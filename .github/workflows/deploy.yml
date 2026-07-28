@@ -1,0 +1,92 @@
+name: Deploy to production (cPanel)
+
+# Auto-deploys on push to main. Two independent jobs:
+#   marketing  -> builds dist/site and uploads it to the main domain docroot
+#   directory  -> composer installs and uploads the CI4 app to the subdomain root
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
+#   FTP_MARKETING_DIR  (e.g. /public_html/)
+#   FTP_DIRECTORY_DIR  (e.g. /directory_app/  — subdomain docroot points at <this>/public)
+#
+# First directory deploy only: run migrations via cPanel Terminal / SSH:
+#   php spark migrate && php spark db:seed DirectoryProfessionsSeeder
+# See DEPLOY.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  marketing:
+    name: Marketing site → main domain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build static site
+        run: |
+          npm ci
+          npm run site:build
+
+      - name: Deploy dist/site via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./dist/site/
+          server-dir: ${{ secrets.FTP_MARKETING_DIR }}
+
+  directory:
+    name: Directory app → subdomain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: intl, mbstring, mysqli
+          tools: composer
+
+      - name: Install PHP deps (production)
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+      - name: Deploy CI4 app via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./
+          server-dir: ${{ secrets.FTP_DIRECTORY_DIR }}
+          # Never ship the server .env, dev/build tooling, or the marketing site.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/marketing-site/**
+            **/scripts/**
+            **/dist/**
+            **/tests/**
+            **/.env
+            **/DEPLOY.md
+            **/README.md
+            **/package.json
+            **/package-lock.json
+            **/phpunit.xml.dist
+            **/phpunit.dist.xml
