@@ -1,0 +1,20 @@
+{
+  "name": "webscheduler-marketing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "WebScheduler marketing website (static) — build tooling. The directory SaaS (this repo's CI4 app) is separate.",
+  "scripts": {
+    "site:shots": "node scripts/capture-screenshots.js",
+    "site:css": "tailwindcss -c marketing-site/tailwind.config.cjs -i marketing-site/src/styles.css -o marketing-site/assets/styles.css",
+    "site:dev": "tailwindcss -c marketing-site/tailwind.config.cjs -i marketing-site/src/styles.css -o marketing-site/assets/styles.css --watch",
+    "site:build": "node scripts/build-marketing-site.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "autoprefixer": "^10.4.21",
+    "playwright": "^1.59.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}
