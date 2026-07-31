@@ -124,6 +124,9 @@ const emitted = [
 const ALLOWED_HOSTS = new Set([
   'webscheduler.co.za',
   'www.webscheduler.co.za',
+  // The directory SaaS — a separate CI4 app on its own subdomain, linked from
+  // the nav/footer. Built by `npm run list:build`, deployed separately.
+  'listing.webscheduler.co.za',
   'www.googletagmanager.com',
   'www.google-analytics.com',
 ]);

@@ -2,8 +2,16 @@
 <html lang="en">
 <body style="font-family:Inter,Arial,sans-serif;color:#0f172a;padding:24px">
     <div style="max-width:520px;margin:0 auto">
-        <h2 style="color:#003049;font-size:18px;margin:0 0 12px">New published listing — <?= esc($site) ?></h2>
-        <p style="font-size:15px"><strong><?= esc($listing['display_name'] ?? '') ?></strong> just verified and published a listing.</p>
+        <?php $event = $event ?? 'published'; ?>
+        <h2 style="color:#003049;font-size:18px;margin:0 0 12px">
+            <?= $event === 'edited' ? 'Listing edited' : 'New published listing' ?> — <?= esc($site) ?>
+        </h2>
+        <p style="font-size:15px">
+            <strong><?= esc($listing['display_name'] ?? '') ?></strong>
+            <?= $event === 'edited'
+                ? 'was just updated by its owner. Review it if anything looks off.'
+                : 'just verified and published a listing.' ?>
+        </p>
         <ul style="font-size:14px;color:#334155;line-height:1.7">
             <li>Email: <?= esc($listing['email'] ?? '') ?></li>
             <li>Phone: <?= esc($listing['phone'] ?? '') ?></li>

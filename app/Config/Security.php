@@ -23,8 +23,12 @@ class Security extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Randomize the CSRF Token for added security.
+     *
+     * Enabled: the token is XOR-masked per response so it is not a static value
+     * repeated across pages (BREACH-style side-channel mitigation). csrf_field()
+     * and csrf_hash() mask/unmask transparently — no call-site changes needed.
      */
-    public bool $tokenRandomize = false;
+    public bool $tokenRandomize = true;
 
     /**
      * --------------------------------------------------------------------------

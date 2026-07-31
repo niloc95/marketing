@@ -6,22 +6,74 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<?php $counts = $result['counts']; $tabs = ['' => 'All', 'pending' => 'Pending', 'published' => 'Published', 'unpublished' => 'Unpublished']; ?>
+<?php
+$counts = $result['counts'];
+$tabs   = [
+    ''            => 'All',
+    'pending'     => 'Pending',
+    'published'   => 'Published',
+    'unpublished' => 'Unpublished',
+    'trashed'     => 'Trash',
+];
+/** Preserve the active filters when linking to another tab or page. */
+$link = function (array $overrides = []) use ($status, $filters) {
+    $q = array_filter(array_merge(['status' => $status], $filters, $overrides), fn ($v) => $v !== '' && $v !== null);
+    return base_url('admin') . ($q ? '?' . http_build_query($q) : '');
+};
+$isTrash = $status === 'trashed';
+?>
 <div class="admin-bar">
     <div class="container">
         <strong>Directory admin</strong>
-        <a href="<?= base_url('admin/logout') ?>">Sign out</a>
+        <span>
+            <a href="<?= base_url('admin') ?>">Listings</a> &middot;
+            <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
+            <a href="<?= base_url('admin/logout') ?>">Sign out</a>
+        </span>
     </div>
 </div>
 
 <section class="section">
     <div class="container">
-        <h1 style="font-size:24px;margin:0 0 16px">Listings</h1>
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-xl font-bold text-slate-900">Listings <span class="text-sm font-normal text-slate-500">(<?= (int) $result['total'] ?>)</span></h1>
+            <a class="btn btn-accent btn-xs" href="<?= base_url('admin/new') ?>">+ New listing</a>
+        </div>
+
+        <form method="get" action="<?= base_url('admin') ?>" class="mb-4 flex flex-wrap items-end gap-2">
+            <?php if ($status !== ''): ?><input type="hidden" name="status" value="<?= esc($status, 'attr') ?>"><?php endif; ?>
+            <div class="field mb-0">
+                <label class="text-xs">Search</label>
+                <input type="text" name="q" value="<?= esc($filters['q'], 'attr') ?>" placeholder="Name, email, city or phone" class="w-64">
+            </div>
+            <div class="field mb-0">
+                <label class="text-xs">Category</label>
+                <select name="category" class="w-52">
+                    <option value="">All</option>
+                    <?php foreach ($categories as $c): ?>
+                        <option value="<?= esc($c['slug'], 'attr') ?>" <?= $filters['category'] === $c['slug'] ? 'selected' : '' ?>><?= esc($c['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="field mb-0">
+                <label class="text-xs">Province</label>
+                <select name="province" class="w-44">
+                    <option value="">All</option>
+                    <?php foreach ($provinces as $p): ?>
+                        <option value="<?= esc($p, 'attr') ?>" <?= $filters['province'] === $p ? 'selected' : '' ?>><?= esc($p) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <button class="btn btn-primary btn-xs">Filter</button>
+            <?php if ($filters['q'] || $filters['category'] || $filters['province']): ?>
+                <a class="btn btn-ghost btn-xs" href="<?= esc($link(['q' => '', 'category' => '', 'province' => '']), 'attr') ?>">Clear</a>
+            <?php endif; ?>
+        </form>
 
         <div class="tabs">
             <?php foreach ($tabs as $key => $label): ?>
                 <?php $c = $key === '' ? ($counts['all'] ?? 0) : ($counts[$key] ?? 0); ?>
-                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= base_url('admin') . ($key ? '?status=' . $key : '') ?>"><?= esc($label) ?> (<?= (int) $c ?>)</a>
+                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link(['status' => $key, 'page' => '']), 'attr') ?>"><?= esc($label) ?> (<?= (int) $c ?>)</a>
             <?php endforeach; ?>
         </div>
 
@@ -31,33 +83,40 @@
         <div class="tablewrap">
             <table class="table">
                 <thead>
-                    <tr><th>Name</th><th>Profession</th><th>Location</th><th>Status</th><th>Verified</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Status</th><th>Verified</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
                     <tr>
                         <td>
                             <strong><?= esc($l['display_name']) ?></strong>
-                            <?php if (! empty($l['is_featured'])): ?> <span class="pill" style="background:#fffbeb;color:#a16207">★</span><?php endif; ?>
-                            <div style="color:var(--muted);font-size:12px"><?= esc($l['email'] ?? '') ?></div>
+                            <?php if (! empty($l['is_featured'])): ?> <span class="pill badge-featured">★</span><?php endif; ?>
+                            <div class="text-xs text-slate-500"><?= esc($l['email'] ?? '') ?></div>
                         </td>
-                        <td><?= esc($l['profession_name'] ?? '—') ?></td>
+                        <td><?= esc($l['category_name'] ?? '—') ?></td>
                         <td><?= esc(trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''))) ?: '—' ?></td>
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
                         <td><?= ! empty($l['is_verified']) ? '✓' : '—' ?></td>
                         <td>
                             <div class="actions">
-                                <?php if ($l['status'] !== 'published'): ?>
-                                    <form method="post" action="<?= base_url('admin/publish/' . $l['id']) ?>"><button class="btn btn-primary btn-xs">Publish</button></form>
+                                <?php if ($isTrash): ?>
+                                    <form method="post" action="<?= base_url('admin/restore/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-primary btn-xs">Restore</button></form>
+                                    <form method="post" action="<?= base_url('admin/purge/' . $l['id']) ?>" onsubmit="return confirm('Permanently delete this listing? This cannot be undone.')"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete forever</button></form>
                                 <?php else: ?>
-                                    <form method="post" action="<?= base_url('admin/unpublish/' . $l['id']) ?>"><button class="btn btn-ghost btn-xs">Unpublish</button></form>
+                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/edit/' . $l['id']) ?>">Edit</a>
+                                    <?php if ($l['status'] !== 'published'): ?>
+                                        <form method="post" action="<?= base_url('admin/publish/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-primary btn-xs">Publish</button></form>
+                                    <?php else: ?>
+                                        <form method="post" action="<?= base_url('admin/unpublish/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-xs">Unpublish</button></form>
+                                    <?php endif; ?>
+                                    <form method="post" action="<?= base_url('admin/feature/' . $l['id']) ?>">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="on" value="<?= empty($l['is_featured']) ? '1' : '0' ?>">
+                                        <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
+                                    </form>
+                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('directory/' . $l['slug']) ?>" target="_blank">View</a>
+                                    <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" onsubmit="return confirm('Move this listing to trash?')"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
                                 <?php endif; ?>
-                                <form method="post" action="<?= base_url('admin/feature/' . $l['id']) ?>">
-                                    <input type="hidden" name="on" value="<?= empty($l['is_featured']) ? '1' : '0' ?>">
-                                    <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
-                                </form>
-                                <a class="btn btn-ghost btn-xs" href="<?= base_url('directory/' . $l['slug']) ?>" target="_blank">View</a>
-                                <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" onsubmit="return confirm('Remove this listing?')"><button class="btn btn-ghost btn-xs" style="color:#b91c1c">Delete</button></form>
                             </div>
                         </td>
                     </tr>
@@ -69,8 +128,7 @@
         <?php if ($result['totalPages'] > 1): ?>
             <nav class="pager">
                 <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                    <?php $href = base_url('admin') . '?' . http_build_query(array_filter(['status' => $status, 'page' => $i])); ?>
-                    <?php if ($i === $result['page']): ?><span class="current"><?= $i ?></span><?php else: ?><a href="<?= esc($href, 'attr') ?>"><?= $i ?></a><?php endif; ?>
+                    <?php if ($i === $result['page']): ?><span class="current"><?= $i ?></span><?php else: ?><a href="<?= esc($link(['page' => $i]), 'attr') ?>"><?= $i ?></a><?php endif; ?>
                 <?php endfor; ?>
             </nav>
         <?php endif; ?>

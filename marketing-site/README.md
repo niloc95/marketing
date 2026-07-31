@@ -26,7 +26,7 @@ Run from the project root:
 
 | Command | What it does |
 |---|---|
-| `npm run site:shots` | Capture real app screenshots (needs the app running + seeded — see the plan/verify skill) into `assets/screenshots/`. |
+| `npm run site:shots` | Capture real app screenshots (needs the *sibling* WebScheduler app running + seeded — see `.claude/skills/marketing-site/SKILL.md`) into `assets/screenshots/`. |
 | `npm run site:css`   | Compile Tailwind once → `assets/styles.css` (needed to preview the source locally). |
 | `npm run site:dev`   | Same as above with `--watch` for live editing. |
 | `npm run site:build` | Build the deployable site into `dist/site/` (minified CSS, bundled `/developer` portal, `robots.txt`, `sitemap.xml`). |

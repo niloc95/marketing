@@ -53,8 +53,12 @@ class Cookie extends BaseConfig
      * --------------------------------------------------------------------------
      *
      * Cookie will only be set if a secure HTTPS connection exists.
+     *
+     * On in production, off locally so dev over http://localhost still works.
+     * Config\Session has no $secure of its own, so this covers both the CSRF
+     * cookie and ci_session. A `cookie.secure` key in .env still overrides it.
      */
-    public bool $secure = false;
+    public bool $secure = (ENVIRONMENT === 'production');
 
     /**
      * --------------------------------------------------------------------------

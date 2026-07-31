@@ -8,7 +8,14 @@
     "site:shots": "node scripts/capture-screenshots.js",
     "site:css": "tailwindcss -c marketing-site/tailwind.config.cjs -i marketing-site/src/styles.css -o marketing-site/assets/styles.css",
     "site:dev": "tailwindcss -c marketing-site/tailwind.config.cjs -i marketing-site/src/styles.css -o marketing-site/assets/styles.css --watch",
-    "site:build": "node scripts/build-marketing-site.js"
+    "site:build": "node scripts/build-marketing-site.js",
+    "site:serve": "php -S localhost:8096 -t marketing-site",
+    "site:preview": "php -S localhost:8097 -t dist/site",
+    "list:css": "tailwindcss -c tailwind.directory.cjs -i resources/directory.css -o public/assets/directory.css --minify",
+    "list:dev": "tailwindcss -c tailwind.directory.cjs -i resources/directory.css -o public/assets/directory.css --watch",
+    "list:serve": "php -S localhost:8095 -t public vendor/codeigniter4/framework/system/rewrite.php",
+    "mail:dev": "node scripts/mailpit.js",
+    "list:build": "npm run list:css && node scripts/build-listing-app.js"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",

@@ -87,6 +87,18 @@ php_errors.log
 vendor/
 
 #-------------------------
+# Runtime-uploaded listing media (not source — logos/gallery photos
+# uploaded through the app; the upload code recreates this directory
+# on demand via mkdir)
+#-------------------------
+/public/assets/listings/*
+
+#-------------------------
+# Claude Code local state
+#-------------------------
+.claude/
+
+#-------------------------
 # IDE / Development Files
 #-------------------------
 

@@ -7,10 +7,11 @@
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card" style="max-width:420px">
-            <h1 style="margin:0 0 6px">Admin sign in</h1>
-            <p style="color:var(--muted);margin:0 0 20px">Directory moderation.</p>
+        <div class="form-card max-w-md">
+            <h1 class="mb-1.5 text-xl font-bold text-slate-900">Admin sign in</h1>
+            <p class="mb-5 text-sm text-slate-500">Directory moderation.</p>
             <form method="post" action="<?= base_url('admin/login') ?>">
+                <?= csrf_field() ?>
                 <div class="field">
                     <label>Password</label>
                     <input type="password" name="password" autofocus required>

@@ -1,0 +1,273 @@
+/* WebScheduler Directory — Tailwind entry + self-hosted Inter + component layer.
+   Compiled by `npm run list:css` → public/assets/directory.css
+
+   The component layer deliberately mirrors marketing-site/src/styles.css: the
+   two sites share .btn/.card/.eyebrow so they read as one system, and the app's
+   views keep semantic class names instead of long utility strings. */
+
+/* Self-hosted Inter (no external requests). Files live in public/assets/fonts/. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/inter-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/inter-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./fonts/inter-latin-800-normal.woff2') format('woff2');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+  ::selection { @apply bg-brand-orange/20; }
+  a { @apply no-underline; }
+}
+
+@layer components {
+  /* ---------------------------------------------------------------- layout */
+  .container { @apply mx-auto w-full max-w-7xl px-4 sm:px-6; }
+  .section   { @apply py-10 sm:py-14; }
+
+  .site-header {
+    @apply sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur;
+  }
+  .site-header .container {
+    @apply flex flex-wrap items-center justify-between gap-3 py-3;
+  }
+  .brand      { @apply flex items-center gap-2 text-base font-bold text-primary-500; }
+  .brand-mark {
+    @apply grid h-8 w-8 place-items-center rounded-lg bg-primary-500
+           text-sm font-extrabold text-white;
+  }
+  .nav        { @apply flex items-center gap-2 sm:gap-4; }
+  .nav a      { @apply text-sm font-medium text-slate-600 hover:text-primary-500; }
+  .nav a.btn  { @apply text-white hover:text-white; }
+
+  .site-footer {
+    @apply mt-12 border-t border-slate-200 bg-white py-8 text-sm text-slate-500;
+  }
+  .site-footer .container { @apply flex flex-wrap items-center justify-between gap-3; }
+  .site-footer a          { @apply text-slate-600 hover:text-primary-500; }
+
+  .admin-bar { @apply border-b border-slate-200 bg-primary-500 py-2.5 text-sm text-white; }
+  .admin-bar .container { @apply flex items-center justify-between; }
+  .admin-bar a { @apply text-white/80 hover:text-white; }
+
+  /* --------------------------------------------------------------- buttons */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl
+           border-0 px-5 py-3 text-sm font-semibold transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  .btn-primary { @apply btn bg-primary-500 text-white shadow-brand hover:bg-primary-600 focus:ring-primary-500; }
+  .btn-accent  { @apply btn bg-brand-orange text-white shadow-brand hover:bg-accent-600 focus:ring-brand-orange; }
+  .btn-ghost   { @apply btn border border-slate-200 bg-white text-primary-700 hover:bg-slate-50 focus:ring-primary-500; }
+  .btn-xs      { @apply px-3 py-1.5 text-xs; }
+  .btn-block   { @apply w-full; }
+
+  /* --------------------------------------------------------------- surfaces */
+  .card  { @apply rounded-2xl border border-slate-200 bg-white shadow-brand; }
+  .panel { @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-brand; }
+  .empty { @apply rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500; }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1
+           text-xs font-semibold uppercase tracking-wider text-primary-600;
+  }
+
+  .hero {
+    @apply bg-gradient-to-br from-primary-500 to-primary-700 py-14 text-white sm:py-20;
+  }
+  .hero h1 { @apply text-3xl font-extrabold leading-tight sm:text-5xl; }
+  .hero p  { @apply mt-3 max-w-2xl text-base text-white/80 sm:text-lg; }
+
+  /* ------------------------------------------------------------ search bar */
+  .searchbar {
+    @apply mt-6 grid gap-2 rounded-2xl bg-white p-3 shadow-brand-lg
+           sm:grid-cols-[1fr_auto_auto_auto];
+  }
+  /* text-slate-900 is explicit: .searchbar sits inside .hero, whose text-white
+     would otherwise be inherited and render the select's text invisible. */
+  .searchbar input,
+  .searchbar select {
+    @apply w-full rounded-xl border-slate-200 text-sm text-slate-900
+           focus:border-primary-500 focus:ring-primary-500;
+  }
+
+  /* ----------------------------------------------------------------- cards */
+  .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+
+  .avatar {
+    @apply grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl
+           bg-primary-50 text-sm font-bold text-primary-600;
+  }
+  .avatar img { @apply h-full w-full object-cover; }
+
+  .badge {
+    @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5
+           text-xs font-medium text-slate-600;
+  }
+  .badge-featured { @apply bg-brand-golden/25 text-amber-700; }
+
+  .taglist { @apply mt-3 flex flex-wrap gap-1.5; }
+  .tag     { @apply inline-flex rounded-full bg-primary-50 px-2.5 py-0.5 text-xs text-primary-600; }
+
+  /* --------------------------------------------------------------- profile */
+  .profile-head { @apply flex flex-wrap items-start gap-4; }
+  .profile-grid { @apply mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]; }
+  /* .kv is one label/value row; panels stack several of them. */
+  .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
+  .kv .k { @apply shrink-0 font-medium text-slate-500; }
+  .panel h3 { @apply mb-3 text-base font-semibold text-slate-900; }
+
+  /* ---------------------------------------------------------------- gallery */
+  .gallery      { @apply mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4; }
+  .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-xl border-0 p-0; }
+  .gallery-item img { @apply h-full w-full object-cover transition-opacity hover:opacity-90; }
+
+  .lightbox        { @apply fixed inset-0 z-50 grid place-items-center bg-slate-900/90 p-4; }
+  .lightbox[hidden] { @apply hidden; }
+  .lightbox img     { @apply max-h-[85vh] max-w-full rounded-lg; }
+  .lightbox-close,
+  .lightbox-prev,
+  .lightbox-next {
+    @apply absolute grid h-10 w-10 cursor-pointer place-items-center rounded-full
+           border-0 bg-white/10 text-xl text-white hover:bg-white/20;
+  }
+  .lightbox-close { @apply right-4 top-4; }
+  .lightbox-prev  { @apply left-4 top-1/2 -translate-y-1/2; }
+  .lightbox-next  { @apply right-4 top-1/2 -translate-y-1/2; }
+
+  /* ------------------------------------------------------------------ pills */
+  .pillrow         { @apply mt-3 flex flex-wrap gap-1.5; }
+  .pill-capability { @apply bg-emerald-50 text-emerald-700; }
+
+  /* ---------------------------------------------------------- trading hours */
+  .hours-day-row     { @apply items-start; }
+  .hours-today       { @apply rounded-lg bg-primary-50 px-2; }
+  .hours-today-badge {
+    @apply ml-1 rounded-full bg-primary-500 px-1.5 py-0.5 text-[10px] font-semibold text-white;
+  }
+  .hours-note-text { @apply text-xs text-slate-500; }
+
+  /* -------------------------------------------------------------------- map */
+  .map-embed {
+    @apply aspect-[4/3] w-full overflow-hidden rounded-xl border border-slate-200;
+  }
+  .map-embed iframe { @apply h-full w-full border-0; }
+
+  /* ------------------------------------------------------------------ reveal */
+  .reveal-btn { @apply btn-ghost btn-xs; }
+
+  /* ------------------------------------------------------------------- share */
+  .share-row  { @apply flex flex-wrap items-start gap-1.5; }
+  .share-icon {
+    @apply grid h-9 w-9 cursor-pointer place-items-center rounded-full border
+           border-slate-200 bg-white text-slate-500 transition-colors
+           hover:border-primary-500 hover:text-primary-500;
+  }
+  .share-icon svg { @apply h-4 w-4; }
+  .share-icon .icon-check { @apply hidden; }
+  .share-icon.is-copied { @apply border-emerald-500 text-emerald-600; }
+  .share-icon.is-copied .icon-link  { @apply hidden; }
+  .share-icon.is-copied .icon-check { @apply block; }
+
+  /* ----------------------------------------------------------------- forms */
+  .form-card { @apply mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-brand sm:p-8; }
+  .form-row  { @apply grid gap-4 sm:grid-cols-2; }
+  .field     { @apply mb-4; }
+  .field label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+  .field input[type="text"],
+  .field input[type="email"],
+  .field input[type="password"],
+  .field input[type="file"],
+  .field select,
+  .field textarea {
+    @apply w-full rounded-xl border-slate-200 text-sm
+           focus:border-primary-500 focus:ring-primary-500;
+  }
+  .hint { @apply mt-1 text-xs text-slate-500; }
+  .err  { @apply mt-1 text-xs font-medium text-brand-crimson; }
+
+  /* address autocomplete dropdown, in the shared listing form */
+  .address-suggest-list {
+    @apply absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl
+           border border-slate-200 bg-white py-1 text-sm shadow-brand-lg;
+  }
+  .address-suggest-list li { @apply cursor-pointer px-3 py-2 text-slate-700; }
+  .address-suggest-list li.is-active,
+  .address-suggest-list li:hover { @apply bg-primary-50 text-primary-700; }
+
+  /* trading-hours input grid, in the shared listing form */
+  .hours-grid   { @apply flex flex-col gap-2; }
+  .hours-row    {
+    @apply grid grid-cols-2 items-center gap-2 rounded-xl border border-slate-100 p-2 text-sm
+           sm:grid-cols-[90px_100px_auto_1fr_auto_1fr_1fr];
+  }
+  .hours-day    { @apply font-medium text-slate-700; }
+  .hours-closed { @apply flex items-center gap-1 text-xs text-slate-500; }
+  .hours-row input[type="time"] { @apply w-full rounded-lg border-slate-200 text-sm; }
+  .hours-note   { @apply col-span-2 sm:col-span-1; }
+  /* Honeypot — visually hidden but not display:none, so bots still fill it. */
+  .hp   { @apply absolute -left-[9999px] h-0 w-0 overflow-hidden; }
+
+  /* ---------------------------------------------------------------- alerts */
+  .alert         { @apply rounded-xl border px-4 py-3 text-sm; }
+  .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .alert-error   { @apply border-red-200 bg-red-50 text-red-800; }
+  .alert-info    { @apply border-sky-200 bg-sky-50 text-sky-800; }
+
+  /* ------------------------------------------------------------ admin table */
+  .tabs   { @apply mb-4 flex flex-wrap gap-1 border-b border-slate-200; }
+  .tabs a { @apply rounded-t-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-primary-500; }
+  .tabs a.active { @apply bg-white text-primary-500 shadow-[inset_0_-2px_0_0_#F77F00]; }
+
+  .tablewrap { @apply overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-brand; }
+  .table     { @apply w-full border-collapse text-sm; }
+  .table th  { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .table td  { @apply border-t border-slate-100 px-4 py-3 align-top; }
+  .actions   { @apply flex flex-wrap items-center gap-1.5; }
+
+  .pill             { @apply inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize; }
+  .pill-pending     { @apply bg-amber-100 text-amber-800; }
+  .pill-published   { @apply bg-emerald-100 text-emerald-800; }
+  .pill-unpublished { @apply bg-slate-100 text-slate-600; }
+  .pill-rejected    { @apply bg-red-100 text-red-700; }
+
+  /* ---------------------------------------------------------------- pager */
+  .pager        { @apply mt-6 flex flex-wrap justify-center gap-1.5; }
+  .pager a      { @apply rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50; }
+  .pager .current { @apply rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-semibold text-white; }
+}

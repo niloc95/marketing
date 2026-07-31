@@ -4,12 +4,14 @@
  * Captures REAL screenshots of the running WebScheduler app for the marketing
  * site. Output → marketing-site/assets/screenshots/*.png (retina @2x, light mode).
  *
- * Reuses the login/seed recipe from .claude/skills/verify/SKILL.md:
+ * This targets the SEPARATE, sibling WebScheduler scheduling product (the
+ * self-hosted app this directory SaaS is distinct from) — not anything in this
+ * repo. See .claude/skills/marketing-site/SKILL.md for the full explanation.
  *   - Dev server expected at BASE_URL (default http://localhost:8080).
  *   - Log in at /auth/login with an ADMIN so admin-only screens
  *     (Analytics, User management) render with data.
  *
- * Prerequisites (see the plan): seed sample data
+ * Prerequisites, on that other app: seed sample data
  *   php spark db:seed SchedulingSampleDataSeeder
  * and have an admin account. A throwaway admin can be used and deleted after.
  *
