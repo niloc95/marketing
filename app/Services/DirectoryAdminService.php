@@ -194,11 +194,14 @@ class DirectoryAdminService
             $data['published_at'] = $old['published_at'] ?? date('Y-m-d H:i:s');
         }
 
-        // Re-geocode only when the address changed (or this is a new listing)
-        // — same policy as the owner-edit path in DirectoryListingMutationService,
-        // to avoid spending a Nominatim call on every unrelated admin save. A
-        // changed address that fails to geocode gets its coordinates cleared
-        // rather than left stale.
+        // Re-geocode when the address changed (or this is a new listing), or
+        // when the listing still has no coordinates from a previous failed
+        // attempt (e.g. Nominatim was rate-limited/down at save time) —
+        // same policy as the owner-edit path in DirectoryListingMutationService,
+        // to avoid spending a Nominatim call on every unrelated admin save
+        // while still giving a failed listing another chance on its next
+        // save. A changed address that fails to geocode gets its
+        // coordinates cleared rather than left stale.
         $addressFields  = ['address_line', 'suburb', 'city', 'province', 'postal_code', 'country'];
         $addressChanged = $old === null;
         if (! $addressChanged) {
@@ -209,7 +212,8 @@ class DirectoryAdminService
                 }
             }
         }
-        if ($addressChanged) {
+        $missingCoords = $old !== null && ($old['latitude'] === null || $old['longitude'] === null);
+        if ($addressChanged || $missingCoords) {
             $merged  = array_merge($old ?? [], $data);
             $address = trim(implode(', ', array_filter([
                 $merged['address_line'] ?? '', $merged['suburb'] ?? '', $merged['city'] ?? '',

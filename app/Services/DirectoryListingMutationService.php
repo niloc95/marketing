@@ -285,9 +285,13 @@ class DirectoryListingMutationService
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
         }
 
-        // Re-geocode only when the address actually changed — an edit that
-        // only touches hours or the description shouldn't spend a Nominatim
-        // call. A changed address that fails to geocode gets its coordinates
+        // Re-geocode when the address actually changed — an edit that only
+        // touches hours or the description shouldn't spend a Nominatim call
+        // — OR when the listing still has no coordinates at all (a previous
+        // geocode attempt failed, e.g. Nominatim was rate-limited/down at
+        // save time; without this, that listing would never get a second
+        // chance short of an owner editing the address away and back). A
+        // changed address that fails to geocode gets its coordinates
         // cleared rather than left stale: an old pin at a now-wrong address
         // is worse than no pin at all.
         $addressFields  = ['address_line', 'suburb', 'city', 'province', 'postal_code', 'country'];
@@ -298,7 +302,8 @@ class DirectoryListingMutationService
                 break;
             }
         }
-        if ($addressChanged) {
+        $missingCoords = $listing['latitude'] === null || $listing['longitude'] === null;
+        if ($addressChanged || $missingCoords) {
             $coords = $this->geocodeIfPossible(array_merge($listing, $data));
             $data['latitude']  = $coords['lat'] ?? null;
             $data['longitude'] = $coords['lng'] ?? null;

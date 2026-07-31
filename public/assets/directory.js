@@ -142,7 +142,19 @@
     var renderResults = function () {
       suggestList.innerHTML = '';
       if (!results.length) {
-        hideList();
+        // A completed search with zero matches must look different from the
+        // dropdown simply not working — otherwise both look like nothing
+        // happened. Nominatim genuinely has no coverage for plenty of real
+        // South African addresses (e.g. informally-named suburbs), so this
+        // is an expected, not exceptional, outcome.
+        var empty = document.createElement('li');
+        empty.className = 'is-empty';
+        empty.setAttribute('aria-disabled', 'true');
+        empty.textContent = 'No matching addresses found — you can still type the address manually.';
+        suggestList.appendChild(empty);
+        suggestList.hidden = false;
+        addressInput.setAttribute('aria-expanded', 'true');
+        activeIndex = -1;
         return;
       }
       results.forEach(function (r, i) {
@@ -176,13 +188,23 @@
       }
       var seq = ++requestSeq;
       fetch(suggestUrl + '?q=' + encodeURIComponent(query))
-        .then(function (res) { return res.ok ? res.json() : []; })
+        .then(function (res) {
+          if (!res.ok) {
+            console.error('Address autocomplete: /address-suggest returned HTTP ' + res.status);
+            return [];
+          }
+          return res.json();
+        })
         .then(function (json) {
           if (seq !== requestSeq) return; // a newer request already resolved
           results = Array.isArray(json) ? json : [];
           renderResults();
         })
-        .catch(function () { /* network hiccup — leave the list as-is */ });
+        .catch(function (err) {
+          // Network hiccup — surface it instead of failing silently, but
+          // leave the list as-is rather than showing a scary error state.
+          console.error('Address autocomplete: fetch failed — ' + err.message);
+        });
     };
 
     addressInput.addEventListener('input', function () {
@@ -210,7 +232,7 @@
 
     suggestList.addEventListener('click', function (e) {
       var li = e.target.closest('li');
-      if (!li) return;
+      if (!li || li.classList.contains('is-empty')) return;
       var index = Array.prototype.indexOf.call(suggestList.querySelectorAll('li'), li);
       if (results[index]) selectSuggestion(results[index]);
     });

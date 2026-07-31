@@ -229,6 +229,9 @@
   .address-suggest-list li { @apply cursor-pointer px-3 py-2 text-slate-700; }
   .address-suggest-list li.is-active,
   .address-suggest-list li:hover { @apply bg-primary-50 text-primary-700; }
+  .address-suggest-list li.is-empty {
+    @apply cursor-default text-slate-400 hover:bg-transparent hover:text-slate-400;
+  }
 
   /* trading-hours input grid, in the shared listing form */
   .hours-grid   { @apply flex flex-col gap-2; }

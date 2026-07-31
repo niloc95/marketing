@@ -7,17 +7,20 @@ use App\Services\DirectoryService;
 /**
  * Free geocoding via OpenStreetMap's Nominatim — no API key, no billing
  * account. Their usage policy requires a descriptive User-Agent and roughly
- * one request per second. `geocode()` only runs once per listing save (and
- * only when the address actually changed on an edit); `suggest()` backs the
+ * one request per second. `geocode()` only runs once per listing save (on
+ * create, when the address text changed, or when the listing still has no
+ * coordinates from a previous failed attempt); `suggest()` backs the
  * interactive address-autocomplete endpoint, which is debounced client-side
  * and throttled server-side (see AddressSuggest::index()) to stay within
  * that policy too. Never throws — callers must always get a usable result
  * (null or []) even if Nominatim is slow, down, or returns nothing useful.
+ * Non-200 responses are logged (not just thrown exceptions) so a rate-limit
+ * or block from Nominatim is diagnosable after the fact.
  */
 class AddressGeocoder
 {
     private const ENDPOINT      = 'https://nominatim.openstreetmap.org/search';
-    private const TIMEOUT       = 5;
+    private const TIMEOUT       = 8;
     private const MIN_QUERY_LEN = 3;
 
     /**
@@ -43,6 +46,7 @@ class AddressGeocoder
             ]);
 
             if ($response->getStatusCode() !== 200) {
+                log_message('error', 'AddressGeocoder: Nominatim returned HTTP ' . $response->getStatusCode() . ' for geocode("' . $address . '")');
                 return null;
             }
 
@@ -90,6 +94,7 @@ class AddressGeocoder
             ]);
 
             if ($response->getStatusCode() !== 200) {
+                log_message('error', 'AddressGeocoder: Nominatim returned HTTP ' . $response->getStatusCode() . ' for suggest("' . $query . '")');
                 return [];
             }
 
