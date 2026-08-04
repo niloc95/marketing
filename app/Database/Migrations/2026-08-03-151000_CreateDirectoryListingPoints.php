@@ -2,6 +2,7 @@
 
 namespace App\Database\Migrations;
 
+use App\Libraries\SpatialSupport;
 use CodeIgniter\Database\Migration;
 
 /**
@@ -43,10 +44,19 @@ class CreateDirectoryListingPoints extends Migration
         $table    = $this->db->prefixTable('directory_listing_points');
         $listings = $this->db->prefixTable('directory_listings');
 
+        // `SRID 4326` on a column is MySQL 8.0.3+ syntax and does not exist in
+        // MariaDB, which is what most cPanel hosting runs. Deploys are automatic,
+        // so a version-specific CREATE TABLE would ship the code and fail the
+        // schema. The constraint is an optimizer hint, not a correctness one:
+        // ST_Distance_Sphere reads x as longitude with or without it, and the
+        // spatial index is created either way. See App\Libraries\SpatialSupport.
+        $srid  = SpatialSupport::supportsSridColumns($this->db);
+        $point = $srid ? 'POINT NOT NULL SRID 4326' : 'POINT NOT NULL';
+
         $this->db->query(
             "CREATE TABLE IF NOT EXISTS `{$table}` (
                 `listing_id` INT(11) UNSIGNED NOT NULL,
-                `location` POINT NOT NULL SRID 4326,
+                `location` {$point},
                 PRIMARY KEY (`listing_id`),
                 SPATIAL INDEX `sp_listing_location` (`location`),
                 CONSTRAINT `fk_listing_points_listing`
@@ -57,9 +67,13 @@ class CreateDirectoryListingPoints extends Migration
 
         // Seed from coordinates already on file so "near me" works against the
         // existing directory immediately, without waiting for a re-geocode.
+        $seedPoint = $srid
+            ? 'ST_SRID(POINT(`longitude`, `latitude`), 4326)'
+            : 'POINT(`longitude`, `latitude`)';
+
         $this->db->query(
             "INSERT IGNORE INTO `{$table}` (`listing_id`, `location`)
-             SELECT `id`, ST_SRID(POINT(`longitude`, `latitude`), 4326)
+             SELECT `id`, {$seedPoint}
              FROM `{$listings}`
              WHERE `latitude` IS NOT NULL AND `longitude` IS NOT NULL
                AND NOT (`latitude` = 0 AND `longitude` = 0)

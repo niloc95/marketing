@@ -131,9 +131,12 @@ final class ListingGeocoder
         // ST_Distance_Sphere reads x as longitude whatever the SRID says. Swap
         // them and nothing errors, no coordinate leaves its valid range, and
         // every distance is quietly wrong.
+        // The point expression has to match how the column was created — the
+        // migration only applies an SRID constraint where the server supports
+        // one. See App\Libraries\SpatialSupport.
         $db->query(
             'INSERT INTO ' . $db->prefixTable('directory_listing_points') . ' (listing_id, location)
-             VALUES (?, ST_SRID(POINT(?, ?), 4326))
+             VALUES (?, ' . SpatialSupport::pointExpression($db) . ')
              ON DUPLICATE KEY UPDATE location = VALUES(location)',
             [$listingId, (float) $lng, (float) $lat]
         );
