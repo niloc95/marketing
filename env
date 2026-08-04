@@ -93,6 +93,26 @@
 # Password for /admin/login. Set a strong value in production.
 # directory.adminPassword =
 
+# The mapping stack is deliberately open-source end to end — Leaflet for the
+# maps, OpenStreetMap for the data, Nominatim for geocoding. There is no API key
+# to set anywhere and nothing is billed per request. Do not reintroduce a
+# commercial provider without revisiting that decision.
+
+# Tile source for every map in the app. Defaults to CARTO's Voyager
+# raster basemap — the same OpenStreetMap data, served from a CDN built for
+# embedding. Deliberately NOT tile.openstreetmap.org: those servers are
+# donation-funded, their policy discourages commercial use, and a block shows up
+# as a blank grey map with no warning.
+#
+# Alternative CARTO styles: swap "rastertiles/voyager" for "light_all" (Positron,
+# very muted) or "dark_all". Other hosts with free tiers: MapTiler, Stadia,
+# Thunderforest — all need only these two values changed, no code.
+#
+# Attribution is mandatory and must credit both the data (OpenStreetMap) and the
+# tile host. Update it to match whatever provider you point at.
+# directory.mapTileUrl = 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+# directory.mapTileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+
 #--------------------------------------------------------------------
 # EMAIL
 #--------------------------------------------------------------------
