@@ -60,9 +60,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Match production (PHP 8.3 on the cPanel host). composer.json requires
+      # ^8.2 via CodeIgniter 4.7, so the old '8.1' pin failed the install
+      # outright — the vendor tree must also be resolved against the runtime it
+      # will actually execute on, not merely a version that satisfies the range.
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.3'
           extensions: intl, mbstring, mysqli
           tools: composer
 
