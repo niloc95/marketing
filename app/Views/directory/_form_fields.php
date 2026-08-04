@@ -19,10 +19,16 @@
  * @var bool     $lockEmail  render email read-only (owners cannot change identity)
  * @var bool     $showConsent
  * @var array    $vHours     decoded trading hours, keyed mon..sun (old value wins on resubmit)
+ * @var string   $existingLogo  stored logo path, so an editor can see what is already set
+ * @var int      $gallerySlots  photos still addable (8 minus what the listing has)
  */
-$lockEmail   = $lockEmail   ?? false;
-$showConsent = $showConsent ?? false;
-$vHours      = $vHours      ?? [];
+$lockEmail    = $lockEmail    ?? false;
+$showConsent  = $showConsent  ?? false;
+$vHours       = $vHours       ?? [];
+// Signup has no listing yet, so both default to "nothing stored, every slot
+// free" — the edit pages pass real values from HandlesListingUploads.
+$existingLogo = $existingLogo ?? '';
+$gallerySlots = $gallerySlots ?? \App\Controllers\Listing::GALLERY_MAX;
 helper('directory_hours');
 ?>
 <div class="form-row">
@@ -69,7 +75,7 @@ helper('directory_hours');
     <div class="field">
         <label>Email *</label>
         <?php if ($lockEmail): ?>
-            <input type="email" value="<?= esc($v('email'), 'attr') ?>" readonly disabled class="bg-slate-100 text-slate-500">
+            <input type="email" value="<?= esc($v('email'), 'attr') ?>" readonly disabled class="bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
             <div class="hint">This is how we identify your listing. Contact us to change it.</div>
         <?php else: ?>
             <input type="email" name="email" value="<?= esc($v('email'), 'attr') ?>" required>
@@ -113,7 +119,8 @@ helper('directory_hours');
     <label class="font-medium"><input type="checkbox" name="offers_online_booking" value="1" <?= $v('offers_online_booking') ? 'checked' : '' ?>> Offers online booking</label>
 </div>
 
-<div data-address-autocomplete data-suggest-url="<?= base_url('address-suggest') ?>">
+<div data-address-autocomplete
+     data-suggest-url="<?= base_url('address-suggest') ?>">
     <div class="form-row">
         <div class="field relative">
             <label>Address</label>
@@ -126,6 +133,15 @@ helper('directory_hours');
             <label>Suburb</label>
             <input type="text" name="suburb" value="<?= esc($v('suburb'), 'attr') ?>" data-address-field="suburb">
         </div>
+    </div>
+    <?php // Unit, floor, building — detail that helps a customer find the door
+          // but only confuses a geocoder, so it is stored and displayed and
+          // deliberately left out of the lookup query. ?>
+    <div class="field">
+        <label>Address line 2 <span class="map-picker-optional">optional</span></label>
+        <input type="text" name="address_line_2" value="<?= esc($v('address_line_2'), 'attr') ?>"
+               data-address-field="address_line_2" autocomplete="off"
+               placeholder="Unit, floor, building">
     </div>
     <div class="form-row">
         <div class="field">
@@ -147,6 +163,84 @@ helper('directory_hours');
             <?php endforeach; ?>
         </select>
     </div>
+
+    <?php // Picking a suggestion captures the exact point the geocoder returned
+          // for that entry, so the server can save it as-is instead of
+          // re-deriving a pin from the address text — which is what fails for
+          // the many South African suburbs no geocoder has heard of. The script
+          // clears these the moment any address field is edited by hand, so a
+          // stale pin can't survive an address change.
+          //
+          // None of these are owner-writable columns: they reach the database
+          // only through ListingGeocoder, which re-checks them. ?>
+    <input type="hidden" name="latitude" value="<?= esc($v('latitude'), 'attr') ?>" data-address-coord="latitude">
+    <input type="hidden" name="longitude" value="<?= esc($v('longitude'), 'attr') ?>" data-address-coord="longitude">
+    <input type="hidden" name="geocode_precision" value="<?= esc($v('geocode_precision'), 'attr') ?>" data-address-coord="geocode_precision">
+
+    <?php // The pin picker. No geocoder has a record of every real South African
+          // suburb, so some of these businesses will never be placed correctly
+          // by lookup alone — dragging the marker is the only thing that can,
+          // and a pin placed this way is saved as 'manual' and never recomputed.
+          // Progressive enhancement: without JavaScript this is an empty div and
+          // the form still submits, falling back to server-side geocoding
+          // exactly as before. ?>
+    <div class="field map-picker"
+         data-map-picker
+         data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+         data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
+         data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
+         data-locate-url="<?= base_url('address-locate') ?>"
+         data-reverse-url="<?= base_url('address-reverse') ?>">
+        <?php
+        // Say plainly when the saved pin is only a guess. A "street" match is a
+        // point somewhere along the road — OpenStreetMap has no house numbers on
+        // many South African streets, so it can sit hundreds of metres from the
+        // real door — and suburb/city matches are centroids. Those are exactly
+        // the listings where dragging the marker is the only real fix, so they
+        // get a direct ask rather than the generic invitation.
+        $pinPrecision  = $v('geocode_precision');
+        $pinIsApprox   = $v('latitude') !== '' && ! in_array($pinPrecision, ['manual', 'exact'], true);
+        $approxWording = [
+            'street' => 'We could only place you somewhere along your street',
+            'suburb' => 'We could only place you in your suburb',
+            'city'   => 'We could only place you in your city',
+        ][$pinPrecision] ?? 'We could not place you precisely';
+        ?>
+        <label>Pin your exact location <span class="map-picker-optional"><?= $pinIsApprox ? 'please check' : 'optional' ?></span></label>
+        <?php if ($pinIsApprox): ?>
+            <p class="map-picker-help map-picker-warn">
+                <strong><?= esc($approxWording) ?>.</strong>
+                Please drag the marker onto your exact spot &mdash; otherwise directions may send
+                customers to the wrong part of the road.
+            </p>
+        <?php else: ?>
+            <p class="map-picker-help">
+                Drag the marker to where your business actually is. Worth doing if the map looks
+                wrong &mdash; we can&rsquo;t always find smaller suburbs automatically.
+            </p>
+        <?php endif; ?>
+        <div class="map-picker-canvas" data-map-picker-canvas></div>
+        <div class="map-picker-actions">
+            <button type="button" class="btn-ghost btn-xs" data-map-picker-locate>Find my address on the map</button>
+            <button type="button" class="btn-ghost btn-xs" data-map-picker-reset hidden>Clear pin</button>
+            <span class="map-picker-status" role="status" data-map-picker-status></span>
+        </div>
+
+        <?php // After a drag, the pin is right but the typed address probably
+              // isn't. We show what OpenStreetMap says is at that spot and let
+              // the user decide — never apply it for them. A hand-placed pin
+              // exists precisely because the geocoder was wrong, so it doesn't
+              // get to overwrite the address it just lost an argument with.
+              // Either way the pin stays 'manual'. ?>
+        <div class="map-picker-suggestion" data-map-picker-suggestion hidden>
+            <p class="map-picker-suggestion-label">That pin looks like:</p>
+            <p class="map-picker-suggestion-text" data-map-picker-suggestion-text></p>
+            <div class="map-picker-actions">
+                <button type="button" class="btn-ghost btn-xs" data-map-picker-suggestion-accept>Use this address</button>
+                <button type="button" class="btn-ghost btn-xs" data-map-picker-suggestion-dismiss>Keep mine</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="field">
@@ -166,14 +260,35 @@ helper('directory_hours');
     <div class="hint">Leave a day's times blank and tick "Closed" for days you don't trade.</div>
 </div>
 
+<?php // accept="image/*" on both is deliberate: it is what makes iOS offer the
+      // photo library and transcode HEIC to JPEG on the way out. Narrowing it to
+      // a MIME list blocks iPhone photos outright. The server re-checks anyway. ?>
 <div class="field">
-    <label>Logo / photo</label>
-    <input type="file" name="logo" accept="image/*">
+    <label for="logo-input">Logo / photo</label>
+    <?php if ($existingLogo !== ''): ?>
+        <div class="upload-current" data-image-current>
+            <?php // Same absolute-vs-relative rule the card and profile pages use. ?>
+            <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo)) ?>" alt="Current logo">
+            <span class="hint">Current logo — choosing a file replaces it.</span>
+        </div>
+    <?php endif; ?>
+    <input type="file" id="logo-input" name="logo" accept="image/*" data-image-upload="single">
+    <div class="upload-preview" data-image-preview></div>
+    <div class="hint">JPEG, PNG, WebP, GIF, BMP or AVIF — up to 10 MB, resized automatically.</div>
 </div>
 <div class="field">
-    <label>Photo gallery</label>
-    <input type="file" name="gallery[]" accept="image/png,image/jpeg,image/jpg" multiple>
-    <div class="hint">Up to 8 photos. PNG or JPEG — resized and optimised automatically.</div>
+    <label for="gallery-input">Photo gallery</label>
+    <?php if ($gallerySlots > 0): ?>
+        <input type="file" id="gallery-input" name="gallery[]" accept="image/*" multiple
+               data-image-upload="multi" data-max-files="<?= (int) $gallerySlots ?>">
+        <div class="upload-preview" data-image-preview></div>
+        <div class="hint">
+            Up to <?= (int) $gallerySlots ?> more photo<?= $gallerySlots === 1 ? '' : 's' ?>, 10 MB each.
+            Any common photo format — resized and optimised automatically.
+        </div>
+    <?php else: ?>
+        <div class="hint">This listing already has the maximum number of photos. Delete one above to add another.</div>
+    <?php endif; ?>
 </div>
 
 <?php if ($showConsent): ?>

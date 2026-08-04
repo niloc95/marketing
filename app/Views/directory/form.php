@@ -22,8 +22,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
     <div class="container">
         <div class="form-card">
             <span class="eyebrow">List your business &mdash; free</span>
-            <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900">Get found by new customers</h1>
-            <p class="mb-6 text-sm text-slate-500">Tell us about your business. We'll email you a link to verify and publish your listing &mdash; it's free.</p>
+            <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Get found by new customers</h1>
+            <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your listing &mdash; it's free.</p>
 
             <form method="post" action="<?= base_url('list-your-practice') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
@@ -44,10 +44,14 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <button type="submit" class="btn btn-accent btn-block">Submit &amp; verify by email</button>
             </form>
 
-            <p class="mt-5 text-center text-sm text-slate-500">
-                Already listed? <a class="font-medium text-primary-500 hover:underline" href="<?= base_url('manage') ?>">Manage your listing</a>.
+            <p class="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+                Already listed? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Manage your listing</a>.
             </p>
         </div>
     </div>
 </section>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<?= view('directory/_map_assets') ?>
 <?= $this->endSection() ?>

@@ -2,14 +2,14 @@
 
 namespace App\Controllers;
 
-use App\Libraries\ListingImageProcessor;
+use App\Controllers\Concerns\HandlesListingUploads;
 use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryService;
 
 class Admin extends BaseController
 {
-    private const GALLERY_MAX = 8;
+    use HandlesListingUploads;
 
     public function login()
     {
@@ -107,63 +107,60 @@ class Admin extends BaseController
             'categories' => $dir->categories(),
             'provinces'  => $dir->provinces(),
             'tags'       => $listing ? $dir->tagsForListing((int) $listing['id']) : [],
+            'photos'     => $listing
+                ? (new DirectoryListingPhotoModel())->forListing((int) $listing['id'])
+                : [],
+            'slots'      => $this->gallerySlots($listing ? (int) $listing['id'] : null),
+            'galleryMax' => self::GALLERY_MAX,
         ]);
     }
 
     private function save(?int $id)
     {
         $post = $this->request->getPost();
-        if (($logo = $this->resolveLogo()) !== '') {
-            $post['logo_path'] = $logo;
+        $logo = $this->resolveLogo();
+        if ($logo['path'] !== '') {
+            $post['logo_path'] = $logo['path'];
         }
 
         $result = (new DirectoryAdminService())->upsert($id, $post);
 
         if (! $result['ok']) {
             $target = $id === null ? base_url('admin/new') : base_url('admin/edit/' . $id);
-            return redirect()->to($target)
-                ->with('errors', $result['errors'])
-                ->with('old', $post)
-                ->with('error', $result['message']);
+            return $this->withUploadErrors(
+                redirect()->to($target)
+                    ->with('errors', $result['errors'])
+                    ->with('old', $post)
+                    ->with('error', $result['message']),
+                array_filter([$logo['error']])
+            );
         }
 
-        if (($photos = $this->resolveGalleryPhotos()) !== []) {
-            (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $photos);
+        $gallery = $this->resolveGalleryPhotos($id);
+        if ($gallery['photos'] !== []) {
+            (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
 
-        return redirect()->to(base_url('admin/edit/' . $result['id']))
-            ->with('success', $result['message']);
+        return $this->withUploadErrors(
+            redirect()->to(base_url('admin/edit/' . $result['id']))->with('success', $result['message']),
+            array_filter(array_merge([$logo['error']], $gallery['errors']))
+        );
     }
 
-    /** Optional logo replacement — '' means "leave the existing logo alone". */
-    private function resolveLogo(): string
+    /** Remove one gallery photo. Admin authority is unrestricted by listing. */
+    public function deletePhoto(int $photoId)
     {
-        $file = $this->request->getFile('logo');
-        if (! $file) {
-            return '';
-        }
-        $result = (new ListingImageProcessor())->process($file, rtrim(FCPATH, '/') . '/assets/listings', 'listing');
-        return $result['path'] ?? '';
-    }
+        $model = new DirectoryListingPhotoModel();
+        $photo = $model->find($photoId);
 
-    /**
-     * @return array<int,array{path:string,width:?int,height:?int,original_name:?string}>
-     */
-    private function resolveGalleryPhotos(): array
-    {
-        $files     = $this->request->getFileMultiple('gallery');
-        $out       = [];
-        $processor = new ListingImageProcessor();
-        foreach (array_slice($files ?? [], 0, self::GALLERY_MAX) as $file) {
-            if (! $file || ! $file->isValid()) {
-                continue;
-            }
-            $result = $processor->process($file, rtrim(FCPATH, '/') . '/assets/listings/gallery', 'gallery');
-            if ($result !== null) {
-                $out[] = $result + ['original_name' => $file->getClientName()];
-            }
+        if (! is_array($photo)) {
+            return redirect()->to(base_url('admin'))->with('error', 'That photo could not be found.');
         }
-        return $out;
+
+        $listingId = (int) $photo['listing_id'];
+        $model->deleteWithFile($photo);
+
+        return redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Photo removed.');
     }
 
     // ------------------------------------------------------------------ actions

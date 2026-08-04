@@ -58,4 +58,23 @@ class DirectoryListingPhotoModel extends Model
         }
         $this->insertBatch($rows);
     }
+
+    /**
+     * Delete a photo row and the file behind it. Paths are FCPATH-relative and
+     * server-generated, but the realpath check is cheap insurance against a
+     * row whose path was ever tampered with reaching unlink() outside public/.
+     *
+     * @param array<string,mixed> $photo a row from this table
+     */
+    public function deleteWithFile(array $photo): void
+    {
+        $root = rtrim(realpath(FCPATH) ?: FCPATH, '/');
+        $full = realpath($root . '/' . ltrim((string) ($photo['path'] ?? ''), '/'));
+
+        if ($full !== false && str_starts_with($full, $root . '/') && is_file($full)) {
+            @unlink($full);
+        }
+
+        $this->delete((int) $photo['id']);
+    }
 }

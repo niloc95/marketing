@@ -5,7 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find a local business or service']) ?>
     <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/favicon.svg') ?>">
-    <link rel="stylesheet" href="<?= base_url('assets/directory.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/directory.css') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.css') ?: time() ?>">
+    <meta name="theme-color" content="#003049" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)">
+    <?php // Dark-mode FOUC guard: matches the marketing site's 'xs-theme' localStorage
+          // contract, so the theme carries across the two properties. Must be blocking
+          // and in <head> — directory.js is deferred and would repaint after first paint. ?>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('xs-theme');
+          if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.classList.toggle('dark', t === 'dark');
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {}
+      })();
+    </script>
 </head>
 <body>
     <header class="site-header">
@@ -16,6 +31,14 @@
             </a>
             <nav class="nav">
                 <a href="<?= base_url('directory') ?>">Find a business</a>
+                <?php // Both icons stay in the DOM and are swapped with dark:hidden /
+                      // hidden dark:block — no JS icon logic, so they can't desync from
+                      // the class the FOUC guard already set. aria-pressed is corrected
+                      // by directory.js, which is the first point the real theme is known. ?>
+                <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="Toggle dark mode">
+                    <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
+                    <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+                </button>
                 <a href="<?= base_url('list-your-practice') ?>" class="btn btn-accent">List your business — free</a>
             </nav>
         </div>
@@ -26,6 +49,21 @@
             <div class="container mt-5"><div class="alert <?= $cls ?>"><?= esc(session()->getFlashdata($key)) ?></div></div>
         <?php endif; ?>
     <?php endforeach; ?>
+
+    <?php // Upload problems are a list, and they accompany rather than replace the
+          // success message: a save can succeed while some photos are rejected. ?>
+    <?php if ($uploadErrors = session()->getFlashdata('upload_errors')): ?>
+        <div class="container mt-5">
+            <div class="alert alert-warning">
+                <strong><?= count($uploadErrors) === 1 ? 'One image was not added:' : count($uploadErrors) . ' images were not added:' ?></strong>
+                <ul class="alert-list">
+                    <?php foreach ($uploadErrors as $uploadError): ?>
+                        <li><?= esc($uploadError) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?= $this->renderSection('content') ?>
 
@@ -41,6 +79,11 @@
         </div>
     </footer>
 
-    <script defer src="<?= base_url('assets/directory.js') ?>"></script>
+    <?php // Page-specific assets (currently only Leaflet, on the three listing
+          // forms). Kept out of the global bundle so browse and profile pages —
+          // the overwhelming majority of traffic — don't pay for a map library
+          // they never use. Rendered before directory.js, which needs L defined. ?>
+    <?= $this->renderSection('scripts') ?>
+    <script defer src="<?= base_url('assets/directory.js') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.js') ?: time() ?>"></script>
 </body>
 </html>

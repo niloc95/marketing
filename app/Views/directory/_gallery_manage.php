@@ -1,0 +1,44 @@
+<?php
+/**
+ * Current gallery photos, with a delete button on each.
+ *
+ * Rendered by directory/manage_edit.php and admin/edit.php. It sits *outside*
+ * the main listing form and cannot move into _form_fields.php: each thumbnail
+ * carries its own <form>, and HTML forbids nesting one form inside another.
+ *
+ * @var array  $photos     rows from DirectoryListingPhotoModel::forListing()
+ * @var string $deleteBase URL prefix the photo id is appended to
+ * @var int    $max        gallery cap, for the remaining-slots line
+ */
+$max  = $max ?? \App\Controllers\Listing::GALLERY_MAX;
+$used = count($photos);
+?>
+<?php if ($photos !== []): ?>
+    <div class="photo-manage">
+        <div class="photo-manage-head">
+            <h2>Current photos</h2>
+            <span class="hint">
+                <?= $used ?> of <?= (int) $max ?> used<?= $used < $max ? ' — ' . ($max - $used) . ' slot' . ($max - $used === 1 ? '' : 's') . ' left' : '' ?>
+            </span>
+        </div>
+        <div class="photo-manage-grid">
+            <?php foreach ($photos as $p): ?>
+                <div class="photo-manage-item">
+                    <?php // Both URLs are server-generated, so they go out raw like the
+                          // gallery in show.php and the form actions on the edit pages —
+                          // esc(…, 'attr') would entity-encode every slash and colon. ?>
+                    <img src="<?= base_url($p['path']) ?>"
+                         alt="<?= esc($p['original_name'] ?? 'Listing photo') ?>"
+                         loading="lazy">
+                    <form method="post" action="<?= rtrim($deleteBase, '/') . '/' . (int) $p['id'] ?>">
+                        <?= csrf_field() ?>
+                        <button type="submit"
+                                class="photo-manage-remove"
+                                aria-label="Delete <?= esc($p['original_name'] ?? 'this photo', 'attr') ?>"
+                                data-confirm="Delete this photo? This cannot be undone.">&times;</button>
+                    </form>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>

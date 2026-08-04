@@ -39,25 +39,35 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
     <div class="container">
         <div class="form-card">
             <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <h1 class="text-xl font-bold text-slate-900"><?= $isNew ? 'New listing' : 'Edit listing' ?></h1>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New listing' : 'Edit listing' ?></h1>
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>">&larr; Back to listings</a>
             </div>
+
+            <?php // Deliberately outside the form below — each thumbnail carries its
+                  // own delete form, and forms cannot nest. ?>
+            <?= view('directory/_gallery_manage', [
+                'photos'     => $photos,
+                'deleteBase' => base_url('admin/photo-delete'),
+                'max'        => $galleryMax,
+            ]) ?>
 
             <form method="post" action="<?= esc($action, 'attr') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
 
                 <?= view('directory/_form_fields', [
-                    'v'          => $v,
-                    'err'        => $err,
-                    'categories' => $categories,
-                    'provinces'  => $provinces,
-                    'lockEmail'  => false,
-                    'vHours'     => $vHours,
+                    'v'            => $v,
+                    'err'          => $err,
+                    'categories'   => $categories,
+                    'provinces'    => $provinces,
+                    'lockEmail'    => false,
+                    'vHours'       => $vHours,
+                    'existingLogo' => (string) ($base['logo_path'] ?? ''),
+                    'gallerySlots' => $slots,
                 ]) ?>
 
                 <?php // Privileged fields — deliberately not in the shared partial, so the
                       // owner form cannot render them even by accident. ?>
-                <div class="panel mt-2 bg-slate-50">
+                <div class="panel mt-2 bg-slate-50 dark:bg-slate-800/60">
                     <h3>Admin controls</h3>
                     <div class="form-row">
                         <div class="field">
@@ -87,4 +97,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
         </div>
     </div>
 </section>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<?= view('directory/_map_assets') ?>
 <?= $this->endSection() ?>

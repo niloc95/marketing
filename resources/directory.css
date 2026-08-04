@@ -50,7 +50,14 @@
   html { scroll-behavior: smooth; }
   body {
     @apply bg-slate-50 font-sans text-slate-900 antialiased;
+    @apply transition-colors duration-200;
   }
+  /* Dark mode uses the class strategy (see tailwind.directory.cjs) with the
+     same surface values as the marketing site: page #0f1419, card #1a202c,
+     footer #0b0f14. Inside @layer components a variant can't be @applied, so
+     the overrides below are written as `.dark .x` descendant rules — the same
+     shape marketing-site/src/styles.css uses. */
+  .dark body { @apply bg-[#0f1419] text-slate-100; }
   ::selection { @apply bg-brand-orange/20; }
   a { @apply no-underline; }
 }
@@ -63,10 +70,13 @@
   .site-header {
     @apply sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur;
   }
+  .dark .site-header { @apply border-slate-800 bg-[#0f1419]/90; }
   .site-header .container {
     @apply flex flex-wrap items-center justify-between gap-3 py-3;
   }
   .brand      { @apply flex items-center gap-2 text-base font-bold text-primary-500; }
+  .dark .brand { @apply text-white; }
+  /* .brand-mark stays ocean-on-white in both themes — it's the logo mark. */
   .brand-mark {
     @apply grid h-8 w-8 place-items-center rounded-lg bg-primary-500
            text-sm font-extrabold text-white;
@@ -74,14 +84,31 @@
   .nav        { @apply flex items-center gap-2 sm:gap-4; }
   .nav a      { @apply text-sm font-medium text-slate-600 hover:text-primary-500; }
   .nav a.btn  { @apply text-white hover:text-white; }
+  .dark .nav a     { @apply text-slate-300 hover:text-white; }
+  .dark .nav a.btn { @apply text-white; }
+
+  /* Sun/moon theme switch in the header. Sized to sit level with .nav links
+     rather than the taller .btn, which would stretch the header. */
+  .theme-toggle {
+    @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border
+           border-slate-200 bg-transparent text-slate-600 transition-colors
+           hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500;
+  }
+  .dark .theme-toggle {
+    @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
+  }
 
   .site-footer {
     @apply mt-12 border-t border-slate-200 bg-white py-8 text-sm text-slate-500;
   }
+  .dark .site-footer { @apply border-slate-800 bg-[#0b0f14] text-slate-400; }
   .site-footer .container { @apply flex flex-wrap items-center justify-between gap-3; }
   .site-footer a          { @apply text-slate-600 hover:text-primary-500; }
+  .dark .site-footer a    { @apply text-slate-400 hover:text-white; }
 
+  /* Already ocean-on-white — only its seam against the page needs darkening. */
   .admin-bar { @apply border-b border-slate-200 bg-primary-500 py-2.5 text-sm text-white; }
+  .dark .admin-bar { @apply border-slate-800; }
   .admin-bar .container { @apply flex items-center justify-between; }
   .admin-bar a { @apply text-white/80 hover:text-white; }
 
@@ -91,9 +118,21 @@
            border-0 px-5 py-3 text-sm font-semibold transition-colors duration-200
            focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
+  /* NB: no `.dark .btn` rule here. @apply pulls in every rule whose selector
+     mentions the applied class and strips the ancestor, so a `.dark .btn` rule
+     would be flattened into .btn-primary/.btn-accent/.btn-ghost below and take
+     effect in BOTH themes. The dark bits live on the concrete classes instead.
+
+     Primary and accent are otherwise unchanged in dark: ocean and orange on
+     white text carry across both themes, exactly as on the marketing site.
+     ring-offset only needs restating because it defaults to white, which would
+     halo every focused button against a dark page. */
   .btn-primary { @apply btn bg-primary-500 text-white shadow-brand hover:bg-primary-600 focus:ring-primary-500; }
   .btn-accent  { @apply btn bg-brand-orange text-white shadow-brand hover:bg-accent-600 focus:ring-brand-orange; }
   .btn-ghost   { @apply btn border border-slate-200 bg-white text-primary-700 hover:bg-slate-50 focus:ring-primary-500; }
+  .dark .btn-primary,
+  .dark .btn-accent { @apply ring-offset-[#0f1419]; }
+  .dark .btn-ghost  { @apply border-slate-700 bg-transparent text-slate-200 ring-offset-[#0f1419] hover:bg-slate-800; }
   .btn-xs      { @apply px-3 py-1.5 text-xs; }
   .btn-block   { @apply w-full; }
 
@@ -101,15 +140,22 @@
   .card  { @apply rounded-2xl border border-slate-200 bg-white shadow-brand; }
   .panel { @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-brand; }
   .empty { @apply rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500; }
+  .dark .card,
+  .dark .panel { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .empty { @apply border-slate-700 bg-[#1a202c] text-slate-400; }
 
   .eyebrow {
     @apply inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1
            text-xs font-semibold uppercase tracking-wider text-primary-600;
   }
+  .dark .eyebrow { @apply bg-primary-500/15 text-primary-300; }
 
   .hero {
     @apply bg-gradient-to-br from-primary-500 to-primary-700 py-14 text-white sm:py-20;
   }
+  /* The ocean gradient is already dark, but against a #0f1419 page it reads as
+     a bright band — start it at the page colour so it recedes instead. */
+  .dark .hero { @apply from-[#0f1419] to-primary-700; }
   .hero h1 { @apply text-3xl font-extrabold leading-tight sm:text-5xl; }
   .hero p  { @apply mt-3 max-w-2xl text-base text-white/80 sm:text-lg; }
 
@@ -125,6 +171,14 @@
     @apply w-full rounded-xl border-slate-200 text-sm text-slate-900
            focus:border-primary-500 focus:ring-primary-500;
   }
+  .dark .searchbar { @apply bg-[#1a202c]; }
+  /* text-white for the same reason the light rule sets text-slate-900: the
+     explicit colour above would otherwise win over anything inherited. */
+  .dark .searchbar input,
+  .dark .searchbar select {
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
+           focus:border-primary-300 focus:ring-primary-300;
+  }
 
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
@@ -134,15 +188,19 @@
            bg-primary-50 text-sm font-bold text-primary-600;
   }
   .avatar img { @apply h-full w-full object-cover; }
+  .dark .avatar { @apply bg-primary-500/15 text-primary-300; }
 
   .badge {
     @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5
            text-xs font-medium text-slate-600;
   }
   .badge-featured { @apply bg-brand-golden/25 text-amber-700; }
+  .dark .badge          { @apply bg-slate-800 text-slate-300; }
+  .dark .badge-featured { @apply bg-brand-golden/20 text-brand-golden; }
 
   .taglist { @apply mt-3 flex flex-wrap gap-1.5; }
   .tag     { @apply inline-flex rounded-full bg-primary-50 px-2.5 py-0.5 text-xs text-primary-600; }
+  .dark .tag { @apply bg-primary-500/15 text-primary-300; }
 
   /* --------------------------------------------------------------- profile */
   .profile-head { @apply flex flex-wrap items-start gap-4; }
@@ -151,13 +209,22 @@
   .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
   .kv .k { @apply shrink-0 font-medium text-slate-500; }
   .panel h3 { @apply mb-3 text-base font-semibold text-slate-900; }
+  .dark .kv    { @apply border-slate-800; }
+  .dark .kv .k { @apply text-slate-400; }
+  .dark .panel h3 { @apply text-white; }
 
   /* ---------------------------------------------------------------- gallery */
+  /* Already dark by design (slate-900/90 scrim, white controls) — no override. */
   .gallery      { @apply mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4; }
   .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-xl border-0 p-0; }
   .gallery-item img { @apply h-full w-full object-cover transition-opacity hover:opacity-90; }
 
-  .lightbox        { @apply fixed inset-0 z-50 grid place-items-center bg-slate-900/90 p-4; }
+  /* z-[1000], not z-50: Leaflet ships its own z-index scale (panes 400,
+     controls 800, control corners 1000) and .map-view sits on the same profile
+     page as the gallery. The map is isolated below so those values can no
+     longer escape, but the lightbox is a modal overlay — it belongs above
+     everything on the page, including the z-40 sticky header. */
+  .lightbox        { @apply fixed inset-0 z-[1000] grid place-items-center bg-slate-900/90 p-4; }
   .lightbox[hidden] { @apply hidden; }
   .lightbox img     { @apply max-h-[85vh] max-w-full rounded-lg; }
   .lightbox-close,
@@ -173,6 +240,7 @@
   /* ------------------------------------------------------------------ pills */
   .pillrow         { @apply mt-3 flex flex-wrap gap-1.5; }
   .pill-capability { @apply bg-emerald-50 text-emerald-700; }
+  .dark .pill-capability { @apply bg-emerald-500/15 text-emerald-300; }
 
   /* ---------------------------------------------------------- trading hours */
   .hours-day-row     { @apply items-start; }
@@ -181,15 +249,104 @@
     @apply ml-1 rounded-full bg-primary-500 px-1.5 py-0.5 text-[10px] font-semibold text-white;
   }
   .hours-note-text { @apply text-xs text-slate-500; }
+  /* The badge keeps its ocean fill — it reads as a chip in both themes. */
+  .dark .hours-today     { @apply bg-primary-500/15; }
+  .dark .hours-note-text { @apply text-slate-400; }
 
   /* -------------------------------------------------------------------- map */
-  .map-embed {
-    @apply aspect-[4/3] w-full overflow-hidden rounded-xl border border-slate-200;
+  /* An interactive Leaflet map over raster OpenStreetMap tiles. The tiles stay
+     light in dark mode — deliberately. A CSS filter would wreck label
+     legibility and misrepresent the map data. Only the frame, the caption and
+     our own controls are themed. */
+  /* `isolate` is load-bearing. Leaflet's panes and controls carry z-index
+     400/800/1000, and neither .leaflet-container nor a plain `relative` creates
+     a stacking context — so without this those values compete in the root
+     stacking context and the map paints over the lightbox and the sticky
+     header. Isolating confines Leaflet's scale to the map. Fullscreen is
+     unaffected: the top layer sits above every stacking context. */
+  .map-view {
+    @apply relative isolate aspect-[4/3] w-full overflow-hidden rounded-xl border border-slate-200;
   }
-  .map-embed iframe { @apply h-full w-full border-0; }
+  .map-view-canvas { @apply h-full w-full; }
+  /* Fullscreen paints the element against a black backdrop by default, and the
+     rounded corners look like a rendering fault at that size. */
+  .map-view:fullscreen { @apply aspect-auto rounded-none border-0; }
+  .map-approx { @apply mt-2 text-xs text-slate-500; }
+  .dark .map-view   { @apply border-slate-800; }
+  .dark .map-approx { @apply text-slate-400; }
+
+  /* Our fullscreen button, styled to sit with Leaflet's own zoom controls
+     rather than beside them looking like a different app. */
+  .map-fullscreen a {
+    @apply flex h-[30px] w-[30px] items-center justify-center bg-white text-lg leading-none
+           text-slate-700 no-underline hover:bg-slate-100;
+  }
+
+  /* --------------------------------------------------------- results map */
+  /* Shorter than the profile map and full-width: it is a way into the list
+     below, not the main event. */
+  /* `isolate` for the same reason as .map-view above. */
+  .results-map {
+    @apply relative isolate mb-6 h-[320px] w-full overflow-hidden rounded-xl border border-slate-200
+           sm:h-[420px];
+  }
+  .results-map-canvas { @apply h-full w-full; }
+  .results-map:fullscreen { @apply h-full rounded-none border-0; }
+  .results-map-status {
+    @apply pointer-events-none absolute bottom-2 left-2 z-[500] rounded-md bg-white/90 px-2 py-1
+           text-xs text-slate-600 shadow-sm;
+  }
+  .results-map-status:empty { @apply hidden; }
+  .dark .results-map { @apply border-slate-800; }
+
+  /* "Near me" and the radius chips. */
+  .near-bar        { @apply mt-3 flex flex-wrap items-center gap-2; }
+  .near-bar[hidden], .near-bar [hidden] { @apply !hidden; }
+  .near-bar-label  { @apply text-sm text-slate-500; }
+  .near-bar-note   { @apply text-xs text-slate-500; }
+  .near-bar-note:empty { @apply hidden; }
+  .near-chip {
+    @apply rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600
+           no-underline hover:border-primary-300 hover:text-primary-600;
+  }
+  .near-chip.is-active {
+    @apply border-primary-500 bg-primary-500 text-white hover:text-white;
+  }
+  .card-distance { @apply text-xs font-medium text-primary-600; }
+  .dark .near-bar-label,
+  .dark .near-bar-note  { @apply text-slate-400; }
+  .dark .near-chip      { @apply border-slate-700 text-slate-300 hover:border-primary-400 hover:text-primary-300; }
+  .dark .near-chip.is-active { @apply border-primary-500 bg-primary-500 text-white; }
+  .dark .card-distance  { @apply text-primary-300; }
+
+  /* Marker popups. Leaflet supplies the bubble; this is what goes inside. */
+  .map-popup           { @apply min-w-[200px] text-sm; }
+  .map-popup-logo      { @apply mb-2 h-10 w-10 rounded-lg object-cover; }
+  .map-popup-name      { @apply text-sm font-semibold text-slate-900; }
+  .map-popup-meta      { @apply mt-0.5 text-xs text-slate-500; }
+  .map-popup-open      { @apply mt-1 text-xs font-semibold text-emerald-600; }
+  .map-popup-shut      { @apply mt-1 text-xs font-semibold text-slate-500; }
+  .map-popup-actions   { @apply mt-2 flex flex-wrap gap-1.5; }
+  .map-popup-btn {
+    @apply rounded-lg bg-primary-500 px-2.5 py-1 text-xs font-medium text-white no-underline
+           hover:bg-primary-600;
+  }
+  /* The popup sits on the light raster tiles, so it stays light in dark mode —
+     same reasoning as .map-view above. */
 
   /* ------------------------------------------------------------------ reveal */
-  .reveal-btn { @apply btn-ghost btn-xs; }
+  /* Spelled out rather than `@apply btn-ghost btn-xs`: @apply would flatten
+     `.dark .btn-ghost` in here without its .dark ancestor, leaving the reveal
+     buttons dark-on-white in light mode. Only .btn is safe to apply — it has
+     no .dark rule, for the same reason. */
+  .reveal-btn {
+    @apply btn btn-xs border border-slate-200 bg-white text-primary-700
+           hover:bg-slate-50 focus:ring-primary-500;
+  }
+  .dark .reveal-btn {
+    @apply border-slate-700 bg-transparent text-slate-200 ring-offset-[#0f1419]
+           hover:bg-slate-800;
+  }
 
   /* ------------------------------------------------------------------- share */
   .share-row  { @apply flex flex-wrap items-start gap-1.5; }
@@ -199,8 +356,13 @@
            hover:border-primary-500 hover:text-primary-500;
   }
   .share-icon svg { @apply h-4 w-4; }
+  .dark .share-icon {
+    @apply border-slate-700 bg-slate-800 text-slate-400
+           hover:border-primary-300 hover:text-primary-300;
+  }
   .share-icon .icon-check { @apply hidden; }
   .share-icon.is-copied { @apply border-emerald-500 text-emerald-600; }
+  .dark .share-icon.is-copied { @apply border-emerald-400 text-emerald-400; }
   .share-icon.is-copied .icon-link  { @apply hidden; }
   .share-icon.is-copied .icon-check { @apply block; }
 
@@ -220,6 +382,76 @@
   }
   .hint { @apply mt-1 text-xs text-slate-500; }
   .err  { @apply mt-1 text-xs font-medium text-brand-crimson; }
+  .dark .form-card   { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .field label { @apply text-slate-200; }
+  .dark .field input[type="text"],
+  .dark .field input[type="email"],
+  .dark .field input[type="password"],
+  .dark .field select,
+  .dark .field textarea {
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
+           focus:border-primary-300 focus:ring-primary-300;
+  }
+  /* File inputs are left unfilled on purpose — @tailwindcss/forms deliberately
+     doesn't style them, so a slate box would frame the native "Choose file"
+     button oddly. color-scheme is what actually themes that button. */
+  .dark .field input[type="file"] { @apply text-slate-300 [color-scheme:dark]; }
+  /* The forms plugin gives checkboxes appearance:none plus a hard white fill,
+     so color-scheme can't reach them — they'd stay bright white on a dark card.
+     Only the *unchecked* box is restyled: checked keeps the plugin's blue-600
+     fill (background-color:currentColor), which carries its white tick fine on
+     dark. :not(:checked) is what stops this rule outranking that fill — it is
+     more specific than the plugin's own :checked rule. */
+  .dark input[type="checkbox"]:not(:checked) {
+    @apply border-slate-600 bg-slate-800;
+  }
+  .dark input[type="checkbox"] { @apply focus:ring-offset-[#1a202c]; }
+  .dark .hint { @apply text-slate-400; }
+  /* brand-crimson is too dark to read on #1a202c. */
+  .dark .err  { @apply text-red-400; }
+
+  /* ------------------------------------------------- image upload previews */
+  /* What is already stored, so an editor can see it before replacing it. */
+  .upload-current     { @apply mb-2 flex items-center gap-3; }
+  .upload-current img { @apply h-14 w-14 shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-1; }
+  .upload-current .hint { @apply mt-0; }
+
+  /* Thumbnails of what was just picked, drawn from the downscaled blob. */
+  .upload-preview     { @apply mt-2 flex flex-wrap gap-2 empty:mt-0; }
+  .upload-thumb       { @apply relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-50; }
+  .upload-thumb img   { @apply h-full w-full object-cover; }
+  .upload-thumb-size  {
+    @apply absolute inset-x-0 bottom-0 bg-slate-900/70 px-1 py-0.5
+           text-center text-[10px] font-medium leading-tight text-white;
+  }
+  .upload-thumb-remove {
+    @apply absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full
+           bg-slate-900/70 text-sm leading-none text-white
+           hover:bg-brand-crimson focus:outline-none focus:ring-2 focus:ring-white;
+  }
+  .upload-note { @apply mt-1.5 text-xs font-medium text-amber-700; }
+
+  .dark .upload-current img { @apply border-slate-700 bg-slate-800; }
+  .dark .upload-thumb       { @apply border-slate-700 bg-slate-800; }
+  .dark .upload-note        { @apply text-amber-400; }
+
+  /* --------------------------------------------- existing gallery, editable */
+  .photo-manage      { @apply mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4; }
+  .photo-manage-head { @apply mb-3 flex flex-wrap items-baseline justify-between gap-2; }
+  .photo-manage-head h2   { @apply text-sm font-semibold text-slate-700; }
+  .photo-manage-head .hint { @apply mt-0; }
+  .photo-manage-grid { @apply grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6; }
+  .photo-manage-item { @apply relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white; }
+  .photo-manage-item img { @apply h-full w-full object-cover; }
+  .photo-manage-remove {
+    @apply absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full
+           bg-slate-900/70 text-base leading-none text-white
+           hover:bg-brand-crimson focus:outline-none focus:ring-2 focus:ring-white;
+  }
+
+  .dark .photo-manage         { @apply border-slate-800 bg-slate-800/50; }
+  .dark .photo-manage-head h2 { @apply text-slate-200; }
+  .dark .photo-manage-item    { @apply border-slate-700 bg-slate-900; }
 
   /* address autocomplete dropdown, in the shared listing form */
   .address-suggest-list {
@@ -232,6 +464,54 @@
   .address-suggest-list li.is-empty {
     @apply cursor-default text-slate-400 hover:bg-transparent hover:text-slate-400;
   }
+  .dark .address-suggest-list { @apply border-slate-700 bg-[#1a202c]; }
+  .dark .address-suggest-list li { @apply text-slate-300; }
+  .dark .address-suggest-list li.is-active,
+  .dark .address-suggest-list li:hover { @apply bg-slate-800 text-white; }
+  .dark .address-suggest-list li.is-empty {
+    @apply text-slate-500 hover:bg-transparent hover:text-slate-500;
+  }
+
+  /* pin picker, in the shared listing form */
+  .map-picker-optional  { @apply ml-1 text-xs font-normal text-slate-400; }
+  .map-picker-help      { @apply mb-2 text-xs text-slate-500; }
+  .map-picker-warn      { @apply rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-800; }
+  /* `isolate` for the same reason as .map-view: without it Leaflet's panes and
+     controls (400/800/1000) outrank the z-20 address-suggest dropdown that
+     opens directly above this map, and the picker paints over the suggestions. */
+  .map-picker-canvas    { @apply relative isolate h-64 w-full overflow-hidden rounded-xl border border-slate-200; }
+  .map-picker-actions   { @apply mt-2 flex flex-wrap items-center gap-2; }
+  /* .btn sets display:inline-flex, which outranks the [hidden] attribute's
+     display:none from preflight — without this the "Clear pin" button shows
+     even when there is no pin to clear. */
+  .map-picker-actions [hidden] { @apply !hidden; }
+  .map-picker-status    { @apply text-xs text-slate-500; }
+
+  /* The reverse-geocoded address offered after a drag. Presented as a question,
+     not a correction — the pin is already saved, and this is only an offer to
+     match the text to it. */
+  .map-picker-suggestion {
+    @apply mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3;
+  }
+  .map-picker-suggestion[hidden]    { @apply !hidden; }
+  .map-picker-suggestion-label      { @apply text-xs text-slate-500; }
+  .map-picker-suggestion-text       { @apply mt-0.5 text-sm font-medium text-slate-700; }
+  .dark .map-picker-suggestion      { @apply border-slate-700 bg-slate-800/60; }
+  .dark .map-picker-suggestion-label { @apply text-slate-400; }
+  .dark .map-picker-suggestion-text  { @apply text-slate-200; }
+
+  /* Leaflet's own controls and attribution stay light — they sit on the light
+     raster tiles, same reasoning as .map-view above. */
+  .dark .map-picker-optional,
+  .dark .map-picker-help,
+  .dark .map-picker-status { @apply text-slate-400; }
+  .dark .map-picker-warn   { @apply border-amber-500/30 bg-amber-500/10 text-amber-300; }
+  .dark .map-picker-canvas { @apply border-slate-700; }
+  /* Leaflet sets its own z-index stack; keep it under the autocomplete
+     dropdown (z-20), which can overhang the map. */
+  .map-picker-canvas .leaflet-pane,
+  .map-picker-canvas .leaflet-top,
+  .map-picker-canvas .leaflet-bottom { @apply z-0; }
 
   /* trading-hours input grid, in the shared listing form */
   .hours-grid   { @apply flex flex-col gap-2; }
@@ -242,6 +522,14 @@
   .hours-day    { @apply font-medium text-slate-700; }
   .hours-closed { @apply flex items-center gap-1 text-xs text-slate-500; }
   .hours-row input[type="time"] { @apply w-full rounded-lg border-slate-200 text-sm; }
+  .dark .hours-row    { @apply border-slate-800; }
+  .dark .hours-day    { @apply text-slate-200; }
+  .dark .hours-closed { @apply text-slate-400; }
+  /* color-scheme drives the native clock picker's own chrome. */
+  .dark .hours-row input[type="time"] {
+    @apply border-slate-700 bg-slate-800 text-white [color-scheme:dark]
+           focus:border-primary-300 focus:ring-primary-300;
+  }
   .hours-note   { @apply col-span-2 sm:col-span-1; }
   /* Honeypot — visually hidden but not display:none, so bots still fill it. */
   .hp   { @apply absolute -left-[9999px] h-0 w-0 overflow-hidden; }
@@ -251,26 +539,49 @@
   .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
   .alert-error   { @apply border-red-200 bg-red-50 text-red-800; }
   .alert-info    { @apply border-sky-200 bg-sky-50 text-sky-800; }
+  /* Upload problems: the save itself succeeded, so this must not read as an
+     error next to the success alert directly above it. */
+  .alert-warning { @apply border-amber-200 bg-amber-50 text-amber-900; }
+  .alert-list    { @apply mt-1.5 list-disc space-y-1 pl-5; }
+  /* Tinted fills rather than the light -50 washes, which glare on a dark page. */
+  .dark .alert-success { @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-300; }
+  .dark .alert-error   { @apply border-red-500/30 bg-red-500/10 text-red-300; }
+  .dark .alert-info    { @apply border-sky-500/30 bg-sky-500/10 text-sky-300; }
 
   /* ------------------------------------------------------------ admin table */
   .tabs   { @apply mb-4 flex flex-wrap gap-1 border-b border-slate-200; }
   .tabs a { @apply rounded-t-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-primary-500; }
   .tabs a.active { @apply bg-white text-primary-500 shadow-[inset_0_-2px_0_0_#F77F00]; }
+  .dark .tabs   { @apply border-slate-800; }
+  .dark .tabs a { @apply text-slate-400 hover:text-white; }
+  /* The orange inset underline carries the active state in both themes. */
+  .dark .tabs a.active { @apply bg-[#1a202c] text-white; }
 
   .tablewrap { @apply overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-brand; }
   .table     { @apply w-full border-collapse text-sm; }
   .table th  { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
   .table td  { @apply border-t border-slate-100 px-4 py-3 align-top; }
   .actions   { @apply flex flex-wrap items-center gap-1.5; }
+  .dark .tablewrap { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .table th  { @apply bg-slate-800/60 text-slate-400; }
+  .dark .table td  { @apply border-slate-800; }
 
   .pill             { @apply inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize; }
   .pill-pending     { @apply bg-amber-100 text-amber-800; }
   .pill-published   { @apply bg-emerald-100 text-emerald-800; }
   .pill-unpublished { @apply bg-slate-100 text-slate-600; }
   .pill-rejected    { @apply bg-red-100 text-red-700; }
+  .dark .pill-pending     { @apply bg-amber-500/15 text-amber-300; }
+  .dark .pill-published   { @apply bg-emerald-500/15 text-emerald-300; }
+  .dark .pill-unpublished { @apply bg-slate-500/20 text-slate-300; }
+  .dark .pill-rejected    { @apply bg-red-500/15 text-red-300; }
 
   /* ---------------------------------------------------------------- pager */
   .pager        { @apply mt-6 flex flex-wrap justify-center gap-1.5; }
   .pager a      { @apply rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50; }
   .pager .current { @apply rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-semibold text-white; }
+  .dark .pager a { @apply border-slate-700 bg-[#1a202c] text-slate-300 hover:bg-slate-800; }
+  /* primary-500 is near-black — invisible as a "current page" chip on a dark
+     page. primary-300 with dark text is the readable inversion. */
+  .dark .pager .current { @apply bg-primary-300 text-[#0f1419]; }
 }

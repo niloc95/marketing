@@ -31,28 +31,38 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
             <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <span class="eyebrow">Manage your listing</span>
-                    <h1 class="mb-1.5 mt-2 text-2xl font-extrabold text-slate-900"><?= esc($listing['display_name']) ?></h1>
-                    <p class="text-sm text-slate-500">
+                    <h1 class="mb-1.5 mt-2 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc($listing['display_name']) ?></h1>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
                         Status:
                         <span class="pill pill-<?= esc($listing['status'], 'attr') ?>"><?= esc($listing['status']) ?></span>
                         <?php if ($listing['status'] === 'published'): ?>
-                            &middot; <a class="text-primary-500 hover:underline" href="<?= base_url('directory/' . $listing['slug']) ?>" target="_blank">View public page</a>
+                            &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('directory/' . $listing['slug']) ?>" target="_blank">View public page</a>
                         <?php endif; ?>
                     </p>
                 </div>
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/signout') ?>">Sign out</a>
             </div>
 
+            <?php // Deliberately outside the form below — each thumbnail carries its
+                  // own delete form, and forms cannot nest. ?>
+            <?= view('directory/_gallery_manage', [
+                'photos'     => $photos,
+                'deleteBase' => base_url('manage/photo-delete'),
+                'max'        => $galleryMax,
+            ]) ?>
+
             <form method="post" action="<?= base_url('manage/edit') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
 
                 <?= view('directory/_form_fields', [
-                    'v'          => $v,
-                    'err'        => $err,
-                    'categories' => $categories,
-                    'provinces'  => $provinces,
-                    'lockEmail'  => true,
-                    'vHours'     => $vHours,
+                    'v'            => $v,
+                    'err'          => $err,
+                    'categories'   => $categories,
+                    'provinces'    => $provinces,
+                    'lockEmail'    => true,
+                    'vHours'       => $vHours,
+                    'existingLogo' => (string) ($listing['logo_path'] ?? ''),
+                    'gallerySlots' => $slots,
                 ]) ?>
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>
@@ -60,4 +70,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
         </div>
     </div>
 </section>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<?= view('directory/_map_assets') ?>
 <?= $this->endSection() ?>

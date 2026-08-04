@@ -9,18 +9,57 @@ use CodeIgniter\HTTP\Files\UploadedFile;
  * resizes, and re-encodes to WebP. Used in place of the ad-hoc, duplicated
  * resolveLogo() that used to live separately in Listing.php and Manage.php.
  *
- * GD only (no Imagick dependency). SVG and GIF pass through unresized: SVG is
- * vector (nothing to raster-resize), and GIF may be animated (re-encoding via
- * GD would silently flatten it to a single frame).
+ * GD only (no Imagick dependency). GIF passes through unresized because it may
+ * be animated and GD would silently flatten it to a single frame. SVG passes
+ * through too — it is vector, nothing to raster-resize — but is sanitised
+ * first: it lands in a web-served directory, so an unmodified <script> inside
+ * it would be stored XSS.
+ *
+ * Every rejection returns an explanation. This class used to return null for
+ * all of them, which meant an oversized phone photo was dropped in silence
+ * while the form still reported success.
  */
 class ListingImageProcessor
 {
-    public const ALLOWED_EXT      = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif'];
-    public const MAX_UPLOAD_BYTES = 2_097_152;
+    /**
+     * Extensions we accept. Everything except gif/svg is decoded by GD and
+     * re-encoded to WebP, so this list is bounded by what GD can read:
+     * heic/heif are accepted only so we can return a useful message (see
+     * HEIC_EXT) — GD cannot decode them and neither can we without Imagick.
+     */
+    public const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif', 'heic', 'heif', 'svg'];
+
+    /** Passed through to disk rather than re-encoded. */
+    public const PASSTHROUGH_EXT = ['gif', 'svg'];
+
+    /** Accepted by the picker but undecodable server-side; see process(). */
+    public const HEIC_EXT = ['heic', 'heif'];
+
+    public const MAX_UPLOAD_BYTES = 10_485_760; // 10 MiB
 
     /**
-     * @return array{path:string,width:?int,height:?int}|null null on any
-     *   validation or GD failure (logged, never thrown).
+     * Detected MIME must match the claimed extension. The extension whitelist
+     * is the first gate and getimagesize()/imagecreatefromstring() is the real
+     * one; this sits between them to reject a .txt renamed to .jpg before we
+     * hand its bytes to GD. octet-stream is tolerated only for the container
+     * formats finfo routinely misreports (HEIC, AVIF, BMP).
+     */
+    private const ALLOWED_MIME = [
+        'png'  => ['image/png'],
+        'jpg'  => ['image/jpeg', 'image/pjpeg'],
+        'jpeg' => ['image/jpeg', 'image/pjpeg'],
+        'webp' => ['image/webp'],
+        'gif'  => ['image/gif'],
+        'bmp'  => ['image/bmp', 'image/x-ms-bmp', 'application/octet-stream'],
+        'avif' => ['image/avif', 'application/octet-stream'],
+        'heic' => ['image/heic', 'image/heif', 'application/octet-stream'],
+        'heif' => ['image/heic', 'image/heif', 'application/octet-stream'],
+        'svg'  => ['image/svg+xml', 'text/xml', 'application/xml', 'text/plain'],
+    ];
+
+    /**
+     * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
+     *   error is a user-facing sentence, empty when ok. Never throws.
      */
     public function process(
         UploadedFile $file,
@@ -28,22 +67,75 @@ class ListingImageProcessor
         string $filenamePrefix,
         int $maxDimension = 1600,
         int $webpQuality = 82
-    ): ?array {
+    ): array {
         if (! $file->isValid() || $file->hasMoved()) {
-            return null;
+            // getErrorString() covers the PHP-level failures we cannot see
+            // otherwise, most usefully UPLOAD_ERR_INI_SIZE.
+            return $this->fail(sprintf(
+                '“%s” did not upload correctly (%s).',
+                $file->getClientName(),
+                strtolower($file->getErrorString() ?: 'unknown error')
+            ));
         }
 
-        $ext = strtolower($file->getExtension() ?: '');
-        if (! in_array($ext, self::ALLOWED_EXT, true) || $file->getSize() > self::MAX_UPLOAD_BYTES) {
-            return null;
+        $name = $file->getClientName();
+
+        // getClientExtension(), not getExtension(): the latter derives the
+        // extension from the detected MIME and maps anything finfo cannot place
+        // to 'bin' — which would reject a perfectly good AVIF or HEIC as
+        // "unsupported" before it ever reached its own branch below. The
+        // claimed extension decides the route; the MIME check right after is
+        // what stops it being trusted, and GD is the final gate.
+        $ext = strtolower($file->getClientExtension() ?: '');
+
+        if (! in_array($ext, self::ALLOWED_EXT, true)) {
+            return $this->fail(sprintf(
+                '“%s” is not a supported image. Use JPEG, PNG, WebP, GIF, BMP or AVIF.',
+                $name
+            ));
+        }
+
+        if ($file->getSize() > self::MAX_UPLOAD_BYTES) {
+            return $this->fail(sprintf(
+                '“%s” is %s — the limit is %s per image.',
+                $name,
+                $this->humanBytes((int) $file->getSize()),
+                $this->humanBytes(self::MAX_UPLOAD_BYTES)
+            ));
+        }
+
+        $mime = strtolower(trim(explode(';', (string) $file->getMimeType())[0]));
+        if (! in_array($mime, self::ALLOWED_MIME[$ext], true)) {
+            return $this->fail(sprintf(
+                '“%s” does not look like a real %s file (it is %s).',
+                $name,
+                strtoupper($ext),
+                $mime !== '' ? $mime : 'unrecognised'
+            ));
+        }
+
+        // HEIC is the iPhone default. Browsers transcode it to JPEG on the way
+        // out (which is why the picker still offers it), so reaching here means
+        // the conversion did not happen — say so rather than "not an image".
+        if (in_array($ext, self::HEIC_EXT, true)) {
+            return $this->fail(sprintf(
+                '“%s” is an iPhone HEIC photo that reached us unconverted. Your browser normally '
+                . 'converts these automatically — try again with JavaScript enabled, or set '
+                . 'iPhone Camera → Formats → Most Compatible.',
+                $name
+            ));
         }
 
         if (! is_dir($destDir) && ! @mkdir($destDir, 0755, true) && ! is_dir($destDir)) {
             log_message('error', "ListingImageProcessor: could not create {$destDir}");
-            return null;
+            return $this->fail('The server could not store the image. Please try again later.');
         }
 
-        if (in_array($ext, ['svg', 'gif'], true)) {
+        if ($ext === 'svg') {
+            return $this->storeSanitisedSvg($file, $destDir, $filenamePrefix);
+        }
+
+        if ($ext === 'gif') {
             return $this->moveAsIs($file, $destDir, $filenamePrefix, $ext);
         }
 
@@ -51,41 +143,99 @@ class ListingImageProcessor
     }
 
     /**
-     * @return array{path:string,width:?int,height:?int}|null
+     * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
      */
-    private function moveAsIs(UploadedFile $file, string $destDir, string $prefix, string $ext): ?array
+    private function moveAsIs(UploadedFile $file, string $destDir, string $prefix, string $ext): array
     {
         $name = $this->generateName($prefix, $ext);
         try {
             $file->move($destDir, $name);
         } catch (\Throwable $e) {
             log_message('error', 'ListingImageProcessor upload failed: ' . $e->getMessage());
-            return null;
+            return $this->fail(sprintf('“%s” could not be saved. Please try again.', $file->getClientName()));
         }
 
-        return ['path' => $this->relativePath($destDir, $name), 'width' => null, 'height' => null];
+        return $this->ok($this->relativePath($destDir, $name));
     }
 
     /**
-     * @return array{path:string,width:?int,height:?int}|null
+     * SVG is served straight back to browsers from public/, so anything
+     * scriptable in it executes on our origin. Strip that before writing.
+     *
+     * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
      */
-    private function resizeToWebp(UploadedFile $file, string $destDir, string $prefix, int $maxDimension, int $webpQuality): ?array
+    private function storeSanitisedSvg(UploadedFile $file, string $destDir, string $prefix): array
     {
-        $tmpPath = $file->getTempName();
-        $info    = @getimagesize($tmpPath);
-        if ($info === false) {
-            log_message('error', 'ListingImageProcessor: upload is not a valid image');
-            return null;
+        $raw = @file_get_contents($file->getTempName());
+        if ($raw === false || stripos($raw, '<svg') === false) {
+            return $this->fail(sprintf('“%s” is not a valid SVG file.', $file->getClientName()));
         }
 
-        $source = @imagecreatefromstring((string) file_get_contents($tmpPath));
+        $clean = $this->sanitizeSvg($raw);
+        $name  = $this->generateName($prefix, 'svg');
+
+        if (@file_put_contents($destDir . '/' . $name, $clean) === false) {
+            log_message('error', 'ListingImageProcessor: could not write sanitised SVG');
+            return $this->fail('The server could not store the image. Please try again later.');
+        }
+
+        return $this->ok($this->relativePath($destDir, $name));
+    }
+
+    /**
+     * Deliberately blunt: strip whole scriptable elements, every on* handler,
+     * and any URL scheme that can execute. An SVG logo needs none of them.
+     */
+    public function sanitizeSvg(string $svg): string
+    {
+        $patterns = [
+            // Scriptable or embedding elements, with or without a closing tag.
+            '#<\s*(script|foreignObject|iframe|embed|object|handler|set|animate)\b[^>]*>.*?<\s*/\s*\1\s*>#is',
+            '#<\s*(script|foreignObject|iframe|embed|object|handler|set|animate)\b[^>]*/?\s*>#is',
+            // Inline event handlers: on…="…" / on…='…' / on…=bare
+            '#\son[a-z-]+\s*=\s*"[^"]*"#is',
+            "#\son[a-z-]+\s*=\s*'[^']*'#is",
+            '#\son[a-z-]+\s*=\s*[^\s>]+#is',
+            // Executable URL schemes in href/xlink:href/style, quoted or not.
+            '#(?:xlink:)?href\s*=\s*"\s*(?:javascript|data:text/html)[^"]*"#is',
+            "#(?:xlink:)?href\s*=\s*'\s*(?:javascript|data:text/html)[^']*'#is",
+            '#javascript\s*:#i',
+        ];
+
+        return (string) preg_replace($patterns, '', $svg);
+    }
+
+    /**
+     * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
+     */
+    private function resizeToWebp(UploadedFile $file, string $destDir, string $prefix, int $maxDimension, int $webpQuality): array
+    {
+        if (! function_exists('imagewebp')) {
+            log_message('error', 'ListingImageProcessor: GD has no WebP support');
+            return $this->fail('The server cannot process images right now. Please try again later.');
+        }
+
+        $tmpPath  = $file->getTempName();
+        $clientNm = $file->getClientName();
+        $info     = @getimagesize($tmpPath);
+        if ($info === false) {
+            log_message('error', 'ListingImageProcessor: upload is not a valid image');
+            return $this->fail(sprintf('“%s” could not be read as an image — the file may be corrupt.', $clientNm));
+        }
+
+        $bytes  = (string) file_get_contents($tmpPath);
+        $source = @imagecreatefromstring($bytes);
         if ($source === false) {
             log_message('error', 'ListingImageProcessor: imagecreatefromstring failed');
-            return null;
+            return $this->fail(sprintf('“%s” could not be read as an image — the file may be corrupt.', $clientNm));
         }
         // imagewebp() rejects palette (indexed-colour) images — a plain PNG
         // export from most graphics tools. No-op if already truecolor.
         imagepalettetotruecolor($source);
+
+        // Re-encoding drops the EXIF orientation tag, so a portrait phone photo
+        // would come out on its side. Apply the rotation to the pixels instead.
+        $source = $this->applyExifOrientation($source, $bytes, $info[2] ?? 0);
 
         [$srcW, $srcH] = [imagesx($source), imagesy($source)];
         $longEdge      = max($srcW, $srcH);
@@ -108,15 +258,60 @@ class ListingImageProcessor
         }
 
         $name    = $this->generateName($prefix, 'webp');
-        $written = imagewebp($image, $destDir . '/' . $name, $webpQuality);
+        $target  = $destDir . '/' . $name;
+        $written = @imagewebp($image, $target, $webpQuality);
         imagedestroy($image);
 
-        if (! $written) {
-            log_message('error', 'ListingImageProcessor: imagewebp failed');
-            return null;
+        // imagewebp() returns true while writing nothing at all — an oversized
+        // canvas produces a truthy return and a 0-byte file, which is how two
+        // broken photos ended up in the gallery. Trust the file, not the flag.
+        if (! $written || ! is_file($target) || filesize($target) === 0) {
+            if (is_file($target)) {
+                @unlink($target);
+            }
+            log_message('error', 'ListingImageProcessor: imagewebp produced no output');
+            return $this->fail(sprintf('“%s” could not be converted. Try saving it as a JPEG or PNG first.', $clientNm));
         }
 
-        return ['path' => $this->relativePath($destDir, $name), 'width' => $finalW, 'height' => $finalH];
+        return $this->ok($this->relativePath($destDir, $name), $finalW, $finalH);
+    }
+
+    /**
+     * @param \GdImage $image
+     * @return \GdImage
+     */
+    private function applyExifOrientation($image, string $bytes, int $imageType)
+    {
+        if ($imageType !== IMAGETYPE_JPEG || ! function_exists('exif_read_data')) {
+            return $image;
+        }
+
+        // exif_read_data() needs a stream; we already hold the bytes, so wrap
+        // them rather than re-reading the upload from disk.
+        $exif = @exif_read_data('data://image/jpeg;base64,' . base64_encode($bytes));
+        $orientation = (int) ($exif['Orientation'] ?? 0);
+
+        $degrees = match ($orientation) {
+            3       => 180,
+            6       => -90,
+            8       => 90,
+            default => 0,
+        };
+
+        if ($degrees === 0) {
+            return $image;
+        }
+
+        $rotated = @imagerotate($image, $degrees, 0);
+        if ($rotated === false) {
+            return $image;
+        }
+
+        imagedestroy($image);
+        imagealphablending($rotated, false);
+        imagesavealpha($rotated, true);
+
+        return $rotated;
     }
 
     private function generateName(string $prefix, string $ext): string
@@ -129,5 +324,28 @@ class ListingImageProcessor
         $fcpath = rtrim(FCPATH, '/');
         $rel    = ltrim(str_replace($fcpath, '', $destDir), '/');
         return $rel . '/' . $name;
+    }
+
+    private function humanBytes(int $bytes): string
+    {
+        return $bytes >= 1_048_576
+            ? round($bytes / 1_048_576, 1) . ' MB'
+            : max(1, (int) round($bytes / 1024)) . ' KB';
+    }
+
+    /**
+     * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
+     */
+    private function ok(string $path, ?int $width = null, ?int $height = null): array
+    {
+        return ['ok' => true, 'path' => $path, 'width' => $width, 'height' => $height, 'error' => ''];
+    }
+
+    /**
+     * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
+     */
+    private function fail(string $error): array
+    {
+        return ['ok' => false, 'path' => '', 'width' => null, 'height' => null, 'error' => $error];
     }
 }

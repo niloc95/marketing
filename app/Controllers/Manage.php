@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-use App\Libraries\ListingImageProcessor;
+use App\Controllers\Concerns\HandlesListingUploads;
 use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
@@ -18,8 +18,9 @@ use App\Services\DirectoryService;
  */
 class Manage extends BaseController
 {
+    use HandlesListingUploads;
+
     private const SESSION_KEY = 'manage_listing_id';
-    private const GALLERY_MAX = 8;
 
     /** Identical wording whichever branch runs — see request(). */
     private const SENT_MESSAGE = 'If that email has a listing, we have sent it a link to manage it. The link lasts one hour.';
@@ -89,6 +90,9 @@ class Manage extends BaseController
             'categories' => $svc->categories(),
             'provinces'  => $svc->provinces(),
             'tags'       => $svc->tagsForListing((int) $listing['id']),
+            'photos'     => (new DirectoryListingPhotoModel())->forListing((int) $listing['id']),
+            'slots'      => $this->gallerySlots((int) $listing['id']),
+            'galleryMax' => self::GALLERY_MAX,
         ]);
     }
 
@@ -101,22 +105,56 @@ class Manage extends BaseController
         }
 
         $post = $this->request->getPost();
-        $post['logo_path'] = $this->resolveLogo();
+        $logo = $this->resolveLogo();
+        $post['logo_path'] = $logo['path'];
 
         $result = (new DirectoryListingMutationService())->updateOwn((int) $listing['id'], $post);
 
         if (! $result['ok']) {
+            return $this->withUploadErrors(
+                redirect()->to(base_url('manage/edit'))
+                    ->with('errors', $result['errors'])
+                    ->with('old', $post)
+                    ->with('error', $result['message']),
+                array_filter([$logo['error']])
+            );
+        }
+
+        $gallery = $this->resolveGalleryPhotos((int) $listing['id']);
+        if ($gallery['photos'] !== []) {
+            (new DirectoryListingPhotoModel())->appendPhotos((int) $listing['id'], $gallery['photos']);
+        }
+
+        return $this->withUploadErrors(
+            redirect()->to(base_url('manage/edit'))->with('success', $result['message']),
+            array_filter(array_merge([$logo['error']], $gallery['errors']))
+        );
+    }
+
+    /**
+     * Remove one gallery photo. The owner session grants authority over exactly
+     * one listing, so a photo belonging to any other one must be refused —
+     * the id in the URL is attacker-controlled.
+     */
+    public function deletePhoto(int $photoId)
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your listing.');
+        }
+
+        $model = new DirectoryListingPhotoModel();
+        $photo = $model->find($photoId);
+
+        if (! is_array($photo) || (int) $photo['listing_id'] !== (int) $listing['id']) {
             return redirect()->to(base_url('manage/edit'))
-                ->with('errors', $result['errors'])
-                ->with('old', $post)
-                ->with('error', $result['message']);
+                ->with('error', 'That photo could not be found.');
         }
 
-        if (($photos = $this->resolveGalleryPhotos()) !== []) {
-            (new DirectoryListingPhotoModel())->appendPhotos((int) $listing['id'], $photos);
-        }
+        $model->deleteWithFile($photo);
 
-        return redirect()->to(base_url('manage/edit'))->with('success', $result['message']);
+        return redirect()->to(base_url('manage/edit'))->with('success', 'Photo removed.');
     }
 
     public function signout()
@@ -136,37 +174,4 @@ class Manage extends BaseController
         return is_array($row) ? $row : null;
     }
 
-    /**
-     * Optional logo replacement. Returns '' when nothing valid was uploaded,
-     * which updateOwn() treats as "leave the existing logo alone".
-     */
-    private function resolveLogo(): string
-    {
-        $file = $this->request->getFile('logo');
-        if (! $file) {
-            return '';
-        }
-        $result = (new ListingImageProcessor())->process($file, rtrim(FCPATH, '/') . '/assets/listings', 'listing');
-        return $result['path'] ?? '';
-    }
-
-    /**
-     * @return array<int,array{path:string,width:?int,height:?int,original_name:?string}>
-     */
-    private function resolveGalleryPhotos(): array
-    {
-        $files     = $this->request->getFileMultiple('gallery');
-        $out       = [];
-        $processor = new ListingImageProcessor();
-        foreach (array_slice($files ?? [], 0, self::GALLERY_MAX) as $file) {
-            if (! $file || ! $file->isValid()) {
-                continue;
-            }
-            $result = $processor->process($file, rtrim(FCPATH, '/') . '/assets/listings/gallery', 'gallery');
-            if ($result !== null) {
-                $out[] = $result + ['original_name' => $file->getClientName()];
-            }
-        }
-        return $out;
-    }
 }
