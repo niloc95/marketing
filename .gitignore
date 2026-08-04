@@ -86,6 +86,12 @@ php_errors.log
 #-------------------------
 vendor/
 
+# ...but NOT the vendored front-end libraries. The rule above is unanchored, so
+# it swallows public/assets/vendor/ too — and because the pin picker no-ops
+# silently when Leaflet is absent, a fresh clone would build a deploy bundle
+# with a quietly missing map instead of an obvious error.
+!/public/assets/vendor/
+
 #-------------------------
 # Runtime-uploaded listing media (not source — logos/gallery photos
 # uploaded through the app; the upload code recreates this directory

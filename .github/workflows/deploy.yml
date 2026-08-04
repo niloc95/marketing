@@ -8,10 +8,15 @@ name: Deploy to production (cPanel)
 #   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
 #   FTP_MARKETING_DIR  (e.g. /public_html/)
 #   FTP_DIRECTORY_DIR  (e.g. /directory_app/  — subdomain docroot points at <this>/public)
+#   SSH_HOST, SSH_USERNAME, SSH_PRIVATE_KEY, SSH_PORT (optional, default 22)
+#   SSH_DIRECTORY_APP_PATH  (absolute server filesystem path to the app root, e.g.
+#                            /home/<cpuser>/directory_app — same folder as FTP_DIRECTORY_DIR
+#                            points at, but as seen by SSH rather than FTP)
 #
-# First directory deploy only: run migrations via cPanel Terminal / SSH:
-#   php spark migrate && php spark db:seed DirectoryProfessionsSeeder
-# See DEPLOY.md.
+# Every deploy runs `php spark migrate` over SSH after the FTP upload (see the
+# `migrate` job below) — schema changes ship automatically, not just on first deploy.
+# First-time-only steps (seeding, .env, subdomain/DB creation) are still manual —
+# see DEPLOY.md.
 
 on:
   push:
@@ -81,6 +86,10 @@ jobs:
             **/node_modules/**
             **/marketing-site/**
             **/scripts/**
+            # Uploaded logos and gallery photos belong to whichever environment
+            # created them — .gitignore keeps them out of the repo, and without
+            # this they would still be FTP'd over production's own files.
+            **/public/assets/listings/**
             **/dist/**
             **/tests/**
             **/.env
@@ -90,3 +99,20 @@ jobs:
             **/package-lock.json
             **/phpunit.xml.dist
             **/phpunit.dist.xml
+
+  migrate:
+    name: Directory app → run migrations
+    needs: directory
+    runs-on: ubuntu-latest
+    steps:
+      - name: php spark migrate over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.SSH_DIRECTORY_APP_PATH }}
+            php spark migrate --all

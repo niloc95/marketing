@@ -49,6 +49,37 @@ Copy `.env.production.example` → `.env` in the app root and fill it in (DB fro
 `app.baseURL = 'https://directory.webscheduler.co.za/'`). **Never commit `.env`** — the
 deploy explicitly skips it.
 
+### Mapping
+
+The whole mapping stack is open-source: **Leaflet** for the maps, **OpenStreetMap** for
+the data, **Nominatim** for geocoding and reverse geocoding. There is no API key to
+obtain, no billing account, and nothing is charged per request. Nothing to configure here
+beyond the tile source below.
+
+### First deploy
+
+After the first deploy, run `php spark directory:geocode` on the server to fill in
+coordinates for listings that have none. It also confirms the host permits outbound
+HTTPS: if it doesn't, every lookup fails and listings silently keep no coordinates.
+
+Each listing records a `geocoding_status` (`pending`, `ok`, `failed`, `manual`), so a
+batch that failed during an outage can be retried on its own with
+`php spark directory:geocode --status failed`. Note the space — CodeIgniter's CLI reads
+`--option value`, and `--option=value` is silently ignored.
+
+Nominatim is rate-limited to about one request a second and the lookup tries several
+progressively looser queries per listing, so a large backfill is slow by design. It is
+free and donation-funded; let it grind rather than parallelising it.
+
+Maps draw their tiles from **CARTO** (Voyager basemap) — the
+same OpenStreetMap data, served from a CDN built for embedding. It deliberately does not
+use `tile.openstreetmap.org`: those servers are donation-funded, the OSM usage policy
+discourages commercial use, and being blocked shows up as a blank grey map with no
+warning. Nothing to configure — but if you want a different look or host (MapTiler,
+Stadia, Thunderforest all have free tiers), it is `directory.mapTileUrl` and
+`directory.mapTileAttribution` in `.env`, no code change. Attribution is mandatory and
+must credit both OpenStreetMap and the tile host.
+
 ## 4. GitHub → host auto-deploy (FTPS)
 
 1. cPanel → *FTP Accounts* → create an FTP account (or use the main one). Note host,
@@ -62,25 +93,32 @@ deploy explicitly skips it.
    | `FTP_PASSWORD` | FTP password |
    | `FTP_MARKETING_DIR` | server path for the marketing site, e.g. `/public_html/` |
    | `FTP_DIRECTORY_DIR` | server path for the directory app, e.g. `/directory_app/` |
+   | `SSH_HOST` | server SSH hostname |
+   | `SSH_USERNAME` | SSH user (usually your cPanel user) |
+   | `SSH_PRIVATE_KEY` | private key for that user (add the matching public key via cPanel → *SSH Access*) |
+   | `SSH_PORT` | SSH port, if not 22 (optional) |
+   | `SSH_DIRECTORY_APP_PATH` | absolute filesystem path to the app root, e.g. `/home/<cpuser>/directory_app` — same folder `FTP_DIRECTORY_DIR` points at, but as an SSH path rather than an FTP path |
 
    (`FTP_DIRECTORY_DIR` is the app root — the subdomain docroot points at
    `<that>/public`.)
 3. Push to `main` (or run the workflow manually). The Action:
    - builds `dist/site/` and uploads it to `FTP_MARKETING_DIR`;
    - runs `composer install --no-dev` and uploads the CI4 app to `FTP_DIRECTORY_DIR`
-     (excluding `.env`, `writable/` runtime, and the marketing/node files).
+     (excluding `.env`, `writable/` runtime, and the marketing/node files);
+   - SSHes in and runs `php spark migrate --all`, so schema changes ship on every
+     deploy, not just the first one.
 
 > First deploy of a large `vendor/` over FTP is slow; subsequent deploys only sync
 > changed files.
 
-## 5. First-run: migrate + seed (once)
+## 5. First-run only: seed the category taxonomy
 
-FTP can't run migrations. After the first directory deploy, open **cPanel → Terminal**
-(or SSH) and run in the app root:
+Migrations now run automatically on every deploy (step 4). Seeding is still a
+one-time manual step — open **cPanel → Terminal** (or SSH) after the first deploy
+and run in the app root:
 
 ```bash
-php spark migrate
-php spark db:seed DirectoryProfessionsSeeder
+php spark db:seed DirectoryCategoriesSeeder
 ```
 
 ## 6. Marketing site — nothing else

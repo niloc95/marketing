@@ -127,6 +127,37 @@ try {
 
 // 4) Web root, with index.php repointed at the relocated app.
 copyDir(path.join(projectRoot, 'public'), webOut);
+
+// 4a) Uploaded logos and gallery photos belong to whichever environment created
+//     them. They are gitignored, so a developer's local test images would
+//     otherwise ride along in the bundle and overwrite production's own files on
+//     install. Ship the directory empty; ListingImageProcessor creates it anyway.
+const uploadsOut = path.join(webOut, 'assets', 'listings');
+fs.rmSync(uploadsOut, { recursive: true, force: true });
+fs.mkdirSync(path.join(uploadsOut, 'gallery'), { recursive: true });
+
+// 4b) Recompile Tailwind straight into the bundle (after the copy, so it is the
+//     authoritative stylesheet) instead of trusting the committed public/assets/
+//     directory.css to already be current. Mirrors build-marketing-site.js, and
+//     removes the "forgot to run `npm run list:css` before committing" failure
+//     mode that shipped stale trading-hours/pills styles to production.
+console.log('  • compiling Tailwind → assets/directory.css');
+try {
+  execFileSync(
+    'npx',
+    [
+      'tailwindcss',
+      '-c', path.join(projectRoot, 'tailwind.directory.cjs'),
+      '-i', path.join(projectRoot, 'resources', 'directory.css'),
+      '-o', path.join(webOut, 'assets', 'directory.css'),
+      '--minify',
+    ],
+    { cwd: projectRoot, stdio: ['ignore', 'ignore', 'inherit'] }
+  );
+} catch (err) {
+  fail('Tailwind build failed: ' + (err && err.message ? err.message : String(err)));
+}
+
 const indexPath = path.join(webOut, 'index.php');
 const indexSrc = fs.readFileSync(indexPath, 'utf8');
 if (!indexSrc.includes(PATHS_REQUIRE_FROM)) {
@@ -163,6 +194,12 @@ database.default.port = 3306
 
 directory.adminEmail = 'CHANGE-ME'
 directory.adminPassword = 'CHANGE-ME'
+
+# Optional. Google Maps Embed API key for listing mini-maps (free, unlimited).
+# Without it, maps fall back to OpenStreetMap and only appear on listings that
+# geocoded successfully. Restrict the key by HTTP referrer and to the Maps
+# Embed API only — it is visible in the page source.
+# directory.mapsEmbedKey = 'CHANGE-ME'
 
 email.protocol = smtp
 email.SMTPHost = CHANGE-ME
