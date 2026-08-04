@@ -21,15 +21,10 @@ class Directory extends BaseController
 
     public function index()
     {
-        $svc = new DirectoryService();
-        $filters = [
-            'q'          => trim((string) $this->request->getGet('q')),
-            'category' => trim((string) $this->request->getGet('category')),
-            'province'   => trim((string) $this->request->getGet('province')),
-            'city'       => trim((string) $this->request->getGet('city')),
-        ];
-        $page   = (int) ($this->request->getGet('page') ?? 1);
-        $result = $svc->browse($filters, $page);
+        $svc     = new DirectoryService();
+        $filters = $this->searchFilters();
+        $page    = (int) ($this->request->getGet('page') ?? 1);
+        $result  = $svc->browse($filters, $page);
 
         return view('directory/index', [
             'result'      => $result,
@@ -37,7 +32,91 @@ class Directory extends BaseController
             'categories' => $svc->categories(),
             'groups'      => $svc->categoriesGrouped(),
             'provinces'   => $svc->provinces(),
+            'radii'       => DirectoryService::RADIUS_OPTIONS,
         ]);
+    }
+
+    /**
+     * Pins for the search map, as JSON.
+     *
+     * Separate from index() because the map and the list want different slices:
+     * the list is twelve at a time, the map wants every pin in the current
+     * viewport. Refetched as the visitor pans, so it is throttled per IP like
+     * the address endpoints — it is a public, unauthenticated query that can be
+     * asked to scan the whole country.
+     */
+    public function map()
+    {
+        $throttler = service('throttler');
+        $key       = 'directory-map-' . md5((string) $this->request->getIPAddress());
+        if ($throttler->check($key, 60, MINUTE) === false) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        $svc   = new DirectoryService();
+        $items = $svc->mapPoints($this->searchFilters());
+
+        helper(['map', 'directory_hours']);
+
+        $out = [];
+        foreach ($items as $l) {
+            $hours = hours_decode($l['trading_hours'] ?? null);
+
+            $out[] = [
+                'id'       => (int) $l['id'],
+                'name'     => (string) $l['display_name'],
+                'category' => (string) ($l['category_name'] ?? ''),
+                'lat'      => (float) $l['latitude'],
+                'lng'      => (float) $l['longitude'],
+                'address'  => map_address_text($l),
+                'phone'    => (string) ($l['phone'] ?? ''),
+                'url'      => base_url('directory/' . $l['slug']),
+                'logo'     => $this->logoUrl($l['logo_path'] ?? null),
+                'openNow'  => hours_is_open_now($hours),
+                'booking'  => ! empty($l['offers_online_booking']),
+                'directions' => map_directions_url($l),
+                // Metres, or null when the visitor gave no position. The browser
+                // decides how to phrase it — see 'approx' below.
+                'distance' => isset($l['distance_m']) ? (float) $l['distance_m'] : null,
+                // A street/suburb/city pin is a centroid that can sit hundreds of
+                // metres off, so any distance measured from it is a rough figure
+                // and must not be shown as though it were surveyed.
+                'approx'   => ! in_array($l['geocode_precision'] ?? null, ['manual', 'exact'], true),
+            ];
+        }
+
+        return $this->response->setJSON(['items' => $out]);
+    }
+
+    /**
+     * The search filters, read once so the HTML page and the map JSON can never
+     * disagree about what is being searched.
+     *
+     * @return array<string,string>
+     */
+    private function searchFilters(): array
+    {
+        return [
+            'q'        => trim((string) $this->request->getGet('q')),
+            'category' => trim((string) $this->request->getGet('category')),
+            'province' => trim((string) $this->request->getGet('province')),
+            'city'     => trim((string) $this->request->getGet('city')),
+            'lat'      => trim((string) $this->request->getGet('lat')),
+            'lng'      => trim((string) $this->request->getGet('lng')),
+            'radius'   => trim((string) $this->request->getGet('radius')),
+            'bounds'   => trim((string) $this->request->getGet('bounds')),
+        ];
+    }
+
+    /** Logo paths may be stored absolute (imported) or relative (uploaded). */
+    private function logoUrl(?string $path): string
+    {
+        $path = trim((string) $path);
+        if ($path === '') {
+            return '';
+        }
+
+        return preg_match('#^https?://#i', $path) === 1 ? $path : base_url($path);
     }
 
     /** /directory/categories — browse every category, grouped, with counts. */

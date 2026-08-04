@@ -17,8 +17,9 @@ class DirectoryListingModel extends Model
         'type', 'display_name', 'contact_person', 'title', 'category_id',
         'credentials', 'description', 'phone', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin',
-        'address_line', 'suburb', 'city', 'province', 'postal_code', 'country',
-        'latitude', 'longitude', 'logo_path', 'slug', 'status', 'is_verified',
+        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
+        'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
+        'logo_path', 'slug', 'status', 'is_verified',
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'source', 'source_url', 'claim_token',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
@@ -31,12 +32,20 @@ class DirectoryListingModel extends Model
      * email and slug are absent on purpose, so a crafted POST cannot publish or
      * feature a listing, hijack another owner's address, or change a live URL.
      * Admins go through DirectoryAdminService instead, which has no such limit.
+     *
+     * The geo columns — latitude, longitude, geocode_precision,
+     * geocoded_address, geocoding_status — are absent for a different reason:
+     * the form does post the first three, but they reach the database only
+     * through ListingGeocoder::resolve(), which vets them against a South
+     * African bounding box and a known precision list before merging. Listing
+     * them here would route a public form's raw input straight into the column
+     * and bypass that check.
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
         'credentials', 'description', 'phone', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin',
-        'address_line', 'suburb', 'city', 'province', 'postal_code', 'country',
+        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'logo_path',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
     ];

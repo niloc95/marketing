@@ -2,11 +2,14 @@
 
 namespace App\Services;
 
+use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryPracticeLocationModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryTagModel;
+use CodeIgniter\Database\BaseBuilder;
+use CodeIgniter\Model;
 
 /**
  * Public directory reads: browse/search, profile, reference lists, sitemap.
@@ -35,19 +38,114 @@ class DirectoryService
         $this->photos       = new DirectoryListingPhotoModel();
     }
 
+    /** Radius options offered on the search page, in kilometres. */
+    public const RADIUS_OPTIONS = [1, 5, 10, 25, 50];
+
     /**
      * Paginated browse/search over published listings.
      *
-     * @param array{q?:string,category?:string,province?:string,city?:string} $filters
-     * @return array{items:array,total:int,page:int,perPage:int,totalPages:int}
+     * @param array{q?:string,category?:string,province?:string,city?:string,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string} $filters
+     * @return array{items:array,total:int,page:int,perPage:int,totalPages:int,near:?array}
      */
     public function browse(array $filters, int $page = 1, int $perPage = 12): array
     {
         $page    = max(1, $page);
         $perPage = min(48, max(1, $perPage));
 
+        $near = $this->nearPoint($filters);
+
+        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug';
+        if ($near !== null) {
+            // Metres from the visitor. Bound as a value rather than interpolated
+            // — this comes off a query string.
+            $select .= ', ' . $this->distanceSelect($near) . ' AS distance_m';
+        }
+
         $builder = $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug')
+            ->select($select, false)
+            ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->where('xs_directory_listings.status', 'published');
+
+        $q = trim($filters['q'] ?? '');
+        if ($q !== '') {
+            // Everything applySearch adds is one OR group. Any filter appended
+            // after it must be a plain where() — an orWhere here would escape
+            // that group and quietly widen the search instead of narrowing it.
+            $this->applySearch($builder, $q);
+        }
+        if (! empty($filters['category'])) {
+            $builder->where('p.slug', $filters['category']);
+        }
+        if (! empty($filters['province'])) {
+            $builder->where('xs_directory_listings.province', $filters['province']);
+        }
+        if (! empty($filters['city'])) {
+            $builder->like('xs_directory_listings.city', trim($filters['city']));
+        }
+        if ($near !== null) {
+            $this->applyNear($builder, $near);
+        }
+        if (! empty($filters['bounds'])) {
+            $this->applyBounds($builder, (string) $filters['bounds']);
+        }
+
+        $total = $builder->countAllResults(false);
+
+        // Nearest first when the visitor gave us a position — a featured
+        // listing 40km away is not a better answer to "near me" than the one
+        // down the road. Otherwise the usual editorial order.
+        if ($near !== null) {
+            $builder->orderBy('distance_m', 'ASC', false);
+        } else {
+            $builder->orderBy('xs_directory_listings.is_featured', 'DESC')
+                ->orderBy('xs_directory_listings.published_at', 'DESC');
+        }
+
+        $items = $builder->limit($perPage, ($page - 1) * $perPage)->findAll();
+
+        return [
+            'items'      => $items,
+            'total'      => $total,
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'totalPages' => (int) max(1, ceil($total / $perPage)),
+            'near'       => $near,
+        ];
+    }
+
+    /**
+     * Every published listing with a position inside the given viewport, for
+     * the search map.
+     *
+     * Separate from browse() because the map and the list want different
+     * things: the list is paginated twelve at a time, the map wants every pin
+     * in view at once. Capped rather than paginated — beyond a few hundred pins
+     * clustering is doing all the work anyway, and an uncapped query over a
+     * whole-country viewport is a denial-of-service waiting to happen.
+     *
+     * @param array<string,mixed> $filters same shape browse() takes
+     * @return list<array<string,mixed>>
+     */
+    public function mapPoints(array $filters, int $limit = 500): array
+    {
+        $near = $this->nearPoint($filters);
+
+        $select = 'xs_directory_listings.id, xs_directory_listings.slug, xs_directory_listings.display_name,'
+            . ' xs_directory_listings.latitude, xs_directory_listings.longitude,'
+            . ' xs_directory_listings.geocode_precision, xs_directory_listings.logo_path,'
+            . ' xs_directory_listings.phone, xs_directory_listings.trading_hours,'
+            . ' xs_directory_listings.offers_online_booking,'
+            . ' xs_directory_listings.address_line, xs_directory_listings.address_line_2,'
+            . ' xs_directory_listings.suburb, xs_directory_listings.city,'
+            . ' xs_directory_listings.province, xs_directory_listings.postal_code,'
+            . ' p.name AS category_name';
+
+        if ($near !== null) {
+            $select .= ', ' . $this->distanceSelect($near) . ' AS distance_m';
+        }
+
+        $builder = $this->listings
+            ->select($select, false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->where('xs_directory_listings.status', 'published');
 
@@ -64,22 +162,144 @@ class DirectoryService
         if (! empty($filters['city'])) {
             $builder->like('xs_directory_listings.city', trim($filters['city']));
         }
+        if ($near !== null) {
+            $this->applyNear($builder, $near);
+        }
+        if (! empty($filters['bounds'])) {
+            $this->applyBounds($builder, (string) $filters['bounds']);
+        }
 
-        $total = $builder->countAllResults(false);
+        // A listing with no coordinates cannot be a pin. The join to the
+        // spatial table is what enforces it, and it is also what makes the
+        // bounding-box filter above use the spatial index.
+        $builder->join(
+            'xs_directory_listing_points pt',
+            'pt.listing_id = xs_directory_listings.id',
+            'inner'
+        );
 
-        $items = $builder
-            ->orderBy('xs_directory_listings.is_featured', 'DESC')
-            ->orderBy('xs_directory_listings.published_at', 'DESC')
-            ->limit($perPage, ($page - 1) * $perPage)
-            ->findAll();
+        if ($near !== null) {
+            $builder->orderBy('distance_m', 'ASC', false);
+        }
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'perPage'    => $perPage,
-            'totalPages' => (int) max(1, ceil($total / $perPage)),
-        ];
+        return $builder->limit(max(1, min($limit, 1000)))->findAll();
+    }
+
+    /**
+     * The visitor's position and search radius, or null when they gave none.
+     *
+     * @param array<string,mixed> $filters
+     * @return array{lat:float,lng:float,radius:int}|null
+     */
+    private function nearPoint(array $filters): ?array
+    {
+        $lat = $filters['lat'] ?? null;
+        $lng = $filters['lng'] ?? null;
+
+        if (! is_numeric($lat) || ! is_numeric($lng)) {
+            return null;
+        }
+        // Same bounding box that vets everything else entering this app. A
+        // position outside South Africa cannot produce a useful result here,
+        // and silently searching from it would return the whole directory
+        // sorted by distance to another continent.
+        if (! NominatimGeocoder::isPlausible((float) $lat, (float) $lng)) {
+            return null;
+        }
+
+        $radius = (int) ($filters['radius'] ?? 0);
+        if (! in_array($radius, self::RADIUS_OPTIONS, true)) {
+            $radius = 0; // no radius limit; still sorts by distance
+        }
+
+        return ['lat' => (float) $lat, 'lng' => (float) $lng, 'radius' => $radius];
+    }
+
+    /**
+     * Distance in metres from the visitor to each listing.
+     *
+     * Reads latitude/longitude off the listing rather than the spatial table so
+     * it works whether or not the points table has been joined — browse() shows
+     * a distance without needing the join, mapPoints() needs the join anyway.
+     *
+     * @param array{lat:float,lng:float,radius:int} $near
+     */
+    private function distanceSelect(array $near): string
+    {
+        // Interpolated, not bound: this lands in a SELECT expression that also
+        // has to be usable in ORDER BY, and CI4 only binds against WHERE. Safe
+        // because nearPoint() has already forced both values through a numeric
+        // check and a South African bounding box — they are floats by here.
+        return sprintf(
+            'ST_Distance_Sphere(POINT(xs_directory_listings.longitude, xs_directory_listings.latitude),'
+            . ' POINT(%.7F, %.7F))',
+            $near['lng'],
+            $near['lat']
+        );
+    }
+
+    /**
+     * Restrict to listings within the radius, using the spatial index.
+     *
+     * The bounding box is the part the index can answer; ST_Distance_Sphere
+     * then trims the corners of that box down to a true circle. Doing only the
+     * distance test would work but would read every row.
+     *
+     * @param array{lat:float,lng:float,radius:int} $near
+     */
+    private function applyNear(BaseBuilder|Model $builder, array $near): void
+    {
+        if ($near['radius'] <= 0) {
+            return;
+        }
+
+        $metres = $near['radius'] * 1000;
+
+        // Degrees of latitude are ~111km everywhere; degrees of longitude
+        // shrink towards the poles, hence the cosine. Generous by 1% so the box
+        // can never clip a listing the distance test would have kept.
+        $latSpan = ($metres / 111_320) * 1.01;
+        $lngSpan = ($metres / (111_320 * max(0.01, cos(deg2rad($near['lat']))))) * 1.01;
+
+        $builder
+            ->where('xs_directory_listings.latitude >=', $near['lat'] - $latSpan)
+            ->where('xs_directory_listings.latitude <=', $near['lat'] + $latSpan)
+            ->where('xs_directory_listings.longitude >=', $near['lng'] - $lngSpan)
+            ->where('xs_directory_listings.longitude <=', $near['lng'] + $lngSpan)
+            ->where($this->distanceSelect($near) . ' <= ' . $metres, null, false);
+    }
+
+    /**
+     * Restrict to listings inside a map viewport.
+     *
+     * @param string $bounds "south,west,north,east" as Leaflet reports it
+     */
+    private function applyBounds(BaseBuilder|Model $builder, string $bounds): void
+    {
+        $parts = array_map('trim', explode(',', $bounds));
+        if (count($parts) !== 4) {
+            return;
+        }
+        foreach ($parts as $part) {
+            if (! is_numeric($part)) {
+                return;
+            }
+        }
+
+        [$south, $west, $north, $east] = array_map('floatval', $parts);
+
+        // A viewport dragged across the antimeridian would arrive inverted.
+        // Nothing in a South African directory should ever do that, so treat it
+        // as junk rather than trying to split the box.
+        if ($south > $north || $west > $east) {
+            return;
+        }
+
+        $builder
+            ->where('xs_directory_listings.latitude >=', $south)
+            ->where('xs_directory_listings.latitude <=', $north)
+            ->where('xs_directory_listings.longitude >=', $west)
+            ->where('xs_directory_listings.longitude <=', $east);
     }
 
     /**
@@ -148,7 +368,7 @@ class DirectoryService
         if ($listing === null) {
             return null;
         }
-        $listing['category'] = $listing['category_id']
+        $listing['category'] = ($listing['category_id'] ?? null)
             ? $this->categories->find((int) $listing['category_id'])
             : null;
         $listing['locations']      = $this->locations->forListing((int) $listing['id']);
@@ -245,6 +465,27 @@ class DirectoryService
     {
         $row = $this->categories->where('slug', $slug)->where('is_active', 1)->first();
         return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Snap a province name from an outside source to its canonical spelling.
+     *
+     * Geocoders return whatever their own data says — "Kwazulu-Natal",
+     * "GAUTENG", or a province that simply isn't one of the nine. The province
+     * column feeds the landing-page slugs and the province filter, so anything
+     * that doesn't match exactly has to become empty rather than a value no
+     * filter will ever select.
+     */
+    public static function normaliseProvince(string $name): string
+    {
+        $name = trim($name);
+        foreach (self::SA_PROVINCES as $known) {
+            if (strcasecmp($known, $name) === 0) {
+                return $known;
+            }
+        }
+
+        return '';
     }
 
     /** Match a province slug ("western-cape") back to its canonical name. */

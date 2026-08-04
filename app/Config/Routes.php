@@ -11,8 +11,11 @@ $routes->get('/', 'Directory::home');
 $routes->get('list-your-practice', 'Listing::create');
 $routes->post('list-your-practice', 'Listing::store');
 
-// AJAX address autocomplete for the signup/owner/admin listing forms.
+// AJAX address autocomplete for the signup/owner/admin listing forms, plus the
+// lookup that centres the pin picker's map on whatever has been typed so far.
 $routes->get('address-suggest', 'AddressSuggest::index');
+$routes->get('address-locate', 'AddressSuggest::locate');
+$routes->get('address-reverse', 'AddressSuggest::reverse');
 
 // Owner self-service (passwordless: emailed single-use magic link).
 // The literal segments MUST precede the {token} catch-all.
@@ -21,6 +24,7 @@ $routes->post('manage', 'Manage::request');
 $routes->get('manage/edit', 'Manage::edit');
 $routes->post('manage/edit', 'Manage::update');
 $routes->get('manage/signout', 'Manage::signout');
+$routes->post('manage/photo-delete/(:num)', 'Manage::deletePhoto/$1');
 $routes->get('manage/(:segment)', 'Manage::redeem/$1');
 
 // SEO
@@ -49,6 +53,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('unpublish/(:num)', 'Admin::unpublish/$1');
     $routes->post('delete/(:num)', 'Admin::remove/$1');
     $routes->post('restore/(:num)', 'Admin::restore/$1');
+    $routes->post('photo-delete/(:num)', 'Admin::deletePhoto/$1');
     $routes->post('purge/(:num)', 'Admin::purge/$1');
 
     // Taxonomy
@@ -66,6 +71,9 @@ $routes->get('directory/verify/(:segment)', 'Directory::verify/$1');
 // "browse all categories" hub — a literal segment, so it too MUST precede the
 // {segment} catch-all below.
 $routes->get('directory/categories', 'Directory::categories');
+// Pins for the search map, as JSON. Literal segment, same ordering rule — put
+// this below the catch-all and it resolves as a listing slug instead.
+$routes->get('directory/map', 'Directory::map');
 // {category}/{province} landing page.
 $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
 // One segment is either a category landing page or a listing profile;

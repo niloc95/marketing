@@ -129,8 +129,8 @@ $schema = [
                 <h2 class="mb-2">Frequently asked questions</h2>
                 <?php foreach ($faqs as $faq): ?>
                     <div class="mb-4">
-                        <h3 class="text-sm font-bold text-slate-900"><?= esc($faq['q']) ?></h3>
-                        <p class="mt-1 text-sm text-slate-600"><?= esc($faq['a']) ?></p>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white"><?= esc($faq['q']) ?></h3>
+                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400"><?= esc($faq['a']) ?></p>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -143,13 +143,13 @@ $schema = [
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($provinceCounts as $prov => $count): ?>
                         <?php if ($province !== null && $prov === $province) { continue; } ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600"
+                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300"
                            href="<?= base_url('directory/' . $catSlug . '/' . slugify((string) $prov)) ?>">
                             <?= esc($prov) ?> (<?= (int) $count ?>)
                         </a>
                     <?php endforeach; ?>
                     <?php if ($province !== null): ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600" href="<?= base_url('directory/' . $catSlug) ?>">All provinces</a>
+                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $catSlug) ?>">All provinces</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -160,7 +160,7 @@ $schema = [
                 <h3>Related categories</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($siblings as $s): ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600" href="<?= base_url('directory/' . $s['slug']) ?>"><?= esc($s['name']) ?></a>
+                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $s['slug']) ?>"><?= esc($s['name']) ?></a>
                     <?php endforeach; ?>
                 </div>
             </div>

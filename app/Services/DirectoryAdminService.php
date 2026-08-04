@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Libraries\AddressGeocoder;
+use App\Libraries\ListingGeocoder;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryTagModel;
@@ -194,35 +194,13 @@ class DirectoryAdminService
             $data['published_at'] = $old['published_at'] ?? date('Y-m-d H:i:s');
         }
 
-        // Re-geocode when the address changed (or this is a new listing), or
-        // when the listing still has no coordinates from a previous failed
-        // attempt (e.g. Nominatim was rate-limited/down at save time) —
-        // same policy as the owner-edit path in DirectoryListingMutationService,
-        // to avoid spending a Nominatim call on every unrelated admin save
-        // while still giving a failed listing another chance on its next
-        // save. A changed address that fails to geocode gets its
-        // coordinates cleared rather than left stale.
-        $addressFields  = ['address_line', 'suburb', 'city', 'province', 'postal_code', 'country'];
-        $addressChanged = $old === null;
-        if (! $addressChanged) {
-            foreach ($addressFields as $field) {
-                if ((string) ($data[$field] ?? $old[$field] ?? '') !== (string) ($old[$field] ?? '')) {
-                    $addressChanged = true;
-                    break;
-                }
-            }
-        }
-        $missingCoords = $old !== null && ($old['latitude'] === null || $old['longitude'] === null);
-        if ($addressChanged || $missingCoords) {
-            $merged  = array_merge($old ?? [], $data);
-            $address = trim(implode(', ', array_filter([
-                $merged['address_line'] ?? '', $merged['suburb'] ?? '', $merged['city'] ?? '',
-                $merged['province'] ?? '', $merged['postal_code'] ?? '', $merged['country'] ?? '',
-            ])));
-            $coords = $address !== '' ? (new AddressGeocoder())->geocode($address) : null;
-            $data['latitude']  = $coords['lat'] ?? null;
-            $data['longitude'] = $coords['lng'] ?? null;
-        }
+        // Same policy as the owner-edit path in DirectoryListingMutationService,
+        // and deliberately the same code: ListingGeocoder decides whether this
+        // save needs a lookup, so the two forms can't drift apart on when a
+        // pin is recomputed, kept, or cleared.
+        $geocoder = new ListingGeocoder();
+        $geo      = $geocoder->resolve(array_merge($old ?? [], $data), $old, $input);
+        $data     = array_merge($data, $geo ?? []);
 
         // Admin may set the slug explicitly; otherwise derive it from the name.
         $slugSource   = trim((string) ($input['slug'] ?? '')) ?: $name;
@@ -241,6 +219,12 @@ class DirectoryAdminService
             if (! $this->listings->update($id, $data + ['id' => $id])) {
                 return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
             }
+        }
+
+        // null means the coordinates were left alone, so the spatial row still
+        // matches. On create it is never null, and the id only exists now.
+        if ($geo !== null) {
+            $geocoder->syncPoint($id, $geo);
         }
 
         if (array_key_exists('specializations', $input)) {

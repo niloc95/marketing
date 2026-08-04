@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Libraries\AddressGeocoder;
+use App\Libraries\ListingGeocoder;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryTagModel;
 use Config\Directory as DirectoryConfig;
@@ -92,16 +92,18 @@ class DirectoryListingMutationService
             'source_url'     => '',
         ];
 
-        $coords = $this->geocodeIfPossible($data);
-        if ($coords !== null) {
-            $data['latitude']  = $coords['lat'];
-            $data['longitude'] = $coords['lng'];
-        }
+        $geocoder = new ListingGeocoder();
+        $geo      = $geocoder->resolve($data, null, $input) ?? [];
+        $data     = array_merge($data, $geo);
 
         $id = $this->listings->insert($data, true);
         if (! $id) {
             return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
         }
+
+        // Only possible after the insert — the spatial row is keyed on an id
+        // that does not exist until now.
+        $geocoder->syncPoint((int) $id, $geo);
 
         if (! empty($input['specializations'])) {
             $names = is_array($input['specializations'])
@@ -285,32 +287,22 @@ class DirectoryListingMutationService
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
         }
 
-        // Re-geocode when the address actually changed — an edit that only
-        // touches hours or the description shouldn't spend a Nominatim call
-        // — OR when the listing still has no coordinates at all (a previous
-        // geocode attempt failed, e.g. Nominatim was rate-limited/down at
-        // save time; without this, that listing would never get a second
-        // chance short of an owner editing the address away and back). A
-        // changed address that fails to geocode gets its coordinates
-        // cleared rather than left stale: an old pin at a now-wrong address
-        // is worse than no pin at all.
-        $addressFields  = ['address_line', 'suburb', 'city', 'province', 'postal_code', 'country'];
-        $addressChanged = false;
-        foreach ($addressFields as $field) {
-            if ((string) ($data[$field] ?? $listing[$field] ?? '') !== (string) ($listing[$field] ?? '')) {
-                $addressChanged = true;
-                break;
-            }
-        }
-        $missingCoords = $listing['latitude'] === null || $listing['longitude'] === null;
-        if ($addressChanged || $missingCoords) {
-            $coords = $this->geocodeIfPossible(array_merge($listing, $data));
-            $data['latitude']  = $coords['lat'] ?? null;
-            $data['longitude'] = $coords['lng'] ?? null;
-        }
+        // ListingGeocoder decides whether this save needs a lookup at all — an
+        // edit that only touches hours or the description shouldn't spend a
+        // Nominatim call on a donation-funded service. It returns null when the
+        // coordinates should be left exactly as they are.
+        $geocoder = new ListingGeocoder();
+        $geo      = $geocoder->resolve(array_merge($listing, $data), $listing, $input);
+        $data     = array_merge($data, $geo ?? []);
 
         if (! $this->listings->update($id, $data)) {
             return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save your changes.'];
+        }
+
+        // null means the coordinates were left alone, so the spatial row is
+        // already correct — re-writing it would be a query for nothing.
+        if ($geo !== null) {
+            $geocoder->syncPoint($id, $geo);
         }
 
         if (array_key_exists('specializations', $input)) {
@@ -324,22 +316,6 @@ class DirectoryListingMutationService
         $this->notifyAdmin(is_array($fresh) ? $fresh : $listing, 'edited');
 
         return ['ok' => true, 'errors' => [], 'message' => 'Your listing has been updated.'];
-    }
-
-    /**
-     * @param array<string,mixed> $data
-     * @return array{lat:float,lng:float}|null
-     */
-    private function geocodeIfPossible(array $data): ?array
-    {
-        $address = trim(implode(', ', array_filter([
-            $data['address_line'] ?? '', $data['suburb'] ?? '', $data['city'] ?? '',
-            $data['province'] ?? '', $data['postal_code'] ?? '', $data['country'] ?? '',
-        ])));
-        if ($address === '') {
-            return null;
-        }
-        return (new AddressGeocoder())->geocode($address);
     }
 
     /**

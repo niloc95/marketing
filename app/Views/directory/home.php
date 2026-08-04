@@ -66,7 +66,7 @@ $schema = [
 
 <section class="section">
     <div class="container">
-        <h2 class="mb-4 text-xl font-bold text-slate-900">Featured businesses</h2>
+        <h2 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Featured businesses</h2>
         <?php if (empty($featured)): ?>
             <div class="empty">
                 <p class="mb-4">No businesses listed yet. Be the first!</p>

@@ -2,6 +2,8 @@
 
 namespace Config;
 
+use App\Libraries\Geocoding\GeocoderInterface;
+use App\Libraries\Geocoding\NominatimGeocoder;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -19,14 +21,24 @@ use CodeIgniter\Config\BaseService;
  */
 class Services extends BaseService
 {
-    /*
-     * public static function example($getShared = true)
-     * {
-     *     if ($getShared) {
-     *         return static::getSharedInstance('example');
-     *     }
+    /**
+     * Whoever answers this app's address lookups.
      *
-     *     return new \CodeIgniter\Example();
-     * }
+     * Nominatim (OpenStreetMap) — free, keyless, and the only provider this app
+     * uses, by design. The mapping stack is open-source end to end.
+     *
+     * The indirection is not dead weight: the autocomplete endpoints,
+     * ListingGeocoder and `spark directory:geocode` all resolve through here, so
+     * they can never end up on different providers, and swapping in Photon or
+     * Pelias later is a one-line change behind GeocoderInterface rather than a
+     * hunt through four call sites.
      */
+    public static function geocoder(bool $getShared = true): GeocoderInterface
+    {
+        if ($getShared) {
+            return static::getSharedInstance('geocoder');
+        }
+
+        return new NominatimGeocoder();
+    }
 }

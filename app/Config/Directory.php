@@ -19,6 +19,31 @@ class Directory extends BaseConfig
     public string $adminEmail = '';
 
     /**
+     * Tile source for every Leaflet map in the app — the listing form's pin
+     * picker, the profile map, and the search results map.
+     *
+     * CARTO's "Voyager" raster basemap, not OpenStreetMap's own tile servers.
+     * The OSM servers are donation-funded and their usage policy discourages
+     * heavy or commercial use — they do block sites that lean on them, which
+     * would leave this form with a blank grey map and no warning. CARTO serves
+     * the same OSM data from a CDN built for embedding.
+     *
+     * Voyager keeps street names and landmarks legible, which is what someone
+     * needs to place a pin accurately. Swap the path for `light_all` (Positron,
+     * very muted) or `dark_all` if the styling ever calls for it.
+     *
+     * `{r}` is Leaflet's retina placeholder — it resolves to "@2x" on hi-dpi
+     * screens and to nothing elsewhere.
+     *
+     * Attribution is not optional, for CARTO or any replacement; it must name
+     * both OpenStreetMap (the data) and the tile host. See mapTileAttribution.
+     */
+    public string $mapTileUrl = 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+    /** Attribution HTML shown in the map corner. Required by every tile provider. */
+    public string $mapTileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+    /**
      * Minimum published listings before a category (or category × province)
      * landing page is indexable and listed in the sitemap.
      *
@@ -67,6 +92,18 @@ class Directory extends BaseConfig
     {
         $env = env('directory.adminEmail');
         return is_string($env) && trim($env) !== '' ? trim($env) : $this->adminEmail;
+    }
+
+    public function mapTileUrl(): string
+    {
+        $env = env('directory.mapTileUrl');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->mapTileUrl;
+    }
+
+    public function mapTileAttribution(): string
+    {
+        $env = env('directory.mapTileAttribution');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->mapTileAttribution;
     }
 
     public function adminPassword(): string

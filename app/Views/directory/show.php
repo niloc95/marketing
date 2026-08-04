@@ -113,13 +113,13 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <nav class="mb-4 text-sm text-slate-500" aria-label="Breadcrumb">
+        <nav class="mb-4 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>
                 <?php if ($i > 0): ?><span class="mx-1">/</span><?php endif; ?>
                 <?php if ($i < count($crumbs) - 1): ?>
-                    <a class="hover:text-primary-500 hover:underline" href="<?= esc($crumb['item'], 'attr') ?>"><?= esc($crumb['name']) ?></a>
+                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['item'], 'attr') ?>"><?= esc($crumb['name']) ?></a>
                 <?php else: ?>
-                    <span class="text-slate-700"><?= esc($crumb['name']) ?></span>
+                    <span class="text-slate-700 dark:text-slate-300"><?= esc($crumb['name']) ?></span>
                 <?php endif; ?>
             <?php endforeach; ?>
         </nav>
@@ -152,12 +152,12 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                         <span class="text-sm font-bold text-brand-orange"><?= esc($prof) ?></span>
                     <?php endif; ?>
                 <?php endif; ?>
-                <h1 class="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl"><?= esc($name) ?></h1>
+                <h1 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl"><?= esc($name) ?></h1>
                 <?php if ($place): ?>
-                    <div class="mt-1 text-sm text-slate-500">
+                    <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         📍
                         <?php if ($catSlug !== '' && $province !== ''): ?>
-                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 hover:underline" href="<?= base_url('directory/' . $catSlug . '/' . slugify($province)) ?>"><?= esc($province) ?></a>
+                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= base_url('directory/' . $catSlug . '/' . slugify($province)) ?>"><?= esc($province) ?></a>
                         <?php else: ?>
                             <?= esc($place) ?>
                         <?php endif; ?>
@@ -212,7 +212,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                 <?php if (! empty($l['description']) || $pills): ?>
                     <div class="panel mb-5">
                         <h3>About</h3>
-                        <?php if (! empty($l['description'])): ?><p class="whitespace-pre-line text-sm text-slate-700"><?= esc($l['description']) ?></p><?php endif; ?>
+                        <?php if (! empty($l['description'])): ?><p class="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300"><?= esc($l['description']) ?></p><?php endif; ?>
                         <?php if ($pills): ?>
                             <div class="pillrow">
                                 <?php foreach ($pills as $label): ?><span class="pill pill-capability"><?= esc($label) ?></span><?php endforeach; ?>
@@ -224,7 +224,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                 <?php if (! empty($l['credentials'])): ?>
                     <div class="panel mb-5">
                         <h3>Credentials</h3>
-                        <p class="whitespace-pre-line text-sm text-slate-700"><?= esc($l['credentials']) ?></p>
+                        <p class="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300"><?= esc($l['credentials']) ?></p>
                     </div>
                 <?php endif; ?>
 
@@ -269,11 +269,19 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     <?php if (! empty($l['website'])): ?><div class="kv"><span class="k">Website</span><span><a href="<?= esc($l['website'], 'attr') ?>" target="_blank" rel="noopener nofollow">Visit</a></span></div><?php endif; ?>
                     <?php
                     $addr = trim(implode(', ', array_filter([$l['address_line'] ?? '', $l['suburb'] ?? '', $l['city'] ?? '', $l['province'] ?? '', $l['postal_code'] ?? ''])));
-                    // A plain Google Maps deep link — no API key or billing account needed,
-                    // unlike embedding Google Maps itself. Coordinates win when geocoded;
-                    // otherwise the address text still makes this clickable.
-                    $mapsQuery = $geo !== null ? $geo['latitude'] . ',' . $geo['longitude'] : $addr;
-                    $mapsUrl   = $mapsQuery !== '' ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode((string) $mapsQuery) : '';
+                    // Two different intents, so two different Google Maps schemes.
+                    // The address text means "show me where this is" — /maps/search/
+                    // drops a pin. The button below means "take me there" — that one
+                    // uses /maps/dir/ instead (see map_directions_url), which opens
+                    // routing directly rather than making the visitor tap Directions
+                    // once they arrive. Neither needs an API key or billing account.
+                    //
+                    // Both take their destination from map_destination(), which only
+                    // trusts our coordinates when the pin was actually pinpointed —
+                    // otherwise Google gets the address text and does far better with
+                    // it than our street-centroid guess would.
+                    $mapsQuery = map_destination($l);
+                    $mapsUrl   = $mapsQuery !== '' ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($mapsQuery) : '';
                     ?>
                     <?php if ($addr !== ''): ?>
                         <div class="kv"><span class="k">Address</span><span>
@@ -294,22 +302,40 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     <?php endif; ?>
                 </div>
 
-                <?php // OpenStreetMap's free embed — no API key, no billing account, unlike
-                      // Google Maps' or Mapbox's embed APIs. Only renders once a listing has
-                      // been successfully geocoded (see $geo above); the address link above
-                      // still works for everyone else. ?>
-                <?php if ($geo !== null): ?>
-                    <?php
-                    $bbox     = ($geo['longitude'] - 0.005) . ',' . ($geo['latitude'] - 0.005) . ',' . ($geo['longitude'] + 0.005) . ',' . ($geo['latitude'] + 0.005);
-                    $marker   = $geo['latitude'] . ',' . $geo['longitude'];
-                    $embedUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' . rawurlencode($bbox) . '&layer=mapnik&marker=' . rawurlencode($marker);
-                    ?>
+                <?php // An interactive Leaflet map over OpenStreetMap tiles, loaded lazily —
+                      // directory.js injects the library and the tiles only when this scrolls
+                      // into view, so the majority of visitors who never reach it pay nothing
+                      // for it. Without JavaScript the panel is a heading and a directions
+                      // link, which is the part that actually gets someone to the door.
+                      //
+                      // Needs real coordinates, unlike the old address-text embed. A listing
+                      // that never geocoded shows no map; geocoding_status is how those get
+                      // found, and the owner's pin picker is how they get fixed. ?>
+                <?php $map = map_point($l); ?>
+                <?php if ($map !== null): ?>
                     <div class="panel mt-5">
                         <h3>Location</h3>
-                        <div class="map-embed">
-                            <iframe src="<?= esc($embedUrl, 'attr') ?>" loading="lazy" title="Map showing the location of <?= esc($name, 'attr') ?>"></iframe>
+                        <div class="map-view"
+                             data-map-view
+                             data-lat="<?= esc((string) $map['lat'], 'attr') ?>"
+                             data-lng="<?= esc((string) $map['lng'], 'attr') ?>"
+                             data-zoom="<?= esc((string) $map['zoom'], 'attr') ?>"
+                             data-label="<?= esc($name . ' — ' . $map['label'], 'attr') ?>"
+                             data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+                             data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
+                             data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
+                             data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
+                             data-leaflet-js="<?= base_url('assets/vendor/leaflet/leaflet.js') ?>">
+                            <div class="map-view-canvas" data-map-view-canvas role="application"
+                                 aria-label="Map showing the location of <?= esc($name, 'attr') ?>"></div>
                         </div>
-                        <a class="mt-2 inline-block text-sm font-medium text-primary-500 hover:underline" href="<?= esc($mapsUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions &rarr;</a>
+                        <?php if ($map['approximate']): ?>
+                            <p class="map-approx">Approximate location &mdash; use the address above for exact directions.</p>
+                        <?php endif; ?>
+                        <?php $directionsUrl = map_directions_url($l); ?>
+                        <?php if ($directionsUrl !== ''): ?>
+                            <a class="mt-2 inline-block text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($directionsUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions &rarr;</a>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
@@ -340,12 +366,12 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
         <?php if (! empty($related)): ?>
             <div class="mt-10">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-lg font-bold text-slate-900">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">
                         <?php // Category names are singular ("Hair Salon"); pluralise for the heading. ?>
                         More <?= esc(strtolower(rtrim($prof, 's') . 's')) ?><?= $province !== '' ? ' in ' . esc($province) : '' ?>
                     </h2>
                     <?php if ($catSlug !== ''): ?>
-                        <a class="text-sm font-medium text-primary-500 hover:underline"
+                        <a class="text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline"
                            href="<?= base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : '')) ?>">See all &rarr;</a>
                     <?php endif; ?>
                 </div>

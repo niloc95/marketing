@@ -72,14 +72,43 @@ if ($indexable && ! empty($result['items'])) {
                     <option value="<?= esc($prov, 'attr') ?>" <?= ($filters['province'] === $prov) ? 'selected' : '' ?>><?= esc($prov) ?></option>
                 <?php endforeach; ?>
             </select>
+            <?php // The map writes lat/lng/radius into the URL, and this form
+                  // rebuilds the query string from scratch on submit — without
+                  // these, refining a "near me" search by category would
+                  // silently drop the position and quietly widen the results. ?>
+            <?php foreach (['lat', 'lng', 'radius'] as $carry): ?>
+                <?php if (($filters[$carry] ?? '') !== ''): ?>
+                    <input type="hidden" name="<?= $carry ?>" value="<?= esc($filters[$carry], 'attr') ?>">
+                <?php endif; ?>
+            <?php endforeach; ?>
             <button class="btn btn-primary" type="submit">Search</button>
         </form>
+
+        <?php // Distance search. "Near me" is JS-only (it needs the browser's
+              // geolocation), so it is hidden until the script confirms the API
+              // exists — an offer the browser cannot honour is worse than no
+              // offer. The radius links work without JavaScript, but only once
+              // a position is set, which is why they appear alongside it. ?>
+        <div class="near-bar">
+            <button type="button" class="btn btn-ghost btn-xs" data-near-me hidden>Use my location</button>
+            <?php if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== ''): ?>
+                <span class="near-bar-label">Within</span>
+                <?php foreach ($radii as $km): ?>
+                    <?php $q = array_filter($filters + ['radius' => (string) $km], static fn ($v) => $v !== ''); unset($q['bounds']); ?>
+                    <a class="near-chip<?= (int) ($filters['radius'] ?? 0) === $km ? ' is-active' : '' ?>"
+                       href="<?= base_url('directory') . '?' . http_build_query($q) ?>"><?= $km ?> km</a>
+                <?php endforeach; ?>
+                <?php $clear = array_filter($filters, static fn ($v) => $v !== ''); unset($clear['lat'], $clear['lng'], $clear['radius'], $clear['bounds']); ?>
+                <a class="near-chip" href="<?= base_url('directory') . ($clear ? '?' . http_build_query($clear) : '') ?>">Clear</a>
+            <?php endif; ?>
+            <span class="near-bar-note" role="status" data-near-me-note></span>
+        </div>
     </div>
 </section>
 
 <section class="section">
     <div class="container">
-        <p class="mb-4 text-sm text-slate-500"><?= (int) $result['total'] ?> business<?= $result['total'] === 1 ? '' : 'es' ?> found</p>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> business<?= $result['total'] === 1 ? '' : 'es' ?> found</p>
 
         <?php // Category chips: crawlable links into the landing pages, which
               // query-string filters alone would never provide. ?>
@@ -90,9 +119,53 @@ if ($indexable && ! empty($result['items'])) {
                     <?php if ($shown >= 18) { break; } ?>
                     <?php if (($c['group_name'] ?? '') === $seenGroup) { continue; } ?>
                     <?php $seenGroup = $c['group_name'] ?? ''; $shown++; ?>
-                    <a class="badge hover:bg-primary-50 hover:text-primary-600" href="<?= base_url('directory/' . $c['slug']) ?>"><?= esc($c['name']) ?></a>
+                    <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $c['slug']) ?>"><?= esc($c['name']) ?></a>
                 <?php endforeach; ?>
-                <a class="badge hover:bg-primary-50 hover:text-primary-600" href="<?= base_url('directory/categories') ?>">Browse all categories &rarr;</a>
+                <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/categories') ?>">Browse all categories &rarr;</a>
+            </div>
+        <?php endif; ?>
+
+        <?php
+        // Where the map opens. Null when nothing on this page is mappable, in
+        // which case no map renders at all — an empty map of South Africa
+        // answers no question.
+        //
+        // The opening zoom has to frame the whole search, not just its centre.
+        // The map only ever loads pins for the viewport it is showing, so a
+        // "within 25km" search opened at street zoom reports "no businesses in
+        // this part of the map" while the list underneath lists three. These
+        // zooms are chosen so the radius fits comfortably inside the viewport.
+        $radiusZoom = [1 => 14, 5 => 12, 10 => 11, 25 => 10, 50 => 9];
+
+        $mapCentre = null;
+        if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '') {
+            $zoom      = $radiusZoom[(int) ($filters['radius'] ?? 0)] ?? 11;
+            $mapCentre = $filters['lat'] . ',' . $filters['lng'] . ',' . $zoom;
+        } else {
+            foreach ($result['items'] as $l) {
+                if (! empty($l['latitude']) && ! empty($l['longitude'])) {
+                    $mapCentre = $l['latitude'] . ',' . $l['longitude'] . ',11';
+                    break;
+                }
+            }
+        }
+        ?>
+        <?php if ($mapCentre !== null): ?>
+            <div class="results-map"
+                 data-results-map
+                 data-endpoint="<?= base_url('directory/map') ?>"
+                 data-centre="<?= esc($mapCentre, 'attr') ?>"
+                 data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+                 data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
+                 data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
+                 data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
+                 data-leaflet-js="<?= base_url('assets/vendor/leaflet/leaflet.js') ?>"
+                 data-cluster-js="<?= base_url('assets/vendor/leaflet/markercluster.js') ?>"
+                 data-cluster-css="<?= base_url('assets/vendor/leaflet/markercluster.css') ?>"
+                 data-cluster-default-css="<?= base_url('assets/vendor/leaflet/markercluster.default.css') ?>">
+                <div class="results-map-canvas" data-results-map-canvas role="application"
+                     aria-label="Map of businesses matching your search"></div>
+                <p class="results-map-status" role="status" data-results-map-status></p>
             </div>
         <?php endif; ?>
 

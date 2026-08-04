@@ -36,7 +36,7 @@ $isTrash = $status === 'trashed';
 <section class="section">
     <div class="container">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-xl font-bold text-slate-900">Listings <span class="text-sm font-normal text-slate-500">(<?= (int) $result['total'] ?>)</span></h1>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Listings <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= (int) $result['total'] ?>)</span></h1>
             <a class="btn btn-accent btn-xs" href="<?= base_url('admin/new') ?>">+ New listing</a>
         </div>
 
@@ -83,7 +83,7 @@ $isTrash = $status === 'trashed';
         <div class="tablewrap">
             <table class="table">
                 <thead>
-                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Status</th><th>Verified</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Verified</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
@@ -91,10 +91,22 @@ $isTrash = $status === 'trashed';
                         <td>
                             <strong><?= esc($l['display_name']) ?></strong>
                             <?php if (! empty($l['is_featured'])): ?> <span class="pill badge-featured">★</span><?php endif; ?>
-                            <div class="text-xs text-slate-500"><?= esc($l['email'] ?? '') ?></div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($l['email'] ?? '') ?></div>
                         </td>
                         <td><?= esc($l['category_name'] ?? '—') ?></td>
                         <td><?= esc(trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''))) ?: '—' ?></td>
+                        <?php
+                        // How good is this listing's map pin? Anything below
+                        // exact/manual is a centroid that can sit hundreds of
+                        // metres out, so these are the rows worth chasing an
+                        // owner about (or fixing with the picker on the edit form).
+                        $pin      = $l['geocode_precision'] ?? null;
+                        $pinLabel = $pin ?: (($l['latitude'] ?? null) === null ? 'none' : 'unknown');
+                        $pinGood  = in_array($pin, ['manual', 'exact'], true);
+                        ?>
+                        <td>
+                            <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate — worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
+                        </td>
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
                         <td><?= ! empty($l['is_verified']) ? '✓' : '—' ?></td>
                         <td>

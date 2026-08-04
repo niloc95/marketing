@@ -27,8 +27,8 @@ sort($groupNames);
 
 <section class="section">
     <div class="container">
-        <h1 class="mb-1 text-xl font-bold text-slate-900">Categories <span class="text-sm font-normal text-slate-500">(<?= count($categories) ?>)</span></h1>
-        <p class="mb-5 text-sm text-slate-500">A category in use cannot be deleted — deactivate it instead, which hides it from the signup form without touching existing listings.</p>
+        <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Categories <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= count($categories) ?>)</span></h1>
+        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">A category in use cannot be deleted — deactivate it instead, which hides it from the signup form without touching existing listings.</p>
 
         <div class="panel mb-8">
             <h3>Add a category</h3>
@@ -53,7 +53,7 @@ sort($groupNames);
         </div>
 
         <?php foreach ($groupNames as $g): ?>
-            <h2 class="mb-3 mt-8 text-base font-semibold text-slate-900"><?= esc($g) ?></h2>
+            <h2 class="mb-3 mt-8 text-base font-semibold text-slate-900 dark:text-white"><?= esc($g) ?></h2>
             <div class="grid gap-2">
                 <?php foreach ($groups[$g] as $c): ?>
                     <?php $used = $usage[(int) $c['id']] ?? 0; ?>
@@ -81,7 +81,7 @@ sort($groupNames);
                             <button class="btn btn-primary btn-xs">Save</button>
                         </form>
 
-                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                        <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                             <span><code><?= esc($c['slug']) ?></code></span>
                             <span><?= $used > 0 ? $used . ' listing' . ($used === 1 ? '' : 's') : 'unused' ?></span>
                             <?php if ($used === 0): ?>

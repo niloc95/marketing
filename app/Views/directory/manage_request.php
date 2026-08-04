@@ -15,8 +15,8 @@
     <div class="container">
         <div class="form-card max-w-lg">
             <span class="eyebrow">Manage your listing</span>
-            <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900">Edit your business details</h1>
-            <p class="mb-6 text-sm text-slate-500">
+            <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Edit your business details</h1>
+            <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 Enter the email address on your listing and we'll send you a link to edit it.
                 No password needed.
             </p>
@@ -30,8 +30,8 @@
                 <button type="submit" class="btn btn-accent btn-block">Email me a link</button>
             </form>
 
-            <p class="mt-5 text-center text-sm text-slate-500">
-                Not listed yet? <a class="font-medium text-primary-500 hover:underline" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>.
+            <p class="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+                Not listed yet? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>.
             </p>
         </div>
     </div>
