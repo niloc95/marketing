@@ -79,6 +79,11 @@ jobs:
           local-dir: ./
           server-dir: ${{ secrets.FTP_DIRECTORY_DIR }}
           # Never ship the server .env, dev/build tooling, or the marketing site.
+          # public/assets/listings holds uploaded logos and gallery photos, which
+          # belong to whichever environment created them. .gitignore keeps them
+          # out of the repo; without the exclude below they would still be
+          # FTP'd over production's own files. (Keep comments out of the block
+          # scalar itself — there, a leading # is a literal glob, not a comment.)
           exclude: |
             **/.git*
             **/.git*/**
@@ -86,9 +91,6 @@ jobs:
             **/node_modules/**
             **/marketing-site/**
             **/scripts/**
-            # Uploaded logos and gallery photos belong to whichever environment
-            # created them — .gitignore keeps them out of the repo, and without
-            # this they would still be FTP'd over production's own files.
             **/public/assets/listings/**
             **/dist/**
             **/tests/**
