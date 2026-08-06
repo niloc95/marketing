@@ -14,16 +14,7 @@ foreach ($categories as $c) {
 $groupNames = array_keys($groups);
 sort($groupNames);
 ?>
-<div class="admin-bar">
-    <div class="container">
-        <strong>Directory admin</strong>
-        <span>
-            <a href="<?= base_url('admin') ?>">Listings</a> &middot;
-            <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
-            <a href="<?= base_url('admin/logout') ?>">Sign out</a>
-        </span>
-    </div>
-</div>
+<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">
@@ -85,7 +76,7 @@ sort($groupNames);
                             <span><code><?= esc($c['slug']) ?></code></span>
                             <span><?= $used > 0 ? $used . ' listing' . ($used === 1 ? '' : 's') : 'unused' ?></span>
                             <?php if ($used === 0): ?>
-                                <form method="post" action="<?= base_url('admin/categories/' . $c['id'] . '/delete') ?>" onsubmit="return confirm('Delete <?= esc($c['name'], 'attr') ?>?')">
+                                <form method="post" action="<?= base_url('admin/categories/' . $c['id'] . '/delete') ?>" data-confirm="Delete <?= esc($c['name'], 'attr') ?>?">
                                     <?= csrf_field() ?>
                                     <button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button>
                                 </form>

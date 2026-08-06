@@ -1,3 +1,4 @@
+<?php $analyticsId = config('Directory')->analyticsId(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,8 +11,14 @@
     <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)">
     <?php // Dark-mode FOUC guard: matches the marketing site's 'xs-theme' localStorage
           // contract, so the theme carries across the two properties. Must be blocking
-          // and in <head> — directory.js is deferred and would repaint after first paint. ?>
-    <script>
+          // and in <head> — directory.js is deferred and would repaint after first paint.
+          //
+          // {csp-script-nonce} is substituted with a real nonce when CSP is on
+          // and stripped when it is off, so it costs nothing either way. It is
+          // not optional: CI4's $autoNonce only replaces this placeholder, it
+          // does not go looking for unmarked <script> tags — an inline script
+          // without it simply stops running under CSP, silently. ?>
+    <script {csp-script-nonce}>
       (function () {
         try {
           var t = localStorage.getItem('xs-theme');
@@ -21,6 +28,40 @@
         } catch (e) {}
       })();
     </script>
+    <?php if ($analyticsId !== ''): ?>
+        <?php // Google Analytics 4 with Consent Mode v2. GA loads on every page but every
+              // storage category defaults to "denied", so nothing is written until the
+              // visitor accepts in the banner (assets/consent.js).
+              //
+              // The localStorage read below is not redundant with consent.js: it is the
+              // blocking fast path. consent.js is deferred, so without this a returning
+              // visitor who already accepted would have their first pageview recorded
+              // under "denied" and lost. wait_for_update gives it a 500ms window. ?>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc($analyticsId, 'attr') ?>"></script>
+        <script {csp-script-nonce}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', {
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            analytics_storage: 'denied',
+            wait_for_update: 500
+          });
+          try {
+            if (localStorage.getItem('ws-consent') === 'granted') {
+              gtag('consent', 'update', {
+                ad_storage: 'granted',
+                ad_user_data: 'granted',
+                ad_personalization: 'granted',
+                analytics_storage: 'granted'
+              });
+            }
+          } catch (e) {}
+          gtag('js', new Date());
+          gtag('config', <?= json_encode($analyticsId, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+        </script>
+    <?php endif; ?>
 </head>
 <body>
     <header class="site-header">
@@ -67,15 +108,55 @@
 
     <?= $this->renderSection('content') ?>
 
+    <?php // Four columns, mirroring the marketing site's footer shape so the two
+          // properties read as one system. Rebuilt with directory.css semantic classes
+          // rather than copied: the marketing markup leans on container-x and nav-link,
+          // neither of which exists here. ?>
     <footer class="site-footer">
-        <div class="container">
-            <span>&copy; <?= date('Y') ?> <?= esc(config('Directory')->siteName()) ?></span>
-            <span>
-                <a href="<?= base_url('directory') ?>">Browse</a> &middot;
-                <a href="<?= base_url('directory/categories') ?>">All categories</a> &middot;
-                <a href="<?= base_url('list-your-practice') ?>">List your business</a> &middot;
-                <a href="<?= base_url('manage') ?>">Manage your listing</a>
-            </span>
+        <div class="container site-footer-grid">
+            <div>
+                <a class="brand" href="<?= base_url('/') ?>">
+                    <span class="brand-mark">W</span>
+                    <span>WebScheduler <span class="text-brand-orange">Directory</span></span>
+                </a>
+                <p class="site-footer-tagline">Find a local business or service anywhere in South Africa — or list your own, free.</p>
+            </div>
+            <div class="site-footer-col">
+                <h3>Directory</h3>
+                <ul>
+                    <li><a href="<?= base_url('directory') ?>">Browse businesses</a></li>
+                    <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
+                    <li><a href="<?= base_url('list-your-practice') ?>">List your business</a></li>
+                    <li><a href="<?= base_url('manage') ?>">Manage your listing</a></li>
+                </ul>
+            </div>
+            <div class="site-footer-col">
+                <h3>Company</h3>
+                <ul>
+                    <li><a href="https://webscheduler.co.za/about.html">About</a></li>
+                    <li><a href="https://webscheduler.co.za/contact.html">Contact</a></li>
+                    <li><a href="https://webscheduler.co.za/">WebScheduler</a></li>
+                </ul>
+            </div>
+            <div class="site-footer-col">
+                <h3>Get started</h3>
+                <p class="site-footer-tagline">Listing your business takes a couple of minutes and costs nothing.</p>
+                <a class="btn btn-accent mt-4" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+            </div>
+        </div>
+        <div class="site-footer-bar">
+            <div class="container">
+                <span>&copy; <?= date('Y') ?> <?= esc(config('Directory')->siteName()) ?></span>
+                <span class="site-footer-legal">
+                    <a href="<?= base_url('privacy') ?>">Privacy</a>
+                    <a href="<?= base_url('terms') ?>">Terms</a>
+                    <a href="<?= base_url('cookie-policy') ?>">Cookie policy</a>
+                    <?php // Only when there is a banner to re-open. ?>
+                    <?php if ($analyticsId !== ''): ?>
+                        <button type="button" data-consent-open>Cookie preferences</button>
+                    <?php endif; ?>
+                </span>
+            </div>
         </div>
     </footer>
 
@@ -85,5 +166,11 @@
           // they never use. Rendered before directory.js, which needs L defined. ?>
     <?= $this->renderSection('scripts') ?>
     <script defer src="<?= base_url('assets/directory.js') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.js') ?: time() ?>"></script>
+    <?php // Shared with the marketing site (source: shared/consent.js, copied here by
+          // scripts/sync-shared-assets.js). Loaded only alongside analytics — with no
+          // measurement ID there is nothing for the visitor to consent to. ?>
+    <?php if ($analyticsId !== ''): ?>
+        <script defer src="<?= base_url('assets/consent.js') ?>?v=<?= @filemtime(FCPATH . 'assets/consent.js') ?: time() ?>" data-privacy-url="<?= esc(base_url('privacy'), 'attr') ?>"></script>
+    <?php endif; ?>
 </body>
 </html>

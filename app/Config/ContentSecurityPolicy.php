@@ -22,7 +22,7 @@ class ContentSecurityPolicy extends BaseConfig
     /**
      * Default CSP report context
      */
-    public bool $reportOnly = false;
+    public bool $reportOnly = true;
 
     /**
      * Specifies a URL where a browser will send reports
@@ -52,21 +52,21 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string|null
      */
-    public $defaultSrc;
+    public $defaultSrc = 'self';
 
     /**
      * Lists allowed scripts' URLs.
      *
      * @var list<string>|string
      */
-    public $scriptSrc = 'self';
+    public $scriptSrc = ['self', 'https://www.googletagmanager.com'];
 
     /**
      * Specifies valid sources for JavaScript <script> elements.
      *
      * @var list<string>|string
      */
-    public array|string $scriptSrcElem = 'self';
+    public array|string $scriptSrcElem = ['self', 'https://www.googletagmanager.com'];
 
     /**
      * Specifies valid sources for JavaScript inline event
@@ -81,14 +81,14 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $styleSrc = 'self';
+    public $styleSrc = ['self', 'unsafe-inline'];
 
     /**
      * Specifies valid sources for stylesheets <link> elements.
      *
      * @var list<string>|string
      */
-    public array|string $styleSrcElem = 'self';
+    public array|string $styleSrcElem = ['self', 'unsafe-inline'];
 
     /**
      * Specifies valid sources for stylesheets inline
@@ -112,7 +112,7 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string|null
      */
-    public $baseURI;
+    public $baseURI = 'self';
 
     /**
      * Lists the URLs for workers and embedded frame contents
@@ -127,14 +127,14 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $connectSrc = 'self';
+    public $connectSrc = ['self', 'https://www.google-analytics.com'];
 
     /**
      * Specifies the origins that can serve web fonts.
      *
      * @var list<string>|string
      */
-    public $fontSrc;
+    public $fontSrc = 'self';
 
     /**
      * Lists valid endpoints for submission from `<form>` tags.
@@ -151,7 +151,7 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string|null
      */
-    public $frameAncestors;
+    public $frameAncestors = 'none';
 
     /**
      * The frame-src directive restricts the URLs which may
@@ -159,7 +159,7 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string|null
      */
-    public $frameSrc;
+    public $frameSrc = 'none';
 
     /**
      * Restricts the origins allowed to deliver video and audio.
@@ -173,7 +173,7 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $objectSrc = 'self';
+    public $objectSrc = 'none';
 
     /**
      * @var list<string>|string|null
@@ -213,4 +213,56 @@ class ContentSecurityPolicy extends BaseConfig
      * Replace nonce tag automatically?
      */
     public bool $autoNonce = true;
+
+    /**
+     * Finish the policy with the values that aren't knowable at parse time.
+     *
+     * The map tile host is the reason this constructor exists. It comes from
+     * `directory.mapTileUrl`, which is env-overridable — hardcode CARTO here and
+     * a deployment that points at a different provider gets a blank map with
+     * nothing but a console message to explain it. Deriving the origin keeps the
+     * policy correct for whatever that deployment is actually configured to use.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $imageSrc = [
+            'self',
+            // Leaflet marker icons are same-origin files, but canvas/tile
+            // shims and the odd inlined SVG arrive as data: URIs.
+            'data:',
+            // GA sends its beacons as image requests.
+            'https://www.google-analytics.com',
+        ];
+
+        $tileHost = $this->originOf(config('Directory')->mapTileUrl());
+        if ($tileHost !== null) {
+            $imageSrc[] = $tileHost;
+        }
+
+        $this->imageSrc = $imageSrc;
+
+        // Path-relative on purpose: base_url() is not dependable this early in
+        // the boot, and the browser resolves this against the document anyway.
+        $this->reportURI = '/csp-report';
+    }
+
+    /**
+     * The scheme+host of a URL, or null if it hasn't got one.
+     *
+     * Tile URLs carry `{z}/{x}/{y}` placeholders that are not valid URL syntax,
+     * so parse_url() is used for its tolerance — it reads the authority and
+     * ignores the rest. A port is preserved; the path never is.
+     */
+    private function originOf(string $url): ?string
+    {
+        $parts = parse_url($url);
+        if (! is_array($parts) || empty($parts['host']) || empty($parts['scheme'])) {
+            return null;
+        }
+
+        return $parts['scheme'] . '://' . $parts['host']
+            . (isset($parts['port']) ? ':' . $parts['port'] : '');
+    }
 }

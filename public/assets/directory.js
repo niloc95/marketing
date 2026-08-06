@@ -50,6 +50,19 @@
     applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
   });
 
+  // -------------------------------------------------- destructive-action confirm
+  // Replaces onsubmit="return confirm(…)" on the admin delete/purge forms.
+  // Inline handlers are blocked by CSP (script-src-attr), and there is no nonce
+  // for an attribute — a delegated listener is the only way to keep the
+  // safety prompt. One listener covers forms rendered later too.
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest ? e.target.closest('form[data-confirm]') : null;
+    if (!form) return;
+    if (!window.confirm(form.getAttribute('data-confirm'))) {
+      e.preventDefault();
+    }
+  });
+
   // ------------------------------------------------------------- reveal
   // Phone/email are stored reversed in data-reveal-value so they never
   // appear as plain text/tel:/mailto: in the HTML a scraper reads. On
