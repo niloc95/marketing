@@ -36,8 +36,8 @@ turns on `Config\Cookie::$secure` — over plain `http://` that throws
 | `CI_ENVIRONMENT` | `development` locally, `production` on the server |
 | `app.baseURL` | Must match the host/port you serve on, or assets 404 |
 | `database.default.*` | MySQL (DB `webscheduler_directory`, prefix `xs_`) |
-| `directory.adminEmail` | Where new-listing notifications are sent |
-| `directory.adminPassword` | Password for `/admin` |
+| `directory.adminEmail` | New-listing notifications **and** the contact address published on `/privacy` and `/terms`. Use a role address, not a personal inbox |
+| `directory.adminPasswordHash` | Password for `/admin` — generate with `php spark directory:adminhash` |
 | `email.*` | SMTP (dev: Mailpit on :1025) |
 
 ## Build commands

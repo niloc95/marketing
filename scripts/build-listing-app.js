@@ -192,7 +192,10 @@ database.default.DBDriver = MySQLi
 database.default.DBPrefix = xs_
 database.default.port = 3306
 
-directory.adminEmail = 'CHANGE-ME'
+# Receives new-listing notifications AND is published as the contact address on
+# the privacy and terms pages. Use a role address, never a personal inbox — it
+# goes on the open web and will be scraped.
+directory.adminEmail = 'za_admin@webscheduler.co.za'
 
 # Admin login. Generate with \`php spark directory:adminhash\` — it prompts for
 # the password and prints this line, so the password never touches the disk.
