@@ -56,7 +56,23 @@ class Exceptions extends BaseConfig
      *
      * @var list<string>
      */
-    public array $sensitiveDataInTrace = [];
+    // A stack trace records the arguments of every frame, and the log file it
+    // lands in is 0644. The arguments in scope here are not innocuous: verify()
+    // and redeemManageToken() take a raw magic-link token — a live credential —
+    // and the database and SMTP config carry passwords. An unrelated crash
+    // anywhere in a request would otherwise write those into a plaintext file
+    // that gets copied around in backups and support tickets.
+    public array $sensitiveDataInTrace = [
+        'token',
+        'verify_token',
+        'manage_token',
+        'claim_token',
+        'password',
+        'adminPassword',
+        'adminPasswordHash',
+        'SMTPPass',
+        'healthToken',
+    ];
 
     /**
      * --------------------------------------------------------------------------

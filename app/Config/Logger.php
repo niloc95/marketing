@@ -39,7 +39,16 @@ class Logger extends BaseConfig
      *
      * @var int|list<int>
      */
-    public $threshold = (ENVIRONMENT === 'production') ? 4 : 9;
+    // 5 (warning), not the framework default of 4 (error). At 4 this app throws
+    // away most of what it deliberately instruments: CSP violation reports
+    // (App\Controllers\Csp logs at warning, and the whole point of report-only
+    // mode is to read them before enforcing), every Nominatim rate-limit and
+    // timeout warning — which is how you learn the geocoder is degrading rather
+    // than only that it finally gave up — and the "you are still using the
+    // deprecated plaintext admin password" warning that README says you'll see.
+    // Those are all early-warning signals, and error-level is by definition too
+    // late for an early warning. Volume is not a concern at this traffic.
+    public $threshold = (ENVIRONMENT === 'production') ? 5 : 9;
 
     /**
      * --------------------------------------------------------------------------

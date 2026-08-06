@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
+use App\Libraries\MailHealth;
 use App\Models\DirectoryListingModel;
+use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
 use Config\Directory as DirectoryConfig;
 
@@ -69,7 +71,7 @@ class DirectoryListingMutationService
             'description'    => $this->clean($input['description'] ?? ''),
             'phone'          => $this->clean($input['phone'] ?? ''),
             'email'          => trim((string) $input['email']),
-            'website'        => $this->clean($input['website'] ?? ''),
+            'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
             'address_line'   => $this->clean($input['address_line'] ?? ''),
             'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
             'city'           => normalise_place($this->clean($input['city'] ?? '')),
@@ -84,7 +86,9 @@ class DirectoryListingMutationService
             'slug'           => $slug,
             'status'         => 'pending',
             'is_verified'    => 0,
-            'verify_token'   => $token,
+            // Hash only — the raw $token goes out in the email at the bottom of
+            // this method and is never written down. See hashToken().
+            'verify_token'   => $this->hashToken($token),
             'verify_expires' => date('Y-m-d H:i:s', time() + $this->config->verifyTtl),
             // Public signup is the only intake route. The source/source_url
             // columns remain for provenance on future imports.
@@ -92,26 +96,50 @@ class DirectoryListingMutationService
             'source_url'     => '',
         ];
 
+        // Outside the transaction on purpose: this is a network call that can
+        // take the better part of a minute (Nominatim, retries, rate-limit
+        // spacing). Holding a write transaction open across it would trade a
+        // rare inconsistency for routine lock contention.
         $geocoder = new ListingGeocoder();
         $geo      = $geocoder->resolve($data, null, $input) ?? [];
         $data     = array_merge($data, $geo);
 
-        $id = $this->listings->insert($data, true);
-        if (! $id) {
-            return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
+        // The listing, its map pin and its tags are one unit of work. Half a
+        // listing is worse than none: a row that never got its spatial point is
+        // invisible to the map and to every radius search, permanently, with
+        // nothing to indicate anything went wrong.
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            $id = $this->listings->insert($data, true);
+            if (! $id) {
+                $db->transRollback();
+
+                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
+            }
+
+            // Only possible after the insert — the spatial row is keyed on an id
+            // that does not exist until now.
+            $geocoder->syncPoint((int) $id, $geo);
+
+            if (! empty($input['specializations'])) {
+                $names = is_array($input['specializations'])
+                    ? $input['specializations']
+                    : array_map('trim', explode(',', (string) $input['specializations']));
+                $this->tags->syncListingTags((int) $id, $names);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Listing signup failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+
+            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the listing. Please try again.'];
         }
 
-        // Only possible after the insert — the spatial row is keyed on an id
-        // that does not exist until now.
-        $geocoder->syncPoint((int) $id, $geo);
-
-        if (! empty($input['specializations'])) {
-            $names = is_array($input['specializations'])
-                ? $input['specializations']
-                : array_map('trim', explode(',', (string) $input['specializations']));
-            $this->tags->syncListingTags((int) $id, $names);
-        }
-
+        // After the commit, never inside it — a verification link for a listing
+        // that got rolled back would be a dead link in someone's inbox.
         $this->sendVerificationEmail($data['email'], (string) $data['display_name'], $token);
 
         return [
@@ -135,7 +163,7 @@ class DirectoryListingMutationService
             return null;
         }
         $listing = $this->listings
-            ->where('verify_token', $token)
+            ->where('verify_token', $this->hashToken($token))
             ->where('verify_expires >=', date('Y-m-d H:i:s'))
             ->first();
         if (! is_array($listing)) {
@@ -143,10 +171,11 @@ class DirectoryListingMutationService
         }
 
         $this->listings->update((int) $listing['id'], [
-            'is_verified'  => 1,
-            'status'       => 'published',
-            'published_at' => date('Y-m-d H:i:s'),
-            'verify_token' => null,
+            'is_verified'    => 1,
+            'status'         => 'published',
+            'published_at'   => date('Y-m-d H:i:s'),
+            'verify_token'   => null,
+            'verify_expires' => null,
         ]);
 
         $fresh = $this->listings->find((int) $listing['id']);
@@ -180,8 +209,10 @@ class DirectoryListingMutationService
     {
         $token = bin2hex(random_bytes(32));
 
+        // Only the hash is stored; the raw token leaves in the email below and
+        // is never persisted anywhere. See hashToken().
         $this->listings->update((int) $listing['id'], [
-            'manage_token'   => $token,
+            'manage_token'   => $this->hashToken($token),
             'manage_expires' => date('Y-m-d H:i:s', time() + $this->config->manageTtl),
         ]);
 
@@ -209,7 +240,7 @@ class DirectoryListingMutationService
         }
 
         $listing = $this->listings
-            ->where('manage_token', $token)
+            ->where('manage_token', $this->hashToken($token))
             ->where('manage_expires >=', date('Y-m-d H:i:s'))
             ->first();
 
@@ -254,9 +285,15 @@ class DirectoryListingMutationService
         $data = [];
         foreach (DirectoryListingModel::OWNER_EDITABLE as $field) {
             if (array_key_exists($field, $input)) {
-                $data[$field] = in_array($field, ['city', 'suburb'], true)
-                    ? normalise_place($this->clean($input[$field]))
-                    : $this->clean($input[$field]);
+                if (in_array($field, ['city', 'suburb'], true)) {
+                    $data[$field] = normalise_place($this->clean($input[$field]));
+                } elseif ($field === 'website') {
+                    // validate() has already rejected anything normaliseUrl
+                    // can't make safe, so the ?? '' here is belt-and-braces.
+                    $data[$field] = $this->normaliseUrl($input[$field]) ?? '';
+                } else {
+                    $data[$field] = $this->clean($input[$field]);
+                }
             }
         }
         $data['type'] = in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true)
@@ -295,21 +332,47 @@ class DirectoryListingMutationService
         $geo      = $geocoder->resolve(array_merge($listing, $data), $listing, $input);
         $data     = array_merge($data, $geo ?? []);
 
-        if (! $this->listings->update($id, $data)) {
-            return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save your changes.'];
+        // One unit of work — see submitPublic(). It matters more here: an owner
+        // edit re-syncs tags, and syncListingTags() deletes the pivot rows
+        // before re-inserting them, so a failure between those two steps would
+        // silently wipe the areas of focus the owner had already set.
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            if (! $this->listings->update($id, $data)) {
+                $db->transRollback();
+
+                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save your changes.'];
+            }
+
+            // null means the coordinates were left alone, so the spatial row is
+            // already correct — re-writing it would be a query for nothing.
+            if ($geo !== null) {
+                $geocoder->syncPoint($id, $geo);
+            }
+
+            if (array_key_exists('specializations', $input)) {
+                $names = is_array($input['specializations'])
+                    ? $input['specializations']
+                    : array_map('trim', explode(',', (string) $input['specializations']));
+                $this->tags->syncListingTags($id, $names);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Owner edit failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+
+            return ['ok' => false, 'errors' => [], 'message' => 'Could not save your changes. Please try again.'];
         }
 
-        // null means the coordinates were left alone, so the spatial row is
-        // already correct — re-writing it would be a query for nothing.
-        if ($geo !== null) {
-            $geocoder->syncPoint($id, $geo);
-        }
-
-        if (array_key_exists('specializations', $input)) {
-            $names = is_array($input['specializations'])
-                ? $input['specializations']
-                : array_map('trim', explode(',', (string) $input['specializations']));
-            $this->tags->syncListingTags($id, $names);
+        // After the commit, so the row is definitely pointing at the new file.
+        // Without this, every logo re-upload left its predecessor on disk
+        // forever, with nothing referencing it.
+        if (isset($data['logo_path']) && ! empty($listing['logo_path'])
+            && $listing['logo_path'] !== $data['logo_path']) {
+            (new DirectoryListingPhotoModel())->deleteFileAt((string) $listing['logo_path']);
         }
 
         $fresh = $this->listings->find($id);
@@ -338,12 +401,98 @@ class DirectoryListingMutationService
         if (empty($input['consent'])) {
             $errors['consent'] = 'Please confirm you may publish these details.';
         }
+        // The model enforces this too, but only at insert time, where it
+        // surfaces as a generic "could not save" with no field highlighted.
+        if (mb_strlen($this->clean($input['description'] ?? '')) > 2000) {
+            $errors['description'] = 'Please keep the description under 2000 characters.';
+        }
+        if (($website = $this->normaliseUrl($input['website'] ?? '')) === null) {
+            $errors['website'] = 'Please enter a valid website address starting with http:// or https://.';
+        }
         return $errors;
+    }
+
+    /**
+     * Normalise a user-supplied URL, or null if it can't be made safe.
+     *
+     * The profile page renders these in an href. esc(…, 'attr') escapes the
+     * HTML but says nothing about the scheme, so "javascript:…" survives it
+     * intact and becomes a one-click XSS. Only http/https get through here.
+     * A bare "example.co.za" is what people actually paste, so it is promoted
+     * to https rather than rejected.
+     *
+     * @return string|null The normalised URL ('' when empty), or null if invalid.
+     */
+    public function normaliseUrl($value): ?string
+    {
+        $url = $this->clean($value);
+        if ($url === '') {
+            return '';
+        }
+        if (! preg_match('#^[a-z][a-z0-9+.\-]*:#i', $url)) {
+            $url = 'https://' . $url;
+        }
+        if (! preg_match('#^https?://#i', $url)) {
+            return null;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) === false ? null : $url;
     }
 
     private function clean($v): string
     {
         return is_scalar($v) ? trim((string) $v) : '';
+    }
+
+    /**
+     * The recipient's domain, for logging.
+     *
+     * Enough to diagnose — "every failure is to one provider" is a reputation
+     * problem, "all of them" is an outage — without writing a subscriber's
+     * address into a 0644 log file that gets copied into backups and support
+     * threads. The address itself is already in the database if it is ever
+     * genuinely needed.
+     */
+    private function domainOf(string $email): string
+    {
+        $at = strrpos($email, '@');
+
+        return $at === false ? '(malformed address)' : '@' . substr($email, $at + 1);
+    }
+
+    /** Collapse newlines so a failure message can't forge extra log lines. */
+    private function oneLine(string $s): string
+    {
+        return trim((string) preg_replace('/\s+/', ' ', $s));
+    }
+
+    /**
+     * The stored form of a magic-link token.
+     *
+     * verify_token and manage_token are bearer credentials — whoever holds one
+     * can publish or edit a listing — so the database keeps only a digest. The
+     * raw value exists in the emailed URL and in the incoming request, never at
+     * rest, which makes a leaked backup or a read-only injection worthless.
+     *
+     * A plain fast hash is the right choice here, and it is worth saying so
+     * because it looks wrong at a glance. bcrypt and argon2 exist to make
+     * guessing expensive for secrets humans chose; these are 256 bits from a
+     * CSPRNG, where guessing is already impossible. A KDF would only add
+     * latency, and password_verify() cannot appear in a WHERE clause — it would
+     * turn an indexed equality lookup into a full table scan. Unsalted is
+     * likewise deliberate: a salt defends against precomputation, which needs a
+     * guessable input space.
+     *
+     * Deterministic by design, so the lookup stays a single indexed query — and
+     * because the column now holds a non-secret, the timing-safe-comparison
+     * question disappears rather than needing to be mitigated.
+     *
+     * Must stay in step with the SHA2(x, 256) backfill in
+     * 2026-08-05-100000_HashListingTokens.php.
+     */
+    private function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
     }
 
     private function sendVerificationEmail(string $to, string $name, string $token): void
@@ -379,6 +528,26 @@ class DirectoryListingMutationService
         $this->send($admin, $subject, $body);
     }
 
+    /**
+     * Send one email, and make it obvious when that didn't work.
+     *
+     * Deliberately void and deliberately non-fatal: a broken mailer must not
+     * fail a signup or an edit halfway through. But "don't fail" is not the same
+     * as "don't tell anyone", and this used to be both.
+     *
+     * The bug worth remembering: this called `$email->send(false)` under a
+     * comment claiming the argument suppressed exceptions. It does not — that
+     * parameter is CodeIgniter's $autoClear. Email::send() signals an SMTP
+     * failure by *returning false*, not by throwing, so the catch below never
+     * ran for the one failure mode that actually happens, and the error line it
+     * logs was unreachable. Outbound mail could stop entirely and leave no
+     * trace anywhere. Hence: check the return value, and record it somewhere a
+     * health check can see (MailHealth).
+     *
+     * Letting $autoClear default to true also matters. service('email') is a
+     * shared instance, so without the reset each send would inherit the
+     * previous one's recipients.
+     */
     private function send(string $to, string $subject, string $body): void
     {
         try {
@@ -387,9 +556,31 @@ class DirectoryListingMutationService
             $email->setSubject($subject);
             $email->setMessage($body);
             $email->setMailType('html');
-            $email->send(false); // don't throw on failure
+
+            if ($email->send()) {
+                MailHealth::recordSuccess();
+
+                return;
+            }
+
+            // printDebugger() is where CI4 keeps the actual SMTP reason —
+            // nothing else in the app reads it, so it would otherwise be lost.
+            // The empty array matters: the default includes the full headers,
+            // subject and body, which would put the recipient's address and the
+            // message content into the log and into /health.
+            $reason = $this->oneLine(strip_tags($email->printDebugger([])));
+            log_message('error', 'Directory email to ' . $this->domainOf($to) . ' failed: ' . $reason);
+            MailHealth::recordFailure($reason);
         } catch (\Throwable $e) {
-            log_message('error', 'Directory email failed: ' . $e->getMessage());
+            // Malformed Config\Email, or the cache being unavailable underneath
+            // MailHealth. Still must not surface to the visitor.
+            log_message('error', 'Directory email to ' . $this->domainOf($to) . ' threw: ' . $this->oneLine($e->getMessage()));
+
+            try {
+                MailHealth::recordFailure($e->getMessage());
+            } catch (\Throwable) {
+                // Nothing left to do — the log line above is the last resort.
+            }
         }
     }
 }

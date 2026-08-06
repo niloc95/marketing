@@ -68,13 +68,39 @@ class DirectoryListingPhotoModel extends Model
      */
     public function deleteWithFile(array $photo): void
     {
+        $this->deleteFileAt((string) ($photo['path'] ?? ''));
+        $this->delete((int) $photo['id']);
+    }
+
+    /**
+     * Delete one stored image file, if it is really inside public/.
+     *
+     * Split out of deleteWithFile() because logos need exactly this and have no
+     * row of their own — logo_path is a column on the listing. Both callers get
+     * the same containment check rather than a second, subtly different copy.
+     *
+     * Silently does nothing for an empty path, a missing file, or anything that
+     * resolves outside FCPATH: this runs during cleanup, where refusing to
+     * delete is always the safe failure.
+     */
+    public function deleteFileAt(string $path): void
+    {
+        $path = ltrim(trim($path), '/');
+        if ($path === '') {
+            return;
+        }
+
+        // Imported listings can carry an absolute URL here — not our file, and
+        // realpath would resolve it to nothing anyway. Bail explicitly.
+        if (preg_match('#^[a-z][a-z0-9+.\-]*://#i', $path)) {
+            return;
+        }
+
         $root = rtrim(realpath(FCPATH) ?: FCPATH, '/');
-        $full = realpath($root . '/' . ltrim((string) ($photo['path'] ?? ''), '/'));
+        $full = realpath($root . '/' . $path);
 
         if ($full !== false && str_starts_with($full, $root . '/') && is_file($full)) {
             @unlink($full);
         }
-
-        $this->delete((int) $photo['id']);
     }
 }

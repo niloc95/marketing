@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Libraries\ListingGeocoder;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
+use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
 
 /**
@@ -19,6 +20,7 @@ class DirectoryAdminService
     private DirectoryListingModel $listings;
     private DirectoryCategoryModel $categories;
     private DirectoryTagModel $tags;
+    private DirectoryListingPhotoModel $photos;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class DirectoryAdminService
         $this->listings   = new DirectoryListingModel();
         $this->categories = new DirectoryCategoryModel();
         $this->tags       = new DirectoryTagModel();
+        $this->photos     = new DirectoryListingPhotoModel();
     }
 
     /**
@@ -125,6 +128,27 @@ class DirectoryAdminService
             return ['ok' => false, 'errors' => ['email' => 'That email is not valid.'], 'message' => 'Please correct the highlighted fields.'];
         }
 
+        // One listing per address, same rule the public form enforces — and for
+        // a harder reason here. The manage flow resolves an address to exactly
+        // one listing (findActiveByEmail, lowest id wins), so a second listing
+        // sharing an address can never be reached by its owner's magic link,
+        // and future signups from that address silently reattach to the first
+        // row. The admin path is the only way to create that state.
+        //
+        // A validation error rather than a unique index: the column is
+        // legitimately nullable, and one-listing-per-email is a service-layer
+        // rule that may want to change without a migration.
+        if ($email !== '') {
+            $owner = $this->listings->findActiveByEmail($email);
+            if ($owner !== null && (int) $owner['id'] !== (int) $id) {
+                return [
+                    'ok'      => false,
+                    'errors'  => ['email' => 'That email already belongs to “' . ($owner['display_name'] ?? 'another listing') . '”. One listing per address.'],
+                    'message' => 'Please correct the highlighted fields.',
+                ];
+            }
+        }
+
         // Text fields are written only when the request actually carries them.
         // Treating "absent" as "blank" makes any partial POST silently destroy
         // stored data — the admin form always sends every field, but a script,
@@ -136,8 +160,12 @@ class DirectoryAdminService
             'credentials'    => null,
             'description'    => null,
             'phone'          => null,
-            'website'        => null,
+            'website'        => 'url',
             'address_line'   => null,
+            // The form posts this and owners can edit it; leaving it out here
+            // meant an admin could fix a unit number, be told "Listing saved.",
+            // and watch the value revert on reload.
+            'address_line_2' => null,
             'postal_code'    => null,
             'suburb'         => 'place',
             'city'           => 'place',
@@ -150,6 +178,24 @@ class DirectoryAdminService
                 continue; // updating and not supplied → leave the stored value alone
             }
             $value = $this->clean($input[$field] ?? '');
+
+            if ($mode === 'url') {
+                // Same normalisation the public and owner forms get. Without
+                // it a bare "example.co.za" saved "successfully" and then
+                // vanished from the public page, because safe_external_url()
+                // correctly refuses to render a link with no scheme.
+                $normalised = (new DirectoryListingMutationService())->normaliseUrl($value);
+                if ($normalised === null) {
+                    return [
+                        'ok'      => false,
+                        'errors'  => ['website' => 'Please enter a valid website address starting with http:// or https://.'],
+                        'message' => 'Please correct the highlighted fields.',
+                    ];
+                }
+                $data[$field] = $normalised;
+                continue;
+            }
+
             $data[$field] = $mode === 'place' ? normalise_place($value) : $value;
         }
 
@@ -206,45 +252,88 @@ class DirectoryAdminService
         $slugSource   = trim((string) ($input['slug'] ?? '')) ?: $name;
         $data['slug'] = ensure_unique_slug($this->listings, 'slug', $slugSource, $id, listing_reserved_slugs());
 
-        if ($id === null) {
-            $newId = $this->listings->insert($data, true);
-            if (! $newId) {
-                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not create the listing.'];
+        // Listing + pin + tags are one unit of work — same reasoning as
+        // DirectoryListingMutationService::submitPublic(). The geocode above is
+        // outside it deliberately; it is a slow network call.
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            if ($id === null) {
+                $newId = $this->listings->insert($data, true);
+                if (! $newId) {
+                    $db->transRollback();
+
+                    return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not create the listing.'];
+                }
+                $id = (int) $newId;
+            } else {
+                // 'id' is carried purely so the slug rule's {id} placeholder can
+                // exclude this row from its uniqueness check. It is not in
+                // $allowedFields, so it is stripped before the UPDATE is built.
+                if (! $this->listings->update($id, $data + ['id' => $id])) {
+                    $db->transRollback();
+
+                    return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
+                }
             }
-            $id = (int) $newId;
-        } else {
-            // 'id' is carried purely so the slug rule's {id} placeholder can
-            // exclude this row from its uniqueness check. It is not in
-            // $allowedFields, so it is stripped before the UPDATE is built.
-            if (! $this->listings->update($id, $data + ['id' => $id])) {
-                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
+
+            // null means the coordinates were left alone, so the spatial row still
+            // matches. On create it is never null, and the id only exists now.
+            if ($geo !== null) {
+                $geocoder->syncPoint($id, $geo);
             }
+
+            if (array_key_exists('specializations', $input)) {
+                $names = is_array($input['specializations'])
+                    ? $input['specializations']
+                    : array_map('trim', explode(',', (string) $input['specializations']));
+                $this->tags->syncListingTags($id, $names);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Admin listing save failed and was rolled back: ' . $e->getMessage());
+
+            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the listing. Please try again.'];
         }
 
-        // null means the coordinates were left alone, so the spatial row still
-        // matches. On create it is never null, and the id only exists now.
-        if ($geo !== null) {
-            $geocoder->syncPoint($id, $geo);
-        }
-
-        if (array_key_exists('specializations', $input)) {
-            $names = is_array($input['specializations'])
-                ? $input['specializations']
-                : array_map('trim', explode(',', (string) $input['specializations']));
-            $this->tags->syncListingTags($id, $names);
+        // After the commit: the row now definitely points at the new file, so
+        // discarding the old one cannot strand a listing with a missing image.
+        if (isset($data['logo_path']) && is_array($old) && ! empty($old['logo_path'])
+            && $old['logo_path'] !== $data['logo_path']) {
+            $this->photos->deleteFileAt((string) $old['logo_path']);
         }
 
         return ['ok' => true, 'errors' => [], 'id' => $id, 'message' => 'Listing saved.'];
     }
 
+    /**
+     * Does a live (non-trashed) listing with this id exist?
+     *
+     * Every moderation method below checks this first, because neither of the
+     * obvious alternatives works. Model::update() returns true when the query
+     * *executed*, not when it changed a row, so it reports success for an id
+     * that does not exist — and it silently skips soft-deleted rows, so it
+     * reports success for a trashed listing too. Checking affectedRows() after
+     * the fact is no better: MySQL counts rows *changed*, so re-publishing an
+     * already-published listing would report failure.
+     */
+    private function liveExists(int $id): bool
+    {
+        return is_array($this->listings->find($id));
+    }
+
     public function setFeatured(int $id, bool $featured): bool
     {
-        return $this->listings->update($id, ['is_featured' => $featured ? 1 : 0]);
+        return $this->liveExists($id)
+            && $this->listings->update($id, ['is_featured' => $featured ? 1 : 0]);
     }
 
     public function publish(int $id): bool
     {
-        return $this->listings->update($id, [
+        return $this->liveExists($id) && $this->listings->update($id, [
             'status'       => 'published',
             'published_at' => date('Y-m-d H:i:s'),
         ]);
@@ -252,12 +341,13 @@ class DirectoryAdminService
 
     public function unpublish(int $id): bool
     {
-        return $this->listings->update($id, ['status' => 'unpublished']);
+        return $this->liveExists($id)
+            && $this->listings->update($id, ['status' => 'unpublished']);
     }
 
     public function remove(int $id): bool
     {
-        return $this->listings->delete($id); // soft delete
+        return $this->liveExists($id) && $this->listings->delete($id); // soft delete
     }
 
     /**
@@ -265,19 +355,53 @@ class DirectoryAdminService
      *
      * The model's update() silently skips soft-deleted rows, so this has to go
      * through the query builder — a plain $model->update() would report success
-     * and change nothing.
+     * and change nothing. The builder has the opposite problem: it reports
+     * success for any query that ran, including one that matched no rows. Hence
+     * the explicit onlyDeleted() lookup first.
      */
     public function restore(int $id): bool
     {
+        if (! is_array($this->listings->onlyDeleted()->find($id))) {
+            return false; // not in the trash — nothing to restore
+        }
+
         return (bool) $this->listings->builder()
             ->where('id', $id)
             ->update(['deleted_at' => null]);
     }
 
     /** Permanent delete — no undo. */
+    /**
+     * Hard-delete a trashed listing, its rows and its files.
+     *
+     * Two things this has to get right that the previous version did not.
+     *
+     * Files first: the foreign keys cascade, so deleting the listing row takes
+     * the photo rows with it — and those rows were the only record of where the
+     * files lived. Delete the row first and the .webp files are orphaned on
+     * disk permanently, unreachable and impossible to identify later. So the
+     * files go before the cascade, never after.
+     *
+     * And it only operates on the trash. This is the one irreversible action in
+     * the app; the UI only offers it from the Trash tab, but the endpoint took
+     * any id, so a single crafted POST could destroy a live published listing
+     * with no soft-delete step in between. Requiring deleted_at means the
+     * two-step delete is a real safety property rather than a UI convention.
+     */
     public function purge(int $id): bool
     {
+        $listing = $this->listings->onlyDeleted()->find($id);
+        if (! is_array($listing)) {
+            return false; // not trashed (or not there) — refuse
+        }
+
+        foreach ($this->photos->forListing($id) as $photo) {
+            $this->photos->deleteFileAt((string) ($photo['path'] ?? ''));
+        }
+        $this->photos->deleteFileAt((string) ($listing['logo_path'] ?? ''));
+
         $this->tags->syncListingTags($id, []);
+
         return $this->listings->delete($id, true);
     }
 

@@ -22,16 +22,21 @@ $link = function (array $overrides = []) use ($status, $filters) {
 };
 $isTrash = $status === 'trashed';
 ?>
-<div class="admin-bar">
-    <div class="container">
-        <strong>Directory admin</strong>
-        <span>
-            <a href="<?= base_url('admin') ?>">Listings</a> &middot;
-            <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
-            <a href="<?= base_url('admin/logout') ?>">Sign out</a>
-        </span>
+<?= view('admin/_bar') ?>
+
+<?php // Outbound mail failing is the one outage the public site hides completely:
+      // signups still report "check your email". Nobody would think to look for
+      // it, so say it on the page an admin lands on. ?>
+<?php if (! empty($mailError)): ?>
+    <div class="container mt-5">
+        <div class="alert alert-error">
+            <strong>Outbound email is failing.</strong>
+            Verification and manage links are not reaching people — signups will sit in Pending.
+            Last failure <?= esc(date('j M Y H:i', $mailError['at'])) ?>:
+            <?= esc($mailError['reason']) ?>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <section class="section">
     <div class="container">
@@ -113,7 +118,7 @@ $isTrash = $status === 'trashed';
                             <div class="actions">
                                 <?php if ($isTrash): ?>
                                     <form method="post" action="<?= base_url('admin/restore/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-primary btn-xs">Restore</button></form>
-                                    <form method="post" action="<?= base_url('admin/purge/' . $l['id']) ?>" onsubmit="return confirm('Permanently delete this listing? This cannot be undone.')"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete forever</button></form>
+                                    <form method="post" action="<?= base_url('admin/purge/' . $l['id']) ?>" data-confirm="Permanently delete this listing? This cannot be undone."><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete forever</button></form>
                                 <?php else: ?>
                                     <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/edit/' . $l['id']) ?>">Edit</a>
                                     <?php if ($l['status'] !== 'published'): ?>
@@ -127,7 +132,7 @@ $isTrash = $status === 'trashed';
                                         <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
                                     </form>
                                     <a class="btn btn-ghost btn-xs" href="<?= base_url('directory/' . $l['slug']) ?>" target="_blank">View</a>
-                                    <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" onsubmit="return confirm('Move this listing to trash?')"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
+                                    <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" data-confirm="Move this listing to trash?"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
                                 <?php endif; ?>
                             </div>
                         </td>
