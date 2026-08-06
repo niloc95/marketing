@@ -3,9 +3,13 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesListingUploads;
+use App\Libraries\LogReader;
+use App\Libraries\MailHealth;
+use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryService;
+use App\Services\SystemStatusService;
 
 class Admin extends BaseController
 {
@@ -66,6 +70,10 @@ class Admin extends BaseController
             'filters'    => $filters,
             'categories' => $dir->categories(),
             'provinces'  => $dir->provinces(),
+            // A mail outage is invisible from the front of the site — signups
+            // still say "check your email". The uptime monitor pages you via
+            // /health; this tells you what happened once you're here looking.
+            'mailError'  => MailHealth::lastError(),
         ]);
     }
 
@@ -165,40 +173,74 @@ class Admin extends BaseController
 
     // ------------------------------------------------------------------ actions
 
+    // Each of these reports what actually happened rather than assuming.
+    // Previously the service's boolean was discarded and a success message
+    // flashed unconditionally, so purging a nonexistent id said "Listing
+    // permanently deleted", and publishing a trashed listing — which the model
+    // silently skips — said "Listing published" while changing nothing.
+
     public function feature(int $id)
     {
-        (new DirectoryAdminService())->setFeatured($id, (bool) $this->request->getPost('on'));
-        return $this->back('Listing updated.');
+        $on = (bool) $this->request->getPost('on');
+
+        return $this->outcome(
+            (new DirectoryAdminService())->setFeatured($id, $on),
+            'Listing updated.',
+            'Could not update that listing.'
+        );
     }
 
     public function publish(int $id)
     {
-        (new DirectoryAdminService())->publish($id);
-        return $this->back('Listing published.');
+        return $this->outcome(
+            (new DirectoryAdminService())->publish($id),
+            'Listing published.',
+            'Could not publish that listing — it may be in the trash. Restore it first.'
+        );
     }
 
     public function unpublish(int $id)
     {
-        (new DirectoryAdminService())->unpublish($id);
-        return $this->back('Listing unpublished.');
+        return $this->outcome(
+            (new DirectoryAdminService())->unpublish($id),
+            'Listing unpublished.',
+            'Could not unpublish that listing — it may be in the trash.'
+        );
     }
 
     public function remove(int $id)
     {
-        (new DirectoryAdminService())->remove($id);
-        return $this->back('Listing moved to trash.');
+        return $this->outcome(
+            (new DirectoryAdminService())->remove($id),
+            'Listing moved to trash.',
+            'Could not move that listing to the trash.'
+        );
     }
 
     public function restore(int $id)
     {
-        (new DirectoryAdminService())->restore($id);
-        return $this->back('Listing restored.');
+        return $this->outcome(
+            (new DirectoryAdminService())->restore($id),
+            'Listing restored.',
+            'Could not restore that listing — it may not be in the trash.'
+        );
     }
 
     public function purge(int $id)
     {
-        (new DirectoryAdminService())->purge($id);
-        return $this->back('Listing permanently deleted.');
+        return $this->outcome(
+            (new DirectoryAdminService())->purge($id),
+            'Listing permanently deleted.',
+            'Could not delete that listing. Only listings already in the trash can be permanently deleted.'
+        );
+    }
+
+    /** Flash the message that matches what the service actually did. */
+    private function outcome(bool $ok, string $success, string $failure)
+    {
+        return $ok
+            ? $this->back($success)
+            : redirect()->back()->with('error', $failure);
     }
 
     // --------------------------------------------------------------- categories
@@ -229,6 +271,60 @@ class Admin extends BaseController
     {
         $result = (new DirectoryAdminService())->deleteCategory($id);
         return $this->backTo('admin/categories', $result);
+    }
+
+    // ------------------------------------------------------------------ status
+
+    /**
+     * System status: is anything broken, and what does the log say.
+     *
+     * Exists so the answer to "why did verification emails stop?" doesn't
+     * require SSH. Everything here is read-only except the mail-reset POST.
+     */
+    public function status()
+    {
+        $health = new SystemHealth();
+        $status = new SystemStatusService();
+        $logs   = new LogReader();
+
+        // Bare filename only; LogReader::resolve() re-validates it against a
+        // strict pattern and a realpath containment check before opening
+        // anything, so a crafted value gets an empty list rather than a file.
+        $file  = (string) ($this->request->getGet('file') ?? '');
+        $file  = $file !== '' ? $file : (string) $logs->latestFile();
+        $level = (int) ($this->request->getGet('level') ?? 5);
+        $level = max(1, min(7, $level)); // never DEBUG (8) — see the view
+
+        return $this->response
+            ->setHeader('Cache-Control', 'no-store')
+            ->setBody(view('admin/status', [
+                'checks'       => $checks = $health->checks(),
+                'allOk'        => $health->allOk($checks),
+                'mailError'    => MailHealth::lastError(),
+                'mailFailures' => MailHealth::consecutiveFailures(),
+                'mailLastOk'   => MailHealth::lastSuccessAt(),
+                'counts'       => (new DirectoryAdminService())->counts(),
+                'stalePending' => $status->stalePendingCount(),
+                'storage'      => $status->storage(),
+                'dbBytes'      => $status->databaseBytes(),
+                'configRows'   => $status->configSummary(),
+                'svc'          => $status,
+                'logFiles'     => $logs->files(),
+                'logFile'      => $file,
+                'logLevel'     => $level,
+                'logEntries'   => $file !== '' ? $logs->entries($file, $level) : [],
+            ]));
+    }
+
+    /**
+     * Clear the recorded mail-failure state after fixing the cause, so the
+     * banner and /health recover now rather than at the next send.
+     */
+    public function clearMailStatus()
+    {
+        MailHealth::clear();
+
+        return $this->backTo('admin/status', ['ok' => true, 'message' => 'Mail status cleared.']);
     }
 
     /** @param array{ok:bool,message:string} $result */

@@ -24,16 +24,7 @@ helper('directory_hours');
 // failed submit; the stored value is JSON and needs decoding. Old wins.
 $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base['trading_hours'] ?? null) ?? []);
 ?>
-<div class="admin-bar">
-    <div class="container">
-        <strong>Directory admin</strong>
-        <span>
-            <a href="<?= base_url('admin') ?>">Listings</a> &middot;
-            <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
-            <a href="<?= base_url('admin/logout') ?>">Sign out</a>
-        </span>
-    </div>
-</div>
+<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

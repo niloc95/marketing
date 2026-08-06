@@ -11,6 +11,11 @@ $routes->get('/', 'Directory::home');
 $routes->get('list-your-practice', 'Listing::create');
 $routes->post('list-your-practice', 'Listing::store');
 
+// Legal. Top-level, so they never meet the directory/{segment} catch-all.
+$routes->get('privacy', 'Legal::privacy');
+$routes->get('terms', 'Legal::terms');
+$routes->get('cookie-policy', 'Legal::cookies');
+
 // AJAX address autocomplete for the signup/owner/admin listing forms, plus the
 // lookup that centres the pin picker's map on whatever has been typed so far.
 $routes->get('address-suggest', 'AddressSuggest::index');
@@ -33,6 +38,16 @@ $routes->get('sitemap.xml', 'Directory::sitemap');
 // URL from app.baseURL. public/robots.txt was removed — a real file would win
 // via the .htaccess "!-f" condition and this route would never run.
 $routes->get('robots.txt', 'Directory::robots');
+
+// Where browsers post CSP violation reports. Named in
+// Config\ContentSecurityPolicy::$reportURI and exempted from CSRF in
+// Config\Filters — browsers don't send a token with a report.
+$routes->post('csp-report', 'Csp::report');
+
+// For an external uptime monitor: 200 when every dependency answers, 503 when
+// one doesn't. Deliberately unthrottled — a throttled health check reads as an
+// outage and would page you about itself.
+$routes->get('health', 'Health::index');
 
 // Admin oversight
 $routes->get('admin/login', 'Admin::login');
@@ -61,6 +76,10 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('categories', 'Admin::storeCategory');
     $routes->post('categories/(:num)', 'Admin::updateCategory/$1');
     $routes->post('categories/(:num)/delete', 'Admin::deleteCategory/$1');
+
+    // Diagnostics — health checks, mail state, storage, config, recent log.
+    $routes->get('status', 'Admin::status');
+    $routes->post('status/clear-mail', 'Admin::clearMailStatus');
 });
 
 // Directory browse/search + profile.
@@ -74,6 +93,11 @@ $routes->get('directory/categories', 'Directory::categories');
 // Pins for the search map, as JSON. Literal segment, same ordering rule — put
 // this below the catch-all and it resolves as a listing slug instead.
 $routes->get('directory/map', 'Directory::map');
+// Province landing page — /directory/province/{province}. "province" is a
+// literal first segment, so the same ordering rule applies: below the
+// two-segment route it would resolve as a category named "province" and 404.
+// listing_reserved_slugs() keeps anything else from claiming the word.
+$routes->get('directory/province/(:segment)', 'Directory::province/$1');
 // {category}/{province} landing page.
 $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
 // One segment is either a category landing page or a listing profile;
