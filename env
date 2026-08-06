@@ -93,6 +93,12 @@
 # Password for /admin/login. Set a strong value in production.
 # directory.adminPassword =
 
+# Google Analytics 4 measurement ID. A real ID ships in app/Config/Directory.php,
+# so leaving this commented out means analytics IS on. Set it to an empty string to
+# turn analytics and the cookie banner off — do that on staging and local dev so
+# they don't pollute the production property.
+# directory.analyticsId = ''
+
 # The mapping stack is deliberately open-source end to end — Leaflet for the
 # maps, OpenStreetMap for the data, Nominatim for geocoding. There is no API key
 # to set anywhere and nothing is billed per request. Do not reintroduce a

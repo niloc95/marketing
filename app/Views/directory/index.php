@@ -119,9 +119,9 @@ if ($indexable && ! empty($result['items'])) {
                     <?php if ($shown >= 18) { break; } ?>
                     <?php if (($c['group_name'] ?? '') === $seenGroup) { continue; } ?>
                     <?php $seenGroup = $c['group_name'] ?? ''; $shown++; ?>
-                    <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $c['slug']) ?>"><?= esc($c['name']) ?></a>
+                    <?= view('directory/_chip', ['label' => $c['name'], 'href' => base_url('directory/' . $c['slug'])], ['saveData' => false]) ?>
                 <?php endforeach; ?>
-                <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/categories') ?>">Browse all categories &rarr;</a>
+                <?= view('directory/_chip', ['label' => 'Browse all categories →', 'href' => base_url('directory/categories')], ['saveData' => false]) ?>
             </div>
         <?php endif; ?>
 

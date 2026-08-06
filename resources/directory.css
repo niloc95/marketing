@@ -98,13 +98,40 @@
     @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
   }
 
+  /* Four-column footer, matching the marketing site's shape. The bottom bar is a
+     separate strip so its top border spans the full width, not just .container. */
   .site-footer {
-    @apply mt-12 border-t border-slate-200 bg-white py-8 text-sm text-slate-500;
+    @apply mt-12 border-t border-slate-200 bg-white text-sm text-slate-500;
   }
   .dark .site-footer { @apply border-slate-800 bg-[#0b0f14] text-slate-400; }
-  .site-footer .container { @apply flex flex-wrap items-center justify-between gap-3; }
-  .site-footer a          { @apply text-slate-600 hover:text-primary-500; }
-  .dark .site-footer a    { @apply text-slate-400 hover:text-white; }
+  .site-footer a       { @apply text-slate-600 hover:text-primary-500; }
+  .dark .site-footer a { @apply text-slate-400 hover:text-white; }
+
+  .site-footer-grid    { @apply grid gap-10 py-12 md:grid-cols-4; }
+  .site-footer-tagline { @apply mt-4 max-w-xs text-sm text-slate-500; }
+  .dark .site-footer-tagline { @apply text-slate-400; }
+
+  .site-footer-col h3 { @apply text-sm font-semibold text-slate-900; }
+  .site-footer-col ul { @apply mt-4 space-y-3; }
+  .dark .site-footer-col h3 { @apply text-white; }
+
+  /* The brand lockup is shared with .site-header; only the footer's own hover
+     colour needs neutralising, since the wordmark is not a nav link. */
+  .site-footer .brand:hover { @apply text-slate-900; }
+  .dark .site-footer .brand:hover { @apply text-white; }
+
+  .site-footer-bar { @apply border-t border-slate-200; }
+  .dark .site-footer-bar { @apply border-slate-800; }
+  .site-footer-bar .container {
+    @apply flex flex-col items-center justify-between gap-4 py-6 sm:flex-row;
+  }
+  .site-footer-legal { @apply flex flex-wrap items-center justify-center gap-x-6 gap-y-2; }
+  /* Written as a button so it is not a fake link, but it has to sit in a row of
+     real ones — strip the UA button chrome and inherit the anchor styling. */
+  .site-footer-legal button {
+    @apply cursor-pointer border-0 bg-transparent p-0 text-sm text-slate-600 hover:text-primary-500;
+  }
+  .dark .site-footer-legal button { @apply text-slate-400 hover:text-white; }
 
   /* Already ocean-on-white — only its seam against the page needs darkening. */
   .admin-bar { @apply border-b border-slate-200 bg-primary-500 py-2.5 text-sm text-white; }
@@ -180,8 +207,98 @@
            focus:border-primary-300 focus:ring-primary-300;
   }
 
+  /* ------------------------------------------------------ homepage sections */
+  /* .section-head is the centred title block; -split puts the title on the
+     left and a button on the right. Both are homepage-only, but the h2/p
+     styling is scoped to them rather than global so the profile and landing
+     pages keep the heading sizes they already have. */
+  .section-head       { @apply mb-8 text-center; }
+  /* items-start so the trailing button hugs its label on mobile instead of
+     stretching to the full column width once the row collapses. */
+  .section-head-split { @apply mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between; }
+  .section-head h2,
+  .section-head-split h2 { @apply text-2xl font-extrabold text-slate-900 sm:text-3xl; }
+  .section-head p        { @apply mx-auto mt-3 max-w-2xl text-slate-500; }
+  .section-head-split p  { @apply mt-2 max-w-xl text-slate-500; }
+  .dark .section-head h2,
+  .dark .section-head-split h2 { @apply text-white; }
+  .dark .section-head p,
+  .dark .section-head-split p  { @apply text-slate-400; }
+
+  /* Alternating band, so five stacked sections don't read as one slab. */
+  .section-alt { @apply bg-white; }
+  .dark .section-alt { @apply bg-[#141a21]; }
+
+  .hero-chips       { @apply mt-6; }
+  .hero-chips-label { @apply mb-2 text-xs font-semibold uppercase tracking-wider text-white/60; }
+
+  .stat-bar { @apply border-y border-slate-200 bg-white py-4 text-sm text-slate-500; }
+  .stat strong { @apply font-bold text-slate-900; }
+  .dark .stat-bar    { @apply border-slate-800 bg-[#141a21] text-slate-400; }
+  .dark .stat strong { @apply text-white; }
+
+  /* The chip that index/categories/landing/province all share. Written as its
+     own rule rather than @apply .badge — .badge has a .dark override, and
+     applying it would flatten that into both themes. */
+  .chip {
+    @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1
+           text-xs font-medium text-slate-600 transition-colors
+           hover:bg-primary-50 hover:text-primary-600;
+  }
+  .chip-count { @apply ml-1 opacity-60; }
+  .dark .chip { @apply bg-slate-800 text-slate-300 hover:bg-primary-500/15 hover:text-primary-300; }
+  /* On the hero the chips sit on the ocean gradient, where slate-100 reads as a
+     bright block — go translucent instead, in both themes. */
+  .hero-chips .chip { @apply bg-white/10 text-white hover:bg-white/20 hover:text-white; }
+  .dark .hero-chips .chip { @apply bg-white/10 text-white hover:bg-white/20 hover:text-white; }
+
+  /* ------------------------------------------------- explore by category */
+  .tile-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5; }
+
+  .cat-tile {
+    @apply flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4
+           shadow-brand transition-shadow hover:shadow-brand-lg sm:p-5;
+  }
+  .cat-tile-icon  { @apply mb-3 grid h-11 w-11 place-items-center rounded-xl bg-primary-50 text-xl sm:h-12 sm:w-12; }
+  .cat-tile-name  { @apply text-sm font-semibold text-slate-900 sm:text-base; }
+  .cat-tile-group { @apply mt-1 line-clamp-1 text-xs text-slate-500; }
+  .cat-tile-foot  { @apply mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs; }
+  .cat-tile-count { @apply font-medium text-primary-600; }
+  .cat-tile-more  { @apply hidden items-center gap-1 font-medium text-slate-500 sm:inline-flex; }
+  .cat-tile-arrow { @apply inline-block transition-transform; }
+  .cat-tile:hover .cat-tile-arrow { @apply translate-x-0.5; }
+  .cat-tile:hover .cat-tile-more  { @apply text-primary-600; }
+  .dark .cat-tile       { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .cat-tile-icon  { @apply bg-primary-500/15; }
+  .dark .cat-tile-name  { @apply text-white; }
+  .dark .cat-tile-group { @apply text-slate-400; }
+  .dark .cat-tile-foot  { @apply border-slate-800; }
+  .dark .cat-tile-count { @apply text-primary-300; }
+  .dark .cat-tile-more  { @apply text-slate-400; }
+  .dark .cat-tile:hover .cat-tile-more { @apply text-primary-300; }
+
+  /* --------------------------------------------------- browse by location */
+  .loc-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
+
+  .loc-card {
+    @apply flex min-h-[11rem] flex-col justify-end rounded-2xl bg-gradient-to-br p-5
+           text-white shadow-brand transition-shadow hover:shadow-brand-xl;
+  }
+  /* Rotated by position in _location_card.php. Spelled out in full because
+     Tailwind cannot see a class name built at runtime. */
+  .loc-card-1 { @apply from-primary-500 to-primary-700; }
+  .loc-card-2 { @apply from-brand-crimson to-primary-700; }
+  .loc-card-3 { @apply from-brand-orange to-brand-crimson; }
+  .loc-card-4 { @apply from-primary-700 to-brand-ocean; }
+  .loc-card-count  { @apply text-xs font-medium text-white/70; }
+  .loc-card-name   { @apply mt-1 text-xl font-extrabold; }
+  .loc-card-cities { @apply mt-1 line-clamp-2 text-sm text-white/70; }
+
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  /* Four-up variant for the homepage rows. .card-grid stays at three columns —
+     index.php and landing.php depend on it. */
+  .card-grid-4 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
 
   .avatar {
     @apply grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl
@@ -201,6 +318,29 @@
   .taglist { @apply mt-3 flex flex-wrap gap-1.5; }
   .tag     { @apply inline-flex rounded-full bg-primary-50 px-2.5 py-0.5 text-xs text-primary-600; }
   .dark .tag { @apply bg-primary-500/15 text-primary-300; }
+
+  /* ----------------------------------------------------------------- legal */
+  /* Long-form document typography, scoped so it cannot reach the app's own
+     headings. @tailwindcss/typography is not installed and these three pages do
+     not justify adding it. */
+  .prose-legal { @apply mx-auto max-w-3xl; }
+  .prose-legal h2 { @apply mb-3 mt-8 text-lg font-bold text-slate-900 first:mt-0; }
+  .prose-legal h3 { @apply mb-2 mt-6 text-base font-semibold text-slate-900; }
+  .prose-legal p  { @apply mb-4 text-sm leading-relaxed text-slate-600; }
+  .prose-legal ul { @apply mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-600; }
+  .prose-legal a  { @apply text-primary-600 underline underline-offset-2 hover:text-primary-500; }
+  .prose-legal strong { @apply font-semibold text-slate-900; }
+  .prose-legal code {
+    @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
+  }
+  .prose-legal .table { @apply mb-6; }
+  .dark .prose-legal h2,
+  .dark .prose-legal h3,
+  .dark .prose-legal strong { @apply text-white; }
+  .dark .prose-legal p,
+  .dark .prose-legal ul { @apply text-slate-400; }
+  .dark .prose-legal a    { @apply text-primary-300 hover:text-primary-200; }
+  .dark .prose-legal code { @apply bg-slate-800 text-slate-300; }
 
   /* --------------------------------------------------------------- profile */
   .profile-head { @apply flex flex-wrap items-start gap-4; }

@@ -1,13 +1,37 @@
 /* WebScheduler — cookie consent banner (POPIA / GDPR) driving Google Consent Mode v2.
-   Self-contained: injects its own styles + DOM, no dependencies. Works on both the
-   marketing pages (.dark class) and the developer portal (prefers-color-scheme).
+   Self-contained: injects its own styles + DOM, no dependencies. Works on the marketing
+   pages and the CI4 listing app (.dark class) and the developer portal
+   (prefers-color-scheme).
+
+   SINGLE SOURCE: this file lives in shared/ and is copied into marketing-site/assets/
+   and public/assets/ by scripts/sync-shared-assets.js. Edit it here — both copies are
+   generated and gitignored.
+
+   Being dependency-free (own <style>, own DOM, no build step) is what lets one file
+   serve a static site and a PHP app. Do not convert it to Tailwind.
 
    GA is loaded with consent defaulting to "denied" (see the inline gtag snippet in
    each page <head>), so no analytics storage/collection happens until the visitor
-   accepts here. The choice is remembered in localStorage['ws-consent']. */
+   accepts here. The choice is remembered in localStorage['ws-consent'], shared across
+   both properties exactly as the 'xs-theme' key is. */
 (function () {
   'use strict';
   var KEY = 'ws-consent';
+
+  /* Each property has its own privacy policy at its own URL, so the link is passed in
+     rather than hardcoded: <script src="…/consent.js" data-privacy-url="/privacy">.
+     With no URL supplied the phrase is rendered as plain text — a property that has no
+     policy yet should say nothing rather than link somewhere that 404s. */
+  function privacyUrl() {
+    var s = document.currentScript || document.querySelector('script[data-privacy-url]');
+    var u = s && s.getAttribute('data-privacy-url');
+    return u && u.trim() !== '' ? u.trim() : '';
+  }
+  var PRIVACY_URL = privacyUrl();
+
+  function escAttr(v) {
+    return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
 
   function gtagConsent(state) {
     window.dataLayer = window.dataLayer || [];
@@ -69,7 +93,9 @@
     el.innerHTML =
       '<div class="wsc-inner">'
       + '<p class="wsc-text">We use cookies for analytics to understand how visitors use this site. '
-      + 'You can accept or decline — see our <a href="#">privacy policy</a>.</p>'
+      + 'You can accept or decline'
+      + (PRIVACY_URL ? ' — see our <a href="' + escAttr(PRIVACY_URL) + '">privacy policy</a>' : '')
+      + '.</p>'
       + '<div class="wsc-actions">'
       + '<button type="button" class="wsc-btn wsc-decline">Decline</button>'
       + '<button type="button" class="wsc-btn wsc-accept">Accept</button>'

@@ -72,7 +72,9 @@ if (! function_exists('listing_reserved_slugs')) {
         }
 
         $rows  = (new App\Models\DirectoryCategoryModel())->select('slug')->findAll();
-        $cache = array_merge(['verify', 'categories'], array_column($rows, 'slug'));
+        // 'province' is the literal first segment of /directory/province/{slug};
+        // a category or listing holding it would shadow every province page.
+        $cache = array_merge(['verify', 'categories', 'map', 'province'], array_column($rows, 'slug'));
 
         return $cache;
     }

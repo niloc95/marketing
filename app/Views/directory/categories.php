@@ -4,22 +4,6 @@
 $siteName  = config('Directory')->siteName();
 $canonical = base_url('directory/categories');
 
-// One emoji per group — a lightweight visual anchor with no new image assets,
-// mirroring the group_name -> schema.org type map in show.php (same idea,
-// same scope: a small local lookup, not a new DB column or asset pipeline).
-$groupEmoji = [
-    'Health & Medical'      => '🩺',
-    'Beauty & Wellness'     => '💆',
-    'Hair'                  => '💇',
-    'Motoring'              => '🚗',
-    'Legal & Financial'     => '⚖️',
-    'Home & Trades'         => '🔧',
-    'Professional Services' => '💼',
-    'Fitness & Sport'       => '🏋️',
-    'Education & Training'  => '🎓',
-    'Retail & Other'        => '🛍️',
-];
-
 // A zero-listing category has no reachable landing page (renderLanding() 404s
 // on an empty result), so it must never be rendered as a link here — only
 // count it into structured data / visible lists once it actually has one.
@@ -81,13 +65,15 @@ $schema = [
             <?php if ($linkable === []): continue; endif; ?>
             <div class="panel mb-6">
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">
-                    <?= esc($groupEmoji[$groupName] ?? '📁') ?> <?= esc($groupName) ?>
+                    <?= esc(category_group_emoji($groupName)) ?> <?= esc($groupName) ?>
                 </h2>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($linkable as $c): ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $c['slug']) ?>">
-                            <?= esc($c['name']) ?> (<?= (int) $c['listing_count'] ?>)
-                        </a>
+                        <?= view('directory/_chip', [
+                            'label' => $c['name'],
+                            'href'  => base_url('directory/' . $c['slug']),
+                            'count' => (int) $c['listing_count'],
+                        ], ['saveData' => false]) ?>
                     <?php endforeach; ?>
                 </div>
             </div>

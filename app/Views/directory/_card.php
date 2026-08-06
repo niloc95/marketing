@@ -3,8 +3,7 @@
 $name = $l['display_name'] ?? '';
 $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));
-$logo = $l['logo_path'] ?? '';
-$logoUrl = $logo === '' ? '' : (preg_match('#^https?://#i', $logo) ? $logo : base_url($logo));
+$logoUrl = listing_image_url($l['logo_path'] ?? null);
 $place = trim(implode(', ', array_filter([$l['city'] ?? '', $l['province'] ?? ''])));
 
 // Distance, present only on a "near me" search. Phrased as loosely as the pin

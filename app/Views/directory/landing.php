@@ -143,13 +143,19 @@ $schema = [
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($provinceCounts as $prov => $count): ?>
                         <?php if ($province !== null && $prov === $province) { continue; } ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300"
-                           href="<?= base_url('directory/' . $catSlug . '/' . slugify((string) $prov)) ?>">
-                            <?= esc($prov) ?> (<?= (int) $count ?>)
-                        </a>
+                        <?= view('directory/_chip', [
+                            'label' => (string) $prov,
+                            'href'  => base_url('directory/' . $catSlug . '/' . slugify((string) $prov)),
+                            'count' => (int) $count,
+                        ], ['saveData' => false]) ?>
                     <?php endforeach; ?>
                     <?php if ($province !== null): ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $catSlug) ?>">All provinces</a>
+                        <?= view('directory/_chip', ['label' => 'All provinces', 'href' => base_url('directory/' . $catSlug)], ['saveData' => false]) ?>
+                        <?php // Up into the location tier, not just sideways within the category. ?>
+                        <?= view('directory/_chip', [
+                            'label' => 'Every business in ' . $province,
+                            'href'  => base_url('directory/province/' . slugify($province)),
+                        ], ['saveData' => false]) ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -160,7 +166,7 @@ $schema = [
                 <h3>Related categories</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($siblings as $s): ?>
-                        <a class="badge hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/15 dark:hover:text-primary-300" href="<?= base_url('directory/' . $s['slug']) ?>"><?= esc($s['name']) ?></a>
+                        <?= view('directory/_chip', ['label' => $s['name'], 'href' => base_url('directory/' . $s['slug'])], ['saveData' => false]) ?>
                     <?php endforeach; ?>
                 </div>
             </div>
