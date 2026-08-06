@@ -7,8 +7,7 @@ $name = $l['display_name'] ?? '';
 $prof = $l['category']['name'] ?? ($l['category_name'] ?? '');
 $city = trim((string) ($l['city'] ?? ''));
 $place = trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? '', $l['province'] ?? ''])));
-$logo = $l['logo_path'] ?? '';
-$logoUrl = $logo === '' ? '' : (preg_match('#^https?://#i', $logo) ? $logo : base_url($logo));
+$logoUrl = listing_image_url($l['logo_path'] ?? null);
 $canonical = base_url('directory/' . ($l['slug'] ?? ''));
 $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));
@@ -50,23 +49,29 @@ if (($l['latitude'] ?? null) !== null && ($l['longitude'] ?? null) !== null
     ];
 }
 
-// sameAs carries only the socials that are actually filled in.
+// sameAs carries only the socials that are actually filled in, and only the
+// ones that are real http(s) URLs — sameAs is a link target like any other.
 $sameAs = array_values(array_filter([
-    $l['social_facebook'] ?? '',
-    $l['social_instagram'] ?? '',
-    $l['social_linkedin'] ?? '',
-    $l['website'] ?? '',
+    safe_external_url($l['social_facebook'] ?? ''),
+    safe_external_url($l['social_instagram'] ?? ''),
+    safe_external_url($l['social_linkedin'] ?? ''),
+    safe_external_url($l['website'] ?? ''),
 ]));
 
 // Deliberately no aggregateRating: there are no reviews, and inventing rating
 // markup is fabricated structured data that earns a manual action.
+//
+// The owner's email is deliberately NOT here. Phone is fine to publish — it is
+// contact data and nothing more — but the email address is the sole credential
+// for the passwordless /manage flow, so a machine-readable copy of it on a page
+// the sitemap enumerates is a ready-made target list for magic-link abuse. The
+// reveal button below still shows it to a human who asks.
 $business = array_filter([
     '@type'       => $schemaTypes[$group] ?? 'LocalBusiness',
     '@id'         => $canonical,
     'name'        => $name,
     'url'         => $canonical,
     'telephone'   => $l['phone'] ?? '',
-    'email'       => $l['email'] ?? '',
     'image'       => $logoUrl,
     'description' => $l['description'] ?? '',
     'knowsAbout'  => $prof,
@@ -266,7 +271,8 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     <?php if (! empty($l['email'])): ?>
                         <div class="kv"><span class="k">Email</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="mailto" data-reveal-value="<?= esc(strrev($l['email']), 'attr') ?>">Show email</button></span></div>
                     <?php endif; ?>
-                    <?php if (! empty($l['website'])): ?><div class="kv"><span class="k">Website</span><span><a href="<?= esc($l['website'], 'attr') ?>" target="_blank" rel="noopener nofollow">Visit</a></span></div><?php endif; ?>
+                    <?php $websiteUrl = safe_external_url($l['website'] ?? ''); ?>
+                    <?php if ($websiteUrl !== ''): ?><div class="kv"><span class="k">Website</span><span><a href="<?= esc($websiteUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Visit</a></span></div><?php endif; ?>
                     <?php
                     $addr = trim(implode(', ', array_filter([$l['address_line'] ?? '', $l['suburb'] ?? '', $l['city'] ?? '', $l['province'] ?? '', $l['postal_code'] ?? ''])));
                     // Two different intents, so two different Google Maps schemes.
@@ -290,9 +296,9 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     <?php endif; ?>
                     <?php
                     $socials = array_filter([
-                        'Facebook'  => $l['social_facebook'] ?? '',
-                        'Instagram' => $l['social_instagram'] ?? '',
-                        'LinkedIn'  => $l['social_linkedin'] ?? '',
+                        'Facebook'  => safe_external_url($l['social_facebook'] ?? ''),
+                        'Instagram' => safe_external_url($l['social_instagram'] ?? ''),
+                        'LinkedIn'  => safe_external_url($l['social_linkedin'] ?? ''),
                     ]);
                     ?>
                     <?php if ($socials): ?>

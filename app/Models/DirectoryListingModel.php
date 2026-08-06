@@ -40,11 +40,18 @@ class DirectoryListingModel extends Model
      * African bounding box and a known precision list before merging. Listing
      * them here would route a public form's raw input straight into the column
      * and bypass that check.
+     *
+     * social_facebook, social_instagram and social_linkedin are absent for a
+     * third reason: no form in the app renders them, so nothing validates them
+     * either — but show.php puts them straight into an href, where a
+     * "javascript:" value is a click away from running. They were reachable
+     * only by hand-crafting a POST. Re-add them here when (and only when) the
+     * edit form gains the fields and they go through
+     * DirectoryListingMutationService::normaliseUrl() like `website` does.
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
         'credentials', 'description', 'phone', 'website',
-        'social_facebook', 'social_instagram', 'social_linkedin',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'logo_path',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
@@ -57,6 +64,7 @@ class DirectoryListingModel extends Model
         // so any update that resubmits an unchanged slug fails validation.
         'id'           => 'permit_empty|is_natural_no_zero',
         'display_name' => 'required|min_length[2]|max_length[200]',
+        'description'  => 'permit_empty|max_length[2000]',
         'type'         => 'permit_empty|in_list[person,practice,facility]',
         'email'        => 'permit_empty|valid_email|max_length[190]',
         'website'      => 'permit_empty|max_length[255]',

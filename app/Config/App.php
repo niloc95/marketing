@@ -178,9 +178,60 @@ class App extends BaseConfig
      *         '192.168.5.0/24' => 'X-Real-IP',
      *     ]
      *
+     * ---------------------------------------------------------------------
+     *
+     * Cloudflare's published edge ranges, mapped to CF-Connecting-IP.
+     *
+     * The site is served through Cloudflare, so without this every request
+     * arrives wearing a Cloudflare edge IP and getIPAddress() hands that back.
+     * Every per-IP throttle in the app (Listing::store, Manage::request,
+     * Admin::attemptLogin, Directory::map, AddressSuggest) then shares ONE
+     * bucket for the entire internet — so five wrong admin passwords from a
+     * stranger lock the real admin out, and the signup limit blocks genuine
+     * visitors. forcehttps also redirect-loops without it (see README).
+     *
+     * Safe to leave on in every environment: CodeIgniter only reads the header
+     * when REMOTE_ADDR *itself* falls in one of these ranges
+     * (RequestTrait::getIPAddress). Locally REMOTE_ADDR is 127.0.0.1, so the
+     * header is ignored; and someone who finds the origin address and connects
+     * to it directly with a forged CF-Connecting-IP is likewise not coming
+     * from a Cloudflare range, so their real IP is what gets throttled. That
+     * makes header spoofing a non-issue here — firewalling the origin to these
+     * ranges is still worth doing, but to stop attackers skipping Cloudflare's
+     * WAF, not to keep these throttles honest.
+     *
+     * Source: https://www.cloudflare.com/ips-v4 and /ips-v6 (fetched
+     * 2026-08-05). Cloudflare changes these rarely; re-check if origin logs
+     * start showing direct hits or throttles behave oddly.
+     *
      * @var array<string, string>
      */
-    public array $proxyIPs = [];
+    public array $proxyIPs = [
+        // IPv4
+        '173.245.48.0/20'   => 'CF-Connecting-IP',
+        '103.21.244.0/22'   => 'CF-Connecting-IP',
+        '103.22.200.0/22'   => 'CF-Connecting-IP',
+        '103.31.4.0/22'     => 'CF-Connecting-IP',
+        '141.101.64.0/18'   => 'CF-Connecting-IP',
+        '108.162.192.0/18'  => 'CF-Connecting-IP',
+        '190.93.240.0/20'   => 'CF-Connecting-IP',
+        '188.114.96.0/20'   => 'CF-Connecting-IP',
+        '197.234.240.0/22'  => 'CF-Connecting-IP',
+        '198.41.128.0/17'   => 'CF-Connecting-IP',
+        '162.158.0.0/15'    => 'CF-Connecting-IP',
+        '104.16.0.0/13'     => 'CF-Connecting-IP',
+        '104.24.0.0/14'     => 'CF-Connecting-IP',
+        '172.64.0.0/13'     => 'CF-Connecting-IP',
+        '131.0.72.0/22'     => 'CF-Connecting-IP',
+        // IPv6
+        '2400:cb00::/32'    => 'CF-Connecting-IP',
+        '2606:4700::/32'    => 'CF-Connecting-IP',
+        '2803:f800::/32'    => 'CF-Connecting-IP',
+        '2405:b500::/32'    => 'CF-Connecting-IP',
+        '2405:8100::/32'    => 'CF-Connecting-IP',
+        '2a06:98c0::/29'    => 'CF-Connecting-IP',
+        '2c0f:f248::/32'    => 'CF-Connecting-IP',
+    ];
 
     /**
      * --------------------------------------------------------------------------
@@ -198,5 +249,5 @@ class App extends BaseConfig
      * @see http://www.html5rocks.com/en/tutorials/security/content-security-policy/
      * @see http://www.w3.org/TR/CSP/
      */
-    public bool $CSPEnabled = false;
+    public bool $CSPEnabled = true;
 }

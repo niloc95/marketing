@@ -1,6 +1,27 @@
 # Disable directory browsing
 Options -Indexes
 
+# Don't advertise the exact PHP build in every response. The authoritative fix
+# is expose_php = Off in php.ini; this covers hosts where php.ini isn't ours to
+# edit. Version disclosure isn't a vulnerability by itself — it just tells a
+# scanner which known CVEs are worth trying.
+<IfModule mod_headers.c>
+	Header always unset X-Powered-By
+	Header unset X-Powered-By
+
+	# SVG uploads are no longer accepted (see ListingImageProcessor), but logos
+	# stored before that change are still on disk and still served. An SVG is an
+	# XML document, so navigating straight to one renders it as active
+	# same-origin content. Static files under /assets are served by Apache and
+	# never touch CodeIgniter, so App\Filters\SecureHeaders cannot reach them —
+	# these have to be set here. Sandboxing costs nothing: <img> rendering is
+	# unaffected, since browsers already refuse to run script in that context.
+	<FilesMatch "\.svg$">
+		Header always set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+		Header always set X-Content-Type-Options "nosniff"
+	</FilesMatch>
+</IfModule>
+
 # ----------------------------------------------------------------------
 # Rewrite engine
 # ----------------------------------------------------------------------

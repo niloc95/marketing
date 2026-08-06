@@ -55,8 +55,23 @@ if (! function_exists('seo_meta')) {
         $out .= '<meta name="twitter:description" content="' . $e($desc) . "\">\n";
 
         if (! empty($d['schema']) && is_array($d['schema'])) {
-            $json = json_encode($d['schema'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $out .= '<script type="application/ld+json">' . $json . "</script>\n";
+            // The HEX flags are load-bearing, not cosmetic. Schema values carry
+            // listing text straight from the public signup form, and json_encode
+            // does not escape < or > on its own — so without JSON_HEX_TAG a
+            // description containing "</script>" closes this block early and
+            // everything after it is parsed as HTML. JSON_UNESCAPED_SLASHES,
+            // which we want for readable URLs, removes the \/ escaping that
+            // would otherwise have absorbed it. Consumers decode <
+            // normally, so the structured data is unaffected.
+            $json = json_encode(
+                $d['schema'],
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                    | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+            );
+            // ld+json is a data block, not executable script, so script-src does
+            // not actually gate it — the nonce placeholder is belt-and-braces
+            // across all six page types that emit schema.
+            $out .= '<script {csp-script-nonce} type="application/ld+json">' . $json . "</script>\n";
         }
 
         return $out;

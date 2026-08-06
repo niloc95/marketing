@@ -92,6 +92,7 @@ helper('directory_hours');
     <div class="field">
         <label>Website</label>
         <input type="text" name="website" value="<?= esc($v('website'), 'attr') ?>" placeholder="https://…">
+        <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
     </div>
 </div>
 
@@ -102,6 +103,7 @@ helper('directory_hours');
 <div class="field">
     <label>Description</label>
     <textarea name="description" rows="4" placeholder="What you offer, who you serve…"><?= esc($v('description')) ?></textarea>
+    <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 <div class="field">
     <label>Areas of focus</label>

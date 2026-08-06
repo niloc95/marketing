@@ -11,7 +11,6 @@ use CodeIgniter\Filters\Honeypot;
 use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
-use CodeIgniter\Filters\SecureHeaders;
 
 class Filters extends BaseFilters
 {
@@ -29,12 +28,15 @@ class Filters extends BaseFilters
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
-        'secureheaders' => SecureHeaders::class,
+        // App\Filters\SecureHeaders, not the framework's — same plumbing, but
+        // OWASP-current values plus HSTS and Permissions-Policy.
+        'secureheaders' => \App\Filters\SecureHeaders::class,
         'cors'          => Cors::class,
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'admin'         => \App\Filters\AdminFilter::class,
+        'bottrap'       => \App\Filters\BotTrap::class,
     ];
 
     /**
@@ -50,13 +52,25 @@ class Filters extends BaseFilters
      *
      * @var array{before: list<string>, after: list<string>}
      */
+    // 'pagecache' is deliberately absent from both lists (it is in the
+    // framework's default). It only ever stores a response when a controller
+    // calls $this->cachePage(), and nothing in this app does — so it was a
+    // cache lookup on every request that could never produce a hit.
+    //
+    // Note what this does NOT fix, so nobody re-adds it expecting otherwise: an
+    // unwritable writable/cache still 500s every request. FileHandler throws
+    // from its constructor, and CodeIgniter's own kernel constructor builds the
+    // response cache (CodeIgniter.php, Services::responsecache) before any
+    // filter or controller runs, so there is no application-level place to
+    // catch it. That failure is at least loud — the whole site returns 500, and
+    // any uptime monitor sees it.
+    //
+    // Restore this if page caching is ever actually used.
     public array $required = [
         'before' => [
             'forcehttps', // Force Global Secure Requests
-            'pagecache',  // Web Page Caching
         ],
         'after' => [
-            'pagecache',   // Web Page Caching
             'performance', // Performance Metrics
             'toolbar',     // Debug Toolbar
         ],
@@ -73,13 +87,22 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            // 'honeypot',
-            'csrf',
+            // Rejects any POST that filled the hidden field 'honeypot' (below)
+            // injects. Deliberately App\Filters\BotTrap rather than the
+            // framework's own honeypot filter — same check, but a 403 instead
+            // of a 500 error page. See the class docblock.
+            'bottrap',
+            // csp-report is exempt because a browser posting a violation report
+            // has no CSRF token to send. Nothing is trusted from that endpoint —
+            // it only writes a throttled, truncated log line (see Csp::report).
+            'csrf' => ['except' => ['csp-report']],
             // 'invalidchars',
         ],
         'after' => [
-            // 'honeypot',
-            // 'secureheaders',
+            // Injects the hidden field that 'bottrap' reads, into every
+            // rendered form. Config\Honeypot owns the name and markup.
+            'honeypot',
+            'secureheaders',
         ],
     ];
 

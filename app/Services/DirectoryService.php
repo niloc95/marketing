@@ -91,6 +91,14 @@ class DirectoryService
 
         $total = $builder->countAllResults(false);
 
+        // Clamp to the last real page. `page` comes off the query string, and
+        // an unclamped one turns into the OFFSET verbatim — ?page=999999999999
+        // asks MySQL to walk and discard twelve billion rows before returning
+        // nothing. Clamping after the count (rather than guessing a ceiling
+        // before it) keeps every legitimate page reachable.
+        $totalPages = (int) max(1, ceil($total / $perPage));
+        $page       = min($page, $totalPages);
+
         // Nearest first when the visitor gave us a position — a featured
         // listing 40km away is not a better answer to "near me" than the one
         // down the road. Otherwise the usual editorial order.
@@ -108,7 +116,7 @@ class DirectoryService
             'total'      => $total,
             'page'       => $page,
             'perPage'    => $perPage,
-            'totalPages' => (int) max(1, ceil($total / $perPage)),
+            'totalPages' => $totalPages,
             'near'       => $near,
         ];
     }
@@ -380,17 +388,40 @@ class DirectoryService
     }
 
     /**
-     * Featured (or most recent) published listings for the homepage.
+     * Curated listings for the homepage — the ones an admin has actually
+     * flagged via admin/feature/{id}.
+     *
+     * Deliberately strict. This used to order by is_featured without filtering
+     * on it, which quietly turned "Featured" into "most recent" and made the
+     * flag meaningless; recent() now covers freshness, so the section can mean
+     * what it says and simply not render when nothing is flagged.
      *
      * @return array<int,array<string,mixed>>
      */
-    public function featured(int $limit = 6): array
+    public function featured(int $limit = 8): array
     {
         return $this->listings
             ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->where('xs_directory_listings.status', 'published')
-            ->orderBy('xs_directory_listings.is_featured', 'DESC')
+            ->where('xs_directory_listings.is_featured', 1)
+            ->orderBy('xs_directory_listings.published_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
+    }
+
+    /**
+     * Most recently published listings — the homepage's freshness signal, and
+     * the reason featured() no longer needs a recency fallback.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function recent(int $limit = 4): array
+    {
+        return $this->listings
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug')
+            ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->where('xs_directory_listings.status', 'published')
             ->orderBy('xs_directory_listings.published_at', 'DESC')
             ->limit($limit)
             ->findAll();
@@ -447,6 +478,148 @@ class DirectoryService
     public function provinces(): array
     {
         return self::SA_PROVINCES;
+    }
+
+    /**
+     * The categories worth putting on the homepage: those with listings, busiest
+     * first. Built from the two methods above rather than a third query, and
+     * filtered to count > 0 because renderLanding() 404s on an empty category.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function topCategories(int $limit = 8): array
+    {
+        $counts = $this->categoryListingCounts();
+        $out    = [];
+
+        foreach ($this->categories() as $c) {
+            $n = $counts[(int) $c['id']] ?? 0;
+            if ($n > 0) {
+                $c['listing_count'] = $n;
+                $out[]              = $c;
+            }
+        }
+
+        usort($out, static fn (array $a, array $b) => $b['listing_count'] <=> $a['listing_count']);
+
+        return array_slice($out, 0, $limit);
+    }
+
+    /**
+     * Published listings per province, countrywide. The global sibling of
+     * provinceCountsForCategory() — powers the homepage location cards and
+     * decides which province landing pages are worth linking to.
+     *
+     * @return array<string,int> province name => count, busiest first
+     */
+    public function provinceCounts(): array
+    {
+        $rows = $this->listings
+            ->select('province, COUNT(*) AS c')
+            ->where('status', 'published')
+            ->where('province !=', '')
+            ->groupBy('province')
+            ->orderBy('c', 'DESC')
+            ->findAll();
+
+        $out = [];
+        foreach ($rows as $r) {
+            if (($r['province'] ?? '') !== '') {
+                $out[(string) $r['province']] = (int) $r['c'];
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * The busiest cities in a province, for the homepage card's "Johannesburg ·
+     * Pretoria · Soweto" line and the province page's city chips.
+     *
+     * @return array<string,int> city => count
+     */
+    public function cityCountsForProvince(string $province, int $limit = 8): array
+    {
+        if ($province === '') {
+            return [];
+        }
+
+        $rows = $this->listings
+            ->select('city, COUNT(*) AS c')
+            ->where('status', 'published')
+            ->where('province', $province)
+            ->where('city !=', '')
+            ->groupBy('city')
+            ->orderBy('c', 'DESC')
+            ->limit($limit)
+            ->findAll();
+
+        $out = [];
+        foreach ($rows as $r) {
+            if (($r['city'] ?? '') !== '') {
+                $out[(string) $r['city']] = (int) $r['c'];
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Categories present in a province, busiest first — the cross-links on a
+     * province landing page. Each entry gains a 'listing_count' scoped to the
+     * province, so the chips can't advertise a count the page won't show.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function topCategoriesInProvince(string $province, int $limit = 8): array
+    {
+        if ($province === '') {
+            return [];
+        }
+
+        $rows = $this->listings
+            ->select('category_id, COUNT(*) AS c')
+            ->where('status', 'published')
+            ->where('province', $province)
+            ->where('category_id IS NOT NULL')
+            ->groupBy('category_id')
+            ->orderBy('c', 'DESC')
+            ->limit($limit)
+            ->findAll();
+
+        if ($rows === []) {
+            return [];
+        }
+
+        $byId = [];
+        foreach ($this->categories() as $c) {
+            $byId[(int) $c['id']] = $c;
+        }
+
+        $out = [];
+        foreach ($rows as $r) {
+            $cid = (int) $r['category_id'];
+            if (isset($byId[$cid])) {
+                $cat                  = $byId[$cid];
+                $cat['listing_count'] = (int) $r['c'];
+                $out[]                = $cat;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Headline numbers for the homepage trust bar.
+     *
+     * @return array{listings:int,categories:int,provinces:int}
+     */
+    public function stats(): array
+    {
+        $counts = $this->categoryListingCounts();
+
+        return [
+            'listings'   => (int) $this->listings->where('status', 'published')->countAllResults(),
+            'categories' => count($counts),
+            'provinces'  => count($this->provinceCounts()),
+        ];
     }
 
     /**
@@ -624,6 +797,40 @@ class DirectoryService
             }
             $out[] = [
                 'loc'     => base_url('directory/' . $slugs[$cid] . '/' . slugify($province)),
+                'lastmod' => substr((string) $r['m'] ?: $today, 0, 10),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Province landing pages worth submitting. Same threshold rule as
+     * sitemapLandingUrls(): a province below it renders (and is linked from the
+     * homepage) but stays out of the sitemap and carries noindex.
+     *
+     * @return array<int,array{loc:string,lastmod:string}>
+     */
+    public function sitemapProvinceUrls(int $minListings): array
+    {
+        helper('slug');
+        $today = date('Y-m-d');
+
+        $rows = $this->listings
+            ->select('province, COUNT(*) AS c, MAX(updated_at) AS m')
+            ->where('status', 'published')
+            ->where('province !=', '')
+            ->groupBy('province')
+            ->findAll();
+
+        $out = [];
+        foreach ($rows as $r) {
+            $province = (string) ($r['province'] ?? '');
+            if ($province === '' || (int) $r['c'] < $minListings) {
+                continue;
+            }
+            $out[] = [
+                'loc'     => base_url('directory/province/' . slugify($province)),
                 'lastmod' => substr((string) $r['m'] ?: $today, 0, 10),
             ];
         }

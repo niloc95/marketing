@@ -11,9 +11,15 @@ class Listing extends BaseController
 {
     use HandlesListingUploads;
 
+    /** Nobody fills in a whole business listing this fast. */
+    private const MIN_FORM_SECONDS = 3;
+
     public function create()
     {
         $svc = new DirectoryService();
+
+        // Stamped here, checked in store() — see the timing floor below.
+        session()->set('listing_form_rendered_at', time());
 
         return view('directory/form', [
             'old'         => session()->getFlashdata('old') ?? [],
@@ -25,9 +31,35 @@ class Listing extends BaseController
 
     public function store()
     {
-        // Honeypot: real users never fill this hidden field.
+        // Honeypot: real users never fill this hidden field. (The framework's
+        // own Honeypot filter runs on every POST as well — two traps under
+        // different names cost nothing and catch more than one does.)
         if (trim((string) $this->request->getPost('company_website_hp')) !== '') {
-            return redirect()->to(base_url('/'))->with('success', 'Thanks — your listing was received.');
+            return $this->fakeSuccess();
+        }
+
+        // Timing floor. A bot that posts the form the instant it loads it — or
+        // replays a captured POST with no GET first — trips this. Reported as
+        // success so an attacker can't tune around it.
+        $renderedAt = (int) session('listing_form_rendered_at');
+        if ($renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            return $this->fakeSuccess();
+        }
+
+        // This endpoint emails an address the caller supplies and, for a new
+        // address, runs a chain of geocoder lookups that can hold a worker for
+        // a minute. Throttle the sender's IP and the target address, exactly as
+        // Manage::request does. The || short-circuits so a blocked IP does not
+        // also burn the address's budget.
+        $email     = strtolower(trim((string) $this->request->getPost('email')));
+        $throttler = service('throttler');
+        $ipKey     = 'signup-ip-' . md5((string) $this->request->getIPAddress());
+        $mailKey   = 'signup-to-' . md5($email);
+
+        if ($throttler->check($ipKey, 3, HOUR) === false
+            || ($email !== '' && $throttler->check($mailKey, 2, HOUR) === false)) {
+            return redirect()->back()->withInput()
+                ->with('error', 'Too many submissions. Please wait a little while and try again.');
         }
 
         $post = $this->request->getPost();
@@ -58,5 +90,15 @@ class Listing extends BaseController
             redirect()->to(base_url('/'))->with('success', $result['message']),
             array_filter(array_merge([$logo['error']], $gallery['errors']))
         );
+    }
+
+    /**
+     * What a caught bot sees: the same page and wording a real submission gets.
+     * Telling it which trap it hit is free tuning information.
+     */
+    private function fakeSuccess()
+    {
+        return redirect()->to(base_url('/'))
+            ->with('success', 'Almost done — check your email to verify and publish your listing.');
     }
 }

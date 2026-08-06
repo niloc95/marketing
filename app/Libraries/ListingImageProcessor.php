@@ -27,10 +27,24 @@ class ListingImageProcessor
      * heic/heif are accepted only so we can return a useful message (see
      * HEIC_EXT) — GD cannot decode them and neither can we without Imagick.
      */
-    public const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif', 'heic', 'heif', 'svg'];
+    public const ALLOWED_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif', 'heic', 'heif'];
 
     /** Passed through to disk rather than re-encoded. */
-    public const PASSTHROUGH_EXT = ['gif', 'svg'];
+    public const PASSTHROUGH_EXT = ['gif'];
+
+    /**
+     * Ceiling on declared pixel count, checked before GD is handed the bytes.
+     *
+     * getimagesize() reads the header only; imagecreatefromstring() allocates
+     * the whole decompressed canvas at roughly 4 bytes a pixel. Those are very
+     * different costs, and the gap is the decompression bomb: a ~2 MB PNG can
+     * legitimately declare 30000x30000, which is 900 megapixels and about
+     * 3.6 GB of RAM — the process dies, or the box starts swapping, for the
+     * price of one upload. 40 MP is past any real camera (a 100 MP phone photo
+     * is ~12000x9000 = 108 MP, but nobody uploads one as a shop logo) and far
+     * under anything dangerous.
+     */
+    public const MAX_PIXELS = 40_000_000;
 
     /** Accepted by the picker but undecodable server-side; see process(). */
     public const HEIC_EXT = ['heic', 'heif'];
@@ -54,7 +68,6 @@ class ListingImageProcessor
         'avif' => ['image/avif', 'application/octet-stream'],
         'heic' => ['image/heic', 'image/heif', 'application/octet-stream'],
         'heif' => ['image/heic', 'image/heif', 'application/octet-stream'],
-        'svg'  => ['image/svg+xml', 'text/xml', 'application/xml', 'text/plain'],
     ];
 
     /**
@@ -159,8 +172,19 @@ class ListingImageProcessor
     }
 
     /**
-     * SVG is served straight back to browsers from public/, so anything
-     * scriptable in it executes on our origin. Strip that before writing.
+     * No longer reachable: 'svg' was removed from ALLOWED_EXT, so uploads never
+     * take this branch. Kept, with sanitizeSvg() below, because logos uploaded
+     * before that change are still on disk and still served.
+     *
+     * Why SVG went: an SVG is an XML document, not a bitmap, so it is served
+     * back as active same-origin content — navigate straight to the stored file
+     * and any script in it runs on our domain. sanitizeSvg() is a regex
+     * blacklist, and regex blacklists on a nesting, entity-encoding grammar
+     * leak: `&#106;avascript:` never matches `#javascript\s*:#i` because the
+     * browser decodes entities after our filter has run. Doing it properly
+     * needs a real XML parser with an element/attribute allowlist. A logo
+     * uploader does not justify that, so the format is simply not accepted —
+     * PNG and WebP cover the same need and go through GD.
      *
      * @return array{ok:bool,path:string,width:?int,height:?int,error:string}
      */
@@ -221,6 +245,26 @@ class ListingImageProcessor
         if ($info === false) {
             log_message('error', 'ListingImageProcessor: upload is not a valid image');
             return $this->fail(sprintf('“%s” could not be read as an image — the file may be corrupt.', $clientNm));
+        }
+
+        // Between the header read above and the full decode below — see
+        // MAX_PIXELS. Everything past this line has the whole canvas in memory.
+        $declaredPixels = (int) ($info[0] ?? 0) * (int) ($info[1] ?? 0);
+        if ($declaredPixels > self::MAX_PIXELS || $declaredPixels <= 0) {
+            log_message('error', sprintf(
+                'ListingImageProcessor: refusing %dx%d image (%d px) from "%s"',
+                $info[0] ?? 0,
+                $info[1] ?? 0,
+                $declaredPixels,
+                $clientNm
+            ));
+
+            return $this->fail(sprintf(
+                '“%s” has unusually large dimensions (%dx%d). Please resize it and try again.',
+                $clientNm,
+                $info[0] ?? 0,
+                $info[1] ?? 0
+            ));
         }
 
         $bytes  = (string) file_get_contents($tmpPath);
