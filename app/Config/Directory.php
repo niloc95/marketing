@@ -19,6 +19,24 @@ class Directory extends BaseConfig
     public string $adminEmail = '';
 
     /**
+     * Google Analytics 4 measurement ID (G-XXXXXXXXXX).
+     *
+     * Empty disables analytics AND the cookie consent banner together — with nothing
+     * being stored there is no consent to ask for, and a banner that asks anyway is
+     * just noise.
+     *
+     * Committed rather than left to .env because a measurement ID is not a secret
+     * (it ships in the page source either way) and production would otherwise need
+     * an extra deploy step to turn analytics on. Non-production environments switch
+     * it off with an explicitly empty directory.analyticsId — see analyticsId().
+     *
+     * Deliberately a different property from the marketing site's G-J8R1WZ2RLX:
+     * directory and marketing traffic are different funnels and would blend in
+     * every report.
+     */
+    public string $analyticsId = 'G-5WNR0873VB';
+
+    /**
      * Tile source for every Leaflet map in the app — the listing form's pin
      * picker, the profile map, and the search results map.
      *
@@ -76,6 +94,12 @@ class Directory extends BaseConfig
      */
     public string $adminPassword = '';
 
+    /**
+     * Unlocks the detailed body of /health. Empty = detail never served.
+     * Generate with: php -r "echo bin2hex(random_bytes(16));"
+     */
+    public string $healthToken = '';
+
     public function siteName(): string
     {
         $env = env('directory.siteName');
@@ -92,6 +116,39 @@ class Directory extends BaseConfig
     {
         $env = env('directory.adminEmail');
         return is_string($env) && trim($env) !== '' ? trim($env) : $this->adminEmail;
+    }
+
+    /**
+     * Note the deliberate difference from the getters around it: they treat an empty
+     * env value as "unset, use the default", which is right for a site name but would
+     * make analytics impossible to switch off now that the default is a real ID. Here
+     * an env value that is present but empty means OFF, and only a genuinely absent
+     * key falls back to the default. env() returns null when the key is absent, so
+     * is_string() is what separates the two cases.
+     *
+     *   directory.analyticsId = ''            → analytics and banner disabled
+     *   directory.analyticsId = 'G-OTHER123'  → that property instead
+     *   (key not present)                     → the committed default
+     */
+    public function analyticsId(): string
+    {
+        $env = env('directory.analyticsId');
+        return is_string($env) ? trim($env) : $this->analyticsId;
+    }
+
+    /**
+     * Shared secret that unlocks the detailed body of /health.
+     *
+     * The endpoint answers 200/503 to anyone, because that is all an uptime
+     * monitor needs and requiring a secret there would mean putting it in a
+     * third party's config. The per-check breakdown says which dependency is
+     * broken, which is exactly the reconnaissance an attacker would like, so
+     * that part is gated. Unset means the detail is simply never served.
+     */
+    public function healthToken(): string
+    {
+        $env = env('directory.healthToken');
+        return is_string($env) ? trim($env) : $this->healthToken;
     }
 
     public function mapTileUrl(): string

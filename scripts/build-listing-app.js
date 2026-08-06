@@ -193,7 +193,17 @@ database.default.DBPrefix = xs_
 database.default.port = 3306
 
 directory.adminEmail = 'CHANGE-ME'
-directory.adminPassword = 'CHANGE-ME'
+
+# Admin login. Generate with \`php spark directory:adminhash\` — it prompts for
+# the password and prints this line, so the password never touches the disk.
+# The older directory.adminPassword setting stores it in cleartext and takes a
+# deprecated code path; don't use it.
+directory.adminPasswordHash = 'CHANGE-ME-RUN-SPARK-DIRECTORY-ADMINHASH'
+
+# Unlocks the per-check detail at /health. The endpoint answers 200/503 without
+# it, which is what an uptime monitor needs; this keeps the breakdown private.
+# Generate with: php -r "echo bin2hex(random_bytes(16));"
+directory.healthToken = CHANGE-ME-RANDOM-HEX
 
 # Optional. Google Maps Embed API key for listing mini-maps (free, unlimited).
 # Without it, maps fall back to OpenStreetMap and only appear on listings that
@@ -291,10 +301,18 @@ it, and sign in at /admin to feature / unpublish / remove listings.
 
 Notes
 -----
-- /admin is a single shared password with no rate limiting. Use a long random
-  value, and consider IP-restricting /admin in .htaccess.
-- Config\\App::$proxyIPs is empty, which is right for direct TLS termination.
-  Behind Cloudflare or any proxy it must be populated, or forcehttps loops.
+- /admin is a single shared password (throttled 5 attempts / 15 min per IP).
+  Set it with: php spark directory:adminhash  -> directory.adminPasswordHash.
+  Use a long random value, and consider IP-restricting /admin in .htaccess.
+- Config\\App::$proxyIPs ships populated with Cloudflare's edge ranges mapped to
+  CF-Connecting-IP. Keep it that way while the site is proxied by Cloudflare:
+  without it every visitor shares one throttle bucket, so five bad admin
+  passwords from a stranger lock you out of your own backend. It is safe in
+  every environment (the header is only trusted from those ranges), but if you
+  ever move OFF Cloudflare to direct TLS termination, empty it.
+- Firewall the origin to Cloudflare's ranges if your host allows it. Not needed
+  for the throttles to work correctly, but it stops anyone who discovers the
+  origin address from skipping Cloudflare's WAF entirely.
 `;
 fs.writeFileSync(path.join(outDir, 'DEPLOY.txt'), deployTxt);
 console.log('  • .env.example + DEPLOY.txt');

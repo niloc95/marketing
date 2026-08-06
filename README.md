@@ -49,6 +49,36 @@ turns on `Config\Cookie::$secure` — over plain `http://` that throws
 | `npm run list:build` | Runs `list:css`, then assembles a deploy bundle in `dist/listing/` |
 | `npm run site:css` / `site:dev` / `site:build` | The static marketing site → `dist/site/` |
 
+## Tests
+
+`composer test` (PHPUnit). Most tests are pure units and need nothing set up.
+
+The tests under `tests/database/` build the real schema from the migrations and need a
+**separate MySQL database** — not just a table prefix. Every model hardcodes the prefix
+(`protected $table = 'xs_directory_listings'`), which bypasses CodeIgniter's `DBPrefix`
+swap, so a prefix-only test config would silently run the suite against your live tables.
+SQLite is not an option either: the migrations use `FULLTEXT`, a spatial `POINT` column
+and `SHA2()`.
+
+One-time setup:
+
+```bash
+mysql -u USER -p -e "CREATE DATABASE webscheduler_directory_tests CHARACTER SET utf8mb4"
+```
+
+then add to `.env` (`DBPrefix` must match the prefix baked into the models):
+
+```
+database.tests.hostname = localhost
+database.tests.database = webscheduler_directory_tests
+database.tests.username = YOUR_USER
+database.tests.password = 'YOUR_PASSWORD'
+database.tests.DBDriver = MySQLi
+database.tests.DBPrefix = xs_
+```
+
+The schema is created and dropped by the tests themselves — nothing to migrate by hand.
+
 ## Local servers (visual testing)
 
 | Command | Serves | URL |
@@ -192,19 +222,29 @@ The split is not optional: `app/`, `vendor/`, `writable/` and `.env` must not si
 document root. The build refuses to ship a bundle that has CSRF disabled, contains dev
 dependencies or a stray `.env`, or whose `.htaccess` downgrades HTTPS.
 
-**Behind Cloudflare** (as `webscheduler.co.za` is): use SSL/TLS mode **Full (strict)** and
-populate `Config\App::$proxyIPs`. In Flexible mode the origin sees plain HTTP, so
-`forcehttps` redirect-loops *and* Secure cookies throw. See `DEPLOY.txt`.
+**Behind Cloudflare** (as `webscheduler.co.za` is): use SSL/TLS mode **Full (strict)**.
+In Flexible mode the origin sees plain HTTP, so `forcehttps` redirect-loops *and* Secure
+cookies throw. `Config\App::$proxyIPs` already ships populated with Cloudflare's edge
+ranges — leave it alone unless you move off Cloudflare, in which case empty it. Without
+it every visitor shares a single throttle bucket. See `DEPLOY.txt`.
+
+**Admin password**: generate it with `php spark directory:adminhash` and set
+`directory.adminPasswordHash`. The older `directory.adminPassword` stores the password in
+cleartext and takes a deprecated code path.
 
 ## Not yet built
 
 - **Category × location landing pages** (`/directory/hair-salons/cape-town`) — the main SEO
   opportunity for a directory of this kind.
-- **Claim this listing** — `claim_token` is reserved in the schema.
+- **Claim this listing** — `claim_token` is reserved in the schema. Whoever builds it must
+  store a `hash('sha256', $token)` and never the raw value, matching `verify_token` and
+  `manage_token` (see `DirectoryListingMutationService::hashToken()`); the column is
+  `VARCHAR(64)`, which already fits a SHA-256 digest exactly.
 - **Quote/enquiry flow** per listing, and paid featured placement (`is_featured` exists and
   the admin panel toggles it).
-- **`/admin` hardening** — a single shared password with no rate limiting. Use a long
-  random value and consider IP-restricting the path.
+- **`/admin` hardening** — a single shared password, no username, no 2FA. It *is* throttled
+  (5 attempts / 15 min per IP) and stored as a bcrypt hash, but consider IP-restricting the
+  path as well.
 
 
 1. Create it in hPanel — Domains → Subdomains, name directory.
@@ -215,7 +255,7 @@ populate `Config\App::$proxyIPs`. In Flexible mode the origin sees plain HTTP, s
 /home/uXXXXXXX/domains/directory.webscheduler.co.za/public_html
 2. Issue the SSL certificate — SSL → Manage, for the subdomain. Do this before the first request. With CI_ENVIRONMENT = production, Secure cookies are on, and CodeIgniter throws forInsecureCookie (a 500 on every request) over plain HTTP.
 
-3. Cloudflare — set SSL/TLS to Full (strict) and populate Config\App::$proxyIPs. In Flexible mode the origin sees HTTP, so forcehttps redirect-loops and Secure cookies throw.
+3. Cloudflare — set SSL/TLS to Full (strict). In Flexible mode the origin sees HTTP, so forcehttps redirect-loops and Secure cookies throw. Config\App::$proxyIPs already carries Cloudflare's ranges; no action needed. If Hostinger lets you firewall the origin to those ranges, do — it stops anyone who finds the origin address bypassing Cloudflare's WAF.
 
 4. Upload npm run list:build output — the two halves go to different places:
 

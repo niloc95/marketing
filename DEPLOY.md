@@ -129,11 +129,66 @@ build locally: `npm run site:build` then open `dist/site/`.
 ## 7. Hardening before you announce it
 
 - **HTTPS**: enable AutoSSL for both the domain and the subdomain; force HTTPS.
-- **CSRF** (directory app): enable the `csrf` global filter with an `except` for
-  `list-your-practice/prefill` (that route is a legitimate cross-origin POST).
-- **Admin**: set a strong `directory.adminPassword`; `/admin` is `noindex`.
+- **CSRF**: already global (`Config\Filters`), with an `except` only for `csp-report` —
+  browsers can't send a token with a violation report. Nothing to switch on.
+- **Admin**: generate the password hash with `php spark directory:adminhash` and set
+  `directory.adminPasswordHash`. Do **not** use `directory.adminPassword` — it stores the
+  password in cleartext and takes a deprecated code path. `/admin` is `noindex`.
 - **Permissions**: ensure `writable/` is writable (755/775) on the server.
+- **CSP**: ships in report-only mode. Watch `writable/logs/` for `CSP violation` lines for
+  a week, then set `$reportOnly = false` in `Config\ContentSecurityPolicy` to enforce.
 - Confirm the WebScheduler app's `directory.handoffUrl` points at the live subdomain.
+
+## 8. Monitoring — do this before you announce it, not after
+
+Almost every way this app breaks still returns HTTP 200. Mail can stop entirely, the cache
+can become unwritable and silently disable every rate limit, uploads can start failing —
+and the homepage renders fine throughout. A monitor pointed at `/` will tell you none of it.
+
+`GET /health` exists for this. It returns **200 `{"status":"ok"}`** when the database,
+cache, disk and mailer are all answering, and **503 `{"status":"degraded"}`** when any of
+them isn't.
+
+1. Set `directory.healthToken` in `.env` to a random value
+   (`php -r "echo bin2hex(random_bytes(16));"`). Without the token `/health` returns only
+   ok/degraded; with `?token=…` it returns a per-check breakdown. Keep the token out of the
+   monitoring service — the status code is all it needs.
+2. Point a free uptime monitor (UptimeRobot, Better Stack, Cronitor) at
+   `https://directory.webscheduler.co.za/health`, 5-minute interval, alerting on any
+   non-2xx.
+3. When it alerts, open `/health?token=…` yourself to see which check failed.
+
+**Why not email alerts:** the single most likely thing to break is outbound mail, and a
+system that emails you when email is broken tells you nothing. The admin dashboard also
+shows a banner when sends are failing, but that only helps if you happen to log in.
+
+## 9. Backups — verify what you actually have
+
+Two things exist in exactly one place. Neither is in git:
+
+| Asset | Where it lives | If the disk dies |
+|---|---|---|
+| Code | git + GitHub | fine |
+| Schema | migrations | `php spark migrate` rebuilds it |
+| Category taxonomy | `DirectoryCategoriesSeeder` | reseeded |
+| **Listing data** | the production database, only | **gone** |
+| **Uploaded logos and photos** | `public/assets/listings/` on the server, only | **gone** |
+
+Uploads are safe from *deploys* — the FTP action excludes `public/assets/listings/**`
+deliberately, so a release never touches them. That is not a backup.
+
+Do these three things:
+
+1. **Check hPanel** for what your plan includes and, more importantly, how far back it
+   goes. Backups are a plan feature on Hostinger, not a given, and the retention window is
+   the number that matters.
+2. **Confirm it covers both** the database *and* `public/assets/listings/`. A
+   database-only backup restores a directory in which every listing has a broken logo.
+3. **Do one restore** into a scratch database before you need it. An untested backup is a
+   belief, not a backup.
+
+If hPanel covers neither, the fallback is a cron'd `mysqldump` plus a `tar` of the uploads,
+written somewhere off this host.
 
 ## Smoke test
 
