@@ -42,6 +42,9 @@ if (isset($l['distance_m'])) {
     <div class="mt-auto flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <?php if ($place !== ''): ?><span>📍 <?= esc($place) ?></span><?php endif; ?>
         <?php if ($distance !== ''): ?><span class="card-distance"><?= esc($distance) ?></span><?php endif; ?>
+        <?php // Verified before Featured: one says we checked this business, the
+              // other says we are promoting it. The stronger claim reads first. ?>
+        <?php if (listing_is_verified_business($l)): ?><span class="badge badge-verified">✓ Verified Business</span><?php endif; ?>
         <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured">★ Featured</span><?php endif; ?>
     </div>
 </div>

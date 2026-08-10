@@ -33,7 +33,7 @@ helper('directory_hours');
 ?>
 <div class="form-row">
     <div class="field">
-        <label>Listing type</label>
+        <label>Profile type</label>
         <select name="type">
             <?php foreach (['person' => 'Individual / sole trader', 'practice' => 'Business / practice', 'facility' => 'Facility / branch'] as $k => $lbl): ?>
                 <option value="<?= $k ?>" <?= $v('type', 'person') === $k ? 'selected' : '' ?>><?= esc($lbl) ?></option>
@@ -76,7 +76,7 @@ helper('directory_hours');
         <label>Email *</label>
         <?php if ($lockEmail): ?>
             <input type="email" value="<?= esc($v('email'), 'attr') ?>" readonly disabled class="bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-            <div class="hint">This is how we identify your listing. Contact us to change it.</div>
+            <div class="hint">This is how we identify your profile. Contact us to change it.</div>
         <?php else: ?>
             <input type="email" name="email" value="<?= esc($v('email'), 'attr') ?>" required>
             <?php if ($err('email')): ?><div class="err"><?= esc($err('email')) ?></div><?php endif; ?>
@@ -289,13 +289,13 @@ helper('directory_hours');
             Any common photo format — resized and optimised automatically.
         </div>
     <?php else: ?>
-        <div class="hint">This listing already has the maximum number of photos. Delete one above to add another.</div>
+        <div class="hint">This profile already has the maximum number of photos. Delete one above to add another.</div>
     <?php endif; ?>
 </div>
 
 <?php if ($showConsent): ?>
     <div class="field">
-        <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details in the public directory.</label>
+        <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details publicly on <?= esc(config('Directory')->siteName()) ?>.</label>
         <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
     </div>
 <?php endif; ?>

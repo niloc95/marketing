@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
-use App\Libraries\MailHealth;
+use App\Libraries\Mailer;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
@@ -54,7 +54,7 @@ class DirectoryListingMutationService
                 'errors'  => [],
                 'id'      => (int) $existing['id'],
                 'slug'    => (string) $existing['slug'],
-                'message' => 'Almost done — check your email to verify and publish your listing.',
+                'message' => 'Almost done — check your email to verify and publish your profile.',
             ];
         }
 
@@ -116,7 +116,7 @@ class DirectoryListingMutationService
             if (! $id) {
                 $db->transRollback();
 
-                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
+                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the profile.'];
             }
 
             // Only possible after the insert — the spatial row is keyed on an id
@@ -135,7 +135,7 @@ class DirectoryListingMutationService
             $db->transRollback();
             log_message('error', 'Listing signup failed and was rolled back: ' . $this->oneLine($e->getMessage()));
 
-            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the listing. Please try again.'];
+            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];
         }
 
         // After the commit, never inside it — a verification link for a listing
@@ -147,7 +147,7 @@ class DirectoryListingMutationService
             'errors'  => [],
             'id'      => (int) $id,
             'slug'    => $slug,
-            'message' => 'Almost done — check your email to verify and publish your listing.',
+            'message' => 'Almost done — check your email to verify and publish your profile.',
         ];
     }
 
@@ -221,9 +221,12 @@ class DirectoryListingMutationService
             'link' => base_url('manage/' . $token),
             'site' => $this->config->siteName(),
             'ttl'  => (int) round($this->config->manageTtl / 60),
+            // A deployment with the badge switched off must not advertise it.
+            'offerBadge' => $this->config->verifiedBadgeEnabled(),
+            'badgePrice' => $this->config->verifiedMonthlyAmount(),
         ]);
 
-        $this->send((string) $listing['email'], 'Manage your ' . $this->config->siteName() . ' listing', $body);
+        $this->send((string) $listing['email'], 'Manage your ' . $this->config->siteName() . ' profile', $body);
     }
 
     /**
@@ -272,7 +275,7 @@ class DirectoryListingMutationService
     {
         $listing = $this->listings->find($id);
         if (! is_array($listing)) {
-            return ['ok' => false, 'errors' => [], 'message' => 'That listing no longer exists.'];
+            return ['ok' => false, 'errors' => [], 'message' => 'That profile no longer exists.'];
         }
 
         // Reuse the signup rules, but the email is fixed to the stored one.
@@ -378,7 +381,7 @@ class DirectoryListingMutationService
         $fresh = $this->listings->find($id);
         $this->notifyAdmin(is_array($fresh) ? $fresh : $listing, 'edited');
 
-        return ['ok' => true, 'errors' => [], 'message' => 'Your listing has been updated.'];
+        return ['ok' => true, 'errors' => [], 'message' => 'Your profile has been updated.'];
     }
 
     /**
@@ -444,22 +447,6 @@ class DirectoryListingMutationService
         return is_scalar($v) ? trim((string) $v) : '';
     }
 
-    /**
-     * The recipient's domain, for logging.
-     *
-     * Enough to diagnose — "every failure is to one provider" is a reputation
-     * problem, "all of them" is an outage — without writing a subscriber's
-     * address into a 0644 log file that gets copied into backups and support
-     * threads. The address itself is already in the database if it is ever
-     * genuinely needed.
-     */
-    private function domainOf(string $email): string
-    {
-        $at = strrpos($email, '@');
-
-        return $at === false ? '(malformed address)' : '@' . substr($email, $at + 1);
-    }
-
     /** Collapse newlines so a failure message can't forge extra log lines. */
     private function oneLine(string $s): string
     {
@@ -499,11 +486,13 @@ class DirectoryListingMutationService
     {
         $link = base_url('directory/verify/' . $token);
         $body = view('emails/verify', [
-            'name' => $name,
-            'link' => $link,
-            'site' => $this->config->siteName(),
+            'name'       => $name,
+            'link'       => $link,
+            'site'       => $this->config->siteName(),
+            'offerBadge' => $this->config->verifiedBadgeEnabled(),
+            'badgePrice' => $this->config->verifiedMonthlyAmount(),
         ]);
-        $this->send($to, 'Verify your ' . $this->config->siteName() . ' listing', $body);
+        $this->send($to, 'Verify your ' . $this->config->siteName() . ' profile', $body);
     }
 
     /**
@@ -523,64 +512,21 @@ class DirectoryListingMutationService
             'event'   => $event,
         ]);
         $subject = $event === 'edited'
-            ? 'Listing edited: ' . ($listing['display_name'] ?? '')
-            : 'New published listing: ' . ($listing['display_name'] ?? '');
+            ? 'Profile edited: ' . ($listing['display_name'] ?? '')
+            : 'New published profile: ' . ($listing['display_name'] ?? '');
         $this->send($admin, $subject, $body);
     }
 
     /**
-     * Send one email, and make it obvious when that didn't work.
+     * Send one email. Deliberately void: a broken mailer must not fail a signup
+     * or an edit halfway through, so callers here cannot branch on the result.
      *
-     * Deliberately void and deliberately non-fatal: a broken mailer must not
-     * fail a signup or an edit halfway through. But "don't fail" is not the same
-     * as "don't tell anyone", and this used to be both.
-     *
-     * The bug worth remembering: this called `$email->send(false)` under a
-     * comment claiming the argument suppressed exceptions. It does not — that
-     * parameter is CodeIgniter's $autoClear. Email::send() signals an SMTP
-     * failure by *returning false*, not by throwing, so the catch below never
-     * ran for the one failure mode that actually happens, and the error line it
-     * logs was unreachable. Outbound mail could stop entirely and leave no
-     * trace anywhere. Hence: check the return value, and record it somewhere a
-     * health check can see (MailHealth).
-     *
-     * Letting $autoClear default to true also matters. service('email') is a
-     * shared instance, so without the reset each send would inherit the
-     * previous one's recipients.
+     * The error handling — and the post-mortem explaining why it looks the way
+     * it does — moved to App\Libraries\Mailer when the contact form needed the
+     * same behaviour. Do not reintroduce a second send path.
      */
     private function send(string $to, string $subject, string $body): void
     {
-        try {
-            $email = service('email');
-            $email->setTo($to);
-            $email->setSubject($subject);
-            $email->setMessage($body);
-            $email->setMailType('html');
-
-            if ($email->send()) {
-                MailHealth::recordSuccess();
-
-                return;
-            }
-
-            // printDebugger() is where CI4 keeps the actual SMTP reason —
-            // nothing else in the app reads it, so it would otherwise be lost.
-            // The empty array matters: the default includes the full headers,
-            // subject and body, which would put the recipient's address and the
-            // message content into the log and into /health.
-            $reason = $this->oneLine(strip_tags($email->printDebugger([])));
-            log_message('error', 'Directory email to ' . $this->domainOf($to) . ' failed: ' . $reason);
-            MailHealth::recordFailure($reason);
-        } catch (\Throwable $e) {
-            // Malformed Config\Email, or the cache being unavailable underneath
-            // MailHealth. Still must not surface to the visitor.
-            log_message('error', 'Directory email to ' . $this->domainOf($to) . ' threw: ' . $this->oneLine($e->getMessage()));
-
-            try {
-                MailHealth::recordFailure($e->getMessage());
-            } catch (\Throwable) {
-                // Nothing left to do — the log line above is the last resort.
-            }
-        }
+        (new Mailer())->send($to, $subject, $body);
     }
 }

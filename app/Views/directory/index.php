@@ -2,8 +2,8 @@
 
 <?= $this->section('head') ?>
 <?php
-$title = 'Browse businesses';
-if (! empty($filters['category'])) { $title = ucwords(str_replace('-', ' ', $filters['category'])) . ' listings'; }
+$title = 'Browse everything';
+if (! empty($filters['category'])) { $title = ucwords(str_replace('-', ' ', $filters['category'])) . ' profiles'; }
 if (! empty($filters['province'])) { $title .= ' in ' . $filters['province']; }
 ?>
 <?php
@@ -44,7 +44,7 @@ if ($indexable && ! empty($result['items'])) {
 ?>
 <?= seo_meta([
     'title'       => $title . ' — ' . $siteName,
-    'description' => 'Browse and search South African service businesses by category, province and city.',
+    'description' => 'Browse and search South African services, professionals and home industry by category, province and city.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
     'schema'      => $schema,
@@ -54,9 +54,9 @@ if ($indexable && ! empty($result['items'])) {
 <?= $this->section('content') ?>
 <section class="hero py-8 sm:py-10">
     <div class="container">
-        <h1 class="text-2xl sm:text-3xl">Find a business</h1>
+        <h1 class="text-2xl sm:text-3xl">Browse</h1>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <input type="text" name="q" value="<?= esc($filters['q'], 'attr') ?>" placeholder="Business, service or keyword">
+            <input type="text" name="q" value="<?= esc($filters['q'], 'attr') ?>" placeholder="Name, service or keyword">
             <select name="category">
                 <option value="">All categories</option>
                 <?php foreach ($groups as $groupName => $cats): ?>
@@ -108,7 +108,7 @@ if ($indexable && ! empty($result['items'])) {
 
 <section class="section">
     <div class="container">
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> business<?= $result['total'] === 1 ? '' : 'es' ?> found</p>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
 
         <?php // Category chips: crawlable links into the landing pages, which
               // query-string filters alone would never provide. ?>
@@ -164,14 +164,14 @@ if ($indexable && ! empty($result['items'])) {
                  data-cluster-css="<?= base_url('assets/vendor/leaflet/markercluster.css') ?>"
                  data-cluster-default-css="<?= base_url('assets/vendor/leaflet/markercluster.default.css') ?>">
                 <div class="results-map-canvas" data-results-map-canvas role="application"
-                     aria-label="Map of businesses matching your search"></div>
+                     aria-label="Map of results matching your search"></div>
                 <p class="results-map-status" role="status" data-results-map-status></p>
             </div>
         <?php endif; ?>
 
         <?php if (empty($result['items'])): ?>
             <div class="empty">
-                <p class="mb-4">No businesses match your search.</p>
+                <p class="mb-4">Nothing matches your search.</p>
                 <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
             </div>
         <?php else: ?>

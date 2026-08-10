@@ -17,7 +17,7 @@ $tints = ['loc-card-1', 'loc-card-2', 'loc-card-3', 'loc-card-4'];
 $tint  = $tints[((int) ($i ?? 0)) % count($tints)];
 ?>
 <a class="loc-card <?= $tint ?>" href="<?= base_url('directory/province/' . slugify($province)) ?>">
-    <span class="loc-card-count">📍 <?= number_format((int) $count) ?> listing<?= (int) $count === 1 ? '' : 's' ?></span>
+    <span class="loc-card-count">📍 <?= number_format((int) $count) ?> profile<?= (int) $count === 1 ? '' : 's' ?></span>
     <h3 class="loc-card-name"><?= esc($province) ?></h3>
     <?php if ($cities !== []): ?>
         <p class="loc-card-cities"><?= esc(implode(' · ', $cities)) ?></p>

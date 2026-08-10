@@ -19,7 +19,7 @@ sort($groupNames);
 <section class="section">
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Categories <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= count($categories) ?>)</span></h1>
-        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">A category in use cannot be deleted — deactivate it instead, which hides it from the signup form without touching existing listings.</p>
+        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">A category in use cannot be deleted — deactivate it instead, which hides it from the signup form without touching existing profiles.</p>
 
         <div class="panel mb-8">
             <h3>Add a category</h3>
@@ -74,7 +74,7 @@ sort($groupNames);
 
                         <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                             <span><code><?= esc($c['slug']) ?></code></span>
-                            <span><?= $used > 0 ? $used . ' listing' . ($used === 1 ? '' : 's') : 'unused' ?></span>
+                            <span><?= $used > 0 ? $used . ' profile' . ($used === 1 ? '' : 's') : 'unused' ?></span>
                             <?php if ($used === 0): ?>
                                 <form method="post" action="<?= base_url('admin/categories/' . $c['id'] . '/delete') ?>" data-confirm="Delete <?= esc($c['name'], 'attr') ?>?">
                                     <?= csrf_field() ?>

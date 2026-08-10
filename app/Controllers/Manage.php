@@ -3,9 +3,13 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesListingUploads;
+use App\Controllers\Concerns\HandlesVerificationUploads;
+use App\Libraries\PayFast;
 use App\Models\DirectoryListingPhotoModel;
+use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\VerificationService;
 
 /**
  * Owner self-service. Passwordless: control of the listing's email address is
@@ -19,11 +23,12 @@ use App\Services\DirectoryService;
 class Manage extends BaseController
 {
     use HandlesListingUploads;
+    use HandlesVerificationUploads;
 
     private const SESSION_KEY = 'manage_listing_id';
 
     /** Identical wording whichever branch runs — see request(). */
-    private const SENT_MESSAGE = 'If that email has a listing, we have sent it a link to manage it. The link lasts one hour.';
+    private const SENT_MESSAGE = 'If that email has a profile, we have sent it a link to manage it. The link lasts one hour.';
 
     public function index()
     {
@@ -78,10 +83,11 @@ class Manage extends BaseController
         $listing = $this->currentListing();
         if ($listing === null) {
             return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your listing.');
+                ->with('error', 'Please request a link to manage your profile.');
         }
 
-        $svc = new DirectoryService();
+        $svc          = new DirectoryService();
+        $verification = new VerificationService();
 
         return view('directory/manage_edit', [
             'listing'    => $listing,
@@ -93,6 +99,11 @@ class Manage extends BaseController
             'photos'     => (new DirectoryListingPhotoModel())->forListing((int) $listing['id']),
             'slots'      => $this->gallerySlots((int) $listing['id']),
             'galleryMax' => self::GALLERY_MAX,
+
+            'verificationOffered' => $verification->isEnabled(),
+            'verificationPayable' => $verification->canTakePayment(),
+            'verificationAmount'  => $verification->monthlyAmount(),
+            'verification'        => $verification->forListing((int) $listing['id']),
         ]);
     }
 
@@ -101,7 +112,7 @@ class Manage extends BaseController
         $listing = $this->currentListing();
         if ($listing === null) {
             return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your listing.');
+                ->with('error', 'Please request a link to manage your profile.');
         }
 
         $post = $this->request->getPost();
@@ -141,7 +152,7 @@ class Manage extends BaseController
         $listing = $this->currentListing();
         if ($listing === null) {
             return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your listing.');
+                ->with('error', 'Please request a link to manage your profile.');
         }
 
         $model = new DirectoryListingPhotoModel();
@@ -157,10 +168,166 @@ class Manage extends BaseController
         return redirect()->to(base_url('manage/edit'))->with('success', 'Photo removed.');
     }
 
+    /**
+     * Apply for the Verified Business badge, or re-apply after a rejection.
+     *
+     * Nothing is charged here. The documents go into the admin review queue and
+     * the owner is invited to pay only once they pass — see VerificationService.
+     */
+    public function submitVerification()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        $service = new VerificationService();
+        if (! $service->isEnabled()) {
+            return redirect()->to(base_url('manage/edit'))
+                ->with('error', 'Verification is not available at the moment.');
+        }
+
+        // Each attempt writes two files of up to 10 MB into private storage, and
+        // a re-submission deletes the previous pair — cheap to repeat, so worth
+        // a ceiling. Keyed on the listing rather than the IP: the session is
+        // already listing-scoped, and an owner on a shared office connection
+        // should not be blocked by a neighbour's uploads.
+        if (service('throttler')->check('verify-doc-' . (int) $listing['id'], 5, HOUR) === false) {
+            return redirect()->to(base_url('manage/edit'))
+                ->with('error', 'Too many upload attempts. Please wait a while and try again.');
+        }
+
+        $resolved = $this->resolveVerificationDocuments((int) $listing['id']);
+
+        if ($resolved['docs'] === []) {
+            return $this->withUploadErrors(
+                redirect()->to(base_url('manage/edit'))
+                    ->with('error', 'Please choose both documents before submitting.'),
+                $resolved['errors']
+            );
+        }
+
+        $result = $service->submitApplication((int) $listing['id'], $resolved['docs']);
+
+        return $this->withUploadErrors(
+            redirect()->to(base_url('manage/edit'))
+                ->with($result['ok'] ? 'success' : 'error', $result['message']),
+            $resolved['errors']
+        );
+    }
+
+    /**
+     * The checkout page: what you are buying, what you will be charged, and
+     * when it renews — then the handoff to PayFast.
+     *
+     * This used to be a holding page that submitted itself the instant it
+     * loaded, which meant the owner went from a button on their dashboard
+     * straight out to a payment form on someone else's domain with nothing in
+     * between confirming what they had agreed to. The summary below is the
+     * whole point of the page; the auto-submit is gone.
+     *
+     * The signed field set is still built server-side and posted as a form,
+     * because that is PayFast's model — there is no redirect URL we could
+     * construct instead, since the signature covers fields that would otherwise
+     * be visible and editable in the address bar.
+     */
+    public function checkout()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        $service = new VerificationService();
+
+        if (! $service->canTakePayment()) {
+            return redirect()->to(base_url('manage/edit'))
+                ->with('error', 'Card payments are not available at the moment — we will be in touch about payment.');
+        }
+
+        $current = $service->forListing((int) $listing['id']);
+
+        // Only an approved application can be paid for. A pending or rejected
+        // one reaching here means a stale tab or a hand-typed URL, not a state
+        // we should invent a payment for.
+        if ($current === null || $current['verification']['state'] !== DirectoryVerificationModel::STATE_APPROVED) {
+            return redirect()->to(base_url('manage/edit'))
+                ->with('error', 'There is nothing to pay for yet.');
+        }
+
+        $verification = $current['verification'];
+
+        // The correlation id is minted on first use rather than at application
+        // time, because a payment that is never started should not burn one —
+        // and PayFast rejects a repeat of an m_payment_id it has already seen.
+        if (trim((string) ($verification['pf_m_payment_id'] ?? '')) === '') {
+            $verification['pf_m_payment_id'] = sprintf('vb-%d-%s', (int) $verification['id'], bin2hex(random_bytes(4)));
+            (new DirectoryVerificationModel())->update(
+                (int) $verification['id'],
+                ['pf_m_payment_id' => $verification['pf_m_payment_id']]
+            );
+        }
+
+        $payfast = new PayFast();
+
+        return view('directory/verification_checkout', [
+            'listing'    => $listing,
+            'amount'     => $verification['amount'],
+            'processUrl' => $payfast->processUrl(),
+            'fields'     => $payfast->subscriptionFields($listing, $verification),
+            'sandbox'    => $payfast->isSandbox(),
+            // Both derived here rather than in the view: the renewal date has to
+            // agree with the billing_date PayFast is actually being sent, and
+            // that is decided by subscriptionFields() above.
+            'firstCharge' => date('j F Y'),
+            'renewsOn'    => date('j F Y', strtotime('+1 month')),
+        ]);
+    }
+
+    /**
+     * Stop a recurring badge subscription.
+     *
+     * Deliberately does not touch the badge: the owner has paid to the end of
+     * the current month and keeps it until then. All this changes is whether it
+     * renews — the sweep takes it down on the date it was always going to.
+     */
+    public function cancelVerification()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        $result = (new VerificationService())->cancelSubscription((int) $listing['id']);
+
+        return redirect()->to(base_url('manage/edit'))
+            ->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
+    /**
+     * Where PayFast sends the owner's browser after checkout.
+     *
+     * Says nothing about whether the payment succeeded, and must not: the
+     * browser's return trip is not evidence of anything — the ITN is, and it
+     * arrives on its own schedule, sometimes after this page has rendered.
+     * Claiming success here and having the badge not appear would be worse than
+     * being vague.
+     */
+    public function verificationDone()
+    {
+        return redirect()->to(base_url('manage/edit'))->with(
+            'info',
+            'Thanks — PayFast is confirming your payment. Your badge appears here within a few minutes.'
+        );
+    }
+
     public function signout()
     {
         session()->remove(self::SESSION_KEY);
-        return redirect()->to(base_url('/'))->with('info', 'Signed out of listing management.');
+        return redirect()->to(base_url('/'))->with('info', 'Signed out of profile management.');
     }
 
     /** @return array<string,mixed>|null */

@@ -11,6 +11,17 @@ $routes->get('/', 'Directory::home');
 $routes->get('list-your-practice', 'Listing::create');
 $routes->post('list-your-practice', 'Listing::store');
 
+// Contact. Top-level like the legal pages, so it never meets the
+// directory/{segment} catch-all. Deliberately on this domain rather than a link
+// out to the marketing site, whose form says "Book a demo" — the wrong ask for
+// someone browsing the directory or fixing their own profile.
+$routes->get('contact', 'Contact::index');
+$routes->post('contact', 'Contact::submit');
+$routes->get('faq', 'Contact::faq');
+// What the Verified Business badge means. Public and indexable — the badge on
+// every verified profile links here, so visitors can check the claim.
+$routes->get('verified', 'Contact::verified');
+
 // Legal. Top-level, so they never meet the directory/{segment} catch-all.
 $routes->get('privacy', 'Legal::privacy');
 $routes->get('terms', 'Legal::terms');
@@ -30,6 +41,13 @@ $routes->get('manage/edit', 'Manage::edit');
 $routes->post('manage/edit', 'Manage::update');
 $routes->get('manage/signout', 'Manage::signout');
 $routes->post('manage/photo-delete/(:num)', 'Manage::deletePhoto/$1');
+// Verified Business: apply, pay, and where PayFast returns the browser to.
+// Like every literal above, these must stay ahead of the catch-all below —
+// 'manage/verification' would otherwise be read as a magic-link token.
+$routes->post('manage/verification', 'Manage::submitVerification');
+$routes->get('manage/verification/checkout', 'Manage::checkout');
+$routes->post('manage/verification/cancel', 'Manage::cancelVerification');
+$routes->get('manage/verification/done', 'Manage::verificationDone');
 $routes->get('manage/(:segment)', 'Manage::redeem/$1');
 
 // SEO
@@ -48,6 +66,11 @@ $routes->post('csp-report', 'Csp::report');
 // one doesn't. Deliberately unthrottled — a throttled health check reads as an
 // outage and would page you about itself.
 $routes->get('health', 'Health::index');
+
+// PayFast's server-to-server payment notification. Exempted from CSRF and the
+// honeypot in Config\Filters — there is no browser here to carry a token. The
+// controller's four validation checks are what stands in their place.
+$routes->post('payfast/notify', 'PayFastNotify::index');
 
 // Admin oversight
 $routes->get('admin/login', 'Admin::login');
@@ -76,6 +99,16 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('categories', 'Admin::storeCategory');
     $routes->post('categories/(:num)', 'Admin::updateCategory/$1');
     $routes->post('categories/(:num)/delete', 'Admin::deleteCategory/$1');
+
+    // Verified Business review queue. The document route streams PII from
+    // outside the docroot, so it lives inside this filter group and nowhere
+    // else — see Admin::verificationDocument.
+    $routes->get('verifications', 'Admin::verifications');
+    $routes->post('verifications/(:num)/approve', 'Admin::approveVerification/$1');
+    $routes->post('verifications/(:num)/reject', 'Admin::rejectVerification/$1');
+    $routes->post('verifications/(:num)/activate', 'Admin::activateVerification/$1');
+    $routes->post('verifications/(:num)/revoke', 'Admin::revokeVerification/$1');
+    $routes->get('verification/document/(:num)', 'Admin::verificationDocument/$1');
 
     // Diagnostics — health checks, mail state, storage, config, recent log.
     $routes->get('status', 'Admin::status');

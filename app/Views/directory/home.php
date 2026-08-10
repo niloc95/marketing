@@ -29,8 +29,8 @@ $schema = [
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $siteName . ' — Find a local business or service',
-    'description' => 'Search South African service businesses — hair salons, spas, attorneys, plumbers, mechanics, doctors and more. Find a business, or list yours free.',
+    'title'       => $siteName . ' — Find someone local',
+    'description' => 'Search South African services, professionals and home industry — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Find someone local, or add your business free.',
     'canonical'   => base_url('/'),
     'schema'      => $schema,
 ]) ?>
@@ -39,11 +39,11 @@ $schema = [
 <?= $this->section('content') ?>
 <section class="hero">
     <div class="container">
-        <span class="eyebrow">South Africa's business directory</span>
-        <h1>Find the right <span class="text-brand-golden">local business</span></h1>
-        <p>Salons, spas, attorneys, mechanics, plumbers, doctors and more — across South Africa. Or list your own business, free.</p>
+        <span class="eyebrow">Local services, professionals &amp; home industry</span>
+        <h1>Find someone <span class="text-brand-golden">local</span> you can trust</h1>
+        <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — across South Africa. Or add your own business, free.</p>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <input type="text" name="q" placeholder="Business, service or keyword">
+            <input type="text" name="q" placeholder="Name, service or keyword">
             <select name="category">
                 <option value="">All categories</option>
                 <?php foreach ($groups as $groupName => $cats): ?>
@@ -85,10 +85,10 @@ $schema = [
 <?php if ($stats['listings'] > 0): ?>
     <div class="stat-bar">
         <div class="container flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-            <span class="stat"><strong><?= number_format($stats['listings']) ?></strong> businesses</span>
+            <span class="stat"><strong><?= number_format($stats['listings']) ?></strong> profiles</span>
             <span class="stat"><strong><?= number_format($stats['categories']) ?></strong> categories</span>
             <span class="stat"><strong><?= number_format($stats['provinces']) ?></strong> provinces</span>
-            <span class="stat"><strong>Free</strong> to list</span>
+            <span class="stat"><strong>Always</strong> free</span>
         </div>
     </div>
 <?php endif; ?>
@@ -97,8 +97,8 @@ $schema = [
     <section class="section">
         <div class="container">
             <div class="empty">
-                <p class="mb-4">No businesses listed yet. Be the first!</p>
-                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+                <p class="mb-4">Nothing here yet. Be the first!</p>
+                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
             </div>
         </div>
     </section>
@@ -111,8 +111,8 @@ $schema = [
     <section class="section">
         <div class="container">
             <div class="section-head">
-                <h2>Featured Listings</h2>
-                <p>Hand-picked businesses from across the directory — verified, published and open for enquiries.</p>
+                <h2>Featured</h2>
+                <p>Hand-picked from across South Africa — verified, published and open for enquiries.</p>
             </div>
             <div class="card-grid-4">
                 <?php foreach ($featured as $l): ?>
@@ -128,7 +128,7 @@ $schema = [
         <div class="container">
             <div class="section-head">
                 <h2>Explore by Category</h2>
-                <p>Salons, spas, attorneys, mechanics, plumbers, doctors and more — browse the services South Africans search for most.</p>
+                <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — browse what South Africans search for most.</p>
             </div>
             <div class="tile-grid">
                 <?php foreach ($topCategories as $c): ?>
@@ -148,9 +148,9 @@ $schema = [
             <div class="section-head-split">
                 <div>
                     <h2>Browse by Location</h2>
-                    <p>Every province we cover, with the towns and cities where our listings actually are.</p>
+                    <p>Every province we cover, with the towns and cities where our profiles actually are.</p>
                 </div>
-                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">Browse all businesses &rarr;</a>
+                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">Browse everything &rarr;</a>
             </div>
             <div class="loc-grid">
                 <?php $i = 0; ?>
@@ -173,7 +173,7 @@ $schema = [
             <div class="section-head-split">
                 <div>
                     <h2>Recently added</h2>
-                    <p>The newest businesses to join the directory.</p>
+                    <p>The newest to join <?= esc($siteName) ?>.</p>
                 </div>
                 <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">See all &rarr;</a>
             </div>
@@ -190,8 +190,8 @@ $schema = [
     <section class="section">
         <div class="container text-center">
             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Run a business in South Africa?</h2>
-            <p class="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">Add it to the directory in a couple of minutes. No fee, no card, no contract.</p>
-            <a class="btn btn-accent mt-5" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+            <p class="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">Add it to <?= esc($siteName) ?> in a couple of minutes. No fee, no card, no contract.</p>
+            <a class="btn btn-accent mt-5" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
         </div>
     </section>
 <?php endif; ?>

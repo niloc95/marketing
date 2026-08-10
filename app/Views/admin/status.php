@@ -63,7 +63,7 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
 
             <!-- ------------------------------------------------------ data -->
             <div class="panel">
-                <h3>Listings</h3>
+                <h3>Profiles</h3>
                 <?php // 'all' excludes trashed — counts() sums the non-deleted GROUP BY. ?>
                 <div class="kv"><span class="k">Live (excl. trash)</span><span><?= (int) ($counts['all'] ?? 0) ?></span></div>
                 <div class="kv"><span class="k">Published</span><span><?= (int) ($counts['published'] ?? 0) ?></span></div>
@@ -81,6 +81,27 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                     </p>
                 <?php endif; ?>
             </div>
+
+            <!-- --------------------------------------- verified business -->
+            <div class="panel">
+                <h3>Verified Business</h3>
+                <div class="kv">
+                    <span class="k">Awaiting review</span>
+                    <?php // Not an error, but it is the number someone has to act on —
+                          // amber once anyone is waiting, so it reads as a queue. ?>
+                    <span class="<?= $pill(($verifCounts['submitted'] ?? 0) === 0) ?>"><?= (int) ($verifCounts['submitted'] ?? 0) ?></span>
+                </div>
+                <div class="kv"><span class="k">Approved, unpaid</span><span><?= (int) ($verifCounts['approved'] ?? 0) ?></span></div>
+                <div class="kv"><span class="k">Active (paying)</span><span><?= (int) ($verifCounts['active'] ?? 0) ?></span></div>
+                <div class="kv"><span class="k">Lapsed</span><span><?= (int) ($verifCounts['lapsed'] ?? 0) ?></span></div>
+                <div class="kv"><span class="k">Rejected</span><span><?= (int) ($verifCounts['rejected'] ?? 0) ?></span></div>
+                <?php if (($verifCounts['submitted'] ?? 0) > 0): ?>
+                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Owners waiting on a decision. Nobody has been charged yet — payment only follows approval.
+                        <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('admin/verifications') ?>">Open the queue</a>.
+                    </p>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="card-grid mb-8">
@@ -95,7 +116,7 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                 </div>
                 <?php if (($storage['orphans'] ?? 0) > 0): ?>
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                        Files on disk that no listing or photo row refers to. Deleting a listing removes its files first, so this should be zero.
+                        Files on disk that no profile or photo row refers to. Deleting a profile removes its files first, so this should be zero.
                     </p>
                 <?php endif; ?>
             </div>
@@ -111,7 +132,7 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                 <div class="kv"><span class="k">Uploads</span><span><?= esc($svc->bytes($storage['logos']['bytes'] + $storage['gallery']['bytes'])) ?></span></div>
                 <ul class="alert-list mt-3 text-xs text-slate-500 dark:text-slate-400">
                     <li>Check hPanel for what your plan covers and how far back it goes.</li>
-                    <li>Confirm it covers the database <em>and</em> <code>public/assets/listings</code> — a database-only backup restores a directory where every logo is broken.</li>
+                    <li>Confirm it covers the database <em>and</em> <code>public/assets/listings</code> — a database-only backup restores a site where every logo is broken.</li>
                     <li>Do one restore into a scratch database before you need it.</li>
                 </ul>
             </div>

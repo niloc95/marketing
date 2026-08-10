@@ -28,7 +28,7 @@ $used = count($photos);
                           // gallery in show.php and the form actions on the edit pages —
                           // esc(…, 'attr') would entity-encode every slash and colon. ?>
                     <img src="<?= base_url($p['path']) ?>"
-                         alt="<?= esc($p['original_name'] ?? 'Listing photo') ?>"
+                         alt="<?= esc($p['original_name'] ?? 'Profile photo') ?>"
                          loading="lazy">
                     <form method="post" action="<?= rtrim($deleteBase, '/') . '/' . (int) $p['id'] ?>">
                         <?= csrf_field() ?>

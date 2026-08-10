@@ -167,10 +167,11 @@ class SystemStatusService
     {
         $c = $this->config;
 
-        $analytics   = $c->analyticsId();
-        $hash        = $c->adminPasswordHash();
-        $plaintext   = $c->adminPassword();
-        $healthToken = $c->healthToken();
+        $analytics    = $c->analyticsId();
+        $hash         = $c->adminPasswordHash();
+        $plaintext    = $c->adminPassword();
+        $healthToken  = $c->healthToken();
+        $payfastReady = $c->payfastMerchantId() !== '' && $c->payfastMerchantKey() !== '';
 
         return [
             ['label' => 'Site name', 'value' => $c->siteName(), 'env' => true, 'warn' => false],
@@ -197,11 +198,36 @@ class SystemStatusService
             ],
             ['label' => 'Map tile host', 'value' => (string) parse_url($c->mapTileUrl(), PHP_URL_HOST), 'env' => true, 'warn' => false],
 
+            // PayFast. Credentials are reported as present or not, never shown,
+            // for the same reason as the two above. Sandbox is called out as a
+            // warning in its own right: a production site quietly running
+            // against the sandbox takes no money at all, and nothing else in the
+            // system would ever complain about it.
+            [
+                'label' => 'PayFast credentials',
+                'value' => $payfastReady ? 'configured' : 'not set — the Verified Business badge is switched off',
+                'env'   => true,
+                'warn'  => ! $payfastReady,
+            ],
+            [
+                'label' => 'PayFast passphrase',
+                'value' => $c->payfastPassphrase() !== '' ? 'configured' : 'not set — notifications cannot be authenticated',
+                'env'   => true,
+                'warn'  => $payfastReady && $c->payfastPassphrase() === '',
+            ],
+            [
+                'label' => 'PayFast mode',
+                'value' => $c->payfastSandbox() ? 'SANDBOX — no real payments' : 'live',
+                'env'   => true,
+                'warn'  => $c->payfastSandbox(),
+            ],
+            ['label' => 'Verified Business price', 'value' => 'R' . $c->verifiedMonthlyAmount() . ' / month', 'env' => true, 'warn' => false],
+
             // These three have no getters, so .env cannot override them — a
             // genuinely non-obvious split worth surfacing.
             ['label' => 'Verification link TTL', 'value' => $this->duration($c->verifyTtl), 'env' => false, 'warn' => false],
             ['label' => 'Manage link TTL', 'value' => $this->duration($c->manageTtl), 'env' => false, 'warn' => false],
-            ['label' => 'Landing page minimum listings', 'value' => (string) $c->landingMinListings, 'env' => false, 'warn' => false],
+            ['label' => 'Landing page minimum profiles', 'value' => (string) $c->landingMinListings, 'env' => false, 'warn' => false],
         ];
     }
 

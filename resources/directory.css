@@ -51,6 +51,19 @@
   body {
     @apply bg-slate-50 font-sans text-slate-900 antialiased;
     @apply transition-colors duration-200;
+
+    /* Sticky footer. A column flexbox at least a viewport tall, with .site-main
+       taking the slack (see the layout), so the footer sits on the bottom edge
+       of a short page rather than floating mid-screen with background beneath
+       it — /manage left ~200px of dead space on a laptop. It still scrolls
+       normally on long pages; this is not a fixed overlay.
+
+       Written as raw CSS rather than @apply because of the two-line fallback:
+       dvh tracks the mobile URL bar as it hides, but browsers that don't know
+       the unit simply ignore the second declaration and keep vh. */
+    @apply flex flex-col;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
   /* Dark mode uses the class strategy (see tailwind.directory.cjs) with the
      same surface values as the marketing site: page #0f1419, card #1a202c,
@@ -97,6 +110,11 @@
   .dark .theme-toggle {
     @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
   }
+
+  /* Takes the leftover height in the body's flex column, which is what pins the
+     footer to the bottom on short pages. min-h-0 keeps a tall child (the search
+     results grid) from forcing the column open past the viewport. */
+  .site-main { @apply min-h-0 flex-1; }
 
   /* Four-column footer, matching the marketing site's shape. The bottom bar is a
      separate strip so its top border spans the full width, not just .container. */
@@ -312,12 +330,56 @@
            text-xs font-medium text-slate-600;
   }
   .badge-featured { @apply bg-brand-golden/25 text-amber-700; }
+  /* Emerald, not the Featured amber: "we checked this business" and "we are
+     promoting this business" are different claims and should not look alike.
+     no-underline because on the profile page this badge is a link to the FAQ. */
+  .badge-verified { @apply bg-emerald-50 text-emerald-700 no-underline; }
   .dark .badge          { @apply bg-slate-800 text-slate-300; }
   .dark .badge-featured { @apply bg-brand-golden/20 text-brand-golden; }
+  .dark .badge-verified { @apply bg-emerald-500/15 text-emerald-300; }
 
   .taglist { @apply mt-3 flex flex-wrap gap-1.5; }
   .tag     { @apply inline-flex rounded-full bg-primary-50 px-2.5 py-0.5 text-xs text-primary-600; }
   .dark .tag { @apply bg-primary-500/15 text-primary-300; }
+
+  /* -------------------------------------------------------------------- faq */
+  /* Native <details>/<summary> — no JavaScript, so the answers are readable
+     (and findable with ctrl-F after expanding) even if directory.js never
+     loads, and each one is keyboard-operable for free. */
+  .faq-group   { @apply mb-10 last:mb-0; }
+  .faq-group h2 { @apply mb-3 text-lg font-bold text-slate-900; }
+  .dark .faq-group h2 { @apply text-white; }
+
+  .faq-item {
+    @apply border-b border-slate-200 last:border-b-0;
+  }
+  .dark .faq-item { @apply border-slate-800; }
+
+  .faq-item summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-4 py-4;
+    @apply text-sm font-semibold text-slate-900;
+  }
+  .dark .faq-item summary { @apply text-white; }
+  .faq-item summary:hover { @apply text-primary-600; }
+  .dark .faq-item summary:hover { @apply text-primary-300; }
+  /* Safari still paints its own triangle without this. */
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::marker { content: ''; }
+
+  /* Rotates to an X-ish diagonal when open. Drawn in CSS rather than shipping
+     two SVGs per question. */
+  .faq-item summary::after {
+    content: '';
+    @apply h-2.5 w-2.5 flex-shrink-0 rotate-45 border-b-2 border-r-2 border-slate-400;
+    @apply transition-transform duration-200;
+    margin-top: -0.25rem;
+  }
+  .faq-item[open] summary::after { @apply -rotate-[135deg]; margin-top: 0.25rem; }
+
+  .faq-item .faq-answer { @apply pb-5 pr-8 text-sm leading-relaxed text-slate-600; }
+  .dark .faq-item .faq-answer { @apply text-slate-400; }
+  .faq-item .faq-answer a { @apply font-medium text-primary-600 hover:underline; }
+  .dark .faq-item .faq-answer a { @apply text-primary-300; }
 
   /* ----------------------------------------------------------------- legal */
   /* Long-form document typography, scoped so it cannot reach the app's own
@@ -328,7 +390,11 @@
   .prose-legal h3 { @apply mb-2 mt-6 text-base font-semibold text-slate-900; }
   .prose-legal p  { @apply mb-4 text-sm leading-relaxed text-slate-600; }
   .prose-legal ul { @apply mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-600; }
-  .prose-legal a  { @apply text-primary-600 underline underline-offset-2 hover:text-primary-500; }
+  /* :not(.btn) so a call-to-action inside a document — the FAQ's "Contact us"
+     — keeps its button styling instead of being repainted as an underlined
+     body link. Without it .prose-legal a (two classes) outweighs .btn-accent
+     (one) and the button renders underlined in link blue. */
+  .prose-legal a:not(.btn)  { @apply text-primary-600 underline underline-offset-2 hover:text-primary-500; }
   .prose-legal strong { @apply font-semibold text-slate-900; }
   .prose-legal code {
     @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
@@ -339,7 +405,7 @@
   .dark .prose-legal strong { @apply text-white; }
   .dark .prose-legal p,
   .dark .prose-legal ul { @apply text-slate-400; }
-  .dark .prose-legal a    { @apply text-primary-300 hover:text-primary-200; }
+  .dark .prose-legal a:not(.btn) { @apply text-primary-300 hover:text-primary-200; }
   .dark .prose-legal code { @apply bg-slate-800 text-slate-300; }
 
   /* --------------------------------------------------------------- profile */
@@ -547,6 +613,69 @@
   }
   .dark input[type="checkbox"] { @apply focus:ring-offset-[#1a202c]; }
   .dark .hint { @apply text-slate-400; }
+
+  /* ------------------------------------------------ verified business badge */
+
+  /* The optional upsell on the signup form. A <details>, closed by default:
+     the listing is free and the page should say that first, so this stays
+     folded away until someone goes looking for it. */
+  .verify-offer {
+    @apply mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3;
+  }
+  .verify-offer > summary {
+    @apply flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-slate-700;
+  }
+  .verify-offer > summary::-webkit-details-marker { display: none; }
+  .verify-offer-body { @apply mt-3 border-t border-slate-200 pt-3; }
+  .dark .verify-offer      { @apply border-slate-800 bg-slate-900/40; }
+  .dark .verify-offer > summary  { @apply text-slate-200; }
+  .dark .verify-offer-body { @apply border-slate-800; }
+
+  /* The owner dashboard panel. Same .panel chrome as the rest of the page,
+     with the state-specific content inside. */
+  .verify-panel       { @apply mb-6; }
+  .verify-panel-title { @apply mb-3; }
+  .verify-form        { @apply mt-4 border-t border-slate-200 pt-4; }
+  .verify-reason      { @apply my-3; }
+  .verify-doclist     { @apply mt-3 space-y-1 text-sm text-slate-600; }
+  .verify-doclist .hint { @apply ml-1 inline; }
+  .dark .verify-form    { @apply border-slate-800; }
+  .dark .verify-doclist { @apply text-slate-300; }
+
+  /* First-time call to action. Emerald edge to tie it to the badge itself and to
+     stop it reading as one more grey box on a page that is already several. */
+  .verify-cta-heading { @apply mb-2 text-base font-bold text-slate-900; }
+  .verify-cta-link    { @apply font-medium text-primary-500 hover:underline; }
+  .dark .verify-cta-heading { @apply text-white; }
+  .dark .verify-cta-link    { @apply text-primary-300; }
+
+  /* The upload fields fold away behind a button styled as one. list-none plus
+     the ::-webkit- rule removes the disclosure triangle, which would otherwise
+     sit inside the button and give away that it is a <summary>. */
+  .verify-cta-details > summary { @apply mt-4 inline-flex cursor-pointer list-none; }
+  .verify-cta-details > summary::-webkit-details-marker { display: none; }
+  .verify-cta-details[open] > summary { @apply hidden; }
+
+  /* Checkout summary — a receipt-shaped block, so what is being bought reads as
+     a set of facts rather than another paragraph of marketing. */
+  .checkout-summary { @apply my-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2; }
+  .checkout-line    { @apply flex items-start justify-between gap-4 border-b border-slate-200 py-2.5 text-sm text-slate-700; }
+  .checkout-line:last-child { @apply border-b-0; }
+  .checkout-label   { @apply shrink-0 font-medium text-slate-500; }
+  .checkout-total   { @apply text-base text-slate-900; }
+  .checkout-terms   { @apply mb-5 space-y-1.5 text-xs text-slate-500; }
+  .checkout-terms li { @apply flex gap-2 before:content-['✓'] before:text-emerald-600; }
+  /* The counterpart on /verified: what the badge does NOT claim. Crossed rather
+     than ticked, and in the same visual weight as the ticks beside it — that
+     section only does its job if it is as readable as the reassuring one. */
+  .verify-nots    { @apply space-y-1.5 text-xs text-slate-500; }
+  .verify-nots li { @apply flex gap-2 before:content-['✗'] before:text-slate-400; }
+  .dark .verify-nots { @apply text-slate-400; }
+  .dark .checkout-summary { @apply border-slate-800 bg-slate-900/40; }
+  .dark .checkout-line    { @apply border-slate-800 text-slate-300; }
+  .dark .checkout-label   { @apply text-slate-400; }
+  .dark .checkout-total   { @apply text-white; }
+  .dark .checkout-terms   { @apply text-slate-400; }
   /* brand-crimson is too dark to read on #1a202c. */
   .dark .err  { @apply text-red-400; }
 

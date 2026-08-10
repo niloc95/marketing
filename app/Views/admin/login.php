@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Admin sign in — WebScheduler Directory']) ?>
+<?= seo_meta(['title' => 'Admin sign in — ' . config('Directory')->siteName()]) ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -9,7 +9,7 @@
     <div class="container">
         <div class="form-card max-w-md">
             <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Admin sign in</h1>
-            <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Directory moderation.</p>
+            <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Moderation.</p>
             <form method="post" action="<?= base_url('admin/login') ?>">
                 <?= csrf_field() ?>
                 <div class="field">

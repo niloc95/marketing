@@ -84,7 +84,7 @@ $business = array_filter([
 $catSlug  = $l['category']['slug'] ?? ($l['category_slug'] ?? '');
 $province = (string) ($l['province'] ?? '');
 $crumbs   = [
-    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Directory', 'item' => base_url('directory')],
+    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Browse', 'item' => base_url('directory')],
 ];
 if ($catSlug !== '') {
     $crumbs[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $prof, 'item' => base_url('directory/' . $catSlug)];
@@ -167,6 +167,13 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                             <?= esc($place) ?>
                         <?php endif; ?>
                     </div>
+                <?php endif; ?>
+                <?php if (listing_is_verified_business($l)): ?>
+                    <?php // The title says what was actually checked. "Verified" with no
+                          // referent is the kind of badge that erodes trust rather than
+                          // building it, and the FAQ this links to spells it out. ?>
+                    <a class="badge badge-verified mt-2" href="<?= base_url('verified') ?>"
+                       title="We checked this business's registration document and the owner's ID">✓ Verified Business</a>
                 <?php endif; ?>
                 <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured mt-2">★ Featured</span><?php endif; ?>
             </div>

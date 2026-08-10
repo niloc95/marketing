@@ -91,17 +91,43 @@ class Filters extends BaseFilters
             // injects. Deliberately App\Filters\BotTrap rather than the
             // framework's own honeypot filter — same check, but a 403 instead
             // of a 500 error page. See the class docblock.
-            'bottrap',
+            //
+            // payfast/notify is exempt defensively rather than out of need: a
+            // PayFast notification does not carry the field today, so the trap
+            // already passes it. But the field name is configurable, and the
+            // failure mode if one were ever chosen that PayFast also sends is
+            // subscriptions silently going unpaid while PayFast retries into a
+            // 403 forever. Cheap to rule out.
+            'bottrap' => ['except' => ['payfast/notify']],
             // csp-report is exempt because a browser posting a violation report
             // has no CSRF token to send. Nothing is trusted from that endpoint —
             // it only writes a throttled, truncated log line (see Csp::report).
-            'csrf' => ['except' => ['csp-report']],
+            //
+            // payfast/notify is exempt for the same structural reason: PayFast
+            // posts server-to-server, with no session and no token to carry.
+            // What replaces CSRF there is the four-way validation in
+            // PayFastNotify — signature, source address, a confirmation
+            // POST-back to PayFast, and an amount check. Do not add a route to
+            // this list without an equivalent story.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify']],
             // 'invalidchars',
         ],
         'after' => [
             // Injects the hidden field that 'bottrap' reads, into every
             // rendered form. Config\Honeypot owns the name and markup.
-            'honeypot',
+            //
+            // manage/verification/checkout is exempt because the only form on
+            // that page is the one we POST to PayFast, and every field in it is
+            // covered by an MD5 signature computed before the filter runs. An
+            // injected honeypot field arrives at PayFast as a parameter our
+            // signature did not account for, which risks the whole payment being
+            // rejected as tampered. Caught in testing, and it would have looked
+            // like an inexplicable signature bug.
+            //
+            // This exemption is bound to the route path by string, so it MUST be
+            // updated whenever the checkout route is renamed — there is nothing
+            // that would fail loudly if it drifted.
+            'honeypot' => ['except' => ['payfast/notify', 'manage/verification/checkout']],
             'secureheaders',
         ],
     ];

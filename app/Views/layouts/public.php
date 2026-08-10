@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find a local business or service']) ?>
+    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find someone local']) ?>
     <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/favicon.svg') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/directory.css') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.css') ?: time() ?>">
     <meta name="theme-color" content="#003049" media="(prefers-color-scheme: light)">
@@ -68,10 +68,10 @@
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>">
                 <span class="brand-mark">W</span>
-                <span>WebScheduler <span class="text-brand-orange">Directory</span></span>
+                <span>WebScheduler <span class="text-brand-orange">Local</span></span>
             </a>
             <nav class="nav">
-                <a href="<?= base_url('directory') ?>">Find a business</a>
+                <a href="<?= base_url('directory') ?>">Browse</a>
                 <?php // Both icons stay in the DOM and are swapped with dark:hidden /
                       // hidden dark:block — no JS icon logic, so they can't desync from
                       // the class the FOUC guard already set. aria-pressed is corrected
@@ -80,10 +80,18 @@
                     <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
                     <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
                 </button>
-                <a href="<?= base_url('list-your-practice') ?>" class="btn btn-accent">List your business — free</a>
+                <a href="<?= base_url('list-your-practice') ?>" class="btn btn-accent">Add your business — free</a>
             </nav>
         </div>
     </header>
+
+    <?php // <main> is what holds the footer down: body is a flex column at least
+          // one viewport tall and this grows to fill whatever is left, so a short
+          // page (/manage, /contact, an empty search) puts the footer at the
+          // bottom of the screen instead of leaving background below it. It is
+          // also the page's main landmark, which screen readers use to skip the
+          // header. See .site-main in resources/directory.css. ?>
+    <main class="site-main">
 
     <?php foreach (['success' => 'alert-success', 'error' => 'alert-error', 'info' => 'alert-info'] as $key => $cls): ?>
         <?php if (session()->getFlashdata($key)): ?>
@@ -108,6 +116,8 @@
 
     <?= $this->renderSection('content') ?>
 
+    </main>
+
     <?php // Four columns, mirroring the marketing site's footer shape so the two
           // properties read as one system. Rebuilt with directory.css semantic classes
           // rather than copied: the marketing markup leans on container-x and nav-link,
@@ -117,31 +127,36 @@
             <div>
                 <a class="brand" href="<?= base_url('/') ?>">
                     <span class="brand-mark">W</span>
-                    <span>WebScheduler <span class="text-brand-orange">Directory</span></span>
+                    <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline">Find a local business or service anywhere in South Africa — or list your own, free.</p>
+                <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa — or add your own, free.</p>
             </div>
             <div class="site-footer-col">
-                <h3>Directory</h3>
+                <h3>Browse</h3>
                 <ul>
-                    <li><a href="<?= base_url('directory') ?>">Browse businesses</a></li>
+                    <li><a href="<?= base_url('directory') ?>">Browse everything</a></li>
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
-                    <li><a href="<?= base_url('list-your-practice') ?>">List your business</a></li>
-                    <li><a href="<?= base_url('manage') ?>">Manage your listing</a></li>
+                    <li><a href="<?= base_url('list-your-practice') ?>">Add your business</a></li>
+                    <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
             </div>
             <div class="site-footer-col">
                 <h3>Company</h3>
                 <ul>
                     <li><a href="https://webscheduler.co.za/about.html">About</a></li>
-                    <li><a href="https://webscheduler.co.za/contact.html">Contact</a></li>
+                    <?php // Our own pages, not the marketing site's — that one is a
+                          // "Book a demo" form for the scheduling product, which is
+                          // not what someone here is asking for. ?>
+                    <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
+                    <li><a href="<?= base_url('verified') ?>">Verified businesses</a></li>
+                    <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                     <li><a href="https://webscheduler.co.za/">WebScheduler</a></li>
                 </ul>
             </div>
             <div class="site-footer-col">
                 <h3>Get started</h3>
-                <p class="site-footer-tagline">Listing your business takes a couple of minutes and costs nothing.</p>
-                <a class="btn btn-accent mt-4" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+                <p class="site-footer-tagline">Adding your business takes a couple of minutes and costs nothing.</p>
+                <a class="btn btn-accent mt-4" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
             </div>
         </div>
         <div class="site-footer-bar">

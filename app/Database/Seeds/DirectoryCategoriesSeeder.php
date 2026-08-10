@@ -5,8 +5,8 @@ namespace App\Database\Seeds;
 use CodeIgniter\Database\Seeder;
 
 /**
- * Service-business taxonomy for the directory. Grouped via the existing
- * `group_name` column so the browse filter can render optgroups.
+ * Taxonomy of services, professionals and home industry. Grouped via the
+ * existing `group_name` column so the browse filter can render optgroups.
  *
  * Idempotent — re-running only inserts slugs that are missing, so this is safe
  * to run against a database that already holds listings.
@@ -80,6 +80,13 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Clothing & Apparel', 'Jewellery', 'Furniture', 'Hardware Store',
                 'Nursery & Garden Centre', 'Courier & Delivery', 'Laundry & Dry Cleaning',
                 'Tailor & Alterations', 'Funeral Services',
+            ],
+            // Home industry — people trading from home rather than premises. A
+            // deliberate positioning bet, not an afterthought: it is the part of
+            // the local economy the big search engines index worst.
+            'Home Industry & Handmade' => [
+                'Home Baker', 'Cake Artist', 'Preserves & Jams', 'Crafts & Handmade',
+                'Sewing & Crochet', 'Farm Produce & Farm Stall', 'Home Decor',
             ],
         ];
 

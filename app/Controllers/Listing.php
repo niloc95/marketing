@@ -3,13 +3,16 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesListingUploads;
+use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\VerificationService;
 
 class Listing extends BaseController
 {
     use HandlesListingUploads;
+    use HandlesVerificationUploads;
 
     /** Nobody fills in a whole business listing this fast. */
     private const MIN_FORM_SECONDS = 3;
@@ -21,11 +24,17 @@ class Listing extends BaseController
         // Stamped here, checked in store() — see the timing floor below.
         session()->set('listing_form_rendered_at', time());
 
+        $verification = new VerificationService();
+
         return view('directory/form', [
             'old'         => session()->getFlashdata('old') ?? [],
             'errors'      => session()->getFlashdata('errors') ?? [],
             'categories' => $svc->categories(),
             'provinces'   => $svc->provinces(),
+            // Off entirely when PayFast has no credentials — better to hide the
+            // offer than to take documents for a badge we cannot sell.
+            'verificationOffered' => $verification->isEnabled(),
+            'verificationAmount'  => $verification->monthlyAmount(),
         ]);
     }
 
@@ -86,9 +95,26 @@ class Listing extends BaseController
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
 
+        // Optional Verified Business application. Also after the commit, and for
+        // a second reason beyond needing the id: a rejected document must never
+        // cost someone their listing. Whatever happens here, the profile is
+        // already saved and the message below still says so.
+        $message  = $result['message'];
+        $verified = $this->resolveVerificationDocuments((int) $result['id']);
+
+        if ($verified['docs'] !== []) {
+            $applied = (new VerificationService())->submitApplication((int) $result['id'], $verified['docs']);
+
+            if ($applied['ok']) {
+                $message .= ' ' . $applied['message'];
+            } else {
+                $verified['errors'][] = $applied['message'];
+            }
+        }
+
         return $this->withUploadErrors(
-            redirect()->to(base_url('/'))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors']))
+            redirect()->to(base_url('/'))->with('success', $message),
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $verified['errors']))
         );
     }
 
@@ -99,6 +125,6 @@ class Listing extends BaseController
     private function fakeSuccess()
     {
         return redirect()->to(base_url('/'))
-            ->with('success', 'Almost done — check your email to verify and publish your listing.');
+            ->with('success', 'Almost done — check your email to verify and publish your profile.');
     }
 }

@@ -33,7 +33,7 @@ $analyticsId = config('Directory')->analyticsId();
             <table class="table">
                 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Lifetime</th></tr></thead>
                 <tbody>
-                    <tr><td><code>ci_session</code></td><td>Cookie</td><td>Keeps you signed in while you edit your listing, and carries one-off status messages between pages.</td><td>Session</td></tr>
+                    <tr><td><code>ci_session</code></td><td>Cookie</td><td>Keeps you signed in while you edit your profile, and carries one-off status messages between pages.</td><td>Session</td></tr>
                     <tr><td><code>csrf_cookie_name</code></td><td>Cookie</td><td>Protects forms against cross-site request forgery.</td><td>Session</td></tr>
                     <tr><td><code>xs-theme</code></td><td>Local storage</td><td>Remembers whether you chose light or dark mode. Shared with webscheduler.co.za so the choice carries across both sites.</td><td>Until cleared</td></tr>
                     <tr><td><code>ws-consent</code></td><td>Local storage</td><td>Remembers your answer to the cookie banner, so we stop asking.</td><td>Until cleared</td></tr>
@@ -64,8 +64,8 @@ $analyticsId = config('Directory')->analyticsId();
             <h2>Third parties that see your request</h2>
             <p>Some things your browser loads come from other companies, which necessarily see your IP address even though they set no cookie of ours:</p>
             <ul>
-                <li><strong>CARTO</strong> serves the map tiles on listing and search pages — <a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>.</li>
-                <li><strong>OpenStreetMap</strong> handles address lookup when you type an address into the listing form — <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>.</li>
+                <li><strong>CARTO</strong> serves the map tiles on profile and search pages — <a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>.</li>
+                <li><strong>OpenStreetMap</strong> handles address lookup when you type an address into the business form — <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>.</li>
             </ul>
             <p>Fonts, styles and scripts are served from our own domain, so nothing else is fetched from a third party as you browse.</p>
 

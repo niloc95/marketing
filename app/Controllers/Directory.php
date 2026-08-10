@@ -279,7 +279,7 @@ class Directory extends BaseController
         $listing = $mut->verify($token);
         if ($listing !== null) {
             return redirect()->to(base_url('directory/' . $listing['slug']))
-                ->with('success', 'Your listing is verified and now live in the directory.');
+                ->with('success', 'Your profile is verified and now live.');
         }
         return redirect()->to(base_url('/'))
             ->with('error', 'That verification link is invalid or has expired.');
@@ -314,6 +314,9 @@ class Directory extends BaseController
                     ['loc' => base_url('directory'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('directory/categories'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('list-your-practice'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('faq'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('verified'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('contact'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('privacy'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('terms'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('cookie-policy'), 'lastmod' => date('Y-m-d')],

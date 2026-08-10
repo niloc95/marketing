@@ -2,7 +2,7 @@
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'  => 'Edit your listing — ' . config('Directory')->siteName(),
+    'title'  => 'Edit your profile — ' . config('Directory')->siteName(),
     'robots' => 'noindex, nofollow',
 ]) ?>
 <?= $this->endSection() ?>
@@ -30,7 +30,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
         <div class="form-card">
             <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <span class="eyebrow">Manage your listing</span>
+                    <span class="eyebrow">Manage your profile</span>
                     <h1 class="mb-1.5 mt-2 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc($listing['display_name']) ?></h1>
                     <p class="text-sm text-slate-500 dark:text-slate-400">
                         Status:
@@ -42,6 +42,15 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
                 </div>
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/signout') ?>">Sign out</a>
             </div>
+
+            <?php // Same reason as the gallery below: this panel posts its own form. ?>
+            <?php if ($verificationOffered): ?>
+                <?= view('directory/_verification_panel', [
+                    'verification' => $verification,
+                    'amount'       => $verificationAmount,
+                    'payable'      => $verificationPayable,
+                ]) ?>
+            <?php endif; ?>
 
             <?php // Deliberately outside the form below — each thumbnail carries its
                   // own delete form, and forms cannot nest. ?>

@@ -30,8 +30,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
     <div class="container">
         <div class="form-card">
             <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New listing' : 'Edit listing' ?></h1>
-                <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>">&larr; Back to listings</a>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New profile' : 'Edit profile' ?></h1>
+                <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>">&larr; Back to profiles</a>
             </div>
 
             <?php // Deliberately outside the form below — each thumbnail carries its
@@ -83,7 +83,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block mt-4"><?= $isNew ? 'Create listing' : 'Save changes' ?></button>
+                <button type="submit" class="btn btn-primary btn-block mt-4"><?= $isNew ? 'Create profile' : 'Save changes' ?></button>
             </form>
         </div>
     </div>

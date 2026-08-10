@@ -39,7 +39,7 @@ $schema = [
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'All categories — ' . $siteName,
-    'description' => 'Browse every business category on ' . $siteName . ' — find the right local service, or list your own business free.',
+    'description' => 'Browse every category on ' . $siteName . ' — find someone local, or add your own business free.',
     'canonical'   => $canonical,
     'schema'      => $schema,
 ]) ?>
@@ -49,12 +49,12 @@ $schema = [
 <section class="hero py-8 sm:py-10">
     <div class="container">
         <nav class="mb-2 text-sm text-white/70" aria-label="Breadcrumb">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Directory</a>
+            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
             <span class="mx-1">/</span>
             <span class="text-white">All categories</span>
         </nav>
         <h1 class="text-2xl sm:text-3xl">Browse by category</h1>
-        <p class="mt-2 text-sm text-white/80">Every service on <?= esc($siteName) ?>, grouped for easy browsing.</p>
+        <p class="mt-2 text-sm text-white/80">Everything on <?= esc($siteName) ?>, grouped for easy browsing.</p>
     </div>
 </section>
 

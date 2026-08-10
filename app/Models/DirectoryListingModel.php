@@ -21,7 +21,7 @@ class DirectoryListingModel extends Model
         'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
         'logo_path', 'slug', 'status', 'is_verified',
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
-        'published_at', 'is_featured', 'source', 'source_url', 'claim_token',
+        'published_at', 'is_featured', 'verified_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
     ];
 
@@ -32,6 +32,12 @@ class DirectoryListingModel extends Model
      * email and slug are absent on purpose, so a crafted POST cannot publish or
      * feature a listing, hijack another owner's address, or change a live URL.
      * Admins go through DirectoryAdminService instead, which has no such limit.
+     *
+     * verified_until is absent for a stronger reason than any of those: it is
+     * what the paid Verified Business badge renders from, so a POST that could
+     * set it would be a free subscription. It is not in the admin service's
+     * privileged block either. VerificationService is the only writer, and only
+     * once PayFast has confirmed a payment.
      *
      * The geo columns — latitude, longitude, geocode_precision,
      * geocoded_address, geocoding_status — are absent for a different reason:

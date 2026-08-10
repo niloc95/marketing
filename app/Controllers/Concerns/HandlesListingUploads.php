@@ -91,7 +91,7 @@ trait HandlesListingUploads
         foreach ($files as $file) {
             if (count($photos) >= $slots) {
                 $errors[] = sprintf(
-                    '“%s” was not added — a listing can have at most %d photos%s.',
+                    '“%s” was not added — a profile can have at most %d photos%s.',
                     $file->getClientName(),
                     self::GALLERY_MAX,
                     $existing > 0 ? sprintf(' and this one already has %d', $existing) : ''

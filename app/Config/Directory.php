@@ -10,7 +10,7 @@ use CodeIgniter\Config\BaseConfig;
 class Directory extends BaseConfig
 {
     /** Public site name. */
-    public string $siteName = 'WebScheduler Directory';
+    public string $siteName = 'WebScheduler Local';
 
     /** Default Open Graph / Twitter share image, used when a page has none of its own. */
     public string $ogImage = 'assets/og-image.jpeg';
@@ -100,6 +100,64 @@ class Directory extends BaseConfig
      */
     public string $healthToken = '';
 
+    /**
+     * Whether businesses can apply for the Verified Business badge at all.
+     *
+     * Deliberately separate from the PayFast settings below. Collecting
+     * documents, reviewing them and awarding a badge are useful on their own —
+     * a business can pay by EFT and an admin can activate the badge by hand —
+     * so tying the whole feature to payment credentials would hide the parts
+     * that have nothing to do with card payments. This flag answers "do we
+     * offer this?"; PayFast::isConfigured() answers the narrower "can we charge
+     * a card for it?".
+     */
+    public bool $verifiedBadgeEnabled = true;
+
+    /**
+     * Monthly price of the Verified Business badge, in rand, as a decimal
+     * string.
+     *
+     * A string and not a float on purpose: this value is signed and sent to
+     * PayFast, and then compared byte-for-byte against what PayFast reports
+     * back. Floats would introduce a formatting step on each side of that round
+     * trip and one day the two would disagree by a cent.
+     *
+     * Changing it affects new applications only. Existing subscriptions keep
+     * the amount snapshotted on their verification row — see the migration.
+     */
+    public string $verifiedMonthlyAmount = '149.00';
+
+    /**
+     * PayFast credentials for the Verified Business subscription.
+     *
+     * The whole feature is dark until merchant id and key are both set:
+     * PayFast::isConfigured() gates the signup block, the manage panel and the
+     * pay route, so a deployment that has not been given credentials shows
+     * nobody a badge they cannot buy.
+     *
+     * Set these in .env, never here — the passphrase in particular is a signing
+     * secret, and this file is in the repository.
+     */
+    public string $payfastMerchantId = '';
+
+    public string $payfastMerchantKey = '';
+
+    /**
+     * Signature passphrase, set in the PayFast dashboard under Settings.
+     *
+     * Optional to PayFast, mandatory here in practice: without it, anyone who
+     * learns the merchant id and key — both of which travel in a form the buyer
+     * can read — can forge a valid-looking payment request. Configure one.
+     */
+    public string $payfastPassphrase = '';
+
+    /**
+     * Defaults to the sandbox, so a misconfigured or half-deployed environment
+     * fails towards "no real money moved" rather than away from it. Set
+     * directory.payfastSandbox = false in production and nowhere else.
+     */
+    public bool $payfastSandbox = true;
+
     public function siteName(): string
     {
         $env = env('directory.siteName');
@@ -173,6 +231,64 @@ class Directory extends BaseConfig
     {
         $env = env('directory.adminPasswordHash');
         return is_string($env) && trim($env) !== '' ? trim($env) : $this->adminPasswordHash;
+    }
+
+    /**
+     * On unless explicitly switched off. Same string-not-bool care as
+     * payfastSandbox() below — env() returns 'false' as a truthy string.
+     */
+    public function verifiedBadgeEnabled(): bool
+    {
+        $env = env('directory.verifiedBadgeEnabled');
+        if ($env === null) {
+            return $this->verifiedBadgeEnabled;
+        }
+
+        return ! in_array(strtolower(trim((string) $env)), ['false', '0', 'no', 'off', ''], true);
+    }
+
+    public function verifiedMonthlyAmount(): string
+    {
+        $env = env('directory.verifiedMonthlyAmount');
+        $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->verifiedMonthlyAmount;
+
+        // Normalised to two decimals here, once, rather than at each of the
+        // four places that sign, display, store or compare it. PayFast rejects
+        // "149" and "149.0" alike.
+        return number_format((float) $raw, 2, '.', '');
+    }
+
+    public function payfastMerchantId(): string
+    {
+        $env = env('directory.payfastMerchantId');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->payfastMerchantId;
+    }
+
+    public function payfastMerchantKey(): string
+    {
+        $env = env('directory.payfastMerchantKey');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->payfastMerchantKey;
+    }
+
+    public function payfastPassphrase(): string
+    {
+        $env = env('directory.payfastPassphrase');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->payfastPassphrase;
+    }
+
+    /**
+     * Anything other than an explicit false-ish env value keeps the sandbox on.
+     * env() gives back the string 'false' rather than a bool, which is truthy —
+     * a naive cast here would put a typo into live payments.
+     */
+    public function payfastSandbox(): bool
+    {
+        $env = env('directory.payfastSandbox');
+        if ($env === null) {
+            return $this->payfastSandbox;
+        }
+
+        return ! in_array(strtolower(trim((string) $env)), ['false', '0', 'no', 'off', ''], true);
     }
 
     /**

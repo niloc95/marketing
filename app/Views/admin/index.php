@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Admin — WebScheduler Directory']) ?>
+<?= seo_meta(['title' => 'Admin — ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -41,8 +41,8 @@ $isTrash = $status === 'trashed';
 <section class="section">
     <div class="container">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Listings <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= (int) $result['total'] ?>)</span></h1>
-            <a class="btn btn-accent btn-xs" href="<?= base_url('admin/new') ?>">+ New listing</a>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Profiles <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= (int) $result['total'] ?>)</span></h1>
+            <a class="btn btn-accent btn-xs" href="<?= base_url('admin/new') ?>">+ New profile</a>
         </div>
 
         <form method="get" action="<?= base_url('admin') ?>" class="mb-4 flex flex-wrap items-end gap-2">
@@ -83,12 +83,17 @@ $isTrash = $status === 'trashed';
         </div>
 
         <?php if (empty($result['items'])): ?>
-            <div class="empty">No listings in this view.</div>
+            <div class="empty">No profiles in this view.</div>
         <?php else: ?>
         <div class="tablewrap">
             <table class="table">
                 <thead>
-                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Verified</th><th>Actions</th></tr>
+                    <?php // "Email" and "Badge", not one column called "Verified". Two
+                          // different things wear that word here: is_verified means the
+                          // owner clicked their confirmation link, verified_until means
+                          // they pay for the Verified Business badge. One header covering
+                          // both is how someone ends up refunding the wrong person. ?>
+                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Email</th><th>Badge</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
@@ -115,10 +120,19 @@ $isTrash = $status === 'trashed';
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
                         <td><?= ! empty($l['is_verified']) ? '✓' : '—' ?></td>
                         <td>
+                            <?php if (listing_is_verified_business($l)): ?>
+                                <span class="pill pill-published" title="Paid through <?= esc($l['verified_until'], 'attr') ?>">✓</span>
+                            <?php elseif (! empty($l['verified_until'])): ?>
+                                <span class="pill pill-unpublished" title="Lapsed <?= esc($l['verified_until'], 'attr') ?>">lapsed</span>
+                            <?php else: ?>
+                                —
+                            <?php endif; ?>
+                        </td>
+                        <td>
                             <div class="actions">
                                 <?php if ($isTrash): ?>
                                     <form method="post" action="<?= base_url('admin/restore/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-primary btn-xs">Restore</button></form>
-                                    <form method="post" action="<?= base_url('admin/purge/' . $l['id']) ?>" data-confirm="Permanently delete this listing? This cannot be undone."><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete forever</button></form>
+                                    <form method="post" action="<?= base_url('admin/purge/' . $l['id']) ?>" data-confirm="Permanently delete this profile? This cannot be undone."><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete forever</button></form>
                                 <?php else: ?>
                                     <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/edit/' . $l['id']) ?>">Edit</a>
                                     <?php if ($l['status'] !== 'published'): ?>
@@ -132,7 +146,7 @@ $isTrash = $status === 'trashed';
                                         <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
                                     </form>
                                     <a class="btn btn-ghost btn-xs" href="<?= base_url('directory/' . $l['slug']) ?>" target="_blank">View</a>
-                                    <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" data-confirm="Move this listing to trash?"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
+                                    <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" data-confirm="Move this profile to trash?"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
                                 <?php endif; ?>
                             </div>
                         </td>

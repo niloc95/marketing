@@ -1,0 +1,155 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Libraries\PayFast;
+use App\Models\DirectoryVerificationModel;
+use App\Services\VerificationService;
+use CodeIgniter\Controller;
+use CodeIgniter\HTTP\ResponseInterface;
+
+/**
+ * PayFast Instant Transaction Notification — the server-to-server callback that
+ * says a Verified Business subscription has been paid.
+ *
+ * This is the only unauthenticated endpoint in the app that grants anything, so
+ * it is worth being explicit about the shape of the problem. A POST here that
+ * we believe hands out a paid badge for free. There is no session, no CSRF
+ * token and no user: the only thing separating a real notification from a
+ * forged one is what we check.
+ *
+ * So: four independent checks, and a request must pass all four. Signature
+ * proves the sender knows the passphrase. Source IP proves it came from a
+ * PayFast machine. The validation POST-back proves PayFast agrees it sent this,
+ * over a connection we opened. The amount check proves it is the payment we
+ * asked for and not a one-cent one. Any single check could be defeated or could
+ * fail wrongly; all four together is a high bar.
+ *
+ * Two things that look like bugs and are not:
+ *
+ *  1. Every outcome returns HTTP 200, including the rejections. PayFast retries
+ *     on anything else, so a 4xx for a forged notification would earn us an
+ *     endless retry loop for a request we have already decided about. The
+ *     response body is empty and says nothing; the log is where the reason goes.
+ *
+ *  2. The request body is read raw and parsed by hand rather than through
+ *     $this->request->getPost(). The signature covers the fields in the order
+ *     PayFast sent them, and an associative array's order is not something to
+ *     stake a payment on.
+ *
+ * CSRF and the honeypot filter are both disabled for this route in
+ * Config/Filters.php. They have to be — there is no browser here to carry a
+ * token — and that exemption is exactly why the four checks above exist.
+ */
+class PayFastNotify extends Controller
+{
+    public function index(): ResponseInterface
+    {
+        $payfast = new PayFast();
+
+        // Nothing to do if the feature was never switched on. Answering 200
+        // keeps a stray notification from retrying forever.
+        if (! $payfast->isConfigured()) {
+            return $this->done('PayFast is not configured; notification ignored.');
+        }
+
+        $raw = (string) file_get_contents('php://input');
+        if (trim($raw) === '') {
+            return $this->done('Empty notification body.');
+        }
+
+        $fields = $payfast->parseNotification($raw);
+        $ip     = (string) $this->request->getIPAddress();
+
+        // --- Check 1: signature ------------------------------------------------
+        if (! $payfast->verifySignature($fields)) {
+            return $this->done('Notification rejected: bad signature.', $fields, $ip);
+        }
+
+        // --- Check 2: source address -------------------------------------------
+        if (! $payfast->isValidSourceIp($ip)) {
+            return $this->done('Notification rejected: source address is not PayFast.', $fields, $ip);
+        }
+
+        // --- Check 3: PayFast confirms it sent this ----------------------------
+        if (! $payfast->validateWithPayFast($raw)) {
+            return $this->done('Notification rejected: PayFast did not confirm it.', $fields, $ip);
+        }
+
+        // Which subscription is this? m_payment_id is ours and is what we look
+        // up on; custom_str2 carries the same id and is the fallback for the
+        // rare notification that arrives without it.
+        $verifications = new DirectoryVerificationModel();
+        $verification  = $verifications->findByPaymentId((string) ($fields['m_payment_id'] ?? ''));
+
+        if ($verification === null && ! empty($fields['custom_str2'])) {
+            $row          = $verifications->find((int) $fields['custom_str2']);
+            $verification = is_array($row) ? $row : null;
+        }
+
+        if ($verification === null) {
+            return $this->done('Notification rejected: no matching verification.', $fields, $ip);
+        }
+
+        // --- Check 4: the amount we asked for ----------------------------------
+        $amountGross = isset($fields['amount_gross']) ? (float) $fields['amount_gross'] : null;
+        $status      = strtoupper(trim((string) ($fields['payment_status'] ?? '')));
+
+        // Only a completed payment has to match an amount. A cancellation
+        // carries no money and would fail a comparison that means nothing.
+        if ($status === 'COMPLETE' && ! $payfast->amountMatches($amountGross, (string) $verification['amount'])) {
+            return $this->done(sprintf(
+                'Notification rejected: amount %s does not match the expected %s.',
+                $amountGross === null ? 'missing' : (string) $amountGross,
+                (string) $verification['amount']
+            ), $fields, $ip);
+        }
+
+        $outcome = (new VerificationService())->recordPayment(
+            $verification,
+            (string) ($fields['pf_payment_id'] ?? ''),
+            $status,
+            $amountGross,
+            $fields
+        );
+
+        return $this->done(sprintf(
+            'Notification %s for verification %d (%s).',
+            $outcome,
+            (int) $verification['id'],
+            $status
+        ), $fields, $ip);
+    }
+
+    /**
+     * Log the outcome and answer 200.
+     *
+     * The log line names the payment, never the payer: pf_payment_id and
+     * m_payment_id are ours to correlate with, while the email address, name and
+     * signature in the notification are not things that need to sit in a log
+     * file to make an incident debuggable. Same discipline Mailer applies to
+     * recipient addresses.
+     *
+     * @param array<string,string> $fields
+     */
+    private function done(string $message, array $fields = [], string $ip = ''): ResponseInterface
+    {
+        $context = [];
+        if (isset($fields['pf_payment_id'])) {
+            $context[] = 'pf_payment_id=' . $fields['pf_payment_id'];
+        }
+        if (isset($fields['m_payment_id'])) {
+            $context[] = 'm_payment_id=' . $fields['m_payment_id'];
+        }
+        if ($ip !== '') {
+            $context[] = 'from=' . $ip;
+        }
+
+        log_message(
+            'info',
+            'PayFast ITN: ' . $message . ($context === [] ? '' : ' [' . implode(' ', $context) . ']')
+        );
+
+        return $this->response->setStatusCode(200)->setBody('');
+    }
+}

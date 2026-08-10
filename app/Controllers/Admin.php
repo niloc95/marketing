@@ -7,9 +7,12 @@ use App\Libraries\LogReader;
 use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
+use App\Models\DirectoryVerificationDocumentModel;
+use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryService;
 use App\Services\SystemStatusService;
+use App\Services\VerificationService;
 
 class Admin extends BaseController
 {
@@ -88,7 +91,7 @@ class Admin extends BaseController
     {
         $listing = (new DirectoryAdminService())->find($id);
         if ($listing === null) {
-            return redirect()->to(base_url('admin'))->with('error', 'That listing no longer exists.');
+            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
         }
         return $this->form($listing);
     }
@@ -185,8 +188,8 @@ class Admin extends BaseController
 
         return $this->outcome(
             (new DirectoryAdminService())->setFeatured($id, $on),
-            'Listing updated.',
-            'Could not update that listing.'
+            'Profile updated.',
+            'Could not update that profile.'
         );
     }
 
@@ -194,8 +197,8 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new DirectoryAdminService())->publish($id),
-            'Listing published.',
-            'Could not publish that listing — it may be in the trash. Restore it first.'
+            'Profile published.',
+            'Could not publish that profile — it may be in the trash. Restore it first.'
         );
     }
 
@@ -203,8 +206,8 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new DirectoryAdminService())->unpublish($id),
-            'Listing unpublished.',
-            'Could not unpublish that listing — it may be in the trash.'
+            'Profile unpublished.',
+            'Could not unpublish that profile — it may be in the trash.'
         );
     }
 
@@ -212,8 +215,8 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new DirectoryAdminService())->remove($id),
-            'Listing moved to trash.',
-            'Could not move that listing to the trash.'
+            'Profile moved to trash.',
+            'Could not move that profile to the trash.'
         );
     }
 
@@ -221,8 +224,8 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new DirectoryAdminService())->restore($id),
-            'Listing restored.',
-            'Could not restore that listing — it may not be in the trash.'
+            'Profile restored.',
+            'Could not restore that profile — it may not be in the trash.'
         );
     }
 
@@ -230,8 +233,8 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new DirectoryAdminService())->purge($id),
-            'Listing permanently deleted.',
-            'Could not delete that listing. Only listings already in the trash can be permanently deleted.'
+            'Profile permanently deleted.',
+            'Could not delete that profile. Only profiles already in the trash can be permanently deleted.'
         );
     }
 
@@ -241,6 +244,217 @@ class Admin extends BaseController
         return $ok
             ? $this->back($success)
             : redirect()->back()->with('error', $failure);
+    }
+
+    // ----------------------------------------------------- verified business
+
+    /**
+     * The Verified Business review queue.
+     *
+     * A page of its own rather than another tab on the profiles table. The tabs
+     * there are listing statuses; verification state is a separate axis, and a
+     * single row of tabs mixing "published" with "awaiting payment" would make
+     * both harder to read.
+     */
+    public function verifications()
+    {
+        $model = new DirectoryVerificationModel();
+        $state = (string) ($this->request->getGet('state') ?? DirectoryVerificationModel::STATE_SUBMITTED);
+        $page  = max(1, (int) ($this->request->getGet('page') ?? 1));
+
+        $result = $model->queue($state, $page);
+
+        return view('admin/verifications', [
+            'state'   => $state,
+            'rows'    => $result['rows'],
+            'pager'   => $result['pager'],
+            'counts'  => $model->counts(),
+            'amount'  => (new VerificationService())->monthlyAmount(),
+        ]);
+    }
+
+    public function approveVerification(int $id)
+    {
+        return $this->outcome(
+            (new VerificationService())->approve($id, $this->adminActor()),
+            'Approved. The owner has been emailed a link to activate and pay.',
+            'Could not approve that application — only one awaiting review can be approved.'
+        );
+    }
+
+    public function rejectVerification(int $id)
+    {
+        $reason = trim((string) $this->request->getPost('reason'));
+
+        if ($reason === '') {
+            return redirect()->back()->with('error', 'Give a reason — the owner sees it, and "rejected" on its own is not actionable.');
+        }
+
+        return $this->outcome(
+            (new VerificationService())->reject($id, $reason, $this->adminActor()),
+            'Rejected. The owner has been emailed the reason and can re-submit.',
+            'Could not reject that application — only one awaiting review can be rejected.'
+        );
+    }
+
+    /**
+     * Grant the badge by hand, for a business that paid by EFT — or when a
+     * PayFast notification went missing and someone has genuinely paid.
+     */
+    public function activateVerification(int $id)
+    {
+        $months = (int) ($this->request->getPost('months') ?? 1);
+
+        return $this->outcome(
+            (new VerificationService())->activateManually($id, $this->adminActor(), $months),
+            sprintf('Badge activated for %d month%s.', max(1, $months), $months === 1 ? '' : 's'),
+            'Could not activate that badge — an application still awaiting review has to be approved first.'
+        );
+    }
+
+    public function revokeVerification(int $id)
+    {
+        return $this->outcome(
+            (new VerificationService())->revoke($id, $this->adminActor()),
+            'Badge removed. Cancel the subscription in the PayFast dashboard too — we cannot do that from here.',
+            'Could not remove that badge.'
+        );
+    }
+
+    /**
+     * Stream a verification document to the reviewing admin.
+     *
+     * These are ID copies and registration certificates: they live outside the
+     * docroot precisely so that no web server config, directory listing or
+     * guessed URL can reach them. This method is the only way back out, and it
+     * is inside the admin filter group.
+     *
+     * The request supplies a row id, never a path — which removes path
+     * traversal as a category rather than defending against it. The containment
+     * check in resolvePath() is the second line for a row whose path was
+     * somehow wrong.
+     */
+    public function verificationDocument(int $documentId)
+    {
+        $model = new DirectoryVerificationDocumentModel();
+        $doc   = $model->find($documentId);
+
+        if (! is_array($doc)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $full = $model->resolvePath((string) $doc['path']);
+        if ($full === null) {
+            log_message('error', 'Verification document ' . $documentId . ' has no file on disk.');
+
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        // Ids, not paths or filenames: an access log is for knowing that a
+        // document was opened, not for reproducing what was in it.
+        log_message('info', sprintf(
+            'Admin opened verification document %d from %s',
+            $documentId,
+            $this->request->getIPAddress()
+        ));
+
+        $contents = (string) file_get_contents($full);
+
+        $this->lockDownCspForDocument();
+
+        return $this->response
+            ->setStatusCode(200)
+            ->setHeader('Content-Type', (string) $doc['mime'])
+            ->setHeader('Content-Length', (string) strlen($contents))
+            // inline so a PDF opens in the reviewer's tab instead of landing in
+            // their Downloads folder, where copies of customers' IDs accumulate.
+            ->setHeader('Content-Disposition', 'inline; filename="' . $this->safeFilename($doc) . '"')
+            // The load-bearing one. Without it a browser is free to sniff a file
+            // we labelled application/pdf, decide it looks like HTML, and render
+            // it as same-origin markup — which for an attacker-supplied upload is
+            // stored XSS inside the admin panel. Same reasoning that took SVG out
+            // of ListingImageProcessor.
+            ->setHeader('X-Content-Type-Options', 'nosniff')
+            ->setHeader('Cache-Control', 'no-store, private, max-age=0')
+            ->setHeader('Pragma', 'no-cache')
+            ->setBody($contents);
+    }
+
+    /**
+     * Replace this response's Content-Security-Policy with a deny-everything one.
+     *
+     * Setting the header directly does not work: $CSPEnabled is on, so CI4
+     * rebuilds both CSP headers from Config\ContentSecurityPolicy during
+     * finalize() and overwrites whatever a controller set. That is worth knowing
+     * — the first version of this method sent a sandbox policy that arrived at
+     * the browser as an empty header, which is the kind of protection that
+     * exists only in the source code.
+     *
+     * So it goes through the response's own policy object instead. The site-wide
+     * policy is report-only and permits Google Tag Manager, both correct for a
+     * page and both wrong for a file uploaded by a member of the public:
+     * reportOnly(false) makes this one actually enforce, and the cleared
+     * directives stop the inherited allowances applying to it.
+     */
+    private function lockDownCspForDocument(): void
+    {
+        $csp = $this->response->getCSP();
+
+        $csp->reportOnly(false);
+
+        foreach ([
+            'base-uri', 'child-src', 'connect-src', 'font-src', 'form-action',
+            'frame-src', 'img-src', 'media-src', 'manifest-src',
+            'script-src', 'script-src-elem', 'script-src-attr',
+            'style-src', 'style-src-elem', 'style-src-attr',
+        ] as $directive) {
+            $csp->clearDirective($directive);
+        }
+
+        // The policy that actually goes out is:
+        //   default-src 'none'; object-src 'none'; sandbox allow-downloads;
+        //   frame-ancestors 'none'
+        // object-src 'none' is inherited from the site config and kept. It does
+        // not stop the reviewer reading a PDF, because the queue opens documents
+        // as a top-level navigation, where the browser's built-in viewer handles
+        // the file and object-src governs only <object>/<embed> inside a
+        // document. If a future change ever embeds one of these in an iframe
+        // instead, that assumption breaks and the file will render blank.
+        $csp->setDefaultSrc("'none'");
+        $csp->addSandbox(['allow-downloads']);
+    }
+
+    /**
+     * A filename safe to put in a header.
+     *
+     * original_name is whatever the uploader's browser claimed, so it can hold
+     * quotes, semicolons or newlines — all of which would break out of the
+     * Content-Disposition value and let the uploader write headers of their
+     * own. Reduced to a conservative character set, with the stored extension
+     * appended rather than the claimed one.
+     *
+     * @param array<string,mixed> $doc
+     */
+    private function safeFilename(array $doc): string
+    {
+        $ext  = pathinfo((string) $doc['path'], PATHINFO_EXTENSION);
+        $base = pathinfo((string) ($doc['original_name'] ?? ''), PATHINFO_FILENAME);
+        $base = preg_replace('/[^A-Za-z0-9 ._-]/', '', $base) ?: (string) $doc['kind'];
+
+        return trim(mb_substr($base, 0, 60)) . '.' . $ext;
+    }
+
+    /**
+     * Who made an admin decision.
+     *
+     * Admin auth is one shared password with no identities behind it, so the
+     * honest answer is "the admin session, from this address". Recorded rather
+     * than left blank because when there is more than one person with the
+     * password, the address is the only thread to pull.
+     */
+    private function adminActor(): string
+    {
+        return 'admin@' . $this->request->getIPAddress();
     }
 
     // --------------------------------------------------------------- categories
@@ -304,6 +518,7 @@ class Admin extends BaseController
                 'mailFailures' => MailHealth::consecutiveFailures(),
                 'mailLastOk'   => MailHealth::lastSuccessAt(),
                 'counts'       => (new DirectoryAdminService())->counts(),
+                'verifCounts'  => (new VerificationService())->counts(),
                 'stalePending' => $status->stalePendingCount(),
                 'storage'      => $status->storage(),
                 'dbBytes'      => $status->databaseBytes(),

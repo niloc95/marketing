@@ -13,7 +13,7 @@ $count = (int) ($c['listing_count'] ?? 0);
         <p class="cat-tile-group"><?= esc($c['group_name']) ?></p>
     <?php endif; ?>
     <span class="cat-tile-foot">
-        <span class="cat-tile-count"><?= number_format($count) ?> listing<?= $count === 1 ? '' : 's' ?></span>
+        <span class="cat-tile-count"><?= number_format($count) ?> profile<?= $count === 1 ? '' : 's' ?></span>
         <span class="cat-tile-more">Browse <span class="cat-tile-arrow" aria-hidden="true">&rarr;</span></span>
     </span>
 </a>

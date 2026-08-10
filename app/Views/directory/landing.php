@@ -16,11 +16,11 @@ $total    = (int) $result['total'];
 $faqs = [
     [
         'q' => 'How do I find ' . strtolower($plural) . $where . '?',
-        'a' => 'Browse the list below, or use the search box to narrow it down by name or keyword. Every listing shows contact details, location and services offered.',
+        'a' => 'Browse the list below, or use the search box to narrow it down by name or keyword. Every profile shows contact details, location and services offered.',
     ],
     [
-        'q' => 'How do I list my ' . strtolower(rtrim($catName, 's')) . ' business on ' . $siteName . '?',
-        'a' => 'Listing is free. Use the "List your business" button on this page to submit your details — we\'ll email you a link to verify and publish your listing.',
+        'q' => 'How do I add my ' . strtolower(rtrim($catName, 's')) . ' business to ' . $siteName . '?',
+        'a' => 'It is free. Use the "Add your business" button on this page to submit your details — we\'ll email you a link to verify and publish your profile.',
     ],
 ];
 $faqSchema = [
@@ -48,7 +48,7 @@ $schema = [
         [
             '@type'           => 'BreadcrumbList',
             'itemListElement' => array_values(array_filter([
-                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Directory', 'item' => base_url('directory')],
+                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Browse', 'item' => base_url('directory')],
                 ['@type' => 'ListItem', 'position' => 2, 'name' => $catName, 'item' => base_url('directory/' . $catSlug)],
                 $province !== null
                     ? ['@type' => 'ListItem', 'position' => 3, 'name' => $province, 'item' => $canonical]
@@ -75,7 +75,7 @@ $schema = [
 <section class="hero py-8 sm:py-10">
     <div class="container">
         <nav class="mb-2 text-sm text-white/70">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Directory</a>
+            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
             <span class="mx-1">/</span>
             <?php if ($province !== null): ?>
                 <a class="hover:text-white" href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
@@ -86,7 +86,7 @@ $schema = [
         </nav>
         <h1 class="text-2xl sm:text-3xl"><?= esc($heading) ?></h1>
         <p class="mt-2 text-sm text-white/80">
-            <?= $total ?> listed <?= $total === 1 ? 'business' : 'businesses' ?><?= $province !== null ? ' in ' . esc($province) : '' ?>.
+            <?= $total ?> <?= $total === 1 ? 'profile' : 'profiles' ?><?= $province !== null ? ' in ' . esc($province) : '' ?>.
         </p>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
             <input type="text" name="q" placeholder="Search within <?= esc(strtolower($plural), 'attr') ?>">
@@ -101,8 +101,8 @@ $schema = [
     <div class="container">
         <?php if ($total === 0): ?>
             <div class="empty">
-                <p class="mb-4">No <?= esc(strtolower($plural)) ?> listed yet<?= esc($where) ?>. Be the first!</p>
-                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+                <p class="mb-4">No <?= esc(strtolower($plural)) ?> here yet<?= esc($where) ?>. Be the first!</p>
+                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
             </div>
         <?php else: ?>
             <div class="card-grid">

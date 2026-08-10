@@ -3,7 +3,7 @@
 <?php
 helper('slug');
 $siteName  = config('Directory')->siteName();
-$heading   = 'Businesses in ' . $province;
+$heading   = 'Local services in ' . $province;
 $canonical = base_url('directory/province/' . slugify($province));
 $total     = (int) $result['total'];
 
@@ -11,12 +11,12 @@ $total     = (int) $result['total'];
 // landing.php takes, so every province page gets this without hand-written copy.
 $faqs = [
     [
-        'q' => 'How do I find a business in ' . $province . '?',
-        'a' => 'Browse the list below, or narrow it down by town and category using the links on this page. Every listing shows contact details, location and services offered.',
+        'q' => 'How do I find someone local in ' . $province . '?',
+        'a' => 'Browse the list below, or narrow it down by town and category using the links on this page. Every profile shows contact details, location and services offered.',
     ],
     [
-        'q' => 'How do I list my ' . $province . ' business on ' . $siteName . '?',
-        'a' => 'Listing is free. Use the "List your business" button on this page to submit your details — we\'ll email you a link to verify and publish your listing.',
+        'q' => 'How do I add my ' . $province . ' business to ' . $siteName . '?',
+        'a' => 'It is free. Use the "Add your business" button on this page to submit your details — we\'ll email you a link to verify and publish your profile.',
     ],
 ];
 $faqSchema = [
@@ -44,7 +44,7 @@ $schema = [
         [
             '@type'           => 'BreadcrumbList',
             'itemListElement' => [
-                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Directory', 'item' => base_url('directory')],
+                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Browse', 'item' => base_url('directory')],
                 ['@type' => 'ListItem', 'position' => 2, 'name' => $province, 'item' => $canonical],
             ],
         ],
@@ -57,7 +57,7 @@ $schema = [
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => $heading . ' — ' . $siteName,
-    'description' => 'Find local businesses and services in ' . $province . ' — salons, spas, attorneys, mechanics, plumbers, doctors and more. Browse contact details and locations, free.',
+    'description' => 'Find someone local in ' . $province . ' — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Browse contact details and locations, free.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
     'schema'      => $schema,
@@ -68,16 +68,16 @@ $schema = [
 <section class="hero py-8 sm:py-10">
     <div class="container">
         <nav class="mb-2 text-sm text-white/70" aria-label="Breadcrumb">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Directory</a>
+            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
             <span class="mx-1">/</span>
             <span class="text-white"><?= esc($province) ?></span>
         </nav>
         <h1 class="text-2xl sm:text-3xl"><?= esc($heading) ?></h1>
         <p class="mt-2 text-sm text-white/80">
-            <?= number_format($total) ?> listed <?= $total === 1 ? 'business' : 'businesses' ?> in <?= esc($province) ?>.
+            <?= number_format($total) ?> <?= $total === 1 ? 'profile' : 'profiles' ?> in <?= esc($province) ?>.
         </p>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <input type="text" name="q" placeholder="Search businesses in <?= esc($province, 'attr') ?>">
+            <input type="text" name="q" placeholder="Search in <?= esc($province, 'attr') ?>">
             <input type="hidden" name="province" value="<?= esc($province, 'attr') ?>">
             <button class="btn btn-primary" type="submit">Search</button>
         </form>
@@ -88,8 +88,8 @@ $schema = [
     <div class="container">
         <?php if ($total === 0): ?>
             <div class="empty">
-                <p class="mb-4">No businesses listed in <?= esc($province) ?> yet. Be the first!</p>
-                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+                <p class="mb-4">Nothing in <?= esc($province) ?> yet. Be the first!</p>
+                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
             </div>
         <?php else: ?>
             <div class="card-grid">

@@ -7,6 +7,8 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
+use App\Models\DirectoryVerificationDocumentModel;
+use App\Models\DirectoryVerificationModel;
 
 /**
  * Admin operations over listings and the category taxonomy.
@@ -143,7 +145,7 @@ class DirectoryAdminService
             if ($owner !== null && (int) $owner['id'] !== (int) $id) {
                 return [
                     'ok'      => false,
-                    'errors'  => ['email' => 'That email already belongs to “' . ($owner['display_name'] ?? 'another listing') . '”. One listing per address.'],
+                    'errors'  => ['email' => 'That email already belongs to “' . ($owner['display_name'] ?? 'another profile') . '”. One profile per address.'],
                     'message' => 'Please correct the highlighted fields.',
                 ];
             }
@@ -230,6 +232,13 @@ class DirectoryAdminService
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
         }
 
+        // Note what is NOT here: verified_until. Even this privileged path
+        // cannot grant the paid Verified Business badge — VerificationService
+        // writes that column and only after PayFast confirms a payment. An admin
+        // who needs to hand one out should approve the application; an admin who
+        // needs to take one away has the Revoke button. Adding it to the block
+        // above would make a form post able to mint free subscriptions.
+
         if (($logo = $this->clean($input['logo_path'] ?? '')) !== '') {
             $data['logo_path'] = $logo;
         }
@@ -264,7 +273,7 @@ class DirectoryAdminService
                 if (! $newId) {
                     $db->transRollback();
 
-                    return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not create the listing.'];
+                    return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not create the profile.'];
                 }
                 $id = (int) $newId;
             } else {
@@ -274,7 +283,7 @@ class DirectoryAdminService
                 if (! $this->listings->update($id, $data + ['id' => $id])) {
                     $db->transRollback();
 
-                    return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the listing.'];
+                    return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the profile.'];
                 }
             }
 
@@ -296,7 +305,7 @@ class DirectoryAdminService
             $db->transRollback();
             log_message('error', 'Admin listing save failed and was rolled back: ' . $e->getMessage());
 
-            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the listing. Please try again.'];
+            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];
         }
 
         // After the commit: the row now definitely points at the new file, so
@@ -306,7 +315,7 @@ class DirectoryAdminService
             $this->photos->deleteFileAt((string) $old['logo_path']);
         }
 
-        return ['ok' => true, 'errors' => [], 'id' => $id, 'message' => 'Listing saved.'];
+        return ['ok' => true, 'errors' => [], 'id' => $id, 'message' => 'Profile saved.'];
     }
 
     /**
@@ -400,9 +409,43 @@ class DirectoryAdminService
         }
         $this->photos->deleteFileAt((string) ($listing['logo_path'] ?? ''));
 
+        // Verification documents, for the same reason and with more at stake:
+        // these are ID copies, the cascade takes their rows, and a row is the
+        // only thing that knows where the file is. Left behind they would be
+        // unidentifiable PII sitting on disk forever — and our privacy policy
+        // promises deleting a profile deletes them.
+        $this->purgeVerificationDocuments($id);
+
         $this->tags->syncListingTags($id, []);
 
         return $this->listings->delete($id, true);
+    }
+
+    /**
+     * Delete a listing's verification documents from disk, and the now-empty
+     * per-listing directory with them.
+     *
+     * Best-effort: a purge that half-worked should still purge. Anything that
+     * cannot be removed is logged rather than thrown, because the alternative is
+     * abandoning the rest of the deletion partway through.
+     */
+    private function purgeVerificationDocuments(int $listingId): void
+    {
+        $verification = (new DirectoryVerificationModel())->forListing($listingId);
+        if ($verification === null) {
+            return;
+        }
+
+        (new DirectoryVerificationDocumentModel())->deleteForVerification((int) $verification['id']);
+
+        // rmdir() only succeeds on an empty directory, which is exactly the
+        // check we want: if something is still in there, leave it and say so
+        // rather than reaching for a recursive delete near a path built from an
+        // id.
+        $dir = DirectoryVerificationDocumentModel::storageRoot() . '/' . $listingId;
+        if (is_dir($dir) && ! @rmdir($dir)) {
+            log_message('warning', 'Verification directory for listing ' . $listingId . ' was not empty after purge.');
+        }
     }
 
     // ---------------------------------------------------------------- categories
@@ -484,7 +527,7 @@ class DirectoryAdminService
         if ($inUse > 0) {
             return [
                 'ok'      => false,
-                'message' => "That category is used by {$inUse} listing(s). Deactivate it instead — deleting would strip the category from them.",
+                'message' => "That category is used by {$inUse} profile(s). Deactivate it instead — deleting would strip the category from them.",
             ];
         }
 
