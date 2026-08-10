@@ -241,14 +241,40 @@ final class PayFastSignatureTest extends CIUnitTestCase
         }
     }
 
-    /** PayFast rejects "149" and "149.0"; the getter normalises once, centrally. */
+    /** PayFast rejects "29" and "29.9"; the getter normalises once, centrally. */
     public function testMonthlyAmountIsAlwaysTwoDecimals(): void
     {
         $config = new DirectoryConfig();
 
-        foreach (['149' => '149.00', '149.5' => '149.50', '99.999' => '100.00'] as $raw => $expected) {
+        foreach (['29' => '29.00', '29.9' => '29.90', '99.999' => '100.00'] as $raw => $expected) {
             $this->withEnv('directory.verifiedMonthlyAmount', (string) $raw, function () use ($config, $expected): void {
                 $this->assertSame($expected, $config->verifiedMonthlyAmount());
+            });
+        }
+    }
+
+    /**
+     * South African prices are written R29,99. PHP casts '29,99' to 29.0
+     * without complaint, which would sell the badge for R29 and show up only as
+     * a one-cent mismatch nobody investigates — so the comma is interpreted
+     * rather than left to the cast.
+     */
+    public function testMonthlyAmountUnderstandsSouthAfricanDecimalCommas(): void
+    {
+        $config = new DirectoryConfig();
+
+        $cases = [
+            '29,99'      => '29.99',   // comma as decimal separator
+            'R29,99'     => '29.99',   // with the currency symbol
+            'R 29,99'    => '29.99',   // and a space
+            '29.99'      => '29.99',   // the canonical form still works
+            '1,299.00'   => '1299.00', // comma as a thousands separator
+            '1 299,00'   => '1299.00', // space-grouped, comma decimal
+        ];
+
+        foreach ($cases as $raw => $expected) {
+            $this->withEnv('directory.verifiedMonthlyAmount', (string) $raw, function () use ($config, $expected, $raw): void {
+                $this->assertSame($expected, $config->verifiedMonthlyAmount(), "'{$raw}' should read as {$expected}");
             });
         }
     }

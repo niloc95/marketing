@@ -124,8 +124,12 @@ class Directory extends BaseConfig
      *
      * Changing it affects new applications only. Existing subscriptions keep
      * the amount snapshotted on their verification row — see the migration.
+     *
+     * Write it with a POINT, not a comma. South African convention is R29,99
+     * and PayFast wants 29.99; the getter below converts one to the other
+     * rather than letting a comma silently cast to R29.00.
      */
-    public string $verifiedMonthlyAmount = '149.00';
+    public string $verifiedMonthlyAmount = '29.99';
 
     /**
      * PayFast credentials for the Verified Business subscription.
@@ -252,9 +256,25 @@ class Directory extends BaseConfig
         $env = env('directory.verifiedMonthlyAmount');
         $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->verifiedMonthlyAmount;
 
+        // Strip anything that is obviously presentation: a currency symbol,
+        // spaces, non-breaking spaces used as thousands separators.
+        $raw = str_replace(['R', 'r', ' ', "\u{00A0}"], '', $raw);
+
+        // South African prices are written R29,99, and PHP casts '29,99' to
+        // 29.0 without complaint — which would quietly sell the badge for R29
+        // and only ever show up as a one-cent mismatch nobody investigates. So
+        // decide what a comma means rather than letting the cast decide:
+        //   "29,99"     comma only          -> decimal separator
+        //   "1,299.00"  comma AND a point   -> thousands separator, drop it
+        if (str_contains($raw, ',')) {
+            $raw = str_contains($raw, '.')
+                ? str_replace(',', '', $raw)
+                : str_replace(',', '.', $raw);
+        }
+
         // Normalised to two decimals here, once, rather than at each of the
         // four places that sign, display, store or compare it. PayFast rejects
-        // "149" and "149.0" alike.
+        // "29" and "29.9" alike.
         return number_format((float) $raw, 2, '.', '');
     }
 

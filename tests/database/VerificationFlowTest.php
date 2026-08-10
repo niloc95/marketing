@@ -110,8 +110,11 @@ final class VerificationFlowTest extends CIUnitTestCase
         };
     }
 
-    private function pay(array $verification, string $paymentId, string $amount = '149.00', string $status = 'COMPLETE'): string
+    /** Defaults to the configured price, so a price change does not break the suite. */
+    private function pay(array $verification, string $paymentId, ?string $amount = null, string $status = 'COMPLETE'): string
     {
+        $amount ??= $this->svc->monthlyAmount();
+
         return $this->svc->recordPayment(
             $verification,
             $paymentId,
@@ -133,7 +136,15 @@ final class VerificationFlowTest extends CIUnitTestCase
         $found = $this->svc->forListing($listingId);
         $this->assertSame(DirectoryVerificationModel::STATE_SUBMITTED, $found['verification']['state']);
         $this->assertCount(2, $found['documents']);
-        $this->assertSame('149.00', $found['verification']['amount'], 'the price is snapshotted at application time');
+        // Asserted against the configured price rather than a literal: what
+        // matters is that the row captures the price at application time, not
+        // what that price happens to be this quarter.
+        $this->assertSame(
+            $this->svc->monthlyAmount(),
+            $found['verification']['amount'],
+            'the price is snapshotted at application time'
+        );
+        $this->assertMatchesRegularExpression('/^\d+\.\d{2}$/', $found['verification']['amount'], 'PayFast needs two decimals');
 
         // No badge yet — documents alone buy nothing.
         $this->assertNull($this->listings->find($listingId)['verified_until']);

@@ -67,10 +67,10 @@ directory.payfastMerchantId    = '...'          # from the PayFast dashboard
 directory.payfastMerchantKey   = '...'
 directory.payfastPassphrase    = '...'          # set the SAME value in PayFast → Settings
 directory.payfastSandbox       = false          # ONLY in production
-directory.verifiedMonthlyAmount = '149.00'      # decide this before you announce it
+directory.verifiedMonthlyAmount = '29.99'       # written with a point, not a comma
 ```
 
-Four things worth knowing:
+Five things worth knowing:
 
 1. **The passphrase is not optional in practice.** The merchant id and key both travel in a
    form the buyer can read. The passphrase is the only part of the signature they cannot
@@ -85,15 +85,17 @@ Four things worth knowing:
    `App\Controllers\PayFastNotify` (signature, source IP, a confirmation POST-back to
    PayFast, and an amount match). Nothing on localhost will ever receive one — use a tunnel
    for testing.
-5. **The self-serve cancel button uses PayFast's Subscriptions API**, which is a separate
+4. **The self-serve cancel button uses PayFast's Subscriptions API**, which is a separate
    integration from the checkout with its own signature rule (alphabetical, not submission
    order — see `PayFast::apiSignature()`). It has **not been exercised against PayFast**;
    confirm it in the sandbox before you rely on it. If the API call fails, the owner is
    told plainly that it failed and you get an email to cancel it by hand — nothing is ever
    recorded as cancelled unless PayFast confirmed it.
-4. **Changing the price later** only affects new applications. Existing subscribers keep the
-   amount stored on their verification row, which is what their renewals are validated
-   against.
+5. **Write the price with a point, not a comma.** R29,99 is how it is written in South
+   Africa and `29,99` is how PHP quietly reads it as 29.0 — so the config getter converts a
+   comma to a point rather than letting that happen. Changing the price later only affects
+   new applications: existing subscribers keep the amount stored on their verification row,
+   which is what their renewals are validated against.
 
 ### Cron: the verification sweep
 
