@@ -110,6 +110,11 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('verifications/(:num)/revoke', 'Admin::revokeVerification/$1');
     $routes->get('verification/document/(:num)', 'Admin::verificationDocument/$1');
 
+    // Operator-editable settings: the badge price and whether it is offered.
+    // Deliberately no secrets here — see the settings migration.
+    $routes->get('settings', 'Admin::settings');
+    $routes->post('settings', 'Admin::saveSettings');
+
     // Diagnostics — health checks, mail state, storage, config, recent log.
     $routes->get('status', 'Admin::status');
     $routes->post('status/clear-mail', 'Admin::clearMailStatus');

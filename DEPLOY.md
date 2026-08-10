@@ -57,17 +57,24 @@ by EFT and you award the badge with the "Activate manually" button on the review
 choosing how many months to add. PayFast only adds *card* payment: the checkout page and
 the owner's self-serve cancel button.
 
-Switch the whole feature off with `directory.verifiedBadgeEnabled = false` if you do not
-want it at all.
+**The price and the on/off switch are editable from the admin panel** at
+`/admin/settings`, so a price change does not need a server login. What is set there is
+stored in the database and wins over the two keys below, which become the fallback used
+until someone saves on that page. The settings page names which source the live value is
+coming from, so a stale `.env` line never looks like a bug.
+
+Everything else stays in `.env` — deliberately, in the case of the PayFast credentials.
+The passphrase is a signing secret, and a value editable through a web form means one
+stolen admin session could re-key payments rather than merely change a price.
 
 ```
-directory.verifiedBadgeEnabled = true           # the feature itself; default true
+directory.verifiedBadgeEnabled = true           # fallback; the admin panel overrides it
 
 directory.payfastMerchantId    = '...'          # from the PayFast dashboard
 directory.payfastMerchantKey   = '...'
 directory.payfastPassphrase    = '...'          # set the SAME value in PayFast → Settings
 directory.payfastSandbox       = false          # ONLY in production
-directory.verifiedMonthlyAmount = '29.99'       # written with a point, not a comma
+directory.verifiedMonthlyAmount = '29.99'       # fallback; a point, not a comma
 ```
 
 Five things worth knowing:

@@ -172,6 +172,7 @@ class SystemStatusService
         $plaintext    = $c->adminPassword();
         $healthToken  = $c->healthToken();
         $payfastReady = $c->payfastMerchantId() !== '' && $c->payfastMerchantKey() !== '';
+        $settings     = new DirectorySettings($c);
 
         return [
             ['label' => 'Site name', 'value' => $c->siteName(), 'env' => true, 'warn' => false],
@@ -221,7 +222,21 @@ class SystemStatusService
                 'env'   => true,
                 'warn'  => $c->payfastSandbox(),
             ],
-            ['label' => 'Verified Business price', 'value' => 'R' . $c->verifiedMonthlyAmount() . ' / month', 'env' => true, 'warn' => false],
+            // Names the source, because "I changed the price and nothing
+            // happened" is otherwise unanswerable without a shell — the usual
+            // cause being a .env line nobody remembers setting.
+            [
+                'label' => 'Verified Business price',
+                'value' => 'R' . $settings->badgePrice() . ' / month (from the ' . $settings->priceSource() . ')',
+                'env'   => true,
+                'warn'  => false,
+            ],
+            [
+                'label' => 'Verified Business badge',
+                'value' => ($settings->badgeEnabled() ? 'offered' : 'switched off') . ' (from the ' . $settings->enabledSource() . ')',
+                'env'   => true,
+                'warn'  => ! $settings->badgeEnabled(),
+            ],
 
             // These three have no getters, so .env cannot override them — a
             // genuinely non-obvious split worth surfacing.

@@ -7,9 +7,11 @@ use App\Libraries\LogReader;
 use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
+use App\Models\DirectorySettingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryAdminService;
+use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\SystemStatusService;
 use App\Services\VerificationService;
@@ -485,6 +487,43 @@ class Admin extends BaseController
     {
         $result = (new DirectoryAdminService())->deleteCategory($id);
         return $this->backTo('admin/categories', $result);
+    }
+
+    // ---------------------------------------------------------------- settings
+
+    /**
+     * The handful of operational values an operator should be able to change
+     * without a shell. Nothing secret — see the settings migration for why.
+     */
+    public function settings()
+    {
+        $settings = new DirectorySettings();
+
+        return view('admin/settings', [
+            'price'         => $settings->badgePrice(),
+            'enabled'       => $settings->badgeEnabled(),
+            'priceSource'   => $settings->priceSource(),
+            'enabledSource' => $settings->enabledSource(),
+            'lastPrice'     => $settings->lastChange(DirectorySettingModel::BADGE_PRICE),
+            'lastEnabled'   => $settings->lastChange(DirectorySettingModel::BADGE_ENABLED),
+            'errors'        => session()->getFlashdata('errors') ?? [],
+            'old'           => session()->getFlashdata('old') ?? [],
+        ]);
+    }
+
+    public function saveSettings()
+    {
+        $post   = $this->request->getPost();
+        $result = (new DirectorySettings())->save($post, $this->adminActor());
+
+        if (! $result['ok']) {
+            return redirect()->to(base_url('admin/settings'))
+                ->with('errors', $result['errors'])
+                ->with('old', $post)
+                ->with('error', $result['message']);
+        }
+
+        return redirect()->to(base_url('admin/settings'))->with('success', $result['message']);
     }
 
     // ------------------------------------------------------------------ status

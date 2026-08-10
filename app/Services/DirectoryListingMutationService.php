@@ -18,6 +18,7 @@ class DirectoryListingMutationService
     private DirectoryListingModel $listings;
     private DirectoryTagModel $tags;
     private DirectoryConfig $config;
+    private DirectorySettings $settings;
 
     public function __construct()
     {
@@ -25,6 +26,7 @@ class DirectoryListingMutationService
         $this->listings = new DirectoryListingModel();
         $this->tags     = new DirectoryTagModel();
         $this->config   = config('Directory');
+        $this->settings = new DirectorySettings($this->config);
     }
 
     /**
@@ -222,8 +224,8 @@ class DirectoryListingMutationService
             'site' => $this->config->siteName(),
             'ttl'  => (int) round($this->config->manageTtl / 60),
             // A deployment with the badge switched off must not advertise it.
-            'offerBadge' => $this->config->verifiedBadgeEnabled(),
-            'badgePrice' => $this->config->verifiedMonthlyAmount(),
+            'offerBadge' => $this->settings->badgeEnabled(),
+            'badgePrice' => $this->settings->badgePrice(),
         ]);
 
         $this->send((string) $listing['email'], 'Manage your ' . $this->config->siteName() . ' profile', $body);
@@ -489,8 +491,8 @@ class DirectoryListingMutationService
             'name'       => $name,
             'link'       => $link,
             'site'       => $this->config->siteName(),
-            'offerBadge' => $this->config->verifiedBadgeEnabled(),
-            'badgePrice' => $this->config->verifiedMonthlyAmount(),
+            'offerBadge' => $this->settings->badgeEnabled(),
+            'badgePrice' => $this->settings->badgePrice(),
         ]);
         $this->send($to, 'Verify your ' . $this->config->siteName() . ' profile', $body);
     }

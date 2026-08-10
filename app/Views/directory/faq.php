@@ -64,7 +64,7 @@ $groups = [
             ],
             [
                 'q' => 'How much is the Verified Business badge, and what do I get?',
-                'a' => 'R' . esc(config('Directory')->verifiedMonthlyAmount()) . ' a month. Your profile and every search result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It does not move you up the search results, and it does not add features — we sell the check, not the ranking.',
+                'a' => 'R' . esc((new App\Services\DirectorySettings())->badgePrice()) . ' a month. Your profile and every search result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It does not move you up the search results, and it does not add features — we sell the check, not the ranking.',
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',

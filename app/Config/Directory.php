@@ -256,9 +256,22 @@ class Directory extends BaseConfig
         $env = env('directory.verifiedMonthlyAmount');
         $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->verifiedMonthlyAmount;
 
+        return $this->normaliseAmount($raw);
+    }
+
+    /**
+     * Turn whatever a human typed into the exact string PayFast wants.
+     *
+     * Public and separate from the getter above because the same rules have to
+     * apply to a price saved through the admin panel — see
+     * App\Services\DirectorySettings. One normaliser, one set of rules, one
+     * place to fix when a new way of writing a price turns up.
+     */
+    public function normaliseAmount(string $raw): string
+    {
         // Strip anything that is obviously presentation: a currency symbol,
         // spaces, non-breaking spaces used as thousands separators.
-        $raw = str_replace(['R', 'r', ' ', "\u{00A0}"], '', $raw);
+        $raw = str_replace(['R', 'r', ' ', "\u{00A0}"], '', trim($raw));
 
         // South African prices are written R29,99, and PHP casts '29,99' to
         // 29.0 without complaint — which would quietly sell the badge for R29
@@ -273,7 +286,7 @@ class Directory extends BaseConfig
         }
 
         // Normalised to two decimals here, once, rather than at each of the
-        // four places that sign, display, store or compare it. PayFast rejects
+        // places that sign, display, store or compare it. PayFast rejects
         // "29" and "29.9" alike.
         return number_format((float) $raw, 2, '.', '');
     }

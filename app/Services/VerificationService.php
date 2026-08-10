@@ -33,6 +33,7 @@ class VerificationService
     private DirectoryListingModel $listings;
     private DirectoryConfig $config;
     private PayFast $payfast;
+    private DirectorySettings $settings;
 
     /**
      * PayFast is injectable for one reason: cancelSubscription() has a failure
@@ -48,6 +49,7 @@ class VerificationService
         $this->listings      = new DirectoryListingModel();
         $this->config        = config('Directory');
         $this->payfast       = $payfast ?? new PayFast();
+        $this->settings      = new DirectorySettings($this->config);
     }
 
     /**
@@ -63,7 +65,7 @@ class VerificationService
      */
     public function isEnabled(): bool
     {
-        return $this->config->verifiedBadgeEnabled();
+        return $this->settings->badgeEnabled();
     }
 
     /**
@@ -78,9 +80,16 @@ class VerificationService
         return $this->isEnabled() && $this->payfast->isConfigured();
     }
 
+    /**
+     * The price a new application will be quoted.
+     *
+     * Note what this is not: the price an existing subscriber pays. That is the
+     * amount snapshotted on their verification row, and it stays put when this
+     * changes — see recordPayment() and the migration.
+     */
     public function monthlyAmount(): string
     {
-        return $this->config->verifiedMonthlyAmount();
+        return $this->settings->badgePrice();
     }
 
     /**

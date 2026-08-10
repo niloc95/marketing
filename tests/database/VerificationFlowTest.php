@@ -4,6 +4,7 @@ use App\Libraries\PayFast;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationEventModel;
 use App\Models\DirectoryVerificationModel;
+use App\Services\DirectorySettings;
 use App\Services\VerificationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
@@ -39,6 +40,7 @@ final class VerificationFlowTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        (new DirectorySettings())->forget();
         $this->svc           = new VerificationService();
         $this->verifications = new DirectoryVerificationModel();
         $this->listings      = new DirectoryListingModel();
@@ -541,6 +543,73 @@ final class VerificationFlowTest extends CIUnitTestCase
         $this->applyAndApprove($listingId);
 
         $this->assertFalse($this->svc->cancelSubscription($listingId)['ok']);
+    }
+
+    // ------------------------------------------------------- price changes
+
+    /**
+     * Raising the price must not touch anyone already in the system.
+     *
+     * This is the property that makes a price change safe to do on a weekday:
+     * PayFastNotify validates each renewal's amount against the snapshot on the
+     * row, so if a price rise reached existing rows every subscriber's next
+     * renewal would be rejected as a mismatch.
+     */
+    public function testRaisingThePriceLeavesExistingApplicationsAlone(): void
+    {
+        $listingId = $this->makeListing();
+        $this->svc->submitApplication($listingId, $this->documents());
+
+        $quoted = $this->verifications->forListing($listingId)['amount'];
+
+        (new DirectorySettings())->save(['badge_price' => '99.00', 'badge_enabled' => '1'], 'admin@test');
+
+        $this->assertSame(
+            $quoted,
+            $this->verifications->forListing($listingId)['amount'],
+            'an application already in flight keeps the price it was quoted'
+        );
+    }
+
+    /**
+     * The owner was shown a price on the signup form and told it again in the
+     * approval email. Approving them later, after a rise, must not change it.
+     */
+    public function testAnApplicationApprovedAfterAPriceRiseKeepsItsQuote(): void
+    {
+        $listingId = $this->makeListing();
+        $this->svc->submitApplication($listingId, $this->documents());
+        $quoted = $this->verifications->forListing($listingId)['amount'];
+
+        (new DirectorySettings())->save(['badge_price' => '99.00', 'badge_enabled' => '1'], 'admin@test');
+
+        $row = $this->verifications->forListing($listingId);
+        $this->assertTrue($this->svc->approve((int) $row['id'], 'admin@test'));
+
+        $this->assertSame($quoted, $this->verifications->forListing($listingId)['amount']);
+
+        // And a payment at the quoted price still activates the badge.
+        $this->assertSame('applied', $this->pay($this->verifications->forListing($listingId), 'PF-QUOTE', $quoted));
+        $this->assertNotNull($this->listings->find($listingId)['verified_until']);
+    }
+
+    public function testANewApplicationPicksUpTheCurrentPrice(): void
+    {
+        (new DirectorySettings())->save(['badge_price' => '59.00', 'badge_enabled' => '1'], 'admin@test');
+
+        $listingId = $this->makeListing();
+        $this->svc->submitApplication($listingId, $this->documents());
+
+        $this->assertSame('59.00', $this->verifications->forListing($listingId)['amount']);
+    }
+
+    /** Switching the feature off from the admin panel closes applications. */
+    public function testTurningTheBadgeOffThroughSettingsDisablesIt(): void
+    {
+        (new DirectorySettings())->save(['badge_price' => '29.99'], 'admin@test');
+
+        $this->assertFalse((new VerificationService())->isEnabled());
+        $this->assertFalse((new VerificationService())->canTakePayment(), 'no payment without the feature');
     }
 
     // --------------------------------------------------------------- boundary
