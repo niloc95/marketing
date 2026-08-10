@@ -1,0 +1,10 @@
+# dist/site/lib/ holds the three PHPMailer classes contact.php requires. They
+# only define classes and do nothing when requested directly, so this is
+# defence in depth rather than a fix for a live hole — it keeps the library's
+# version out of a fingerprinting scan.
+#
+# Apache 2.4 (cPanel). If the host ever runs 2.2, the equivalent is
+# "Order deny,allow / Deny from all".
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>

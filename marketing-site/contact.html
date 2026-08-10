@@ -61,7 +61,7 @@
         <a href="./about.html" class="nav-link">About</a>
         <a href="./contact.html" class="nav-link text-primary-600 dark:text-white">Contact</a>
         <a href="/developer/" class="nav-link">Developers</a>
-        <a href="https://listing.webscheduler.co.za/" class="nav-link">Directory</a>
+        <a href="https://listing.webscheduler.co.za/" class="nav-link">Local</a>
       </nav>
       <div class="flex items-center gap-2">
         <button data-theme-toggle aria-label="Toggle dark mode" class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
@@ -80,7 +80,7 @@
         <a href="./about.html" class="nav-link">About</a>
         <a href="./contact.html" class="nav-link">Contact</a>
         <a href="/developer/" class="nav-link">Developers</a>
-        <a href="https://listing.webscheduler.co.za/" class="nav-link">Directory</a>
+        <a href="https://listing.webscheduler.co.za/" class="nav-link">Local</a>
       </div>
     </div>
   </header>
@@ -96,34 +96,55 @@
       <div class="mx-auto grid max-w-5xl gap-10 lg:grid-cols-5">
         <!-- Form -->
         <div class="card p-8 lg:col-span-3">
-          <!-- NOTE: static site — this form opens the visitor's mail client via mailto.
-               Swap the action for your form endpoint (e.g. a CRM / form service) when ready. -->
-          <form action="mailto:hello@webscheduler.co.za" method="post" enctype="text/plain" class="space-y-5">
+          <!-- Posts to ./contact.php on this same host, which emails us via SMTP.
+               Works without JavaScript (the endpoint renders a confirm step);
+               assets/contact.js upgrades it to submit in place. Never restore an
+               enctype here — "text/plain" leaves $_POST empty and the form would
+               silently do nothing. The build guards both. -->
+          <form action="./contact.php" method="post" class="space-y-5" data-contact-form>
+            <!-- Honeypot: hidden from people, irresistible to bots. -->
+            <div class="hidden" aria-hidden="true">
+              <label>Company website <input type="text" name="company_website_hp" tabindex="-1" autocomplete="off" /></label>
+            </div>
+            <input type="hidden" name="form_token" value="" data-form-token />
             <div class="grid gap-5 sm:grid-cols-2">
               <div>
                 <label for="name" class="block text-sm font-medium text-primary-900 dark:text-slate-200">Name</label>
-                <input id="name" name="name" type="text" required class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Your name" />
+                <input id="name" name="name" type="text" required autocomplete="name" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Your name" />
+                <p data-field-error="name" class="mt-2 hidden text-sm text-brand-crimson dark:text-red-300"></p>
               </div>
               <div>
                 <label for="business" class="block text-sm font-medium text-primary-900 dark:text-slate-200">Business</label>
-                <input id="business" name="business" type="text" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Your business name" />
+                <input id="business" name="business" type="text" autocomplete="organization" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Your business name" />
               </div>
             </div>
             <div class="grid gap-5 sm:grid-cols-2">
               <div>
                 <label for="email" class="block text-sm font-medium text-primary-900 dark:text-slate-200">Email</label>
-                <input id="email" name="email" type="email" required class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="you@business.co.za" />
+                <input id="email" name="email" type="email" required autocomplete="email" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="you@business.co.za" />
+                <p data-field-error="email" class="mt-2 hidden text-sm text-brand-crimson dark:text-red-300"></p>
               </div>
               <div>
                 <label for="phone" class="block text-sm font-medium text-primary-900 dark:text-slate-200">Phone</label>
-                <input id="phone" name="phone" type="tel" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="+27 ..." />
+                <input id="phone" name="phone" type="tel" autocomplete="tel" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="+27 ..." />
               </div>
             </div>
             <div>
               <label for="message" class="block text-sm font-medium text-primary-900 dark:text-slate-200">How can we help?</label>
-              <textarea id="message" name="message" rows="4" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Tell us about your team and how many providers you have."></textarea>
+              <textarea id="message" name="message" rows="4" required minlength="10" class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="Tell us about your team and how many providers you have."></textarea>
+              <p data-field-error="message" class="mt-2 hidden text-sm text-brand-crimson dark:text-red-300"></p>
             </div>
-            <button type="submit" class="btn-accent w-full">Send &amp; book a demo</button>
+            <label class="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-400">
+              <input type="checkbox" name="consent" value="1" required class="mt-1 rounded border-slate-300 text-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800" />
+              <span>I agree that WebScheduler may use these details to reply to my enquiry, as described in the <a href="./privacy.html" class="nav-link underline">privacy policy</a>.</span>
+            </label>
+            <p data-field-error="consent" class="hidden text-sm text-brand-crimson dark:text-red-300"></p>
+            <!-- contact.js applies one of these two class sets. They live here,
+                 not in the script, because Tailwind's content glob scans markup. -->
+            <div data-form-status class="hidden rounded-xl px-4 py-3 text-sm" role="status" aria-live="polite"
+                 data-ok-class="bg-primary-50 text-primary-900 dark:bg-primary-500/15 dark:text-primary-200"
+                 data-err-class="bg-red-50 text-brand-crimson dark:bg-red-500/10 dark:text-red-300"></div>
+            <button type="submit" class="btn-accent w-full" data-submit>Send &amp; book a demo</button>
           </form>
         </div>
 
@@ -177,7 +198,7 @@
           <li><a href="./features.html" class="nav-link">Features</a></li>
           <li><a href="./pricing.html" class="nav-link">Pricing</a></li>
           <li><a href="/developer/" class="nav-link">Developers</a></li>
-          <li><a href="https://listing.webscheduler.co.za/" class="nav-link">Directory</a></li>
+          <li><a href="https://listing.webscheduler.co.za/" class="nav-link">Local</a></li>
           <li><a href="./contact.html" class="nav-link">Book a demo</a></li>
         </ul>
       </div>
@@ -198,8 +219,9 @@
       <div class="container-x flex flex-col items-center justify-between gap-4 py-6 text-sm text-slate-500 sm:flex-row dark:text-slate-400">
         <p>&copy; <span data-year>2026</span> WebScheduler. All rights reserved.</p>
         <div class="flex gap-6">
-          <a href="#" class="nav-link">Privacy</a>
-          <a href="#" class="nav-link">Terms</a>
+          <a href="./privacy.html" class="nav-link">Privacy</a>
+          <a href="./terms.html" class="nav-link">Terms</a>
+          <a href="./cookie-policy.html" class="nav-link">Cookie policy</a>
           <a href="./contact.html" class="nav-link">Support</a>
           <button type="button" data-consent-open class="nav-link">Cookie preferences</button>
         </div>
@@ -208,6 +230,7 @@
   </footer>
 
   <script src="./assets/site.js" defer></script>
-  <script src="./assets/consent.js" defer></script>
+  <script src="./assets/contact.js" defer></script>
+  <script src="./assets/consent.js" data-privacy-url="./privacy.html" defer></script>
 </body>
 </html>

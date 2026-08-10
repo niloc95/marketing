@@ -10,7 +10,11 @@ const tokens = require('../tailwind.tokens.cjs');
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
-  content: ['./marketing-site/**/*.html'],
+  // .php as well as .html: contact.php server-renders the no-JS confirm step
+  // and the result pages, and its classes have to survive the purge. Scripts
+  // are deliberately NOT scanned — assets/contact.js reads its class names off
+  // data attributes in contact.html rather than inventing any.
+  content: ['./marketing-site/**/*.{html,php}'],
   theme: {
     extend: tokens,
   },

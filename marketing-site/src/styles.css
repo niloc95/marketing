@@ -106,4 +106,33 @@
     @apply text-sm font-medium text-slate-600 hover:text-primary-600 transition-colors;
   }
   .dark .nav-link { @apply text-slate-300 hover:text-white; }
+
+  /* Long-form legal copy (privacy, terms, cookie policy). Ported from the app's
+     resources/directory.css so both properties read the same. @tailwindcss/typography
+     is not installed and three pages do not justify adding it. */
+  .prose-legal h2 { @apply mb-3 mt-8 text-lg font-bold text-primary-900 first:mt-0; }
+  .prose-legal h3 { @apply mb-2 mt-6 text-base font-semibold text-primary-900; }
+  .prose-legal p  { @apply mb-4 text-sm leading-relaxed text-slate-600; }
+  .prose-legal ul { @apply mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-600; }
+  .prose-legal a  { @apply text-primary-600 underline underline-offset-2 hover:text-primary-500; }
+  .prose-legal strong { @apply font-semibold text-primary-900; }
+  .prose-legal code { @apply whitespace-nowrap rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700; }
+  .prose-legal .tablewrap { @apply mb-6; }
+  .dark .prose-legal h2,
+  .dark .prose-legal h3,
+  .dark .prose-legal strong { @apply text-white; }
+  .dark .prose-legal p,
+  .dark .prose-legal ul   { @apply text-slate-400; }
+  .dark .prose-legal a    { @apply text-primary-300 hover:text-primary-200; }
+  .dark .prose-legal code { @apply bg-slate-800 text-slate-300; }
+
+  /* Data tables inside legal copy. Wrapped so a narrow screen scrolls the table
+     rather than the page. */
+  .tablewrap { @apply overflow-x-auto rounded-2xl border border-slate-200; }
+  .table     { @apply w-full border-collapse text-sm; }
+  .table th  { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .table td  { @apply border-t border-slate-100 px-4 py-3 align-top text-slate-600; }
+  .dark .tablewrap { @apply border-slate-800; }
+  .dark .table th  { @apply bg-slate-800/60 text-slate-400; }
+  .dark .table td  { @apply border-slate-800 text-slate-400; }
 }

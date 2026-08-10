@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Google Analytics (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-J8R1WZ2RLX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    // Consent Mode v2 — default denied until the visitor accepts (POPIA/GDPR).
+    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', wait_for_update: 500 });
+    try { if (localStorage.getItem('ws-consent') === 'granted') gtag('consent', 'update', { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted', analytics_storage: 'granted' }); } catch (e) {}
+    gtag('js', new Date());
+    gtag('config', 'G-J8R1WZ2RLX');
+  </script>
+
+  <title>Privacy policy — WebScheduler</title>
+  <meta name="description" content="How webscheduler.co.za collects, uses and protects personal information, in line with South Africa's POPIA. The WebScheduler product is self-hosted, so your customers' data never reaches us." />
+  <link rel="canonical" href="https://webscheduler.co.za/privacy.html" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#003049" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="WebScheduler" />
+  <meta property="og:title" content="Privacy policy — WebScheduler" />
+  <meta property="og:description" content="How webscheduler.co.za collects, uses and protects personal information, in line with South Africa's POPIA. The WebScheduler product is self-hosted, so your customers' data never reaches us." />
+  <meta property="og:url" content="https://webscheduler.co.za/privacy.html" />
+  <meta property="og:image" content="https://webscheduler.co.za/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Privacy policy — WebScheduler" />
+  <meta name="twitter:description" content="How webscheduler.co.za collects, uses and protects personal information, in line with South Africa's POPIA. The WebScheduler product is self-hosted, so your customers' data never reaches us." />
+  <meta name="twitter:image" content="https://webscheduler.co.za/assets/og-image.png" />
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('xs-theme');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.classList.toggle('dark', t === 'dark');
+        document.documentElement.style.colorScheme = t;
+      } catch (e) {}
+    })();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"WebScheduler","url":"https://webscheduler.co.za/","logo":"https://webscheduler.co.za/assets/logo.svg","description":"Self-hosted appointment scheduling software for service businesses."}</script>
+</head>
+<body class="font-sans">
+
+  <header class="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-[#0f1419]/90">
+    <div class="container-x flex h-16 items-center justify-between">
+      <a href="./index.html" class="flex items-center gap-2.5">
+        <img src="./assets/logo.svg" alt="" class="h-8 w-8" />
+        <span class="text-lg font-extrabold tracking-tight text-primary-900 dark:text-white">WebScheduler</span>
+      </a>
+      <nav class="hidden items-center gap-8 md:flex">
+        <a href="./features.html" class="nav-link">Features</a>
+        <a href="./pricing.html" class="nav-link">Pricing</a>
+        <a href="./about.html" class="nav-link">About</a>
+        <a href="./contact.html" class="nav-link">Contact</a>
+        <a href="/developer/" class="nav-link">Developers</a>
+        <a href="https://listing.webscheduler.co.za/" class="nav-link">Local</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <button data-theme-toggle aria-label="Toggle dark mode" class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+          <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
+          <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+        </button>
+        <a href="./contact.html" class="btn-accent hidden sm:inline-flex">Book a demo</a>
+        <button data-menu-toggle aria-label="Open menu" class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 md:hidden dark:border-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+        </button>
+      </div>
+    </div>
+    <div data-mobile-menu class="hidden border-t border-slate-200 bg-white px-6 py-4 md:hidden dark:border-slate-800 dark:bg-[#0f1419]">
+      <div class="flex flex-col gap-3">
+        <a href="./features.html" class="nav-link">Features</a>
+        <a href="./pricing.html" class="nav-link">Pricing</a>
+        <a href="./about.html" class="nav-link">About</a>
+        <a href="./contact.html" class="nav-link">Contact</a>
+        <a href="/developer/" class="nav-link">Developers</a>
+        <a href="https://listing.webscheduler.co.za/" class="nav-link">Local</a>
+        <a href="./contact.html" class="btn-accent mt-2">Book a demo</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="container-x pt-16 pb-8 text-center">
+      <span class="eyebrow">Legal</span>
+      <h1 class="mx-auto mt-5 max-w-3xl text-4xl font-extrabold tracking-tight text-primary-900 sm:text-5xl dark:text-white">Privacy policy</h1>
+      <p class="mx-auto mt-4 text-sm text-slate-500 dark:text-slate-400">Last updated 9 August 2026</p>
+    </section>
+
+    <section class="container-x pb-16">
+      <div class="prose-legal mx-auto max-w-3xl">
+        <div class="card p-8">
+          <h2>1. Who we are</h2>
+          <p>WebScheduler makes appointment scheduling software for service businesses. This policy explains what personal information <strong>this website</strong> — webscheduler.co.za — collects, why, and what you can do about it. It is written to meet the Protection of Personal Information Act, 2013 (POPIA).</p>
+          <p>Two things this policy does <em>not</em> cover, because they are separate:</p>
+          <ul>
+            <li><strong>WebScheduler Local</strong>, our public place to find local services, professionals and home industry, has its own policy at <a href="https://listing.webscheduler.co.za/privacy">listing.webscheduler.co.za/privacy</a>.</li>
+            <li><strong>The WebScheduler product itself</strong> is self-hosted. See section 4.</li>
+          </ul>
+
+          <h2>2. What this site collects</h2>
+          <p>Very little. This is a brochure site — there is no account to create and nothing to sign in to.</p>
+          <ul>
+            <li><strong>Analytics</strong>, and only if you accept cookies. We use Google Analytics 4 to see which pages people find useful. Nothing is measured or stored until you press Accept. See our <a href="./cookie-policy.html">cookie policy</a>.</li>
+            <li><strong>Two browser storage entries</strong> — one remembering whether you chose light or dark mode, one remembering your answer to the cookie banner so we stop asking. Neither is sent to us; both stay in your browser.</li>
+            <li><strong>Standard web server logs</strong> kept by our hosting provider, including IP addresses, used to keep the site available and to investigate abuse.</li>
+            <li><strong>What you type into the demo request form</strong> on our contact page — your name, business name, email address, phone number if you give one, and your message. You send it deliberately, by pressing the button and ticking the consent box; nothing on this site collects any of it otherwise.</li>
+          </ul>
+
+          <h2>3. What happens to a demo request</h2>
+          <p>The form emails your enquiry straight to our own mailbox and <strong>keeps no copy on the website</strong>. There is no database behind this site and no record of your submission is stored on the web server — once the email is on its way, the only copy is in our inbox, handled as described in sections 6 and 8.</p>
+          <p>We record the time and the sending IP address alongside the message, purely to trace abuse if the form is used to send spam, and we limit how often the form may be used from one address. If you would rather not use the form at all, email us directly — the address is on the <a href="./contact.html">contact page</a>.</p>
+          <p>We use what you send only to reply to you and to arrange the demo you asked for. We do not add you to a marketing list off the back of it. We do not use advertising cookies, we do not build visitor profiles, and we do not sell or rent personal information to anyone.</p>
+
+          <h2>4. The product is self-hosted</h2>
+          <p>WebScheduler runs on your own infrastructure, under your own brand. That has a direct privacy consequence worth stating plainly: <strong>your customers' appointment records, contact details and booking history never reach us.</strong> They live on servers you control.</p>
+          <p>For that data you are the responsible party under POPIA, not us. We are not a processor of it, we cannot read it, and we cannot produce it on request — because we never hold it.</p>
+
+          <h2>5. Why we process what we do, and on what basis</h2>
+          <div class="tablewrap">
+            <table class="table">
+              <thead><tr><th>Purpose</th><th>Lawful basis (POPIA s11)</th></tr></thead>
+              <tbody>
+                <tr><td>Analytics, to understand which pages are useful</td><td>Your consent, which you can withdraw at any time</td></tr>
+                <tr><td>Remembering your theme and cookie choices</td><td>Necessary to provide the site as you asked for it</td></tr>
+                <tr><td>Server logs, to keep the site available and investigate abuse</td><td>Our legitimate interest in a working, secure service</td></tr>
+                <tr><td>Replying to an enquiry you emailed us</td><td>Necessary to take steps you requested</td></tr>
+                <tr><td>Replying to a demo request you sent through the contact form</td><td>Your consent, given by ticking the box, and necessary to take steps you requested</td></tr>
+                <tr><td>Rate-limiting the contact form and keeping the sender's IP with the message</td><td>Our legitimate interest in preventing abuse of the form</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2>6. Who else sees it</h2>
+          <ul>
+            <li><strong>Google</strong>, for analytics, and only once you have accepted cookies. Google's own <a href="https://policies.google.com/privacy">privacy policy</a> governs what it does with that data.</li>
+            <li><strong>Our hosting provider</strong>, which necessarily handles the requests your browser makes.</li>
+            <li><strong>Our email provider</strong>, if you email us or send a demo request through the contact form — the form delivers it as an ordinary email.</li>
+            <li><strong>Where the law requires it</strong>, such as a valid court order.</li>
+          </ul>
+          <p>Fonts, stylesheets, scripts and images on this site are served from our own domain, so browsing it does not quietly hand your IP address to a content delivery network or a font host.</p>
+
+          <h2>7. Information leaving South Africa</h2>
+          <p>Google processes analytics data outside South Africa. POPIA section 72 permits this where the recipient is subject to comparable protection; we rely on Google's own contractual and regulatory commitments. If you decline cookies, no analytics data is generated at all.</p>
+
+          <h2>8. How long we keep it</h2>
+          <p>Analytics data is retained for the period configured in our Google Analytics property and is aggregated for reporting. Email correspondence — including demo requests sent through the contact form, which reach us as ordinary email — is kept for as long as it is useful for the enquiry and our records. Server logs are kept on our provider's standard rotation. The two browser storage entries stay until you clear your browser data.</p>
+          <p>The contact form itself stores nothing, so there is nothing on the website to delete. It does keep small counters for a couple of days to rate-limit submissions; those hold a one-way hash of the sender's address, not the address itself, and no message content.</p>
+
+          <h2>9. Your rights under POPIA</h2>
+          <p>You may ask us to confirm what we hold about you, to correct or delete it, or to withdraw a consent you previously gave. Withdrawing analytics consent takes one click — open <a href="./cookie-policy.html">cookie preferences</a> and press Decline.</p>
+          <p>You also have the right to complain to the Information Regulator (South Africa) — <a href="https://inforegulator.org.za/">inforegulator.org.za</a>.</p>
+
+          <h2>10. Security</h2>
+          <p>This site is served over HTTPS and is a set of static pages apart from the single script that sends the contact form. There is no database attached to it, no visitor account to compromise, and no store of past enquiries to breach — the form forwards your message by email and retains nothing. No system is perfectly secure, and we cannot guarantee absolute security.</p>
+
+          <h2>11. Children</h2>
+          <p>This site is aimed at businesses and is not directed at children. We do not knowingly collect information from anyone under 18.</p>
+
+          <h2>12. Changes</h2>
+          <p>If we change this policy we will update the date at the top of this page. Material changes affecting how we use information you have already given us will be described here.</p>
+
+          <h2>13. Contact us</h2>
+          <p>Questions, or a request about your information: <a href="mailto:privacy@webscheduler.co.za">privacy@webscheduler.co.za</a>. For anything else, use our <a href="./contact.html">contact page</a>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-[#0b0f14]">
+    <div class="container-x grid gap-10 py-14 md:grid-cols-4">
+      <div class="md:col-span-1">
+        <a href="./index.html" class="flex items-center gap-2.5">
+          <img src="./assets/logo.svg" alt="" class="h-8 w-8" />
+          <span class="text-lg font-extrabold tracking-tight text-primary-900 dark:text-white">WebScheduler</span>
+        </a>
+        <p class="mt-4 max-w-xs text-sm text-slate-600 dark:text-slate-400">Appointment scheduling for service businesses — on your infrastructure, under your brand.</p>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-primary-900 dark:text-white">Product</h3>
+        <ul class="mt-4 space-y-3 text-sm">
+          <li><a href="./features.html" class="nav-link">Features</a></li>
+          <li><a href="./pricing.html" class="nav-link">Pricing</a></li>
+          <li><a href="/developer/" class="nav-link">Developers</a></li>
+          <li><a href="https://listing.webscheduler.co.za/" class="nav-link">Local</a></li>
+          <li><a href="./contact.html" class="nav-link">Book a demo</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-primary-900 dark:text-white">Company</h3>
+        <ul class="mt-4 space-y-3 text-sm">
+          <li><a href="./about.html" class="nav-link">About</a></li>
+          <li><a href="./contact.html" class="nav-link">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-primary-900 dark:text-white">Get started</h3>
+        <p class="mt-4 text-sm text-slate-600 dark:text-slate-400">Plans from R160/month.</p>
+        <a href="./pricing.html" class="btn-primary mt-4">View plans</a>
+      </div>
+    </div>
+    <div class="border-t border-slate-200 dark:border-slate-800">
+      <div class="container-x flex flex-col items-center justify-between gap-4 py-6 text-sm text-slate-500 sm:flex-row dark:text-slate-400">
+        <p>&copy; <span data-year>2026</span> WebScheduler. All rights reserved.</p>
+        <div class="flex gap-6">
+          <a href="./privacy.html" class="nav-link">Privacy</a>
+          <a href="./terms.html" class="nav-link">Terms</a>
+          <a href="./cookie-policy.html" class="nav-link">Cookie policy</a>
+          <a href="./contact.html" class="nav-link">Support</a>
+          <button type="button" data-consent-open class="nav-link">Cookie preferences</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./assets/site.js" defer></script>
+  <script src="./assets/consent.js" data-privacy-url="./privacy.html" defer></script>
+</body>
+</html>

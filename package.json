@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "WebScheduler marketing website (static) — build tooling. The directory SaaS (this repo's CI4 app) is separate.",
+  "description": "WebScheduler marketing website (static) — build tooling. WebScheduler Local (this repo's CI4 app) is separate.",
   "scripts": {
     "site:shots": "node scripts/capture-screenshots.js",
     "site:css": "node scripts/sync-shared-assets.js && tailwindcss -c marketing-site/tailwind.config.cjs -i marketing-site/src/styles.css -o marketing-site/assets/styles.css",
