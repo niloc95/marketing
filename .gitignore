@@ -45,6 +45,12 @@ $RECYCLE.BIN/
 .vagrant
 Vagrantfile
 
+# Secrets for marketing-site/contact.php. Unanchored on purpose: it covers the
+# repo root (docroot of `npm run site:serve`) and dist/ (docroot of
+# `npm run site:preview`). marketing-site/.env.example is the committed
+# template; the live copy belongs ABOVE the docroot — see DEPLOY.md §6.
+.ws-contact.env
+
 #-------------------------
 # Temporary Files
 #-------------------------
@@ -62,6 +68,11 @@ Vagrantfile
 
 /writable/debugbar/*
 !/writable/debugbar/index.html
+
+# Verification documents: company registration certificates and owner ID
+# copies. PII — never in the repo, never under public/.
+/writable/verification/*
+!/writable/verification/index.html
 
 php_errors.log
 

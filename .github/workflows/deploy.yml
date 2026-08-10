@@ -1,8 +1,15 @@
 name: Deploy to production (cPanel)
 
 # Auto-deploys on push to main. Two independent jobs:
-#   marketing  -> builds dist/site and uploads it to the main domain docroot
+#   marketing  -> composer installs (for PHPMailer), builds dist/site and
+#                 uploads it to the main domain docroot
 #   directory  -> composer installs and uploads the CI4 app to the subdomain root
+#
+# Both jobs run composer. The marketing site is static apart from contact.php,
+# the demo-request endpoint, whose only dependency is PHPMailer — the build
+# copies three of its files into dist/site/lib/. PHPMailer therefore also lands
+# unused in the directory app's vendor/; that is harmless, and removing it from
+# composer.json would break the marketing contact form.
 #
 # Required repo secrets (Settings → Secrets and variables → Actions):
 #   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
@@ -33,6 +40,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Must run BEFORE the site build: it reads vendor/phpmailer/ to vendor the
+      # three classes contact.php requires, and fails the build if they are
+      # absent rather than shipping an endpoint that 500s on every submission.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring
+          tools: composer
+
+      - name: Install PHP deps (PHPMailer, for contact.php)
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
       - uses: actions/setup-node@v4
         with:
@@ -83,11 +102,12 @@ jobs:
           local-dir: ./
           server-dir: ${{ secrets.FTP_DIRECTORY_DIR }}
           # Never ship the server .env, dev/build tooling, or the marketing site.
-          # public/assets/listings holds uploaded logos and gallery photos, which
-          # belong to whichever environment created them. .gitignore keeps them
-          # out of the repo; without the exclude below they would still be
-          # FTP'd over production's own files. (Keep comments out of the block
-          # scalar itself — there, a leading # is a literal glob, not a comment.)
+          # public/assets/listings holds uploaded logos and gallery photos, and
+          # writable/verification holds verification documents — both belong to
+          # whichever environment created them. .gitignore keeps them out of the
+          # repo; without the excludes below they would still be FTP'd over
+          # production's own files. (Keep comments out of the block scalar
+          # itself — there, a leading # is a literal glob, not a comment.)
           exclude: |
             **/.git*
             **/.git*/**
@@ -96,6 +116,7 @@ jobs:
             **/marketing-site/**
             **/scripts/**
             **/public/assets/listings/**
+            **/writable/verification/**
             **/dist/**
             **/tests/**
             **/.env

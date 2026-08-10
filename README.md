@@ -1,8 +1,9 @@
-# WebScheduler Directory (SaaS)
+# WebScheduler Local (SaaS)
 
-A free public directory of South African service businesses — hair salons, spas, nail bars,
-attorneys, mechanics, plumbers, doctors and more. Browse/search by category and location,
-public profile pages, and a "list your business" signup gated by email verification.
+A free public place to find local services, professionals and home industry across South
+Africa — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more.
+Browse/search by category and location, public profile pages, and an "add your business"
+signup gated by email verification.
 
 Separate from the standalone WebScheduler product, which is self-hosted per customer.
 
@@ -49,6 +50,10 @@ turns on `Config\Cookie::$secure` — over plain `http://` that throws
 | `npm run list:build` | Runs `list:css`, then assembles a deploy bundle in `dist/listing/` |
 | `npm run site:css` / `site:dev` / `site:build` | The static marketing site → `dist/site/` |
 
+`site:build` needs `composer install` to have run: it vendors three PHPMailer classes
+into `dist/site/lib/` for `contact.php`, the marketing contact form's endpoint, and fails
+rather than shipping an endpoint that would 500 on every submission.
+
 ## Tests
 
 `composer test` (PHPUnit). Most tests are pure units and need nothing set up.
@@ -91,6 +96,14 @@ Pair a server with its watcher in a second terminal — `list:dev` or `site:dev`
 CSS. `site:serve` needs `npm run site:css` to have run at least once; `site:preview` needs
 `npm run site:build`.
 
+Both marketing servers are PHP, not static file servers, because the site has one dynamic
+file — `marketing-site/contact.php`. To exercise it locally, put a `.ws-contact.env`
+alongside the docroot's parent: `./.ws-contact.env` for `site:serve` (docroot is
+`marketing-site/`) and `./dist/.ws-contact.env` for `site:preview` (docroot is
+`dist/site/`). Copy `marketing-site/.env.example` and uncomment its Mailpit block. Both
+names are git-ignored; `dist/site` is wiped per build but `dist/` itself is not, so the
+preview copy survives a rebuild.
+
 Two deliberate choices, both learned the hard way:
 
 - **`list:serve` uses CI4's `rewrite.php` router, not `public/index.php`.** With `index.php`
@@ -107,7 +120,10 @@ CSS from the wrong origin.
 
 The app sends two emails: a verification link to the submitter, and a "new published
 listing" notification to `directory.adminEmail`. Locally both are caught by
-[Mailpit](https://mailpit.axllent.org/) instead of being delivered.
+[Mailpit](https://mailpit.axllent.org/) instead of being delivered — as is the marketing
+site's contact form, once its `.ws-contact.env` points at `localhost:1025` with an empty
+`SMTP_CRYPTO` (the empty value matters: with a crypto set, PHPMailer tries STARTTLS
+against a plaintext server and the send fails in a way that reads like a Mailpit fault).
 
 ```bash
 brew install mailpit     # once
@@ -145,8 +161,16 @@ deploying. The production template is separate —
 | `GET|POST /manage` | Owner self-service: request an edit link by email |
 | `GET /manage/{token}` | Redeem the single-use link → session |
 | `GET|POST /manage/edit` | The owner's edit form |
+| `GET /faq` | FAQ (also emits `FAQPage` JSON-LD) |
+| `GET|POST /contact` | Contact form → emails `directory.adminEmail` |
 | `GET /admin`, `GET|POST /admin/login` | Admin backend |
 | `GET /sitemap.xml` | Sitemap incl. all published listings |
+
+`/contact` is deliberately on this domain rather than a link out to
+`webscheduler.co.za/contact.html`: that page is a *Book a demo* form for the scheduling
+product, which is the wrong ask for someone browsing the directory or trying to correct
+their own profile. It sends through the same `email.*` SMTP config as the verification and
+manage emails, sets `Reply-To` to the visitor, and stores nothing.
 
 ## Editing a listing
 

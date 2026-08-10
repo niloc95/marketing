@@ -39,7 +39,7 @@ Use the **same value** in three places:
 - Each WebScheduler app `.env` → `directory.handoffSecret`
 - (WebScheduler app also) `directory.handoffUrl = 'https://directory.webscheduler.co.za/list-your-practice/prefill'`
 
-That's what lets "List on our directory" pre-fill across the two systems. The payload
+That's what lets "Add your business" pre-fill across the two systems. The payload
 is still email-verified on this side, so the secret is tamper-evidence, not auth.
 
 ## 3. Directory app `.env` on the server
@@ -48,6 +48,67 @@ Copy `.env.production.example` → `.env` in the app root and fill it in (DB fro
 `directory.prefillSecret` from step 2, a strong `directory.adminPassword`, SMTP creds,
 `app.baseURL = 'https://directory.webscheduler.co.za/'`). **Never commit `.env`** — the
 deploy explicitly skips it.
+
+### Verified Business badge (PayFast)
+
+**Verification works without PayFast.** Document upload, the admin review queue, the badge
+and the public `/verified` page are all live as soon as you deploy — a business can pay you
+by EFT and you award the badge with the "Activate manually" button on the review queue,
+choosing how many months to add. PayFast only adds *card* payment: the checkout page and
+the owner's self-serve cancel button.
+
+Switch the whole feature off with `directory.verifiedBadgeEnabled = false` if you do not
+want it at all.
+
+```
+directory.verifiedBadgeEnabled = true           # the feature itself; default true
+
+directory.payfastMerchantId    = '...'          # from the PayFast dashboard
+directory.payfastMerchantKey   = '...'
+directory.payfastPassphrase    = '...'          # set the SAME value in PayFast → Settings
+directory.payfastSandbox       = false          # ONLY in production
+directory.verifiedMonthlyAmount = '149.00'      # decide this before you announce it
+```
+
+Four things worth knowing:
+
+1. **The passphrase is not optional in practice.** The merchant id and key both travel in a
+   form the buyer can read. The passphrase is the only part of the signature they cannot
+   see. Without one, a forged payment notification is much easier to construct.
+2. **`payfastSandbox` defaults to `true`**, so a half-configured environment takes no real
+   money rather than the reverse. That also means forgetting to set it to `false` in
+   production means you take *no* money at all and nothing complains — check the admin
+   Status page, which shows the mode and warns while it is on sandbox.
+3. **The notify URL must be publicly reachable**: PayFast posts to
+   `https://<your-domain>/payfast/notify` server-to-server. It is exempt from CSRF and the
+   honeypot filter by necessity, and defended instead by four checks in
+   `App\Controllers\PayFastNotify` (signature, source IP, a confirmation POST-back to
+   PayFast, and an amount match). Nothing on localhost will ever receive one — use a tunnel
+   for testing.
+5. **The self-serve cancel button uses PayFast's Subscriptions API**, which is a separate
+   integration from the checkout with its own signature rule (alphabetical, not submission
+   order — see `PayFast::apiSignature()`). It has **not been exercised against PayFast**;
+   confirm it in the sandbox before you rely on it. If the API call fails, the owner is
+   told plainly that it failed and you get an email to cancel it by hand — nothing is ever
+   recorded as cancelled unless PayFast confirmed it.
+4. **Changing the price later** only affects new applications. Existing subscribers keep the
+   amount stored on their verification row, which is what their renewals are validated
+   against.
+
+### Cron: the verification sweep
+
+Add one daily job:
+
+```
+0 3 * * * cd /home/<cpuser>/<appdir> && php spark directory:verifications:sweep --quiet
+```
+
+It moves expired subscriptions to `lapsed` and emails renewal reminders three days ahead.
+
+It is deliberately **not** load-bearing for correctness: the public badge is hidden by a
+date comparison at render time, so a business whose payments stop loses the badge on the
+right day whether or not this job ever runs. Missing a day costs a late reminder and a
+briefly stale admin queue, nothing more.
 
 ### Mapping
 
@@ -121,10 +182,83 @@ and run in the app root:
 php spark db:seed DirectoryCategoriesSeeder
 ```
 
-## 6. Marketing site — nothing else
+## 6. Marketing site — one manual step, then it publishes itself
 
-It's static. Once `FTP_MARKETING_DIR` is set it publishes on every push. To preview a
-build locally: `npm run site:build` then open `dist/site/`.
+The site is static apart from **one file**: `contact.php`, the demo-request endpoint
+behind the form on the contact page. Once `FTP_MARKETING_DIR` is set the site publishes
+on every push, but the endpoint needs its own configuration placed by hand, once —
+nothing in the repo or the deploy bundle ever contains it.
+
+Preview a build locally with `npm run site:build` then `npm run site:preview` (a PHP
+server — `python3 -m http.server` would hand out `contact.php` as a text download).
+
+### 6a. Requirements on the host
+
+- **PHP 8.1+ for the main domain.** cPanel → *MultiPHP Manager*. The subdomain's version
+  is set separately, so a healthy directory app tells you nothing about `webscheduler.co.za`.
+- **A real mailbox to send from**, e.g. `no-reply@webscheduler.co.za`. The directory
+  app's mailbox can be reused; a dedicated one isolates reputation better.
+
+### 6b. The config file — ABOVE the docroot
+
+```
+/home/<cpuser>/.ws-contact.env       ← chmod 600, place by hand, never deployed
+/home/<cpuser>/public_html/contact.php
+```
+
+`contact.php` reads `__DIR__ . '/../.ws-contact.env'`, which resolves exactly there.
+Copy `marketing-site/.env.example` as the template and fill it in.
+
+Above the docroot, not in it. In `public_html` the file would be one PHP misconfiguration
+away from being served to anyone as plain text — and protecting it would need a root
+`.htaccess`, which the deploy would then overwrite along with cPanel's AutoSSL redirect
+and MultiPHP handler, taking the whole site down rather than just the form.
+
+Generate the token secret with:
+
+```bash
+php -r "echo bin2hex(random_bytes(32));"
+```
+
+Then create the rate-limit directory, also outside the docroot, and point
+`RATE_LIMIT_DIR` at it:
+
+```bash
+mkdir -m 700 /home/<cpuser>/ws-contact-state
+```
+
+Leave it unset and the endpoint falls back to the system temp directory, which on shared
+hosting may be swept or per-request — the limiter then quietly does nothing. It logs the
+fallback, so check for that line if submissions stop being throttled.
+
+> **Both paths start with a dot.** hPanel's file manager and FileZilla hide dotfiles by
+> default (FileZilla: *Server → Force showing hidden files*). Turn that on first, or you
+> will "upload" the file into thin air and see a 503 with no obvious cause.
+
+### 6c. Smoke test after the first deploy
+
+```bash
+curl -sI  https://webscheduler.co.za/contact.php          # 303, X-Robots-Tag, text/html
+curl -s  'https://webscheduler.co.za/contact.php?token=1' # {"ok":true,...,"token":"v1..."}
+curl -sI  https://webscheduler.co.za/.ws-contact.env      # 404 — non-negotiable
+```
+
+A `Content-Type: text/plain` on the first call means PHP is **not** executing and the
+source is being served — stop and fix MultiPHP before going further.
+
+Then submit the real form in a browser and confirm the mail arrives at
+`directory.adminEmail` (**check the spam folder**), that its headers show SPF/DKIM/DMARC
+`pass`, and that pressing reply addresses the visitor rather than `no-reply@`. Submit
+four times in a row: the fourth should be refused, and `ws-contact-state/` should now
+contain `rl-*.json` files — which is how you know the limiter found its real directory.
+
+On the **second** deploy, re-check that `.ws-contact.env` and the state directory are
+still there and the form still works. That is the assertion that the FTP sync leaves
+them alone.
+
+If the endpoint is misconfigured it answers 503 with a message pointing the visitor at
+`info@webscheduler.co.za` and logs the missing key names — deliberately loud, because a
+contact form that silently swallows enquiries is worse than one that is visibly down.
 
 ## 7. Hardening before you announce it
 
@@ -173,9 +307,19 @@ Two things exist in exactly one place. Neither is in git:
 | Category taxonomy | `DirectoryCategoriesSeeder` | reseeded |
 | **Listing data** | the production database, only | **gone** |
 | **Uploaded logos and photos** | `public/assets/listings/` on the server, only | **gone** |
+| **Verification documents** | `writable/verification/` on the server, only | **gone** |
 
-Uploads are safe from *deploys* — the FTP action excludes `public/assets/listings/**`
-deliberately, so a release never touches them. That is not a backup.
+Uploads are safe from *deploys* — the FTP action excludes `public/assets/listings/**` and
+`writable/verification/**` deliberately, so a release never touches them. That is not a
+backup.
+
+⚠️ **Verification documents are different from everything else in that table.** They are
+company registration certificates and copies of owners' ID documents. Back them up if you
+back them up *encrypted and off-host*, and think about where the copies end up: a backup of
+this directory is a file full of other people's identity documents. Losing them is
+recoverable — you can ask the affected owners to re-upload — so if you are not confident
+the backup itself will be handled properly, **not backing them up is a defensible choice**.
+Nothing else on this list has that property.
 
 Do these three things:
 
