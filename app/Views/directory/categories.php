@@ -7,33 +7,30 @@ $canonical = base_url('directory/categories');
 // A zero-listing category has no reachable landing page (renderLanding() 404s
 // on an empty result), so it must never be rendered as a link here — only
 // count it into structured data / visible lists once it actually has one.
-$crumbs = [
-    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Directory', 'item' => base_url('directory')],
-    ['@type' => 'ListItem', 'position' => 2, 'name' => 'All categories', 'item' => $canonical],
-];
-
-$items = [];
+$links = [];
 foreach ($groups as $cats) {
     foreach ($cats as $c) {
         if ((int) $c['listing_count'] === 0) {
             continue;
         }
-        $items[] = [
-            '@type'    => 'ListItem',
-            'position' => count($items) + 1,
-            'url'      => base_url('directory/' . $c['slug']),
-            'name'     => $c['name'],
-        ];
+        $links[] = ['url' => base_url('directory/' . $c['slug']), 'name' => (string) $c['name']];
     }
 }
 
-$schema = [
-    '@context' => 'https://schema.org',
-    '@graph'   => [
-        ['@type' => 'BreadcrumbList', 'itemListElement' => $crumbs],
-        ['@type' => 'ItemList', 'name' => 'All categories', 'numberOfItems' => count($items), 'itemListElement' => $items],
+// schema_link_elements(), not schema_listing_elements(): the members here are
+// landing pages, not businesses.
+$schema = schema_page(
+    [
+        schema_breadcrumb([
+            ['name' => 'Directory', 'url' => base_url('directory')],
+            ['name' => 'All categories', 'url' => $canonical],
+        ], $canonical),
+        schema_item_list('All categories', schema_link_elements($links), null, $canonical),
     ],
-];
+    $canonical,
+    'CollectionPage',
+    'All categories'
+);
 ?>
 
 <?= $this->section('head') ?>

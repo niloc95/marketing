@@ -49,15 +49,12 @@ $faqs = [
     'description' => 'The Verified Business badge on ' . $siteName . ' means we have checked a company registration '
         . 'document and the owner\'s ID. Here is exactly what we check, and what we do not.',
     'canonical'   => $canonical,
-    'schema'      => [
-        '@context'   => 'https://schema.org',
-        '@type'      => 'FAQPage',
-        'mainEntity' => array_map(static fn ($f) => [
-            '@type'          => 'Question',
-            'name'           => $f['q'],
-            'acceptedAnswer' => ['@type' => 'Answer', 'text' => html_entity_decode(strip_tags($f['a']), ENT_QUOTES, 'UTF-8')],
-        ], $faqs),
-    ],
+    'schema'      => schema_page(
+        [schema_faq_page($faqs, $canonical)],
+        $canonical,
+        'WebPage',
+        'What the Verified Business badge means'
+    ),
 ]) ?>
 <?= $this->endSection() ?>
 

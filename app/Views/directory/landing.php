@@ -11,54 +11,33 @@ $heading  = $plural . $where;
 $canonical = base_url('directory/' . $catSlug . ($province !== null ? '/' . slugify($province) : ''));
 $total    = (int) $result['total'];
 
-// Templated FAQ — no hand-written copy, built entirely from data already in
-// scope, so every category/province landing page gets this for free.
-$faqs = [
-    [
-        'q' => 'How do I find ' . strtolower($plural) . $where . '?',
-        'a' => 'Browse the list below, or use the search box to narrow it down by name or keyword. Every profile shows contact details, location and services offered.',
-    ],
-    [
-        'q' => 'How do I add my ' . strtolower(rtrim($catName, 's')) . ' business to ' . $siteName . '?',
-        'a' => 'It is free. Use the "Add your business" button on this page to submit your details — we\'ll email you a link to verify and publish your profile.',
-    ],
-];
-$faqSchema = [
-    '@type' => 'FAQPage',
-    'mainEntity' => array_map(static fn (array $f) => [
-        '@type'          => 'Question',
-        'name'           => $f['q'],
-        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']],
-    ], $faqs),
-];
+// No FAQ block here any more, visible or structured. It used to be templated
+// from the category name, which meant the same two questions repeated verbatim
+// across all 147 categories × 9 provinces — the thin-content pattern itself.
+// FAQ rich results have also been Google-deprecated since August 2023, so
+// there was nothing being earned in exchange. The search box, province chips
+// and related-category links below cover the same ground more usefully.
 
-// ItemList tells search engines this is a curated set rather than prose.
-$items = [];
-foreach ($result['items'] as $i => $l) {
-    $items[] = [
-        '@type'    => 'ListItem',
-        'position' => $i + 1,
-        'url'      => base_url('directory/' . $l['slug']),
-        'name'     => $l['display_name'],
-    ];
-}
-$schema = [
-    '@context'        => 'https://schema.org',
-    '@graph'          => [
-        [
-            '@type'           => 'BreadcrumbList',
-            'itemListElement' => array_values(array_filter([
-                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Browse', 'item' => base_url('directory')],
-                ['@type' => 'ListItem', 'position' => 2, 'name' => $catName, 'item' => base_url('directory/' . $catSlug)],
-                $province !== null
-                    ? ['@type' => 'ListItem', 'position' => 3, 'name' => $province, 'item' => $canonical]
-                    : null,
-            ])),
-        ],
-        ['@type' => 'ItemList', 'name' => $heading, 'numberOfItems' => $total, 'itemListElement' => $items],
-        $faqSchema,
-    ],
+// ItemList tells search engines this is a curated set rather than prose. Its
+// members carry full LocalBusiness detail — the search query already selects
+// every field used, so this costs no extra queries.
+$crumbs = [
+    ['name' => 'Browse', 'url' => base_url('directory')],
+    ['name' => $catName, 'url' => base_url('directory/' . $catSlug)],
 ];
+if ($province !== null) {
+    $crumbs[] = ['name' => $province, 'url' => $canonical];
+}
+
+$schema = schema_page(
+    [
+        schema_breadcrumb($crumbs, $canonical),
+        schema_item_list($heading, schema_listing_elements($result['items']), $total, $canonical),
+    ],
+    $canonical,
+    'CollectionPage',
+    $heading
+);
 ?>
 
 <?= $this->section('head') ?>
@@ -122,18 +101,6 @@ $schema = [
                     <?php endif; ?>
                 <?php endfor; ?>
             </nav>
-        <?php endif; ?>
-
-        <?php if ($faqs !== []): ?>
-            <div class="panel mt-8">
-                <h2 class="mb-2">Frequently asked questions</h2>
-                <?php foreach ($faqs as $faq): ?>
-                    <div class="mb-4">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white"><?= esc($faq['q']) ?></h3>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400"><?= esc($faq['a']) ?></p>
-                    </div>
-                <?php endforeach; ?>
-            </div>
         <?php endif; ?>
 
         <?php // Internal links: without these the landing pages are orphans. ?>

@@ -138,28 +138,24 @@ $groups = [
     ],
 ];
 
-// FAQPage schema, built from the same array — same shape as the templated FAQ on
-// the category landing pages (see directory/landing.php).
-$questions = [];
+// FAQPage schema, built from the same array. Google stopped rendering FAQ rich
+// results in August 2023 (authoritative government and health sites only), so
+// this earns no snippet — it stays because the markup is simply true of this
+// page, it costs nothing, and other consumers still read it. The templated
+// version that landing/province pages used to generate was removed precisely
+// because neither of those held there.
+$faqs = [];
 foreach ($groups as $group) {
     foreach ($group['faqs'] as $faq) {
-        $questions[] = [
-            '@type'          => 'Question',
-            'name'           => $faq['q'],
-            'acceptedAnswer' => [
-                '@type' => 'Answer',
-                // Tags stripped and entities decoded: a rich result is plain
-                // text, and "&amp;" would otherwise show up literally in it.
-                'text'  => html_entity_decode(strip_tags($faq['a']), ENT_QUOTES, 'UTF-8'),
-            ],
-        ];
+        $faqs[] = $faq;
     }
 }
-$schema = [
-    '@context'   => 'https://schema.org',
-    '@type'      => 'FAQPage',
-    'mainEntity' => $questions,
-];
+$schema = schema_page(
+    [schema_faq_page($faqs, $canonical)],
+    $canonical,
+    'WebPage',
+    'Frequently asked questions'
+);
 ?>
 
 <?= $this->section('head') ?>

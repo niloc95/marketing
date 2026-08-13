@@ -4,28 +4,11 @@
 $siteName = config('Directory')->siteName();
 
 // WebSite+SearchAction unlocks the sitelinks searchbox; Organization backs the
-// brand knowledge panel. One canonical instance of each, here on the homepage.
-$schema = [
-    '@context' => 'https://schema.org',
-    '@graph'   => [
-        [
-            '@type'          => 'WebSite',
-            'name'           => $siteName,
-            'url'            => base_url('/'),
-            'potentialAction' => [
-                '@type'       => 'SearchAction',
-                'target'      => base_url('directory') . '?q={search_term_string}',
-                'query-input' => 'required name=search_term_string',
-            ],
-        ],
-        [
-            '@type' => 'Organization',
-            'name'  => $siteName,
-            'url'   => base_url('/'),
-            'logo'  => base_url(config('Directory')->ogImage()),
-        ],
-    ],
-];
+// brand knowledge panel. The `true` is what makes this the one page that emits
+// them in full — every other page references the same two @ids instead, which
+// is what merges them into a single entity rather than a page-full of
+// look-alikes.
+$schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([

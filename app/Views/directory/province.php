@@ -7,51 +7,22 @@ $heading   = 'Local services in ' . $province;
 $canonical = base_url('directory/province/' . slugify($province));
 $total     = (int) $result['total'];
 
-// Templated FAQ, built entirely from data already in scope — the same approach
-// landing.php takes, so every province page gets this without hand-written copy.
-$faqs = [
+// The templated FAQ that used to live here is gone for the same reason it went
+// from landing.php: two boilerplate questions repeated across every province
+// page is a thin-content signal, and FAQ rich results have been deprecated
+// since August 2023 so it earned nothing back.
+$schema = schema_page(
     [
-        'q' => 'How do I find someone local in ' . $province . '?',
-        'a' => 'Browse the list below, or narrow it down by town and category using the links on this page. Every profile shows contact details, location and services offered.',
+        schema_breadcrumb([
+            ['name' => 'Browse', 'url' => base_url('directory')],
+            ['name' => $province, 'url' => $canonical],
+        ], $canonical),
+        schema_item_list($heading, schema_listing_elements($result['items']), $total, $canonical),
     ],
-    [
-        'q' => 'How do I add my ' . $province . ' business to ' . $siteName . '?',
-        'a' => 'It is free. Use the "Add your business" button on this page to submit your details — we\'ll email you a link to verify and publish your profile.',
-    ],
-];
-$faqSchema = [
-    '@type'      => 'FAQPage',
-    'mainEntity' => array_map(static fn (array $f) => [
-        '@type'          => 'Question',
-        'name'           => $f['q'],
-        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']],
-    ], $faqs),
-];
-
-$items = [];
-foreach ($result['items'] as $i => $l) {
-    $items[] = [
-        '@type'    => 'ListItem',
-        'position' => $i + 1,
-        'url'      => base_url('directory/' . $l['slug']),
-        'name'     => $l['display_name'],
-    ];
-}
-
-$schema = [
-    '@context' => 'https://schema.org',
-    '@graph'   => [
-        [
-            '@type'           => 'BreadcrumbList',
-            'itemListElement' => [
-                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Browse', 'item' => base_url('directory')],
-                ['@type' => 'ListItem', 'position' => 2, 'name' => $province, 'item' => $canonical],
-            ],
-        ],
-        ['@type' => 'ItemList', 'name' => $heading, 'numberOfItems' => $total, 'itemListElement' => $items],
-        $faqSchema,
-    ],
-];
+    $canonical,
+    'CollectionPage',
+    $heading
+);
 ?>
 
 <?= $this->section('head') ?>
@@ -159,18 +130,6 @@ $schema = [
                 <?php endforeach; ?>
             </div>
         </div>
-
-        <?php if ($faqs !== []): ?>
-            <div class="panel mt-4">
-                <h2 class="mb-2">Frequently asked questions</h2>
-                <?php foreach ($faqs as $faq): ?>
-                    <div class="mb-4">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white"><?= esc($faq['q']) ?></h3>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400"><?= esc($faq['a']) ?></p>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
 
         <div class="mt-8 text-center">
             <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">List your business — free</a>

@@ -12,95 +12,31 @@ $canonical = base_url('directory/' . ($l['slug'] ?? ''));
 $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));
 
-$address = array_filter([
-    '@type'           => 'PostalAddress',
-    'streetAddress'   => $l['address_line'] ?? '',
-    'addressLocality' => $l['city'] ?? '',
-    'addressRegion'   => $l['province'] ?? '',
-    'postalCode'      => $l['postal_code'] ?? '',
-    'addressCountry'  => $l['country'] ?? '',
-]);
-// The directory covers every kind of service business, so LocalBusiness is the
-// base type. Where the category group maps cleanly onto a schema.org subtype we
-// emit that instead — richer for search engines, and safe to fall back from.
-$schemaTypes = [
-    'Health & Medical'      => 'MedicalBusiness',
-    'Beauty & Wellness'     => 'HealthAndBeautyBusiness',
-    'Hair'                  => 'HairSalon',
-    'Motoring'              => 'AutomotiveBusiness',
-    'Legal & Financial'     => 'ProfessionalService',
-    'Home & Trades'         => 'HomeAndConstructionBusiness',
-    'Professional Services' => 'ProfessionalService',
-    'Fitness & Sport'       => 'SportsActivityLocation',
-    'Education & Training'  => 'EducationalOrganization',
-    'Retail & Other'        => 'Store',
-];
-$group = $l['category']['group_name'] ?? '';
-
-// Only emit geo when both coordinates are actually set — a half-populated or
-// 0,0 GeoCoordinates is worse than none.
-$geo = null;
-if (($l['latitude'] ?? null) !== null && ($l['longitude'] ?? null) !== null
-    && (float) $l['latitude'] !== 0.0 && (float) $l['longitude'] !== 0.0) {
-    $geo = [
-        '@type'     => 'GeoCoordinates',
-        'latitude'  => (float) $l['latitude'],
-        'longitude' => (float) $l['longitude'],
-    ];
-}
-
-// sameAs carries only the socials that are actually filled in, and only the
-// ones that are real http(s) URLs — sameAs is a link target like any other.
-$sameAs = array_values(array_filter([
-    safe_external_url($l['social_facebook'] ?? ''),
-    safe_external_url($l['social_instagram'] ?? ''),
-    safe_external_url($l['social_linkedin'] ?? ''),
-    safe_external_url($l['website'] ?? ''),
-]));
-
-// Deliberately no aggregateRating: there are no reviews, and inventing rating
-// markup is fabricated structured data that earns a manual action.
-//
-// The owner's email is deliberately NOT here. Phone is fine to publish — it is
-// contact data and nothing more — but the email address is the sole credential
-// for the passwordless /manage flow, so a machine-readable copy of it on a page
-// the sitemap enumerates is a ready-made target list for magic-link abuse. The
-// reveal button below still shows it to a human who asks.
-$business = array_filter([
-    '@type'       => $schemaTypes[$group] ?? 'LocalBusiness',
-    '@id'         => $canonical,
-    'name'        => $name,
-    'url'         => $canonical,
-    'telephone'   => $l['phone'] ?? '',
-    'image'       => $logoUrl,
-    'description' => $l['description'] ?? '',
-    'knowsAbout'  => $prof,
-    'areaServed'  => $l['province'] ?? '',
-    'address'     => count($address) > 1 ? $address : null,
-    'geo'         => $geo,
-    'sameAs'      => $sameAs !== [] ? $sameAs : null,
-]);
+// The business node, its type mapping and its deliberate omissions (no
+// aggregateRating, no owner email) all live in schema_helper.php now.
+$business = schema_local_business($l, $canonical);
 
 $catSlug  = $l['category']['slug'] ?? ($l['category_slug'] ?? '');
 $province = (string) ($l['province'] ?? '');
 $crumbs   = [
-    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Browse', 'item' => base_url('directory')],
+    ['name' => 'Browse', 'url' => base_url('directory')],
 ];
 if ($catSlug !== '') {
-    $crumbs[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $prof, 'item' => base_url('directory/' . $catSlug)];
+    $crumbs[] = ['name' => $prof, 'url' => base_url('directory/' . $catSlug)];
     if ($province !== '') {
-        $crumbs[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $province, 'item' => base_url('directory/' . $catSlug . '/' . slugify($province))];
+        $crumbs[] = ['name' => $province, 'url' => base_url('directory/' . $catSlug . '/' . slugify($province))];
     }
 }
-$crumbs[] = ['@type' => 'ListItem', 'position' => count($crumbs) + 1, 'name' => $name, 'item' => $canonical];
+$crumbs[] = ['name' => $name, 'url' => $canonical];
 
-$schema = [
-    '@context' => 'https://schema.org',
-    '@graph'   => [
-        $business,
-        ['@type' => 'BreadcrumbList', 'itemListElement' => $crumbs],
-    ],
-];
+// ProfilePage, not WebPage: the page exists to describe one business, and
+// schema_page() wires it to the business node as mainEntity.
+$schema = schema_page(
+    [$business, schema_breadcrumb($crumbs, $canonical)],
+    $canonical,
+    'ProfilePage',
+    $name
+);
 $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') . '.') : $name;
 ?>
 
@@ -122,7 +58,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
             <?php foreach ($crumbs as $i => $crumb): ?>
                 <?php if ($i > 0): ?><span class="mx-1">/</span><?php endif; ?>
                 <?php if ($i < count($crumbs) - 1): ?>
-                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['item'], 'attr') ?>"><?= esc($crumb['name']) ?></a>
+                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['url'], 'attr') ?>"><?= esc($crumb['name']) ?></a>
                 <?php else: ?>
                     <span class="text-slate-700 dark:text-slate-300"><?= esc($crumb['name']) ?></span>
                 <?php endif; ?>

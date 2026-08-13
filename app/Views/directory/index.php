@@ -25,21 +25,12 @@ if (! $hasQuery && ($filters['category'] ?? '') !== '') {
 // emitting structured data for a page we've told search engines to skip.
 $schema = null;
 if ($indexable && ! empty($result['items'])) {
-    $items = [];
-    foreach ($result['items'] as $i => $l) {
-        $items[] = [
-            '@type'    => 'ListItem',
-            'position' => $i + 1,
-            'url'      => base_url('directory/' . $l['slug']),
-            'name'     => $l['display_name'],
-        ];
-    }
-    $schema = [
-        '@context' => 'https://schema.org',
-        '@graph'   => [
-            ['@type' => 'ItemList', 'name' => $title, 'numberOfItems' => (int) $result['total'], 'itemListElement' => $items],
-        ],
-    ];
+    $schema = schema_page(
+        [schema_item_list($title, schema_listing_elements($result['items']), (int) $result['total'], $canonical)],
+        $canonical,
+        'CollectionPage',
+        $title
+    );
 }
 ?>
 <?= seo_meta([
