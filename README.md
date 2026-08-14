@@ -8,7 +8,7 @@ signup gated by email verification.
 Separate from the standalone WebScheduler product, which is self-hosted per customer.
 
 - **Stack:** CodeIgniter 4.7 + MySQL, Tailwind for the views.
-- **Production:** https://directory.webscheduler.co.za (its own subdomain — see *Deploying*)
+- **Production:** https://listing.webscheduler.co.za (its own subdomain — see *Deploying*)
 - **Local:** http://localhost:8095
 
 This repo also holds the static marketing site (`marketing-site/`), which links to the
@@ -271,12 +271,12 @@ cleartext and takes a deprecated code path.
   path as well.
 
 
-1. Create it in hPanel — Domains → Subdomains, name directory.
+1. Create it in hPanel — Domains → Subdomains, name listing.
 
-⚠️ Watch the document root. Hostinger defaults a subdomain's root to public_html/directory, which would make that folder reachable at both directory.webscheduler.co.za and webscheduler.co.za/directory — the exact overlap that confused things last time. Set a custom root outside public_html:
+⚠️ Watch the document root. Hostinger defaults a subdomain's root to public_html/directory, which would make that folder reachable at both listing.webscheduler.co.za and webscheduler.co.za/directory — the exact overlap that confused things last time. Set a custom root outside public_html:
 
 
-/home/uXXXXXXX/domains/directory.webscheduler.co.za/public_html
+/home/uXXXXXXX/domains/listing.webscheduler.co.za/public_html
 2. Issue the SSL certificate — SSL → Manage, for the subdomain. Do this before the first request. With CI_ENVIRONMENT = production, Secure cookies are on, and CodeIgniter throws forInsecureCookie (a 500 on every request) over plain HTTP.
 
 3. Cloudflare — set SSL/TLS to Full (strict). In Flexible mode the origin sees HTTP, so forcehttps redirect-loops and Secure cookies throw. Config\App::$proxyIPs already carries Cloudflare's ranges; no action needed. If Hostinger lets you firewall the origin to those ranges, do — it stops anyone who finds the origin address bypassing Cloudflare's WAF.
@@ -284,7 +284,7 @@ cleartext and takes a deprecated code path.
 4. Upload npm run list:build output — the two halves go to different places:
 
 
-/home/uXXXXXXX/domains/directory.webscheduler.co.za/
+/home/uXXXXXXX/domains/listing.webscheduler.co.za/
 ├── directory-app/     ← dist/listing/directory-app/   (ABOVE the web root)
 └── public_html/       ← contents of dist/listing/docroot/
 They must be siblings; docroot/index.php resolves the app via ../directory-app.
@@ -293,16 +293,18 @@ They must be siblings; docroot/index.php resolves the app via ../directory-app.
 
 
 CI_ENVIRONMENT = production
-app.baseURL = 'https://directory.webscheduler.co.za/'
+app.baseURL = 'https://listing.webscheduler.co.za/'
 
 6. Migrate and seed:
 
-cd ~/domains/directory.webscheduler.co.za/directory-app
-php spark migrate                              # 6 migrations
+cd ~/domains/listing.webscheduler.co.za/directory-app
+php spark migrate --all                        # 19 migrations as of 2026-08-14
 php spark db:seed DirectoryCategoriesSeeder    # 147 categories
 php spark directory:adminhash                  # then set adminPasswordHash
 
 7. Verify — the checks in dist/listing/DEPLOY.txt, especially:
 
-curl -sI https://directory.webscheduler.co.za/          # 200, no redirect loop
+curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/   # 200
+# Use GET, not curl -I: routes are registered with $routes->get(), so HEAD returns 404
+# from a perfectly healthy app. Same trap when configuring an uptime monitor.
 curl -sI https://webscheduler.co.za/directory/          # 404 — old broken copy gone

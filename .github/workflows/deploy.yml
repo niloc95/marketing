@@ -1,4 +1,4 @@
-name: Deploy to production (cPanel)
+name: Deploy to production (Hostinger)
 
 # Auto-deploys on push to main. Two independent jobs:
 #   marketing  -> composer installs (for PHPMailer), builds dist/site and
@@ -11,19 +11,35 @@ name: Deploy to production (cPanel)
 # unused in the directory app's vendor/; that is harmless, and removing it from
 # composer.json would break the marketing contact form.
 #
-# Required repo secrets (Settings → Secrets and variables → Actions):
+# REQUIRED repo secrets (Settings → Secrets and variables → Actions). Without
+# these the deploy does not merely misbehave — FTP-Deploy-Action aborts with
+# "Input required and not supplied: server" before it opens a connection:
 #   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
 #   FTP_MARKETING_DIR  (e.g. /public_html/)
-#   FTP_DIRECTORY_DIR  (e.g. /directory_app/  — subdomain docroot points at <this>/public)
-#   SSH_HOST, SSH_USERNAME, SSH_PRIVATE_KEY, SSH_PORT (optional, default 22)
-#   SSH_DIRECTORY_APP_PATH  (absolute server filesystem path to the app root, e.g.
-#                            /home/<cpuser>/directory_app — same folder as FTP_DIRECTORY_DIR
-#                            points at, but as seen by SSH rather than FTP)
 #
-# Every deploy runs `php spark migrate` over SSH after the FTP upload (see the
-# `migrate` job below) — schema changes ship automatically, not just on first deploy.
-# First-time-only steps (seeding, .env, subdomain/DB creation) are still manual —
-# see DEPLOY.md.
+# ⚠️ DO NOT SET `FTP_DIRECTORY_DIR`. The directory job is disabled because its
+# layout assumption does not match production (see the block above that job).
+# Setting it makes the run fail on purpose. The directory app is deployed by
+# hand until that job is rewritten.
+#
+# OPTIONAL. Each is guarded; leaving one unset skips its step rather than failing
+# the run, and the skip is announced in the job summary:
+#   CF_ZONE_ID, CF_API_TOKEN   Cloudflare cache purge after the marketing upload.
+#                              Token needs Zone → Cache Purge → Purge. Unset means
+#                              visitors keep seeing the previous build until you
+#                              purge by hand.
+#   SSH_HOST, SSH_USERNAME, SSH_PRIVATE_KEY, SSH_PORT (default 22)
+#   SSH_DIRECTORY_APP_PATH     absolute server path to the app root, e.g.
+#                              /home/<cpuser>/directory_app — the same folder
+#                              FTP_DIRECTORY_DIR points at, as seen over SSH.
+#
+# With SSH set, every deploy runs `php spark migrate --all` after the upload, so
+# schema changes ship automatically. Without it, migrations are a MANUAL gate —
+# run them from hPanel → Advanced → Terminal. Either way the `migrate` job tells
+# you which of the two happened.
+#
+# First-time-only steps (seeding, .env, subdomain/DB creation, the marketing
+# .ws-contact.env) are manual regardless — see DEPLOY.md.
 
 on:
   push:
@@ -38,6 +54,11 @@ jobs:
   marketing:
     name: Marketing site → main domain
     runs-on: ubuntu-latest
+    # Hoisted to job level so the purge steps' `if:` can test it. A step's own
+    # `env:` block is not dependably in scope while that same step's `if:` is
+    # being evaluated; a job-level one always is.
+    env:
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -73,66 +94,137 @@ jobs:
           local-dir: ./dist/site/
           server-dir: ${{ secrets.FTP_MARKETING_DIR }}
 
+      # Cloudflare proxies the apex (orange cloud). Without this, an FTP upload
+      # that succeeded still leaves visitors on the previous HTML and CSS — the
+      # deploy looks green, the site looks unchanged, and the time goes into
+      # debugging a bug that isn't there. Purge everything rather than by URL:
+      # the asset filenames are not content-hashed, so a URL list would have to
+      # be kept in sync with the build by hand.
+      #
+      # The secret is read through `env`, not `secrets`, in the `if:`. The
+      # `secrets` context is NOT available to any `if` condition — job or step —
+      # so `if: secrets.CF_ZONE_ID != ''` would not gate anything. Mapping it
+      # into `env` first is the documented way to make a secret's presence
+      # testable. Same pattern in the `migrate` job below.
+      - name: Purge Cloudflare cache
+        if: env.CF_ZONE_ID != ''
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          response=$(curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}')
+          echo "$response"
+          # curl exits 0 on a 4xx from the API, so the body is the only signal.
+          echo "$response" | grep -q '"success":true' \
+            || { echo "::error::Cloudflare purge failed — visitors may keep seeing the previous build."; exit 1; }
+
+      - name: Remind to purge Cloudflare by hand
+        if: env.CF_ZONE_ID == ''
+        run: |
+          echo "::warning::CF_ZONE_ID is not set, so the Cloudflare cache was NOT purged."
+          echo "::warning::Visitors may keep seeing the previous build. Purge manually:"
+          echo "::warning::  Cloudflare → Caching → Configuration → Purge Everything"
+
+  # ============================================================================
+  # ⚠️  DISABLED: this job's layout assumption does not match production.
+  #
+  # It uploads the repo root and assumes the subdomain docroot is
+  # <FTP_DIRECTORY_DIR>/public, with public/index.php resolving the app via
+  # `../app/Config/Paths.php`.
+  #
+  # Production is laid out the OTHER way — the split bundle that
+  # `npm run list:build` produces and README documents:
+  #
+  #     domains/listing.webscheduler.co.za/
+  #     ├── directory-app/     ← app code, ABOVE the web root
+  #     └── public_html/       ← docroot; its index.php requires
+  #                              ../directory-app/app/Config/Paths.php
+  #
+  # These are incompatible. Because this workflow has never completed a run, the
+  # mismatch was never discovered — production was always deployed by hand.
+  #
+  # Setting FTP_DIRECTORY_DIR without first rewriting the upload step would, at
+  # best, change nothing visible; at worst — if it pointed at public_html/ — it
+  # would publish app/, vendor/ and writable/ INSIDE the web root. The tripwire
+  # below fails the job loudly rather than letting that happen silently.
+  #
+  # To re-enable: build the bundle (`npm run list:build`) and upload
+  # dist/listing/directory-app/ and dist/listing/docroot/ to their two separate
+  # destinations, then delete the tripwire. Until then the directory app is
+  # deployed manually — see DEPLOY.md.
+  # ============================================================================
   directory:
     name: Directory app → subdomain
     runs-on: ubuntu-latest
+    env:
+      FTP_DIRECTORY_DIR: ${{ secrets.FTP_DIRECTORY_DIR }}
     steps:
       - uses: actions/checkout@v4
 
-      # Match production (PHP 8.3 on the cPanel host). composer.json requires
-      # ^8.2 via CodeIgniter 4.7, so the old '8.1' pin failed the install
-      # outright — the vendor tree must also be resolved against the runtime it
-      # will actually execute on, not merely a version that satisfies the range.
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: intl, mbstring, mysqli
-          tools: composer
+      - name: Refuse to deploy with a mismatched layout
+        if: env.FTP_DIRECTORY_DIR != ''
+        run: |
+          echo "::error::FTP_DIRECTORY_DIR is set, but this job uploads the repo root while production uses the split directory-app/ + public_html/ layout."
+          echo "::error::Uploading would not deploy the app, and pointing it at public_html/ would expose app/ and vendor/ to the web."
+          echo "::error::Rewrite this job to ship dist/listing/ (npm run list:build), or unset FTP_DIRECTORY_DIR and deploy by hand. See DEPLOY.md."
+          exit 1
 
-      - name: Install PHP deps (production)
-        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+      - name: Directory deploy is manual — say so
+        if: env.FTP_DIRECTORY_DIR == ''
+        run: |
+          echo "::warning::The directory app was NOT deployed by this run — its job is intentionally not wired up."
+          echo "::warning::Deploy it by hand: npm run list:build, then upload the two folders. See DEPLOY.md."
+          {
+            echo "### ℹ️ Directory app not deployed"
+            echo ""
+            echo "This job is intentionally inert: it uploads the repo root, but production"
+            echo "uses the split \`directory-app/\` + \`public_html/\` layout, so the two are"
+            echo "incompatible."
+            echo ""
+            echo "The marketing site **was** deployed. To release the directory app, run"
+            echo "\`npm run list:build\` and upload the two folders — see DEPLOY.md."
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Deploy CI4 app via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./
-          server-dir: ${{ secrets.FTP_DIRECTORY_DIR }}
-          # Never ship the server .env, dev/build tooling, or the marketing site.
-          # public/assets/listings holds uploaded logos and gallery photos, and
-          # writable/verification holds verification documents — both belong to
-          # whichever environment created them. .gitignore keeps them out of the
-          # repo; without the excludes below they would still be FTP'd over
-          # production's own files. (Keep comments out of the block scalar
-          # itself — there, a leading # is a literal glob, not a comment.)
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/node_modules/**
-            **/marketing-site/**
-            **/scripts/**
-            **/public/assets/listings/**
-            **/writable/verification/**
-            **/dist/**
-            **/tests/**
-            **/.env
-            **/DEPLOY.md
-            **/README.md
-            **/package.json
-            **/package-lock.json
-            **/phpunit.xml.dist
-            **/phpunit.dist.xml
+      # The composer install and the FTPS upload that used to live here have been
+      # REMOVED, not merely guarded. Leaving the upload step in place was the
+      # actual hazard: FTP_SERVER/USERNAME/PASSWORD are shared with the marketing
+      # job, so once those are set for the marketing site, this step would run
+      # with an EMPTY server-dir and sync the whole repo to the FTP account's
+      # default directory — usually the account root.
+      #
+      # The exclude list it carried is preserved in DEPLOY.md, because the
+      # rewritten job will need it: it kept .env, uploaded listing photos and
+      # verification documents from being overwritten by a deploy. Those
+      # exclusions matter just as much for the manual procedure.
 
+  # Only meaningful once the `directory` job actually deploys again — right now
+  # nothing is uploaded, so there is no new schema-dependent code to migrate for.
+  # It is kept wired and guarded so that re-enabling the directory deploy does not
+  # also require remembering to re-add this.
+  #
+  # Migrations run over SSH when SSH is configured, and are announced as NOT run
+  # when it isn't. Both cases live in one job with step-level guards because the
+  # `secrets` context cannot be used in a job-level `if` — see the note in the
+  # marketing job. `SSH_HOST` is mapped into `env` at job level so both steps can
+  # test it.
+  #
+  # Why guard at all: without it, appleboy/ssh-action errors on an empty host and
+  # fails the workflow *even though both uploads succeeded*. A deploy that shipped
+  # correctly still shows red, an all-red run list stops being read, and a real
+  # failure then hides among the noise.
   migrate:
     name: Directory app → run migrations
     needs: directory
     runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
     steps:
       - name: php spark migrate over SSH
+        if: env.SSH_HOST != ''
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -143,3 +235,27 @@ jobs:
             set -e
             cd ${{ secrets.SSH_DIRECTORY_APP_PATH }}
             php spark migrate --all
+
+      # A skipped migration must never be silent. Schema changes ship in the FTP
+      # upload whether or not they have been applied, so an un-migrated deploy is
+      # new code running against an old schema — which surfaces as a 500 on
+      # whichever page touches the new column, not as an obvious outage.
+      - name: Migrations NOT run — say so loudly
+        if: env.SSH_HOST == ''
+        run: |
+          echo "::warning::SSH is not configured, so migrations did NOT run."
+          echo "::warning::New code is now live against the OLD schema."
+          echo "::warning::Run this in hPanel → Advanced → Terminal, in the app root:"
+          echo "::warning::  php spark migrate --all"
+          {
+            echo "### ⚠️ Migrations did not run"
+            echo ""
+            echo "\`SSH_HOST\` is not set, so the migration step was skipped."
+            echo "The upload succeeded — the new code is live against the **old schema**."
+            echo ""
+            echo "Run in **hPanel → Advanced → Terminal**, from the app root:"
+            echo ""
+            echo '```bash'
+            echo "php spark migrate --all"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

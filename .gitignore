@@ -119,7 +119,14 @@ vendor/
 #-------------------------
 # Claude Code local state
 #-------------------------
-.claude/
+# Local state only — machine-specific settings and lock files. The skills under
+# .claude/skills/ are project documentation (the release runbook lives there), so
+# they are tracked deliberately: a runbook that does not survive a fresh clone is
+# not documentation.
+.claude/*
+!.claude/skills/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 #-------------------------
 # IDE / Development Files
