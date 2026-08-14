@@ -99,3 +99,33 @@ if (! function_exists('listing_is_verified_business')) {
         return $until !== '' && $until >= date('Y-m-d');
     }
 }
+
+if (! function_exists('form_old_value')) {
+    /**
+     * Flatten one flashed-input value into a string the form can redisplay.
+     *
+     * Every listing form's $v() closure used to do a bare `(string) $old[$f]`,
+     * which is fine until a field arrives as an array. `specializations` is
+     * exactly that field: it is a comma-separated text input in the markup, but
+     * the mutation service accepts `specializations[]` too, so a POST that
+     * sends the array form and then fails validation hit
+     * "Array to string conversion" while re-rendering the page — an
+     * unauthenticated 500 on the public signup form, reachable with one
+     * crafted request.
+     *
+     * Arrays join on ', ' rather than being dropped, so the visitor gets their
+     * input back in the shape the input expects — and it matches how
+     * manage_edit.php and admin/edit.php already present stored tags.
+     */
+    function form_old_value(mixed $value): string
+    {
+        if (is_array($value)) {
+            return implode(', ', array_filter(array_map(
+                static fn ($v): string => is_scalar($v) ? trim((string) $v) : '',
+                $value
+            )));
+        }
+
+        return is_scalar($value) ? (string) $value : '';
+    }
+}

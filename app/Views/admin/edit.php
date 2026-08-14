@@ -13,7 +13,7 @@ if (! $isNew) {
     $base['specializations'] = implode(', ', $tags);
 }
 $v = function (string $f, string $default = '') use ($old, $base) {
-    if (array_key_exists($f, $old)) return (string) $old[$f];
+    if (array_key_exists($f, $old)) return form_old_value($old[$f]);
     if (array_key_exists($f, $base) && $base[$f] !== null) return (string) $base[$f];
     return $default;
 };

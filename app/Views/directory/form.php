@@ -12,7 +12,7 @@
 <?= $this->section('content') ?>
 <?php
 $v = function (string $f, string $default = '') use ($old) {
-    if (array_key_exists($f, $old)) return (string) $old[$f];
+    if (array_key_exists($f, $old)) return form_old_value($old[$f]);
     return $default;
 };
 $err = fn (string $f) => $errors[$f] ?? '';

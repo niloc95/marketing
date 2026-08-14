@@ -58,19 +58,21 @@ helper('directory_hours');
 <div class="form-row">
     <div class="field">
         <label>Business or trading name *</label>
-        <input type="text" name="display_name" value="<?= esc($v('display_name'), 'attr') ?>" required>
+        <input type="text" name="display_name" value="<?= esc($v('display_name'), 'attr') ?>" maxlength="200" required>
         <?php if ($err('display_name')): ?><div class="err"><?= esc($err('display_name')) ?></div><?php endif; ?>
     </div>
     <div class="field">
         <label>Contact person</label>
-        <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>">
+        <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150">
+        <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
     </div>
 </div>
 
 <div class="form-row">
     <div class="field">
         <label>Title</label>
-        <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" placeholder="Dr, Mrs, Prof…">
+        <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…">
+        <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
     </div>
     <div class="field">
         <label>Email *</label>
@@ -87,28 +89,31 @@ helper('directory_hours');
 <div class="form-row">
     <div class="field">
         <label>Phone</label>
-        <input type="text" name="phone" value="<?= esc($v('phone'), 'attr') ?>">
+        <input type="text" name="phone" value="<?= esc($v('phone'), 'attr') ?>" maxlength="40">
+        <?php if ($err('phone')): ?><div class="err"><?= esc($err('phone')) ?></div><?php endif; ?>
     </div>
     <div class="field">
         <label>Website</label>
-        <input type="text" name="website" value="<?= esc($v('website'), 'attr') ?>" placeholder="https://…">
+        <input type="text" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
         <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
     </div>
 </div>
 
 <div class="field">
     <label>Credentials</label>
-    <textarea name="credentials" rows="2"><?= esc($v('credentials')) ?></textarea>
+    <textarea name="credentials" rows="2" maxlength="500"><?= esc($v('credentials')) ?></textarea>
+    <?php if ($err('credentials')): ?><div class="err"><?= esc($err('credentials')) ?></div><?php endif; ?>
 </div>
 <div class="field">
     <label>Description</label>
-    <textarea name="description" rows="4" placeholder="What you offer, who you serve…"><?= esc($v('description')) ?></textarea>
+    <textarea name="description" rows="4" maxlength="2000" placeholder="What you offer, who you serve…"><?= esc($v('description')) ?></textarea>
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 <div class="field">
     <label>Areas of focus</label>
     <input type="text" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma-separated, e.g. Bridal packages, Emergency callouts, Home visits">
-    <div class="hint">Separate with commas.</div>
+    <div class="hint">Separate with commas — up to 20.</div>
+    <?php if ($err('specializations')): ?><div class="err"><?= esc($err('specializations')) ?></div><?php endif; ?>
 </div>
 
 <div class="field">
@@ -126,14 +131,16 @@ helper('directory_hours');
     <div class="form-row">
         <div class="field relative">
             <label>Address</label>
-            <input type="text" name="address_line" value="<?= esc($v('address_line'), 'attr') ?>"
+            <input type="text" name="address_line" value="<?= esc($v('address_line'), 'attr') ?>" maxlength="255"
                    data-address-field="address_line" autocomplete="off"
                    role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="address-suggest-list">
             <ul class="address-suggest-list" id="address-suggest-list" role="listbox" data-address-suggest-list hidden></ul>
+            <?php if ($err('address_line')): ?><div class="err"><?= esc($err('address_line')) ?></div><?php endif; ?>
         </div>
         <div class="field">
             <label>Suburb</label>
-            <input type="text" name="suburb" value="<?= esc($v('suburb'), 'attr') ?>" data-address-field="suburb">
+            <input type="text" name="suburb" value="<?= esc($v('suburb'), 'attr') ?>" maxlength="120" data-address-field="suburb">
+            <?php if ($err('suburb')): ?><div class="err"><?= esc($err('suburb')) ?></div><?php endif; ?>
         </div>
     </div>
     <?php // Unit, floor, building — detail that helps a customer find the door
@@ -141,19 +148,22 @@ helper('directory_hours');
           // deliberately left out of the lookup query. ?>
     <div class="field">
         <label>Address line 2 <span class="map-picker-optional">optional</span></label>
-        <input type="text" name="address_line_2" value="<?= esc($v('address_line_2'), 'attr') ?>"
+        <input type="text" name="address_line_2" value="<?= esc($v('address_line_2'), 'attr') ?>" maxlength="255"
                data-address-field="address_line_2" autocomplete="off"
                placeholder="Unit, floor, building">
+        <?php if ($err('address_line_2')): ?><div class="err"><?= esc($err('address_line_2')) ?></div><?php endif; ?>
     </div>
     <div class="form-row">
         <div class="field">
             <label>City / town</label>
-            <input type="text" name="city" value="<?= esc($v('city'), 'attr') ?>" data-address-field="city">
+            <input type="text" name="city" value="<?= esc($v('city'), 'attr') ?>" maxlength="120" data-address-field="city">
+            <?php if ($err('city')): ?><div class="err"><?= esc($err('city')) ?></div><?php endif; ?>
         </div>
         <div class="field">
             <label>Postal code</label>
             <input type="text" name="postal_code" value="<?= esc($v('postal_code'), 'attr') ?>"
                    inputmode="numeric" maxlength="4" data-address-field="postal_code">
+            <?php if ($err('postal_code')): ?><div class="err"><?= esc($err('postal_code')) ?></div><?php endif; ?>
         </div>
     </div>
     <div class="field">
@@ -164,6 +174,7 @@ helper('directory_hours');
                 <option value="<?= esc($prov, 'attr') ?>" <?= $v('province') === $prov ? 'selected' : '' ?>><?= esc($prov) ?></option>
             <?php endforeach; ?>
         </select>
+        <?php if ($err('province')): ?><div class="err"><?= esc($err('province')) ?></div><?php endif; ?>
     </div>
 
     <?php // Picking a suggestion captures the exact point the geocoder returned
@@ -255,7 +266,7 @@ helper('directory_hours');
                 <input type="time" name="hours[<?= $key ?>][open]" value="<?= esc($row['open'] ?? '', 'attr') ?>">
                 <span>&ndash;</span>
                 <input type="time" name="hours[<?= $key ?>][close]" value="<?= esc($row['close'] ?? '', 'attr') ?>">
-                <input type="text" class="hours-note" name="hours[<?= $key ?>][note]" value="<?= esc($row['note'] ?? '', 'attr') ?>" placeholder="Optional note, e.g. Jumu'ah 12:00–13:30">
+                <input type="text" class="hours-note" name="hours[<?= $key ?>][note]" value="<?= esc($row['note'] ?? '', 'attr') ?>" maxlength="120" placeholder="Optional note, e.g. Lunch 12:00–13:30">
             </div>
         <?php endforeach; ?>
     </div>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
 use App\Libraries\Mailer;
+use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
@@ -125,10 +126,8 @@ class DirectoryListingMutationService
             // that does not exist until now.
             $geocoder->syncPoint((int) $id, $geo);
 
-            if (! empty($input['specializations'])) {
-                $names = is_array($input['specializations'])
-                    ? $input['specializations']
-                    : array_map('trim', explode(',', (string) $input['specializations']));
+            $names = $this->tagNames($input['specializations'] ?? null);
+            if ($names !== []) {
                 $this->tags->syncListingTags((int) $id, $names);
             }
 
@@ -357,11 +356,10 @@ class DirectoryListingMutationService
                 $geocoder->syncPoint($id, $geo);
             }
 
+            // array_key_exists, not the value: an absent field means "leave the
+            // tags alone", while a present-but-empty one means "clear them".
             if (array_key_exists('specializations', $input)) {
-                $names = is_array($input['specializations'])
-                    ? $input['specializations']
-                    : array_map('trim', explode(',', (string) $input['specializations']));
-                $this->tags->syncListingTags($id, $names);
+                $this->tags->syncListingTags($id, $this->tagNames($input['specializations']));
             }
 
             $db->transCommit();
@@ -387,6 +385,48 @@ class DirectoryListingMutationService
     }
 
     /**
+     * Field => [max length, label], mirroring the column widths in
+     * 2026-07-28-100100_CreateDirectoryListings.php (address_line_2 comes from
+     * 2026-08-03-150000_AddMappingFieldsToListings.php).
+     *
+     * These have to be checked here rather than left to the database. MySQL in
+     * strict mode rejects the over-length INSERT, the exception is caught by
+     * submitPublic()'s transaction handler, and the visitor gets a bare "Could
+     * not save the profile. Please try again." with nothing highlighted — so a
+     * pasted address one character too long fails silently and forever. In
+     * non-strict mode it is worse: the value is truncated and saved.
+     *
+     * credentials and description are TEXT; their ceilings are editorial, not
+     * structural.
+     */
+    private const MAX_LENGTHS = [
+        'display_name'   => [200, 'business name'],
+        'contact_person' => [150, 'contact person'],
+        'title'          => [60, 'title'],
+        'credentials'    => [500, 'credentials'],
+        'phone'          => [40, 'phone number'],
+        'email'          => [190, 'email'],
+        'website'        => [255, 'website'],
+        'address_line'   => [255, 'street address'],
+        'address_line_2' => [255, 'address line 2'],
+        'suburb'         => [120, 'suburb'],
+        'city'           => [120, 'city'],
+        'postal_code'    => [20, 'postal code'],
+        'country'        => [80, 'country'],
+    ];
+
+    /** Tag name column is VARCHAR(120) — see CreateDirectoryTags. */
+    private const MAX_TAG_LENGTH = 120;
+
+    /**
+     * A listing describing itself with more specialisations than this is
+     * either confused or automated. Each unique name that gets through creates
+     * a row in the *global* tag table via DirectoryTagModel::resolveId(), so an
+     * uncapped array lets one POST pollute a table the whole directory shares.
+     */
+    private const MAX_TAGS = 20;
+
+    /**
      * @param array<string,mixed> $input
      * @return array<string,string>
      */
@@ -402,6 +442,10 @@ class DirectoryListingMutationService
         }
         if ((int) ($input['category_id'] ?? 0) <= 0) {
             $errors['category_id'] = 'Please choose a category.';
+        } elseif (! $this->categoryExists((int) $input['category_id'])) {
+            // The FK would reject this anyway, but as a caught exception with a
+            // generic message. Named here so the field gets highlighted.
+            $errors['category_id'] = 'Please choose a category from the list.';
         }
         if (empty($input['consent'])) {
             $errors['consent'] = 'Please confirm you may publish these details.';
@@ -411,10 +455,87 @@ class DirectoryListingMutationService
         if (mb_strlen($this->clean($input['description'] ?? '')) > 2000) {
             $errors['description'] = 'Please keep the description under 2000 characters.';
         }
-        if (($website = $this->normaliseUrl($input['website'] ?? '')) === null) {
+        // Measured on the normalised value, not the raw input: normaliseUrl()
+        // promotes a bare "example.co.za" to "https://example.co.za", so a
+        // 250-character bare host passes a check on the input and then
+        // overflows the 255-wide column once those eight characters are added.
+        $website = $this->normaliseUrl($input['website'] ?? '');
+        if ($website === null) {
             $errors['website'] = 'Please enter a valid website address starting with http:// or https://.';
+        } elseif (mb_strlen($website) > self::MAX_LENGTHS['website'][0]) {
+            $errors['website'] = sprintf(
+                'Please keep the website address under %d characters.',
+                self::MAX_LENGTHS['website'][0] + 1
+            );
         }
+
+        foreach (self::MAX_LENGTHS as $field => [$max, $label]) {
+            // website is checked above, against its normalised form.
+            if ($field === 'website' || isset($errors[$field]) || ! isset($input[$field])) {
+                continue;
+            }
+            if (mb_strlen($this->clean($input[$field])) > $max) {
+                $errors[$field] = sprintf('Please keep the %s under %d characters.', $label, $max + 1);
+            }
+        }
+
+        // The form renders a <select>, so this only ever fires on a crafted
+        // POST — but province is echoed on the public profile and slugified
+        // into canonical URLs, so it does not get to be free text.
+        $province = $this->clean($input['province'] ?? '');
+        if ($province !== '' && ! in_array($province, DirectoryService::SA_PROVINCES, true)) {
+            $errors['province'] = 'Please choose a province from the list.';
+        }
+
+        if (($tagError = $this->validateTags($input['specializations'] ?? null)) !== null) {
+            $errors['specializations'] = $tagError;
+        }
+
         return $errors;
+    }
+
+    /**
+     * Called from validate(), so the cap is enforced before either write
+     * transaction opens rather than inside it.
+     */
+    private function validateTags(mixed $raw): ?string
+    {
+        $names = $this->tagNames($raw);
+
+        if (count($names) > self::MAX_TAGS) {
+            return sprintf('Please list at most %d specialisations.', self::MAX_TAGS);
+        }
+        foreach ($names as $name) {
+            if (mb_strlen($name) > self::MAX_TAG_LENGTH) {
+                return sprintf('Each specialisation must be under %d characters.', self::MAX_TAG_LENGTH + 1);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalise the specializations field, which arrives either as an array of
+     * checkbox values or as one comma-separated string.
+     *
+     * @return array<int,string>
+     */
+    private function tagNames(mixed $raw): array
+    {
+        if ($raw === null || $raw === '' || $raw === []) {
+            return [];
+        }
+        $names = is_array($raw) ? $raw : explode(',', (string) $raw);
+
+        return array_values(array_unique(array_filter(array_map(
+            fn ($n): string => $this->clean($n),
+            $names
+        ))));
+    }
+
+    private function categoryExists(int $id): bool
+    {
+        return (new DirectoryCategoryModel())->where('id', $id)->countAllResults() > 0;
     }
 
     /**

@@ -21,19 +21,37 @@ if (! function_exists('ensure_unique_slug')) {
      * @param int|null            $ignoreId Row id to exclude (for updates).
      * @param array<int,string>   $reserved Slugs that may never be taken, even
      *                                      though no row in $model holds them.
+     * @param int                 $maxLength Width of the destination column.
      */
-    function ensure_unique_slug(Model $model, string $field, string $base, ?int $ignoreId = null, array $reserved = []): string
+    function ensure_unique_slug(Model $model, string $field, string $base, ?int $ignoreId = null, array $reserved = [], int $maxLength = 190): string
     {
         $base = slugify($base);
         if ($base === '') {
             $base = 'listing';
         }
+
+        // The slug column is finite and the name it derives from is not. A
+        // 200-character business name produced a 200-character slug, which the
+        // model's max_length[190] rule then rejected — surfacing to the visitor
+        // as "Could not save the profile" with no field marked, because there
+        // is no slug input on the form to attach the error to.
+        //
+        // Trimmed against the suffix actually being appended rather than a
+        // guess at the widest one, so the result fits whatever the counter has
+        // reached. slugify() has already reduced this to [a-z0-9-], so byte
+        // functions are safe here and match the column's character count.
+        $fit = static function (string $base, string $suffix) use ($maxLength): string {
+            $room = $maxLength - strlen($suffix);
+
+            return strlen($base) > $room ? rtrim(substr($base, 0, $room), '-') : $base;
+        };
+
         $reserved = array_map('strtolower', $reserved);
-        $slug = $base;
+        $slug = $fit($base, '');
         $i = 2;
         while (true) {
             if (in_array($slug, $reserved, true)) {
-                $slug = $base . '-' . $i;
+                $slug = $fit($base, '-' . $i) . '-' . $i;
                 $i++;
                 continue;
             }
@@ -48,7 +66,7 @@ if (! function_exists('ensure_unique_slug')) {
             if ((int) $builder->countAllResults() === 0) {
                 return $slug;
             }
-            $slug = $base . '-' . $i;
+            $slug = $fit($base, '-' . $i) . '-' . $i;
             $i++;
         }
     }

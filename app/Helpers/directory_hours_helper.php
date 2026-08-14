@@ -1,5 +1,8 @@
 <?php
 
+/** Per-day free-text note ceiling. See hours_encode(). */
+defined('HOURS_NOTE_MAX') || define('HOURS_NOTE_MAX', 120);
+
 if (! function_exists('hours_days')) {
     /**
      * Canonical day order/labels, keyed mon..sun. Single source of truth for
@@ -38,7 +41,12 @@ if (! function_exists('hours_encode')) {
                 'closed' => $closed,
                 'open'   => $closed ? '' : $open,
                 'close'  => $closed ? '' : $close,
-                'note'   => trim((string) ($row['note'] ?? '')),
+                // Truncated rather than rejected, to match how malformed times
+                // are blanked above: hours are display-only and never worth
+                // failing a whole submission over. The cap exists because the
+                // encoded JSON goes into one TEXT column, and seven uncapped
+                // notes are seven unbounded strings per submission.
+                'note'   => mb_substr(trim((string) ($row['note'] ?? '')), 0, HOURS_NOTE_MAX),
             ];
         }
 

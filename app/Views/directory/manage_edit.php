@@ -16,7 +16,7 @@ $listing['specializations'] = implode(', ', $tags);
 // Flashed input wins (so a failed save keeps what was typed), then the stored
 // listing, then the default.
 $v = function (string $f, string $default = '') use ($old, $listing) {
-    if (array_key_exists($f, $old)) return (string) $old[$f];
+    if (array_key_exists($f, $old)) return form_old_value($old[$f]);
     if (array_key_exists($f, $listing) && $listing[$f] !== null) return (string) $listing[$f];
     return $default;
 };
@@ -36,7 +36,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
                         Status:
                         <span class="pill pill-<?= esc($listing['status'], 'attr') ?>"><?= esc($listing['status']) ?></span>
                         <?php if ($listing['status'] === 'published'): ?>
-                            &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('directory/' . $listing['slug']) ?>" target="_blank">View public page</a>
+                            &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug']), 'attr') ?>" target="_blank">View public page</a>
                         <?php endif; ?>
                     </p>
                 </div>
