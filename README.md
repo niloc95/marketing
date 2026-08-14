@@ -298,7 +298,7 @@ app.baseURL = 'https://listing.webscheduler.co.za/'
 6. Migrate and seed:
 
 cd ~/domains/listing.webscheduler.co.za/directory-app
-php spark migrate --all                        # 19 migrations as of 2026-08-14
+php spark migrate --all                        # 18 migrations as of 2026-08-14
 php spark db:seed DirectoryCategoriesSeeder    # 147 categories
 php spark directory:adminhash                  # then set adminPasswordHash
 
