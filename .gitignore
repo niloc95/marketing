@@ -41,7 +41,13 @@ $RECYCLE.BIN/
 #-------------------------
 # These should never be under version control,
 # as it poses a security risk.
-.env
+#
+# Glob, not the bare `.env`: a literal pattern silently let `.env_old`,
+# `.env.production`, `.env.bak` and friends through, and a real production
+# .env once ended up staged that way. Only the scrubbed placeholder template
+# is exempted back in.
+.env*
+!.env.production.example
 .vagrant
 Vagrantfile
 
