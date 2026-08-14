@@ -165,3 +165,5 @@ marketing-site/assets/styles.css
 # Copies of shared/, written by scripts/sync-shared-assets.js. Edit shared/, not these.
 marketing-site/assets/consent.js
 public/assets/consent.js
+marketing-site/assets/consent.css
+public/assets/consent.css

@@ -1,0 +1,82 @@
+/* WebScheduler — cookie consent banner styles.
+
+   SINGLE SOURCE: this file lives in shared/ and is copied into marketing-site/assets/
+   and public/assets/ by scripts/sync-shared-assets.js, alongside consent.js. Edit it
+   here — both copies are generated and gitignored.
+
+   These rules used to be a string inside consent.js, injected as a <style> element at
+   runtime. That stopped working when the listing app moved its Content-Security-Policy
+   from report-only to enforcing: style-src-elem allows 'self' and a per-request nonce,
+   and a <style> built by script carries neither, so the browser dropped it and the
+   banner rendered as unstyled static content at the bottom of the document.
+
+   A same-origin stylesheet satisfies 'self' with no nonce plumbing, and it keeps
+   consent.js dependency-free and identical across the static marketing site and the
+   PHP app. Deliberately plain CSS, not Tailwind — see the header of consent.js. */
+
+#ws-consent {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 24px rgba(0, 48, 73, .12);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+#ws-consent .wsc-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+#ws-consent .wsc-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #334155;
+  margin: 0;
+  max-width: 660px;
+}
+
+#ws-consent .wsc-text a { color: #003049; text-decoration: underline; }
+
+#ws-consent .wsc-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+#ws-consent .wsc-btn {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background .15s;
+}
+
+#ws-consent .wsc-decline { background: transparent; border-color: #cbd5e1; color: #334155; }
+#ws-consent .wsc-decline:hover { background: #f1f5f9; }
+#ws-consent .wsc-accept { background: #F77F00; color: #fff; }
+#ws-consent .wsc-accept:hover { background: #ea580c; }
+
+/* The developer portal has no theme class, so it follows the OS. */
+@media (prefers-color-scheme: dark) {
+  #ws-consent { background: #1a202c; border-top-color: #2d3748; }
+  #ws-consent .wsc-text { color: #cbd5e1; }
+  #ws-consent .wsc-text a { color: #7dd3fc; }
+  #ws-consent .wsc-decline { border-color: #475569; color: #e2e8f0; }
+  #ws-consent .wsc-decline:hover { background: #2d3748; }
+}
+
+/* The marketing site and the listing app both set .dark on <html>, which must win
+   over the OS preference above. */
+html.dark #ws-consent { background: #1a202c; border-top-color: #2d3748; }
+html.dark #ws-consent .wsc-text { color: #cbd5e1; }
+html.dark #ws-consent .wsc-text a { color: #7dd3fc; }
+html.dark #ws-consent .wsc-decline { border-color: #475569; color: #e2e8f0; }
+html.dark #ws-consent .wsc-decline:hover { background: #2d3748; }

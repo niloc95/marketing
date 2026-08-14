@@ -138,7 +138,8 @@ $prettyDate = static function (?string $date): string {
                                               class="flex items-center gap-1"
                                               data-confirm="Activate this badge without PayFast? Only do this once payment has actually arrived.">
                                             <?= csrf_field() ?>
-                                            <input type="number" name="months" value="1" min="1" max="24" class="text-xs" style="width:3.5rem"
+                                            <?php // w-16, not an inline width: CSP enforces style-src-attr. ?>
+                                            <input type="number" name="months" value="1" min="1" max="24" class="text-xs w-16"
                                                    title="Months to add">
                                             <button class="btn btn-ghost btn-xs">Activate manually</button>
                                         </form>

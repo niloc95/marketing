@@ -21,8 +21,20 @@ class ContentSecurityPolicy extends BaseConfig
 
     /**
      * Default CSP report context
+     *
+     * Enforcing, not report-only. This site's whole job is publishing text that
+     * strangers submitted, so the escaping in the views should not be the only
+     * thing standing between a crafted listing and script execution.
+     *
+     * Reports still flow to /csp-report — the reportURI is set in the
+     * constructor and stays useful in enforce mode, where a report now means
+     * something was actually blocked.
+     *
+     * Turned on only after clearing what it would have broken: the honeypot's
+     * inline style (Config\Honeypot::$container), an inline width in
+     * admin/verifications.php, and form-action for the PayFast checkout below.
      */
-    public bool $reportOnly = true;
+    public bool $reportOnly = false;
 
     /**
      * Specifies a URL where a browser will send reports
@@ -79,16 +91,23 @@ class ContentSecurityPolicy extends BaseConfig
     /**
      * Lists allowed stylesheets' URLs.
      *
+     * No 'unsafe-inline'. It was already inert: $autoNonce puts a
+     * 'nonce-…' into this directive, and per CSP Level 2 a nonce makes a
+     * browser ignore 'unsafe-inline' entirely — so it bought nothing and only
+     * read as if inline styles were permitted. Every inline <style> the app
+     * emits carries {csp-style-nonce}, including the one the framework injects
+     * for the honeypot container.
+     *
      * @var list<string>|string
      */
-    public $styleSrc = ['self', 'unsafe-inline'];
+    public $styleSrc = ['self'];
 
     /**
      * Specifies valid sources for stylesheets <link> elements.
      *
      * @var list<string>|string
      */
-    public array|string $styleSrcElem = ['self', 'unsafe-inline'];
+    public array|string $styleSrcElem = ['self'];
 
     /**
      * Specifies valid sources for stylesheets inline
@@ -125,9 +144,21 @@ class ContentSecurityPolicy extends BaseConfig
      * Limits the origins that you can connect to (via XHR,
      * WebSockets, and EventSource).
      *
+     * GA4 does not send every beacon to www.google-analytics.com. Depending on
+     * the visitor it uses a regional endpoint (region1…regionN) and, for the
+     * gtag.js transport, analytics.google.com. Under report-only those were
+     * noise in the log; enforcing, each one is a dropped hit, so the whole set
+     * is listed rather than the single host that happened to be observed.
+     *
      * @var list<string>|string
      */
-    public $connectSrc = ['self', 'https://www.google-analytics.com'];
+    public $connectSrc = [
+        'self',
+        'https://www.google-analytics.com',
+        'https://analytics.google.com',
+        'https://*.google-analytics.com',
+        'https://*.analytics.google.com',
+    ];
 
     /**
      * Specifies the origins that can serve web fonts.
@@ -232,8 +263,12 @@ class ContentSecurityPolicy extends BaseConfig
             // Leaflet marker icons are same-origin files, but canvas/tile
             // shims and the odd inlined SVG arrive as data: URIs.
             'data:',
-            // GA sends its beacons as image requests.
+            // GA sends its beacons as image requests. Both hosts are needed:
+            // measurement hits go to google-analytics.com, while gtag.js also
+            // pings googletagmanager.com/a?id=… as an image. Listing only the
+            // first left that second beacon blocked once CSP started enforcing.
             'https://www.google-analytics.com',
+            'https://www.googletagmanager.com',
         ];
 
         $tileHost = $this->originOf(config('Directory')->mapTileUrl());
@@ -242,6 +277,18 @@ class ContentSecurityPolicy extends BaseConfig
         }
 
         $this->imageSrc = $imageSrc;
+
+        // The badge checkout is a browser form POST straight to PayFast — see
+        // verification_checkout.php and PayFast::processUrl(). form-action does
+        // not fall back to default-src, so leaving this at 'self' silently
+        // blocks the submit and every payment dies at the last click. Both
+        // hosts are listed because payfastSandbox is env-switchable and the
+        // policy is built before we know which one this request will use.
+        $this->formAction = [
+            'self',
+            'https://www.payfast.co.za',
+            'https://sandbox.payfast.co.za',
+        ];
 
         // Path-relative on purpose: base_url() is not dependable this early in
         // the boot, and the browser resolves this against the document anyway.

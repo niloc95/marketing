@@ -46,38 +46,28 @@
   function store(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
 
-  var STYLE = [
-    '#ws-consent{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#fff;',
-    'border-top:1px solid #e2e8f0;box-shadow:0 -4px 24px rgba(0,48,73,.12);',
-    'font-family:Inter,system-ui,-apple-system,sans-serif}',
-    '#ws-consent .wsc-inner{max-width:80rem;margin:0 auto;padding:16px 24px;display:flex;',
-    'gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}',
-    '#ws-consent .wsc-text{font-size:14px;line-height:1.5;color:#334155;margin:0;max-width:660px}',
-    '#ws-consent .wsc-text a{color:#003049;text-decoration:underline}',
-    '#ws-consent .wsc-actions{display:flex;gap:10px;flex-shrink:0}',
-    '#ws-consent .wsc-btn{font-size:14px;font-weight:600;padding:9px 18px;border-radius:10px;',
-    'cursor:pointer;border:1px solid transparent;transition:background .15s}',
-    '#ws-consent .wsc-decline{background:transparent;border-color:#cbd5e1;color:#334155}',
-    '#ws-consent .wsc-decline:hover{background:#f1f5f9}',
-    '#ws-consent .wsc-accept{background:#F77F00;color:#fff}',
-    '#ws-consent .wsc-accept:hover{background:#ea580c}',
-    '@media (prefers-color-scheme:dark){',
-    '#ws-consent{background:#1a202c;border-top-color:#2d3748}',
-    '#ws-consent .wsc-text{color:#cbd5e1}#ws-consent .wsc-text a{color:#7dd3fc}',
-    '#ws-consent .wsc-decline{border-color:#475569;color:#e2e8f0}',
-    '#ws-consent .wsc-decline:hover{background:#2d3748}}',
-    'html.dark #ws-consent{background:#1a202c;border-top-color:#2d3748}',
-    'html.dark #ws-consent .wsc-text{color:#cbd5e1}html.dark #ws-consent .wsc-text a{color:#7dd3fc}',
-    'html.dark #ws-consent .wsc-decline{border-color:#475569;color:#e2e8f0}',
-    'html.dark #ws-consent .wsc-decline:hover{background:#2d3748}',
-  ].join('');
+  /* The stylesheet is a sibling of this script, so its URL is derived from our own
+     src rather than hardcoded: the two properties serve these files from different
+     roots, and both copies come from shared/ via scripts/sync-shared-assets.js.
+     Resolved at load time because document.currentScript is only meaningful during
+     initial execution — showBanner() may run much later, from a click. */
+  var STYLE_URL = (function () {
+    var s = document.currentScript || document.querySelector('script[src*="consent.js"]');
+    var src = s && s.getAttribute('src');
+    return src ? src.split('?')[0].replace(/consent\.js$/, 'consent.css') : '';
+  })();
 
+  /* A <link> rather than a <style> with the rules inlined: an enforcing
+     Content-Security-Policy allows a same-origin stylesheet under style-src-elem
+     'self', while a script-created <style> element carries no nonce and is refused.
+     See the header of consent.css. */
   function injectStyle() {
-    if (document.getElementById('ws-consent-style')) return;
-    var s = document.createElement('style');
-    s.id = 'ws-consent-style';
-    s.textContent = STYLE;
-    document.head.appendChild(s);
+    if (STYLE_URL === '' || document.getElementById('ws-consent-style')) return;
+    var l = document.createElement('link');
+    l.id = 'ws-consent-style';
+    l.rel = 'stylesheet';
+    l.href = STYLE_URL;
+    document.head.appendChild(l);
   }
   function removeBanner() {
     var b = document.getElementById('ws-consent');

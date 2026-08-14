@@ -29,9 +29,22 @@ class Honeypot extends BaseConfig
     /**
      * Honeypot container
      *
-     * If you enabled CSP, you can remove `style="display:none"`.
+     * No inline style, because CSP is enabled (App::$CSPEnabled) and enforcing.
+     * Honeypot::attachHoneypot() sees that, rewrites this into
+     * `<div id="hpc">` and injects a nonced `#hpc { display:none }` into the
+     * head — but it only ever *adds* the id, it never strips an inline style,
+     * so leaving the framework default here produced a style-src-attr
+     * violation on every form on the site.
+     *
+     * This must keep both the `>` and the `{template}` placeholder: the id
+     * rewrite matches on the literal `>{template}`, and an empty container or
+     * one missing the placeholder is silently replaced with the inline-style
+     * default again.
+     *
+     * If CSP is ever turned off, restore `style="display:none"` — without it
+     * and without the injected rule, the field is visible to humans.
      */
-    public string $container = '<div style="display:none">{template}</div>';
+    public string $container = '<div>{template}</div>';
 
     /**
      * The id attribute for Honeypot container tag
