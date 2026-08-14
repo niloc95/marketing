@@ -42,7 +42,12 @@ class Admin extends BaseController
         $password = (string) $this->request->getPost('password');
 
         if (config('Directory')->verifyAdminPassword($password)) {
-            session()->regenerate(); // the session now carries authority
+            // regenerate(true): destroy the old session, don't just rotate the id.
+            // Without the argument the pre-login id keeps working until the
+            // garbage collector runs, which is the fixation window this line
+            // exists to close. Config\Session::$regenerateDestroy does not
+            // reach here — it only feeds Session::start()'s periodic rotation.
+            session()->regenerate(true); // the session now carries authority
             session()->set('dir_admin', true);
             return redirect()->to(base_url('admin'));
         }
@@ -132,13 +137,22 @@ class Admin extends BaseController
     {
         $post = $this->request->getPost();
         $logo = $this->resolveLogo();
-        if ($logo['path'] !== '') {
-            $post['logo_path'] = $logo['path'];
-        }
+        // Unconditional, matching Listing::store() and Manage::update(). The
+        // `if` that used to guard this let a posted logo_path survive into
+        // DirectoryAdminService::upsert(), which writes it as-is and later
+        // unlinks the previous value — so the form could name any file under
+        // public/ and have it deleted on the next logo change. resolveLogo()
+        // returning '' already means "keep the existing logo", so there is
+        // nothing the guard was buying.
+        $post['logo_path'] = $logo['path'];
 
         $result = (new DirectoryAdminService())->upsert($id, $post);
 
         if (! $result['ok']) {
+            // See Listing::store() — nothing saved, so the file is orphaned.
+            $this->discardLogo($logo['path']);
+            $post['logo_path'] = '';
+
             $target = $id === null ? base_url('admin/new') : base_url('admin/edit/' . $id);
             return $this->withUploadErrors(
                 redirect()->to($target)
@@ -588,8 +602,24 @@ class Admin extends BaseController
             ->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
+    /**
+     * Back to where the admin came from, but only if that is somewhere on this
+     * site.
+     *
+     * previous_url() reads _ci_previous_url from the session, and when that key
+     * is missing — a POST handled before any GET has populated it — it falls
+     * back to the raw Referer header. redirect()->to() does not check the host,
+     * so that fallback would bounce an authenticated admin to whatever site
+     * sent them here.
+     */
     private function back(string $message)
     {
-        return redirect()->to(previous_url() ?: base_url('admin'))->with('success', $message);
+        $previous = (string) previous_url();
+        $root     = rtrim(base_url(), '/');
+        $safe     = ($previous !== '' && str_starts_with($previous, $root . '/'))
+            ? $previous
+            : base_url('admin');
+
+        return redirect()->to($safe)->with('success', $message);
     }
 }

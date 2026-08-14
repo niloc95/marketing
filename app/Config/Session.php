@@ -89,6 +89,17 @@ class Session extends BaseConfig
      * Whether to destroy session data associated with the old session ID
      * when auto-regenerating the session ID. When set to FALSE, the data
      * will be later deleted by the garbage collector.
+     *
+     * Left FALSE, deliberately. This setting reaches only Session::start()'s
+     * periodic rotation (every $timeToUpdate seconds) — a rotation nobody
+     * asked for, that can land between two in-flight requests from the same
+     * visitor. Destroying the old data there logs people out at random,
+     * mid-form, for no security gain: that rotation is not a privilege change.
+     *
+     * The rotations that do matter are the two privilege boundaries, and they
+     * pass $destroy explicitly instead: Admin::attemptLogin() and
+     * Manage::redeem() both call regenerate(true), which is what actually
+     * closes session fixation.
      */
     public bool $regenerateDestroy = false;
 

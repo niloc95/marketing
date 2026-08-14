@@ -145,7 +145,7 @@ $prettyDate = static function (?string $date): string {
                                         </form>
                                     <?php endif; ?>
                                     <?php if (! empty($r['listing_slug'])): ?>
-                                        <a class="btn btn-ghost btn-xs" href="<?= base_url('directory/' . $r['listing_slug']) ?>" target="_blank" rel="noopener">View</a>
+                                        <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $r['listing_slug']), 'attr') ?>" target="_blank" rel="noopener">View</a>
                                     <?php endif; ?>
                                     <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/edit/' . $r['listing_id']) ?>">Edit listing</a>
                                 </div>

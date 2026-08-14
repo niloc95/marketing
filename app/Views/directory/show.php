@@ -69,7 +69,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
             <div class="gallery" data-gallery>
                 <?php foreach ($l['photos'] as $i => $p): ?>
                     <button type="button" class="gallery-item" data-gallery-open data-index="<?= $i ?>">
-                        <img src="<?= base_url($p['path']) ?>"
+                        <img src="<?= esc(base_url($p['path']), 'attr') ?>"
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
                              alt="<?= esc($name) ?> — photo <?= $i + 1 ?>"
@@ -88,7 +88,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                       // stops those pages being orphans and gives them internal authority. ?>
                 <?php if ($prof): ?>
                     <?php if ($catSlug !== ''): ?>
-                        <a class="text-sm font-bold text-brand-orange hover:underline" href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($prof) ?></a>
+                        <a class="text-sm font-bold text-brand-orange hover:underline" href="<?= esc(base_url('directory/' . $catSlug), 'attr') ?>"><?= esc($prof) ?></a>
                     <?php else: ?>
                         <span class="text-sm font-bold text-brand-orange"><?= esc($prof) ?></span>
                     <?php endif; ?>
@@ -98,7 +98,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         📍
                         <?php if ($catSlug !== '' && $province !== ''): ?>
-                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= base_url('directory/' . $catSlug . '/' . slugify($province)) ?>"><?= esc($province) ?></a>
+                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province)), 'attr') ?>"><?= esc($province) ?></a>
                         <?php else: ?>
                             <?= esc($place) ?>
                         <?php endif; ?>
@@ -321,7 +321,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     </h2>
                     <?php if ($catSlug !== ''): ?>
                         <a class="text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline"
-                           href="<?= base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : '')) ?>">See all &rarr;</a>
+                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : '')), 'attr') ?>">See all &rarr;</a>
                     <?php endif; ?>
                 </div>
                 <div class="card-grid">

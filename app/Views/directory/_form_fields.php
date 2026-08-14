@@ -281,7 +281,7 @@ helper('directory_hours');
     <?php if ($existingLogo !== ''): ?>
         <div class="upload-current" data-image-current>
             <?php // Same absolute-vs-relative rule the card and profile pages use. ?>
-            <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo)) ?>" alt="Current logo">
+            <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo), 'attr') ?>" alt="Current logo">
             <span class="hint">Current logo — choosing a file replaces it.</span>
         </div>
     <?php endif; ?>

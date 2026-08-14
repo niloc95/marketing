@@ -533,6 +533,15 @@ class DirectoryListingMutationService
         ))));
     }
 
+    /**
+     * Flatten anything destined for a mail header. Mirrors Contact::clean() —
+     * a bare CR/LF in a header is how a submitter adds their own Bcc.
+     */
+    private function headerSafe(string $v): string
+    {
+        return trim((string) preg_replace('/[\r\n\t]+/', ' ', $v));
+    }
+
     private function categoryExists(int $id): bool
     {
         return (new DirectoryCategoryModel())->where('id', $id)->countAllResults() > 0;
@@ -634,9 +643,14 @@ class DirectoryListingMutationService
             'site'    => $this->config->siteName(),
             'event'   => $event,
         ]);
+        // The only place a listing's own text reaches a mail header. CI4's
+        // setSubject() encodes it, so this is not header injection today — but
+        // that safety lives in the framework, and the same one-line defence
+        // Contact.php applies to its user-supplied subject costs nothing here.
+        $name    = $this->headerSafe((string) ($listing['display_name'] ?? ''));
         $subject = $event === 'edited'
-            ? 'Profile edited: ' . ($listing['display_name'] ?? '')
-            : 'New published profile: ' . ($listing['display_name'] ?? '');
+            ? 'Profile edited: ' . $name
+            : 'New published profile: ' . $name;
         $this->send($admin, $subject, $body);
     }
 

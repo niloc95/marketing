@@ -52,9 +52,28 @@ class Directory extends BaseController
         $page    = (int) ($this->request->getGet('page') ?? 1);
         $result  = $svc->browse($filters, $page);
 
+        // Resolved here rather than in the view, because the view turns these
+        // into the <title>, the og:title and a rel=canonical, and then asks for
+        // `index, follow`. Left unresolved, ?category=Cheap-Loans-Payday is a
+        // 200 with an attacker's words in the title and a canonical pointing
+        // wherever they like — unlimited indexable URLs on this domain, minted
+        // by anyone who can construct a query string. The sibling landing pages
+        // (segment(), place()) have always resolved first; /directory was the
+        // one entry point that did not.
+        $category = $filters['category'] !== ''
+            ? $svc->findCategoryBySlug($filters['category'])
+            : null;
+        $province = in_array($filters['province'], DirectoryService::SA_PROVINCES, true)
+            ? $filters['province']
+            : null;
+
         return view('directory/index', [
             'result'      => $result,
             'filters'     => $filters,
+            // Null means "asked for, but no such thing" — the view must not
+            // treat that page as indexable or name it after the raw input.
+            'category'    => $category,
+            'province'    => $province,
             'categories' => $svc->categories(),
             'groups'      => $svc->categoriesGrouped(),
             'provinces'   => $svc->provinces(),

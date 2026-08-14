@@ -23,6 +23,25 @@ trait HandlesListingUploads
     /** Public so the edit views can be handed the cap rather than repeating it. */
     public const GALLERY_MAX = 8;
 
+    /**
+     * Throw away a logo that was processed but never got attached to a row.
+     *
+     * resolveLogo() has to run before the save, because the path is part of the
+     * data being saved — so a submission that then fails validation has already
+     * written a resized WebP into public/assets/listings/ that nothing will
+     * ever reference, ever serve, or ever clean up. One determined visitor
+     * fighting a validation error leaves a file per attempt.
+     *
+     * deleteFileAt() does the realpath containment check, so a path that
+     * somehow points outside the docroot is ignored rather than unlinked.
+     */
+    protected function discardLogo(string $path): void
+    {
+        if ($path !== '') {
+            (new DirectoryListingPhotoModel())->deleteFileAt($path);
+        }
+    }
+
     /** How many more photos this listing can take. */
     protected function gallerySlots(?int $listingId): int
     {

@@ -72,7 +72,9 @@ class Manage extends BaseController
                 ->with('error', 'That link is invalid or has expired. Request a new one below.');
         }
 
-        session()->regenerate(); // the session now carries authority — close fixation
+        // regenerate(true) — see Admin::attemptLogin(). The old id must die here:
+        // the magic link it was presented with is a bearer credential.
+        session()->regenerate(true); // the session now carries authority — close fixation
         session()->set(self::SESSION_KEY, (int) $listing['id']);
 
         return redirect()->to(base_url('manage/edit'));
@@ -122,6 +124,11 @@ class Manage extends BaseController
         $result = (new DirectoryListingMutationService())->updateOwn((int) $listing['id'], $post);
 
         if (! $result['ok']) {
+            // See Listing::store() — the update was rejected, so this file is
+            // orphaned. The listing keeps whatever logo it already had.
+            $this->discardLogo($logo['path']);
+            $post['logo_path'] = '';
+
             return $this->withUploadErrors(
                 redirect()->to(base_url('manage/edit'))
                     ->with('errors', $result['errors'])

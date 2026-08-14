@@ -2,23 +2,34 @@
 
 <?= $this->section('head') ?>
 <?php
-$title = 'Browse everything';
-if (! empty($filters['category'])) { $title = ucwords(str_replace('-', ' ', $filters['category'])) . ' profiles'; }
-if (! empty($filters['province'])) { $title .= ' in ' . $filters['province']; }
-?>
-<?php
 helper('slug');
 $siteName = config('Directory')->siteName();
+
+// $category and $province come from the controller already resolved against
+// the real category table and the province list; null means the visitor asked
+// for something that does not exist. Titles and canonicals are built from
+// those resolved values, never from the raw query string.
+$askedCategory = ($filters['category'] ?? '') !== '';
+$askedProvince = ($filters['province'] ?? '') !== '';
+$unknownFilter = ($askedCategory && $category === null) || ($askedProvince && $province === null);
+
+$title = 'Browse everything';
+if ($category !== null) { $title = $category['name'] . ' profiles'; }
+if ($province !== null) { $title .= ' in ' . $province; }
+
 // A filtered browse view duplicates a landing page, and a ?q= result set is
 // endless thin permutations — canonicalise to the landing page where one exists
 // and keep search/pagination out of the index.
 $hasQuery  = ($filters['q'] ?? '') !== '';
 $page      = (int) ($result['page'] ?? 1);
-$indexable = ! $hasQuery && $page === 1;
+// An unrecognised category or province is noindexed as well: without that, any
+// query string is a 200 that asks to be indexed under a title of its author's
+// choosing.
+$indexable = ! $hasQuery && $page === 1 && ! $unknownFilter;
 $canonical = base_url('directory');
-if (! $hasQuery && ($filters['category'] ?? '') !== '') {
-    $canonical = base_url('directory/' . $filters['category']
-        . (($filters['province'] ?? '') !== '' ? '/' . slugify($filters['province']) : ''));
+if (! $hasQuery && $category !== null) {
+    $canonical = base_url('directory/' . $category['slug']
+        . ($province !== null ? '/' . slugify($province) : ''));
 }
 
 // Only worth an ItemList when the page is actually indexable — no point
@@ -87,10 +98,10 @@ if ($indexable && ! empty($result['items'])) {
                 <?php foreach ($radii as $km): ?>
                     <?php $q = array_filter($filters + ['radius' => (string) $km], static fn ($v) => $v !== ''); unset($q['bounds']); ?>
                     <a class="near-chip<?= (int) ($filters['radius'] ?? 0) === $km ? ' is-active' : '' ?>"
-                       href="<?= base_url('directory') . '?' . http_build_query($q) ?>"><?= $km ?> km</a>
+                       href="<?= esc(base_url('directory') . '?' . http_build_query($q), 'attr') ?>"><?= $km ?> km</a>
                 <?php endforeach; ?>
                 <?php $clear = array_filter($filters, static fn ($v) => $v !== ''); unset($clear['lat'], $clear['lng'], $clear['radius'], $clear['bounds']); ?>
-                <a class="near-chip" href="<?= base_url('directory') . ($clear ? '?' . http_build_query($clear) : '') ?>">Clear</a>
+                <a class="near-chip" href="<?= esc(base_url('directory') . ($clear ? '?' . http_build_query($clear) : ''), 'attr') ?>">Clear</a>
             <?php endif; ?>
             <span class="near-bar-note" role="status" data-near-me-note></span>
         </div>
@@ -142,7 +153,12 @@ if ($indexable && ! empty($result['items'])) {
         }
         ?>
         <?php if ($mapCentre !== null): ?>
-            <div class="results-map"
+            <?php // id + scroll-mt: the header's "Map" link is /directory#map, and the
+                  // header is sticky h-16 — without the margin the map's top edge lands
+                  // underneath it. Nothing else links here, so if this block is ever made
+                  // conditional on something new, the anchor degrades to the page top. ?>
+            <div class="results-map scroll-mt-20"
+                 id="map"
                  data-results-map
                  data-endpoint="<?= base_url('directory/map') ?>"
                  data-centre="<?= esc($mapCentre, 'attr') ?>"

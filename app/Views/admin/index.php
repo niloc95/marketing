@@ -145,7 +145,7 @@ $isTrash = $status === 'trashed';
                                         <input type="hidden" name="on" value="<?= empty($l['is_featured']) ? '1' : '0' ?>">
                                         <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
                                     </form>
-                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('directory/' . $l['slug']) ?>" target="_blank">View</a>
+                                    <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $l['slug']), 'attr') ?>" target="_blank">View</a>
                                     <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" data-confirm="Move this profile to trash?"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
                                 <?php endif; ?>
                             </div>

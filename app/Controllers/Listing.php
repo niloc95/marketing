@@ -79,6 +79,12 @@ class Listing extends BaseController
         $result = $mut->submitPublic($post);
 
         if (! $result['ok']) {
+            // Nothing was saved, so the file this upload produced is already
+            // unreachable. Bin it and blank the path before the input is
+            // flashed back, or the redisplayed form points at a dead file.
+            $this->discardLogo($logo['path']);
+            $post['logo_path'] = '';
+
             return $this->withUploadErrors(
                 redirect()->back()
                     ->with('errors', $result['errors'])

@@ -34,7 +34,7 @@ if (isset($l['distance_m'])) {
                 <span class="badge mb-1"><?= esc($l['category_name']) ?></span>
             <?php endif; ?>
             <h3 class="truncate text-base font-semibold">
-                <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= base_url('directory/' . ($l['slug'] ?? '')) ?>"><?= esc($name) ?></a>
+                <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc(base_url('directory/' . ($l['slug'] ?? '')), 'attr') ?>"><?= esc($name) ?></a>
             </h3>
         </div>
     </div>

@@ -24,13 +24,14 @@ $used = count($photos);
         <div class="photo-manage-grid">
             <?php foreach ($photos as $p): ?>
                 <div class="photo-manage-item">
-                    <?php // Both URLs are server-generated, so they go out raw like the
-                          // gallery in show.php and the form actions on the edit pages —
-                          // esc(…, 'attr') would entity-encode every slash and colon. ?>
-                    <img src="<?= base_url($p['path']) ?>"
+                    <?php // Both URLs are server-generated, so escaping them is belt and
+                          // braces rather than a fix — but it is what every other
+                          // attribute here does, and the entities it produces decode
+                          // back to the same URL before the browser parses it. ?>
+                    <img src="<?= esc(base_url($p['path']), 'attr') ?>"
                          alt="<?= esc($p['original_name'] ?? 'Profile photo') ?>"
                          loading="lazy">
-                    <form method="post" action="<?= rtrim($deleteBase, '/') . '/' . (int) $p['id'] ?>">
+                    <form method="post" action="<?= esc(rtrim($deleteBase, '/') . '/' . (int) $p['id'], 'attr') ?>">
                         <?= csrf_field() ?>
                         <button type="submit"
                                 class="photo-manage-remove"
