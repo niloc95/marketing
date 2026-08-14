@@ -84,21 +84,36 @@
     @apply sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur;
   }
   .dark .site-header { @apply border-slate-800 bg-[#0f1419]/90; }
+  /* Deliberately NOT flex-wrap. Wrapping was the old overflow behaviour and it
+     dropped the whole nav onto a second row on any phone, which is a taller,
+     lopsided header rather than a graceful degradation. The bar is now a fixed
+     h-16 (matching the marketing site) and .brand absorbs the overflow instead. */
   .site-header .container {
-    @apply flex flex-wrap items-center justify-between gap-3 py-3;
+    @apply flex h-16 items-center justify-between gap-2 sm:gap-3;
   }
-  .brand      { @apply flex items-center gap-2 text-base font-bold text-primary-500; }
+  /* min-w-0 is what lets the truncate on the label span actually fire — a flex
+     item won't shrink below its content width without it, so the row would push
+     wide instead. The tighter gap/tracking below are not cosmetic: at 360px —
+     the most common Android width — the full lockup needs every one of those
+     pixels to render as "WebScheduler Local" rather than "WebScheduler L…". */
+  .brand      { @apply flex min-w-0 items-center gap-1.5 text-sm font-bold tracking-tight text-primary-500 sm:gap-2 sm:text-base sm:tracking-normal; }
   .dark .brand { @apply text-white; }
   /* .brand-mark stays ocean-on-white in both themes — it's the logo mark. */
   .brand-mark {
-    @apply grid h-8 w-8 place-items-center rounded-lg bg-primary-500
+    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary-500
            text-sm font-extrabold text-white;
   }
-  .nav        { @apply flex items-center gap-2 sm:gap-4; }
+  /* Header only — the footer lockup has a whole column to itself. */
+  .site-header .brand-mark { @apply h-7 w-7 sm:h-8 sm:w-8; }
+  .nav        { @apply flex shrink-0 items-center gap-2 sm:gap-4; }
   .nav a      { @apply text-sm font-medium text-slate-600 hover:text-primary-500; }
   .nav a.btn  { @apply text-white hover:text-white; }
   .dark .nav a     { @apply text-slate-300 hover:text-white; }
   .dark .nav a.btn { @apply text-white; }
+
+  /* The header CTA carries .btn-accent for colour; this only tightens it on
+     phones, where it sits next to the menu button on a 328px-wide bar. */
+  .nav-cta { @apply gap-1.5 px-3 py-2 text-xs sm:gap-2 sm:px-5 sm:py-3 sm:text-sm; }
 
   /* Sun/moon theme switch in the header. Sized to sit level with .nav links
      rather than the taller .btn, which would stretch the header. */
@@ -109,6 +124,42 @@
   }
   .dark .theme-toggle {
     @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
+  }
+
+  /* ------------------------------------------------------------ mobile menu */
+  /* Same box as .theme-toggle so the two read as a pair when both are on the
+     bar at md and up — except .menu-toggle is md:hidden, so they never are. */
+  .menu-toggle {
+    @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border
+           border-slate-200 bg-transparent text-slate-600 transition-colors
+           hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500;
+  }
+  .dark .menu-toggle {
+    @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
+  }
+
+  /* Opaque, unlike the bar above it: the header is bg-white/90 + backdrop-blur,
+     which is fine for a 64px strip but turns a full list of links into a mess
+     over scrolled content. Padding matches .container so the links line up with
+     the brand rather than sitting in their own inset column. */
+  .mobile-menu {
+    @apply border-t border-slate-200 bg-white px-4 pb-3 sm:px-6;
+  }
+  .dark .mobile-menu { @apply border-slate-800 bg-[#0f1419]; }
+  /* block + py-3 gives a 48px row — the tap-target floor, and the reason these
+     don't inherit .nav a's text-sm. */
+  .mobile-menu a {
+    @apply block py-3 text-base font-medium text-slate-700 hover:text-primary-500;
+  }
+  .dark .mobile-menu a { @apply text-slate-200 hover:text-white; }
+  /* Divider above it: this is a setting, not a destination like the links. */
+  .mobile-menu-theme {
+    @apply mt-2 flex w-full cursor-pointer items-center gap-3 border-t border-slate-200
+           bg-transparent pt-4 pb-1 text-base font-medium text-slate-700
+           hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500;
+  }
+  .dark .mobile-menu-theme {
+    @apply border-slate-800 text-slate-200 hover:text-white focus:ring-primary-300;
   }
 
   /* Takes the leftover height in the body's flex column, which is what pins the
@@ -201,6 +252,8 @@
   /* The ocean gradient is already dark, but against a #0f1419 page it reads as
      a bright band — start it at the page colour so it recedes instead. */
   .dark .hero { @apply from-[#0f1419] to-primary-700; }
+  /* The pill sits right on top of the h1 otherwise — give it room to breathe. */
+  .hero .eyebrow { @apply mb-4 sm:mb-5; }
   .hero h1 { @apply text-3xl font-extrabold leading-tight sm:text-5xl; }
   .hero p  { @apply mt-3 max-w-2xl text-base text-white/80 sm:text-lg; }
 

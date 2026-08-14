@@ -68,20 +68,74 @@
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>">
                 <span class="brand-mark">W</span>
-                <span>WebScheduler <span class="text-brand-orange">Local</span></span>
+                <?php // The full lockup fits from 360px up, which is every current phone.
+                      // Narrower than that (SE 1st gen, a folded cover screen) the mark
+                      // stands alone rather than truncating — "WebSchedul…" reads as a
+                      // broken layout, a bare logo reads as a deliberate one. truncate
+                      // stays as the last resort for large text-zoom settings. ?>
+                <span class="truncate max-[359px]:hidden">WebScheduler <span class="text-brand-orange">Local</span></span>
             </a>
             <nav class="nav">
-                <a href="<?= base_url('directory') ?>">Browse</a>
+                <?php // Three links is the most that stays visible without crowding the
+                      // CTA; everything else lives in the panel below. Hidden on phones,
+                      // where the same links are in the panel instead. ?>
+                <a class="hidden md:inline" href="<?= base_url('directory') ?>">Browse</a>
+                <a class="hidden md:inline" href="<?= base_url('directory/categories') ?>">Categories</a>
+                <?php // NOT /directory/map — that route is the JSON pin feed the map
+                      // widget fetches, not a page. The map itself is embedded in the
+                      // browse results, so the link anchors to it there. ?>
+                <a class="hidden md:inline" href="<?= base_url('directory') ?>#map">Map</a>
                 <?php // Both icons stay in the DOM and are swapped with dark:hidden /
                       // hidden dark:block — no JS icon logic, so they can't desync from
                       // the class the FOUC guard already set. aria-pressed is corrected
-                      // by directory.js, which is the first point the real theme is known. ?>
-                <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="Toggle dark mode">
+                      // by directory.js, which is the first point the real theme is known.
+                      //
+                      // Desktop only. The phone gets the same control as a labelled row at
+                      // the bottom of the panel — the bar has no width to spare, and a
+                      // theme switch is not something anyone reaches for twice a session. ?>
+                <button type="button" class="theme-toggle hidden md:grid" data-theme-toggle aria-pressed="false" aria-label="Toggle dark mode">
                     <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
                     <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
                 </button>
-                <a href="<?= base_url('list-your-practice') ?>" class="btn btn-accent">Add your business — free</a>
+                <?php // Never goes in the panel: adding a listing is what the site is for,
+                      // and hidden navigation measurably costs the actions put behind it.
+                      // It shortens to "Add free" instead of hiding. .btn is inline-flex
+                      // with gap-2, so <strong> gets its own spacing without a literal one. ?>
+                <a href="<?= base_url('list-your-practice') ?>" class="btn btn-accent nav-cta">
+                    <span class="hidden sm:inline">Add your business</span>
+                    <span class="sm:hidden">Add</span>
+                    <strong>free</strong>
+                </a>
+                <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
+                      // aria-expanded — one source of truth for open/closed. ?>
+                <button type="button" class="menu-toggle md:hidden" data-menu-toggle aria-controls="site-menu" aria-expanded="false" aria-label="Menu">
+                    <svg class="h-5 w-5" data-menu-icon="open" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+                    <svg class="hidden h-5 w-5" data-menu-icon="close" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
             </nav>
+        </div>
+        <?php // Collapsed by default and md:hidden, so it can never appear on a desktop
+              // where the same links are already on the bar. Same data-attribute contract
+              // as the marketing site's header, deliberately — the two properties share
+              // the shape, and directory.js adds the dismiss/aria behaviour on top. ?>
+        <div id="site-menu" class="mobile-menu hidden md:hidden" data-mobile-menu>
+            <a href="<?= base_url('directory') ?>">Browse everything</a>
+            <a href="<?= base_url('directory/categories') ?>">All categories</a>
+            <a href="<?= base_url('directory') ?>#map">Map</a>
+            <a href="<?= base_url('verified') ?>">Verified businesses</a>
+            <a href="<?= base_url('manage') ?>">Manage your profile</a>
+            <a href="<?= base_url('faq') ?>">FAQ</a>
+            <a href="<?= base_url('contact') ?>">Contact</a>
+            <?php // Second [data-theme-toggle] on the page, and that needs no JS change:
+                  // applyTheme() writes aria-pressed to every one of them and the click
+                  // handler is delegated. Labels name the theme you'd be switching TO,
+                  // and swap on the same dark: variants as the icons. ?>
+            <button type="button" class="mobile-menu-theme" data-theme-toggle aria-pressed="false">
+                <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
+                <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+                <span class="dark:hidden">Dark mode</span>
+                <span class="hidden dark:inline">Light mode</span>
+            </button>
         </div>
     </header>
 

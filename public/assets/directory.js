@@ -1,8 +1,8 @@
 /* WebScheduler Directory — small page behaviour.
-   Seven independent modules (theme toggle / reveal / gallery lightbox / share /
-   image uploads / address autocomplete / map pin picker), each a no-op if its
-   markup isn't on the page. Event delegation from one listener each, so this
-   works for content injected later too.
+   Eight independent modules (theme toggle / mobile menu / reveal / gallery
+   lightbox / share / image uploads / address autocomplete / map pin picker),
+   each a no-op if its markup isn't on the page. Event delegation from one
+   listener each, so this works for content injected later too.
 
    Only the pin picker has a dependency: Leaflet, loaded ahead of this file by
    directory/_map_assets on the three listing forms. Everything else stays
@@ -49,6 +49,47 @@
     if (!e.target.closest('[data-theme-toggle]')) return;
     applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
   });
+
+  // ---------------------------------------------------------- mobile menu
+  // The header's burger panel. `hidden` on the panel is the single source of
+  // truth for open/closed — aria-expanded and the bars/X icons are written from
+  // it, so they cannot drift. The panel is also md:hidden, so nothing here can
+  // leave a desktop header in a strange state.
+  (function () {
+    var menu = document.querySelector('[data-mobile-menu]');
+    var toggle = document.querySelector('[data-menu-toggle]');
+    if (!menu || !toggle) return;
+
+    function setOpen(open) {
+      menu.classList.toggle('hidden', !open);
+      toggle.setAttribute('aria-expanded', String(open));
+      var openIcon = toggle.querySelector('[data-menu-icon="open"]');
+      var closeIcon = toggle.querySelector('[data-menu-icon="close"]');
+      if (openIcon) openIcon.classList.toggle('hidden', open);
+      if (closeIcon) closeIcon.classList.toggle('hidden', !open);
+    }
+
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('[data-menu-toggle]')) {
+        setOpen(menu.classList.contains('hidden'));
+        return;
+      }
+      if (menu.classList.contains('hidden')) return;
+      // A link navigates away, but same-page anchors and the bfcache mean the
+      // panel can outlive the click — close it either way. A click anywhere
+      // outside the header dismisses it, as a tap on the page behind an open
+      // menu is a request to get back to the page.
+      if (e.target.closest('[data-mobile-menu] a') || !e.target.closest('.site-header')) {
+        setOpen(false);
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || menu.classList.contains('hidden')) return;
+      setOpen(false);
+      toggle.focus();
+    });
+  })();
 
   // -------------------------------------------------- destructive-action confirm
   // Replaces onsubmit="return confirm(…)" on the admin delete/purge forms.
