@@ -183,7 +183,7 @@
                     <span class="brand-mark">W</span>
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa — or add your own, free.</p>
+                <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>
             </div>
             <div class="site-footer-col">
                 <h3>Browse</h3>
@@ -210,7 +210,7 @@
             <div class="site-footer-col">
                 <h3>Get started</h3>
                 <p class="site-footer-tagline">Adding your business takes a couple of minutes and costs nothing.</p>
-                <a class="btn btn-accent mt-4" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
+                <a class="btn btn-accent mt-4" href="<?= base_url('list-your-practice') ?>">Add your business <strong>free</strong></a>
             </div>
         </div>
         <div class="site-footer-bar">
