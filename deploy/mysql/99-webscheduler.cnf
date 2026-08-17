@@ -1,0 +1,49 @@
+# =============================================================================
+# MySQL 8.0 settings for the WebScheduler directory database.
+#
+# Install to /etc/mysql/mysql.conf.d/99-webscheduler.cnf, then
+#   systemctl restart mysql
+#
+# Sized for the 2 GB Lightsail plan, where MySQL shares the box with Apache and
+# PHP-FPM. The dataset is tiny (well under 100 MB); the point of these limits is
+# to stop MySQL from claiming memory the web tier needs, not to make it faster.
+# =============================================================================
+
+[mysqld]
+
+# Never reachable from outside the instance. The app connects over localhost and
+# there is no other consumer, so binding publicly would only add attack surface.
+# The Lightsail firewall does not open 3306 either — belt and braces.
+bind-address = 127.0.0.1
+
+# The listings table carries a FULLTEXT index and the points table stores
+# POINT ... SRID 4326, both of which need utf8mb4 to match what the migrations
+# create. utf8mb4_general_ci (not 0900_ai_ci) because that is what the existing
+# schema and the imported dump use — mixing collations makes joins fail with
+# "Illegal mix of collations" at query time, not at import time.
+character-set-server = utf8mb4
+collation-server = utf8mb4_general_ci
+
+# The default 128M is already more than this dataset needs. 512M is headroom for
+# growth while leaving ~1.2 GB for Apache, PHP-FPM and the OS.
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 128M
+
+# Durability over throughput: this is the only copy of the listing data between
+# nightly dumps. 1 = flush on every commit, which survives an instance crash.
+innodb_flush_log_at_trx_commit = 1
+
+max_connections = 60
+wait_timeout = 300
+interactive_timeout = 300
+
+# Spatial queries (ST_Distance_Sphere over the points table) and FULLTEXT search
+# both benefit; the joins are small but frequent.
+join_buffer_size = 1M
+sort_buffer_size = 2M
+tmp_table_size = 32M
+max_heap_table_size = 32M
+
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2

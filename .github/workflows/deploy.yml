@@ -1,9 +1,26 @@
-name: Deploy to production (Hostinger)
+name: Deploy to production (Lightsail)
 
-# Auto-deploys on push to main. Two independent jobs:
-#   marketing  -> composer installs (for PHPMailer), builds dist/site and
-#                 uploads it to the main domain docroot
-#   directory  -> composer installs and uploads the CI4 app to the subdomain root
+# ⚠️  DORMANT — this workflow no longer fires on push. Releases are manual.
+#
+# The production instance is provisioned and released by hand from the Lightsail
+# browser terminal: `git pull` on the server, build there, `cp -a` into /var/www.
+# See deploy/LAMP-SETUP.md ("Releasing changes after this") and the
+# deploy-production skill. The SSH_* secrets this workflow needs do not exist,
+# and the `deploy` user has no authorized_keys entry, so a push-triggered run
+# would fail on every push to main for no useful reason.
+#
+# It is retained rather than deleted because the rsync exclusions below encode
+# which server paths hold data that exists in exactly one place — the kind of
+# knowledge that is expensive to reconstruct. To revive it: restore the `push:`
+# trigger, add the four SSH secrets, and put the CI public key in
+# /home/deploy/.ssh/authorized_keys.
+#
+# Below describes what it does WHEN RUN MANUALLY, and what it would do if
+# re-enabled:
+#
+#   marketing  -> rsync dist/site/     to /var/www/marketing        (webscheduler.co.za)
+#   directory  -> rsync dist/listing/  to /var/www/listing/{directory-app,public_html}
+#                 then `php spark migrate --all` and reload PHP-FPM
 #
 # Both jobs run composer. The marketing site is static apart from contact.php,
 # the demo-request endpoint, whose only dependency is PHPMailer — the build
@@ -11,54 +28,57 @@ name: Deploy to production (Hostinger)
 # unused in the directory app's vendor/; that is harmless, and removing it from
 # composer.json would break the marketing contact form.
 #
-# REQUIRED repo secrets (Settings → Secrets and variables → Actions). Without
-# these the deploy does not merely misbehave — FTP-Deploy-Action aborts with
-# "Input required and not supplied: server" before it opens a connection:
-#   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
-#   FTP_MARKETING_DIR  (e.g. /public_html/)
+# This replaces the FTPS pipeline that shipped to Hostinger shared hosting.
+# Two things that were impossible there are now the point of the whole exercise:
+# the directory app deploys automatically (its FTPS job never once completed a
+# run — FTP credentials were shared between both apps, so it had to be gutted
+# rather than guarded), and migrations run without anyone typing them into a
+# web terminal.
 #
-# ⚠️ DO NOT SET `FTP_DIRECTORY_DIR`. The directory job is disabled because its
-# layout assumption does not match production (see the block above that job).
-# Setting it makes the run fail on purpose. The directory app is deployed by
-# hand until that job is rewritten.
+# REQUIRED repo secrets (Settings -> Secrets and variables -> Actions):
+#   SSH_HOST          the Lightsail static IP
+#   SSH_USER          deploy
+#   SSH_PRIVATE_KEY   private half of the key in /home/deploy/.ssh/authorized_keys
+#   SSH_KNOWN_HOSTS   output of: ssh-keyscan -H <static-ip>
+#                     Pinned rather than trust-on-first-use: without it every run
+#                     would accept whatever host key it is handed, which is the
+#                     whole attack this protects against.
 #
-# OPTIONAL. Each is guarded; leaving one unset skips its step rather than failing
-# the run, and the skip is announced in the job summary:
+# OPTIONAL:
 #   CF_ZONE_ID, CF_API_TOKEN   Cloudflare cache purge after the marketing upload.
-#                              Token needs Zone → Cache Purge → Purge. Unset means
-#                              visitors keep seeing the previous build until you
-#                              purge by hand.
-#   SSH_HOST, SSH_USERNAME, SSH_PRIVATE_KEY, SSH_PORT (default 22)
-#   SSH_DIRECTORY_APP_PATH     absolute server path to the app root, e.g.
-#                              /home/<cpuser>/directory_app — the same folder
-#                              FTP_DIRECTORY_DIR points at, as seen over SSH.
+#                              Token needs Zone -> Cache Purge -> Purge. Unset
+#                              means visitors keep seeing the previous build.
 #
-# With SSH set, every deploy runs `php spark migrate --all` after the upload, so
-# schema changes ship automatically. Without it, migrations are a MANUAL gate —
-# run them from hPanel → Advanced → Terminal. Either way the `migrate` job tells
-# you which of the two happened.
-#
-# First-time-only steps (seeding, .env, subdomain/DB creation, the marketing
-# .ws-contact.env) are manual regardless — see DEPLOY.md.
+# The FTP_* secrets are no longer read by anything. Delete them from the repo
+# once Hostinger is decommissioned.
 
+# Manual dispatch only. There is deliberately no `push:` trigger — see the
+# DORMANT note above.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Show what rsync would change, transfer nothing'
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  RSYNC_DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '--dry-run --itemize-changes' || '' }}
+
 jobs:
+  # ============================================================================
   marketing:
-    name: Marketing site → main domain
+    name: Marketing site → webscheduler.co.za
     runs-on: ubuntu-latest
-    # Hoisted to job level so the purge steps' `if:` can test it. A step's own
-    # `env:` block is not dependably in scope while that same step's `if:` is
-    # being evaluated; a job-level one always is.
     env:
       CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+      # Mapped into env because the `secrets` context is not available to any
+      # `if:` — see the note on the Cloudflare purge step below.
+      SSH_HOST: ${{ secrets.SSH_HOST }}
     steps:
       - uses: actions/checkout@v4
 
@@ -84,30 +104,80 @@ jobs:
           npm ci
           npm run site:build
 
-      - name: Deploy dist/site via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./dist/site/
-          server-dir: ${{ secrets.FTP_MARKETING_DIR }}
+      # rsync --delete is unforgiving in a way FTP-Deploy-Action was not: it
+      # mirrors, full stop. If the build ever emits an empty or near-empty
+      # dist/site, --delete would faithfully empty the live docroot. The build
+      # script's own guards would normally catch that first; this is the backstop
+      # for the case where it exits 0 having produced nothing useful.
+      - name: Sanity-check the bundle before letting --delete near it
+        run: |
+          set -euo pipefail
+          test -f dist/site/index.html || { echo "::error::dist/site/index.html missing — refusing to deploy."; exit 1; }
+          count=$(find dist/site -type f | wc -l)
+          echo "dist/site contains $count files"
+          [ "$count" -ge 10 ] || { echo "::error::Only $count files in dist/site — refusing to deploy."; exit 1; }
 
-      # Cloudflare proxies the apex (orange cloud). Without this, an FTP upload
-      # that succeeded still leaves visitors on the previous HTML and CSS — the
-      # deploy looks green, the site looks unchanged, and the time goes into
-      # debugging a bug that isn't there. Purge everything rather than by URL:
-      # the asset filenames are not content-hashed, so a URL list would have to
-      # be kept in sync with the build by hand.
+      # This workflow can land on main before the Lightsail instance exists. Skip
+      # loudly rather than reddening every push with an SSH failure that says
+      # nothing about the code — the same reasoning that guarded the old
+      # migrate job. Once SSH_HOST is set, these guards never fire again.
+      - name: Not deployed — Lightsail is not configured yet
+        if: env.SSH_HOST == ''
+        run: |
+          echo "::warning::SSH_HOST is not set, so nothing was deployed."
+          echo "::warning::The build ran and its guards passed. Set SSH_HOST, SSH_USER,"
+          echo "::warning::SSH_PRIVATE_KEY and SSH_KNOWN_HOSTS once the instance is up."
+          {
+            echo "### ℹ️ Nothing deployed"
+            echo ""
+            echo "\`SSH_HOST\` is unset — the Lightsail instance is not wired up yet."
+            echo "The site **was built** and passed every guard; it just was not shipped."
+            echo ""
+            echo "See \`deploy/README.md\` for provisioning and the secret list."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Configure SSH
+        if: env.SSH_HOST != ''
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # ⚠️ --exclude='/developer/' is NOT optional.
+      #
+      # The developer API portal is built and deployed from a DIFFERENT repo
+      # (niloc95/xscheduler_ci4, `npm run docs:build`) into this same docroot,
+      # and nothing in dist/site/ reproduces it. It survived the FTPS era only
+      # because FTP-Deploy-Action tracked its own uploads in a server-side state
+      # file and never touched files it had not put there. rsync has no such
+      # memory: without this exclude, the first deploy silently deletes
+      # /developer/ and the marketing pages start linking to a 404.
+      - name: Deploy dist/site via rsync
+        if: env.SSH_HOST != ''
+        run: |
+          set -euo pipefail
+          rsync -az --delete ${RSYNC_DRY_RUN} \
+            -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes" \
+            --exclude='/developer/' \
+            dist/site/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/marketing/"
+
+      # Cloudflare proxies the apex (orange cloud). Without this, an upload that
+      # succeeded still leaves visitors on the previous HTML and CSS — the deploy
+      # looks green, the site looks unchanged, and the time goes into debugging a
+      # bug that isn't there. Purge everything rather than by URL: the asset
+      # filenames are not content-hashed, so a URL list would have to be kept in
+      # sync with the build by hand.
       #
       # The secret is read through `env`, not `secrets`, in the `if:`. The
       # `secrets` context is NOT available to any `if` condition — job or step —
       # so `if: secrets.CF_ZONE_ID != ''` would not gate anything. Mapping it
       # into `env` first is the documented way to make a secret's presence
-      # testable. Same pattern in the `migrate` job below.
+      # testable.
       - name: Purge Cloudflare cache
-        if: env.CF_ZONE_ID != ''
+        if: env.SSH_HOST != '' && env.CF_ZONE_ID != '' && github.event.inputs.dry_run != 'true'
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
@@ -123,139 +193,158 @@ jobs:
             || { echo "::error::Cloudflare purge failed — visitors may keep seeing the previous build."; exit 1; }
 
       - name: Remind to purge Cloudflare by hand
-        if: env.CF_ZONE_ID == ''
+        if: env.SSH_HOST != '' && env.CF_ZONE_ID == ''
         run: |
           echo "::warning::CF_ZONE_ID is not set, so the Cloudflare cache was NOT purged."
           echo "::warning::Visitors may keep seeing the previous build. Purge manually:"
           echo "::warning::  Cloudflare → Caching → Configuration → Purge Everything"
 
   # ============================================================================
-  # ⚠️  DISABLED: this job's layout assumption does not match production.
-  #
-  # It uploads the repo root and assumes the subdomain docroot is
-  # <FTP_DIRECTORY_DIR>/public, with public/index.php resolving the app via
-  # `../app/Config/Paths.php`.
-  #
-  # Production is laid out the OTHER way — the split bundle that
-  # `npm run list:build` produces and README documents:
-  #
-  #     domains/listing.webscheduler.co.za/
-  #     ├── directory-app/     ← app code, ABOVE the web root
-  #     └── public_html/       ← docroot; its index.php requires
-  #                              ../directory-app/app/Config/Paths.php
-  #
-  # These are incompatible. Because this workflow has never completed a run, the
-  # mismatch was never discovered — production was always deployed by hand.
-  #
-  # Setting FTP_DIRECTORY_DIR without first rewriting the upload step would, at
-  # best, change nothing visible; at worst — if it pointed at public_html/ — it
-  # would publish app/, vendor/ and writable/ INSIDE the web root. The tripwire
-  # below fails the job loudly rather than letting that happen silently.
-  #
-  # To re-enable: build the bundle (`npm run list:build`) and upload
-  # dist/listing/directory-app/ and dist/listing/docroot/ to their two separate
-  # destinations, then delete the tripwire. Until then the directory app is
-  # deployed manually — see DEPLOY.md.
-  # ============================================================================
   directory:
-    name: Directory app → subdomain
-    runs-on: ubuntu-latest
-    env:
-      FTP_DIRECTORY_DIR: ${{ secrets.FTP_DIRECTORY_DIR }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Refuse to deploy with a mismatched layout
-        if: env.FTP_DIRECTORY_DIR != ''
-        run: |
-          echo "::error::FTP_DIRECTORY_DIR is set, but this job uploads the repo root while production uses the split directory-app/ + public_html/ layout."
-          echo "::error::Uploading would not deploy the app, and pointing it at public_html/ would expose app/ and vendor/ to the web."
-          echo "::error::Rewrite this job to ship dist/listing/ (npm run list:build), or unset FTP_DIRECTORY_DIR and deploy by hand. See DEPLOY.md."
-          exit 1
-
-      - name: Directory deploy is manual — say so
-        if: env.FTP_DIRECTORY_DIR == ''
-        run: |
-          echo "::warning::The directory app was NOT deployed by this run — its job is intentionally not wired up."
-          echo "::warning::Deploy it by hand: npm run list:build, then upload the two folders. See DEPLOY.md."
-          {
-            echo "### ℹ️ Directory app not deployed"
-            echo ""
-            echo "This job is intentionally inert: it uploads the repo root, but production"
-            echo "uses the split \`directory-app/\` + \`public_html/\` layout, so the two are"
-            echo "incompatible."
-            echo ""
-            echo "The marketing site **was** deployed. To release the directory app, run"
-            echo "\`npm run list:build\` and upload the two folders — see DEPLOY.md."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      # The composer install and the FTPS upload that used to live here have been
-      # REMOVED, not merely guarded. Leaving the upload step in place was the
-      # actual hazard: FTP_SERVER/USERNAME/PASSWORD are shared with the marketing
-      # job, so once those are set for the marketing site, this step would run
-      # with an EMPTY server-dir and sync the whole repo to the FTP account's
-      # default directory — usually the account root.
-      #
-      # The exclude list it carried is preserved in DEPLOY.md, because the
-      # rewritten job will need it: it kept .env, uploaded listing photos and
-      # verification documents from being overwritten by a deploy. Those
-      # exclusions matter just as much for the manual procedure.
-
-  # Only meaningful once the `directory` job actually deploys again — right now
-  # nothing is uploaded, so there is no new schema-dependent code to migrate for.
-  # It is kept wired and guarded so that re-enabling the directory deploy does not
-  # also require remembering to re-add this.
-  #
-  # Migrations run over SSH when SSH is configured, and are announced as NOT run
-  # when it isn't. Both cases live in one job with step-level guards because the
-  # `secrets` context cannot be used in a job-level `if` — see the note in the
-  # marketing job. `SSH_HOST` is mapped into `env` at job level so both steps can
-  # test it.
-  #
-  # Why guard at all: without it, appleboy/ssh-action errors on an empty host and
-  # fails the workflow *even though both uploads succeeded*. A deploy that shipped
-  # correctly still shows red, an all-red run list stops being read, and a real
-  # failure then hides among the noise.
-  migrate:
-    name: Directory app → run migrations
-    needs: directory
+    name: Directory app → listing.webscheduler.co.za
     runs-on: ubuntu-latest
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}
     steps:
-      - name: php spark migrate over SSH
-        if: env.SSH_HOST != ''
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            set -e
-            cd ${{ secrets.SSH_DIRECTORY_APP_PATH }}
-            php spark migrate --all
+      - uses: actions/checkout@v4
 
-      # A skipped migration must never be silent. Schema changes ship in the FTP
-      # upload whether or not they have been applied, so an un-migrated deploy is
-      # new code running against an old schema — which surfaces as a 500 on
-      # whichever page touches the new column, not as an obvious outage.
-      - name: Migrations NOT run — say so loudly
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          # Mirrors what the instance has. The bundle only needs composer to
+          # resolve, but matching the runtime here means a platform mismatch
+          # surfaces in CI rather than as a 500 after deploy.
+          extensions: mbstring, intl, mysqli, curl, gd, exif
+          tools: composer
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Produces dist/listing/{directory-app,docroot}/ and runs its own guards:
+      # no .env in the bundle, no dev dependencies, CSRF filter enabled, no
+      # http:// downgrade in .htaccess, migrations and seeder present, and
+      # index.php repointed at ../directory-app.
+      - name: Build deploy bundle
+        run: |
+          npm ci
+          npm run list:build
+
+      - name: Sanity-check the bundle before letting --delete near it
+        run: |
+          set -euo pipefail
+          test -f dist/listing/docroot/index.php        || { echo "::error::docroot/index.php missing."; exit 1; }
+          test -f dist/listing/docroot/.htaccess        || { echo "::error::docroot/.htaccess missing — every URL but / would 404."; exit 1; }
+          test -d dist/listing/directory-app/vendor     || { echo "::error::vendor/ missing."; exit 1; }
+          test -f dist/listing/directory-app/spark      || { echo "::error::spark missing — migrations could not run."; exit 1; }
+
+      - name: Not deployed — Lightsail is not configured yet
         if: env.SSH_HOST == ''
         run: |
-          echo "::warning::SSH is not configured, so migrations did NOT run."
-          echo "::warning::New code is now live against the OLD schema."
-          echo "::warning::Run this in hPanel → Advanced → Terminal, in the app root:"
-          echo "::warning::  php spark migrate --all"
+          echo "::warning::SSH_HOST is not set, so the directory app was NOT deployed."
+          echo "::warning::The bundle built and passed every guard. See deploy/README.md."
           {
-            echo "### ⚠️ Migrations did not run"
+            echo "### ℹ️ Directory app not deployed"
             echo ""
-            echo "\`SSH_HOST\` is not set, so the migration step was skipped."
-            echo "The upload succeeded — the new code is live against the **old schema**."
-            echo ""
-            echo "Run in **hPanel → Advanced → Terminal**, from the app root:"
-            echo ""
-            echo '```bash'
-            echo "php spark migrate --all"
-            echo '```'
+            echo "\`SSH_HOST\` is unset — the Lightsail instance is not wired up yet."
+            echo "The bundle **was built** and passed its guards; migrations did not run"
+            echo "because nothing new shipped."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Configure SSH
+        if: env.SSH_HOST != ''
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # Every --exclude below maps to a way --delete would destroy production
+      # data that exists in exactly one place and is in no git repo. This list
+      # is the FTPS-era exclude list, which survived only as prose in DEPLOY.md
+      # after the old job was gutted.
+      #
+      #   .env                     the server's secrets; the bundle never carries one
+      #   writable/verification/   uploaded identity documents
+      #   writable/{logs,cache,session}/  runtime state; deleting cache also
+      #                            takes every rate limit with it
+      - name: Deploy app tree (above the web root)
+        if: env.SSH_HOST != ''
+        run: |
+          set -euo pipefail
+          rsync -az --delete ${RSYNC_DRY_RUN} \
+            -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes" \
+            --exclude='.env' \
+            --exclude='writable/verification/' \
+            --exclude='writable/logs/' \
+            --exclude='writable/cache/' \
+            --exclude='writable/session/' \
+            dist/listing/directory-app/ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/listing/directory-app/"
+
+      # assets/listings/ holds uploaded logos and gallery photos. The build ships
+      # the directory empty on purpose (build-listing-app.js removes it, so a
+      # developer's local test images never ride along) — which is exactly why
+      # --delete must not be allowed to mirror that emptiness onto the server.
+      - name: Deploy web root
+        if: env.SSH_HOST != ''
+        run: |
+          set -euo pipefail
+          rsync -az --delete ${RSYNC_DRY_RUN} \
+            -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes" \
+            --exclude='assets/listings/' \
+            dist/listing/docroot/ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/listing/public_html/"
+
+      # Migrations run in THIS job rather than a dependent one. A separate job
+      # would add a runner cold-start to the window in which new code is live
+      # against the old schema — which surfaces as a 500 on whichever page
+      # touches the new column, not as an obvious outage. Same reason the FPM
+      # reload comes after: it is what makes the new code actually take effect.
+      #
+      # Forward-only, as on the old host: `migrate:rollback` against production
+      # stays banned. Code rolls back by redeploying; schema is fixed forward
+      # with a new migration.
+      - name: Run migrations and reload PHP-FPM
+        if: env.SSH_HOST != '' && github.event.inputs.dry_run != 'true'
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash -euo pipefail <<'REMOTE'
+            cd /var/www/listing/directory-app
+            php spark migrate --all
+            # opcache.revalidate_freq is 0, so PHP already re-stats changed files
+            # and this is belt-and-braces. It stops being optional the moment
+            # anyone raises that value for performance.
+            sudo systemctl reload php8.3-fpm
+          REMOTE
+
+      # A deploy that shipped but did not come back up should not be discovered
+      # by a user. /health returns 200/503 to anyone; the per-check detail needs
+      # the token, which CI does not have and does not need.
+      #
+      # Checked against the ORIGIN over the SSH connection, not against the
+      # public URL. Curling https://listing.webscheduler.co.za/ from the runner
+      # would test whatever DNS currently resolves to — which, until the cutover
+      # completes, is still Hostinger. That would report a green deploy while
+      # confirming nothing about the box we just shipped to. -k because the
+      # Cloudflare origin certificate is not in any public trust store.
+      - name: Verify the origin is serving
+        if: env.SSH_HOST != '' && github.event.inputs.dry_run != 'true'
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5; do
+            code=$(ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "curl -sk -o /dev/null -w '%{http_code}' -H 'Host: listing.webscheduler.co.za' https://127.0.0.1/health" || echo 000)
+            [ "$code" = "200" ] && { echo "origin health OK"; exit 0; }
+            echo "attempt $i: /health returned $code"
+            sleep 5
+          done
+          echo "::error::/health did not return 200 on the origin after the deploy."
+          echo "::error::Check: ssh in and read writable/logs/ — a 503 here means a"
+          echo "::error::SystemHealth check failed (db, writable paths), not that Apache is down."
+          exit 1

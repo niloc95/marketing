@@ -51,6 +51,12 @@ $RECYCLE.BIN/
 .vagrant
 Vagrantfile
 
+# The bare-name copies the glob above cannot see. `deploy/env` is a working copy
+# of a filled-in environment — live DB, SMTP, PayFast and admin credentials —
+# and this repo is PUBLIC. The tracked root `env` is the scrubbed CI4 template
+# (every secret line commented out) and stays tracked; this one must not.
+/deploy/env
+
 # Secrets for marketing-site/contact.php. Unanchored on purpose: it covers the
 # repo root (docroot of `npm run site:serve`) and dist/ (docroot of
 # `npm run site:preview`). marketing-site/.env.example is the committed

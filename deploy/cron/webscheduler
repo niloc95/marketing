@@ -1,0 +1,39 @@
+# =============================================================================
+# WebScheduler scheduled jobs.
+#
+# Install:  /etc/cron.d/webscheduler   (root:root, chmod 644, MUST end with a
+#           newline and MUST NOT be executable — cron ignores it otherwise)
+#
+# Note the extra user column: /etc/cron.d entries take one, unlike `crontab -e`.
+# =============================================================================
+
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+MAILTO=""
+
+# --- Verification badge sweep -------------------------------------------------
+# Expires verification badges that have passed their date. Explicitly NOT
+# correctness-load-bearing: badge visibility is a render-time date comparison,
+# so a missed run shows a stale badge until the next sweep rather than breaking
+# anything. Same job, same time as it ran on Hostinger.
+0 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:verifications:sweep --quiet
+
+# --- Nightly database dump ----------------------------------------------------
+# Replaces Hostinger's plan backups. Credentials come from /home/deploy/.my.cnf
+# (chmod 600) so no password appears in the process list or in this file.
+#
+# --single-transaction keeps it non-blocking on InnoDB. Do NOT drop
+# --default-character-set=utf8mb4: dumping as latin1 silently mangles accented
+# practice names, and you only find out at restore time.
+15 2 * * * deploy /usr/bin/mysqldump --defaults-file=/home/deploy/.my.cnf --single-transaction --default-character-set=utf8mb4 --routines --triggers webscheduler_directory | gzip > /home/deploy/backups/db-$(date +\%F).sql.gz
+
+# Prune dumps older than 14 days. Lightsail's automatic snapshots are the real
+# backup — these are for quick "restore one table" work without rolling an
+# instance back.
+30 2 * * * deploy find /home/deploy/backups -name 'db-*.sql.gz' -mtime +14 -delete
+
+# --- Certificate expiry warning ----------------------------------------------
+# The Cloudflare origin certificate is valid for 15 years, so there is no renewal
+# cron. That is precisely why it needs a reminder: nothing else will ever mention
+# it again, and Full (strict) breaks hard the day it lapses.
+0 9 1 * * deploy /usr/bin/openssl x509 -in /etc/ssl/cloudflare/webscheduler.co.za.pem -noout -checkend 7776000 || echo "Cloudflare origin cert for webscheduler.co.za expires within 90 days"
