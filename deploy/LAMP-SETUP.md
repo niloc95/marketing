@@ -1,9 +1,9 @@
 # Manual LAMP setup — bare Ubuntu to live, in the browser terminal
 
 Start to finish, by hand, in the **Lightsail browser terminal**. No provisioning
-script, no GitHub Actions, no FileZilla, no SFTP. The code arrives by `git clone`
-and is built on the box; the data arrives by `lftp` straight from Hostinger.
-Nothing travels via your laptop.
+script, no GitHub Actions, no FileZilla, no FTP. The code arrives by `git clone`
+and is built on the box; the data arrives by `scp` pushed straight from
+Hostinger. Nothing travels via your laptop.
 
 **Target:** Ubuntu 24.04 LTS **OS Only**, 4 GB / 2 vCPU / 80 GB, `ap-south-1`
 (Mumbai). Apache 2.4 + PHP 8.3-FPM + MySQL 8.0, all from Ubuntu's own `main`
@@ -37,7 +37,7 @@ the rollback, right up to Part 11.
 | 5 | [System configuration](#part-5--system-configuration) |
 | 6 | [MySQL](#part-6--mysql) |
 | 7 | [TLS, then enable the vhosts](#part-7--tls-then-enable-the-vhosts) |
-| 8 | [Secrets, pulled from Hostinger](#part-8--secrets-pulled-from-hostinger) |
+| 8 | [Secrets, pushed from Hostinger](#part-8--secrets-pushed-from-hostinger) |
 | 9 | [Import the live data](#part-9--import-the-live-data) |
 | 10 | [Verify before DNS moves](#part-10--verify-before-dns-moves) |
 | 11 | [Cutover](#part-11--cutover) |
@@ -113,7 +113,7 @@ sudo apt-get install -y \
   apache2 mysql-server \
   php8.3-fpm php8.3-intl php8.3-mbstring php8.3-mysql php8.3-curl \
   php8.3-gd php8.3-xml php8.3-zip php8.3-opcache \
-  composer git unzip nodejs npm lftp jq
+  composer git unzip nodejs npm jq
 ```
 
 ### Verify before building anything on top of it
@@ -395,7 +395,7 @@ Finally, Cloudflare → SSL/TLS → Overview → **Full (strict)**.
 
 ---
 
-## Part 8 — Secrets, pulled from Hostinger
+## Part 8 — Secrets, pushed from Hostinger
 
 Two files hold everything that must not be regenerated. Both come off the old
 host as-is.
@@ -403,17 +403,76 @@ host as-is.
 > `.env.production` in this repo is **not** a substitute. It is stale and missing
 > `encryption.key`, `directory.adminPasswordHash` and `app.indexPage`.
 
-The instance has outbound internet, so pull them directly. Use an **interactive**
-`lftp` login — `lftp -u user,password` puts the password in the process list:
+### Do not use FTP for this
+
+Earlier versions of this runbook said to `lftp ftp.webscheduler.co.za` and `get`
+both files. That cannot work, for three independent reasons:
+
+- **`ftp.webscheduler.co.za` is behind Cloudflare.** It resolves to `172.67.x` /
+  `104.21.x`, which proxy HTTP and HTTPS only. Nothing answers on port 21, so the
+  connect black-holes and lftp sits at `[Connecting...]` until it times out. The
+  real host is `194.164.74.32`.
+- **The per-domain FTP accounts are jailed to their own `public_html`.** There is
+  one per site, and neither secret file lives inside a docroot. Both sit above
+  the jail and are simply not addressable. Confirm the exact usernames in hPanel
+  before typing them — they are derived from the domain, and a transposed
+  character is a silent auth failure.
+- **That the files are outside the docroot is the point.** `.ws-contact.env` sits
+  at the account home root precisely so nothing can serve it;
+  `curl -sI https://webscheduler.co.za/.ws-contact.env` returning 404 is a
+  release check in `DEPLOY.md`. An FTP path that reached it would be a bug.
+
+### Push them instead
+
+Both files live above every docroot:
+
+```
+~/.ws-contact.env
+~/domains/listing.webscheduler.co.za/directory-app/.env
+```
+
+The new instance has a public IP and sshd, so push from **hPanel → Advanced →
+Terminal** rather than pulling. This also keeps the password out of the process
+list, which is the only thing the interactive `lftp` login ever bought:
 
 ```bash
-sudo -u deploy -H lftp ftp.webscheduler.co.za
+scp ~/domains/listing.webscheduler.co.za/directory-app/.env \
+    ~/.ws-contact.env  deploy@$IP:/home/deploy/
 ```
+
+That needs `deploy` to accept an inbound SSH login, which a stock Lightsail image
+will not do — `PasswordAuthentication` is off and `deploy` has no password
+anyway. Grant it for the migration only. On Hostinger:
+
+```bash
+ssh-keygen -t ed25519 -N '' -f ~/.ssh/migrate
+cat ~/.ssh/migrate.pub
 ```
-login <ftp-user>          # prompts for the password, does not echo it
-get domains/listing.webscheduler.co.za/directory-app/.env -o /home/deploy/dotenv
-get .ws-contact.env -o /home/deploy/ws-contact.env
-bye
+
+On the new instance, paste that one line in:
+
+```bash
+sudo -u deploy -H mkdir -p ~deploy/.ssh && sudo -u deploy -H chmod 700 ~deploy/.ssh
+sudo -u deploy -H nano ~deploy/.ssh/authorized_keys      # paste, save
+sudo -u deploy -H chmod 600 ~deploy/.ssh/authorized_keys
+```
+
+Then `scp -i ~/.ssh/migrate …` from Hostinger. **Revoke it once Part 9 is done** —
+empty `authorized_keys` on the new box, `rm ~/.ssh/migrate*` on Hostinger. The old
+host keeping a working key into the new one outlives its usefulness the moment
+the data has moved.
+
+No terminal on the plan? **hPanel → Files → File Manager** browses the real home,
+not a jail. Download each path and move it across yourself. These are small text
+files — worst case, open each one and paste it into
+`sudo -u deploy -H nano /home/deploy/dotenv` on the new box.
+
+They arrive under their own names. Rename both, since the install step below
+expects `dotenv` and `ws-contact.env`:
+
+```bash
+sudo -u deploy mv /home/deploy/.env          /home/deploy/dotenv
+sudo -u deploy mv /home/deploy/.ws-contact.env /home/deploy/ws-contact.env
 ```
 
 Check the three keys that matter survived:
@@ -484,20 +543,19 @@ ls -lh ~/directory.sql ~/uploads.tgz ~/verification.tgz
 No terminal on the plan? Use hPanel → Databases → **phpMyAdmin** → Export →
 Quick → SQL → Go for the database, and download the two folders in a file manager.
 
-**On the new instance**, pull all three the same way as Part 8:
+Move all three the same way as Part 8, and for the same reasons — FTP reaches
+none of them, and a data connection that stalls halfway through a dump is worse
+than one that never starts. Still from the **Hostinger terminal**, reusing the
+`~/.ssh/migrate` key:
 
 ```bash
-cd /tmp
-sudo -u deploy -H lftp ftp.webscheduler.co.za
+scp -i ~/.ssh/migrate ~/directory.sql ~/uploads.tgz ~/verification.tgz \
+    deploy@$IP:/tmp/
 ```
-```
-login <ftp-user>
-lcd /tmp
-get directory.sql
-get uploads.tgz
-get verification.tgz
-bye
-```
+
+Compare the sizes against what `ls -lh` printed on Hostinger before going any
+further. A truncated `directory.sql` imports partially and then fails much later,
+in ways that look like application bugs.
 
 ### The database
 
