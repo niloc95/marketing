@@ -1,4 +1,30 @@
-# Deploying to production (Hostinger / hPanel)
+# Deploying to production (Hostinger / hPanel) — superseded
+
+> ## ⚠️ Production is moving to AWS Lightsail
+>
+> **For the new stack, provisioning, and the cutover runbook, read
+> [`deploy/README.md`](deploy/README.md).** For a routine release, use the
+> **`deploy-production` skill**.
+>
+> This file is the Hostinger shared-hosting record. It stays accurate for the
+> environment that is live **until the DNS cutover completes**, and is worth keeping
+> after that as the rollback target — rollback is repointing two Cloudflare A records
+> back here, which only works while this environment still exists.
+>
+> What has already changed in the repo, and therefore no longer matches this file:
+>
+> | This document says | Now |
+> |---|---|
+> | FTPS upload via `SamKirkland/FTP-Deploy-Action` | `rsync` over SSH |
+> | The `directory` job is disabled; deploy by hand | Both jobs deploy automatically |
+> | Migrations are a manual hPanel terminal step | Run automatically after the rsync |
+> | `FTP_SERVER` / `FTP_USERNAME` / `FTP_PASSWORD` / `FTP_MARKETING_DIR` | `SSH_HOST` / `SSH_USER` / `SSH_PRIVATE_KEY` / `SSH_KNOWN_HOSTS` |
+> | Never set `FTP_DIRECTORY_DIR` | The secret is no longer read by anything |
+> | Backups rely on the Hostinger plan | Lightsail snapshots + nightly `mysqldump` |
+>
+> The workflow's deploy steps are guarded on `SSH_HOST`, so until that secret is set it
+> builds, runs every guard, and ships nothing — pushing to `main` before the instance
+> exists is safe, it just does not deploy anywhere.
 
 This repo ships **two deployables**:
 
