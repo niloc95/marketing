@@ -14,6 +14,7 @@
  * @var array{verification:array<string,mixed>,documents:array<int,array<string,mixed>>}|null $verification
  * @var string $amount
  * @var bool   $payable  whether PayFast is configured — see VerificationService::canTakePayment()
+ * @var bool   $pending  owner is back from PayFast, ITN not in yet — see Manage::paymentPending()
  */
 
 use App\Models\DirectoryVerificationDocumentModel;
@@ -23,6 +24,7 @@ $row       = $verification['verification'] ?? null;
 $docs      = $verification['documents'] ?? [];
 $state     = $row['state'] ?? null;
 $payable   = $payable ?? false;
+$pending   = $pending ?? false;
 $cancelled = ! empty($row['cancelled_at']);
 
 $prettyDate = static function (?string $date): string {
@@ -83,7 +85,22 @@ $prettyDate = static function (?string $date): string {
 
     <?php elseif ($state === DirectoryVerificationModel::STATE_APPROVED): ?>
 
-        <?php if ($payable): ?>
+        <?php if ($payable && $pending): ?>
+            <?php // Back from PayFast, ITN not in yet. Offering "Activate my badge"
+                  // here reads as "your payment failed" to someone who just paid,
+                  // and invites them to pay a second time. Say what we are waiting
+                  // for instead — and claim nothing, because the money is not
+                  // confirmed until the ITN says so. ?>
+            <p class="text-sm text-slate-600 dark:text-slate-300">
+                <strong>Thanks &mdash; we have your payment.</strong> PayFast is confirming it now.
+            </p>
+            <p class="hint">
+                Your badge goes live on your profile as soon as that clears, usually within a few
+                minutes. Refresh this page to check &mdash; there is nothing else for you to do, and
+                you will not be charged twice.
+            </p>
+
+        <?php elseif ($payable): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your documents check out. Switch the badge on for
                 <strong>R<?= esc($amount) ?> a month</strong> &mdash; it appears on your profile and

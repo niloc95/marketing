@@ -49,6 +49,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
                     'verification' => $verification,
                     'amount'       => $verificationAmount,
                     'payable'      => $verificationPayable,
+                    'pending'      => $verificationPending,
                 ]) ?>
             <?php endif; ?>
 

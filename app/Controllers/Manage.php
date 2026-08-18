@@ -38,6 +38,28 @@ class Manage extends BaseController
         'checkout' => 'manage/verification/checkout',
     ];
 
+    /**
+     * Set when the owner comes back through PayFast's return_url, cleared the
+     * moment the ITN lands. It covers only the gap between the two, where the
+     * verification row still reads 'approved' and the panel would otherwise go
+     * on offering "Activate my badge" to somebody who has just paid.
+     *
+     * Session rather than a column, deliberately: it is a fact about one
+     * person's trip through checkout, not about the listing, and it must never
+     * be mistaken for evidence of payment — the ITN remains the only thing that
+     * grants a badge. Anyone can hit the return URL directly; all that gets
+     * them is a "confirming" message on their own dashboard.
+     */
+    private const PAYMENT_PENDING_KEY = 'vb_payment_pending_since';
+
+    /**
+     * How long the "confirming" message may stand before the pay button comes
+     * back. An ITN normally arrives in seconds; if one never does, a payment
+     * that genuinely failed has to be retryable rather than sitting behind a
+     * message insisting it is still in flight.
+     */
+    private const PAYMENT_PENDING_TTL = 1800; // 30 min
+
     /** Identical wording whichever branch runs — see request(). */
     private const SENT_MESSAGE = 'If that email has a profile, we have sent it a link to manage it. The link lasts one hour.';
 
@@ -111,8 +133,9 @@ class Manage extends BaseController
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
-        $svc          = new DirectoryService();
-        $verification = new VerificationService();
+        $svc             = new DirectoryService();
+        $verification    = new VerificationService();
+        $verificationRow = $verification->forListing((int) $listing['id']);
 
         return view('directory/manage_edit', [
             'listing'    => $listing,
@@ -128,7 +151,8 @@ class Manage extends BaseController
             'verificationOffered' => $verification->isEnabled(),
             'verificationPayable' => $verification->canTakePayment(),
             'verificationAmount'  => $verification->monthlyAmount(),
-            'verification'        => $verification->forListing((int) $listing['id']),
+            'verification'        => $verificationRow,
+            'verificationPending' => $this->paymentPending($verificationRow),
         ]);
     }
 
@@ -340,18 +364,69 @@ class Manage extends BaseController
     /**
      * Where PayFast sends the owner's browser after checkout.
      *
-     * Says nothing about whether the payment succeeded, and must not: the
-     * browser's return trip is not evidence of anything — the ITN is, and it
-     * arrives on its own schedule, sometimes after this page has rendered.
-     * Claiming success here and having the badge not appear would be worse than
-     * being vague.
+     * The browser's return trip is still not evidence of payment — the ITN is,
+     * and it arrives on its own schedule. So this asks the database what
+     * actually happened rather than believing the redirect.
+     *
+     * The ITN frequently wins the race, and when it has there is nothing to be
+     * coy about: the badge is live, so send the owner to their own profile to
+     * see it. When it has not, we say we are confirming and remember that they
+     * came back, so the panel stops offering to sell them a badge they have
+     * already bought. Neither branch grants anything.
      */
     public function verificationDone()
     {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        $current = (new VerificationService())->forListing((int) $listing['id']);
+        $state   = $current['verification']['state'] ?? null;
+
+        if ($state === DirectoryVerificationModel::STATE_ACTIVE) {
+            session()->remove(self::PAYMENT_PENDING_KEY);
+
+            return redirect()->to(base_url('directory/' . $listing['slug']))
+                ->with('success', 'Payment confirmed — your Verified Business badge is live.');
+        }
+
+        session()->set(self::PAYMENT_PENDING_KEY, time());
+
         return redirect()->to(base_url('manage/edit'))->with(
             'info',
-            'Thanks — PayFast is confirming your payment. Your badge appears here within a few minutes.'
+            'Thanks — we have your payment and PayFast is confirming it. Your badge goes live within '
+                . 'a few minutes; refresh this page to check.'
         );
+    }
+
+    /**
+     * Whether to show "confirming your payment" in place of the pay button.
+     *
+     * Expires two ways — the ITN landing (state is no longer 'approved') or
+     * PAYMENT_PENDING_TTL passing — so the panel cannot get stuck insisting on a
+     * payment that never completed.
+     *
+     * @param array<string,mixed>|null $verification
+     */
+    private function paymentPending(?array $verification): bool
+    {
+        $since = (int) (session()->get(self::PAYMENT_PENDING_KEY) ?? 0);
+        if ($since <= 0) {
+            return false;
+        }
+
+        $state = $verification['verification']['state'] ?? null;
+
+        if ($state !== DirectoryVerificationModel::STATE_APPROVED
+            || $since < time() - self::PAYMENT_PENDING_TTL) {
+            session()->remove(self::PAYMENT_PENDING_KEY);
+
+            return false;
+        }
+
+        return true;
     }
 
     public function signout()
