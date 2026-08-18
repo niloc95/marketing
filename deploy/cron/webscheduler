@@ -25,7 +25,12 @@ MAILTO=""
 # --single-transaction keeps it non-blocking on InnoDB. Do NOT drop
 # --default-character-set=utf8mb4: dumping as latin1 silently mangles accented
 # practice names, and you only find out at restore time.
-15 2 * * * deploy /usr/bin/mysqldump --defaults-file=/home/deploy/.my.cnf --single-transaction --default-character-set=utf8mb4 --routines --triggers webscheduler_directory | gzip > /home/deploy/backups/db-$(date +\%F).sql.gz
+# --no-tablespaces: the deploy user has no PROCESS privilege (it does not need
+# one), and without this mysqldump 8.0 writes an "Access denied ... when trying
+# to dump tablespaces" error to stderr on every run. The dump itself is complete
+# either way, but MAILTO="" swallows the noise — and would swallow a real
+# failure just as quietly.
+15 2 * * * deploy /usr/bin/mysqldump --defaults-file=/home/deploy/.my.cnf --single-transaction --default-character-set=utf8mb4 --routines --triggers --no-tablespaces webscheduler_directory | gzip > /home/deploy/backups/db-$(date +\%F).sql.gz
 
 # Prune dumps older than 14 days. Lightsail's automatic snapshots are the real
 # backup — these are for quick "restore one table" work without rolling an
