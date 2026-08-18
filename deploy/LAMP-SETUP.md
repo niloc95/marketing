@@ -713,9 +713,19 @@ be replayed by hand.
 
 ## Part 12 — Afterwards
 
-**Retire the old Lightsail instance.** Delete `13.203.131.32` *and* release its
-static IP — an unattached static IP is billed, and it is exactly the kind of
-charge nobody notices for six months.
+**Retire the old Lightsail instance.**
+
+> ⚠️ **Identify it by instance name, never by IP.** The static IP
+> `13.203.131.32` was detached from the old instance and reattached to this one,
+> so that address now points at the box you just migrated *to*. Deleting "the
+> instance at `13.203.131.32`" after cutover destroys production and drops the
+> address both Cloudflare A records resolve to. Confirm in the Lightsail console
+> which instance currently holds the static IP before deleting anything.
+
+Delete the old instance itself. **Keep the static IP** — it is attached to the new
+box and in active use. Only release a static IP that is genuinely unattached: an
+unattached static IP is billed, and it is exactly the kind of charge nobody
+notices for six months.
 
 **Delete the dead GitHub secrets:** `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`,
 `SSH_KNOWN_HOSTS`, and the older `FTP_*` set. Nothing reads them; the deploy
