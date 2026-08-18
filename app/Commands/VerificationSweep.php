@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Services\VerificationService;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
@@ -34,6 +35,13 @@ class VerificationSweep extends BaseCommand
     /** Days before renewal that the reminder goes out. */
     private const REMIND_DAYS = 3;
 
+    /**
+     * How long a refused PayFast notification is kept. Long enough to answer
+     * "you say I paid in March" a year later, short enough that payer details
+     * do not accumulate forever.
+     */
+    private const REJECTION_RETENTION_DAYS = 365;
+
     public function run(array $params): int
     {
         $quiet   = array_key_exists('quiet', $params) || in_array('--quiet', $params, true);
@@ -47,11 +55,19 @@ class VerificationSweep extends BaseCommand
             $reminded++;
         }
 
+        // Refused PayFast notifications are kept as an audit trail, but unlike
+        // accepted events they have no natural ceiling and each row holds a
+        // payer's email and name inside its payload. Age them out here rather
+        // than adding a second cron entry to forget about.
+        $pruned = (new DirectoryVerificationItnRejectionModel())->prune(self::REJECTION_RETENTION_DAYS);
+
         $summary = sprintf(
-            'Verification sweep: %d lapsed, %d renewal reminder%s sent.',
+            'Verification sweep: %d lapsed, %d renewal reminder%s sent, %d old ITN rejection%s pruned.',
             $lapsed,
             $reminded,
-            $reminded === 1 ? '' : 's'
+            $reminded === 1 ? '' : 's',
+            $pruned,
+            $pruned === 1 ? '' : 's'
         );
 
         // Logged whatever the verbosity, so there is a record of the last run

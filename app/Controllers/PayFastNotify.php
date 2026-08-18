@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\PayFast;
+use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\VerificationService;
 use CodeIgniter\Controller;
@@ -73,7 +74,20 @@ class PayFastNotify extends Controller
 
         // --- Check 3: PayFast confirms it sent this ----------------------------
         if (! $payfast->validateWithPayFast($raw)) {
-            return $this->done('Notification rejected: PayFast did not confirm it.', $fields, $ip);
+            // Production refuses, always — this is the strongest of the four.
+            //
+            // The sandbox is the exception, and only the sandbox: its validate
+            // endpoint answers INVALID for notifications it did itself send, so
+            // enforcing this there makes an end-to-end test of the badge
+            // impossible while proving nothing about the live path. Gated on
+            // isSandbox() so a correctly configured production box can never
+            // reach it, and loud when it runs.
+            if (! $payfast->isSandbox()) {
+                return $this->done('Notification rejected: PayFast did not confirm it.', $fields, $ip);
+            }
+
+            log_message('warning', 'PayFast ITN: sandbox POST-back validation failed; continuing '
+                . 'because directory.payfastSandbox is on. This must never run in production.');
         }
 
         // Which subscription is this? m_payment_id is ours and is what we look
@@ -102,7 +116,7 @@ class PayFastNotify extends Controller
                 'Notification rejected: amount %s does not match the expected %s.',
                 $amountGross === null ? 'missing' : (string) $amountGross,
                 (string) $verification['amount']
-            ), $fields, $ip);
+            ), $fields, $ip, 'warning', (int) $verification['id']);
         }
 
         $outcome = (new VerificationService())->recordPayment(
@@ -151,7 +165,8 @@ class PayFastNotify extends Controller
         string $message,
         array $fields = [],
         string $ip = '',
-        string $level = 'warning'
+        string $level = 'warning',
+        ?int $verificationId = null
     ): ResponseInterface {
         $context = [];
         if (isset($fields['pf_payment_id'])) {
@@ -168,6 +183,14 @@ class PayFastNotify extends Controller
             $level,
             'PayFast ITN: ' . $message . ($context === [] ? '' : ' [' . implode(' ', $context) . ']')
         );
+
+        // A refusal — and only a refusal — is also written down, using the same
+        // severity split that decides what gets logged, so there is one
+        // definition of "we turned money away" rather than two that can drift.
+        // record() swallows its own failures: see the model.
+        if ($level === 'warning') {
+            (new DirectoryVerificationItnRejectionModel())->record($message, $fields, $ip, $verificationId);
+        }
 
         return $this->response->setStatusCode(200)->setBody('');
     }

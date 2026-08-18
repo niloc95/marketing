@@ -48,7 +48,22 @@ class DirectoryVerificationEventModel extends Model
                 'payload'         => json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ], false);
         } catch (\Throwable $e) {
-            log_message('info', 'PayFast notification not claimed (already seen, or storage refused it): ' . $e->getMessage());
+            // These two outcomes are not the same event and must not share a
+            // log level. A duplicate key is routine — PayFast re-sending a
+            // notification whose 200 went missing — and belongs at 'info'.
+            // Anything else means a payment PayFast confirmed was not recorded
+            // and the badge will not appear, which is an incident; at 'info' it
+            // would be invisible in production (Config\Logger threshold 5),
+            // the same blind spot PayFastNotify::done() was fixed for.
+            $duplicate = str_contains($e->getMessage(), 'Duplicate entry')
+                || str_contains($e->getMessage(), '1062');
+
+            log_message(
+                $duplicate ? 'info' : 'error',
+                $duplicate
+                    ? 'PayFast notification not claimed (already seen): ' . $e->getMessage()
+                    : 'PayFast notification could NOT be stored, so the payment was not applied: ' . $e->getMessage()
+            );
 
             return false;
         }

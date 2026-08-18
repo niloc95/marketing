@@ -174,6 +174,14 @@ class Directory extends BaseConfig
      * Defaults to the sandbox, so a misconfigured or half-deployed environment
      * fails towards "no real money moved" rather than away from it. Set
      * directory.payfastSandbox = false in production and nowhere else.
+     *
+     * This flag is load-bearing for security, not only for which URL we post
+     * to. PayFastNotify skips check 3 — the POST-back that asks PayFast whether
+     * it really sent a notification — when this is on, because PayFast's
+     * sandbox validator answers INVALID for notifications it did itself send
+     * and would otherwise make an end-to-end test impossible. Leaving this true
+     * in production therefore does two things: it takes no real money, and it
+     * accepts notifications on three checks instead of four.
      */
     public bool $payfastSandbox = true;
 
