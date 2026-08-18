@@ -19,11 +19,12 @@
  *   - marketing-site/src/styles.css              (Tailwind input)
  *   - marketing-site/tailwind.config.cjs         (brand tokens)
  *   - marketing-site/assets/**                    (logo, fonts, screenshots, site.js, contact.js)
+ *   - marketing-site/developer/**                 (API portal: Redoc + openapi.yaml)
  *   - vendor/phpmailer/phpmailer/src/**           (3 files, via composer)
  *
  * Steps:
  *   1. Clean + recreate dist/site/
- *   2. Copy the HTML pages, contact.php, and assets/
+ *   2. Copy the HTML pages, contact.php, assets/ and developer/
  *   3. Compile Tailwind → dist/site/assets/styles.css; copy PHPMailer
  *   4. Guards: external hosts, banned positioning words, contact-form
  *      regressions, and secrets in the output
@@ -156,15 +157,33 @@ if (missingShots.length) {
   fail(`Missing screenshots: ${missingShots.join(', ')}. Run "npm run site:shots" first.`);
 }
 
-// 3c) The developer API portal is built + deployed separately from the
-//     WebScheduler app repo (see .github/workflows/developer-docs.yml there) and
-//     served at /developer on the same domain. The marketing pages link to it
-//     with absolute "/developer/" paths — nothing to bundle here.
+// 3c) The developer API portal, served at /developer and linked from the nav on
+//     every page. It used to be built and deployed separately from the
+//     WebScheduler app repo (.github/workflows/developer-docs.yml there), which
+//     uploaded it straight to the old Hostinger docroot. Nothing in this build
+//     knew about it, so when the apex moved to Lightsail the whole portal 404'd
+//     while every page went on linking to it. It is bundled here now: one build,
+//     one deploy, one thing to forget.
+//
+//     openapi.yaml is generated from the app's API. This is a vendored copy —
+//     refresh it from the app repo when the API changes, or it drifts quietly.
+const developerSrc = path.join(srcDir, 'developer');
+const developerOut = path.join(outDir, 'developer');
+if (!fs.existsSync(path.join(developerSrc, 'index.html'))) {
+  fail('marketing-site/developer/index.html is missing — the nav links to /developer/ from every page.');
+}
+copyDir(developerSrc, developerOut);
+const DEVELOPER_PAGES = fs.readdirSync(developerSrc).filter((f) => f.endsWith('.html'));
+console.log(`  • developer/ (${fs.readdirSync(developerSrc).length} files)`);
 
 // 4) Guards over the emitted HTML + CSS.
 const emitted = [
   ...PAGES.map((p) => path.join(outDir, p)),
   ...PHP_FILES.map((p) => path.join(outDir, p)),
+  // The portal loads gtag and links back to our own domain, both already
+  // allowlisted. It is held to the same no-CDN rule as everything else —
+  // Redoc is vendored precisely so it does not need one.
+  ...DEVELOPER_PAGES.map((p) => path.join(developerOut, p)),
   path.join(assetsOut, 'styles.css'),
 ];
 
