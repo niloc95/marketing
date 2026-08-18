@@ -45,8 +45,16 @@ const webOut = path.join(outDir, 'docroot');
 /** Files copied verbatim into the app root. */
 const APP_FILES = ['composer.json', 'composer.lock', 'preload.php', 'spark'];
 
-/** writable/ subdirectories the framework requires at runtime. */
-const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads'];
+/** writable/ subdirectories the framework requires at runtime.
+ *
+ * `verification` is NOT a framework directory — it holds uploaded verification
+ * documents and is deliberately never web-served (streamed through a controller
+ * instead). It belongs here anyway: VerificationDocumentProcessor creates it
+ * with @mkdir(..., 0700, true) on first upload, which silently no-ops if the
+ * parent writable/ is not writable by the PHP user. Shipping the directory in
+ * the bundle means a fresh install has it before the first upload rather than
+ * discovering the permission problem as a failed document submission. */
+const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification'];
 
 /** The line in public/index.php that resolves the app root. */
 const PATHS_REQUIRE_FROM = "require FCPATH . '../app/Config/Paths.php';";
