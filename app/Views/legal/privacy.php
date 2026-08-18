@@ -26,7 +26,37 @@ $contact   = config('Directory')->adminEmail();
     <div class="container prose-legal">
         <div class="panel">
             <h2>Who we are</h2>
-            <p><?= esc($siteName) ?> is a public place to find local services, professionals and home industry in South Africa, operated by WebScheduler. This policy explains what personal information we collect, why, and what you can do about it. It is written to meet the Protection of Personal Information Act, 2013 (POPIA).</p>
+            <p><strong>WebScheduler (Pty) Ltd</strong>, registration number 2026/138798/07, is a South African technology company providing online scheduling, appointment-booking, business listing and related SaaS services. It processes the personal information of individuals who use those services, including the WebScheduler SaaS application, the online booking platform and this business listing service.</p>
+            <p><?= esc($siteName) ?> is our public place to find local services, professionals and home industry in South Africa. This policy explains what personal information we collect through it, why, and what you can do about it. It is written to meet the Protection of Personal Information Act, 2013 (POPIA).</p>
+
+            <h3>Company details</h3>
+            <ul>
+                <li><strong>Registered name</strong> — WebScheduler (Pty) Ltd</li>
+                <li><strong>Registration number</strong> — 2026/138798/07</li>
+                <li><strong>Contact number</strong> — <a href="tel:+27768297070">076 829 7070</a></li>
+                <?php if ($contact !== ''): ?>
+                    <li><strong>Email address</strong> — <a href="mailto:<?= esc($contact, 'attr') ?>"><?= esc($contact) ?></a></li>
+                <?php endif; ?>
+                <li><strong>Website</strong> — <a href="https://webscheduler.co.za/" rel="noopener">webscheduler.co.za</a></li>
+            </ul>
+
+            <h3>The WebScheduler Listing Service</h3>
+            <p>The WebScheduler Listing Service enables businesses and service providers to create and maintain an online business listing. A listing may include business information, contact details, operating hours, services, locations, booking links and other information provided by or on behalf of the business. You can use the service online through the WebScheduler website and associated services.</p>
+
+            <h3>Hosting and technology infrastructure</h3>
+            <p>Our services are hosted on Amazon Web Services (AWS) infrastructure. Our servers currently run in the AWS Asia Pacific (Mumbai) Region, <code>ap-south-1</code>, which means the information you give us is stored and processed outside South Africa. That is a cross-border transfer, and it is described under &ldquo;Cross-border transfers&rdquo; below along with the third-party services we use. If we move to a different region we will update this page.</p>
+            <p>The platform is built on a PHP-based technology stack:</p>
+            <ul>
+                <li><strong>Backend</strong> — PHP and CodeIgniter 4</li>
+                <li><strong>Database</strong> — MySQL / MariaDB</li>
+                <li><strong>Frontend</strong> — JavaScript, Vite, Tailwind CSS and SCSS</li>
+                <li><strong>Client-side libraries</strong> — Chart.js and Luxon, where applicable</li>
+                <li><strong>Authentication</strong> — session-based authentication</li>
+                <li><strong>Web server</strong> — Apache</li>
+                <li><strong>Hosting and cloud infrastructure</strong> — Amazon Web Services (AWS)</li>
+                <li><strong>Security</strong> — access controls, application-level authorisation, encrypted connections (HTTPS/TLS), and other appropriate technical and organisational security measures</li>
+            </ul>
+            <p>This stack may be updated, replaced or expanded from time to time as we develop and improve the service.</p>
 
             <h2>What we collect</h2>
             <h3>Information you give us when you list a business</h3>
@@ -85,7 +115,7 @@ $contact   = config('Directory')->adminEmail();
             </ul>
 
             <h2>Cross-border transfers</h2>
-            <p>Some of the services above process data outside South Africa. POPIA section 72 permits this where the recipient is subject to comparable protection; we rely on the providers' own contractual and regulatory commitments.</p>
+            <p>Our own hosting, described above, runs in the AWS Asia Pacific (Mumbai) Region, so your information is stored outside South Africa. Some of the third-party services listed above also process data abroad. POPIA section 72 permits this where the recipient is subject to comparable protection; we rely on AWS's and the other providers' own contractual and regulatory commitments, including their data processing terms and standard contractual clauses.</p>
 
             <h2>How long we keep it</h2>
             <p>A published profile is kept until you ask us to remove it, or until we remove it under our <a href="<?= base_url('terms') ?>">terms</a>. Unverified submissions expire and are discarded. Verification and management links expire quickly by design — 48 hours and one hour respectively. Deleted profiles are soft-deleted first so an accidental deletion can be reversed, then purged.</p>

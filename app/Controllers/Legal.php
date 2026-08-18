@@ -12,26 +12,33 @@ namespace App\Controllers;
 class Legal extends BaseController
 {
     /**
-     * When the policy text was last substantively changed.
+     * When each policy text was last substantively changed.
      *
      * Hardcoded rather than derived from filemtime(): a whitespace edit or a fresh
      * deployment checkout would silently claim the policy changed, and a visitor
      * comparing this against their own records deserves the real date.
+     *
+     * Kept per document rather than as one shared date, so that revising one policy
+     * does not date-stamp the other two as changed when their text is untouched.
      */
-    private const LAST_UPDATED = '2026-08-04';
+    private const LAST_UPDATED = [
+        'privacy' => '2026-08-14',
+        'terms'   => '2026-08-04',
+        'cookies' => '2026-08-04',
+    ];
 
     public function privacy()
     {
-        return view('legal/privacy', ['lastUpdated' => self::LAST_UPDATED]);
+        return view('legal/privacy', ['lastUpdated' => self::LAST_UPDATED['privacy']]);
     }
 
     public function terms()
     {
-        return view('legal/terms', ['lastUpdated' => self::LAST_UPDATED]);
+        return view('legal/terms', ['lastUpdated' => self::LAST_UPDATED['terms']]);
     }
 
     public function cookies()
     {
-        return view('legal/cookies', ['lastUpdated' => self::LAST_UPDATED]);
+        return view('legal/cookies', ['lastUpdated' => self::LAST_UPDATED['cookies']]);
     }
 }
