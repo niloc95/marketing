@@ -44,6 +44,13 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class PayFastNotify extends Controller
 {
+    /**
+     * Where the notification body was read from, carried into the log line so
+     * that "which path did this take" is answerable after the fact rather than
+     * by re-deriving it from content types.
+     */
+    private string $bodySource = 'php://input';
+
     public function index(): ResponseInterface
     {
         $payfast = new PayFast();
@@ -54,9 +61,41 @@ class PayFastNotify extends Controller
             return $this->done('PayFast is not configured; notification ignored.', level: 'info');
         }
 
+        // Read the raw stream first, because that is what PayFast signed and
+        // what check 3 has to echo back verbatim.
+        //
+        // But it cannot be the only source. PayFast posts notifications as
+        // multipart/form-data, and PHP makes php://input unavailable for that
+        // content type — it consumes the body into $_POST and leaves the stream
+        // empty. Reading only the stream therefore saw every notification as
+        // empty, logged it at a level production discards, and answered 200. The
+        // result was silent and total: PayFast recorded "Success" for every
+        // delivery, and not one ITN in this deployment's history was ever
+        // processed. Falling back to the parsed body is what makes the endpoint
+        // work at all.
+        //
+        // The round-trip is faithful: PHP preserves the order the fields arrived
+        // in, parseNotification() urldecodes what we re-encode here, and the
+        // signature is computed over decoded values.
         $raw = (string) file_get_contents('php://input');
+
         if (trim($raw) === '') {
-            return $this->done('Empty notification body.', level: 'info');
+            $post = $this->request->getPost();
+            if (is_array($post) && $post !== []) {
+                $raw               = http_build_query($post);
+                $this->bodySource = 'parsed-body';
+            }
+        }
+
+        if (trim($raw) === '') {
+            // A body that was declared and then arrived empty is an anomaly
+            // worth seeing. No body at all is a bot poking a public endpoint,
+            // and would only fill the log.
+            $declared = (int) ($this->request->getServer('CONTENT_LENGTH') ?? 0);
+
+            return $declared > 0
+                ? $this->done(sprintf('Notification unreadable: %d bytes declared, none readable.', $declared))
+                : $this->done('Empty notification body.', level: 'info');
         }
 
         $fields = $payfast->parseNotification($raw);
@@ -178,6 +217,7 @@ class PayFastNotify extends Controller
         if ($ip !== '') {
             $context[] = 'from=' . $ip;
         }
+        $context[] = 'body=' . $this->bodySource;
 
         log_message(
             $level,
