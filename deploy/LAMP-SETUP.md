@@ -803,11 +803,20 @@ sudo systemctl reload php8.3-fpm
 And purge the Cloudflare cache. Asset filenames are not content-hashed, so a
 release with an unpurged cache looks exactly like a release that did nothing.
 
-`cp -a` copies, it does not mirror. That is deliberate — it is why
-`/var/www/marketing/developer/` (built from a different repo,
-`niloc95/xscheduler_ci4`) survives a marketing release untouched, and why
-uploaded images survive a listing release. The cost is that **files deleted from
-the repo linger on the server** and must be removed by hand.
+`cp -a` copies, it does not mirror. That is deliberate — it is why `.env`,
+`writable/` and uploaded images survive a listing release. The cost is that
+**files deleted from the repo linger on the server** and must be removed by hand.
+
+> **`/var/www/marketing/developer/` used to depend on that.** The API portal was
+> built from `niloc95/xscheduler_ci4` and uploaded straight into the old
+> Hostinger docroot, so a marketing release left it untouched. That stopped
+> working the moment the apex moved here — the new box builds the marketing site
+> from this repo, which had never contained the portal, and `/developer/` began
+> 404ing while all eight pages went on linking to it. It is vendored at
+> `marketing-site/developer/` now and emitted by `site:build`, so a release
+> overwrites it like any other page. If the app repo's
+> `.github/workflows/developer-docs.yml` still runs, retire it or point it here —
+> `openapi.yaml` is generated from the API, and two copies will drift.
 
 ---
 
