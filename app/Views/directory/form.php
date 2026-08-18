@@ -48,7 +48,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     <details class="verify-offer">
                         <summary>
                             <span class="badge badge-verified">&#10003; Verified Business</span>
-                            Get the verified badge &mdash; optional
+                            Want the verified badge? Add your documents now &mdash; optional
                         </summary>
                         <div class="verify-offer-body">
                             <p class="hint">

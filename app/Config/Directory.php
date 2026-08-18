@@ -83,6 +83,21 @@ class Directory extends BaseConfig
     public int $manageTtl = 3600; // 1h
 
     /**
+     * How long the badge-approval "pay now" link stays valid (seconds).
+     *
+     * Much longer than manageTtl, for the same reason verifyTtl is: this is a
+     * one-off invitation that may sit unread overnight, not an edit link the
+     * owner can re-request in ten seconds. The alternative is an owner who
+     * clicks an expired link and has to go round the magic-link loop again —
+     * which is the friction this window exists to remove.
+     *
+     * Worth being plain about the trade: a redeemed token grants the full
+     * manage session, not checkout alone, so this widens the window on edit
+     * access too. It stays single-use, and any newer manage link supersedes it.
+     */
+    public int $approvalLinkTtl = 604800; // 7 days
+
+    /**
      * Admin panel password, hashed with password_hash().
      * Generate one with: php spark directory:adminhash
      */

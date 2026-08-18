@@ -37,7 +37,8 @@ $paidUntil = $paid_until ?? '';
                 <a href="<?= esc($manageLink, 'attr') ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Activate my badge</a>
             </p>
             <p style="font-size:13px;color:#64748b">
-                Sign in with your email address from that page, and you'll find the button on your dashboard.
+                That button takes you straight to the payment page — no password, nothing else to fill in.
+                It works once, and expires in 7 days.
             </p>
 
         <?php elseif ($event === 'rejected'): ?>
@@ -60,8 +61,8 @@ $paidUntil = $paid_until ?? '';
                 Your payment came through and your <strong>Verified Business</strong> badge is now live on your profile.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                It renews automatically each month. You can cancel any time from your PayFast account,
-                or by replying to this email — the badge stays up until the month you've paid for runs out.
+                It renews automatically each month. You can cancel any time from your dashboard — the
+                badge stays up until the month you've paid for runs out.
             </p>
             <p style="margin:22px 0">
                 <a href="<?= esc($manageLink, 'attr') ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">View my profile</a>

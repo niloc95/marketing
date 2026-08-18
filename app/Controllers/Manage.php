@@ -25,7 +25,18 @@ class Manage extends BaseController
     use HandlesListingUploads;
     use HandlesVerificationUploads;
 
-    private const SESSION_KEY = 'manage_listing_id';
+    /** Public so Directory::verify() can open the same session, not retype the key. */
+    public const SESSION_KEY = 'manage_listing_id';
+
+    /**
+     * Where a redeemed magic link may land, keyed by the ?to= value the link
+     * carries. A fixed map rather than a path built from the parameter: the
+     * caller chooses from this list or gets the dashboard, which is what keeps
+     * ?to=https://evil.example from being an open redirect.
+     */
+    private const REDEEM_DESTINATIONS = [
+        'checkout' => 'manage/verification/checkout',
+    ];
 
     /** Identical wording whichever branch runs — see request(). */
     private const SENT_MESSAGE = 'If that email has a profile, we have sent it a link to manage it. The link lasts one hour.';
@@ -63,7 +74,14 @@ class Manage extends BaseController
         return redirect()->to(base_url('manage'))->with('info', self::SENT_MESSAGE);
     }
 
-    /** Redeem a single-use token, then hand over to a session. */
+    /**
+     * Redeem a single-use token, then hand over to a session.
+     *
+     * ?to= lets the link that issued the token pick the landing page, so the
+     * badge-approval email can drop the owner straight on the payment page
+     * instead of on a dashboard where they still have to find the button. It is
+     * resolved through REDEEM_DESTINATIONS and never concatenated.
+     */
     public function redeem(string $token)
     {
         $listing = (new DirectoryListingMutationService())->redeemManageToken($token);
@@ -77,7 +95,12 @@ class Manage extends BaseController
         session()->regenerate(true); // the session now carries authority — close fixation
         session()->set(self::SESSION_KEY, (int) $listing['id']);
 
-        return redirect()->to(base_url('manage/edit'));
+        // is_string, not a cast: ?to[]=checkout hands back an array, and casting
+        // that is a fatal — a mangled link would burn the token and then 500.
+        $to = $this->request->getGet('to');
+        $to = is_string($to) ? $to : '';
+
+        return redirect()->to(base_url(self::REDEEM_DESTINATIONS[$to] ?? 'manage/edit'));
     }
 
     public function edit()

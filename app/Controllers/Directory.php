@@ -292,13 +292,33 @@ class Directory extends BaseController
         ]);
     }
 
+    /**
+     * Confirm the emailed signup link: publish the listing, and sign the owner in.
+     *
+     * The sign-in is deliberate. This token proves control of the listing's email
+     * address — the identical proof a manage token gives — it is single use, and
+     * MutationService::verify() has already cleared it by the time we get here.
+     * Without it an owner who wanted the verified badge had to go straight back
+     * out to the inbox for a manage link, having just clicked a link from that
+     * same inbox.
+     *
+     * The redirect fires before anything renders, so the token never sits on a
+     * page with outbound links to leak through Referer — the concern noted on
+     * Manage::redeem(), handled here the same way.
+     */
     public function verify(string $token)
     {
         $mut     = new DirectoryListingMutationService();
         $listing = $mut->verify($token);
         if ($listing !== null) {
+            // regenerate(true) — the session is about to carry authority, so the
+            // pre-authentication id must die with it. See Manage::redeem().
+            session()->regenerate(true);
+            session()->set(Manage::SESSION_KEY, (int) $listing['id']);
+
             return redirect()->to(base_url('directory/' . $listing['slug']))
-                ->with('success', 'Your profile is verified and now live.');
+                ->with('success', 'Your profile is verified and now live. You are signed in — '
+                    . 'use Manage your profile to edit it or apply for the Verified Business badge.');
         }
         return redirect()->to(base_url('/'))
             ->with('error', 'That verification link is invalid or has expired.');

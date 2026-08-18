@@ -208,14 +208,7 @@ class DirectoryListingMutationService
      */
     private function issueManageLink(array $listing): void
     {
-        $token = bin2hex(random_bytes(32));
-
-        // Only the hash is stored; the raw token leaves in the email below and
-        // is never persisted anywhere. See hashToken().
-        $this->listings->update((int) $listing['id'], [
-            'manage_token'   => $this->hashToken($token),
-            'manage_expires' => date('Y-m-d H:i:s', time() + $this->config->manageTtl),
-        ]);
+        $token = $this->mintManageToken((int) $listing['id']);
 
         $body = view('emails/manage', [
             'name' => (string) ($listing['display_name'] ?? ''),
@@ -228,6 +221,33 @@ class DirectoryListingMutationService
         ]);
 
         $this->send((string) $listing['email'], 'Manage your ' . $this->config->siteName() . ' profile', $body);
+    }
+
+    /**
+     * Mint a single-use manage token and return the raw value, without sending
+     * anything. Only the hash is stored; the raw token exists in whatever URL
+     * the caller builds and is never persisted. See hashToken().
+     *
+     * Split out from issueManageLink() because not every manage link arrives in
+     * the "Manage your profile" email — the badge-approval mail carries one too,
+     * so that an owner who has just proved inbox control is not asked to prove
+     * it a second time before they can pay.
+     *
+     * $ttl defaults to the on-demand manage window. The approval invitation
+     * passes a longer one; see Config\Directory::$approvalLinkTtl.
+     *
+     * Any previously issued token is overwritten, so only the newest link works.
+     */
+    public function mintManageToken(int $listingId, ?int $ttl = null): string
+    {
+        $token = bin2hex(random_bytes(32));
+
+        $this->listings->update($listingId, [
+            'manage_token'   => $this->hashToken($token),
+            'manage_expires' => date('Y-m-d H:i:s', time() + ($ttl ?? $this->config->manageTtl)),
+        ]);
+
+        return $token;
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationEventModel;
 use App\Models\DirectoryVerificationModel;
 use Config\Directory as DirectoryConfig;
+use Throwable;
 
 /**
  * Everything behind the paid "Verified Business" badge.
@@ -715,10 +716,51 @@ class VerificationService
             'site'       => $this->config->siteName(),
             'name'       => (string) ($listing['display_name'] ?? ''),
             'event'      => $event,
-            'manageLink' => base_url('manage'),
+            'manageLink' => $this->ownerLink($listingId, $event),
         ], $extra));
 
         (new Mailer())->send((string) $listing['email'], $subjects[$event], $body);
+    }
+
+    /**
+     * The button target for an owner email.
+     *
+     * The two events that ask the owner to *do* something carry a live magic
+     * link, because both follow a decision only we could have made — the owner
+     * cannot act until we mail them, and sending them to a sign-in page to
+     * request a second email before they can pay was the longest detour in the
+     * whole funnel. They proved inbox control by opening this message; asking
+     * for the same proof again buys nothing.
+     *
+     * 'approved' goes straight to checkout via Manage::REDEEM_DESTINATIONS.
+     * 'activated' and 'renewing' stay on the plain sign-in page: they are
+     * receipts, and a live credential in a receipt is a credential with no job
+     * to do.
+     *
+     * A minting failure must not cost the owner the email itself, so this falls
+     * back to the sign-in page — the slow path still works.
+     */
+    private function ownerLink(int $listingId, string $event): string
+    {
+        if ($event !== 'approved' && $event !== 'rejected') {
+            return base_url('manage');
+        }
+
+        try {
+            $token = (new DirectoryListingMutationService())
+                ->mintManageToken($listingId, $this->config->approvalLinkTtl);
+        } catch (Throwable $e) {
+            log_message('error', 'Could not mint an owner link for listing {id}: {msg}', [
+                'id'  => $listingId,
+                'msg' => $this->oneLine($e->getMessage()),
+            ]);
+
+            return base_url('manage');
+        }
+
+        return $event === 'approved'
+            ? base_url('manage/' . $token) . '?to=checkout'
+            : base_url('manage/' . $token);
     }
 
     /** Collapse newlines so a failure message can't forge extra log lines. */
