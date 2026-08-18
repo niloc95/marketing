@@ -400,8 +400,9 @@ Finally, Cloudflare → SSL/TLS → Overview → **Full (strict)**.
 Two files hold everything that must not be regenerated. Both come off the old
 host as-is.
 
-> `.env.production` in this repo is **not** a substitute. It is stale and missing
-> `encryption.key`, `directory.adminPasswordHash` and `app.indexPage`.
+> `.env.production` in this repo is **not** a substitute — it carries placeholder
+> values, not the live credentials. It is *not*, however, missing keys: its key
+> set is identical to the live file's.
 
 ### Do not use FTP for this
 
@@ -475,16 +476,24 @@ sudo -u deploy mv /home/deploy/.env          /home/deploy/dotenv
 sudo -u deploy mv /home/deploy/.ws-contact.env /home/deploy/ws-contact.env
 ```
 
-Check the three keys that matter survived:
+Check the transfer is byte-identical rather than hunting for individual keys:
 
 ```bash
-for k in encryption.key directory.adminPasswordHash app.indexPage; do
-  printf '%-32s ' "$k"
-  sudo grep -qE "^[[:space:]]*[^#]*$k" /home/deploy/dotenv && echo OK || echo MISSING
-done
+# on Hostinger
+sha256sum ~/domains/listing.webscheduler.co.za/directory-app/.env
+# on the new instance
+sudo sha256sum /home/deploy/dotenv
 ```
 
-All three must say `OK`. Then edit `/home/deploy/dotenv` and change **only** these
+> Earlier versions of this runbook told you to check for `encryption.key`,
+> `directory.adminPasswordHash` and `app.indexPage`, and to treat anything else
+> as a failed transfer. **None of those three exist in the live file.** The app
+> never uses the encrypter, admin auth runs on the deprecated-but-supported
+> plaintext `directory.adminPassword`, and `app.indexPage` is left at its
+> `App::$indexPage` default. Run as written, that check reports `MISSING` three
+> times on a perfectly good copy.
+
+Then edit `/home/deploy/dotenv` and change **only** these
 four lines:
 
 ```
@@ -495,9 +504,13 @@ database.default.password = 'THE-DBPW-FROM-PART-6'
 ```
 
 Leave everything else exactly as it is. `app.baseURL` stays
-`https://listing.webscheduler.co.za/` — the domain is not changing — and a new
-`encryption.key` invalidates every existing session and everything encrypted at
-rest.
+`https://listing.webscheduler.co.za/` — the domain is not changing.
+
+> Optional, and a behaviour change rather than a fix: adding `app.indexPage = ''`
+> strips the `/index.php/` that CodeIgniter currently puts in generated URLs and
+> redirects. Hostinger does the same thing today, so leaving it out reproduces
+> production exactly. Set it only as a deliberate improvement, not as part of the
+> migration.
 
 ### Install both, and mind the modes
 
@@ -564,14 +577,19 @@ mysql -u webscheduler -p webscheduler_directory < /tmp/directory.sql
 ```
 
 Verify the spatial column survived — the piece most likely to come back subtly
-wrong, and the one nothing else will tell you about:
+wrong, and the one nothing else will tell you about. Test the behaviour, not the
+schema:
 
 ```bash
-mysql -u webscheduler -p webscheduler_directory \
-  -e "SHOW CREATE TABLE xs_directory_listing_points\G" | grep -iE 'srid|spatial'
+mysql -u webscheduler -p webscheduler_directory -e \
+ "SELECT COUNT(*) FROM xs_directory_listing_points
+   WHERE ST_Distance_Sphere(location, ST_GeomFromText('POINT(28.0473 -26.2041)')) < 50000;"
 ```
 
-You want `SRID 4326` and a `SPATIAL KEY`. Then the row counts:
+A non-zero count means proximity search works. You want a `SPATIAL KEY` on the
+column; **do not expect `SRID 4326`** — the source database does not declare one,
+and `ST_Distance_Sphere` reads the point regardless, as the migration that
+created the table says in its own comments. Then the row counts:
 
 ```bash
 mysql -u webscheduler -p webscheduler_directory -e \
@@ -579,7 +597,10 @@ mysql -u webscheduler -p webscheduler_directory -e \
    SELECT COUNT(*) AS categories FROM xs_directory_categories;"
 ```
 
-Categories must be **147**. If it is 0:
+Compare against the source rather than a remembered figure — count both sides
+before the dump and after the import. (An older version of this runbook asserted
+147; production actually carries 129, and the number moves as categories are
+edited.) Seed only if the table is genuinely empty:
 
 ```bash
 cd /var/www/listing/directory-app && sudo -u deploy php spark db:seed DirectoryCategoriesSeeder
@@ -636,28 +657,36 @@ deliver nothing.
 required because a Cloudflare origin certificate is deliberately not trusted by
 anything except Cloudflare:
 
+macOS ships zsh, which does **not** word-split an unquoted `$R` the way bash
+does — a string here makes curl fail with `option --resolve ...: is unknown`.
+Use an array, which behaves the same in both shells:
+
 ```bash
 IP=<the-static-ip>
-R="--resolve listing.webscheduler.co.za:443:$IP
-   --resolve webscheduler.co.za:443:$IP
-   --resolve www.webscheduler.co.za:443:$IP"
+R=(--resolve "listing.webscheduler.co.za:443:$IP"
+   --resolve "webscheduler.co.za:443:$IP"
+   --resolve "www.webscheduler.co.za:443:$IP")
 
 # Rewriting is on — the #1 failure mode
-curl -k $R -sI https://listing.webscheduler.co.za/directory | head -1   # 200, NOT 404
-curl -k $R -sI https://listing.webscheduler.co.za/about/    | head -1   # 301, slash stripped
-curl -k $R -sI https://www.webscheduler.co.za/              | head -1   # 301 -> https://
+curl -k "${R[@]}" -sI https://listing.webscheduler.co.za/directory | head -1   # 200, NOT 404
+curl -k "${R[@]}" -sI https://listing.webscheduler.co.za/about/    | head -1   # 301, slash stripped
+curl -k "${R[@]}" -sI https://www.webscheduler.co.za/              | head -1   # 301 -> https://
 
 # The app is healthy, not merely responding
-curl -k $R -s "https://listing.webscheduler.co.za/health?token=<healthToken>" | jq .
+curl -k "${R[@]}" -s "https://listing.webscheduler.co.za/health?token=<healthToken>" | jq .
 
-# Security headers and CSRF
-curl -k $R -sI https://listing.webscheduler.co.za/list-your-practice | grep -i set-cookie
-       # Secure; HttpOnly; SameSite=Lax
-curl -k $R -s -o /dev/null -w '%{http_code}\n' -X POST \
-     -d "display_name=x" https://listing.webscheduler.co.za/list-your-practice     # 403
+# Security headers and CSRF. Use -s, not -sI: a HEAD request emits no Set-Cookie.
+curl -k "${R[@]}" -s -o /dev/null -D- https://listing.webscheduler.co.za/list-your-practice \
+  | grep -i set-cookie          # secure; HttpOnly; SameSite=Lax, plus csrf_cookie_name
+curl -k "${R[@]}" -s -o /dev/null -w '%{http_code}\n' -X POST \
+     -d "display_name=x" https://listing.webscheduler.co.za/list-your-practice     # 303
+       # 303, not 403: with csrfProtection = 'cookie' CodeIgniter redirects a
+       # tokenless POST rather than aborting. The POST is still rejected — that
+       # is the property being tested. Anything that reaches the controller (a
+       # 200, or a 302 to a success page) is the real failure.
 
 # URLs use the real domain, not CHANGE-ME or localhost
-curl -k $R -s https://listing.webscheduler.co.za/sitemap.xml | head -5
+curl -k "${R[@]}" -s https://listing.webscheduler.co.za/sitemap.xml | head -5
 ```
 
 If `/directory` returns 404 but `/index.php/directory` returns 200, `.htaccess`
