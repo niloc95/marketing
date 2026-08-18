@@ -50,12 +50,12 @@ class PayFastNotify extends Controller
         // Nothing to do if the feature was never switched on. Answering 200
         // keeps a stray notification from retrying forever.
         if (! $payfast->isConfigured()) {
-            return $this->done('PayFast is not configured; notification ignored.');
+            return $this->done('PayFast is not configured; notification ignored.', level: 'info');
         }
 
         $raw = (string) file_get_contents('php://input');
         if (trim($raw) === '') {
-            return $this->done('Empty notification body.');
+            return $this->done('Empty notification body.', level: 'info');
         }
 
         $fields = $payfast->parseNotification($raw);
@@ -118,7 +118,7 @@ class PayFastNotify extends Controller
             $outcome,
             (int) $verification['id'],
             $status
-        ), $fields, $ip);
+        ), $fields, $ip, 'info');
     }
 
     /**
@@ -130,10 +130,29 @@ class PayFastNotify extends Controller
      * file to make an incident debuggable. Same discipline Mailer applies to
      * recipient addresses.
      *
+     * Rejections log at 'warning' and everything else at 'info', because
+     * production runs at threshold 5 (see Config\Logger) — at 'info' the reason
+     * a notification was refused is written nowhere and the failure is
+     * invisible. That matters more here than anywhere else in the app: we
+     * always answer 200, so PayFast's dashboard reports "Success" for a
+     * notification we threw away, and the only other symptom is a badge that
+     * quietly never activates.
+     *
+     * A refused notification is either an attack or a misconfiguration costing
+     * money, which is what 'warning' is for. The benign cases — an empty body
+     * from a bot probing the endpoint, a notification arriving before the
+     * feature is switched on, and the successful path, whose full payload is
+     * already stored in verification_events — stay at 'info' so the production
+     * log does not fill with noise.
+     *
      * @param array<string,string> $fields
      */
-    private function done(string $message, array $fields = [], string $ip = ''): ResponseInterface
-    {
+    private function done(
+        string $message,
+        array $fields = [],
+        string $ip = '',
+        string $level = 'warning'
+    ): ResponseInterface {
         $context = [];
         if (isset($fields['pf_payment_id'])) {
             $context[] = 'pf_payment_id=' . $fields['pf_payment_id'];
@@ -146,7 +165,7 @@ class PayFastNotify extends Controller
         }
 
         log_message(
-            'info',
+            $level,
             'PayFast ITN: ' . $message . ($context === [] ? '' : ' [' . implode(' ', $context) . ']')
         );
 
