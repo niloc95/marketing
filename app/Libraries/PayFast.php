@@ -145,9 +145,24 @@ class PayFast
      * thing to try flipping, and it is deliberately the only place the encoding
      * is decided.
      *
-     * @param array<string,mixed> $fields ordered; `signature` is ignored if present
+     * On empty values, $skipEmpty, and why the two directions differ. Outbound
+     * we build the field list ourselves and omit anything empty, which is what
+     * PayFast's checkout sample does. Inbound is NOT the same rule: PayFast
+     * signs the notification over every field it sent, empty ones included, so
+     * dropping them here produces a hash over a shorter string and refuses a
+     * perfectly good notification.
+     *
+     * This is not hypothetical. A real ITN arrived with 25 fields, 10 of them
+     * empty; skipping those gave 8cc89a8b… against a claimed 615fe322…, and
+     * keeping them matched exactly. Because checkout uses the same method and
+     * checkout was working, the natural conclusion was a wrong passphrase — the
+     * passphrase was right the whole time.
+     *
+     * @param array<string,mixed> $fields    ordered; `signature` is ignored if present
+     * @param bool                $skipEmpty true for outbound (checkout), false
+     *                                       for verifying an inbound notification
      */
-    public function signature(array $fields, ?string $passphrase = null): string
+    public function signature(array $fields, ?string $passphrase = null, bool $skipEmpty = true): string
     {
         $passphrase ??= $this->config->payfastPassphrase();
 
@@ -157,7 +172,7 @@ class PayFast
                 continue;
             }
             $value = trim((string) $value);
-            if ($value === '') {
+            if ($skipEmpty && $value === '') {
                 continue;
             }
             $parts[] = $key . '=' . urlencode($value);
@@ -192,7 +207,9 @@ class PayFast
             return false;
         }
 
-        return hash_equals($this->signature($fields), $claimed);
+        // skipEmpty: false — an inbound notification is signed over every field
+        // PayFast sent, including the empty ones. See signature().
+        return hash_equals($this->signature($fields, null, false), $claimed);
     }
 
     /**

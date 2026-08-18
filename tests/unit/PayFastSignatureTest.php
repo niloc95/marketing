@@ -430,4 +430,47 @@ final class PayFastSignatureTest extends CIUnitTestCase
         unset($withoutSignature['signature']);
         $this->assertSame($payfast->signature($withoutSignature), $fields['signature']);
     }
+
+    /**
+     * The two directions do NOT share a rule, and this is the test that says so.
+     *
+     * Outbound we omit empty fields, as PayFast's checkout sample does. An
+     * inbound notification is signed by PayFast over everything it sent, empty
+     * fields included, so verification has to hash the same longer string.
+     *
+     * Regression test for a live failure: a real ITN carried 25 fields, 10 of
+     * them empty. Skipping those produced a different hash and the notification
+     * was refused as forged. Because checkout shares the method and checkout
+     * worked, the symptom pointed at the passphrase, which was never wrong. The
+     * cost was that no PayFast notification was ever processed.
+     */
+    public function testInboundSignatureIncludesEmptyFieldsAndOutboundDoesNot(): void
+    {
+        $payfast = $this->payfast();
+
+        // Shaped like a real notification: a populated field, an empty one, a
+        // populated one — so an implementation that drops the middle entry
+        // produces a visibly different string.
+        $fields = ['m_payment_id' => 'vb-1-abc', 'custom_str3' => '', 'amount_gross' => '29.99'];
+
+        $inbound  = md5('m_payment_id=vb-1-abc&custom_str3=&amount_gross=29.99');
+        $outbound = md5('m_payment_id=vb-1-abc&amount_gross=29.99');
+
+        $this->assertSame($inbound, $payfast->signature($fields, '', false), 'inbound must keep empty fields');
+        $this->assertSame($outbound, $payfast->signature($fields, '', true), 'outbound must drop them');
+        $this->assertNotSame($inbound, $outbound, 'the two rules must not collapse into one');
+
+        // And the whole point: verifySignature() must accept a signature that was
+        // computed the inbound way. Signed with the configured passphrase rather
+        // than a literal, so both sides agree whatever the developer's .env says
+        // and this assertion never has to skip.
+        $signed              = $fields;
+        $signed['signature'] = $payfast->signature($fields, null, false);
+
+        $this->assertTrue($payfast->verifySignature($signed));
+        $this->assertFalse(
+            $payfast->verifySignature(array_merge($fields, ['signature' => $payfast->signature($fields, null, true)])),
+            'a signature computed the outbound way must NOT verify as inbound — that is the bug this guards'
+        );
+    }
 }
