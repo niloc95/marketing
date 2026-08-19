@@ -118,10 +118,17 @@ class PayFast
             'custom_str2' => (string) $verification['id'],
 
             'subscription_type' => '1',
-            'billing_date'      => date('Y-m-d'),
-            'recurring_amount'  => $amount,
-            'frequency'         => (string) self::FREQUENCY_MONTHLY,
-            'cycles'            => '0',
+            // No billing_date on purpose. It is optional and PayFast defaults it
+            // to the day the payment arrives, which is exactly what we want and
+            // is not what sending one guarantees: the field would be stamped
+            // when the checkout page rendered, so an owner who opened it at
+            // 23:58 and paid at 00:01 would submit a billing_date of yesterday
+            // and have the payment refused. Refused for a reason nothing in the
+            // response names, which is the expensive part — the shape of the
+            // error points at the signature, and the signature is fine.
+            'recurring_amount' => $amount,
+            'frequency'        => (string) self::FREQUENCY_MONTHLY,
+            'cycles'           => '0',
         ];
 
         $fields['signature'] = $this->signature($fields);

@@ -425,6 +425,11 @@ final class PayFastSignatureTest extends CIUnitTestCase
         $this->assertSame('35', $fields['custom_str1'], 'listing id, for correlating a stray notification');
         $this->assertSame('1', $fields['custom_str2'], 'verification id');
 
+        // Deliberately absent: a billing_date stamped when the page rendered
+        // goes stale if the owner pays after midnight, and PayFast refuses it.
+        // Letting PayFast default it to the day the payment lands cannot rot.
+        $this->assertArrayNotHasKey('billing_date', $fields, 'billing_date must be left to PayFast');
+
         // The signature in the array must be the signature of the array.
         $withoutSignature = $fields;
         unset($withoutSignature['signature']);
