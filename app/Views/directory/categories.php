@@ -77,7 +77,7 @@ $schema = schema_page(
         <?php endforeach; ?>
 
         <div class="mt-8 text-center">
-            <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">List your business — free</a>
+            <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
         </div>
     </div>
 </section>

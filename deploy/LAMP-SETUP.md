@@ -676,10 +676,10 @@ curl -k "${R[@]}" -sI https://www.webscheduler.co.za/              | head -1   #
 curl -k "${R[@]}" -s "https://listing.webscheduler.co.za/health?token=<healthToken>" | jq .
 
 # Security headers and CSRF. Use -s, not -sI: a HEAD request emits no Set-Cookie.
-curl -k "${R[@]}" -s -o /dev/null -D- https://listing.webscheduler.co.za/list-your-practice \
+curl -k "${R[@]}" -s -o /dev/null -D- https://listing.webscheduler.co.za/add-listing \
   | grep -i set-cookie          # secure; HttpOnly; SameSite=Lax, plus csrf_cookie_name
 curl -k "${R[@]}" -s -o /dev/null -w '%{http_code}\n' -X POST \
-     -d "display_name=x" https://listing.webscheduler.co.za/list-your-practice     # 303
+     -d "display_name=x" https://listing.webscheduler.co.za/add-listing     # 303
        # 303, not 403: with csrfProtection = 'cookie' CodeIgniter redirects a
        # tokenless POST rather than aborting. The POST is still rejected — that
        # is the property being tested. Anything that reaches the controller (a

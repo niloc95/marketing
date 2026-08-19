@@ -68,7 +68,7 @@ $groups = [
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',
-                'a' => 'Send us two documents — your company registration document and an ID document for the owner — either from the optional section on the <a href="' . base_url('list-your-practice') . '">Add your business</a> form or, at any time afterwards, from <a href="' . base_url('manage') . '">manage your profile</a>. We review them, usually within two working days, and email you either way. <strong>You are only asked to pay after we have approved you.</strong> If we cannot verify your business, nothing is charged and you are told exactly why, so you can send better documents.',
+                'a' => 'Send us two documents — your company registration document and an ID document for the owner — either from the optional section on the <a href="' . base_url('add-listing') . '">List your business</a> form or, at any time afterwards, from <a href="' . base_url('manage') . '">manage your profile</a>. We review them, usually within two working days, and email you either way. <strong>You are only asked to pay after we have approved you.</strong> If we cannot verify your business, nothing is charged and you are told exactly why, so you can send better documents.',
             ],
             [
                 'q' => 'What happens to my registration document and ID?',
@@ -80,11 +80,11 @@ $groups = [
             ],
             [
                 'q' => 'How do I add my business?',
-                'a' => 'Fill in the <a href="' . base_url('list-your-practice') . '">Add your business</a> form. We email you a link; clicking it confirms the address and publishes your profile straight away. It takes a couple of minutes.',
+                'a' => 'Fill in the <a href="' . base_url('add-listing') . '">List your business</a> form. We email you a link; clicking it confirms the address and publishes your profile straight away. It takes a couple of minutes.',
             ],
             [
                 'q' => 'I submitted my business but it is not showing. Why?',
-                'a' => 'Almost always the verification email. A profile stays unpublished until you click the link we sent, and that link is good for 48 hours. Check your spam folder — if it has expired or never arrived, just <a href="' . base_url('list-your-practice') . '">submit the form again</a> with the same email address and we will send a fresh one.',
+                'a' => 'Almost always the verification email. A profile stays unpublished until you click the link we sent, and that link is good for 48 hours. Check your spam folder — if it has expired or never arrived, just <a href="' . base_url('add-listing') . '">submit the form again</a> with the same email address and we will send a fresh one.',
             ],
             [
                 'q' => 'Can I add a logo and photos?',

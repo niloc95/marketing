@@ -99,12 +99,22 @@
                 </button>
                 <?php // Never goes in the panel: adding a listing is what the site is for,
                       // and hidden navigation measurably costs the actions put behind it.
-                      // It shortens to "Add free" instead of hiding. .btn is inline-flex
-                      // with gap-2, so <strong> gets its own spacing without a literal one. ?>
-                <a href="<?= base_url('list-your-practice') ?>" class="btn btn-accent nav-cta">
-                    <span class="hidden sm:inline">Add your business</span>
-                    <span class="sm:hidden">Add</span>
-                    <strong>free</strong>
+                      //
+                      // Each breakpoint gets a phrase that stands on its own, rather than
+                      // one sentence spliced across the two. Splicing is what produced the
+                      // old mobile string — "Add" + "free" rendered as "Add free", which
+                      // reads as a misspelt "ad-free". The phone has ~110px here once the
+                      // brand lockup and menu button are placed, so the full desktop wording
+                      // cannot fit; "Get listed" does, and says the same thing. "free" is
+                      // desktop-only for the same reason — the form states it in its own
+                      // eyebrow and intro the moment you land.
+                      //
+                      // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
+                      // gets its own spacing without a literal one. ?>
+                <a href="<?= base_url('add-listing') ?>" class="btn btn-accent nav-cta">
+                    <span class="sm:hidden">Get listed</span>
+                    <span class="hidden sm:inline">List your business</span>
+                    <strong class="hidden sm:inline">free</strong>
                 </a>
                 <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
                       // aria-expanded — one source of truth for open/closed. ?>
@@ -190,7 +200,7 @@
                 <ul>
                     <li><a href="<?= base_url('directory') ?>">Browse everything</a></li>
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
-                    <li><a href="<?= base_url('list-your-practice') ?>">Add your business</a></li>
+                    <li><a href="<?= base_url('add-listing') ?>">List your business</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
             </div>
@@ -210,7 +220,7 @@
             <div class="site-footer-col">
                 <h3>Get started</h3>
                 <p class="site-footer-tagline">Adding your business takes a couple of minutes and costs nothing.</p>
-                <a class="btn btn-accent mt-4" href="<?= base_url('list-your-practice') ?>">Add your business <strong>free</strong></a>
+                <a class="btn btn-accent mt-4" href="<?= base_url('add-listing') ?>">List your business <strong>free</strong></a>
             </div>
         </div>
         <div class="site-footer-bar">

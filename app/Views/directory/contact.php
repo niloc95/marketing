@@ -31,7 +31,7 @@ $admin = config('Directory')->adminEmail();
                 <p class="font-medium text-slate-700 dark:text-slate-200">Looking for one of these?</p>
                 <ul class="mt-2 space-y-1 text-slate-500 dark:text-slate-400">
                     <li>Editing your own business details &mdash; <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>, no password needed.</li>
-                    <li>Not listed yet &mdash; <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('list-your-practice') ?>">add your business</a>, free.</li>
+                    <li>Not listed yet &mdash; <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-listing') ?>">list your business</a>, free.</li>
                     <li>Something else &mdash; the <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('faq') ?>">FAQ</a> may already answer it.</li>
                 </ul>
             </div>

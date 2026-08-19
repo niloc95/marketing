@@ -25,7 +25,7 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET /directory/{category}/{province}` | `Directory::place` — landing page |
 | `GET /directory/{slug}` | `Directory::segment` → category landing page **or** falls through to `show($slug)`, the listing detail page — category wins so a listing can never claim a category's slug |
 | `GET /directory/verify/{token}` | `Directory::verify` — publishes a pending listing |
-| `GET/POST /list-your-practice` | `Listing::create` / `Listing::store` — public signup |
+| `GET/POST /add-listing` | `Listing::create` / `Listing::store` — public signup |
 | `GET/POST /manage` | `Manage::index` / `Manage::request` — owner requests an edit link by email |
 | `GET /manage/{token}` | `Manage::redeem` — single-use, trades the token for a session |
 | `GET/POST /manage/edit` | `Manage::edit` / `Manage::update` — the owner's edit form |
@@ -108,7 +108,7 @@ Pair `list:serve` with `list:dev` in a second terminal for live CSS.
 
 - **Listing detail page**: `list:serve` + `list:dev`, visit
   `http://localhost:8095/directory/{slug}` for a published, seeded listing.
-- **Signup flow**: submit `/list-your-practice`, open Mailpit
+- **Signup flow**: submit `/add-listing`, open Mailpit
   (http://localhost:8025), click the verification link, confirm the listing is now live at
   its slug.
 - **Owner self-service**: `/manage` → enter email → Mailpit link → `/manage/edit` → save →

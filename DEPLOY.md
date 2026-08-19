@@ -72,9 +72,13 @@ php -r "echo bin2hex(random_bytes(32));"
 Use the **same value** in three places:
 - Directory app `.env` → `directory.prefillSecret`
 - Each WebScheduler app `.env` → `directory.handoffSecret`
-- (WebScheduler app also) `directory.handoffUrl = 'https://listing.webscheduler.co.za/list-your-practice/prefill'`
+- (WebScheduler app also) `directory.handoffUrl = 'https://listing.webscheduler.co.za/add-listing/prefill'`
+  > **Renamed.** This path was `/list-your-practice` until the URL was made
+  > generic. The directory app 301s the old path, so an un-updated WebScheduler
+  > app keeps working — but update its `.env` so the handoff stops relying on a
+  > redirect.
 
-That's what lets "Add your business" pre-fill across the two systems. The payload
+That's what lets "List your business" pre-fill across the two systems. The payload
 is still email-verified on this side, so the secret is tamper-evidence, not auth.
 
 ## 3. Directory app `.env` on the server
@@ -618,6 +622,6 @@ written somewhere off this host.
 ## Smoke test
 
 1. `https://webscheduler.co.za` loads; "Find a provider" → the directory.
-2. `https://listing.webscheduler.co.za/list-your-practice` → submit → verify email → published.
+2. `https://listing.webscheduler.co.za/add-listing` → submit → verify email → published.
 3. In a WebScheduler install, **Settings → Integrations → List your practice** →
    lands on the directory signup **pre-filled** (confirms the shared secret matches).

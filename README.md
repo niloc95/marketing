@@ -155,8 +155,8 @@ deploying. The production template is separate —
 | `GET /` | Home: hero, search, featured listings |
 | `GET /directory` | Browse/search (category, province, city, `?q=` FULLTEXT) |
 | `GET /directory/{slug}` | Business profile (SEO + `LocalBusiness` JSON-LD) |
-| `GET /list-your-practice` | Signup form |
-| `POST /list-your-practice` | Submit → pending + email verification |
+| `GET /add-listing` | Signup form |
+| `POST /add-listing` | Submit → pending + email verification |
 | `GET /directory/verify/{token}` | Verify email → **auto-publish** |
 | `GET|POST /manage` | Owner self-service: request an edit link by email |
 | `GET /manage/{token}` | Redeem the single-use link → session |
@@ -218,9 +218,6 @@ php spark directory:adminhash          # prints directory.adminPasswordHash = '.
 Set `directory.adminPasswordHash` in `.env` and remove `directory.adminPassword`. The
 plaintext key still works if no hash is set, but logs a deprecation warning. Failed logins
 are throttled by IP (5 per 15 min).
-
-> The `/list-your-practice` path predates the pivot from healthcare-only to all service
-> businesses. The visible copy says "List your business"; renaming the URL is a loose end.
 
 ## Data model (`xs_directory_*`)
 

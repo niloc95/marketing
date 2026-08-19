@@ -75,7 +75,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h2>5. Information you provide when creating a business listing</h2>
             <p>Creating a business listing is voluntary.</p>
-            <p>When you submit a business through <a href="<?= base_url('list-your-practice') ?>">Add your business</a>, we may collect:</p>
+            <p>When you submit a business through <a href="<?= base_url('add-listing') ?>">List your business</a>, we may collect:</p>
 
             <h3>Business information</h3>
             <ul>

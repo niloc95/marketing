@@ -13,7 +13,7 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => $siteName . ' — Find someone local',
-    'description' => 'Search South African services, professionals and home industry — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Find someone local, or add your business free.',
+    'description' => 'Search South African services, professionals and home industry — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Find someone local, or list your business free.',
     'canonical'   => base_url('/'),
     'schema'      => $schema,
 ]) ?>
@@ -81,7 +81,7 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
         <div class="container">
             <div class="empty">
                 <p class="mb-4">Nothing here yet. Be the first!</p>
-                <a class="btn btn-accent" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
+                <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
             </div>
         </div>
     </section>
@@ -174,7 +174,7 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
         <div class="container text-center">
             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Run a business in South Africa?</h2>
             <p class="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">Add it to <?= esc($siteName) ?> in a couple of minutes. No fee, no card, no contract.</p>
-            <a class="btn btn-accent mt-5" href="<?= base_url('list-your-practice') ?>">Add your business — free</a>
+            <a class="btn btn-accent mt-5" href="<?= base_url('add-listing') ?>">List your business — free</a>
         </div>
     </section>
 <?php endif; ?>

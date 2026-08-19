@@ -3,9 +3,9 @@
 <?php $siteName = config('Directory')->siteName(); ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Add your business — ' . $siteName,
-    'description' => 'Add your business to ' . $siteName . ' so new customers can find you. Free, always.',
-    'canonical'   => base_url('list-your-practice'),
+    'title'       => 'List your business — ' . $siteName,
+    'description' => 'List your business on ' . $siteName . ' so new customers can find you. Free, always.',
+    'canonical'   => base_url('add-listing'),
 ]) ?>
 <?= $this->endSection() ?>
 
@@ -21,11 +21,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
 <section class="section">
     <div class="container">
         <div class="form-card">
-            <span class="eyebrow">Add your business &mdash; free</span>
+            <span class="eyebrow">List your business &mdash; free</span>
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Get found by new customers</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile &mdash; it's free.</p>
 
-            <form method="post" action="<?= base_url('list-your-practice') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('add-listing') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <!-- honeypot -->
                 <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>

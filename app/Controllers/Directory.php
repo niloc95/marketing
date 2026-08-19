@@ -352,7 +352,7 @@ class Directory extends BaseController
                     ['loc' => base_url('/'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('directory'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('directory/categories'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('list-your-practice'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('add-listing'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('faq'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('verified'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('contact'), 'lastmod' => date('Y-m-d')],

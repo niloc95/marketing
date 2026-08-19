@@ -8,8 +8,13 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Directory::home');
 
 // Public submission
-$routes->get('list-your-practice', 'Listing::create');
-$routes->post('list-your-practice', 'Listing::store');
+$routes->get('add-listing', 'Listing::create');
+$routes->post('add-listing', 'Listing::store');
+// Renamed from /list-your-practice, a leftover from the healthcare-only era.
+// Permanent and kept indefinitely: printed and WhatsApp links are already in
+// the wild, and the WebScheduler app's directory.handoffUrl still points at the
+// old path from a repo this one cannot change.
+$routes->addRedirect('list-your-practice', 'add-listing', 301);
 
 // Contact. Top-level like the legal pages, so it never meets the
 // directory/{segment} catch-all. Deliberately on this domain rather than a link
