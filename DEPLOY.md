@@ -63,6 +63,17 @@ Auto-deploy is handled by **`.github/workflows/deploy.yml`** (GitHub Actions →
 
 ## 2. Generate the shared handoff secret (the cross-system "connection")
 
+> **Not implemented — this step configures nothing.** The receiving endpoint
+> (`/add-listing/prefill`) does not exist in the directory app: there is no route, no
+> controller, and no `prefillSecret` read anywhere in `app/`. Both paths return 404,
+> and did so under the old `/list-your-practice` name too — this is not fallout from
+> the URL rename. `directory.prefillSecret` is set on the live server and is inert.
+>
+> Keep the secret provisioned if you intend to build the handoff, but do not expect
+> "List your business" to pre-fill across the two systems today, and do not treat a
+> 404 here as a broken deploy. Delete this section, the `.env` key, and the
+> verification line in "After the first deploy" if the feature is abandoned.
+
 Run once locally and keep the value safe:
 
 ```bash
@@ -73,13 +84,12 @@ Use the **same value** in three places:
 - Directory app `.env` → `directory.prefillSecret`
 - Each WebScheduler app `.env` → `directory.handoffSecret`
 - (WebScheduler app also) `directory.handoffUrl = 'https://listing.webscheduler.co.za/add-listing/prefill'`
-  > **Renamed.** This path was `/list-your-practice` until the URL was made
-  > generic. The directory app 301s the old path, so an un-updated WebScheduler
-  > app keeps working — but update its `.env` so the handoff stops relying on a
-  > redirect.
+  > Path renamed from `/list-your-practice` when the URL was made generic. The old
+  > path 301s, but only as an exact match — `/list-your-practice/prefill` was never
+  > redirected and never existed.
 
-That's what lets "List your business" pre-fill across the two systems. The payload
-is still email-verified on this side, so the secret is tamper-evidence, not auth.
+The payload would still be email-verified on this side, so the secret is
+tamper-evidence, not auth.
 
 ## 3. Directory app `.env` on the server
 
@@ -518,7 +528,9 @@ contact form that silently swallows enquiries is worse than one that is visibly 
   first deploy is the first time this policy meets real traffic. Watch
   `writable/logs/` for `CSP violation` lines for the first week and treat any of them
   as a live breakage rather than noise. See "CSP: what breaks first" below.
-- Confirm the WebScheduler app's `directory.handoffUrl` points at the live subdomain.
+- ~~Confirm the WebScheduler app's `directory.handoffUrl` points at the live
+  subdomain.~~ Nothing to confirm — the prefill endpoint is unimplemented and
+  returns 404. See step 2.
 
 ### CSP: what breaks first
 

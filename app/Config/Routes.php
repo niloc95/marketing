@@ -11,9 +11,12 @@ $routes->get('/', 'Directory::home');
 $routes->get('add-listing', 'Listing::create');
 $routes->post('add-listing', 'Listing::store');
 // Renamed from /list-your-practice, a leftover from the healthcare-only era.
-// Permanent and kept indefinitely: printed and WhatsApp links are already in
-// the wild, and the WebScheduler app's directory.handoffUrl still points at the
-// old path from a repo this one cannot change.
+// Permanent and kept indefinitely: the old path was indexed and is on printed
+// and WhatsApp material already in circulation.
+//
+// Exact-match only, which is all that is needed — DEPLOY.md's cross-app
+// handoff names /list-your-practice/prefill, but no such endpoint has ever
+// existed here, so there is no sub-path worth redirecting.
 $routes->addRedirect('list-your-practice', 'add-listing', 301);
 
 // Contact. Top-level like the legal pages, so it never meets the
