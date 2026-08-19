@@ -315,6 +315,36 @@ final class VerificationFlowTest extends CIUnitTestCase
         $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $after['state']);
     }
 
+    /**
+     * A lapse must not destroy the approval behind it.
+     *
+     * The owner panel offers a lapsed subscriber a one-click reactivation
+     * straight to checkout, on the promise that "we still have your approved
+     * documents". Manage::checkout() lets a lapsed row pay for the same reason.
+     * Both are only honest while a lapse leaves the documents and the review
+     * decision alone — so this pins that, rather than leaving it as something
+     * the sweep could quietly change and nothing would catch until a subscriber
+     * was asked to re-photograph their ID because a card expired.
+     */
+    public function testALapseKeepsTheApprovedDocumentsAndTheReviewDecision(): void
+    {
+        $listingId = $this->makeListing();
+        $row       = $this->applyAndApprove($listingId);
+        $this->pay($row, 'PF-1');
+
+        $this->verifications->update((int) $row['id'], [
+            'paid_until' => date('Y-m-d', strtotime('-1 day')),
+        ]);
+        $this->svc->lapseExpired();
+
+        $after = $this->svc->forListing($listingId);
+
+        $this->assertSame(DirectoryVerificationModel::STATE_LAPSED, $after['verification']['state']);
+        $this->assertCount(2, $after['documents'], 'a lapse must not delete the documents');
+        $this->assertNotEmpty($after['verification']['reviewed_at'], 'the approval decision stands');
+        $this->assertSame('admin@test', $after['verification']['reviewed_by']);
+    }
+
     /** A cancellation carries no money and must not extend anything. */
     public function testACancellationDoesNotShortenOrExtendThePaidPeriod(): void
     {

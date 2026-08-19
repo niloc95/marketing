@@ -702,6 +702,16 @@
   .dark .verify-cta-heading { @apply text-white; }
   .dark .verify-cta-link    { @apply text-primary-300; }
 
+  /* Re-uploading documents on a lapsed badge. Folded away because the lapse is
+     nearly always a card that failed rather than a business that changed, and
+     the one-click reactivation above is what almost everyone here needs. Kept
+     reachable, and kept looking like a secondary option rather than the path. */
+  .verify-resubmit > summary {
+    @apply mt-4 cursor-pointer list-none underline decoration-dotted underline-offset-2;
+  }
+  .verify-resubmit > summary::-webkit-details-marker { display: none; }
+  .verify-resubmit[open] > summary { @apply no-underline; }
+
   /* The upload fields fold away behind a button styled as one. list-none plus
      the ::-webkit- rule removes the disclosure triangle, which would otherwise
      sit inside the button and give away that it is a <summary>. */

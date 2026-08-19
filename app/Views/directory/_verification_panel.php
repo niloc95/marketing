@@ -132,15 +132,53 @@ $prettyDate = static function (?string $date): string {
             <?php endif; ?>.
             Your listing itself is unaffected.
         </p>
-        <p class="hint">
-            We still have your approved documents, so starting again is one step.
-        </p>
-        <form method="post" action="<?= base_url('manage/verification') ?>" enctype="multipart/form-data" class="verify-form">
-            <?= csrf_field() ?>
-            <p class="hint">Send fresh documents if anything has changed, then submit to go back into review.</p>
-            <?= view('directory/_verification_fields', ['amount' => $amount]) ?>
-            <button type="submit" class="btn btn-primary">Submit for review</button>
-        </form>
+
+        <?php if ($payable && $pending): ?>
+            <?php // Same reasoning as the approved branch: someone who has just
+                  // paid must not be shown a button that reads as "that failed,
+                  // try again". ?>
+            <p class="text-sm text-slate-600 dark:text-slate-300">
+                <strong>Thanks &mdash; we have your payment.</strong> PayFast is confirming it now.
+            </p>
+            <p class="hint">
+                Your badge goes back up as soon as that clears, usually within a few minutes.
+                Refresh this page to check &mdash; you will not be charged twice.
+            </p>
+
+        <?php elseif ($payable): ?>
+            <?php // The badge lapsed, which almost always means a card expired or a
+                  // payment bounced — not that the business stopped being real. The
+                  // documents behind this row were approved, and they stay approved,
+                  // so the way back is a payment and not another review. Sending
+                  // someone to re-photograph their ID because their card was
+                  // declined is how a recoverable lapse becomes a lost subscriber. ?>
+            <p class="hint">
+                We still have your approved documents, so starting again really is one step.
+            </p>
+            <p class="mt-4">
+                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge &mdash; R<?= esc($amount) ?> a month</a>
+            </p>
+        <?php else: ?>
+            <p class="hint">
+                We still have your approved documents. We will email you about payment
+                (<strong>R<?= esc($amount) ?> a month</strong>) and put your badge back up as soon
+                as it clears.
+            </p>
+        <?php endif; ?>
+
+        <?php // Kept, demoted. Re-uploading is the right path for a business whose
+              // registration or ownership genuinely changed, and it is the only path
+              // when card payments are switched off — but it is no longer what a
+              // lapsed subscriber is pushed towards. ?>
+        <details class="verify-resubmit">
+            <summary class="hint">Our company details have changed</summary>
+            <form method="post" action="<?= base_url('manage/verification') ?>" enctype="multipart/form-data" class="verify-form">
+                <?= csrf_field() ?>
+                <p class="hint">Send fresh documents and we will review them again before your badge goes back up.</p>
+                <?= view('directory/_verification_fields', ['amount' => $amount]) ?>
+                <button type="submit" class="btn btn-primary">Submit for review</button>
+            </form>
+        </details>
 
     <?php elseif ($state === DirectoryVerificationModel::STATE_REJECTED): ?>
 

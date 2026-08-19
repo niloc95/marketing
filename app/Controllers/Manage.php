@@ -303,10 +303,24 @@ class Manage extends BaseController
 
         $current = $service->forListing((int) $listing['id']);
 
-        // Only an approved application can be paid for. A pending or rejected
-        // one reaching here means a stale tab or a hand-typed URL, not a state
-        // we should invent a payment for.
-        if ($current === null || $current['verification']['state'] !== DirectoryVerificationModel::STATE_APPROVED) {
+        // Two states can be paid for, for two different reasons.
+        //
+        //   approved — the first payment, at the end of the application flow.
+        //   lapsed   — a subscriber whose badge ran out, paying to start again.
+        //
+        // The second is not a new application. The documents behind a lapsed row
+        // were approved once, and an expiry is nearly always a card that failed
+        // rather than a business that stopped being real; sending them back
+        // through document upload and the review queue to recover from a
+        // declined card is a renewal flow nobody would design on purpose.
+        //
+        // Everything else reaching here — submitted, rejected, or no application
+        // at all — is a stale tab or a hand-typed URL, not a state we should
+        // invent a payment for.
+        $state = $current['verification']['state'] ?? null;
+
+        if ($state !== DirectoryVerificationModel::STATE_APPROVED
+            && $state !== DirectoryVerificationModel::STATE_LAPSED) {
             return redirect()->to(base_url('manage/edit'))
                 ->with('error', 'There is nothing to pay for yet.');
         }
@@ -316,7 +330,15 @@ class Manage extends BaseController
         // The correlation id is minted on first use rather than at application
         // time, because a payment that is never started should not burn one —
         // and PayFast rejects a repeat of an m_payment_id it has already seen.
-        if (trim((string) ($verification['pf_m_payment_id'] ?? '')) === '') {
+        //
+        // That last clause is why a reactivation always takes a fresh one: the
+        // lapsed row is still carrying the id its first subscription used, and
+        // re-presenting it would have PayFast refuse the payment as a duplicate.
+        // A stale tab paying against a superseded id still lands, because
+        // PayFastNotify falls back to custom_str2 — the verification id, which
+        // does not change — when m_payment_id matches nothing.
+        if (trim((string) ($verification['pf_m_payment_id'] ?? '')) === ''
+            || $state === DirectoryVerificationModel::STATE_LAPSED) {
             $verification['pf_m_payment_id'] = sprintf('vb-%d-%s', (int) $verification['id'], bin2hex(random_bytes(4)));
             (new DirectoryVerificationModel())->update(
                 (int) $verification['id'],
@@ -332,9 +354,11 @@ class Manage extends BaseController
             'processUrl' => $payfast->processUrl(),
             'fields'     => $payfast->subscriptionFields($listing, $verification),
             'sandbox'    => $payfast->isSandbox(),
-            // Both derived here rather than in the view: the renewal date has to
-            // agree with the billing_date PayFast is actually being sent, and
-            // that is decided by subscriptionFields() above.
+            // Both derived here rather than in the view, so the dates the page
+            // promises are computed in one place. subscriptionFields() sends no
+            // billing_date, which means PayFast bills on the day the payment
+            // lands — today, from the point of view of someone about to press
+            // the button — and every month from there.
             'firstCharge' => date('j F Y'),
             'renewsOn'    => date('j F Y', strtotime('+1 month')),
         ]);
@@ -404,9 +428,15 @@ class Manage extends BaseController
     /**
      * Whether to show "confirming your payment" in place of the pay button.
      *
-     * Expires two ways — the ITN landing (state is no longer 'approved') or
-     * PAYMENT_PENDING_TTL passing — so the panel cannot get stuck insisting on a
-     * payment that never completed.
+     * Expires two ways — the ITN landing (the row goes 'active', so it is no
+     * longer in a payable state) or PAYMENT_PENDING_TTL passing — so the panel
+     * cannot get stuck insisting on a payment that never completed.
+     *
+     * Both payable states count, and 'lapsed' is here for the same reason it is
+     * in checkout(): a reactivating subscriber sits in exactly the same gap
+     * between paying and the ITN arriving, and a panel that offered them
+     * "Reactivate my badge" again in that window would be inviting a second
+     * charge for the month they just bought.
      *
      * @param array<string,mixed>|null $verification
      */
@@ -419,8 +449,10 @@ class Manage extends BaseController
 
         $state = $verification['verification']['state'] ?? null;
 
-        if ($state !== DirectoryVerificationModel::STATE_APPROVED
-            || $since < time() - self::PAYMENT_PENDING_TTL) {
+        $awaitingPayment = $state === DirectoryVerificationModel::STATE_APPROVED
+            || $state === DirectoryVerificationModel::STATE_LAPSED;
+
+        if (! $awaitingPayment || $since < time() - self::PAYMENT_PENDING_TTL) {
             session()->remove(self::PAYMENT_PENDING_KEY);
 
             return false;
