@@ -16,7 +16,7 @@ class DirectoryVerificationModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'listing_id', 'state', 'paid_until', 'amount',
-        'pf_subscription_token', 'pf_m_payment_id', 'rejection_reason',
+        'pf_subscription_token', 'billing_anchor_day', 'pf_m_payment_id', 'rejection_reason',
         'submitted_at', 'reviewed_at', 'reviewed_by', 'activated_at', 'cancelled_at',
     ];
 

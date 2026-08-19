@@ -112,6 +112,30 @@ final class VerificationFlowTest extends CIUnitTestCase
         };
     }
 
+    /**
+     * The date a payment made today should be paid through.
+     *
+     * These assertions used to read `date('Y-m-d', strtotime('+1 month'))`,
+     * which is the exact idiom the service was fixed for: run the suite on the
+     * 31st and both sides overflow into the month after next, agreeing with each
+     * other and with nothing real. That made them pass every day except the ones
+     * that mattered.
+     *
+     * Built on DateTimeImmutable rather than strtotime strings so it is an
+     * independent statement of the answer rather than a copy of the
+     * implementation. Clamps to the last day of a short month, as PayFast does.
+     *
+     * See RenewalDateTest for the anchored cases; these only need "today".
+     */
+    private function paidThrough(int $months = 1, ?string $from = null): string
+    {
+        $start  = new DateTimeImmutable($from ?? date('Y-m-d'));
+        $target = $start->modify('first day of this month')->modify("+{$months} months");
+        $day    = min((int) $start->format('j'), (int) $target->format('t'));
+
+        return $target->setDate((int) $target->format('Y'), (int) $target->format('n'), $day)->format('Y-m-d');
+    }
+
     /** Defaults to the configured price, so a price change does not break the suite. */
     private function pay(array $verification, string $paymentId, ?string $amount = null, string $status = 'COMPLETE'): string
     {
@@ -251,7 +275,7 @@ final class VerificationFlowTest extends CIUnitTestCase
 
         $row = $this->verifications->forListing($listingId);
         $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $row['state']);
-        $this->assertSame(date('Y-m-d', strtotime('+1 month')), $row['paid_until']);
+        $this->assertSame($this->paidThrough(), $row['paid_until']);
         $this->assertSame('tok-123', $row['pf_subscription_token']);
         $this->assertNotNull($row['activated_at']);
 
@@ -287,7 +311,7 @@ final class VerificationFlowTest extends CIUnitTestCase
         $this->assertSame('applied', $this->pay($afterFirst, 'PF-2'));
 
         $this->assertSame(
-            date('Y-m-d', strtotime($afterFirst['paid_until'] . ' +1 month')),
+            $this->paidThrough(1, $afterFirst['paid_until']),
             $this->verifications->forListing($listingId)['paid_until']
         );
     }
@@ -311,8 +335,81 @@ final class VerificationFlowTest extends CIUnitTestCase
         $this->pay($this->verifications->forListing($listingId), 'PF-COMEBACK');
 
         $after = $this->verifications->forListing($listingId);
-        $this->assertSame(date('Y-m-d', strtotime('+1 month')), $after['paid_until']);
+        $this->assertSame($this->paidThrough(), $after['paid_until']);
         $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $after['state']);
+    }
+
+    /**
+     * The billing day comes from PayFast, on the notification that opens the
+     * subscription — the same one that carries the token.
+     *
+     * Taking it from the payment date instead would be wrong whenever the two
+     * differ, and the anchor is what every future renewal date is built on.
+     */
+    public function testTheBillingAnchorIsTakenFromTheNotificationThatOpensTheSubscription(): void
+    {
+        $listingId = $this->makeListing();
+        $row       = $this->applyAndApprove($listingId);
+
+        $this->svc->recordPayment($row, 'PF-ANCHOR', 'COMPLETE', (float) $row['amount'], [
+            'pf_payment_id' => 'PF-ANCHOR',
+            'amount_gross'  => $row['amount'],
+            'token'         => 'tok-anchor',
+            'billing_date'  => '2026-01-31',
+        ]);
+
+        $after = $this->verifications->forListing($listingId);
+        $this->assertSame(31, (int) $after['billing_anchor_day']);
+        $this->assertSame('tok-anchor', $after['pf_subscription_token']);
+    }
+
+    /**
+     * A renewal must not move the anchor.
+     *
+     * PayFast omits the token on later cycles, which is how the code knows a
+     * notification is a renewal rather than a new mandate. If the billing day
+     * were re-read on every notification, a subscriber anchored to the 31st
+     * would be re-anchored to the 28th the first time February clamped, and
+     * would never find its way back — which is the bug the column exists to
+     * prevent, reintroduced from the other end.
+     */
+    public function testARenewalDoesNotMoveTheBillingAnchor(): void
+    {
+        $listingId = $this->makeListing();
+        $row       = $this->applyAndApprove($listingId);
+
+        $this->svc->recordPayment($row, 'PF-1', 'COMPLETE', (float) $row['amount'], [
+            'pf_payment_id' => 'PF-1',
+            'amount_gross'  => $row['amount'],
+            'token'         => 'tok-anchor',
+            'billing_date'  => '2026-01-31',
+        ]);
+
+        // A later cycle: no token, and a billing_date naming the clamped day.
+        $afterFirst = $this->verifications->forListing($listingId);
+        $this->svc->recordPayment($afterFirst, 'PF-2', 'COMPLETE', (float) $row['amount'], [
+            'pf_payment_id' => 'PF-2',
+            'amount_gross'  => $row['amount'],
+            'billing_date'  => '2026-02-28',
+        ]);
+
+        $after = $this->verifications->forListing($listingId);
+        $this->assertSame(31, (int) $after['billing_anchor_day'], 'the anchor is set once, by the mandate');
+        $this->assertSame('tok-anchor', $after['pf_subscription_token'], 'and the token survives a renewal');
+    }
+
+    /** An EFT badge has no PayFast mandate, so there is no billing day to record. */
+    public function testAManuallyActivatedBadgeHasNoBillingAnchor(): void
+    {
+        $listingId = $this->makeListing();
+        $row       = $this->applyAndApprove($listingId);
+
+        $this->assertTrue($this->svc->activateManually((int) $row['id'], 'admin@test'));
+
+        $after = $this->verifications->forListing($listingId);
+        $this->assertNull($after['billing_anchor_day']);
+        $this->assertNull($after['pf_subscription_token']);
+        $this->assertSame($this->paidThrough(), $after['paid_until']);
     }
 
     /**
@@ -452,7 +549,7 @@ final class VerificationFlowTest extends CIUnitTestCase
 
         $after = $this->verifications->forListing($listingId);
         $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $after['state']);
-        $this->assertSame(date('Y-m-d', strtotime('+3 months')), $after['paid_until']);
+        $this->assertSame($this->paidThrough(3), $after['paid_until']);
         $this->assertSame($after['paid_until'], $this->listings->find($listingId)['verified_until']);
 
         // No recurring mandate exists, which is how the cancel path knows not to

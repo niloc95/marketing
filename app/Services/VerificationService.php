@@ -373,7 +373,15 @@ class VerificationService
         $db->transBegin();
 
         try {
-            $paidUntil = $this->nextPaidUntil($row['paid_until'] ?? null, $months);
+            // Honours the anchor if this row ever had a PayFast mandate — an
+            // admin extending a subscription by hand should not shift the day it
+            // renews on. An EFT-only badge has none, and falls back to the day
+            // it is being activated from.
+            $paidUntil = $this->nextPaidUntil(
+                $row['paid_until'] ?? null,
+                $months,
+                isset($row['billing_anchor_day']) ? (int) $row['billing_anchor_day'] : null
+            );
 
             $this->verifications->update($verificationId, [
                 'state'        => DirectoryVerificationModel::STATE_ACTIVE,
@@ -473,20 +481,37 @@ class VerificationService
             }
 
             if ($status === 'COMPLETE') {
-                $paidUntil = $this->nextPaidUntil($verification['paid_until'] ?? null);
-
-                $update = [
-                    'state'      => DirectoryVerificationModel::STATE_ACTIVE,
-                    'paid_until' => $paidUntil,
-                ];
+                $update = ['state' => DirectoryVerificationModel::STATE_ACTIVE];
 
                 // The recurring token arrives with the first payment of a
                 // subscription and is absent from later cycles; only write it
                 // when it is actually there, or a renewal would blank it.
                 $token = trim((string) ($payload['token'] ?? ''));
+
+                // The billing day is captured in the same breath, and only here.
+                // A token means a new recurring mandate has begun, which is the
+                // one moment the day PayFast bills on can change.
+                //
+                // Reading it on every notification instead would undo the fix it
+                // exists for: if PayFast reports the current cycle's date rather
+                // than the subscription's on a renewal, a 31st subscriber would
+                // re-anchor to the 28th the first time February clamped, and
+                // never find its way back to the 31st.
+                $anchorDay = $verification['billing_anchor_day'] ?? null;
+                $anchorDay = $anchorDay === null ? null : (int) $anchorDay;
+
                 if ($token !== '') {
                     $update['pf_subscription_token'] = $token;
+
+                    $fromPayload = $this->billingAnchorDay($payload);
+                    if ($fromPayload !== null) {
+                        $anchorDay                    = $fromPayload;
+                        $update['billing_anchor_day'] = $fromPayload;
+                    }
                 }
+
+                $paidUntil            = $this->nextPaidUntil($verification['paid_until'] ?? null, 1, $anchorDay);
+                $update['paid_until'] = $paidUntil;
 
                 if (empty($verification['activated_at'])) {
                     $update['activated_at'] = date('Y-m-d H:i:s');
@@ -602,20 +627,92 @@ class VerificationService
     }
 
     /**
-     * One month on from whichever is later: today, or the date already paid to.
+     * One month on from whichever is later: today, or the date already paid to
+     * — landing on the day of the month PayFast actually bills.
      *
      * The max() is what makes renewals safe. Extending from today would quietly
      * shorten the term of anyone who renews early — PayFast bills on its own
      * schedule, not ours — and extending from paid_until alone would back-date a
      * subscriber who lapsed for six months and came back, giving them a badge
      * that expired before it was bought.
+     *
+     * $anchorDay is the day of the month PayFast bills this subscription on, and
+     * it is a separate input rather than something read back off $from because a
+     * renewal date cannot be derived from the previous renewal date. PHP's
+     * `+1 month` overflows a day the next month does not have — 31 January
+     * becomes 3 March — while PayFast clamps to the last day and then returns to
+     * the original day: 28 February, 31 March, 30 April.
+     *
+     * Merely clamping would be worse than the overflow it fixes. Clamp 31
+     * January to 28 February, then compute the next renewal from *that*, and you
+     * get 28 March against a PayFast charge on 31 March: three days in which a
+     * paying customer has no badge. Only a remembered anchor keeps the two in
+     * step, which is what the billing_anchor_day column is for. It falls back to
+     * the day of $from, which is right for a badge activated by hand — there is
+     * no PayFast mandate behind it and so no billing day to honour.
+     *
+     * The arithmetic itself lives in addMonthsAnchored() so it can be tested
+     * against fixed dates. This method cannot be: it resolves $from against the
+     * clock, so any past date handed to it collapses to today.
      */
-    private function nextPaidUntil(?string $current, int $months = 1): string
+    private function nextPaidUntil(?string $current, int $months = 1, ?int $anchorDay = null): string
     {
         $today = date('Y-m-d');
         $from  = ($current !== null && $current !== '' && $current > $today) ? $current : $today;
 
-        return date('Y-m-d', strtotime($from . ' +' . max(1, $months) . ' month'));
+        return $this->addMonthsAnchored($from, $months, $anchorDay);
+    }
+
+    /**
+     * $months on from $from, landing on $anchorDay of the target month, or the
+     * last day of that month when the anchor does not fit in it.
+     *
+     * Pure: no clock, no database. That is the point — it is the half of the
+     * renewal date that can be checked against known answers.
+     *
+     * The month arithmetic runs on the FIRST of the month, which cannot
+     * overflow, and the day is placed inside the target month afterwards. Doing
+     * it the other way round — adding a month to the 31st and hoping — is the
+     * whole bug this replaced.
+     */
+    private function addMonthsAnchored(string $from, int $months = 1, ?int $anchorDay = null): string
+    {
+        $anchorDay = $anchorDay !== null && $anchorDay >= 1 && $anchorDay <= 31
+            ? $anchorDay
+            : (int) date('j', strtotime($from));
+
+        $firstOfTarget = date(
+            'Y-m-01',
+            strtotime(date('Y-m-01', strtotime($from)) . ' +' . max(1, $months) . ' month')
+        );
+
+        $day = min($anchorDay, (int) date('t', strtotime($firstOfTarget)));
+
+        return date('Y-m-d', strtotime($firstOfTarget . ' +' . ($day - 1) . ' days'));
+    }
+
+    /**
+     * The day of the month a PayFast subscription bills on, from the ITN that
+     * opened it.
+     *
+     * PayFast sends `billing_date` alongside `token` on the first notification
+     * of a subscription. Reading it is better than reconstructing it from the
+     * payment date, because the two can differ — a payment can land a day after
+     * the date the subscription is anchored to, and it is the anchor that
+     * decides every future charge.
+     *
+     * @param array<string,mixed> $payload
+     */
+    private function billingAnchorDay(array $payload): ?int
+    {
+        $billingDate = trim((string) ($payload['billing_date'] ?? ''));
+        if ($billingDate === '') {
+            return null;
+        }
+
+        $ts = strtotime($billingDate);
+
+        return $ts === false ? null : (int) date('j', $ts);
     }
 
     /**
