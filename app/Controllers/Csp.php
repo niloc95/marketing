@@ -45,15 +45,62 @@ class Csp extends BaseController
             return $this->response->setStatusCode(204)->setBody('');
         }
 
+        $directive = $this->field($r, 'violated-directive', 'effective-directive');
+
         log_message('warning', sprintf(
-            'CSP violation: directive=%s blocked=%s document=%s',
-            $this->field($r, 'violated-directive', 'effective-directive'),
+            'CSP violation: directive=%s blocked=%s document=%s enforced=[%s]',
+            $directive,
             $this->field($r, 'blocked-uri'),
-            $this->field($r, 'document-uri')
+            $this->field($r, 'document-uri'),
+            $this->enforcedRule($r, $directive)
         ));
 
         // 204: the browser wants nothing back, and a body would just be traffic.
         return $this->response->setStatusCode(204)->setBody('');
+    }
+
+    /**
+     * What the browser's own policy said about the directive it just enforced.
+     *
+     * Pulled out of `original-policy`, which is the policy the browser actually
+     * applied — not the one we believe we sent. When those two disagree the
+     * difference is the entire answer, and without this field it is invisible:
+     * a report saying "form-action blocked https://www.payfast.co.za" is
+     * indistinguishable between a policy that omits the host and a policy that
+     * lists it, and only one of those is a bug in this codebase.
+     *
+     * That is not hypothetical. The badge checkout was reported dead in
+     * production against a response header that plainly allowed the POST, and
+     * there was nothing in the log able to settle whether the browser had ever
+     * seen that header.
+     *
+     * Just the one matching directive rather than the whole policy: the policy
+     * is roughly 800 characters, most violations are routine, and the log is
+     * worth more when a line still fits on a screen.
+     *
+     * @param array<string,mixed> $r
+     */
+    private function enforcedRule(array $r, string $directive): string
+    {
+        $policy = trim((string) ($r['original-policy'] ?? ''));
+        if ($policy === '' || $directive === '-') {
+            return '-';
+        }
+
+        // 'style-src-elem' arrives as the violated directive but the policy may
+        // only carry 'style-src'; take the directive name and match on it.
+        $name = strtolower(explode(' ', trim($directive))[0]);
+
+        foreach (explode(';', $policy) as $rule) {
+            $rule = trim(preg_replace('/[\r\n]+/', ' ', $rule) ?? '');
+            if ($rule !== '' && strtolower(explode(' ', $rule)[0]) === $name) {
+                return mb_substr($rule, 0, self::MAX_FIELD);
+            }
+        }
+
+        // Said nothing about it — so the browser fell back to default-src, or
+        // the policy is not the one we think it is.
+        return 'absent from policy';
     }
 
     /**
