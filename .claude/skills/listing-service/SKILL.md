@@ -127,9 +127,16 @@ than an error. When editing views:
   anyway, so adding it back buys nothing).
 - **No inline event handlers** (`onclick=`, `javascript:` URLs) — `script-src-attr` is
   `'self'`. Bind listeners from a file instead.
-- **A new off-site form POST needs adding to `form-action`.** It does not fall back to
-  `default-src`; an unlisted target dies silently at the last click. Both PayFast hosts
-  are already listed.
+- **A new off-site form POST needs adding to `form-action`, and so does wherever it
+  redirects.** It does not fall back to `default-src`; an unlisted target dies silently at
+  the last click. The redirect half is the one that bites: PayFast answers the checkout
+  POST with a 302, and **live crosses to `https://payment.payfast.io`** while the sandbox
+  stays on `sandbox.payfast.co.za` — so this passes every sandbox test and breaks the
+  moment real payments are switched on. All of it is listed now
+  (`www.payfast.co.za`, `sandbox.payfast.co.za`, `*.payfast.io`).
+  The symptom is a console error quoting a policy that visibly *contains* the host it
+  claims was violated, because Chrome names the URL the form pointed at rather than the
+  redirect it actually refused. `writable/logs/` records what the browser enforced.
 - **`img-src` picks up the map tile host at runtime** from `directory.mapTileUrl`. A
   blank grey map is the symptom of that being wrong, and it looks identical to a tile
   provider outage — check `writable/logs/` for `CSP violation` first.

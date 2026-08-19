@@ -282,12 +282,34 @@ class ContentSecurityPolicy extends BaseConfig
         // verification_checkout.php and PayFast::processUrl(). form-action does
         // not fall back to default-src, so leaving this at 'self' silently
         // blocks the submit and every payment dies at the last click. Both
-        // hosts are listed because payfastSandbox is env-switchable and the
-        // policy is built before we know which one this request will use.
+        // co.za hosts are listed because payfastSandbox is env-switchable and
+        // the policy is built before we know which one this request will use.
+        //
+        // payfast.io is the one that is not obvious, and it cost a day. The
+        // browser does not stop at the URL the form names: PayFast answers that
+        // POST with a 302, and form-action is enforced against where it lands
+        // too. Live redirects to https://payment.payfast.io/eng/process/payment/…
+        // — a different apex domain from the one being posted to — so a policy
+        // naming only payfast.co.za blocks the payment at the redirect.
+        //
+        // It cannot be caught before going live. The sandbox redirects within
+        // sandbox.payfast.co.za and passes happily; only the live endpoint
+        // crosses to payfast.io. What it looks like from the browser is a
+        // console error quoting a policy that plainly contains the host it says
+        // was violated, because Chrome reports the URL the form named rather
+        // than the redirect it actually refused.
+        //
+        // Wildcarded on the .io side deliberately. PayFast is evidently moving
+        // payment flows onto that domain, the subdomain is theirs to change
+        // without telling us, and the failure mode is silent lost revenue. A
+        // violation now logs which directive the browser enforced (see
+        // App\Controllers\Csp), so a further move is a minute's diagnosis.
         $this->formAction = [
             'self',
             'https://www.payfast.co.za',
             'https://sandbox.payfast.co.za',
+            'https://payment.payfast.io',
+            'https://*.payfast.io',
         ];
 
         // Path-relative on purpose: base_url() is not dependable this early in
