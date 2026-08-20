@@ -40,7 +40,12 @@ class DirectoryHeroImagesSeeder extends Seeder
 
         $categories = $this->db->table('directory_categories');
         $heroes     = $this->db->table('directory_hero_images');
+        $docroot    = $this->docroot();
         $sort       = 0;
+
+        if ($docroot === null) {
+            log_message('warning', 'Hero seeder: could not locate the web root — inserting without checking the files are there.');
+        }
 
         foreach ($photos as [$caption, $slug, $base, $height, $credit, $pexelsId]) {
             $path = 'assets/hero/' . $base . '-1600.webp';
@@ -52,8 +57,10 @@ class DirectoryHeroImagesSeeder extends Seeder
 
             // The file has to be there before the row is. A row pointing at a
             // missing image renders a broken <img> over the search box, which is
-            // worse than one fewer photo in the rotation.
-            if (! is_file(FCPATH . $path)) {
+            // worse than one fewer photo in the rotation. Skipped entirely when
+            // the web root cannot be found — a check that cannot be performed
+            // must not masquerade as a check that failed.
+            if ($docroot !== null && ! is_file($docroot . $path)) {
                 log_message('warning', 'Hero seeder: missing ' . $path . ', skipping.');
                 $sort++;
                 continue;
@@ -78,5 +85,31 @@ class DirectoryHeroImagesSeeder extends Seeder
 
             $sort++;
         }
+    }
+
+    /**
+     * The directory the hero photos are actually served from.
+     *
+     * FCPATH cannot be trusted here. Over HTTP it is whatever public/index.php
+     * defined and is correct; under `spark` CodeIgniter derives it as
+     * ROOTPATH/public, which does not exist in the deployed layout — there the
+     * app sits at directory-app/ with the web root beside it as public_html/,
+     * and spark says so out loud with a chdir() warning on every command.
+     *
+     * This cost a production release. The seeder ran, reported success, and
+     * inserted nothing: every file looked missing because it was being looked
+     * for under a directory that was not there. Resolving the candidates in
+     * order fixes both layouts without either having to know about the other.
+     */
+    private function docroot(): ?string
+    {
+        foreach ([FCPATH, ROOTPATH . '../public_html/'] as $candidate) {
+            $real = realpath($candidate);
+            if ($real !== false && is_dir($real)) {
+                return rtrim($real, '/') . '/';
+            }
+        }
+
+        return null;
     }
 }
