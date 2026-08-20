@@ -59,11 +59,47 @@ ini_set('display_errors', '1');
  *---------------------------------------------------------------
  */
 
-// Path to the front controller
-define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR);
+// Path to the front controller.
+//
+// Stock CI4 hard-codes __DIR__/public/. That is right for this repo and wrong
+// for the deployed layout, where the app sits at directory-app/ with the web
+// root beside it as public_html/ — so directory-app/public/ does not exist,
+// every spark command printed a chdir() warning, and, far worse, anything
+// resolving an upload path against FCPATH looked under a directory that was
+// not there.
+//
+// That is not hypothetical: it cost a release. The hero seeder ran, reported
+// success and inserted nothing, because every photo looked missing. The
+// workaround lives in DirectoryHeroImagesSeeder::docroot() and had to be
+// repeated by any other caller that needed the docroot from the CLI. Fixing it
+// here instead means FCPATH is simply correct for every command in both
+// layouts, and neither has to know about the other.
+//
+// Note for a framework upgrade: this file is app-level scaffolding, so composer
+// will not overwrite it — but if it is ever regenerated from the CI4 skeleton,
+// this block has to come back with it.
+$fcpath = __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR;
 
-// Ensure the current directory is pointing to the front controller's directory
-chdir(FCPATH);
+foreach ([
+    $fcpath,
+    __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'public_html' . DIRECTORY_SEPARATOR,
+] as $candidate) {
+    $real = realpath($candidate);
+    if ($real !== false && is_dir($real)) {
+        $fcpath = rtrim($real, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        break;
+    }
+}
+
+define('FCPATH', $fcpath);
+unset($fcpath, $candidate, $real);
+
+// Guarded, because chdir() into a directory that is not there is precisely the
+// warning this block exists to remove. If neither candidate resolved, leave the
+// working directory alone rather than shouting about it on every command.
+if (is_dir(FCPATH)) {
+    chdir(FCPATH);
+}
 
 /*
  *---------------------------------------------------------------
