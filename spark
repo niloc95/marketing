@@ -111,9 +111,12 @@ if (is_dir(FCPATH)) {
  */
 
 // LOAD OUR PATHS CONFIG FILE
-// This is the line that might need to be changed, depending on your folder structure.
-require FCPATH . '../app/Config/Paths.php';
-// ^^^ Change this line if you move your application folder
+// Anchored on __DIR__, not on FCPATH. Stock CI4 writes this as
+// FCPATH . '../app/Config/Paths.php', which only works because it assumes
+// FCPATH is __DIR__/public/ — the assumption the block above deliberately
+// breaks. app/ is a sibling of this file in both layouts, so __DIR__ is both
+// simpler and the thing that is actually true.
+require __DIR__ . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Config' . DIRECTORY_SEPARATOR . 'Paths.php';
 
 $paths = new Paths();
 
