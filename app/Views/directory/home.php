@@ -82,7 +82,6 @@ $hasSlides = $slides !== [];
     <?php endif; ?>
 
     <div class="container hero-inner">
-        <span class="eyebrow">Local services, professionals &amp; home industry</span>
         <h1>Find someone <span class="text-brand-golden">local</span> you can trust</h1>
         <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — across South Africa. Or add your own business, free.</p>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
@@ -104,24 +103,6 @@ $hasSlides = $slides !== [];
             </select>
             <button class="btn btn-primary" type="submit">Search</button>
         </form>
-
-        <?php // Crawlable shortcuts into the busiest landing pages, straight off
-              // the hero — the fastest route in for someone who does not yet
-              // know what to type. ?>
-        <?php if ($topCategories !== []): ?>
-            <div class="hero-chips">
-                <p class="hero-chips-label">Popular categories</p>
-                <div class="flex flex-wrap gap-2">
-                    <?php foreach ($topCategories as $c): ?>
-                        <?= view('directory/_chip', [
-                            'label' => $c['name'],
-                            'href'  => base_url('directory/' . $c['slug']),
-                            'count' => (int) $c['listing_count'],
-                        ], ['saveData' => false]) ?>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php endif; ?>
     </div>
 
     <?php // The Yelp move: say what is in the photograph and make it a way in.

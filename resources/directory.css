@@ -403,13 +403,6 @@
   .hero-home .searchbar input,
   .hero-home .searchbar select { @apply sm:py-3 sm:text-base; }
   .hero-home .searchbar .btn { @apply sm:px-7 sm:py-3 sm:text-base; }
-  /* bg-white/10 is what the gradient hero uses; over a photograph it reads as
-     mud, so these get a lift and an edge to sit on. */
-  .hero-home .hero-chips .chip,
-  .dark .hero-home .hero-chips .chip {
-    @apply bg-white/15 ring-1 ring-inset ring-white/20 backdrop-blur-sm hover:bg-white/25;
-  }
-
   /* Non-negotiable. The rotation is ambience; for anyone who has asked their
      system for less movement it is just movement. The JS bails on the same
      query, so slide one simply stands still — these rules are the belt to that
@@ -468,9 +461,6 @@
   .section-alt { @apply bg-white; }
   .dark .section-alt { @apply bg-[#141a21]; }
 
-  .hero-chips       { @apply mt-6; }
-  .hero-chips-label { @apply mb-2 text-xs font-semibold uppercase tracking-wider text-white/60; }
-
   .stat-bar { @apply border-y border-slate-200 bg-white py-4 text-sm text-slate-500; }
   .stat strong { @apply font-bold text-slate-900; }
   .dark .stat-bar    { @apply border-slate-800 bg-[#141a21] text-slate-400; }
@@ -486,11 +476,6 @@
   }
   .chip-count { @apply ml-1 opacity-60; }
   .dark .chip { @apply bg-slate-800 text-slate-300 hover:bg-primary-500/15 hover:text-primary-300; }
-  /* On the hero the chips sit on the ocean gradient, where slate-100 reads as a
-     bright block — go translucent instead, in both themes. */
-  .hero-chips .chip { @apply bg-white/10 text-white hover:bg-white/20 hover:text-white; }
-  .dark .hero-chips .chip { @apply bg-white/10 text-white hover:bg-white/20 hover:text-white; }
-
   /* ------------------------------------------------- explore by category */
   .tile-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5; }
 
