@@ -117,6 +117,39 @@ final class ListingImageProcessorTest extends CIUnitTestCase
         $this->assertSame(IMAGETYPE_WEBP, getimagesize($written)[2]);
     }
 
+    /**
+     * The hero rotation writes two renditions of one upload — 1600 for the page
+     * and 800 for phones — by calling process() twice on the same UploadedFile.
+     * That only works because the resize path reads the temp file with
+     * file_get_contents and never moves it. Nothing in process() advertises
+     * that, so a refactor to $file->move() would break the hero's srcset
+     * silently: the first pass would still succeed and only the small file
+     * would quietly stop appearing.
+     *
+     * See App\Services\HeroImageService::processUpload().
+     */
+    public function testTheSameUploadCanBeProcessedTwiceAtDifferentSizes(): void
+    {
+        $file = $this->upload($this->pngBytes(1600, 900), 'hero.png', 'image/png');
+
+        $large = $this->process($file, 1600);
+        $small = $this->process($file, 800);
+
+        $this->assertTrue($large['ok'], $large['error']);
+        $this->assertTrue($small['ok'], $small['error']);
+        $this->assertSame([1600, 900], [$large['width'], $large['height']]);
+        $this->assertSame([800, 450], [$small['width'], $small['height']]);
+
+        // Two separate files, both real — the second pass must not overwrite or
+        // consume the first.
+        $this->assertNotSame($large['path'], $small['path']);
+        foreach ([$large, $small] as $result) {
+            $written = $this->destDir . '/' . basename($result['path']);
+            $this->assertFileExists($written);
+            $this->assertGreaterThan(0, filesize($written));
+        }
+    }
+
     public function testResizesDownToTheLongEdgeLimit(): void
     {
         $result = $this->process($this->upload($this->pngBytes(400, 200), 'big.png', 'image/png'), 100);

@@ -257,6 +257,174 @@
   .hero h1 { @apply text-3xl font-extrabold leading-tight sm:text-5xl; }
   .hero p  { @apply mt-3 max-w-2xl text-base text-white/80 sm:text-lg; }
 
+  /* ------------------------------------------------- home page photo hero */
+  /* Deliberately NOT a modifier on .hero. That class is shared by ten pages —
+     browse, categories, province, landing, verified, faq and the three legal
+     pages — and every one of them wants the short gradient band it already has.
+     This is the home page's own thing.
+
+     The gradient below is the same one .hero uses, and it is the fallback, not
+     decoration: with no rows in directory_hero_images (a fresh install, a
+     database blip, an operator who deactivated everything) no <img> renders at
+     all and this is what shows. The hero degrades to its old self instead of a
+     white hole. */
+  .hero-home {
+    @apply relative isolate flex min-h-[520px] items-center overflow-hidden
+           bg-gradient-to-br from-primary-500 to-primary-700 text-white sm:min-h-[640px];
+  }
+  .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
+  .hero-inner { @apply relative z-10 py-14 sm:py-24; }
+  /* The shared .eyebrow is a pale pill for a pale page, and its dark variant is
+     primary-300 on a 15% wash — over a photograph that reads as floating blue
+     text with no pill at all. Restated here for both themes as the same
+     translucent white the chips use, which is legible on any frame. */
+  .hero-home .eyebrow,
+  .dark .hero-home .eyebrow {
+    @apply mb-4 bg-white/15 text-white ring-1 ring-inset ring-white/25 backdrop-blur-sm sm:mb-5;
+  }
+  /* text-3xl on phones is the size the hero already used. 4xl fits, but it
+     pushes the search box below the fold on a 375px screen, and the box is the
+     thing someone came here to use. */
+  /* max-w in ch is what keeps the headline inside the veil. Unconstrained,
+     "Find someone local you can trust" sets on one line at desktop widths and
+     runs to about 75% of the frame — past where the fade has gone, and straight
+     onto the bright wall in the salon photo. 18ch wraps it after "local", so it
+     stays in the protected column at every size and the fade can stay narrow.
+     The unit matters: ch scales with the font, so this holds at 3xl, 5xl and
+     6xl without three separate values.
+
+     drop-shadow is load-bearing rather than decorative now that no overlay
+     covers the whole photo — it is what stops the headline dissolving into a
+     light frame at the point the veil has faded out. */
+  .hero-home h1 {
+    @apply max-w-[18ch] text-3xl font-extrabold leading-[1.1] drop-shadow-lg
+           sm:text-5xl lg:text-6xl;
+  }
+  .hero-home p  { @apply mt-4 max-w-2xl text-base text-white/85 sm:text-lg; }
+
+  .hero-media { @apply absolute inset-0 -z-10; }
+  /* Every slide is stacked in the same box and only opacity separates them, so
+     nothing reflows as the rotation runs — a cross-fade must not be a layout
+     change. object-cover because the frame is a viewport, not the photo's
+     aspect ratio. */
+  .hero-slide {
+    @apply absolute inset-0 h-full w-full object-cover object-center opacity-0;
+  }
+
+  /* A dissolve, not two simultaneous fades.
+     
+     Fading the old photo out while the new one fades in looks obvious but is
+     not what it appears: the two are stacked over the hero's own background, so
+     at the midpoint you get 50% of the new plus 25% of the old plus 25% of the
+     background. Measured — a quarter of the gradient bleeds through halfway
+     through every transition, and the whole hero visibly washes out and comes
+     back. That flicker is what reads as "not smooth", not the duration.
+     
+     So only the incoming slide animates. It fades up on top (z-2) while the
+     outgoing one sits underneath at full opacity (z-1), which keeps the frame
+     covered by a real photograph for every frame of the transition. The
+     outgoing slide is dropped to opacity 0 only once it is completely hidden,
+     and that drop is instant on purpose — the base .hero-slide rule declares no
+     transition, so removing .is-leaving cannot animate anything. */
+  .hero-slide.is-active {
+    @apply z-[2] opacity-100;
+    transition: opacity 1600ms cubic-bezier(0.37, 0, 0.28, 1);
+  }
+  .hero-slide.is-leaving { @apply z-[1] opacity-100; }
+
+  /* The slow push in is what separates "a photo is behind this" from "this page
+     is alive". It runs on the outgoing slide too: bound to .is-active alone it
+     would be cancelled the moment that class came off, snapping the photo back
+     to scale(1) while it is still visible underneath the dissolve. Both
+     selectors name the same animation, so moving between them continues it
+     rather than restarting it.
+     
+     linear, not ease-out. ease-out puts most of the travel in the first second,
+     which arrives as a lurch exactly when the photo does; a constant creep is
+     the thing that goes unnoticed. 12s against a ~8s visible life means it
+     never reaches the end and so never visibly resets. */
+  .hero-slide.is-active,
+  .hero-slide.is-leaving {
+    animation: hero-zoom 12s linear forwards;
+    will-change: opacity, transform;
+  }
+
+  /* Readability for the text, at no cost to the photograph.
+     
+     A horizontal fade, not a full-cover scrim: it is opaque where the headline
+     starts and gone by the middle of the frame, so the subject of every photo —
+     which sits right of centre in all six seeded shots — is seen at full
+     colour and contrast. Near-black rather than the brand ocean, because a
+     colour that tints the photo is the thing the full scrim was doing wrong.
+
+     The reach is wider on phones. There the copy runs the whole width of the
+     screen instead of sitting in a left column, so a fade that stopped at 60%
+     would leave the end of every line unprotected. */
+  .hero-veil {
+    @apply absolute inset-0 -z-10 bg-gradient-to-r from-[#04202f]/85
+           via-[#04202f]/60 via-45% to-transparent to-95%
+           sm:via-[32%] sm:to-[70%];
+  }
+  .dark .hero-veil { @apply from-[#04202f]/90 via-[#04202f]/65; }
+
+  /* ------------------------------------------------------- hero captions */
+  /* A one-cell grid, not a flex row: every caption is placed in that same cell
+     so they stack instead of sitting side by side. Same reason the slides are
+     absolutely positioned — swapping a short caption for a long one must not
+     move anything. pointer-events-none on the strip keeps the invisible ones
+     from eating clicks meant for the photo behind. */
+  .hero-captions { @apply pointer-events-none absolute inset-x-0 bottom-0 z-10 grid px-4 pb-4 sm:px-6 sm:pb-5; }
+  /* Delayed so it changes once the photo it names is most of the way in.
+     Swapping the label first makes the caption look like it belongs to the
+     picture still on screen. */
+  .hero-caption {
+    grid-area: 1 / 1;
+    @apply pointer-events-auto flex w-fit items-center gap-2 justify-self-end rounded-full
+           bg-black/40 px-3 py-1.5 text-xs opacity-0 backdrop-blur-sm
+           transition-opacity delay-500 duration-700;
+  }
+  .hero-caption.is-active { @apply opacity-100; }
+  /* A slide with neither caption nor credit still gets an element, so the
+     rotation's indexes stay aligned with the slides. It just never shows. */
+  .hero-caption.is-bare { @apply invisible; }
+  .hero-caption-link { @apply inline-flex items-center gap-1.5 font-semibold text-white; }
+  a.hero-caption-link:hover { @apply underline; }
+  .hero-credit { @apply text-white/60; }
+  a.hero-credit:hover { @apply text-white/90 underline; }
+
+  /* Yelp-scale search box: on a photograph the bar is the one thing that must
+     read as an object rather than a panel, so it gets more air and a heavier
+     shadow than the gradient version. Colours are untouched — the text-slate-900
+     rules further down already handle inheriting text-white from the hero. */
+  /* The size bump is sm: and up only. Below that the bar has already collapsed
+     to four stacked full-width rows, and taller rows there just push the search
+     button off the screen. */
+  .hero-home .searchbar { @apply mt-7 shadow-2xl sm:mt-8 sm:gap-2.5 sm:p-3; }
+  .hero-home .searchbar input,
+  .hero-home .searchbar select { @apply sm:py-3 sm:text-base; }
+  .hero-home .searchbar .btn { @apply sm:px-7 sm:py-3 sm:text-base; }
+  /* bg-white/10 is what the gradient hero uses; over a photograph it reads as
+     mud, so these get a lift and an edge to sit on. */
+  .hero-home .hero-chips .chip,
+  .dark .hero-home .hero-chips .chip {
+    @apply bg-white/15 ring-1 ring-inset ring-white/20 backdrop-blur-sm hover:bg-white/25;
+  }
+
+  /* Non-negotiable. The rotation is ambience; for anyone who has asked their
+     system for less movement it is just movement. The JS bails on the same
+     query, so slide one simply stands still — these rules are the belt to that
+     braces, and cover a stylesheet loading without its script. */
+  @media (prefers-reduced-motion: reduce) {
+    /* .hero-slide.is-active, not .hero-slide — the transition is declared on
+       the two-class selector now, and a single-class rule here would lose to it
+       on specificity and silently stop suppressing anything. */
+    .hero-slide.is-active,
+    .hero-slide.is-leaving,
+    .hero-caption { @apply transition-none; }
+    .hero-slide.is-active,
+    .hero-slide.is-leaving { animation: none; }
+  }
+
   /* ------------------------------------------------------------ search bar */
   .searchbar {
     @apply mt-6 grid gap-2 rounded-2xl bg-white p-3 shadow-brand-lg
@@ -916,4 +1084,18 @@
   /* primary-500 is near-black — invisible as a "current page" chip on a dark
      page. primary-300 with dark text is the readable inversion. */
   .dark .pager .current { @apply bg-primary-300 text-[#0f1419]; }
+}
+
+/* ---------------------------------------------------------------- keyframes */
+/* Outside @layer components on purpose: keyframes are not a component, and
+   Tailwind's layer machinery has no reason to see them. Applied by
+   .hero-slide.is-active and cancelled under prefers-reduced-motion, both above.
+
+   1.06 is chosen to be felt rather than noticed. Larger and the crop visibly
+   loses the edges of the frame between the first and last second — and because
+   the run is linear over 12s, only about the first third of that travel is ever
+   on screen. */
+@keyframes hero-zoom {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
 }

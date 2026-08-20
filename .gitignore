@@ -123,6 +123,19 @@ vendor/
 /public/assets/listings/*
 
 #-------------------------
+# Runtime-uploaded hero photographs, from admin/hero.
+#
+# Only the uploads/ subdirectory. public/assets/hero/ itself holds the seeded
+# photographs, which ARE source: they are what a fresh install's home page
+# shows, they are referenced by DirectoryHeroImagesSeeder, and they ship in the
+# deploy bundle. Uploads are per-environment content and must not — a
+# developer's test photo overwriting production's is exactly the failure the
+# listings rule above exists to prevent.
+#-------------------------
+/public/assets/hero/uploads/*
+!/public/assets/hero/uploads/.gitkeep
+
+#-------------------------
 # Claude Code local state
 #-------------------------
 # Local state only — machine-specific settings and lock files. The skills under

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\HeroImageService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Directory extends BaseController
@@ -30,6 +31,9 @@ class Directory extends BaseController
             'groups'         => $svc->categoriesGrouped(),
             'provinces'      => $svc->provinces(),
             'stats'          => $svc->stats(),
+            // Cached whole, and an empty array on any failure — the hero falls
+            // back to its gradient rather than taking the home page with it.
+            'slides'         => (new HeroImageService())->slides(),
         ]);
     }
 

@@ -20,8 +20,68 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
-    <div class="container">
+<?php
+// The photographs are decoration over a search form that works without them, so
+// everything below is conditional on there being any. With none, .hero-home
+// renders its own ocean gradient and the page looks exactly as it did before
+// this feature existed — which is also what a database or cache failure gets,
+// by way of HeroImageService::slides() returning [].
+$hasSlides = $slides !== [];
+?>
+<section class="hero-home"<?= $hasSlides ? ' data-hero' : '' ?>>
+    <?php if ($hasSlides): ?>
+        <?php // aria-hidden and alt="": these carry no information a screen reader
+              // needs. What they represent is said out loud by the caption link
+              // below, which is a real, focusable control. ?>
+        <div class="hero-media" aria-hidden="true">
+            <?php foreach ($slides as $i => $s): ?>
+                <?php
+                $large = base_url($s['path']);
+                $small = $s['path_sm'] ? base_url($s['path_sm']) : '';
+                ?>
+                <?php
+                // Only the first photo gets a real src. The rest carry their URLs
+                // in data- attributes and are hydrated by directory.js after the
+                // window load event.
+                //
+                // loading="lazy" does NOT do this job: these are all stacked at
+                // the top of the page, so the browser considers every one of them
+                // in the viewport and fetches the lot immediately — measured at
+                // six requests and ~530kB before the fold had settled. Deferring
+                // in script is what actually keeps the hero to one image.
+                //
+                // With no JavaScript the rotation never runs, so the images it
+                // would have rotated to are never needed: the hero is a single
+                // still photograph, which is the right thing to degrade to.
+                $srcAttr = $i === 0 ? 'src' : 'data-src';
+                $setAttr = $i === 0 ? 'srcset' : 'data-srcset';
+                ?>
+                <img class="hero-slide<?= $i === 0 ? ' is-active' : '' ?>"
+                     <?= $srcAttr ?>="<?= esc($large, 'attr') ?>"
+                     <?php // One srcset only when there really are two renditions —
+                           // a photo whose small encode failed stores path_sm null. ?>
+                     <?php if ($small !== ''): ?>
+                     <?= $setAttr ?>="<?= esc($small, 'attr') ?> 800w, <?= esc($large, 'attr') ?> 1600w"
+                     sizes="100vw"
+                     <?php endif; ?>
+                     <?php // Kept on every slide, hydrated or not, so swapping a
+                           // photo in can never shift the layout. ?>
+                     <?php if ($s['width'] && $s['height']): ?>
+                     width="<?= (int) $s['width'] ?>" height="<?= (int) $s['height'] ?>"
+                     <?php endif; ?>
+                     alt="" decoding="async"
+                     <?= $i === 0 ? 'fetchpriority="high"' : '' ?>>
+            <?php endforeach; ?>
+        </div>
+        <?php // A wash across the left of the frame only, not a scrim over the
+              // whole photograph. Every seeded shot puts its subject right of
+              // centre, so this darkens the side the headline sits on and leaves
+              // the person in the picture at full colour — which was the point
+              // of dropping the full-cover overlay. ?>
+        <div class="hero-veil" aria-hidden="true"></div>
+    <?php endif; ?>
+
+    <div class="container hero-inner">
         <span class="eyebrow">Local services, professionals &amp; home industry</span>
         <h1>Find someone <span class="text-brand-golden">local</span> you can trust</h1>
         <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — across South Africa. Or add your own business, free.</p>
@@ -63,6 +123,47 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
             </div>
         <?php endif; ?>
     </div>
+
+    <?php // The Yelp move: say what is in the photograph and make it a way in.
+          // One element per slide, in slide order — the rotation swaps both by
+          // index, so a caption can never end up describing the wrong photo.
+          // Rendered even when a slide has nothing to say, because dropping it
+          // would shift every later index by one. ?>
+    <?php if ($hasSlides): ?>
+        <div class="hero-captions" data-hero-captions>
+            <?php foreach ($slides as $i => $s): ?>
+                <?php
+                $caption   = (string) ($s['caption'] ?? '');
+                $slug      = (string) ($s['category_slug'] ?? '');
+                $credit    = (string) ($s['credit'] ?? '');
+                $creditUrl = (string) ($s['credit_url'] ?? '');
+                $bare      = $caption === '' && $credit === '';
+                ?>
+                <div class="hero-caption<?= $i === 0 ? ' is-active' : '' ?><?= $bare ? ' is-bare' : '' ?>">
+                    <?php if ($caption !== ''): ?>
+                        <?php // A link only when the category still exists — ON DELETE
+                              // SET NULL leaves the caption behind as plain text
+                              // rather than a link into a 404. ?>
+                        <?php if ($slug !== ''): ?>
+                            <a class="hero-caption-link" href="<?= esc(base_url('directory/' . $slug), 'attr') ?>">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z"/></svg>
+                                <?= esc($caption) ?>
+                            </a>
+                        <?php else: ?>
+                            <span class="hero-caption-link"><?= esc($caption) ?></span>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    <?php if ($credit !== ''): ?>
+                        <?php if ($creditUrl !== ''): ?>
+                            <a class="hero-credit" href="<?= esc($creditUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Photo: <?= esc($credit) ?></a>
+                        <?php else: ?>
+                            <span class="hero-credit">Photo: <?= esc($credit) ?></span>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 </section>
 
 <?php if ($stats['listings'] > 0): ?>

@@ -13,6 +13,7 @@ use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
+use App\Services\HeroImageService;
 use App\Services\SystemStatusService;
 use App\Services\VerificationService;
 
@@ -501,6 +502,60 @@ class Admin extends BaseController
     {
         $result = (new DirectoryAdminService())->deleteCategory($id);
         return $this->backTo('admin/categories', $result);
+    }
+
+    // ------------------------------------------------------------ hero images
+
+    /**
+     * The photographs behind the home page hero.
+     *
+     * Thin shims over HeroImageService, same shape as the category screen
+     * above. The one difference is the upload: field-level complaints come back
+     * as `errors` + `old` so the form can redraw what was typed, exactly as
+     * saveSettings() does.
+     */
+    public function heroImages()
+    {
+        return view('admin/hero', [
+            'images'     => (new HeroImageService())->all(),
+            'categories' => (new DirectoryAdminService())->allCategories(),
+            'errors'     => session()->getFlashdata('errors') ?? [],
+            'old'        => session()->getFlashdata('old') ?? [],
+        ]);
+    }
+
+    public function storeHeroImage()
+    {
+        return $this->saveHeroImage(null);
+    }
+
+    public function updateHeroImage(int $id)
+    {
+        return $this->saveHeroImage($id);
+    }
+
+    public function deleteHeroImage(int $id)
+    {
+        $result = (new HeroImageService())->delete($id);
+
+        return $this->backTo('admin/hero', $result);
+    }
+
+    /** Shared by store and update — the two differ only in the id. */
+    private function saveHeroImage(?int $id)
+    {
+        $post   = $this->request->getPost();
+        $file   = $this->request->getFile('photo');
+        $result = (new HeroImageService())->save($id, $post, $file);
+
+        if (! $result['ok']) {
+            return redirect()->to(base_url('admin/hero'))
+                ->with('errors', $result['errors'])
+                ->with('old', $post)
+                ->with('error', $result['message']);
+        }
+
+        return redirect()->to(base_url('admin/hero'))->with('success', $result['message']);
     }
 
     // ---------------------------------------------------------------- settings

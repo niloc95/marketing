@@ -144,6 +144,14 @@ const uploadsOut = path.join(webOut, 'assets', 'listings');
 fs.rmSync(uploadsOut, { recursive: true, force: true });
 fs.mkdirSync(path.join(uploadsOut, 'gallery'), { recursive: true });
 
+// 4a-ii) Hero photographs uploaded through admin/hero, for the same reason and
+//     with the same consequence — production's rotation is production's. Note
+//     this wipes ONLY uploads/: the seeded photos in assets/hero/ are tracked
+//     source, are what DirectoryHeroImagesSeeder points at, and must ship.
+const heroUploadsOut = path.join(webOut, 'assets', 'hero', 'uploads');
+fs.rmSync(heroUploadsOut, { recursive: true, force: true });
+fs.mkdirSync(heroUploadsOut, { recursive: true });
+
 // 4b) Recompile Tailwind straight into the bundle (after the copy, so it is the
 //     authoritative stylesheet) instead of trusting the committed public/assets/
 //     directory.css to already be current. Mirrors build-marketing-site.js, and

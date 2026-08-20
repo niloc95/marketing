@@ -118,6 +118,14 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('verifications/(:num)/revoke', 'Admin::revokeVerification/$1');
     $routes->get('verification/document/(:num)', 'Admin::verificationDocument/$1');
 
+    // The home page hero rotation. Content, not configuration — which photo
+    // represents which category is an editorial call, so it lives here rather
+    // than in a committed array.
+    $routes->get('hero', 'Admin::heroImages');
+    $routes->post('hero', 'Admin::storeHeroImage');
+    $routes->post('hero/(:num)', 'Admin::updateHeroImage/$1');
+    $routes->post('hero/(:num)/delete', 'Admin::deleteHeroImage/$1');
+
     // Operator-editable settings: the badge price and whether it is offered.
     // Deliberately no secrets here — see the settings migration.
     $routes->get('settings', 'Admin::settings');

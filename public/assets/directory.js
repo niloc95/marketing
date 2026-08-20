@@ -1,8 +1,9 @@
 /* WebScheduler Directory — small page behaviour.
-   Eight independent modules (theme toggle / mobile menu / reveal / gallery
-   lightbox / share / image uploads / address autocomplete / map pin picker),
-   each a no-op if its markup isn't on the page. Event delegation from one
-   listener each, so this works for content injected later too.
+   Nine independent modules (theme toggle / mobile menu / reveal / gallery
+   lightbox / share / image uploads / address autocomplete / map pin picker /
+   home hero rotation), each a no-op if its markup isn't on the page. Event
+   delegation from one listener each, so this works for content injected later
+   too.
 
    Only the pin picker has a dependency: Leaflet, loaded ahead of this file by
    directory/_map_assets on the three listing forms. Everything else stays
@@ -1287,4 +1288,128 @@
       document.head.appendChild(l);
     });
   }
+
+  // ------------------------------------------------------ home hero rotation
+  // Cross-fades the photographs behind the home page search box, and moves the
+  // caption with them. Home page only — [data-hero] is on nothing else.
+  //
+  // The CSS does the actual fading; this only decides which element wears
+  // .is-active. That split is why the reduced-motion bail below is safe: with
+  // no JS running at all, slide one keeps the class the server rendered and the
+  // hero is simply a still photograph.
+  (function () {
+    var hero = document.querySelector('[data-hero]');
+    if (!hero) return;
+
+    var slides = hero.querySelectorAll('.hero-slide');
+    if (slides.length < 2) return;
+
+    // Someone who has asked their system for less movement is not asking for a
+    // slower carousel — they are asking for none. Checked once: a visitor who
+    // changes the setting mid-visit can reload.
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) { /* no matchMedia — fall through and animate */ }
+
+    var captions = hero.querySelectorAll('.hero-caption');
+
+    // DWELL is time on screen between transitions; FADE must match the
+    // transition-duration on .hero-slide.is-active in directory.css. They are
+    // two halves of one number: FADE too short and the outgoing photo is
+    // uncovered before the incoming has arrived, which is the flicker this
+    // whole arrangement exists to avoid.
+    var DWELL = 6500;
+    var FADE = 1600;
+    var index = 0;
+    var timer = null;
+    var settle = null;
+
+    // Slides past the first render with data-src instead of src, so the browser
+    // fetches exactly one hero photo before first paint. Moving them across is
+    // this module's job, and it happens after `load` — the hero is ambience, and
+    // it must not compete with anything the visitor is actually waiting for.
+    function hydrate() {
+      for (var i = 1; i < slides.length; i++) {
+        var img = slides[i];
+        var set = img.getAttribute('data-srcset');
+        // srcset first: assigning src on an <img> that is about to get a srcset
+        // can start a second, wasted request for the src candidate.
+        if (set) { img.srcset = set; img.removeAttribute('data-srcset'); }
+        var src = img.getAttribute('data-src');
+        if (src) { img.src = src; img.removeAttribute('data-src'); }
+      }
+    }
+
+    function show(next) {
+      var leaving = slides[index];
+
+      // Any slide still marked from an earlier transition is by definition
+      // hidden behind the current one — clear it before starting, so a
+      // transition interrupted by a backgrounded tab cannot leave a stale
+      // opaque slide stacked in the middle.
+      for (var i = 0; i < slides.length; i++) {
+        if (slides[i] !== leaving) slides[i].classList.remove('is-leaving');
+      }
+      clearTimeout(settle);
+
+      // The outgoing slide keeps full opacity underneath while the incoming one
+      // fades up on top of it — see .hero-slide.is-leaving. Dropping it here
+      // instead is what produces the mid-transition wash.
+      leaving.classList.remove('is-active');
+      leaving.classList.add('is-leaving');
+      if (captions[index]) captions[index].classList.remove('is-active');
+
+      index = next;
+      slides[index].classList.add('is-active');
+      if (captions[index]) captions[index].classList.add('is-active');
+
+      // Now fully covered, so this is invisible. It also stops the zoom on a
+      // slide nobody can see.
+      settle = setTimeout(function () {
+        leaving.classList.remove('is-leaving');
+      }, FADE);
+    }
+
+    function tick() {
+      show((index + 1) % slides.length);
+    }
+
+    function start() {
+      if (timer === null) timer = setInterval(tick, DWELL);
+    }
+
+    function stop() {
+      if (timer !== null) { clearInterval(timer); timer = null; }
+    }
+
+    // A backgrounded tab has nobody watching it. Stopping also means the first
+    // slide someone sees on returning is a whole dwell long, not the tail end
+    // of one that ran while the tab was hidden.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stop(); else start();
+    });
+
+    // Don't start the clock until the second photo can actually be painted.
+    // Starting on a timer alone means that on a slow connection the first
+    // transition fades a loaded photo out into nothing — the fade is a
+    // cross-fade or it is a flicker.
+    function begin() {
+      hydrate();
+      var second = slides[1];
+      if (second.complete && second.naturalWidth > 0) {
+        start();
+        return;
+      }
+      second.addEventListener('load', start, { once: true });
+      // A broken second image must not freeze the rotation on slide one
+      // forever; the others may be fine.
+      second.addEventListener('error', start, { once: true });
+    }
+
+    if (document.readyState === 'complete') {
+      begin();
+    } else {
+      window.addEventListener('load', begin, { once: true });
+    }
+  })();
 })();
