@@ -129,3 +129,25 @@ if (! function_exists('form_old_value')) {
         return is_scalar($value) ? (string) $value : '';
     }
 }
+
+if (! function_exists('listing_rich_text')) {
+    /**
+     * Render an owner-authored description as HTML.
+     *
+     * This is the one place in the app that prints listing content without
+     * esc(), so it re-runs App\Libraries\RichText::sanitise() at render time
+     * rather than trusting what is in the column. The write paths already
+     * sanitise, and this is the belt to that pair of braces: a row that got
+     * there another way — a hand-run UPDATE, an import, a restored backup
+     * predating the sanitiser — must not be able to put markup on the page.
+     *
+     * Yes, that is a DOM parse per profile view. It is bounded (RichText caps
+     * nodes and depth), it happens on one page, and the alternative is a
+     * guarantee that holds only as long as nothing ever writes to the database
+     * except the three services.
+     */
+    function listing_rich_text(?string $html): string
+    {
+        return \App\Libraries\RichText::sanitise((string) $html);
+    }
+}

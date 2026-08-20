@@ -1,5 +1,7 @@
 <?php
 
+use App\Libraries\RichText;
+
 /**
  * schema.org JSON-LD node builders.
  *
@@ -351,6 +353,28 @@ if (! function_exists('schema_opening_hours')) {
     }
 }
 
+if (! function_exists('schema_plain_description')) {
+    /**
+     * A listing's description as plain text, for structured data.
+     *
+     * Reads the derived description_text column, which the three write paths
+     * keep in step with the HTML. The fallback matters for rows loaded through
+     * a query that did not select it, and for the window between deploying the
+     * code and running the migration — deriving it on the spot is cheap and
+     * beats emitting markup into JSON-LD.
+     *
+     * @param array<string,mixed> $l
+     */
+    function schema_plain_description(array $l): string
+    {
+        $text = trim((string) ($l['description_text'] ?? ''));
+
+        return $text !== ''
+            ? $text
+            : RichText::toPlainText(trim((string) ($l['description'] ?? '')));
+    }
+}
+
 if (! function_exists('schema_local_business')) {
     /**
      * The full business node for a profile page, from a complete listing record.
@@ -412,7 +436,9 @@ if (! function_exists('schema_local_business')) {
             'url'                      => $canonical,
             'telephone'                => trim((string) ($l['phone'] ?? '')),
             'image'                    => listing_image_url($l['logo_path'] ?? null),
-            'description'              => trim((string) ($l['description'] ?? '')),
+            // The plain-text twin, never the HTML column: Google's parser wants
+            // text here, and markup in it is a structured-data warning.
+            'description'              => schema_plain_description($l),
             'knowsAbout'               => (string) ($l['category']['name'] ?? ($l['category_name'] ?? '')),
             'areaServed'               => trim((string) ($l['province'] ?? '')),
             'address'                  => count($address) > 1 ? $address : null,

@@ -79,4 +79,5 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
 
 <?= $this->section('scripts') ?>
 <?= view('directory/_map_assets') ?>
+<?= view('directory/_editor_assets') ?>
 <?= $this->endSection() ?>

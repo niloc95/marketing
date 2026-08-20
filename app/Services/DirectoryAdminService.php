@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
+use App\Libraries\RichText;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
@@ -160,7 +161,7 @@ class DirectoryAdminService
             'contact_person' => null,
             'title'          => null,
             'credentials'    => null,
-            'description'    => null,
+            'description'    => 'richtext',
             'phone'          => null,
             'website'        => 'url',
             'address_line'   => null,
@@ -195,6 +196,32 @@ class DirectoryAdminService
                     ];
                 }
                 $data[$field] = $normalised;
+                continue;
+            }
+
+            if ($mode === 'richtext') {
+                // Admins get sanitised on exactly the same terms as owners. It
+                // is not a trust judgement — the admin form is where a listing
+                // imported or pasted from elsewhere lands, and description_text
+                // has to be rederived here or the search index and the JSON-LD
+                // quietly keep describing the previous version.
+                $data[$field]             = RichText::sanitise($value);
+                $data['description_text'] = RichText::toPlainText($data[$field]);
+
+                // Checked here rather than left to the model rule, which fires
+                // at save time and surfaces as an unhighlighted "could not
+                // save". The public and owner forms get the same message from
+                // DirectoryListingMutationService::validate().
+                if (mb_strlen($data['description_text']) > RichText::MAX_PLAIN_LENGTH) {
+                    return [
+                        'ok'     => false,
+                        'errors' => ['description' => sprintf(
+                            'Please keep the description under %d characters.',
+                            RichText::MAX_PLAIN_LENGTH
+                        )],
+                        'message' => 'Please correct the highlighted fields.',
+                    ];
+                }
                 continue;
             }
 

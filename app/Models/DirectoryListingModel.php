@@ -15,7 +15,7 @@ class DirectoryListingModel extends Model
 
     protected $allowedFields = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
-        'credentials', 'description', 'phone', 'email', 'website',
+        'credentials', 'description', 'description_text', 'phone', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
@@ -68,14 +68,20 @@ class DirectoryListingModel extends Model
         // to fill a placeholder for a field that has no rule of its own, and
         // without the placeholder is_unique compares the row against itself —
         // so any update that resubmits an unchanged slug fails validation.
-        'id'           => 'permit_empty|is_natural_no_zero',
-        'display_name' => 'required|min_length[2]|max_length[200]',
-        'description'  => 'permit_empty|max_length[2000]',
-        'type'         => 'permit_empty|in_list[person,practice,facility]',
-        'email'        => 'permit_empty|valid_email|max_length[190]',
-        'website'      => 'permit_empty|max_length[255]',
-        'slug'         => 'required|alpha_dash|max_length[190]|is_unique[xs_directory_listings.slug,id,{id}]',
-        'status'       => 'permit_empty|in_list[pending,published,unpublished,rejected]',
+        'id'               => 'permit_empty|is_natural_no_zero',
+        'display_name'     => 'required|min_length[2]|max_length[200]',
+        // A structural ceiling on stored markup, not the editorial one. The
+        // 2000-character limit owners actually feel is enforced against the
+        // plain text in DirectoryListingMutationService::validate(), so
+        // formatting does not eat into the allowance; this only stops something
+        // pathological reaching a TEXT column.
+        'description'      => 'permit_empty|max_length[20000]',
+        'description_text' => 'permit_empty|max_length[2000]',
+        'type'             => 'permit_empty|in_list[person,practice,facility]',
+        'email'            => 'permit_empty|valid_email|max_length[190]',
+        'website'          => 'permit_empty|max_length[255]',
+        'slug'             => 'required|alpha_dash|max_length[190]|is_unique[xs_directory_listings.slug,id,{id}]',
+        'status'           => 'permit_empty|in_list[pending,published,unpublished,rejected]',
     ];
 
     /**

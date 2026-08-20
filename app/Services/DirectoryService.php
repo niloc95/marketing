@@ -317,8 +317,11 @@ class DirectoryService
      * matching only the listing's own text misses the most common query there
      * is. This deliberately spans four sources:
      *
-     *   - FULLTEXT over display_name / description / credentials, in BOOLEAN
-     *     mode with a trailing * so "hairdress" reaches "hairdresser"
+     *   - FULLTEXT over display_name / description_text / credentials, in
+     *     BOOLEAN mode with a trailing * so "hairdress" reaches "hairdresser".
+     *     description_text, not description: the latter holds the rich-text
+     *     HTML, and indexing that would make "strong", "blockquote" and
+     *     "center" match every listing whose owner used the toolbar
      *   - the joined category name
      *   - the listing's town and suburb
      *   - its tags, via EXISTS on the pivot
@@ -342,7 +345,7 @@ class DirectoryService
             // innodb_ft_min_token_size (3 by default), which is fine here.
             $expr = implode(' ', array_map(static fn ($t) => $t . '*', $terms));
             $builder->where(
-                'MATCH(xs_directory_listings.display_name, xs_directory_listings.description, xs_directory_listings.credentials) '
+                'MATCH(xs_directory_listings.display_name, xs_directory_listings.description_text, xs_directory_listings.credentials) '
                 . 'AGAINST (' . $db->escape($expr) . ' IN BOOLEAN MODE)',
                 null,
                 false

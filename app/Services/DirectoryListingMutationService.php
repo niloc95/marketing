@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
 use App\Libraries\Mailer;
+use App\Libraries\RichText;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
@@ -61,8 +62,9 @@ class DirectoryListingMutationService
             ];
         }
 
-        $token = bin2hex(random_bytes(32));
-        $slug  = ensure_unique_slug($this->listings, 'slug', (string) $input['display_name'], null, listing_reserved_slugs());
+        $token       = bin2hex(random_bytes(32));
+        $description = $this->richText($input['description'] ?? '');
+        $slug        = ensure_unique_slug($this->listings, 'slug', (string) $input['display_name'], null, listing_reserved_slugs());
 
         $data = [
             'type'           => in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true) ? $input['type'] : 'person',
@@ -71,7 +73,8 @@ class DirectoryListingMutationService
             'title'          => $this->clean($input['title'] ?? ''),
             'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
             'credentials' => $this->clean($input['credentials'] ?? ''),
-            'description'    => $this->clean($input['description'] ?? ''),
+            'description'      => $description,
+            'description_text' => RichText::toPlainText($description),
             'phone'          => $this->clean($input['phone'] ?? ''),
             'email'          => trim((string) $input['email']),
             'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
@@ -311,6 +314,14 @@ class DirectoryListingMutationService
             if (array_key_exists($field, $input)) {
                 if (in_array($field, ['city', 'suburb'], true)) {
                     $data[$field] = normalise_place($this->clean($input[$field]));
+                } elseif ($field === 'description') {
+                    // Rich text: sanitise, then derive the plain-text twin the
+                    // FULLTEXT index and the JSON-LD read. description_text is
+                    // deliberately not in OWNER_EDITABLE, so this is the only
+                    // way it can be written on this path — a crafted POST
+                    // naming it directly is ignored by the loop above.
+                    $data[$field]             = $this->richText($input[$field]);
+                    $data['description_text'] = RichText::toPlainText($data[$field]);
                 } elseif ($field === 'website') {
                     // validate() has already rejected anything normaliseUrl
                     // can't make safe, so the ?? '' here is belt-and-braces.
@@ -472,8 +483,17 @@ class DirectoryListingMutationService
         }
         // The model enforces this too, but only at insert time, where it
         // surfaces as a generic "could not save" with no field highlighted.
-        if (mb_strlen($this->clean($input['description'] ?? '')) > 2000) {
-            $errors['description'] = 'Please keep the description under 2000 characters.';
+        //
+        // Counted on the plain text, not the posted HTML: the field is rich text
+        // now, and measuring the markup would mean a listing that uses a bullet
+        // list gets a smaller allowance than one that does not — for characters
+        // the owner never typed and cannot see.
+        $description = RichText::toPlainText($this->richText($input['description'] ?? ''));
+        if (mb_strlen($description) > RichText::MAX_PLAIN_LENGTH) {
+            $errors['description'] = sprintf(
+                'Please keep the description under %d characters.',
+                RichText::MAX_PLAIN_LENGTH
+            );
         }
         // Measured on the normalised value, not the raw input: normaliseUrl()
         // promotes a bare "example.co.za" to "https://example.co.za", so a
@@ -597,6 +617,16 @@ class DirectoryListingMutationService
     private function clean($v): string
     {
         return is_scalar($v) ? trim((string) $v) : '';
+    }
+
+    /**
+     * The description is the one field that may carry markup. Everything that
+     * makes that safe lives in RichText; this only guards the type, since an
+     * array posted as description[] would otherwise reach the sanitiser.
+     */
+    private function richText($v): string
+    {
+        return RichText::sanitise($this->clean($v));
     }
 
     /** Collapse newlines so a failure message can't forge extra log lines. */

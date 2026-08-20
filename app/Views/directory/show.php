@@ -160,7 +160,10 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                 <?php if (! empty($l['description']) || $pills): ?>
                     <div class="panel mb-5">
                         <h3>About</h3>
-                        <?php if (! empty($l['description'])): ?><p class="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300"><?= esc($l['description']) ?></p><?php endif; ?>
+                        <?php /* The only unescaped listing content on the site. listing_rich_text()
+                                 runs it through RichText::sanitise() first — do not swap this for a
+                                 bare echo, and do not add esc() (it would print the tags). */ ?>
+                        <?php if (! empty($l['description'])): ?><div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text($l['description']) ?></div><?php endif; ?>
                         <?php if ($pills): ?>
                             <div class="pillrow">
                                 <?php foreach ($pills as $label): ?><span class="pill pill-capability"><?= esc($label) ?></span><?php endforeach; ?>

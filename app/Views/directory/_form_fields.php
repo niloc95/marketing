@@ -104,9 +104,31 @@ helper('directory_hours');
     <textarea name="credentials" rows="2" maxlength="500"><?= esc($v('credentials')) ?></textarea>
     <?php if ($err('credentials')): ?><div class="err"><?= esc($err('credentials')) ?></div><?php endif; ?>
 </div>
-<div class="field">
-    <label>Description</label>
-    <textarea name="description" rows="4" maxlength="2000" placeholder="What you offer, who you serve…"><?= esc($v('description')) ?></textarea>
+<div class="field" data-rich-text>
+    <label for="description">Description</label>
+    <?php /*
+        The textarea is the real form field and stays that way. directory.js
+        hides it, mounts Quill into the div below, and copies the editor's HTML
+        back into it on submit — so with JavaScript off or Quill failing to
+        load, this posts plain text and RichText::sanitise() turns it into
+        paragraphs. Nothing about the form depends on the editor existing.
+
+        maxlength is gone because it counts markup, not words; the same 2000-
+        character cap is enforced against the plain text by the counter in
+        directory.js and, authoritatively, by the service on save.
+    */ ?>
+    <textarea id="description" name="description" rows="6" placeholder="What you offer, who you serve…"><?= esc($v('description')) ?></textarea>
+    <?php /*
+        The inner div is the mount and the outer one is not redundant: Quill
+        turns the element it is given into .ql-container and inserts .ql-toolbar
+        as its *previous sibling*. Without a wrapper the toolbar lands loose in
+        .field, out of reach of the styles below and above the label's own hint.
+    */ ?>
+    <div class="rt-editor" hidden>
+        <div data-rich-text-for="description"></div>
+    </div>
+    <div class="rt-count" data-rich-text-count hidden></div>
+    <div class="hint">Use the toolbar to add headings, bold, lists and links.</div>
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 <div class="field">

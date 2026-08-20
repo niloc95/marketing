@@ -1084,6 +1084,113 @@
   /* primary-500 is near-black — invisible as a "current page" chip on a dark
      page. primary-300 with dark text is the readable inversion. */
   .dark .pager .current { @apply bg-primary-300 text-[#0f1419]; }
+
+  /* --------------------------------------------------- description editor */
+  /* Quill's Snow theme, fitted to the form and taught about dark mode. It is
+     vendored under public/assets/vendor/quill/ and loaded only on the three
+     listing forms; none of this reaches a visitor reading a profile.
+
+     Written as explicit selectors rather than utilities because these class
+     names come out of a vendored bundle Tailwind's content globs never scan. */
+  .rt-editor .ql-editor {
+    @apply min-h-[12rem] text-sm text-slate-900;
+  }
+  .rt-editor .ql-editor.ql-blank::before {
+    @apply not-italic text-slate-400;
+  }
+  .rt-editor .ql-toolbar.ql-snow {
+    @apply rounded-t-xl border-slate-200 bg-slate-50;
+  }
+  .rt-editor .ql-container.ql-snow {
+    @apply rounded-b-xl border-slate-200 bg-white font-sans;
+  }
+  .rt-editor .ql-snow .ql-picker { @apply text-slate-700; }
+  .rt-editor .ql-snow .ql-stroke  { stroke: theme('colors.slate.600'); }
+  .rt-editor .ql-snow .ql-fill    { fill: theme('colors.slate.600'); }
+
+  /* Live plain-text budget, mirroring RichText::MAX_PLAIN_LENGTH. */
+  .rt-count            { @apply mt-1 text-right text-xs text-slate-500; }
+  .rt-count.is-over    { @apply font-semibold text-brand-crimson; }
+  .dark .rt-count      { @apply text-slate-400; }
+
+  .dark .rt-editor .ql-toolbar.ql-snow  { @apply border-slate-700 bg-slate-900; }
+  .dark .rt-editor .ql-container.ql-snow { @apply border-slate-700 bg-slate-800; }
+  .dark .rt-editor .ql-editor            { @apply text-white; }
+  .dark .rt-editor .ql-editor.ql-blank::before { @apply text-slate-400; }
+  /* The toolbar icons are inline SVG, so they follow stroke/fill rather than
+     color — leaving them at Snow's near-black makes the whole toolbar
+     disappear against a dark card. */
+  .dark .rt-editor .ql-snow .ql-stroke   { stroke: theme('colors.slate.300'); }
+  .dark .rt-editor .ql-snow .ql-fill     { fill: theme('colors.slate.300'); }
+  .dark .rt-editor .ql-snow .ql-picker   { @apply text-slate-300; }
+  .dark .rt-editor .ql-snow .ql-picker-options {
+    @apply border-slate-700 bg-slate-900 text-slate-200;
+  }
+  .dark .rt-editor .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+    @apply border-slate-700;
+  }
+  .dark .rt-editor .ql-snow.ql-toolbar button:hover .ql-stroke,
+  .dark .rt-editor .ql-snow.ql-toolbar button.ql-active .ql-stroke {
+    stroke: theme('colors.primary.300');
+  }
+  .dark .rt-editor .ql-snow.ql-toolbar button:hover .ql-fill,
+  .dark .rt-editor .ql-snow.ql-toolbar button.ql-active .ql-fill {
+    fill: theme('colors.primary.300');
+  }
+  /* The link tooltip is a floating panel Quill positions itself; without this
+     it stays white-on-white-text in dark mode and reads as empty. */
+  .dark .rt-editor .ql-snow .ql-tooltip {
+    @apply border-slate-700 bg-slate-900 text-slate-200 shadow-lg;
+  }
+  .dark .rt-editor .ql-snow .ql-tooltip input[type="text"] {
+    @apply border-slate-700 bg-slate-800 text-white;
+  }
+
+  /* ------------------------------------------------------- listing prose */
+  /* The public rendering of an owner's description — the one place the site
+     prints listing content unescaped, after App\Libraries\RichText has reduced
+     it to the allowlist below. Every element here is one that sanitiser
+     permits; anything else never reaches the page, so there is nothing else to
+     style.
+
+     Hand-written rather than @tailwindcss/typography: the plugin is not a
+     dependency of this project, and its defaults assume far more markup than
+     thirteen tags. */
+  .listing-prose > :first-child { @apply mt-0; }
+  .listing-prose > :last-child  { @apply mb-0; }
+  .listing-prose p          { @apply my-2 leading-relaxed; }
+  /* Both sit *below* the panel's own <h3> "About", which is 16px/600. An
+     owner's heading organises their copy; it does not get to look like the
+     site's section title sitting directly above it. */
+  .listing-prose h2         { @apply mb-1.5 mt-4 text-[0.9375rem] font-semibold text-slate-900; }
+  .listing-prose h3         { @apply mb-1 mt-3 text-sm font-semibold text-slate-900; }
+  .listing-prose ul         { @apply my-2 list-disc space-y-1 pl-5; }
+  .listing-prose ol         { @apply my-2 list-decimal space-y-1 pl-5; }
+  .listing-prose blockquote { @apply my-3 border-l-2 border-slate-300 pl-3 italic text-slate-600; }
+  .listing-prose strong     { @apply font-semibold text-slate-900; }
+  .listing-prose a          { @apply font-medium text-primary-500 underline underline-offset-2 hover:text-primary-300; }
+  .dark .listing-prose h2,
+  .dark .listing-prose h3,
+  .dark .listing-prose strong { @apply text-white; }
+  .dark .listing-prose blockquote { @apply border-slate-600 text-slate-400; }
+  .dark .listing-prose a          { @apply text-primary-300 hover:text-white; }
+
+  /* Quill's align and indent formats are classes, not inline styles — which is
+     the reason the CSP tolerates them at all (style-src-attr is 'self'). They
+     arrive from the database, so Tailwind never sees them in a template and
+     they have to be written out longhand. */
+  .listing-prose .ql-align-center  { @apply text-center; }
+  .listing-prose .ql-align-right   { @apply text-right; }
+  .listing-prose .ql-align-justify { @apply text-justify; }
+  .listing-prose .ql-indent-1 { @apply pl-6; }
+  .listing-prose .ql-indent-2 { @apply pl-12; }
+  .listing-prose .ql-indent-3 { @apply pl-[4.5rem]; }
+  .listing-prose .ql-indent-4 { @apply pl-24; }
+  .listing-prose .ql-indent-5 { @apply pl-[7.5rem]; }
+  .listing-prose .ql-indent-6 { @apply pl-36; }
+  .listing-prose .ql-indent-7 { @apply pl-[10.5rem]; }
+  .listing-prose .ql-indent-8 { @apply pl-48; }
+  .listing-prose .ql-indent-9 { @apply pl-[13.5rem]; }
 }
 
 /* ---------------------------------------------------------------- keyframes */
