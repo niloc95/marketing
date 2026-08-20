@@ -24,6 +24,11 @@ $err = fn (string $f) => $errors[$f] ?? '';
 
 helper('directory_hours');
 $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listing['trading_hours'] ?? null) ?? []);
+
+// Same precedence as every other field: what was typed into a rejected save
+// wins over what is stored, so nobody retypes a team after one bad row.
+$vTeam      = is_array($old['team'] ?? null) ? $old['team'] : $team;
+$vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locations;
 ?>
 <section class="section">
     <div class="container">
@@ -73,6 +78,9 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
                     'vHours'       => $vHours,
                     'existingLogo' => (string) ($listing['logo_path'] ?? ''),
                     'gallerySlots' => $slots,
+                    'vTeam'        => $vTeam,
+                    'vLocations'   => $vLocations,
+                    'showExtras'   => $showExtras,
                 ]) ?>
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>

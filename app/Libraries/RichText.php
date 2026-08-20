@@ -35,11 +35,11 @@ final class RichText
      * The editorial cap, counted in plain text.
      *
      * Measured after markup is removed so a listing that uses formatting is not
-     * punished for it — 2000 characters of prose stays 2000 characters whether
+     * punished for it — 5000 characters of prose stays 5000 characters whether
      * or not half of it is bold. Mirrored by the character counter in
      * public/assets/directory.js; change both together.
      */
-    public const MAX_PLAIN_LENGTH = 2000;
+    public const MAX_PLAIN_LENGTH = 5000;
 
     /**
      * Every element permitted in stored HTML.

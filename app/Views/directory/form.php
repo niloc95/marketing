@@ -48,18 +48,17 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     <details class="verify-offer">
                         <summary>
                             <span class="badge badge-verified">&#10003; Verified Business</span>
-                            Want the verified badge? Add your documents now &mdash; optional
+                            Want the verified badge? See what it adds &mdash; optional
                         </summary>
                         <div class="verify-offer-body">
-                            <p class="hint">
-                                Send us your company registration document and the owner's ID. Once we've
-                                checked them, your profile carries a Verified Business badge in search
-                                results and on your page, for <strong>R<?= esc($verificationAmount) ?> a month</strong>.
-                            </p>
-                            <p class="hint">
-                                <strong>You won't be charged anything now.</strong> We review your documents
-                                first and email you a payment link only if they check out. Your listing is
-                                free either way.
+                            <?php // Stays collapsed for the reason above, but once it is open it
+                                  // should answer "why would I" rather than only "what do you
+                                  // need from me". The pitch is shared with the owner dashboard
+                                  // and /verified so all three describe the same offer. ?>
+                            <?= view('directory/_verification_pitch', ['amount' => $verificationAmount]) ?>
+                            <p class="hint verify-offer-docs">
+                                To apply, send your company registration document and the owner's ID.
+                                We review them, usually within two working days.
                             </p>
                             <?= view('directory/_verification_fields', ['amount' => $verificationAmount]) ?>
                         </div>

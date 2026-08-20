@@ -15,7 +15,7 @@ class DirectoryListingModel extends Model
 
     protected $allowedFields = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
-        'credentials', 'description', 'description_text', 'phone', 'email', 'website',
+        'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
@@ -57,7 +57,7 @@ class DirectoryListingModel extends Model
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
-        'credentials', 'description', 'phone', 'website',
+        'credentials', 'description', 'phone', 'phone_alt', 'website',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'logo_path',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
@@ -71,12 +71,12 @@ class DirectoryListingModel extends Model
         'id'               => 'permit_empty|is_natural_no_zero',
         'display_name'     => 'required|min_length[2]|max_length[200]',
         // A structural ceiling on stored markup, not the editorial one. The
-        // 2000-character limit owners actually feel is enforced against the
+        // 5000-character limit owners actually feel is enforced against the
         // plain text in DirectoryListingMutationService::validate(), so
         // formatting does not eat into the allowance; this only stops something
         // pathological reaching a TEXT column.
-        'description'      => 'permit_empty|max_length[20000]',
-        'description_text' => 'permit_empty|max_length[2000]',
+        'description'      => 'permit_empty|max_length[50000]',
+        'description_text' => 'permit_empty|max_length[5000]',
         'type'             => 'permit_empty|in_list[person,practice,facility]',
         'email'            => 'permit_empty|valid_email|max_length[190]',
         'website'          => 'permit_empty|max_length[255]',

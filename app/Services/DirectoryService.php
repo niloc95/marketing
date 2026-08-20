@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
+use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPracticeLocationModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryTagModel;
@@ -27,15 +28,17 @@ class DirectoryService
     private DirectoryPracticeLocationModel $locations;
     private DirectoryTagModel $tags;
     private DirectoryListingPhotoModel $photos;
+    private DirectoryListingTeamModel $team;
 
     public function __construct()
     {
-        helper('directory_hours');
+        helper(['directory_hours', 'directory_ui']);
         $this->listings    = new DirectoryListingModel();
         $this->categories = new DirectoryCategoryModel();
         $this->locations   = new DirectoryPracticeLocationModel();
         $this->tags        = new DirectoryTagModel();
         $this->photos       = new DirectoryListingPhotoModel();
+        $this->team         = new DirectoryListingTeamModel();
     }
 
     /** Radius options offered on the search page, in kilometres. */
@@ -325,6 +328,8 @@ class DirectoryService
      *   - the joined category name
      *   - the listing's town and suburb
      *   - its tags, via EXISTS on the pivot
+     *   - its team members' names and areas of focus, via EXISTS on the team
+     *     table, and only while the badge that publishes them is live
      *
      * @param \CodeIgniter\Database\BaseBuilder|\CodeIgniter\Model $builder
      */
@@ -365,6 +370,21 @@ class DirectoryService
             . ' AND t.name LIKE ' . $db->escape('%' . $db->escapeLikeString($q) . '%') . ')';
         $builder->orWhere($tagSql, null, false);
 
+        // Team members, for the same reason and in the same shape: a firm is
+        // very often searched for by the name of the person you were referred
+        // to, or by an area of law only one of its attorneys practises, and
+        // neither string is anywhere on the listing row.
+        //
+        // The verified_until clause is not optional. Team members only render
+        // for a listing with a live badge, so without it a search would return
+        // a business on the strength of a panel the visitor cannot see.
+        $like    = $db->escape('%' . $db->escapeLikeString($q) . '%');
+        $teamSql = 'EXISTS (SELECT 1 FROM xs_directory_listing_team tm'
+            . ' WHERE tm.listing_id = xs_directory_listings.id'
+            . ' AND xs_directory_listings.verified_until >= CURDATE()'
+            . ' AND (tm.name LIKE ' . $like . ' OR tm.specializations LIKE ' . $like . '))';
+        $builder->orWhere($teamSql, null, false);
+
         $builder->groupEnd();
     }
 
@@ -386,6 +406,15 @@ class DirectoryService
         $listing['tags']           = $this->tags->namesForListing((int) $listing['id']);
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
         $listing['trading_hours']  = hours_decode($listing['trading_hours'] ?? null);
+
+        // Team members are part of the paid badge, so the gate is here at load
+        // rather than in the view: one place decides, the panel and the
+        // JSON-LD both follow from it, and a listing without a live badge does
+        // not pay for the query. The rows are untouched — see
+        // TeamMemberService::canManage().
+        $listing['team'] = listing_is_verified_business($listing)
+            ? $this->team->forListing((int) $listing['id'])
+            : [];
 
         return $listing;
     }

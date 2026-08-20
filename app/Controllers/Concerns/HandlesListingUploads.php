@@ -4,6 +4,7 @@ namespace App\Controllers\Concerns;
 
 use App\Libraries\ListingImageProcessor;
 use App\Models\DirectoryListingPhotoModel;
+use App\Services\TeamMemberService;
 
 /**
  * Logo and gallery upload handling for the three controllers that own a
@@ -39,6 +40,28 @@ trait HandlesListingUploads
     {
         if ($path !== '') {
             (new DirectoryListingPhotoModel())->deleteFileAt($path);
+        }
+    }
+
+    /**
+     * Throw away headshots that were processed but never got attached to a row.
+     *
+     * The team equivalent of discardLogo(), and needed for the same reason: the
+     * files are written before the save so their paths can be part of it, which
+     * means a rejected save has already put images in public/ that nothing will
+     * ever reference. One determined visitor fighting a validation error leaves
+     * one file per person per attempt.
+     *
+     * @param mixed $team rows as returned by resolveTeamPhotos()
+     */
+    protected function discardTeamPhotos(mixed $team): void
+    {
+        $files = new DirectoryListingPhotoModel();
+
+        foreach (is_array($team) ? $team : [] as $row) {
+            if (is_array($row) && ! empty($row['photo_path'])) {
+                $files->deleteFileAt((string) $row['photo_path']);
+            }
         }
     }
 
@@ -137,6 +160,62 @@ trait HandlesListingUploads
         }
 
         return ['photos' => $photos, 'errors' => $errors];
+    }
+
+    /**
+     * Resolve the headshots posted alongside the team rows.
+     *
+     * The team lives inside the listing form, so its file inputs are named
+     * team_photo[0], team_photo[1] … and arrive as one indexed array. Each
+     * processed path is merged back into the matching team row as `photo_path`,
+     * which is where TeamMemberService::syncFromForm() looks for it.
+     *
+     * An index with no file is not an error — it is the normal case for a row
+     * whose photo is not being changed, and an empty photo_path means "keep
+     * whatever is stored", exactly as resolveLogo() does for the listing.
+     *
+     * Runs before the save, like every other upload here, so a rejected save
+     * leaves files behind on purpose; the caller bins them with the orphans the
+     * sync hands back.
+     *
+     * @param mixed $team the raw `team` array off the request
+     *
+     * @return array{team:array<int|string,mixed>,errors:array<int,string>}
+     */
+    protected function resolveTeamPhotos(mixed $team): array
+    {
+        $team  = is_array($team) ? $team : [];
+        $files = $this->request->getFileMultiple('team_photo') ?? [];
+
+        $errors    = [];
+        $processor = new ListingImageProcessor();
+
+        foreach ($files as $index => $file) {
+            if (! $file || $file->getError() === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            // A file for a row that was not submitted has nowhere to go. Skip
+            // it rather than processing an image nothing will ever reference.
+            if (! isset($team[$index]) || ! is_array($team[$index])) {
+                continue;
+            }
+
+            $result = $processor->process(
+                $file,
+                rtrim(FCPATH, '/') . '/' . TeamMemberService::UPLOAD_DIR,
+                'team',
+                TeamMemberService::PHOTO_SIZE
+            );
+
+            if ($result['ok']) {
+                $team[$index]['photo_path'] = $result['path'];
+            } else {
+                $errors[] = $result['error'];
+            }
+        }
+
+        return ['team' => $team, 'errors' => $errors];
     }
 
     /**

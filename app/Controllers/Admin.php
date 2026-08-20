@@ -7,6 +7,7 @@ use App\Libraries\LogReader;
 use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
+use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectorySettingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
@@ -14,7 +15,9 @@ use App\Services\DirectoryAdminService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
+use App\Services\PracticeLocationService;
 use App\Services\SystemStatusService;
+use App\Services\TeamMemberService;
 use App\Services\VerificationService;
 
 class Admin extends BaseController
@@ -131,6 +134,18 @@ class Admin extends BaseController
                 : [],
             'slots'      => $this->gallerySlots($listing ? (int) $listing['id'] : null),
             'galleryMax' => self::GALLERY_MAX,
+            // Same badge rule as the owner form, deliberately. The admin session
+            // is privileged over a listing's own fields, but team and branches
+            // are what the badge is sold as — an operator who wants to populate
+            // them activates the badge first, which is one action away on the
+            // verifications screen.
+            'team'       => $listing
+                ? (new TeamMemberService())->forListing((int) $listing['id'])
+                : [],
+            'locations'  => $listing
+                ? (new PracticeLocationService())->forListing((int) $listing['id'])
+                : [],
+            'showExtras' => $listing !== null && (new TeamMemberService())->canManage($listing),
         ]);
     }
 
@@ -147,12 +162,19 @@ class Admin extends BaseController
         // nothing the guard was buying.
         $post['logo_path'] = $logo['path'];
 
+        // Before the save, same as the logo — see resolveTeamPhotos().
+        $headshots = $this->resolveTeamPhotos($post['team'] ?? null);
+        if (array_key_exists('team', $post)) {
+            $post['team'] = $headshots['team'];
+        }
+
         $result = (new DirectoryAdminService())->upsert($id, $post);
 
         if (! $result['ok']) {
             // See Listing::store() — nothing saved, so the file is orphaned.
             $this->discardLogo($logo['path']);
             $post['logo_path'] = '';
+            $this->discardTeamPhotos($headshots['team']);
 
             $target = $id === null ? base_url('admin/new') : base_url('admin/edit/' . $id);
             return $this->withUploadErrors(
@@ -160,7 +182,7 @@ class Admin extends BaseController
                     ->with('errors', $result['errors'])
                     ->with('old', $post)
                     ->with('error', $result['message']),
-                array_filter([$logo['error']])
+                array_filter(array_merge([$logo['error']], $headshots['errors']))
             );
         }
 
@@ -171,7 +193,7 @@ class Admin extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('admin/edit/' . $result['id']))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $headshots['errors']))
         );
     }
 
@@ -557,6 +579,8 @@ class Admin extends BaseController
 
         return redirect()->to(base_url('admin/hero'))->with('success', $result['message']);
     }
+
+    // ------------------------------------------------------------ team members
 
     // ---------------------------------------------------------------- settings
 

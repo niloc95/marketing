@@ -1291,6 +1291,84 @@
     });
   }
 
+  // --------------------------------------------------------- repeatable rows
+  //
+  // The team and extra-location sections of the listing form. Both are lists of
+  // identical rows inside the one big form, and both ship a <template> holding a
+  // blank row whose input names carry an "__i__" index placeholder.
+  //
+  // Everything here is enhancement. With this script absent the server still
+  // renders every stored row plus one blank slot, the native <details> still
+  // opens, and the Remove checkbox is a plain checkbox that does exactly what it
+  // says on save — so a person can still be added, edited and removed, just one
+  // per submit.
+
+  document.querySelectorAll('[data-repeat]').forEach(function (section) {
+    var list     = section.querySelector('[data-repeat-list]');
+    var template = section.querySelector('[data-repeat-template]');
+    var addBtn   = section.querySelector('[data-repeat-add]');
+    if (!list || !template || !addBtn) return;
+
+    var max = parseInt(addBtn.getAttribute('data-repeat-max') || '0', 10);
+
+    function rows() {
+      return list.querySelectorAll('[data-repeat-item]');
+    }
+
+    // Rows marked for removal still count against nothing — they are about to
+    // be deleted — so they are excluded from the cap.
+    function liveRows() {
+      var live = 0;
+      rows().forEach(function (row) {
+        var box = row.querySelector('[data-repeat-remove]');
+        if (!box || !box.checked) live++;
+      });
+      return live;
+    }
+
+    function syncAddState() {
+      var full = max > 0 && liveRows() >= max;
+      addBtn.disabled = full;
+      addBtn.title    = full ? (addBtn.getAttribute('data-repeat-full') || '') : '';
+    }
+
+    // A ticked Remove box greys the row out, so it is obvious before saving
+    // which people are about to go. Unticking puts it back — nothing is
+    // destroyed until the form is submitted.
+    function bindRemove(row) {
+      var box = row.querySelector('[data-repeat-remove]');
+      if (!box) return;
+      box.addEventListener('change', function () {
+        row.classList.toggle('is-removed', box.checked);
+        syncAddState();
+      });
+    }
+
+    rows().forEach(bindRemove);
+    syncAddState();
+
+    addBtn.addEventListener('click', function () {
+      if (addBtn.disabled) return;
+
+      // Index off the row count, not the live count: two rows may not share an
+      // index even when one of them is on its way out, or the server would read
+      // the second as an edit of the first.
+      var html = template.innerHTML.replace(/__i__/g, String(rows().length));
+      var wrap = document.createElement('div');
+      wrap.innerHTML = html.trim();
+
+      var row = wrap.firstElementChild;
+      if (!row) return;
+
+      list.appendChild(row);
+      bindRemove(row);
+      syncAddState();
+
+      var first = row.querySelector('input[type="text"]');
+      if (first) first.focus();
+    });
+  });
+
   // ------------------------------------------------- description rich text
   // Turns the description textarea on the three listing forms into a Quill
   // editor. No-op without [data-rich-text] on the page, and no-op if Quill did
@@ -1316,8 +1394,8 @@
     if (!textarea || !shell || !mount || !form) return;
 
     // Mirrors RichText::MAX_PLAIN_LENGTH. The server is the authority; this
-    // only stops someone writing 4000 characters before being told.
-    var MAX = 2000;
+    // only stops someone writing 7000 characters before being told.
+    var MAX = 5000;
 
     shell.hidden = true;
     if (counter) counter.hidden = true;

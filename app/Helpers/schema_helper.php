@@ -429,12 +429,44 @@ if (! function_exists('schema_local_business')) {
 
         $hours = schema_opening_hours($l['trading_hours'] ?? null);
 
+        // Both contact numbers, in the order the profile shows them, with blanks
+        // dropped — a listing with only an alternative number still gets one.
+        $phones = array_values(array_filter([
+            trim((string) ($l['phone'] ?? '')),
+            trim((string) ($l['phone_alt'] ?? '')),
+        ], static fn (string $p) => $p !== ''));
+
+        // The named people inside the business. Present only for a listing with
+        // a live badge, because that is the only case getProfile() populates.
+        //
+        // No email or telephone on these nodes, for the reason spelled out
+        // above about the listing's own address — and there is a second one
+        // here: these are named private individuals, and a machine-readable
+        // contact card for each of them on a page the sitemap enumerates is a
+        // scrape target we would be building on their behalf.
+        $employees = [];
+        foreach ($l['team'] ?? [] as $member) {
+            $knowsAbout = \App\Services\TeamMemberService::splitSpecializations($member['specializations'] ?? null);
+
+            $employees[] = array_filter([
+                '@type'       => 'Person',
+                'name'        => trim((string) ($member['name'] ?? '')),
+                'jobTitle'    => trim((string) ($member['role'] ?? '')),
+                'image'       => listing_image_url($member['photo_path'] ?? null),
+                'description' => trim((string) ($member['bio'] ?? '')),
+                'knowsAbout'  => $knowsAbout !== [] ? $knowsAbout : null,
+            ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
+        }
+
         return array_filter([
             '@type'                    => schema_business_type((string) ($l['category']['group_name'] ?? '')),
             '@id'                      => $canonical . '#business',
             'name'                     => (string) ($l['display_name'] ?? ''),
             'url'                      => $canonical,
-            'telephone'                => trim((string) ($l['phone'] ?? '')),
+            // An array when a listing carries both numbers, a bare string when
+            // it has one. Schema.org allows either, and a single-element array
+            // for the common case would be noise in every profile's markup.
+            'telephone'                => $phones === [] ? null : (count($phones) === 1 ? $phones[0] : $phones),
             'image'                    => listing_image_url($l['logo_path'] ?? null),
             // The plain-text twin, never the HTML column: Google's parser wants
             // text here, and markup in it is a structured-data warning.
@@ -445,6 +477,7 @@ if (! function_exists('schema_local_business')) {
             'geo'                      => $geo,
             'openingHoursSpecification' => $hours !== [] ? $hours : null,
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
+            'employee'                 => $employees !== [] ? $employees : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }

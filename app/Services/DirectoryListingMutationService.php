@@ -9,6 +9,8 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
+use App\Services\PracticeLocationService;
+use App\Services\TeamMemberService;
 use Config\Directory as DirectoryConfig;
 
 /**
@@ -393,6 +395,22 @@ class DirectoryListingMutationService
                 $this->tags->syncListingTags($id, $this->tagNames($input['specializations']));
             }
 
+            // Team and branches, on the same terms as tags: absent means leave
+            // them alone, present means reconcile against what was submitted.
+            //
+            // The badge is re-checked here against the *stored* row, not the
+            // posted one. The form hides both sections without a live badge, but
+            // the form is not the control — a crafted POST from a free listing
+            // reaches this line, and this is where it stops.
+            $sync = $this->syncChildRows($id, $listing, $input);
+            if ($sync['errors'] !== []) {
+                $db->transRollback();
+                $this->discardOrphans($sync['orphans']);
+
+                return ['ok' => false, 'errors' => $sync['errors'], 'message' => 'Please correct the highlighted fields.'];
+            }
+            $orphans = $sync['orphans'];
+
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
@@ -400,6 +418,10 @@ class DirectoryListingMutationService
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save your changes. Please try again.'];
         }
+
+        // Headshots the sync replaced or deleted. After the commit for exactly
+        // the same reason as the logo below.
+        $this->discardOrphans($orphans ?? []);
 
         // After the commit, so the row is definitely pointing at the new file.
         // Without this, every logo re-upload left its predecessor on disk
@@ -715,5 +737,53 @@ class DirectoryListingMutationService
     private function send(string $to, string $subject, string $body): void
     {
         (new Mailer())->send($to, $subject, $body);
+    }
+
+    /**
+     * Reconcile the two repeatable child sections of the listing form.
+     *
+     * Shared by the owner edit here and by DirectoryAdminService::upsert(), so
+     * the badge rule and the absent-vs-empty rule are stated once. Called from
+     * inside the caller's transaction; the orphaned file paths it returns must
+     * be unlinked only after that transaction commits.
+     *
+     * @param array<string,mixed> $listing the STORED row — the badge check must
+     *                                     not read a posted value
+     * @param array<string,mixed> $input
+     *
+     * @return array{errors:array<string,string>,orphans:array<int,string>}
+     */
+    public function syncChildRows(int $id, array $listing, array $input): array
+    {
+        $team      = new TeamMemberService();
+        $locations = new PracticeLocationService();
+
+        $errors  = [];
+        $orphans = [];
+
+        if (array_key_exists('team', $input) && $team->canManage($listing)) {
+            $result  = $team->syncFromForm($id, $input['team']);
+            $errors  = array_merge($errors, $result['errors']);
+            $orphans = array_merge($orphans, $result['orphans']);
+        }
+
+        if (array_key_exists('locations', $input) && $locations->canManage($listing)) {
+            $result = $locations->syncFromForm($id, $input['locations']);
+            $errors = array_merge($errors, $result['errors']);
+        }
+
+        return ['errors' => $errors, 'orphans' => $orphans];
+    }
+
+    /**
+     * @param array<int,string> $paths
+     */
+    public function discardOrphans(array $paths): void
+    {
+        if ($paths === []) {
+            return;
+        }
+
+        (new TeamMemberService())->discardFiles($paths);
     }
 }

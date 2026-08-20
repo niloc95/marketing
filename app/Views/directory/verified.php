@@ -112,11 +112,11 @@ $faqs = [
                     <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>.
                     We review them, usually within two working days.
                 </p>
-                <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                    The badge costs <strong>R<?= esc($amount) ?> a month</strong>, and
-                    <strong>you are only asked to pay once your documents are approved</strong>.
-                    Cancel any time. Your listing itself is free either way, and stays free.
-                </p>
+                <?php // The same pitch the signup form and the owner dashboard show, so a
+                      // business reading this page before applying is told exactly what it
+                      // will be told inside. ?>
+                <p class="mt-4 text-sm font-semibold text-slate-900 dark:text-white">What the badge adds</p>
+                <?= view('directory/_verification_pitch', ['amount' => $amount]) ?>
                 <p class="hint mt-3">
                     Your documents are stored privately, never appear on your profile, and are only seen by
                     our review team &mdash; see our

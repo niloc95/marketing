@@ -21,6 +21,9 @@
  * @var array    $vHours     decoded trading hours, keyed mon..sun (old value wins on resubmit)
  * @var string   $existingLogo  stored logo path, so an editor can see what is already set
  * @var int      $gallerySlots  photos still addable (8 minus what the listing has)
+ * @var array    $vTeam       team rows (old input wins), rendered by _team_fields.php
+ * @var array    $vLocations  branch rows (old input wins), rendered by _location_fields.php
+ * @var bool     $showExtras  render the team and location sections at all
  */
 $lockEmail    = $lockEmail    ?? false;
 $showConsent  = $showConsent  ?? false;
@@ -29,6 +32,14 @@ $vHours       = $vHours       ?? [];
 // free" — the edit pages pass real values from HandlesListingUploads.
 $existingLogo = $existingLogo ?? '';
 $gallerySlots = $gallerySlots ?? \App\Controllers\Listing::GALLERY_MAX;
+
+// Team and branches are part of the paid badge and belong to a listing that
+// already exists, so public signup gets neither — it passes none of these and
+// the defaults switch both sections off. The services re-check the badge
+// against the stored row; this only decides what is drawn.
+$vTeam      = $vTeam      ?? [];
+$vLocations = $vLocations ?? [];
+$showExtras = $showExtras ?? false;
 helper('directory_hours');
 ?>
 <div class="form-row">
@@ -54,6 +65,14 @@ helper('directory_hours');
         <?php if ($err('category_id')): ?><div class="err"><?= esc($err('category_id')) ?></div><?php endif; ?>
     </div>
 </div>
+
+<?php // Directly under the profile type on purpose: "Business / practice" is the
+      // answer that decides whether this listing has people at all, so "what
+      // kind of business are you" reading straight into "who works here" is one
+      // thought rather than two. ?>
+<?php if ($showExtras): ?>
+    <?= view('directory/_team_fields', ['rows' => $vTeam, 'err' => $err]) ?>
+<?php endif; ?>
 
 <div class="form-row">
     <div class="field">
@@ -93,10 +112,17 @@ helper('directory_hours');
         <?php if ($err('phone')): ?><div class="err"><?= esc($err('phone')) ?></div><?php endif; ?>
     </div>
     <div class="field">
-        <label>Website</label>
-        <input type="text" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
-        <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
+        <label>Alternative phone</label>
+        <input type="text" name="phone_alt" value="<?= esc($v('phone_alt'), 'attr') ?>" maxlength="40">
+        <div class="hint">A mobile alongside a landline, say. Both are shown on your profile.</div>
+        <?php if ($err('phone_alt')): ?><div class="err"><?= esc($err('phone_alt')) ?></div><?php endif; ?>
     </div>
+</div>
+
+<div class="field">
+    <label>Website</label>
+    <input type="text" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
+    <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
 <div class="field">
@@ -113,7 +139,7 @@ helper('directory_hours');
         load, this posts plain text and RichText::sanitise() turns it into
         paragraphs. Nothing about the form depends on the editor existing.
 
-        maxlength is gone because it counts markup, not words; the same 2000-
+        maxlength is gone because it counts markup, not words; the same 5000-
         character cap is enforced against the plain text by the counter in
         directory.js and, authoritatively, by the service on save.
     */ ?>
@@ -147,6 +173,15 @@ helper('directory_hours');
 <div class="field">
     <label class="font-medium"><input type="checkbox" name="offers_online_booking" value="1" <?= $v('offers_online_booking') ? 'checked' : '' ?>> Offers online booking</label>
 </div>
+
+<?php // Against the address block, where a second address belongs. ?>
+<?php if ($showExtras): ?>
+    <?= view('directory/_location_fields', [
+        'rows'      => $vLocations,
+        'provinces' => $provinces,
+        'err'       => $err,
+    ]) ?>
+<?php endif; ?>
 
 <div data-address-autocomplete
      data-suggest-url="<?= base_url('address-suggest') ?>">

@@ -80,7 +80,10 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
         <?php endif; ?>
 
         <div class="profile-head">
-            <div class="avatar">
+            <?php // avatar-logo only when there is a logo: it swaps the square crop for
+                  // a contained fit that shows a wide lockup whole. Without an image the
+                  // box stays square for the initials. ?>
+            <div class="avatar<?= $logoUrl !== '' ? ' avatar-logo' : '' ?>">
                 <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl, 'attr') ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
             </div>
             <div class="min-w-0 flex-1">
@@ -188,6 +191,12 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     </div>
                 <?php endif; ?>
 
+                <?php // Empty unless the listing carries a live badge — the gate is
+                      // in getProfile(), not here. ?>
+                <?php if (! empty($l['team'])): ?>
+                    <?= view('directory/_team_panel', ['members' => $l['team']]) ?>
+                <?php endif; ?>
+
                 <?php if (! empty($l['locations'])): ?>
                     <div class="panel">
                         <h3>Other locations</h3>
@@ -213,6 +222,12 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                           // still carries the real values, so crawlers are unaffected. ?>
                     <?php if (! empty($l['phone'])): ?>
                         <div class="kv"><span class="k">Phone</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="tel" data-reveal-value="<?= esc(strrev($l['phone']), 'attr') ?>">Show phone</button></span></div>
+                    <?php endif; ?>
+                    <?php // Same reversal and same reveal button as the number above.
+                          // A second row rather than "021 555 0100 / 082 555 0100"
+                          // in one, so each gets its own tel: link on a phone. ?>
+                    <?php if (! empty($l['phone_alt'])): ?>
+                        <div class="kv"><span class="k">Alt phone</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="tel" data-reveal-value="<?= esc(strrev($l['phone_alt']), 'attr') ?>">Show number</button></span></div>
                     <?php endif; ?>
                     <?php if (! empty($l['email'])): ?>
                         <div class="kv"><span class="k">Email</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="mailto" data-reveal-value="<?= esc(strrev($l['email']), 'attr') ?>">Show email</button></span></div>

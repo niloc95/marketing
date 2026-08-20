@@ -9,6 +9,8 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\PracticeLocationService;
+use App\Services\TeamMemberService;
 use App\Services\VerificationService;
 
 /**
@@ -136,6 +138,8 @@ class Manage extends BaseController
         $svc             = new DirectoryService();
         $verification    = new VerificationService();
         $verificationRow = $verification->forListing((int) $listing['id']);
+        $team            = new TeamMemberService();
+        $locations       = new PracticeLocationService();
 
         return view('directory/manage_edit', [
             'listing'    => $listing,
@@ -147,6 +151,13 @@ class Manage extends BaseController
             'photos'     => (new DirectoryListingPhotoModel())->forListing((int) $listing['id']),
             'slots'      => $this->gallerySlots((int) $listing['id']),
             'galleryMax' => self::GALLERY_MAX,
+
+            // Rows are read whatever the badge says — a lapsed subscriber keeps
+            // their team and branches, they just stop rendering. The flags are
+            // what hide the two sections of the form; the services re-check.
+            'team'      => $team->forListing((int) $listing['id']),
+            'locations' => $locations->forListing((int) $listing['id']),
+            'showExtras' => $team->canManage($listing),
 
             'verificationOffered' => $verification->isEnabled(),
             'verificationPayable' => $verification->canTakePayment(),
@@ -168,6 +179,14 @@ class Manage extends BaseController
         $logo = $this->resolveLogo();
         $post['logo_path'] = $logo['path'];
 
+        // Headshots are processed before the save, like the logo, because their
+        // paths are part of the data being saved. Anything written here that the
+        // save then rejects comes back as an orphan below.
+        $headshots = $this->resolveTeamPhotos($post['team'] ?? null);
+        if (array_key_exists('team', $post)) {
+            $post['team'] = $headshots['team'];
+        }
+
         $result = (new DirectoryListingMutationService())->updateOwn((int) $listing['id'], $post);
 
         if (! $result['ok']) {
@@ -175,13 +194,14 @@ class Manage extends BaseController
             // orphaned. The listing keeps whatever logo it already had.
             $this->discardLogo($logo['path']);
             $post['logo_path'] = '';
+            $this->discardTeamPhotos($headshots['team']);
 
             return $this->withUploadErrors(
                 redirect()->to(base_url('manage/edit'))
                     ->with('errors', $result['errors'])
                     ->with('old', $post)
                     ->with('error', $result['message']),
-                array_filter([$logo['error']])
+                array_filter(array_merge([$logo['error']], $headshots['errors']))
             );
         }
 
@@ -192,7 +212,7 @@ class Manage extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('manage/edit'))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $headshots['errors']))
         );
     }
 

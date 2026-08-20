@@ -7,6 +7,7 @@ use App\Libraries\RichText;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
+use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryTagModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
@@ -65,6 +66,7 @@ class DirectoryAdminService
                 ->orLike('xs_directory_listings.email', $q)
                 ->orLike('xs_directory_listings.city', $q)
                 ->orLike('xs_directory_listings.phone', $q)
+                ->orLike('xs_directory_listings.phone_alt', $q)
                 ->groupEnd();
         }
         if (! empty($filters['category'])) {
@@ -163,6 +165,7 @@ class DirectoryAdminService
             'credentials'    => null,
             'description'    => 'richtext',
             'phone'          => null,
+            'phone_alt'      => null,
             'website'        => 'url',
             'address_line'   => null,
             // The form posts this and owners can edit it; leaving it out here
@@ -327,6 +330,21 @@ class DirectoryAdminService
                 $this->tags->syncListingTags($id, $names);
             }
 
+            // Team and branches. The admin form is privileged over everything
+            // else on a listing, but not over this: both sections are part of
+            // the paid badge, and syncChildRows() checks the stored row. An
+            // operator who wants to populate a team first activates the badge.
+            $mutations = new DirectoryListingMutationService();
+            $stored    = $this->listings->find($id) ?? [];
+            $sync      = $mutations->syncChildRows($id, $stored, $input);
+            if ($sync['errors'] !== []) {
+                $db->transRollback();
+                $mutations->discardOrphans($sync['orphans']);
+
+                return ['ok' => false, 'errors' => $sync['errors'], 'message' => 'Please correct the highlighted fields.'];
+            }
+            $orphans = $sync['orphans'];
+
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
@@ -334,6 +352,9 @@ class DirectoryAdminService
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];
         }
+
+        // Headshots the sync replaced or deleted — after the commit, same rule.
+        (new DirectoryListingMutationService())->discardOrphans($orphans ?? []);
 
         // After the commit: the row now definitely points at the new file, so
         // discarding the old one cannot strand a listing with a missing image.
@@ -435,6 +456,12 @@ class DirectoryAdminService
             $this->photos->deleteFileAt((string) ($photo['path'] ?? ''));
         }
         $this->photos->deleteFileAt((string) ($listing['logo_path'] ?? ''));
+
+        // Team headshots, for exactly the reason above: the FK cascade removes
+        // the rows, and the row is the only thing that knows where the file is.
+        foreach ((new DirectoryListingTeamModel())->forListing($id) as $member) {
+            $this->photos->deleteFileAt((string) ($member['photo_path'] ?? ''));
+        }
 
         // Verification documents, for the same reason and with more at stake:
         // these are ID copies, the cascade takes their rows, and a row is the

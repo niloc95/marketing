@@ -200,14 +200,10 @@ $prettyDate = static function (?string $date): string {
               // behind the button: two file inputs are a wall, and the decision to
               // make first is "do I want this", not "where is my ID". ?>
         <h3 class="verify-cta-heading">Get verified &mdash; show customers your business is real</h3>
-        <p class="text-sm text-slate-600 dark:text-slate-300">
-            Send us your company registration document and the owner's ID. Once we have checked
-            them, your profile carries a Verified Business badge here and everywhere your business
-            shows up in search &mdash; <strong>R<?= esc($amount) ?> a month</strong>.
-        </p>
-        <p class="hint">
-            <strong>You will not be charged now.</strong> We review your documents first and only ask
-            for payment if they check out. Your listing stays free either way.
+        <?= view('directory/_verification_pitch', ['amount' => $amount]) ?>
+        <p class="hint mt-2">
+            To apply, send your company registration document and the owner's ID. We review them,
+            usually within two working days.
             <a class="verify-cta-link" href="<?= base_url('verified') ?>">What we check &rarr;</a>
         </p>
         <details class="verify-cta-details">

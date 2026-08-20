@@ -26,7 +26,10 @@ if (isset($l['distance_m'])) {
 ?>
 <div class="card flex flex-col gap-3 p-4 transition-shadow hover:shadow-brand-lg">
     <div class="flex items-start gap-3">
-        <div class="avatar">
+        <?php // avatar-logo only when there is a logo: it swaps the square crop for
+              // a contained fit that shows a wide lockup whole. Without an image the
+              // box stays square for the initials. ?>
+        <div class="avatar<?= $logoUrl !== '' ? ' avatar-logo' : '' ?>">
             <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl, 'attr') ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
         </div>
         <div class="min-w-0">

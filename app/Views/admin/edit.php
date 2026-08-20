@@ -54,6 +54,10 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     'vHours'       => $vHours,
                     'existingLogo' => (string) ($base['logo_path'] ?? ''),
                     'gallerySlots' => $slots,
+                    'vTeam'        => is_array($old['team'] ?? null) ? $old['team'] : $team,
+                    'vLocations'   => is_array($old['locations'] ?? null) ? $old['locations'] : $locations,
+                    // A new profile has no id yet, so nothing to hang child rows on.
+                    'showExtras'   => ! $isNew && $showExtras,
                 ]) ?>
 
                 <?php // Privileged fields — deliberately not in the shared partial, so the
