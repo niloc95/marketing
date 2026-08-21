@@ -55,6 +55,7 @@ final class ListingImageProcessorTest extends CIUnitTestCase
         // MIME is set afterwards rather than passed in.
         $file = new class ($path, $clientName, $mime, strlen($contents), UPLOAD_ERR_OK) extends UploadedFile {
             public string $fakeMime = '';
+            private bool $moved = false;
 
             public function isValid(): bool
             {
@@ -64,6 +65,28 @@ final class ListingImageProcessorTest extends CIUnitTestCase
             public function getMimeType(): string
             {
                 return $this->fakeMime;
+            }
+
+            /**
+             * The real move() calls move_uploaded_file(), which refuses a file
+             * that did not arrive over HTTP — so the passthrough branch, the one
+             * that moves bytes instead of re-encoding them, was unreachable from
+             * a test. copy() puts the same bytes in the same place.
+             */
+            public function move(string $targetPath, ?string $name = null, bool $overwrite = false): bool
+            {
+                $target = rtrim($targetPath, '/') . '/' . ($name ?? $this->getName());
+                if (! copy($this->getPathname(), $target)) {
+                    return false;
+                }
+                $this->moved = true;
+
+                return true;
+            }
+
+            public function hasMoved(): bool
+            {
+                return $this->moved;
             }
         };
         $file->fakeMime = $mime;
@@ -91,6 +114,17 @@ final class ListingImageProcessorTest extends CIUnitTestCase
 
         ob_start();
         imagepng($im, null, 0);
+        imagedestroy($im);
+
+        return (string) ob_get_clean();
+    }
+
+    private function gifBytes(int $w, int $h): string
+    {
+        $im = imagecreatetruecolor($w, $h);
+        imagefilledrectangle($im, 0, 0, $w, $h, imagecolorallocate($im, 20, 90, 140));
+        ob_start();
+        imagegif($im);
         imagedestroy($im);
 
         return (string) ob_get_clean();
@@ -185,6 +219,46 @@ final class ListingImageProcessorTest extends CIUnitTestCase
         $this->assertTrue($result['ok'], $result['error']);
         $this->assertSame(1600, $result['width']);
         $this->assertSame(1200, $result['height']);
+    }
+
+    /**
+     * A GIF is the one format written to disk byte for byte, so for GIFs the
+     * accepted size is the stored size — and eight gallery slots at the 10 MB
+     * photo limit would be 80 MB of animation from one profile.
+     */
+    public function testRejectsAGifOverTheTighterPassthroughLimit(): void
+    {
+        $this->assertLessThan(
+            ListingImageProcessor::MAX_UPLOAD_BYTES,
+            ListingImageProcessor::MAX_PASSTHROUGH_BYTES,
+            'a stored-as-is format must be capped below what we merely accept'
+        );
+
+        $oversized = $this->gifBytes(8, 8)
+            . str_repeat("\0", ListingImageProcessor::MAX_PASSTHROUGH_BYTES);
+        $result = $this->process($this->upload($oversized, 'dancing.gif', 'image/gif'));
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('dancing.gif', $result['error']);
+        // The message has to explain why this format is treated differently, or
+        // it reads as an arbitrary limit next to the 10 MB one on the same form.
+        $this->assertStringContainsString('animated', $result['error']);
+        $this->assertStringContainsString('2 MB', $result['error']);
+        $this->assertStringContainsString('10 MB', $result['error']);
+    }
+
+    public function testStoresAModestGifUntouched(): void
+    {
+        $bytes  = $this->gifBytes(40, 30);
+        $result = $this->process($this->upload($bytes, 'logo.gif', 'image/gif'));
+
+        $this->assertTrue($result['ok'], $result['error']);
+        $this->assertStringEndsWith('.gif', $result['path']);
+
+        // Byte for byte: an animation must not come back as a single frame.
+        $written = $this->destDir . '/' . basename($result['path']);
+        $this->assertFileExists($written);
+        $this->assertSame($bytes, file_get_contents($written));
     }
 
     public function testRejectsAnUnsupportedExtension(): void

@@ -10,10 +10,10 @@ use CodeIgniter\HTTP\Files\UploadedFile;
  * resolveLogo() that used to live separately in Listing.php and Manage.php.
  *
  * GD only (no Imagick dependency). GIF passes through unresized because it may
- * be animated and GD would silently flatten it to a single frame. SVG passes
- * through too — it is vector, nothing to raster-resize — but is sanitised
- * first: it lands in a web-served directory, so an unmodified <script> inside
- * it would be stored XSS.
+ * be animated and GD would silently flatten it to a single frame — and because
+ * that makes its accepted size its stored size, it carries a much tighter cap
+ * of its own (MAX_PASSTHROUGH_BYTES). SVG is no longer accepted at all; the
+ * sanitising path below is kept only for logos stored before it was removed.
  *
  * Every rejection returns an explanation. This class used to return null for
  * all of them, which meant an oversized phone photo was dropped in silence
@@ -22,7 +22,7 @@ use CodeIgniter\HTTP\Files\UploadedFile;
 class ListingImageProcessor
 {
     /**
-     * Extensions we accept. Everything except gif/svg is decoded by GD and
+     * Extensions we accept. Everything except gif is decoded by GD and
      * re-encoded to WebP, so this list is bounded by what GD can read:
      * heic/heif are accepted only so we can return a useful message (see
      * HEIC_EXT) — GD cannot decode them and neither can we without Imagick.
@@ -49,7 +49,27 @@ class ListingImageProcessor
     /** Accepted by the picker but undecodable server-side; see process(). */
     public const HEIC_EXT = ['heic', 'heif'];
 
+    /**
+     * Ceiling on what we accept, not on what we keep. Everything that reaches
+     * resizeToWebp() leaves it as a 1600px WebP — a 6 MB phone photo is written
+     * to disk at roughly 50-250 KB — so this number governs the upload, not the
+     * storage bill. It is deliberately generous: the browser downscales before
+     * sending, but with no JavaScript the camera original arrives whole, and
+     * phone photos are routinely 3-6 MB. A tighter limit here would reject
+     * ordinary uploads to save disk space that is never used.
+     */
     public const MAX_UPLOAD_BYTES = 10_485_760; // 10 MiB
+
+    /**
+     * The exception, and the reason it needs its own number: a GIF is the one
+     * format written to disk byte for byte (see PASSTHROUGH_EXT — GD would
+     * flatten an animation to a single frame). For a GIF the accepted size *is*
+     * the stored size, so MAX_UPLOAD_BYTES would let one profile put 80 MB of
+     * animation on the disk through the eight gallery slots.
+     *
+     * 2 MiB is past any GIF logo and well short of that.
+     */
+    public const MAX_PASSTHROUGH_BYTES = 2_097_152; // 2 MiB
 
     /**
      * Detected MIME must match the claimed extension. The extension whitelist
@@ -149,6 +169,21 @@ class ListingImageProcessor
         }
 
         if ($ext === 'gif') {
+            // Checked here rather than beside the MAX_UPLOAD_BYTES gate above so
+            // the two limits stay legible: that one is about what we accept,
+            // this one is about what we keep.
+            if ($file->getSize() > self::MAX_PASSTHROUGH_BYTES) {
+                return $this->fail(sprintf(
+                    '“%s” is %s. A GIF may be animated, so it is stored exactly as it '
+                    . 'arrives rather than resized — the limit for GIFs is %s. Save it as '
+                    . 'a JPEG or PNG and the limit is %s.',
+                    $name,
+                    $this->humanBytes((int) $file->getSize()),
+                    $this->humanBytes(self::MAX_PASSTHROUGH_BYTES),
+                    $this->humanBytes(self::MAX_UPLOAD_BYTES)
+                ));
+            }
+
             return $this->moveAsIs($file, $destDir, $filenamePrefix, $ext);
         }
 
