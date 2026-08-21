@@ -22,8 +22,14 @@ if (! function_exists('category_group_emoji')) {
             'Fitness & Sport'       => '🏋️',
             'Education & Training'  => '🎓',
             'Events & Hospitality'  => '🎉',
+            'Travel & Tourism'      => '✈️',
             'Pets & Animals'        => '🐾',
+            'Everyday Services'     => '🧺',
             'Retail & Other'        => '🛍️',
+            // Was missing since the group was added, so every home-page tile for
+            // a home baker rendered the generic folder — exactly what the note
+            // above warns about.
+            'Home Industry & Handmade' => '🧁',
         ];
 
         return $map[(string) $group] ?? '📁';

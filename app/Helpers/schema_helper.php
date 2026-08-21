@@ -289,6 +289,18 @@ if (! function_exists('schema_business_type')) {
             'Retail & Other'        => 'Store',
         ];
 
+        // Deliberately absent: Travel & Tourism, Everyday Services, Events &
+        // Hospitality, Pets & Animals and Home Industry & Handmade. Each holds
+        // categories whose schema.org types diverge — a game lodge is a
+        // LodgingBusiness and the travel agent selling the stay is a TravelAgency
+        // — and this map only sees the group. LocalBusiness is true of all of
+        // them; a wrong subtype would not be.
+        //
+        // Everyday Services exists partly for this: laundry, tailoring, couriers
+        // and funeral parlours used to sit in Retail & Other and were published
+        // as schema.org/Store, which none of them are.
+
+
         return $map[$group] ?? 'LocalBusiness';
     }
 }

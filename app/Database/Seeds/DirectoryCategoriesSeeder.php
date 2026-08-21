@@ -9,7 +9,10 @@ use CodeIgniter\Database\Seeder;
  * existing `group_name` column so the browse filter can render optgroups.
  *
  * Idempotent — re-running only inserts slugs that are missing, so this is safe
- * to run against a database that already holds listings.
+ * to run against a database that already holds listings. It is also how a
+ * taxonomy change reaches an existing site: moving a name between the groups
+ * below and re-running the seeder re-files it in place, keeping the row's id and
+ * slug, and therefore every listing on it and every link to it.
  */
 class DirectoryCategoriesSeeder extends Seeder
 {
@@ -18,11 +21,28 @@ class DirectoryCategoriesSeeder extends Seeder
         helper('slug');
 
         $groups = [
+            // Enumerated in full, legacy rows included. Everything the launch
+            // taxonomy created — the specialists, the nursing and pharmacy rows —
+            // used to sit outside this list, which meant nothing set their
+            // sort_order and the group rendered as two interleaved sequences both
+            // counting from zero. Listing them here is what makes the order in the
+            // picker deterministic; the update pass below leaves their ids alone.
             'Health & Medical' => [
-                'General Practitioner', 'Dentist', 'Optometrist', 'Physiotherapist',
-                'Chiropractor', 'Dietician', 'Psychologist', 'Psychiatrist',
+                'General Practitioner', 'Specialist Physician', 'Paediatrician',
+                'Cardiologist', 'Dermatologist', 'Gynaecologist', 'Neurologist',
+                'Oncologist', 'Urologist', 'ENT Specialist', 'Ophthalmologist',
+                'General Surgeon', 'Orthopaedic Surgeon', 'Anaesthetist', 'Radiologist',
+                'Dentist', 'Orthodontist', 'Oral Hygienist',
+                'Optometrist', 'Audiologist',
+                'Physiotherapist', 'Chiropractor', 'Biokineticist',
                 'Occupational Therapist', 'Speech Therapist', 'Podiatrist',
-                'Audiologist', 'Biokineticist', 'Specialist Physician',
+                // Dietician and Nutritionist are neighbours here rather than one in
+                // Beauty & Wellness, where the legacy "Wellness" group left it —
+                // Nutritionist carries more listings than any other category on the
+                // site, and it was the only clinical row filed under beauty.
+                'Dietician', 'Nutritionist', 'Homeopath',
+                'Psychologist', 'Psychiatrist', 'Counsellor', 'Social Worker',
+                'Nurse', 'Midwife', 'Pharmacist',
                 'Pharmacy', 'Medical Clinic', 'Hospital', 'Pathology Laboratory',
                 'Radiology Practice',
             ],
@@ -63,23 +83,46 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Gym & Fitness Centre', 'Personal Trainer', 'Yoga Studio',
                 'Pilates Studio', 'Martial Arts', 'Dance Studio', 'Sports Coaching',
             ],
+            // Ordered as the school ladder, then everything taught outside it.
+            // "Training College" is the TVET / private college a school leaver
+            // enrols at; "Training Provider" is the accredited outfit that runs
+            // short courses for people already working. Different searches, and
+            // the directory launched with only the second one.
             'Education & Training' => [
+                'Preschool & Daycare', 'Primary School', 'High School',
+                'Training College', 'University',
                 'Tutor', 'Driving School', 'Language School', 'Music Teacher',
-                'Preschool & Daycare', 'Training Provider', 'Computer Training',
+                'Computer Training', 'Training Provider',
             ],
             'Events & Hospitality' => [
                 'Event Planner', 'Caterer', 'Venue Hire', 'Florist',
-                'DJ & Entertainment', 'Restaurant', 'Coffee Shop',
-                'Guest House & Accommodation', 'Bakery',
+                'DJ & Entertainment', 'Restaurant', 'Coffee Shop', 'Bakery',
+            ],
+            // Somewhere to sleep is what a visitor searches for, not a party
+            // supplier — so Guest House & Accommodation moves out of Events and
+            // leads here. Its slug is untouched, so /directory/guest-house-
+            // accommodation and every saved filter link still resolve.
+            'Travel & Tourism' => [
+                'Guest House & Accommodation', 'Game Lodge & Safari', 'Travel Agency',
+                'Tour Operator & Guide', 'Car Rental', 'Shuttle & Airport Transfer',
             ],
             'Pets & Animals' => [
                 'Veterinarian', 'Pet Grooming', 'Pet Boarding & Kennels',
                 'Dog Training', 'Pet Shop',
             ],
+            // Services you buy over a counter but do not walk out holding. All
+            // four sat in Retail & Other, which typed them as schema.org/Store on
+            // every profile they appear on — a dry cleaner is not a shop, and the
+            // group had become the place things went when nothing else fitted.
+            'Everyday Services' => [
+                'Laundry & Dry Cleaning', 'Tailor & Alterations', 'Courier & Delivery',
+                'Funeral Services',
+            ],
+            // What is left is genuinely retail: a counter, stock, a till. It stays
+            // the catch-all for anything future that has no better home.
             'Retail & Other' => [
                 'Clothing & Apparel', 'Jewellery', 'Furniture', 'Hardware Store',
-                'Nursery & Garden Centre', 'Courier & Delivery', 'Laundry & Dry Cleaning',
-                'Tailor & Alterations', 'Funeral Services',
+                'Nursery & Garden Centre',
             ],
             // Home industry — people trading from home rather than premises. A
             // deliberate positioning bet, not an afterthought: it is the part of
@@ -147,6 +190,36 @@ class DirectoryCategoriesSeeder extends Seeder
                 'group_name' => $to,
                 'updated_at' => $now,
             ]);
+        }
+
+        // Pairs the launch taxonomy left behind, where the list above already
+        // covers the same thing under a clearer name. Both being active offers
+        // the visitor the same choice twice in one optgroup.
+        //
+        // Deactivated, never deleted, and only while nothing points at the row:
+        // a category with listings on it keeps working exactly as it did, and
+        // whoever is holding the reins can switch any of these back on from
+        // /admin/categories. Rows already switched off stay off — the update is
+        // a no-op for them.
+        $superseded = [
+            'physician'       => 'specialist-physician',
+            'clinic'          => 'medical-clinic',
+            'pharmacy-retail' => 'pharmacy',
+        ];
+        foreach (array_keys($superseded) as $slug) {
+            $row = $db->table($table)->select('id')->where('slug', $slug)->get()->getRowArray();
+            if ($row === null) {
+                continue;
+            }
+            $inUse = $db->table('xs_directory_listings')
+                ->where('category_id', (int) $row['id'])
+                ->countAllResults();
+            if ($inUse === 0) {
+                $db->table($table)->where('id', (int) $row['id'])->update([
+                    'is_active'  => 0,
+                    'updated_at' => $now,
+                ]);
+            }
         }
     }
 }
