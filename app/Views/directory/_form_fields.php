@@ -315,9 +315,32 @@ helper('directory_hours');
 
 <div class="field">
     <label>Trading hours</label>
-    <div class="hours-grid">
+    <?php // Filling the same times seven times is the tedious part of this form,
+          // and most businesses trade the same hours Monday to Friday at least.
+          //
+          // Above the grid, not below it. The seven rows stack on a phone and run
+          // to roughly a screen and a half, so a button underneath them is only
+          // found by someone who has already typed all seven — which is the one
+          // moment it is no use. Up here it is on screen before the first row is
+          // filled, and clicking it early is handled: with Monday blank it says
+          // so and changes nothing.
+          //
+          // hidden until directory.js unhides it, the same contract "Use my
+          // location" uses on the browse page: with no JavaScript the button
+          // could not do anything, and a control that does nothing when pressed
+          // is worse than one that was never offered. The grid itself needs no
+          // script — it is seven rows of plain inputs either way.
+          //
+          // The label names Monday because that is what it copies: the first row,
+          // not "whichever row you last touched". Naming the source is what makes
+          // the result predictable before the click rather than after it. ?>
+    <div class="hours-actions">
+        <button type="button" class="btn btn-ghost btn-xs" data-hours-copy hidden>Copy Monday to every day</button>
+        <span class="hint" role="status" data-hours-copy-note></span>
+    </div>
+    <div class="hours-grid" data-hours>
         <?php foreach (hours_days() as $key => $label): $row = $vHours[$key] ?? []; ?>
-            <div class="hours-row">
+            <div class="hours-row" data-hours-row>
                 <span class="hours-day"><?= esc($label) ?></span>
                 <label class="hours-closed"><input type="checkbox" name="hours[<?= $key ?>][closed]" value="1" <?= ! empty($row['closed']) ? 'checked' : '' ?>> Closed</label>
                 <input type="time" name="hours[<?= $key ?>][open]" value="<?= esc($row['open'] ?? '', 'attr') ?>">

@@ -15,7 +15,7 @@ $contact   = config('Directory')->adminEmail();
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero py-8 sm:py-10">
+<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Terms of use</h1>
         <p class="mt-2 text-sm text-white/80">Last updated <?= esc(date('j F Y', strtotime($lastUpdated))) ?></p>

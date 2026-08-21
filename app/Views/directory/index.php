@@ -54,7 +54,7 @@ if ($indexable && ! empty($result['items'])) {
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero py-8 sm:py-10">
+<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Browse</h1>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">

@@ -43,7 +43,9 @@
 @tailwind utilities;
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  /* scroll-padding is the fixed header's tax on in-page anchors: without it a
+     jump link lands with its heading underneath the bar. 4rem is its height. */
+  html { scroll-behavior: smooth; @apply scroll-pt-16; }
   body {
     @apply bg-white text-primary-900 antialiased;
     @apply transition-colors duration-200;
@@ -53,6 +55,26 @@
 }
 
 @layer components {
+  /* ------------------------------------------------------------------ header */
+  /* Fixed rather than sticky, so the hero's tint runs up behind the bar instead
+     of starting below it. Transparent at rest, solid once the page has scrolled
+     a few pixels — site.js writes .is-solid, and holds it on while the mobile
+     panel is open, because a panel hanging off a see-through bar reads as
+     detached. The lettering never inverts: every page here opens on a light
+     background, so the dark ink is legible against the hero as it stands.
+
+     Named to match the directory app's .site-header, which carries the same
+     behaviour — the two properties share the header's shape deliberately.
+
+     border-b is declared transparent rather than left off so the 1px is already
+     in the box: going solid then changes a colour, never the layout. */
+  .site-header {
+    @apply fixed inset-x-0 top-0 z-50 border-b border-transparent
+           transition-colors duration-300;
+  }
+  .site-header.is-solid { @apply border-slate-200 bg-white/90 backdrop-blur; }
+  .dark .site-header.is-solid { @apply border-slate-800 bg-[#0f1419]/90; }
+
   /* Buttons — mirror the app's xs-btn language (ocean primary, orange accent). */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3

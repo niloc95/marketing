@@ -47,7 +47,9 @@
 @tailwind utilities;
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  /* scroll-padding is the fixed header's tax on in-page anchors: without it
+     #map and the FAQ jump links land underneath the bar. 4rem is its height. */
+  html { scroll-behavior: smooth; @apply scroll-pt-16; }
   body {
     @apply bg-slate-50 font-sans text-slate-900 antialiased;
     @apply transition-colors duration-200;
@@ -80,10 +82,20 @@
   .container { @apply mx-auto w-full max-w-7xl px-4 sm:px-6; }
   .section   { @apply py-10 sm:py-14; }
 
+  /* Fixed rather than sticky, which is the whole point: the bar sits *over* the
+     page instead of above it, so a hero can run up behind it. Transparent at
+     rest, solid once the page has scrolled a few pixels — directory.js writes
+     .is-solid, and holds it on while the burger panel is open, because a
+     floating panel hanging off a see-through bar reads as broken.
+
+     border-b is declared transparent rather than left off so the 1px is already
+     in the box: going solid then changes a colour, never the layout. */
   .site-header {
-    @apply sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur;
+    @apply fixed inset-x-0 top-0 z-40 border-b border-transparent
+           transition-colors duration-300;
   }
-  .dark .site-header { @apply border-slate-800 bg-[#0f1419]/90; }
+  .site-header.is-solid { @apply border-slate-200 bg-white/90 backdrop-blur; }
+  .dark .site-header.is-solid { @apply border-slate-800 bg-[#0f1419]/90; }
   /* Deliberately NOT flex-wrap. Wrapping was the old overflow behaviour and it
      dropped the whole nav onto a second row on any phone, which is a taller,
      lopsided header rather than a graceful degradation. The bar is now a fixed
@@ -138,9 +150,57 @@
     @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
   }
 
-  /* Opaque, unlike the bar above it: the header is bg-white/90 + backdrop-blur,
-     which is fine for a 64px strip but turns a full list of links into a mess
-     over scrolled content. Padding matches .container so the links line up with
+  /* ------------------------------------------- the bar while it is over a hero */
+  /* Same :first-child test as the pull-up on .site-main, for the same reason.
+     Everything in the bar that is dark-on-light has to invert for as long as it
+     is over the ocean gradient or the home photograph; .is-solid ends it, and so
+     does opening the burger panel, which turns .is-solid on.
+
+     Grouped into two rules so the long selector is written twice rather than
+     once per element. .brand-mark and the orange CTA are deliberately absent —
+     both are already solid blocks of colour that read fine on any frame. */
+  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+    .site-header:not(.is-solid) :is(.brand, .nav a, .nav a:hover, .theme-toggle, .menu-toggle) {
+    @apply text-white;
+  }
+  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+    .site-header:not(.is-solid) :is(.theme-toggle, .menu-toggle) {
+    @apply border-white/30 hover:bg-white/10;
+  }
+
+  /* The mark is a solid ocean square, and the .hero band it now sits on starts
+     from that same ocean — it disappeared into it. Restated as the translucent
+     white the hero's own eyebrow uses, which the photograph and the gradient
+     both take. The white "W" inside is unchanged. */
+  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+    .site-header:not(.is-solid) .brand-mark {
+    @apply bg-white/15 ring-1 ring-inset ring-white/25 backdrop-blur-sm;
+  }
+
+  /* Only the home page, and only because its backdrop is a photograph: the
+     gradient band on every other hero is a known dark colour, but a photo can
+     put a white wall behind the nav links — which is exactly what the salon
+     frame does. The fade down from the top is the same trick .hero-veil plays
+     horizontally, and the drop-shadow is the same belt-and-braces .hero-home h1
+     already carries for the same reason.
+     It is a pseudo-element rather than a background on the bar because it has to
+     be twice the bar's height: a fade that ends exactly on the bottom edge
+     leaves a visible seam ruled across the photograph. -z-10 keeps it behind the
+     lettering, and inside the bar's own stacking context, so it cannot reach the
+     search box below. */
+  body:has(.site-main > .hero-home:first-child) .site-header:not(.is-solid)::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 top-0 -z-10 h-32
+           bg-gradient-to-b from-black/35 to-transparent;
+  }
+  body:has(.site-main > .hero-home:first-child)
+    .site-header:not(.is-solid) :is(.brand, .nav a) {
+    @apply drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)];
+  }
+
+  /* Opaque, unlike the bar above it: an open panel forces the bar to .is-solid,
+     which is bg-white/90 + backdrop-blur — fine for a 64px strip, but it turns a
+     full list of links into a mess over scrolled content. Padding matches .container so the links line up with
      the brand rather than sitting in their own inset column. */
   .mobile-menu {
     @apply border-t border-slate-200 bg-white px-4 pb-3 sm:px-6;
@@ -164,8 +224,23 @@
 
   /* Takes the leftover height in the body's flex column, which is what pins the
      footer to the bottom on short pages. min-h-0 keeps a tall child (the search
-     results grid) from forcing the column open past the viewport. */
-  .site-main { @apply min-h-0 flex-1; }
+     results grid) from forcing the column open past the viewport.
+
+     A fixed header takes no space in the flow, so .site-main puts the 4rem back
+     — otherwise every page that doesn't open with a hero starts underneath the
+     bar. Pages that DO open with a hero take it away again below. */
+  .site-main { @apply min-h-0 flex-1 pt-16; }
+
+  /* This is what puts the gradient (or, on the home page, the photograph) behind
+     the bar. :first-child is the test rather than plain .hero because a flash
+     message renders above the hero: when one is present the page must not slide
+     up, or the message is what ends up hidden behind the bar. The same test
+     gates the light lettering further down, so the two cannot disagree.
+
+     Browsers without :has() (pre-2023) never match that rule and simply keep the
+     old arrangement — an opaque bar with the hero starting below it. */
+  .site-main > .hero:first-child,
+  .site-main > .hero-home:first-child { @apply -mt-16; }
 
   /* Four-column footer, matching the marketing site's shape. The bottom bar is a
      separate strip so its top border spans the full width, not just .container. */
@@ -267,9 +342,14 @@
      decoration: with no rows in directory_hero_images (a fresh install, a
      database blip, an operator who deactivated everything) no <img> renders at
      all and this is what shows. The hero degrades to its old self instead of a
-     white hole. */
+     white hole.
+
+     pt-16 is the fixed header's height. border-box means it comes out of the
+     min-height rather than adding to it, so the hero is the same size it always
+     was and items-center now centres the copy in the part of it the bar isn't
+     covering. */
   .hero-home {
-    @apply relative isolate flex min-h-[520px] items-center overflow-hidden
+    @apply relative isolate flex min-h-[520px] items-center overflow-hidden pt-16
            bg-gradient-to-br from-primary-500 to-primary-700 text-white sm:min-h-[640px];
   }
   .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
@@ -629,8 +709,10 @@
      (one) and the button renders underlined in link blue. */
   .prose-legal a:not(.btn)  { @apply text-primary-600 underline underline-offset-2 hover:text-primary-500; }
   .prose-legal strong { @apply font-semibold text-slate-900; }
+  /* rounded-lg rather than the bare rounded it carried — the only 4px corner in
+     the sheet, on the one element nobody looks at twice. */
   .prose-legal code {
-    @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
+    @apply rounded-lg bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
   }
   .prose-legal .table { @apply mb-6; }
   .dark .prose-legal h2,
@@ -642,7 +724,21 @@
   .dark .prose-legal code { @apply bg-slate-800 text-slate-300; }
 
   /* --------------------------------------------------------------- profile */
-  .profile-head { @apply flex flex-wrap items-start gap-4; }
+  /* Three parts — logo, name block, share icons — and on a phone they do not fit
+     on one row. flex-wrap was meant to handle that and could not: the name block
+     is flex-1 min-w-0, so it surrenders its width to the ~200px strip of share
+     buttons instead of pushing them onto a line of their own. At 390px that left
+     the name in a 90px column — "Skin & Aesthetics Clinic" set on three lines,
+     the business's own name on two, the town on three.
+
+     A grid says it outright. Logo and name take the first row; the share icons
+     get the next one to themselves. From sm up, where the row measurably fits,
+     the third column comes back and the header is what it always was. */
+  .profile-head {
+    @apply grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-4
+           sm:grid-cols-[auto_minmax(0,1fr)_auto];
+  }
+  .profile-head > .share-row { @apply col-span-2 sm:col-span-1; }
   .profile-grid { @apply mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]; }
   /* .kv is one label/value row; panels stack several of them. */
   .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
@@ -731,8 +827,10 @@
   }
   .results-map-canvas { @apply h-full w-full; }
   .results-map:fullscreen { @apply h-full rounded-none border-0; }
+  /* rounded-lg, the step every other small floating chip uses. It was the one
+     rounded-md in the stylesheet. */
   .results-map-status {
-    @apply pointer-events-none absolute bottom-2 left-2 z-[500] rounded-md bg-white/90 px-2 py-1
+    @apply pointer-events-none absolute bottom-2 left-2 z-[500] rounded-lg bg-white/90 px-2 py-1
            text-xs text-slate-600 shadow-sm;
   }
   .results-map-status:empty { @apply hidden; }
@@ -813,7 +911,6 @@
   .field input[type="text"],
   .field input[type="email"],
   .field input[type="password"],
-  .field input[type="file"],
   .field select,
   .field textarea {
     @apply w-full rounded-xl border-slate-200 text-sm
@@ -831,10 +928,38 @@
     @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
            focus:border-primary-300 focus:ring-primary-300;
   }
-  /* File inputs are left unfilled on purpose — @tailwindcss/forms deliberately
-     doesn't style them, so a slate box would frame the native "Choose file"
-     button oddly. color-scheme is what actually themes that button. */
-  .dark .field input[type="file"] { @apply text-slate-300 [color-scheme:dark]; }
+  /* A file input is not a text box and cannot be styled as one. It used to sit
+     in the rule above and take rounded-xl with the rest, which does not round
+     the control — it *clips* it: the browser paints the native "Choose file"
+     button inside the input's border-box, so a 12px radius sliced the corners
+     off the button's left edge.
+
+     So the input itself carries no chrome at all, and the chrome goes on the
+     button instead, through ::file-selector-button — which is what Tailwind's
+     file: variant targets. Same shape and hover as .btn-ghost, one size down,
+     so it reads as a button in this design rather than the operating system's.
+
+     The focus ring is on the button while focus is on the input: that is the
+     one part of this a keyboard user needs to see, and the input has no visible
+     box left to draw a ring around.
+
+     border-solid is not redundant. Preflight sets border-style on `*`, and `*`
+     does not match a pseudo-element, so ::file-selector-button keeps the UA's
+     `outset` — which renders our 1px slate border as a 3D bevel, light on the
+     top-left and dark on the bottom-right. */
+  .field input[type="file"] {
+    @apply w-full cursor-pointer rounded-none border-0 p-0 text-sm text-slate-500
+           file:mr-3 file:cursor-pointer file:rounded-lg file:border
+           file:border-solid file:border-slate-200 file:bg-white file:px-4 file:py-2
+           file:text-sm file:font-semibold file:text-primary-700
+           file:transition-colors hover:file:bg-primary-50
+           focus:outline-none file:focus:ring-2 file:focus:ring-primary-500;
+  }
+  .dark .field input[type="file"] {
+    @apply text-slate-400
+           file:border-slate-700 file:bg-slate-800 file:text-slate-200
+           hover:file:bg-slate-700 file:focus:ring-primary-300;
+  }
   /* The forms plugin gives checkboxes appearance:none plus a hard white fill,
      so color-scheme can't reach them — they'd stay bright white on a dark card.
      Only the *unchecked* box is restyled: checked keeps the plugin's blue-600
@@ -1011,8 +1136,10 @@
   .dark .disclosure-summary { @apply text-slate-200 hover:bg-slate-800; }
   .dark .disclosure-body    { @apply border-slate-800; }
 
+  /* rounded-xl, matching .hours-row: both are a repeated sub-row inside one
+     form field, and on /manage they are a few hundred pixels apart. It was lg. */
   .repeat-row {
-    @apply mb-3 rounded-lg border border-slate-200 bg-white p-3;
+    @apply mb-3 rounded-xl border border-slate-200 bg-white p-3;
   }
   .repeat-row-head { @apply mb-2 flex items-center justify-between gap-3; }
   .repeat-remove   { @apply ml-auto flex items-center gap-1.5 text-xs text-slate-500; }
@@ -1121,13 +1248,40 @@
 
   /* trading-hours input grid, in the shared listing form */
   .hours-grid   { @apply flex flex-col gap-2; }
+  /* The phone layout is built around the one thing in the row that must not
+     break: opens – closes. Three columns, the middle one shrink-wrapped to the
+     dash, and the times land either side of it on a line of their own.
+     grid-cols-2 used to put "opens" and the dash on one line and "closes" on the
+     next, which split a single time range across two rows and left the dash
+     pointing at nothing. Day and Closed share the row above, the note takes the
+     row below, and from sm up the row lays out on one line again.
+
+     Six tracks from sm up, because the row has six children. It had seven, and
+     they did not line up with what was in them: the dash was given a whole 1fr
+     to sit in, the note got the next one, and the seventh stayed empty — so a
+     quarter of the row was blank while the note rendered as "Optioı". The times
+     get a floor of 7rem so the native clock icon always has room beside the
+     digits, the dash shrink-wraps, and what is left goes to the note. */
   .hours-row    {
-    @apply grid grid-cols-2 items-center gap-2 rounded-xl border border-slate-100 p-2 text-sm
-           sm:grid-cols-[90px_100px_auto_1fr_auto_1fr_1fr];
+    @apply grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-slate-100 p-2 text-sm
+           sm:grid-cols-[90px_100px_minmax(7rem,1fr)_auto_minmax(7rem,1fr)_minmax(0,2fr)];
   }
-  .hours-day    { @apply font-medium text-slate-700; }
-  .hours-closed { @apply flex items-center gap-1 text-xs text-slate-500; }
-  .hours-row input[type="time"] { @apply w-full rounded-lg border-slate-200 text-sm; }
+  .hours-day    { @apply col-span-2 font-medium text-slate-700 sm:col-span-1; }
+  .hours-closed {
+    @apply flex items-center justify-self-end gap-1 text-xs text-slate-500
+           sm:justify-self-auto;
+  }
+  /* Both controls in the row get identical chrome. They sit side by side, so a
+     12px note box against 8px time boxes reads as a mistake rather than a
+     choice — which is what it was: .hours-note has no radius of its own and was
+     picking up rounded-xl from the .field input[type="text"] rule.
+
+     Written as `input.hours-note` rather than `.hours-note` deliberately: that
+     rule is (0,2,1) and a lone class is (0,1,0), so the class alone would lose
+     and the note would stay 12px. This matches its specificity and comes later
+     in the file, which is what makes rounded-lg land. */
+  .hours-row input[type="time"],
+  .hours-row input.hours-note { @apply w-full rounded-lg border-slate-200 text-sm; }
   .dark .hours-row    { @apply border-slate-800; }
   .dark .hours-day    { @apply text-slate-200; }
   .dark .hours-closed { @apply text-slate-400; }
@@ -1136,7 +1290,20 @@
     @apply border-slate-700 bg-slate-800 text-white [color-scheme:dark]
            focus:border-primary-300 focus:ring-primary-300;
   }
-  .hours-note   { @apply col-span-2 sm:col-span-1; }
+  .hours-note   { @apply col-span-3 sm:col-span-1; }
+  /* The copy button and its status message, sitting between the label and the
+     grid. items-center rather than baseline because the message wraps to two
+     lines on a phone and a baseline would peg it to the button's first line. */
+  .hours-actions { @apply mb-2 flex flex-wrap items-center gap-x-3 gap-y-1; }
+  /* Same guard .near-bar carries, for the same reason and on the same kind of
+     button: preflight's `[hidden] { display: none }` and `.btn`'s inline-flex
+     have equal specificity, and the components layer is written after the base
+     layer — so .btn wins and a `hidden` button renders anyway. Without this the
+     copy button would show up for browsers running no JavaScript, which is the
+     one audience it cannot work for. */
+  .hours-actions [hidden] { @apply !hidden; }
+  /* .hint is mt-1 for the note under a field; here it sits in a row. */
+  .hours-actions .hint { @apply mt-0; }
   /* Honeypot — visually hidden but not display:none, so bots still fill it. */
   .hp   { @apply absolute -left-[9999px] h-0 w-0 overflow-hidden; }
 

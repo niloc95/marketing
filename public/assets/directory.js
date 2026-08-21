@@ -1,9 +1,9 @@
 /* WebScheduler Directory — small page behaviour.
-   Ten independent modules (theme toggle / mobile menu / reveal / gallery
-   lightbox / share / image uploads / address autocomplete / map pin picker /
-   description rich text / home hero rotation), each a no-op if its markup isn't
-   on the page. Event delegation from one listener each, so this works for
-   content injected later too.
+   Thirteen independent modules (theme toggle / header on scroll / mobile menu /
+   reveal / gallery lightbox / share / image uploads / verification documents /
+   address autocomplete / map pin picker / trading hours / description rich text /
+   home hero rotation), each a no-op if its markup isn't on the page. Event delegation from one
+   listener each, so this works for content injected later too.
 
    Two modules have a dependency, both loaded ahead of this file on the three
    listing forms: the pin picker needs Leaflet (directory/_map_assets) and the
@@ -53,6 +53,32 @@
     applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
   });
 
+  // ------------------------------------------------------ header on scroll
+  // The bar is transparent over the hero and solid over everything else. Two
+  // things make it solid: any scroll past the first few pixels, and an open
+  // burger panel — see setSolid()'s second caller in the mobile-menu module.
+  //
+  // 8px rather than the hero's height on purpose. Waiting for the fold means the
+  // bar spends a long stretch of the scroll invisible over ordinary content;
+  // reacting immediately is what every site with this pattern does.
+  var siteHeader = document.querySelector('.site-header');
+  var menuIsOpen = false;
+
+  function setSolid() {
+    if (!siteHeader) return;
+    siteHeader.classList.toggle('is-solid', menuIsOpen || window.scrollY > 8);
+  }
+
+  if (siteHeader) {
+    // passive: this listener never calls preventDefault, and saying so keeps it
+    // off the scroll's critical path.
+    window.addEventListener('scroll', setSolid, { passive: true });
+    // A reload restores the old scroll offset before this runs, and bfcache can
+    // restore it after — so set the state from the real offset, not from zero.
+    setSolid();
+    window.addEventListener('pageshow', setSolid);
+  }
+
   // ---------------------------------------------------------- mobile menu
   // The header's burger panel. `hidden` on the panel is the single source of
   // truth for open/closed — aria-expanded and the bars/X icons are written from
@@ -70,6 +96,9 @@
       var closeIcon = toggle.querySelector('[data-menu-icon="close"]');
       if (openIcon) openIcon.classList.toggle('hidden', open);
       if (closeIcon) closeIcon.classList.toggle('hidden', !open);
+      // An opaque panel hanging off a transparent bar reads as a detached box.
+      menuIsOpen = open;
+      setSolid();
     }
 
     document.addEventListener('click', function (e) {
@@ -225,6 +254,29 @@
     try { return new DataTransfer().files instanceof FileList; } catch (e) { return false; }
   })();
 
+  // Shared by the two upload modules below. Generic on purpose — they decode a
+  // file to something drawable and know nothing about what it will be used for.
+  // imageOrientation:'from-image' is what applies a phone's EXIF rotation; the
+  // two catches walk back to progressively dumber decoders rather than failing.
+  function decodeImage(file) {
+    if (window.createImageBitmap) {
+      return createImageBitmap(file, { imageOrientation: 'from-image' })
+        .catch(function () { return createImageBitmap(file); })
+        .catch(function () { return decodeViaImg(file); });
+    }
+    return decodeViaImg(file);
+  }
+
+  function decodeViaImg(file) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    });
+  }
+
   document.querySelectorAll('[data-image-upload]').forEach(function (input) {
     var preview = input.parentNode.querySelector('[data-image-preview]');
     if (!preview) return;
@@ -273,7 +325,7 @@
         return Promise.resolve({ file: file, url: URL.createObjectURL(file) });
       }
 
-      return decode(file).then(function (bitmap) {
+      return decodeImage(file).then(function (bitmap) {
         if (!bitmap) return { file: file, url: URL.createObjectURL(file) };
 
         var scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
@@ -304,25 +356,6 @@
     // createImageBitmap applies the EXIF rotation for us, which is what keeps
     // portrait phone photos upright. The <img> fallback does not, so the server
     // rotates too for browsers that land here.
-    function decode(file) {
-      if (window.createImageBitmap) {
-        return createImageBitmap(file, { imageOrientation: 'from-image' })
-          .catch(function () { return createImageBitmap(file); })
-          .catch(function () { return decodeViaImg(file); });
-      }
-      return decodeViaImg(file);
-    }
-
-    function decodeViaImg(file) {
-      return new Promise(function (resolve) {
-        var url = URL.createObjectURL(file);
-        var img = new Image();
-        img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
-        img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
-        img.src = url;
-      });
-    }
-
     function toBlob(canvas) {
       return new Promise(function (resolve) {
         if (!canvas.toBlob) { resolve(null); return; }
@@ -408,6 +441,90 @@
     var btn = e.target.closest('[data-confirm]');
     if (btn && !window.confirm(btn.getAttribute('data-confirm'))) {
       e.preventDefault();
+    }
+  });
+
+  // ------------------------------------------------- verification documents
+  // Downscale a photographed ID or certificate before it is submitted.
+  //
+  // Deliberately NOT the [data-image-upload] module above, and the two reasons
+  // are both things that would ship broken rather than merely untidy:
+  //
+  //   1. That module encodes to WebP. VerificationDocumentProcessor accepts pdf,
+  //      jpg, jpeg and png only, so every downscaled document would be refused
+  //      by the server it was shrunk for.
+  //   2. Its processFile() returns null for anything that is not an image, and
+  //      the nulls are filtered out before input.files is rebuilt — so a PDF,
+  //      which is what most registration certificates are, would be dropped and
+  //      the owner would submit an empty field.
+  //
+  // It is the same split the two processor classes make server-side, for the
+  // same reason: one of these transforms what it is given and the other must not.
+  //
+  // What the server stores is still exactly the bytes it receives. This changes
+  // what the browser sends, which the form says out loud — a document is
+  // evidence, and quietly altering it would not be honest.
+  var DOC_MAX_EDGE = 2000;      // above the photos' 1600: small print on an ID
+  var DOC_QUALITY  = 0.85;      // has to survive the round trip and stay readable
+
+  document.querySelectorAll('[data-doc-upload]').forEach(function (input) {
+    // Without DataTransfer we cannot put the smaller file back on the input, and
+    // sending the original is the correct outcome — just a larger one.
+    if (!canReplaceFiles) return;
+
+    input.addEventListener('change', function () {
+      var file = (input.files || [])[0];
+      if (!file) return;
+
+      // PDFs are never touched, at either end.
+      if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) return;
+      if (!/^image\/(jpeg|png)$/.test(file.type) && !/\.(jpe?g|png)$/i.test(file.name)) return;
+
+      shrink(file).then(function (out) {
+        if (!out) return;
+        var dt = new DataTransfer();
+        dt.items.add(out);
+        input.files = dt.files;
+      });
+    });
+
+    // Resolves to a smaller File, or null when there is nothing to gain — a
+    // scan already under the limit, a decode failure, a browser without
+    // canvas.toBlob. In every one of those the original is left on the input.
+    function shrink(file) {
+      return decodeImage(file).then(function (bitmap) {
+        if (!bitmap) return null;
+
+        var scale = Math.min(1, DOC_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+        var w = Math.max(1, Math.round(bitmap.width * scale));
+        var h = Math.max(1, Math.round(bitmap.height * scale));
+
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+        if (bitmap.close) bitmap.close();
+
+        return toJpeg(canvas).then(function (blob) {
+          // A small PNG scan of a certificate can come out of JPEG larger than
+          // it went in. Keeping the original is both smaller and more faithful.
+          if (!blob || blob.size >= file.size) return null;
+
+          return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+        });
+      });
+    }
+
+    // JPEG, not WebP: it is what the server's allow-list accepts, and it is the
+    // one lossy format every browser can write.
+    function toJpeg(canvas) {
+      return new Promise(function (resolve) {
+        if (!canvas.toBlob) { resolve(null); return; }
+        canvas.toBlob(resolve, 'image/jpeg', DOC_QUALITY);
+      });
     }
   });
 
@@ -1367,6 +1484,77 @@
       var first = row.querySelector('input[type="text"]');
       if (first) first.focus();
     });
+  });
+
+  // ------------------------------------------------------------ trading hours
+  // "Copy Monday to every day" on the three listing forms. Seven rows of the
+  // same opening time is the tedious part of this form, and most businesses
+  // keep at least Monday to Friday identical.
+  //
+  // Enhancement only: the button ships hidden and is unhidden here, so a browser
+  // without this script never sees a control it could not honour. The grid is
+  // plain inputs and submits the same either way.
+  document.querySelectorAll('[data-hours]').forEach(function (grid) {
+    // Scoped to the field the grid sits in rather than the document, so this
+    // stays correct if a form ever carries two sets of hours — a second branch
+    // with its own times is exactly the kind of thing this form grows.
+    var field = grid.parentElement;
+    var btn   = field && field.querySelector('[data-hours-copy]');
+    if (!btn) return;
+    var note = field.querySelector('[data-hours-copy-note]');
+    var rows = grid.querySelectorAll('[data-hours-row]');
+    if (rows.length < 2) return;
+
+    btn.hidden = false;
+
+    // Selected by name rather than by position in the row. The row is a grid
+    // whose column order has already changed once for the phone layout, and a
+    // querySelectorAll('input[type=time]')[0] would silently start copying the
+    // wrong field the next time it changes.
+    function fields(row) {
+      return {
+        closed: row.querySelector('input[name$="[closed]"]'),
+        open:   row.querySelector('input[name$="[open]"]'),
+        close:  row.querySelector('input[name$="[close]"]'),
+        note:   row.querySelector('input[name$="[note]"]')
+      };
+    }
+
+    function say(message) {
+      if (note) note.textContent = message;
+    }
+
+    btn.addEventListener('click', function () {
+      var src = fields(rows[0]);
+      if (!src.open || !src.close) return;
+
+      // A blank Monday would wipe six filled-in days, which is the one way this
+      // button could destroy work rather than save it. Ticking "Closed" counts
+      // as filled in — a business closed on Mondays is a real answer.
+      var hasSomething = src.open.value !== '' || src.close.value !== ''
+        || (src.closed && src.closed.checked)
+        || (src.note && src.note.value !== '');
+      if (!hasSomething) {
+        say('Fill in Monday first, then copy it down.');
+        return;
+      }
+
+      var copied = 0;
+      for (var i = 1; i < rows.length; i++) {
+        var dst = fields(rows[i]);
+        if (dst.open)  dst.open.value  = src.open.value;
+        if (dst.close) dst.close.value = src.close.value;
+        if (dst.note && src.note)  dst.note.value = src.note.value;
+        if (dst.closed && src.closed) dst.closed.checked = src.closed.checked;
+        copied++;
+      }
+      // role="status" on the note, so this is announced rather than only seen.
+      say('Monday copied to the other ' + copied + ' days. Edit any of them below.');
+    });
+
+    // The message describes a state the form is no longer in the moment anything
+    // is typed, so it goes as soon as it stops being true.
+    grid.addEventListener('input', function () { say(''); });
   });
 
   // ------------------------------------------------- description rich text

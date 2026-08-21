@@ -59,7 +59,7 @@ $faqs = [
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero py-8 sm:py-10">
+<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
     <div class="container">
         <span class="badge badge-verified">&#10003; Verified Business</span>
         <h1 class="mt-3 text-2xl sm:text-3xl">What the Verified Business badge means</h1>
