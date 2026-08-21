@@ -37,7 +37,7 @@ trait HandlesVerificationUploads
     /**
      * Validate and store whatever verification documents this request carries.
      *
-     * @return array{docs:array<string,array{name:string,mime:string,bytes:int,original_name:string}>,errors:array<int,string>}
+     * @return array{docs:array<string,array{name:string,mime:string,bytes:int,sha256:string,original_name:string}>,errors:array<int,string>}
      *   `docs` is keyed by document kind and empty when nobody is applying —
      *   the normal case on a signup, not an error.
      */
@@ -63,6 +63,7 @@ trait HandlesVerificationUploads
                     'name'          => $result['name'],
                     'mime'          => $result['mime'],
                     'bytes'         => $result['bytes'],
+                    'sha256'        => $result['sha256'],
                     'original_name' => $file->getClientName(),
                 ];
             } else {

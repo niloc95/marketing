@@ -158,6 +158,41 @@ final class VerificationDocumentProcessorTest extends CIUnitTestCase
         $this->assertStringEndsWith('.png', $result['name'], 'the extension must not change either');
     }
 
+    /**
+     * The digest is what turns "a copy of their document" into "provably their
+     * document" if the verification is ever questioned. Taken from the file as
+     * stored, not from the upload, because the stored bytes are the ones we will
+     * still have to answer for.
+     */
+    public function testReturnsTheSha256OfTheStoredFile(): void
+    {
+        $bytes  = $this->pdfBytes();
+        $result = (new VerificationDocumentProcessor())->process($this->upload('reg.pdf', $bytes, 'application/pdf'), $this->dest);
+
+        $this->assertTrue($result['ok'], $result['error']);
+        $this->assertSame(hash('sha256', $bytes), $result['sha256']);
+        $this->assertSame(
+            hash_file('sha256', $this->dest . '/' . $result['name']),
+            $result['sha256'],
+            'the digest must describe the file on disk'
+        );
+    }
+
+    /**
+     * Callers read $result['sha256'] unconditionally, so a rejection has to
+     * carry the key too — the alternative is an undefined-index warning on the
+     * one path that is already going badly.
+     */
+    public function testARejectionCarriesTheSameKeysAsASuccess(): void
+    {
+        $ok       = (new VerificationDocumentProcessor())->process($this->upload('reg.pdf', $this->pdfBytes(), 'application/pdf'), $this->dest);
+        $rejected = (new VerificationDocumentProcessor())->process($this->upload('note.txt', 'plain', 'text/plain'), $this->dest);
+
+        $this->assertFalse($rejected['ok']);
+        $this->assertSame(array_keys($ok), array_keys($rejected));
+        $this->assertSame('', $rejected['sha256']);
+    }
+
     // --------------------------------------------------------------- rejection
 
     public function testRejectsExtensionsOutsideTheAllowList(): void

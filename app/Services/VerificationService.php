@@ -6,6 +6,7 @@ use App\Libraries\Mailer;
 use App\Libraries\PayFast;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationDocumentModel;
+use App\Models\DirectoryVerificationSubmissionModel;
 use App\Models\DirectoryVerificationEventModel;
 use App\Models\DirectoryVerificationModel;
 use Config\Directory as DirectoryConfig;
@@ -30,6 +31,7 @@ class VerificationService
 {
     private DirectoryVerificationModel $verifications;
     private DirectoryVerificationDocumentModel $documents;
+    private DirectoryVerificationSubmissionModel $submissions;
     private DirectoryVerificationEventModel $events;
     private DirectoryListingModel $listings;
     private DirectoryConfig $config;
@@ -46,6 +48,7 @@ class VerificationService
     {
         $this->verifications = new DirectoryVerificationModel();
         $this->documents     = new DirectoryVerificationDocumentModel();
+        $this->submissions   = new DirectoryVerificationSubmissionModel();
         $this->events        = new DirectoryVerificationEventModel();
         $this->listings      = new DirectoryListingModel();
         $this->config        = config('Directory');
@@ -119,7 +122,7 @@ class VerificationService
      * than queued, because an admin cannot act on it and the owner would be left
      * waiting for a decision that could never come.
      *
-     * @param array<string,array{name:string,mime:string,bytes:int}> $documents
+     * @param array<string,array{name:string,mime:string,bytes:int,sha256:string}> $documents
      *        keyed by DirectoryVerificationDocumentModel::KINDS, as returned by
      *        HandlesVerificationUploads::resolveVerificationDocuments()
      *
@@ -163,11 +166,20 @@ class VerificationService
         $db->transBegin();
 
         try {
+            $submittedAt = date('Y-m-d H:i:s');
+
             if ($existing !== null) {
-                // Re-submission after a rejection or a lapse. The superseded
-                // evidence goes, files included: keeping an ID copy we have
-                // already decided against is retention without a purpose.
-                $this->documents->deleteForVerification((int) $existing['id']);
+                // Re-submission after a rejection or a lapse. The previous
+                // evidence is closed off, not deleted: the verification row
+                // below is about to lose its decision fields, and the documents
+                // plus the submission row are the only remaining answer to "how
+                // was this business verified in the first place". They stay for
+                // the life of the listing.
+                $previous = $this->submissions->latestForVerification((int) $existing['id']);
+                if ($previous !== null) {
+                    $this->submissions->supersede((int) $previous['id']);
+                }
+                $this->documents->supersedeForVerification((int) $existing['id']);
 
                 $this->verifications->update((int) $existing['id'], [
                     'state'            => DirectoryVerificationModel::STATE_SUBMITTED,
@@ -175,7 +187,7 @@ class VerificationService
                     'rejection_reason' => null,
                     'reviewed_at'      => null,
                     'reviewed_by'      => null,
-                    'submitted_at'     => date('Y-m-d H:i:s'),
+                    'submitted_at'     => $submittedAt,
                 ]);
                 $verificationId = (int) $existing['id'];
             } else {
@@ -183,7 +195,7 @@ class VerificationService
                     'listing_id'   => $listingId,
                     'state'        => DirectoryVerificationModel::STATE_SUBMITTED,
                     'amount'       => $this->monthlyAmount(),
-                    'submitted_at' => date('Y-m-d H:i:s'),
+                    'submitted_at' => $submittedAt,
                 ], true);
 
                 if ($verificationId === 0) {
@@ -191,14 +203,21 @@ class VerificationService
                 }
             }
 
+            $submissionId = $this->submissions->open($verificationId, $submittedAt);
+            if ($submissionId === 0) {
+                throw new \RuntimeException('verification submission row not created');
+            }
+
             foreach (DirectoryVerificationDocumentModel::KINDS as $kind) {
                 $this->documents->insert([
                     'verification_id' => $verificationId,
+                    'submission_id'   => $submissionId,
                     'kind'            => $kind,
                     'path'            => $listingId . '/' . $documents[$kind]['name'],
                     'original_name'   => $documents[$kind]['original_name'] ?? null,
                     'mime'            => $documents[$kind]['mime'],
                     'bytes'           => $documents[$kind]['bytes'],
+                    'sha256'          => $documents[$kind]['sha256'] ?? null,
                 ]);
             }
 
@@ -239,6 +258,14 @@ class VerificationService
         ]);
 
         if ($ok) {
+            // The same decision, written where it will survive the next
+            // application. The verification row above is the badge's state and
+            // gets overwritten; this is the record of the ruling.
+            $this->recordDecision(
+                $verificationId,
+                DirectoryVerificationSubmissionModel::OUTCOME_APPROVED,
+                $by
+            );
             $this->mailOwner((int) $row['listing_id'], 'approved', ['amount' => $row['amount']]);
         }
 
@@ -271,6 +298,12 @@ class VerificationService
         ]);
 
         if ($ok) {
+            $this->recordDecision(
+                $verificationId,
+                DirectoryVerificationSubmissionModel::OUTCOME_REJECTED,
+                $by,
+                mb_substr($reason, 0, 500)
+            );
             $this->mailOwner((int) $row['listing_id'], 'rejected', ['reason' => $reason]);
         }
 
@@ -722,6 +755,24 @@ class VerificationService
      *
      * @param array<string,array{name:string}> $documents
      */
+    /**
+     * Freeze an admin's ruling onto the application it was made about.
+     *
+     * Silent when there is no submission row — a verification created before
+     * this table existed and never re-applied has nothing to write to, and a
+     * missing history row is not a reason to fail a decision the admin has
+     * already made and the owner has already been emailed about.
+     */
+    private function recordDecision(int $verificationId, string $outcome, string $by, ?string $reason = null): void
+    {
+        $submission = $this->submissions->latestForVerification($verificationId);
+        if ($submission === null) {
+            return;
+        }
+
+        $this->submissions->recordDecision((int) $submission['id'], $outcome, $by, $reason);
+    }
+
     private function discardStoredFiles(int $listingId, array $documents): void
     {
         foreach ($documents as $doc) {

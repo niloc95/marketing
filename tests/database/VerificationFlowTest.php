@@ -3,7 +3,10 @@
 use App\Libraries\PayFast;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationEventModel;
+use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
+use App\Models\DirectoryVerificationSubmissionModel;
+use App\Services\DirectoryAdminService;
 use App\Services\DirectorySettings;
 use App\Services\VerificationService;
 use CodeIgniter\Test\CIUnitTestCase;
@@ -37,13 +40,38 @@ final class VerificationFlowTest extends CIUnitTestCase
     private DirectoryVerificationModel $verifications;
     private DirectoryListingModel $listings;
 
+    /**
+     * Unique per test, so fixture files cannot collide with each other or with
+     * anything already in the shared storage root. See storedFiles().
+     */
+    private string $fixturePrefix = 'fixture_';
+
     protected function setUp(): void
     {
         parent::setUp();
         (new DirectorySettings())->forget();
+        $this->fixturePrefix = 'fixture_' . bin2hex(random_bytes(4)) . '_';
         $this->svc           = new VerificationService();
         $this->verifications = new DirectoryVerificationModel();
         $this->listings      = new DirectoryListingModel();
+    }
+
+    /**
+     * Take the fixture files with us. The storage root is a real directory shared
+     * with the developer's own database, and a suite that leaves ID-shaped files
+     * lying around in it is untidy everywhere and actively confusing in the one
+     * directory that also holds genuine documents.
+     *
+     * Scoped to this test's own prefix, so it can only remove what it wrote.
+     */
+    protected function tearDown(): void
+    {
+        $root = DirectoryVerificationDocumentModel::storageRoot();
+        foreach (glob($root . '/*/' . $this->fixturePrefix . '*') ?: [] as $path) {
+            @unlink($path);
+        }
+
+        parent::tearDown();
     }
 
     private function makeListing(): int
@@ -68,6 +96,65 @@ final class VerificationFlowTest extends CIUnitTestCase
             'company_registration' => ['name' => 'verif_a.pdf', 'mime' => 'application/pdf', 'bytes' => 100, 'original_name' => 'cipc.pdf'],
             'owner_id'             => ['name' => 'verif_b.png', 'mime' => 'image/png', 'bytes' => 200, 'original_name' => 'id.png'],
         ];
+    }
+
+    /**
+     * The same two documents, but written to disk first — retention is a claim
+     * about files, and a test that only counts rows would pass while every ID
+     * copy leaked or vanished.
+     *
+     * @return array<string,array{name:string,mime:string,bytes:int,sha256:string,original_name:string}>
+     */
+    private function documentsOnDisk(int $listingId, string $tag = 'a'): array
+    {
+        $dir = DirectoryVerificationDocumentModel::storageRoot() . '/' . $listingId;
+        if (! is_dir($dir)) {
+            mkdir($dir, 0700, true);
+        }
+
+        $docs = [];
+        foreach ([
+            'company_registration' => [$this->fixturePrefix . $tag . '_reg.pdf', 'application/pdf'],
+            'owner_id'             => [$this->fixturePrefix . $tag . '_id.png', 'image/png'],
+        ] as $kind => [$name, $mime]) {
+            $bytes = $kind . '-' . $tag . '-bytes';
+            file_put_contents($dir . '/' . $name, $bytes);
+            $docs[$kind] = [
+                'name'          => $name,
+                'mime'          => $mime,
+                'bytes'         => strlen($bytes),
+                'sha256'        => hash('sha256', $bytes),
+                'original_name' => $kind . '.' . pathinfo($name, PATHINFO_EXTENSION),
+            ];
+        }
+
+        return $docs;
+    }
+
+    /**
+     * The fixture files this test wrote, and only those.
+     *
+     * The directory is keyed by listing id and the test database restarts its
+     * ids at 1 on every refresh, so writable/verification/1 is shared with
+     * whatever a developer's own database put there — on this machine, two real
+     * documents from a genuine application. Counting the whole directory made
+     * the assertions depend on someone else's data. (The purge itself was never
+     * at risk of touching them: it deletes by row, and those rows are in another
+     * database.)
+     *
+     * @return array<int,string>
+     */
+    private function storedFiles(int $listingId): array
+    {
+        $dir = DirectoryVerificationDocumentModel::storageRoot() . '/' . $listingId;
+        if (! is_dir($dir)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_diff(scandir($dir), ['.', '..']),
+            fn (string $name) => str_starts_with($name, $this->fixturePrefix)
+        ));
     }
 
     private function applyAndApprove(int $listingId): array
@@ -177,6 +264,106 @@ final class VerificationFlowTest extends CIUnitTestCase
     }
 
     /** An application an admin could not act on is worse than none. */
+    // ------------------------------------------------------------- retention
+    //
+    // The policy these cover: a secure copy of the evidence is kept for the life
+    // of the listing, so "how did we verify this business" can be answered later.
+    // Before this, re-applying deleted the previous documents and nulled the
+    // decision, which left that question unanswerable for any listing that had
+    // applied more than once.
+
+    public function testReApplyingKeepsTheEarlierDocumentsInsteadOfDeletingThem(): void
+    {
+        $listingId = $this->makeListing();
+        $documents = new DirectoryVerificationDocumentModel();
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'first'));
+        $row = $this->verifications->forListing($listingId);
+        $this->svc->reject((int) $row['id'], 'The ID photo is cut off at the edge.', 'admin@test');
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'second'));
+
+        $verificationId = (int) $this->verifications->forListing($listingId)['id'];
+
+        // The live set is still one registration document and one ID, so the
+        // review queue and the owner's panel look exactly as they always did.
+        $this->assertCount(2, $documents->forVerification($verificationId));
+        // But nothing was thrown away.
+        $this->assertCount(4, $documents->historyForVerification($verificationId));
+        $this->assertCount(4, $this->storedFiles($listingId), 'every file must still be on disk');
+
+        foreach ($documents->historyForVerification($verificationId) as $doc) {
+            $this->assertNotNull($documents->resolvePath((string) $doc['path']), $doc['path'] . ' should resolve');
+        }
+    }
+
+    public function testTheEarlierDecisionSurvivesTheNextApplication(): void
+    {
+        $listingId = $this->makeListing();
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'first'));
+        $row = $this->verifications->forListing($listingId);
+        $this->svc->reject((int) $row['id'], 'The ID photo is cut off at the edge.', 'reviewer@test');
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'second'));
+
+        // The verification row has been reset for the new application — that is
+        // correct, it describes the badge now.
+        $current = $this->verifications->forListing($listingId);
+        $this->assertNull($current['reviewed_by']);
+        $this->assertSame(DirectoryVerificationModel::STATE_SUBMITTED, $current['state']);
+
+        // The ruling itself is still on the attempt it was made about.
+        $attempts = (new DirectoryVerificationSubmissionModel())->forVerification((int) $current['id']);
+        $this->assertCount(2, $attempts);
+        $this->assertSame(1, (int) $attempts[0]['attempt_no']);
+        $this->assertSame(DirectoryVerificationSubmissionModel::OUTCOME_REJECTED, $attempts[0]['outcome']);
+        $this->assertSame('reviewer@test', $attempts[0]['reviewed_by']);
+        $this->assertSame('The ID photo is cut off at the edge.', $attempts[0]['rejection_reason']);
+        $this->assertSame(DirectoryVerificationSubmissionModel::OUTCOME_SUBMITTED, $attempts[1]['outcome']);
+    }
+
+    /**
+     * The trap this guards. forVerification() now hides superseded rows so the
+     * review queue stays readable — and the purge used to walk that same query.
+     * Left that way, deleting a listing would take the live documents and leave
+     * every earlier attempt's ID copy on disk with no row pointing at it: PII
+     * that nothing would ever come back for, which is the exact opposite of what
+     * keeping the history is for.
+     */
+    public function testDeletingAListingRemovesEveryAttemptsFilesNotJustTheLiveOnes(): void
+    {
+        $listingId = $this->makeListing();
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'first'));
+        $row = $this->verifications->forListing($listingId);
+        $this->svc->reject((int) $row['id'], 'Not legible.', 'admin@test');
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'second'));
+
+        $this->assertCount(4, $this->storedFiles($listingId));
+
+        $admin = new DirectoryAdminService();
+        $this->listings->delete($listingId);      // soft delete — purge only touches the trash
+        $this->assertTrue($admin->purge($listingId));
+
+        $this->assertSame([], $this->storedFiles($listingId), 'no ID copy may outlive the listing');
+    }
+
+    public function testTheStoredDigestIsKeptWithTheDocument(): void
+    {
+        $listingId = $this->makeListing();
+        $documents = $this->documentsOnDisk($listingId, 'first');
+
+        $this->svc->submitApplication($listingId, $documents);
+
+        $verificationId = (int) $this->verifications->forListing($listingId)['id'];
+        $rows           = (new DirectoryVerificationDocumentModel())->forVerification($verificationId);
+
+        $byKind = array_column($rows, null, 'kind');
+        $this->assertSame($documents['owner_id']['sha256'], $byKind['owner_id']['sha256']);
+        $this->assertSame($documents['company_registration']['sha256'], $byKind['company_registration']['sha256']);
+    }
+
     public function testOneDocumentIsRefused(): void
     {
         $listingId = $this->makeListing();

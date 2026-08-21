@@ -490,6 +490,10 @@ class DirectoryAdminService
             return;
         }
 
+        // deleteForVerification() walks the *full* history — superseded attempts
+        // as well as the live set. That is the retention boundary: evidence
+        // lives exactly as long as the listing does, and this is the only place
+        // that still deletes any of it.
         (new DirectoryVerificationDocumentModel())->deleteForVerification((int) $verification['id']);
 
         // rmdir() only succeeds on an empty directory, which is exactly the

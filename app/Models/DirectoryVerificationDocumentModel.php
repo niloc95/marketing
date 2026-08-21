@@ -15,7 +15,8 @@ class DirectoryVerificationDocumentModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'verification_id', 'kind', 'path', 'original_name', 'mime', 'bytes',
+        'verification_id', 'submission_id', 'kind', 'path', 'original_name',
+        'mime', 'bytes', 'sha256', 'superseded_at',
     ];
 
     public const KIND_REGISTRATION = 'company_registration';
@@ -40,14 +41,76 @@ class DirectoryVerificationDocumentModel extends Model
     }
 
     /**
+     * The documents behind the application currently in play.
+     *
+     * Superseded rows are excluded, which is what keeps the review queue and the
+     * owner's panel showing one registration document and one ID rather than a
+     * growing pile of every attempt. Their files are still on disk and still
+     * streamable by id — see historyForVerification().
+     *
      * @return array<int,array<string,mixed>>
      */
     public function forVerification(int $verificationId): array
     {
         return $this->where('verification_id', $verificationId)
+            ->where('superseded_at', null)
             ->orderBy('kind', 'ASC')
             ->orderBy('id', 'ASC')
             ->findAll();
+    }
+
+    /**
+     * Every document ever attached to this verification, superseded ones
+     * included, oldest attempt first.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function historyForVerification(int $verificationId): array
+    {
+        return $this->where('verification_id', $verificationId)
+            ->orderBy('submission_id', 'ASC')
+            ->orderBy('kind', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->findAll();
+    }
+
+    /**
+     * The superseded documents only, grouped by the application they belonged
+     * to, for the "earlier attempts" panel in the review queue.
+     *
+     * @return array<int,array<int,array<string,mixed>>> keyed by submission id
+     */
+    public function supersededBySubmission(int $verificationId): array
+    {
+        $rows = $this->where('verification_id', $verificationId)
+            ->where('superseded_at IS NOT NULL')
+            ->orderBy('submission_id', 'ASC')
+            ->orderBy('kind', 'ASC')
+            ->findAll();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int) ($row['submission_id'] ?? 0)][] = $row;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Mark this verification's live documents as replaced by a newer
+     * application. The files are deliberately left on disk: the retention
+     * boundary is the life of the listing, not the life of one attempt.
+     */
+    public function supersedeForVerification(int $verificationId): void
+    {
+        $live = $this->forVerification($verificationId);
+        if ($live === []) {
+            return;
+        }
+
+        $this->whereIn('id', array_column($live, 'id'))
+            ->set('superseded_at', date('Y-m-d H:i:s'))
+            ->update();
     }
 
     /**
@@ -93,13 +156,22 @@ class DirectoryVerificationDocumentModel extends Model
     }
 
     /**
-     * Delete every document for a verification, files included. Used when an
-     * owner re-submits after a rejection: the superseded evidence should not
-     * outlive the application it belonged to.
+     * Delete every document for a verification, files included — superseded
+     * attempts as well as the live one.
+     *
+     * The only caller left is the listing purge, and that is the point: this is
+     * where the retention boundary is enforced, so it has to see everything.
+     * historyForVerification(), not forVerification() — the latter filters out
+     * superseded rows, and using it here would quietly leave the earlier
+     * attempts' ID copies on disk with no row pointing at them and nothing that
+     * would ever come back for them.
+     *
+     * Re-submission no longer comes through here; it calls
+     * supersedeForVerification() instead.
      */
     public function deleteForVerification(int $verificationId): void
     {
-        foreach ($this->forVerification($verificationId) as $doc) {
+        foreach ($this->historyForVerification($verificationId) as $doc) {
             $this->deleteWithFile($doc);
         }
     }

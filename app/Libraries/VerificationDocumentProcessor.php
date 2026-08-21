@@ -18,6 +18,14 @@ use CodeIgniter\HTTP\Files\UploadedFile;
  * other class's branches would have left the two intentions tangled in one
  * place where a later edit could quietly re-encode a passport scan.
  *
+ * Say the invariant precisely, because half of it is easy to misread: *this
+ * class* never alters a byte. The browser may downscale a photograph before it
+ * is submitted — see the document-upload module in directory.js, and the form
+ * hint that says so — and what arrives is then what the owner sent. PDFs are
+ * never touched at either end. The sha256 returned below is taken from the file
+ * as stored, which is what makes "this is their document" checkable rather than
+ * merely asserted.
+ *
  * The other difference is where the output lands. Listing images go to
  * public/assets/listings and are served directly by Apache. These go under
  * writable/, outside the docroot, and are readable only through a session-gated
@@ -77,7 +85,7 @@ class VerificationDocumentProcessor
      *
      * @param string $destDir absolute path, must be under the private storage root
      *
-     * @return array{ok:bool,name:string,mime:string,bytes:int,error:string}
+     * @return array{ok:bool,name:string,mime:string,bytes:int,sha256:string,error:string}
      *   `name` is the generated filename only; the caller composes the stored
      *   path, because only it knows the listing subdirectory. Never throws.
      */
@@ -163,7 +171,21 @@ class VerificationDocumentProcessor
 
         @chmod($destDir . '/' . $stored, 0600);
 
-        return ['ok' => true, 'name' => $stored, 'mime' => $mime, 'bytes' => $bytes, 'error' => ''];
+        // Hashed after the move, from the file on disk, deliberately: the claim
+        // worth being able to make later is about the bytes we are keeping, not
+        // about a temp file that no longer exists. '' if the read fails — a
+        // document that stored fine is not worth refusing over a missing digest,
+        // and a null column says "unknown" honestly.
+        $digest = hash_file('sha256', $destDir . '/' . $stored);
+
+        return [
+            'ok'     => true,
+            'name'   => $stored,
+            'mime'   => $mime,
+            'bytes'  => $bytes,
+            'sha256' => $digest === false ? '' : $digest,
+            'error'  => '',
+        ];
     }
 
     /**
@@ -221,6 +243,6 @@ class VerificationDocumentProcessor
      */
     private function fail(string $error): array
     {
-        return ['ok' => false, 'name' => '', 'mime' => '', 'bytes' => 0, 'error' => $error];
+        return ['ok' => false, 'name' => '', 'mime' => '', 'bytes' => 0, 'sha256' => '', 'error' => $error];
     }
 }

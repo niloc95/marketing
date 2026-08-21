@@ -10,8 +10,18 @@
 
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
+use App\Models\DirectoryVerificationSubmissionModel;
 
-$documents = new DirectoryVerificationDocumentModel();
+$documents   = new DirectoryVerificationDocumentModel();
+$submissions = new DirectoryVerificationSubmissionModel();
+
+// First twelve characters of the digest, which is plenty to compare two by eye;
+// the full value is on the title attribute for anyone who needs to paste it.
+$digest = static function (?string $sha): string {
+    $sha = (string) $sha;
+
+    return $sha === '' ? '' : substr($sha, 0, 12);
+};
 
 // Submitted first: it is the only tab with work in it. The rest are for looking
 // things up, not for getting through.
@@ -96,11 +106,60 @@ $prettyDate = static function (?string $date): string {
                                         <a class="btn btn-ghost btn-xs"
                                            href="<?= base_url('admin/verification/document/' . $doc['id']) ?>"
                                            target="_blank" rel="noopener"
-                                           title="<?= esc($doc['original_name'] ?? '', 'attr') ?>">
+                                           title="<?= esc(trim(($doc['original_name'] ?? '') . "\n" . ($doc['sha256'] ?? '')), 'attr') ?>">
                                             <?= $doc['kind'] === DirectoryVerificationDocumentModel::KIND_REGISTRATION ? 'Registration' : 'Owner ID' ?>
                                         </a>
                                     <?php endforeach; ?>
                                     </div>
+                                    <?php if ($digest($docs[0]['sha256'] ?? '') !== ''): ?>
+                                        <div class="hint font-mono"><?= esc($digest($docs[0]['sha256'])) ?>…</div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+
+                                <?php
+                                // Earlier applications. Only rendered when there
+                                // are any, so a listing that applied once looks
+                                // exactly as it did before this existed.
+                                $earlier = $documents->supersededBySubmission((int) $r['id']);
+                                ?>
+                                <?php if ($earlier !== []): ?>
+                                    <?php $attempts = []; ?>
+                                    <?php foreach ($submissions->forVerification((int) $r['id']) as $sub): ?>
+                                        <?php $attempts[(int) $sub['id']] = $sub; ?>
+                                    <?php endforeach; ?>
+                                    <details class="disclosure mt-2">
+                                        <summary class="disclosure-summary">
+                                            <?= count($earlier) ?> earlier application<?= count($earlier) === 1 ? '' : 's' ?>
+                                        </summary>
+                                        <div class="disclosure-body">
+                                            <?php foreach ($earlier as $submissionId => $oldDocs): ?>
+                                                <?php $sub = $attempts[$submissionId] ?? null; ?>
+                                                <p class="hint mb-1">
+                                                    <?php if ($sub !== null): ?>
+                                                        Attempt <?= (int) $sub['attempt_no'] ?> ·
+                                                        <?= esc(DirectoryVerificationSubmissionModel::OUTCOME_LABELS[$sub['outcome']] ?? $sub['outcome']) ?>
+                                                        <?= $sub['reviewed_by'] ? ' by ' . esc($sub['reviewed_by']) : '' ?>
+                                                        <?= $sub['reviewed_at'] ? ' on ' . esc($prettyDate($sub['reviewed_at'])) : '' ?>
+                                                        <?php if (! empty($sub['rejection_reason'])): ?>
+                                                            <br><em><?= esc($sub['rejection_reason']) ?></em>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        An earlier application
+                                                    <?php endif; ?>
+                                                </p>
+                                                <div class="actions">
+                                                    <?php foreach ($oldDocs as $doc): ?>
+                                                        <a class="btn btn-ghost btn-xs"
+                                                           href="<?= base_url('admin/verification/document/' . $doc['id']) ?>"
+                                                           target="_blank" rel="noopener"
+                                                           title="<?= esc(trim(($doc['original_name'] ?? '') . "\n" . ($doc['sha256'] ?? '')), 'attr') ?>">
+                                                            <?= $doc['kind'] === DirectoryVerificationDocumentModel::KIND_REGISTRATION ? 'Registration' : 'Owner ID' ?>
+                                                        </a>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </details>
                                 <?php endif; ?>
                             </td>
                             <td><?= esc($prettyDate($r['submitted_at'] ?? null)) ?></td>
