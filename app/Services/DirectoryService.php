@@ -402,7 +402,18 @@ class DirectoryService
         $listing['category'] = ($listing['category_id'] ?? null)
             ? $this->categories->find((int) $listing['category_id'])
             : null;
-        $listing['locations']      = $this->locations->forListing((int) $listing['id']);
+        // Branches are rendered by the same panels as the listing's own address,
+        // so their hours have to arrive in the same shape — decoded, keyed
+        // mon..sun. Decoding here rather than in the view keeps _hours_panel.php
+        // free of any branch-specific case.
+        $listing['locations'] = array_map(
+            static function (array $loc): array {
+                $loc['trading_hours'] = hours_decode($loc['trading_hours'] ?? null);
+
+                return $loc;
+            },
+            $this->locations->forListing((int) $listing['id'])
+        );
         $listing['tags']           = $this->tags->namesForListing((int) $listing['id']);
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
         $listing['trading_hours']  = hours_decode($listing['trading_hours'] ?? null);

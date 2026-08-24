@@ -529,9 +529,26 @@
   });
 
   // --------------------------------------------------------- address autocomplete
-  var addressWrap = document.querySelector('[data-address-autocomplete]');
-  if (addressWrap) {
+  // One instance per [data-address-autocomplete]: the listing's own address, and
+  // one for every branch row on the forms that offer them. Everything below was
+  // already scoped to its wrapper, so making it multi-instance is mostly this
+  // function boundary — the exceptions are called out where they occur.
+  //
+  // Runs both at load and again on each row the repeat script clones, hence the
+  // initialised flag: a second binding would double every keystroke's search.
+  function initAddressAutocomplete(addressWrap) {
+    if (!addressWrap || addressWrap.dataset.autocompleteReady === '1') return;
+    addressWrap.dataset.autocompleteReady = '1';
+
+    // The pin picker lives inside the listing's own wrapper and nowhere else, so
+    // this is what tells the primary instance from a branch's. It decides which
+    // instance owns the two picker bridges below — without it the last branch to
+    // initialise would capture them, and the picker would start driving its
+    // fields instead of the listing's.
+    var isPrimary = addressWrap.querySelector('[data-map-picker]') !== null;
+
     var addressInput = addressWrap.querySelector('[data-address-field="address_line"]');
+    if (!addressInput) return;
     var suggestList = addressWrap.querySelector('[data-address-suggest-list]');
     var suggestUrl = addressWrap.getAttribute('data-suggest-url');
     var debounceTimer = null;
@@ -626,14 +643,19 @@
       // address text afterwards, so carry them through with the form.
       if (r.lat && r.lng) {
         setCoords(r.lat, r.lng, precision || r.precision || 'exact');
-        if (setPinFromSuggestion) setPinFromSuggestion(r.lat, r.lng);
+        // Only the listing's own suggestion moves the pin. Picking one in a
+        // branch row must leave the listing's marker where it is — it is a
+        // different place entirely.
+        if (isPrimary && setPinFromSuggestion) setPinFromSuggestion(r.lat, r.lng);
       } else {
         setCoords('', '', '');
       }
       suppressClear = false;
     };
     // Exposed for the pin picker's "use this address" button, further down.
-    applySuggestedAddress = fillAddress;
+    // Guarded: every instance would otherwise overwrite this, leaving the
+    // picker's "Use this address" filling whichever branch initialised last.
+    if (isPrimary) applySuggestedAddress = fillAddress;
 
     var selectSuggestion = function (r) {
       hideList();
@@ -723,10 +745,15 @@
       if (results[index]) selectSuggestion(results[index]);
     });
 
+    // Scoped to this wrapper, not to "any wrapper": with several on the page,
+    // clicking into one row has to close the others' lists as well as leaving
+    // its own open.
     document.addEventListener('click', function (e) {
-      if (!e.target.closest('[data-address-autocomplete]')) hideList();
+      if (!addressWrap.contains(e.target)) hideList();
     });
   }
+
+  document.querySelectorAll('[data-address-autocomplete]').forEach(initAddressAutocomplete);
 
   // ------------------------------------------------------- map pin picker
   // No geocoder finds every South African address — OpenStreetMap has never
@@ -758,8 +785,16 @@
     var locateUrl = pickerWrap.getAttribute('data-locate-url');
     var reverseUrl = pickerWrap.getAttribute('data-reverse-url');
 
+    // The listing's own address block, which is the wrapper the picker sits
+    // inside. Scoped rather than form-wide because branch rows carry the same
+    // data-address-coord and data-address-field hooks now: a form-wide lookup
+    // returns whichever comes first in the document, which is the listing's
+    // only by accident of ordering. The fallback keeps this working if the
+    // picker is ever rendered outside a wrapper.
+    var addressScope = pickerWrap.closest('[data-address-autocomplete]') || form;
+
     var coordField = function (name) {
-      return form ? form.querySelector('[data-address-coord="' + name + '"]') : null;
+      return addressScope ? addressScope.querySelector('[data-address-coord="' + name + '"]') : null;
     };
 
     var readPin = function () {
@@ -887,7 +922,7 @@
         locateBtn.addEventListener('click', function () {
           var params = [];
           ['address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code'].forEach(function (key) {
-            var field = form && form.querySelector('[data-address-field="' + key + '"]');
+            var field = addressScope && addressScope.querySelector('[data-address-field="' + key + '"]');
             if (field && field.value.trim()) {
               params.push(key + '=' + encodeURIComponent(field.value.trim()));
             }
@@ -1063,10 +1098,20 @@
     });
   }
 
-  // ---------------------------------------------------- listing profile map
+  // ---------------------------------------------------- listing profile maps
   // Read-only: one marker, no dragging. Editing a location is the form's job.
-  var mapView = document.querySelector('[data-map-view]');
-  if (mapView && 'IntersectionObserver' in window) {
+  //
+  // querySelectorAll, not querySelector: a profile renders one of these for the
+  // business's own address and one more for every branch it lists, all from the
+  // same partial. This was a single querySelector, which meant the first map on
+  // the page worked and every branch map below it stayed a blank box.
+  //
+  // Each panel keeps its own started-flag and its own IntersectionObserver, so
+  // a branch map still costs nothing until it is actually scrolled to — the
+  // lazy-load was already per-element, it just had one element to work with.
+  document.querySelectorAll('[data-map-view]').forEach(function (mapView) {
+    if (!('IntersectionObserver' in window)) return;
+
     var mapViewStarted = false;
 
     var startMapView = function () {
@@ -1120,7 +1165,7 @@
     }, { rootMargin: '200px' });
 
     mapObserver.observe(mapView);
-  }
+  });
 
   // ------------------------------------------------------- search results map
   // Clustered pins for the current search, refetched as the visitor pans. Lazy
@@ -1479,6 +1524,11 @@
 
       list.appendChild(row);
       bindRemove(row);
+      // A cloned branch row carries its own address block, and nothing has bound
+      // to it yet — the load-time pass ran before this row existed. Without this
+      // the "+ Add another location" rows are the only ones with no
+      // autocomplete, which is a confusing way for it to fail.
+      initAddressAutocomplete(row.querySelector('[data-address-autocomplete]'));
       syncAddState();
 
       var first = row.querySelector('input[type="text"]');

@@ -1186,6 +1186,18 @@
   .dark .team-member-credentials { @apply text-slate-400; }
   .dark .team-member-bio         { @apply text-slate-300; }
 
+  /* "Other locations" on the profile. Not a card itself — each branch stacks
+     the same Contact / Location / Trading hours panels the listing's own
+     address gets, and a card around cards double-borders every one of them.
+     The heading and the rule are what group them instead. */
+  .branch-section       { @apply mb-5; }
+  .branch-section-title { @apply mb-3 text-base font-semibold text-slate-900; }
+  .dark .branch-section-title { @apply text-white; }
+
+  .branch { @apply mb-5; }
+  .branch-name { @apply mb-2 text-sm font-semibold text-primary-600; }
+  .dark .branch-name { @apply text-primary-300; }
+
   /* address autocomplete dropdown, in the shared listing form */
   .address-suggest-list {
     @apply absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl

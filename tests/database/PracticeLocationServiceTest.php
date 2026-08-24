@@ -1,7 +1,10 @@
 <?php
 
+use App\Libraries\Geocoding\GeocoderInterface;
+use App\Libraries\ListingGeocoder;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryPracticeLocationModel;
+use App\Services\DirectoryService;
 use App\Services\PracticeLocationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
@@ -205,6 +208,236 @@ final class PracticeLocationServiceTest extends CIUnitTestCase
     }
 
     // -------------------------------------------------------------- fixtures
+
+    // ------------------------------------------- parity with the main address
+
+    /**
+     * A branch carries the listing's full field set now, and every one of them
+     * has to survive a round trip — the profile renders a branch with the same
+     * partials as the primary, so a column that silently fails to save shows up
+     * as a missing panel rather than an error.
+     */
+    public function testABranchRoundTripsTheFullFieldSet(): void
+    {
+        $listing = $this->listing('Full Field Co');
+
+        $result = $this->service->syncFromForm($listing, [[
+            'name'           => 'Claremont office',
+            'contact_person' => 'Thandi Mokoena',
+            'address_line'   => '12 Main Road',
+            'address_line_2' => 'Unit 4B',
+            'suburb'         => 'claremont',
+            'city'           => 'cape town',
+            'province'       => 'Western Cape',
+            'postal_code'    => '7708',
+            'phone'          => '021 555 0100',
+            'phone_alt'      => '082 555 0100',
+            'email'          => 'claremont@example.test',
+            'hours'          => [
+                'mon' => ['open' => '08:00', 'close' => '17:00'],
+                'sun' => ['closed' => '1'],
+            ],
+        ]]);
+
+        $this->assertSame([], $result['errors']);
+
+        $row = $this->locations->forListing($listing)[0];
+        $this->assertSame('Claremont office', $row['name']);
+        $this->assertSame('Thandi Mokoena', $row['contact_person']);
+        $this->assertSame('12 Main Road', $row['address_line']);
+        $this->assertSame('Unit 4B', $row['address_line_2']);
+        $this->assertSame('7708', $row['postal_code']);
+        $this->assertSame('082 555 0100', $row['phone_alt']);
+        $this->assertSame('claremont@example.test', $row['email']);
+
+        // normalise_place(), the same helper the listing's own address uses.
+        $this->assertSame('Claremont', $row['suburb']);
+        $this->assertSame('Cape Town', $row['city']);
+
+        // Stored as the same JSON the listing's hours use, so the shared hours
+        // panel needs no branch-specific case.
+        $hours = hours_decode($row['trading_hours']);
+        $this->assertSame('08:00', $hours['mon']['open']);
+        $this->assertNotEmpty($hours['sun']['closed']);
+    }
+
+    public function testABranchWithoutACountryGetsTheDefault(): void
+    {
+        $listing = $this->listing('Default Country Co');
+        $this->service->syncFromForm($listing, [['name' => 'Branch', 'city' => 'Durban']]);
+
+        // Not cosmetic: ListingGeocoder appends a country to its query, and a
+        // branch without one resolves against the whole world.
+        $this->assertSame('South Africa', $this->locations->forListing($listing)[0]['country']);
+    }
+
+    public function testAnInvalidBranchEmailIsRejected(): void
+    {
+        $listing = $this->listing('Bad Email Co');
+
+        $result = $this->service->syncFromForm($listing, [[
+            'name'  => 'Branch',
+            'email' => 'not-an-address',
+        ]]);
+
+        $this->assertArrayHasKey('locations.0.email', $result['errors']);
+        $this->assertSame([], $this->locations->forListing($listing), 'nothing may be written on a validation failure');
+    }
+
+    // ------------------------------------------------------------ geocoding
+
+    public function testABranchAddressIsGeocodedOnSave(): void
+    {
+        $listing = $this->listing('Geocoded Co');
+        $service = $this->serviceWithStubGeocoder();
+
+        $service->syncFromForm($listing, [[
+            'name'         => 'Branch',
+            'address_line' => '12 Main Road',
+            'city'         => 'Cape Town',
+        ]]);
+
+        $row = $this->locations->forListing($listing)[0];
+        $this->assertSame(-33.9249, (float) $row['latitude']);
+        $this->assertSame(18.4241, (float) $row['longitude']);
+        $this->assertSame('exact', $row['geocode_precision']);
+        $this->assertSame('ok', $row['geocoding_status']);
+        $this->assertNotNull($row['geocoded_at']);
+    }
+
+    /**
+     * The reason resolve() is handed the stored row: with MAX_LOCATIONS branches
+     * a save that re-geocoded every one of them would spend six network round
+     * trips to change a phone number.
+     */
+    public function testEditingOnlyThePhoneDoesNotRegeocode(): void
+    {
+        $listing = $this->listing('No Regeocode Co');
+        $service = $this->serviceWithStubGeocoder();
+
+        $service->syncFromForm($listing, [[
+            'name'         => 'Branch',
+            'address_line' => '12 Main Road',
+            'city'         => 'Cape Town',
+        ]]);
+        $before = $this->locations->forListing($listing)[0];
+
+        $service->syncFromForm($listing, [[
+            'id'           => $before['id'],
+            'name'         => 'Branch',
+            'address_line' => '12 Main Road',
+            'city'         => 'Cape Town',
+            'phone'        => '021 555 0199',
+        ]]);
+        $after = $this->locations->forListing($listing)[0];
+
+        $this->assertSame('021 555 0199', $after['phone'], 'the edit must still land');
+        $this->assertSame($before['latitude'], $after['latitude']);
+        $this->assertSame($before['longitude'], $after['longitude']);
+        $this->assertSame($before['geocoded_at'], $after['geocoded_at'], 'no lookup should have been spent');
+    }
+
+    public function testChangingTheCityDoesRegeocode(): void
+    {
+        $listing = $this->listing('Regeocode Co');
+        $service = $this->serviceWithStubGeocoder();
+
+        $service->syncFromForm($listing, [[
+            'name'         => 'Branch',
+            'address_line' => '12 Main Road',
+            'city'         => 'Cape Town',
+        ]]);
+        $before = $this->locations->forListing($listing)[0];
+
+        $service->syncFromForm($listing, [[
+            'id'           => $before['id'],
+            'name'         => 'Branch',
+            'address_line' => '12 Main Road',
+            'city'         => 'Durban',
+        ]]);
+        $after = $this->locations->forListing($listing)[0];
+
+        $this->assertNotSame($before['geocoded_address'], $after['geocoded_address']);
+        $this->assertSame('Durban', $after['city']);
+    }
+
+    /**
+     * Branches deliberately stay out of the spatial index, so one listing stays
+     * one search result. If this ever changes it is a decision, not a drift.
+     */
+    public function testABranchDoesNotEnterTheSearchIndex(): void
+    {
+        $listing = $this->listing('No Search Pin Co');
+        $service = $this->serviceWithStubGeocoder();
+
+        $service->syncFromForm($listing, [[
+            'name'         => 'Branch',
+            'address_line' => '12 Main Road',
+            'city'         => 'Cape Town',
+        ]]);
+
+        $points = $this->db->table('directory_listing_points')
+            ->where('listing_id', $listing)->countAllResults();
+        $this->assertSame(0, $points);
+    }
+
+    // ------------------------------------------------------------- the read
+
+    public function testGetProfileDecodesEachBranchesHours(): void
+    {
+        $listing = $this->listing('Decoded Hours Co');
+        $this->service->syncFromForm($listing, [[
+            'name'  => 'Branch',
+            'hours' => ['mon' => ['open' => '09:00', 'close' => '16:00']],
+        ]]);
+
+        $slug    = $this->listings->find($listing)['slug'];
+        $profile = (new DirectoryService())->getProfile($slug);
+
+        // The shared hours panel is handed this directly and expects an array —
+        // a raw JSON string would render nothing at all.
+        $hours = $profile['locations'][0]['trading_hours'];
+        $this->assertIsArray($hours);
+        $this->assertSame('09:00', $hours['mon']['open']);
+    }
+
+    /**
+     * A service whose geocoder answers without a network call.
+     *
+     * The stub returns a different label per city so the re-geocode test can
+     * tell one lookup from another.
+     */
+    private function serviceWithStubGeocoder(): PracticeLocationService
+    {
+        $stub = new class implements GeocoderInterface {
+            public function suggest(string $query, int $limit = 5): array
+            {
+                return [];
+            }
+
+            public function geocodeParts(array $parts): ?array
+            {
+                $city = (string) ($parts['city'] ?? '');
+                if ($city === '' && (string) ($parts['address_line'] ?? '') === '') {
+                    return null;
+                }
+
+                return [
+                    'lat'       => -33.9249,
+                    'lng'       => 18.4241,
+                    'precision' => 'exact',
+                    'label'     => trim($parts['address_line'] . ', ' . $city, ', '),
+                ];
+            }
+
+            public function reverse(float $lat, float $lng): ?array
+            {
+                return null;
+            }
+        };
+
+        return new PracticeLocationService(new ListingGeocoder($stub));
+    }
 
     private function listing(string $name): int
     {

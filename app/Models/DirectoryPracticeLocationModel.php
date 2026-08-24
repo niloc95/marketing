@@ -10,9 +10,20 @@ class DirectoryPracticeLocationModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = true;
+    /**
+     * Deliberately the listing's own column names, not shorter branch-specific
+     * ones. map_point(), map_address_text() and ListingGeocoder all read these
+     * keys off whatever array they are given, so matching the names is what lets
+     * a branch reuse the primary's renderers instead of needing copies of them.
+     */
     protected $allowedFields = [
-        'listing_id', 'name', 'address_line', 'suburb', 'city', 'province',
-        'phone', 'is_primary', 'sort_order',
+        'listing_id', 'name', 'contact_person',
+        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
+        'phone', 'phone_alt', 'email',
+        'latitude', 'longitude', 'geocode_precision',
+        'geocoded_at', 'geocoded_address', 'geocoding_status',
+        'trading_hours',
+        'is_primary', 'sort_order',
     ];
 
     /**

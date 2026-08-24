@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\ListingGeocoder;
 use App\Models\DirectoryPracticeLocationModel;
 
 /**
@@ -17,8 +18,12 @@ use App\Models\DirectoryPracticeLocationModel;
  * only the ones that matter: no files, so no orphan handling and no transaction
  * ordering to respect, and a lower cap.
  *
- * No migration came with this. The table's existing columns are exactly the
- * field set a branch needs, which is what they were chosen for.
+ * A branch carries the listing's full address field set now — coordinates,
+ * trading hours, contact details — added by the ExpandPracticeLocations
+ * migration. Nothing here re-implements what the listing already does with
+ * those: the pin comes from ListingGeocoder and the hours from hours_encode(),
+ * the same two the primary save uses, which is what keeps a branch and a
+ * primary from drifting apart on what an address means.
  */
 class PracticeLocationService
 {
@@ -31,10 +36,15 @@ class PracticeLocationService
 
     private DirectoryPracticeLocationModel $locations;
 
-    public function __construct()
+    private ListingGeocoder $geocoder;
+
+    public function __construct(?ListingGeocoder $geocoder = null)
     {
-        helper(['directory_ui', 'slug']);
+        helper(['directory_ui', 'directory_hours', 'slug']);
         $this->locations = new DirectoryPracticeLocationModel();
+        // Injectable so tests can pin the geocoder without reaching Nominatim.
+        // The listing's own save resolves its pin through this same class.
+        $this->geocoder = $geocoder ?? new ListingGeocoder();
     }
 
     // ------------------------------------------------------------------ reads
@@ -112,19 +122,38 @@ class PracticeLocationService
 
             $prefix = sprintf('locations.%d.', $index);
 
+            $email = $this->limited($row['email'] ?? '', 190, $prefix . 'email', 'The email address', $errors);
+            if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[$prefix . 'email'] = 'Enter a valid email address for this branch, or leave it blank.';
+            }
+
             $submitted[] = [
                 'existing' => $existing,
+                'raw'      => $row,
                 'data'     => [
-                    'listing_id'   => $listingId,
-                    'name'         => $name,
-                    'address_line' => $this->limited($row['address_line'] ?? '', 255, $prefix . 'address_line', 'The address', $errors) ?: null,
+                    'listing_id'     => $listingId,
+                    'name'           => $name,
+                    'contact_person' => $this->limited($row['contact_person'] ?? '', 150, $prefix . 'contact_person', 'The contact person', $errors) ?: null,
+                    'address_line'   => $this->limited($row['address_line'] ?? '', 255, $prefix . 'address_line', 'The address', $errors) ?: null,
+                    'address_line_2' => $this->limited($row['address_line_2'] ?? '', 255, $prefix . 'address_line_2', 'Address line 2', $errors) ?: null,
                     // normalise_place(), the same helper the main address goes
                     // through, so "cape town" and "Cape Town" do not fragment
                     // the location data across two spellings.
                     'suburb'       => normalise_place($this->limited($row['suburb'] ?? '', 120, $prefix . 'suburb', 'The suburb', $errors)) ?: null,
                     'city'         => normalise_place($this->limited($row['city'] ?? '', 120, $prefix . 'city', 'The city', $errors)) ?: null,
                     'province'     => $this->province($row['province'] ?? '') ?: null,
+                    'postal_code'  => $this->limited($row['postal_code'] ?? '', 20, $prefix . 'postal_code', 'The postal code', $errors) ?: null,
+                    // Defaulted, not left null: ListingGeocoder appends a country
+                    // to its query, and a branch without one resolves against the
+                    // whole world rather than South Africa.
+                    'country'      => $this->limited($row['country'] ?? '', 80, $prefix . 'country', 'The country', $errors) ?: 'South Africa',
                     'phone'        => $this->limited($row['phone'] ?? '', 40, $prefix . 'phone', 'The phone number', $errors) ?: null,
+                    'phone_alt'    => $this->limited($row['phone_alt'] ?? '', 40, $prefix . 'phone_alt', 'The alternate phone number', $errors) ?: null,
+                    'email'        => $email ?: null,
+                    // The same encoder the listing's own hours go through, so a
+                    // branch's JSON is the shape hours_decode() and the shared
+                    // hours panel already understand.
+                    'trading_hours' => hours_encode(is_array($row['hours'] ?? null) ? $row['hours'] : []),
                     // is_primary is not offered on the form. The listing's own
                     // address is the primary one by definition, and a second
                     // row claiming the title would only argue with it.
@@ -144,6 +173,22 @@ class PracticeLocationService
 
         if ($errors !== []) {
             return ['errors' => $errors, 'orphans' => []];
+        }
+
+        // Geocoding, before any write and outside any transaction — the same
+        // reason DirectoryListingMutationService gives for the listing's own
+        // pin: these are network calls that can take the better part of a minute
+        // each, and with MAX_LOCATIONS branches a save could hold a write
+        // transaction open for six of them.
+        //
+        // resolve() returns null when nothing in ADDRESS_FIELDS changed, which
+        // is what keeps this cheap: editing a branch's phone number spends no
+        // lookups at all, and a hand-placed 'manual' pin is never recomputed.
+        foreach ($submitted as $i => $row) {
+            $geo = $this->geocoder->resolve($row['data'], $row['existing'], $row['raw']);
+            if ($geo !== null) {
+                $submitted[$i]['data'] = array_merge($row['data'], $geo);
+            }
         }
 
         $keptIds = [];

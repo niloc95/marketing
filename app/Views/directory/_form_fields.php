@@ -174,78 +174,23 @@ helper('directory_hours');
     <label class="font-medium"><input type="checkbox" name="offers_online_booking" value="1" <?= $v('offers_online_booking') ? 'checked' : '' ?>> Offers online booking</label>
 </div>
 
-<?php // Against the address block, where a second address belongs. ?>
-<?php if ($showExtras): ?>
-    <?= view('directory/_location_fields', [
-        'rows'      => $vLocations,
-        'provinces' => $provinces,
-        'err'       => $err,
-    ]) ?>
-<?php endif; ?>
-
 <div data-address-autocomplete
      data-suggest-url="<?= base_url('address-suggest') ?>">
-    <div class="form-row">
-        <div class="field relative">
-            <label>Address</label>
-            <input type="text" name="address_line" value="<?= esc($v('address_line'), 'attr') ?>" maxlength="255"
-                   data-address-field="address_line" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="address-suggest-list">
-            <ul class="address-suggest-list" id="address-suggest-list" role="listbox" data-address-suggest-list hidden></ul>
-            <?php if ($err('address_line')): ?><div class="err"><?= esc($err('address_line')) ?></div><?php endif; ?>
-        </div>
-        <div class="field">
-            <label>Suburb</label>
-            <input type="text" name="suburb" value="<?= esc($v('suburb'), 'attr') ?>" maxlength="120" data-address-field="suburb">
-            <?php if ($err('suburb')): ?><div class="err"><?= esc($err('suburb')) ?></div><?php endif; ?>
-        </div>
-    </div>
-    <?php // Unit, floor, building — detail that helps a customer find the door
-          // but only confuses a geocoder, so it is stored and displayed and
-          // deliberately left out of the lookup query. ?>
-    <div class="field">
-        <label>Address line 2 <span class="map-picker-optional">optional</span></label>
-        <input type="text" name="address_line_2" value="<?= esc($v('address_line_2'), 'attr') ?>" maxlength="255"
-               data-address-field="address_line_2" autocomplete="off"
-               placeholder="Unit, floor, building">
-        <?php if ($err('address_line_2')): ?><div class="err"><?= esc($err('address_line_2')) ?></div><?php endif; ?>
-    </div>
-    <div class="form-row">
-        <div class="field">
-            <label>City / town</label>
-            <input type="text" name="city" value="<?= esc($v('city'), 'attr') ?>" maxlength="120" data-address-field="city">
-            <?php if ($err('city')): ?><div class="err"><?= esc($err('city')) ?></div><?php endif; ?>
-        </div>
-        <div class="field">
-            <label>Postal code</label>
-            <input type="text" name="postal_code" value="<?= esc($v('postal_code'), 'attr') ?>"
-                   inputmode="numeric" maxlength="4" data-address-field="postal_code">
-            <?php if ($err('postal_code')): ?><div class="err"><?= esc($err('postal_code')) ?></div><?php endif; ?>
-        </div>
-    </div>
-    <div class="field">
-        <label>Province</label>
-        <select name="province" data-address-field="province">
-            <option value="">Choose…</option>
-            <?php foreach ($provinces as $prov): ?>
-                <option value="<?= esc($prov, 'attr') ?>" <?= $v('province') === $prov ? 'selected' : '' ?>><?= esc($prov) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <?php if ($err('province')): ?><div class="err"><?= esc($err('province')) ?></div><?php endif; ?>
-    </div>
-
-    <?php // Picking a suggestion captures the exact point the geocoder returned
-          // for that entry, so the server can save it as-is instead of
-          // re-deriving a pin from the address text — which is what fails for
-          // the many South African suburbs no geocoder has heard of. The script
-          // clears these the moment any address field is edited by hand, so a
-          // stale pin can't survive an address change.
-          //
-          // None of these are owner-writable columns: they reach the database
-          // only through ListingGeocoder, which re-checks them. ?>
-    <input type="hidden" name="latitude" value="<?= esc($v('latitude'), 'attr') ?>" data-address-coord="latitude">
-    <input type="hidden" name="longitude" value="<?= esc($v('longitude'), 'attr') ?>" data-address-coord="longitude">
-    <input type="hidden" name="geocode_precision" value="<?= esc($v('geocode_precision'), 'attr') ?>" data-address-coord="geocode_precision">
+    <?php // The address block itself — shared with every branch row in
+          // _location_fields.php, which renders the same partial with a
+          // 'locations[i]' prefix and no autocomplete. ?>
+    <?= view('directory/_address_inputs', [
+        'n'         => static fn (string $f): string => $f,
+        'val'       => $v,
+        'e'         => $err,
+        'provinces' => $provinces,
+        // The listing's listbox keeps the bare id it has always had; branches
+        // suffix theirs with the row index.
+        'listId'    => 'address-suggest-list',
+        // false: the wrapper is opened above, because the pin picker below has
+        // to sit inside it.
+        'wrap'      => false,
+    ]) ?>
 
     <?php // The pin picker. No geocoder has a record of every real South African
           // suburb, so some of these businesses will never be placed correctly
@@ -313,45 +258,24 @@ helper('directory_hours');
     </div>
 </div>
 
-<div class="field">
-    <label>Trading hours</label>
-    <?php // Filling the same times seven times is the tedious part of this form,
-          // and most businesses trade the same hours Monday to Friday at least.
-          //
-          // Above the grid, not below it. The seven rows stack on a phone and run
-          // to roughly a screen and a half, so a button underneath them is only
-          // found by someone who has already typed all seven — which is the one
-          // moment it is no use. Up here it is on screen before the first row is
-          // filled, and clicking it early is handled: with Monday blank it says
-          // so and changes nothing.
-          //
-          // hidden until directory.js unhides it, the same contract "Use my
-          // location" uses on the browse page: with no JavaScript the button
-          // could not do anything, and a control that does nothing when pressed
-          // is worse than one that was never offered. The grid itself needs no
-          // script — it is seven rows of plain inputs either way.
-          //
-          // The label names Monday because that is what it copies: the first row,
-          // not "whichever row you last touched". Naming the source is what makes
-          // the result predictable before the click rather than after it. ?>
-    <div class="hours-actions">
-        <button type="button" class="btn btn-ghost btn-xs" data-hours-copy hidden>Copy Monday to every day</button>
-        <span class="hint" role="status" data-hours-copy-note></span>
-    </div>
-    <div class="hours-grid" data-hours>
-        <?php foreach (hours_days() as $key => $label): $row = $vHours[$key] ?? []; ?>
-            <div class="hours-row" data-hours-row>
-                <span class="hours-day"><?= esc($label) ?></span>
-                <label class="hours-closed"><input type="checkbox" name="hours[<?= $key ?>][closed]" value="1" <?= ! empty($row['closed']) ? 'checked' : '' ?>> Closed</label>
-                <input type="time" name="hours[<?= $key ?>][open]" value="<?= esc($row['open'] ?? '', 'attr') ?>">
-                <span>&ndash;</span>
-                <input type="time" name="hours[<?= $key ?>][close]" value="<?= esc($row['close'] ?? '', 'attr') ?>">
-                <input type="text" class="hours-note" name="hours[<?= $key ?>][note]" value="<?= esc($row['note'] ?? '', 'attr') ?>" maxlength="120" placeholder="Optional note, e.g. Lunch 12:00–13:30">
-            </div>
-        <?php endforeach; ?>
-    </div>
-    <div class="hint">Leave a day's times blank and tick "Closed" for days you don't trade.</div>
-</div>
+<?php // Shared with every branch row — see _hours_inputs.php. ?>
+<?= view('directory/_hours_inputs', [
+    'n'     => static fn (string $f): string => $f,
+    'hours' => $vHours,
+    'copy'  => true,
+]) ?>
+
+<?php // Below every field belonging to the business's own address — its
+      // address, its pin and its hours — because a branch repeats all three.
+      // Asking for a second location before the first one has been given reads
+      // backwards, and it used to sit above the address block. ?>
+<?php if ($showExtras): ?>
+    <?= view('directory/_location_fields', [
+        'rows'      => $vLocations,
+        'provinces' => $provinces,
+        'err'       => $err,
+    ]) ?>
+<?php endif; ?>
 
 <?php // accept="image/*" on both is deliberate: it is what makes iOS offer the
       // photo library and transcode HEIC to JPEG on the way out. Narrowing it to

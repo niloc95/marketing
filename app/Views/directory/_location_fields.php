@@ -11,9 +11,21 @@ use App\Services\PracticeLocationService;
  * is a native <details>, why removal is a checkbox, and what happens with
  * JavaScript off.
  *
- * These rows carry no map pin. The listing's own address is the one that gets
- * geocoded and placed on the search map; a branch is an address and a phone
- * number on the profile, which is what the columns have always held.
+ * A branch now carries the same field set as the listing's own address, and is
+ * built from the same partials: _address_inputs.php and _hours_inputs.php, with
+ * a 'locations[i]' name prefix. That is the whole point — a branch is not a
+ * thinner kind of address, so it does not get a second, thinner form.
+ *
+ * Two deliberate differences from the primary, neither cosmetic:
+ *
+ *   - No pin picker and no address autocomplete. Both scripts bind one element
+ *     per page, and the autocomplete's listbox id would be duplicated across
+ *     rows. A branch is geocoded server-side on save instead —
+ *     PracticeLocationService runs the same ListingGeocoder the listing does.
+ *   - No "Copy Monday to every day" on the hours grid. That button is unhidden
+ *     by directory.js per grid, but a cloned row's copy would be one more
+ *     control inside an already-dense repeat row; the grid itself works either
+ *     way, being plain inputs.
  *
  * @var array    $rows      stored location rows, or flashed input after a failed save
  * @var array    $provinces DirectoryService::SA_PROVINCES
@@ -26,7 +38,10 @@ $slots = max(0, $max - $used);
 
 $hasError = $err('locations') !== '';
 foreach ($rows as $i => $_) {
-    foreach (['name', 'address_line', 'suburb', 'city', 'province', 'phone'] as $f) {
+    foreach ([
+        'name', 'contact_person', 'address_line', 'address_line_2', 'suburb',
+        'city', 'province', 'postal_code', 'phone', 'phone_alt', 'email',
+    ] as $f) {
         if ($err('locations.' . $i . '.' . $f) !== '') {
             $hasError = true;
         }
@@ -35,6 +50,16 @@ foreach ($rows as $i => $_) {
 
 /** One row; $i = '__i__' builds the clone template. See _team_fields.php. */
 $row = function ($i, array $loc = []) use ($err, $provinces): string {
+    // The three accessors the shared partials expect. $n turns a bare field
+    // into this row's name — 'city' becomes 'locations[2][city]' — and $e is
+    // blank for the clone template, whose '__i__' index has no errors of its own.
+    //
+    // $n's output is emitted unescaped while $val's is not, which is the right
+    // way round: a name is built from literals and $i, and array_values() above
+    // guarantees $i is an int (or the literal '__i__'), so there is no user data
+    // in it. Values are user data. Running a name through esc(..., 'attr') would
+    // also turn its brackets into &#x5B;, which works but reads as a bug.
+    $n = static fn (string $f): string => 'locations[' . $i . '][' . $f . ']';
     $val = static fn (string $k): string => (string) ($loc[$k] ?? '');
     $e   = static fn (string $k): string => is_string($i) ? '' : $err('locations.' . $i . '.' . $k);
 
@@ -55,47 +80,61 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
         <div class="form-row">
             <div class="field">
                 <label>Branch name</label>
-                <input type="text" name="locations[<?= $i ?>][name]" maxlength="200"
+                <input type="text" name="<?= $n('name') ?>" maxlength="200"
                        value="<?= esc($val('name'), 'attr') ?>" placeholder="e.g. Claremont office">
                 <?php if ($e('name')): ?><div class="err"><?= esc($e('name')) ?></div><?php endif; ?>
             </div>
             <div class="field">
+                <label>Contact person</label>
+                <input type="text" name="<?= $n('contact_person') ?>" maxlength="150"
+                       value="<?= esc($val('contact_person'), 'attr') ?>">
+                <?php if ($e('contact_person')): ?><div class="err"><?= esc($e('contact_person')) ?></div><?php endif; ?>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="field">
                 <label>Phone</label>
-                <input type="text" name="locations[<?= $i ?>][phone]" maxlength="40"
+                <input type="text" name="<?= $n('phone') ?>" maxlength="40"
                        value="<?= esc($val('phone'), 'attr') ?>">
                 <?php if ($e('phone')): ?><div class="err"><?= esc($e('phone')) ?></div><?php endif; ?>
             </div>
-        </div>
-        <div class="field">
-            <label>Address</label>
-            <input type="text" name="locations[<?= $i ?>][address_line]" maxlength="255"
-                   value="<?= esc($val('address_line'), 'attr') ?>">
-            <?php if ($e('address_line')): ?><div class="err"><?= esc($e('address_line')) ?></div><?php endif; ?>
-        </div>
-        <div class="form-row">
             <div class="field">
-                <label>Suburb</label>
-                <input type="text" name="locations[<?= $i ?>][suburb]" maxlength="120"
-                       value="<?= esc($val('suburb'), 'attr') ?>">
-                <?php if ($e('suburb')): ?><div class="err"><?= esc($e('suburb')) ?></div><?php endif; ?>
-            </div>
-            <div class="field">
-                <label>City / town</label>
-                <input type="text" name="locations[<?= $i ?>][city]" maxlength="120"
-                       value="<?= esc($val('city'), 'attr') ?>">
-                <?php if ($e('city')): ?><div class="err"><?= esc($e('city')) ?></div><?php endif; ?>
+                <label>Alt phone</label>
+                <input type="text" name="<?= $n('phone_alt') ?>" maxlength="40"
+                       value="<?= esc($val('phone_alt'), 'attr') ?>">
+                <?php if ($e('phone_alt')): ?><div class="err"><?= esc($e('phone_alt')) ?></div><?php endif; ?>
             </div>
         </div>
         <div class="field">
-            <label>Province</label>
-            <select name="locations[<?= $i ?>][province]">
-                <option value="">Choose&hellip;</option>
-                <?php foreach ($provinces as $prov): ?>
-                    <option value="<?= esc($prov, 'attr') ?>" <?= $val('province') === $prov ? 'selected' : '' ?>><?= esc($prov) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <?php if ($e('province')): ?><div class="err"><?= esc($e('province')) ?></div><?php endif; ?>
+            <label>Email</label>
+            <input type="email" name="<?= $n('email') ?>" maxlength="190"
+                   value="<?= esc($val('email'), 'attr') ?>">
+            <?php if ($e('email')): ?><div class="err"><?= esc($e('email')) ?></div><?php endif; ?>
         </div>
+
+        <?php // The listing's own address block, same partial, prefixed names —
+              // autocomplete included. $i is the row index (or '__i__' in the
+              // clone template, which the repeat script rewrites), so every
+              // row's listbox gets an id of its own. ?>
+        <?= view('directory/_address_inputs', [
+            'n'         => $n,
+            'val'       => $val,
+            'e'         => $e,
+            'provinces' => $provinces,
+            'listId'    => 'address-suggest-list-' . $i,
+            // true, unlike the listing's: a branch has no pin picker to keep
+            // inside the wrapper, so the partial can own it.
+            'wrap'      => true,
+        ]) ?>
+
+        <?php // And the same seven-row hours grid. ?>
+        <?= view('directory/_hours_inputs', [
+            'n'     => $n,
+            'hours' => is_array($loc['hours'] ?? null) ? $loc['hours'] : (hours_decode($loc['trading_hours'] ?? null) ?? []),
+            'copy'  => false,
+            'label' => 'Trading hours at this branch',
+        ]) ?>
     </div>
     <?php
     return (string) ob_get_clean();

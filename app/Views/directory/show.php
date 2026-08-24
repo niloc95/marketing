@@ -197,134 +197,34 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     <?= view('directory/_team_panel', ['members' => $l['team']]) ?>
                 <?php endif; ?>
 
+                <?php // Branches, rendered by the same three panels as the address
+                      // below — see _location_panel.php. ?>
                 <?php if (! empty($l['locations'])): ?>
-                    <div class="panel">
-                        <h3>Other locations</h3>
-                        <?php foreach ($l['locations'] as $loc): ?>
-                            <div class="kv">
-                                <span class="k"><?= esc($loc['name'] ?: 'Location') ?></span>
-                                <span><?= esc(trim(implode(', ', array_filter([$loc['address_line'] ?? '', $loc['suburb'] ?? '', $loc['city'] ?? '', $loc['province'] ?? ''])))) ?><?php if (! empty($loc['phone'])): ?> · <?= esc($loc['phone']) ?><?php endif; ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+                    <?= view('directory/_location_panel', ['locations' => $l['locations']]) ?>
                 <?php endif; ?>
             </div>
 
             <div>
-                <div class="panel">
-                    <h3>Contact</h3>
-                    <?php // title ("Dr, Mrs, Prof…") is the contact person's honorific, not the
-                          // business name's — pairing it here (not the H1) keeps them together. ?>
-                    <?php $contactLine = trim(($l['title'] ?? '') . ' ' . ($l['contact_person'] ?? '')); ?>
-                    <?php if ($contactLine !== ''): ?><div class="kv"><span class="k">Contact</span><span><?= esc($contactLine) ?></span></div><?php endif; ?>
-                    <?php // Phone/email are reversed in data-reveal-value (not plaintext tel:/mailto:)
-                          // so naive HTML scrapers can't lift them; the LocalBusiness JSON-LD below
-                          // still carries the real values, so crawlers are unaffected. ?>
-                    <?php if (! empty($l['phone'])): ?>
-                        <div class="kv"><span class="k">Phone</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="tel" data-reveal-value="<?= esc(strrev($l['phone']), 'attr') ?>">Show phone</button></span></div>
-                    <?php endif; ?>
-                    <?php // Same reversal and same reveal button as the number above.
-                          // A second row rather than "021 555 0100 / 082 555 0100"
-                          // in one, so each gets its own tel: link on a phone. ?>
-                    <?php if (! empty($l['phone_alt'])): ?>
-                        <div class="kv"><span class="k">Alt phone</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="tel" data-reveal-value="<?= esc(strrev($l['phone_alt']), 'attr') ?>">Show number</button></span></div>
-                    <?php endif; ?>
-                    <?php if (! empty($l['email'])): ?>
-                        <div class="kv"><span class="k">Email</span><span><button type="button" class="reveal-btn" data-reveal data-reveal-type="mailto" data-reveal-value="<?= esc(strrev($l['email']), 'attr') ?>">Show email</button></span></div>
-                    <?php endif; ?>
-                    <?php $websiteUrl = safe_external_url($l['website'] ?? ''); ?>
-                    <?php if ($websiteUrl !== ''): ?><div class="kv"><span class="k">Website</span><span><a href="<?= esc($websiteUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Visit</a></span></div><?php endif; ?>
-                    <?php
-                    $addr = trim(implode(', ', array_filter([$l['address_line'] ?? '', $l['suburb'] ?? '', $l['city'] ?? '', $l['province'] ?? '', $l['postal_code'] ?? ''])));
-                    // Two different intents, so two different Google Maps schemes.
-                    // The address text means "show me where this is" — /maps/search/
-                    // drops a pin. The button below means "take me there" — that one
-                    // uses /maps/dir/ instead (see map_directions_url), which opens
-                    // routing directly rather than making the visitor tap Directions
-                    // once they arrive. Neither needs an API key or billing account.
-                    //
-                    // Both take their destination from map_destination(), which only
-                    // trusts our coordinates when the pin was actually pinpointed —
-                    // otherwise Google gets the address text and does far better with
-                    // it than our street-centroid guess would.
-                    $mapsQuery = map_destination($l);
-                    $mapsUrl   = $mapsQuery !== '' ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($mapsQuery) : '';
-                    ?>
-                    <?php if ($addr !== ''): ?>
-                        <div class="kv"><span class="k">Address</span><span>
-                            <?php if ($mapsUrl !== ''): ?><a href="<?= esc($mapsUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc($addr) ?></a><?php else: ?><?= esc($addr) ?><?php endif; ?>
-                        </span></div>
-                    <?php endif; ?>
-                    <?php
-                    $socials = array_filter([
-                        'Facebook'  => safe_external_url($l['social_facebook'] ?? ''),
-                        'Instagram' => safe_external_url($l['social_instagram'] ?? ''),
-                        'LinkedIn'  => safe_external_url($l['social_linkedin'] ?? ''),
-                    ]);
-                    ?>
-                    <?php if ($socials): ?>
-                        <div class="kv"><span class="k">Social</span><span>
-                            <?php foreach ($socials as $label => $url): ?><a href="<?= esc($url, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc($label) ?></a>&nbsp; <?php endforeach; ?>
-                        </span></div>
-                    <?php endif; ?>
-                </div>
+                <?php // The listing's own address, rendered by the same three panels
+                      // each branch above gets. One definition per panel, used twice. ?>
+                <?= view('directory/_contact_panel', [
+                    'row'     => $l,
+                    'heading' => 'Contact',
+                    'showWeb' => true,
+                ]) ?>
 
-                <?php // An interactive Leaflet map over OpenStreetMap tiles, loaded lazily —
-                      // directory.js injects the library and the tiles only when this scrolls
-                      // into view, so the majority of visitors who never reach it pay nothing
-                      // for it. Without JavaScript the panel is a heading and a directions
-                      // link, which is the part that actually gets someone to the door.
-                      //
-                      // Needs real coordinates, unlike the old address-text embed. A listing
-                      // that never geocoded shows no map; geocoding_status is how those get
-                      // found, and the owner's pin picker is how they get fixed. ?>
-                <?php $map = map_point($l); ?>
-                <?php if ($map !== null): ?>
-                    <div class="panel mt-5">
-                        <h3>Location</h3>
-                        <div class="map-view"
-                             data-map-view
-                             data-lat="<?= esc((string) $map['lat'], 'attr') ?>"
-                             data-lng="<?= esc((string) $map['lng'], 'attr') ?>"
-                             data-zoom="<?= esc((string) $map['zoom'], 'attr') ?>"
-                             data-label="<?= esc($name . ' — ' . $map['label'], 'attr') ?>"
-                             data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
-                             data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
-                             data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
-                             data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
-                             data-leaflet-js="<?= base_url('assets/vendor/leaflet/leaflet.js') ?>">
-                            <div class="map-view-canvas" data-map-view-canvas role="application"
-                                 aria-label="Map showing the location of <?= esc($name, 'attr') ?>"></div>
-                        </div>
-                        <?php if ($map['approximate']): ?>
-                            <p class="map-approx">Approximate location &mdash; use the address above for exact directions.</p>
-                        <?php endif; ?>
-                        <?php $directionsUrl = map_directions_url($l); ?>
-                        <?php if ($directionsUrl !== ''): ?>
-                            <a class="mt-2 inline-block text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($directionsUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions &rarr;</a>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
+                <?= view('directory/_map_panel', [
+                    'row'     => $l,
+                    'name'    => $name,
+                    'heading' => 'Location',
+                    'class'   => 'mt-5',
+                ]) ?>
 
-                <?php if (! empty($l['trading_hours'])): ?>
-                    <?php $todayKey = hours_today_key(); ?>
-                    <div class="panel mt-5">
-                        <h3>Trading hours</h3>
-                        <?php foreach (hours_days() as $key => $label): $row = $l['trading_hours'][$key] ?? null; ?>
-                            <div class="kv hours-day-row<?= $key === $todayKey ? ' hours-today' : '' ?>">
-                                <span class="k"><?= esc($label) ?><?php if ($key === $todayKey): ?> <span class="hours-today-badge">Today</span><?php endif; ?></span>
-                                <span>
-                                    <?php if (empty($row) || ! empty($row['closed'])): ?>
-                                        Closed
-                                    <?php else: ?>
-                                        <?= esc($row['open']) ?>&ndash;<?= esc($row['close']) ?>
-                                    <?php endif; ?>
-                                    <?php if (! empty($row['note'])): ?><br><span class="hours-note-text"><?= esc($row['note']) ?></span><?php endif; ?>
-                                </span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
+                <?= view('directory/_hours_panel', [
+                    'hours'   => $l['trading_hours'] ?? null,
+                    'heading' => 'Trading hours',
+                    'class'   => 'mt-5',
+                ]) ?>
             </div>
         </div>
 
