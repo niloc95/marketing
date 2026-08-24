@@ -19,6 +19,17 @@ use Config\Directory as DirectoryConfig;
  */
 class DirectoryListingMutationService
 {
+    /**
+     * The one thing a successful public submission ever says.
+     *
+     * A constant rather than a repeated literal because every branch of the
+     * duplicate guard has to return it byte-for-byte. The moment one branch
+     * says something more specific — "you already have a profile", or even a
+     * differently worded success — the signup form becomes an oracle for
+     * whether any given address is in the directory.
+     */
+    private const SIGNUP_MESSAGE = 'Almost done — check your email to verify and publish your profile.';
+
     private DirectoryListingModel $listings;
     private DirectoryTagModel $tags;
     private DirectoryConfig $config;
@@ -49,60 +60,50 @@ class DirectoryListingMutationService
 
         // Duplicate guard: one email owns one listing. Rather than creating a
         // second row (or telling the visitor this address is already listed,
-        // which would let anyone enumerate the directory's emails), send the
-        // owner a manage link and return the SAME message as a fresh signup.
+        // which would let anyone enumerate the directory's emails), act on the
+        // listing that address already owns — and return the SAME message
+        // whichever branch runs, which is the part that defeats enumeration.
+        //
+        // Which action depends on where that listing got to, because only
+        // verify() publishes and a manage link cannot. This used to issue a
+        // manage link for every duplicate, which meant a still-pending signup
+        // was answered with the one link that cannot finish what the page had
+        // just told the owner to finish — with no resend route anywhere and a
+        // 48h verifyTtl running out. A rejected listing was a permanent dead
+        // end for the same reason: its owner could never submit again.
         $existing = $this->listings->findActiveByEmail((string) $input['email']);
         if ($existing !== null) {
-            $this->issueManageLink($existing);
+            $status = (string) ($existing['status'] ?? '');
+
+            if ($status === 'pending') {
+                // Still waiting on its first verification, so send that again
+                // rather than a manage link. Deliberately does not write the
+                // re-submitted fields onto the stored row: this is a "the email
+                // never arrived" retry far more often than a correction, and
+                // overwriting from a re-keyed form would throw away whatever
+                // the first submission got right. Same lever the admin button
+                // pulls — see resendVerification().
+                $this->resendVerification((int) $existing['id']);
+            } elseif ($status === 'rejected') {
+                return $this->resubmitRejected($existing, $input);
+            } else {
+                $this->issueManageLink($existing);
+            }
 
             return [
                 'ok'      => true,
                 'errors'  => [],
                 'id'      => (int) $existing['id'],
                 'slug'    => (string) $existing['slug'],
-                'message' => 'Almost done — check your email to verify and publish your profile.',
+                'message' => self::SIGNUP_MESSAGE,
             ];
         }
 
-        $token       = bin2hex(random_bytes(32));
-        $description = $this->richText($input['description'] ?? '');
-        $slug        = ensure_unique_slug($this->listings, 'slug', (string) $input['display_name'], null, listing_reserved_slugs());
-
-        $data = [
-            'type'           => in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true) ? $input['type'] : 'person',
-            'display_name'   => trim((string) $input['display_name']),
-            'contact_person' => $this->clean($input['contact_person'] ?? ''),
-            'title'          => $this->clean($input['title'] ?? ''),
-            'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
-            'credentials' => $this->clean($input['credentials'] ?? ''),
-            'description'      => $description,
-            'description_text' => RichText::toPlainText($description),
-            'phone'          => $this->clean($input['phone'] ?? ''),
-            'email'          => trim((string) $input['email']),
-            'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
-            'address_line'   => $this->clean($input['address_line'] ?? ''),
-            'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
-            'city'           => normalise_place($this->clean($input['city'] ?? '')),
-            'province'       => $this->clean($input['province'] ?? ''),
-            'postal_code'    => $this->clean($input['postal_code'] ?? ''),
-            'country'        => $this->clean($input['country'] ?? '') ?: 'South Africa',
-            'logo_path'      => $this->clean($input['logo_path'] ?? ''),
-            'trading_hours'          => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []),
-            'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
-            'offers_delivery'        => empty($input['offers_delivery']) ? 0 : 1,
-            'offers_online_booking'  => empty($input['offers_online_booking']) ? 0 : 1,
-            'slug'           => $slug,
-            'status'         => 'pending',
-            'is_verified'    => 0,
-            // Hash only — the raw $token goes out in the email at the bottom of
-            // this method and is never written down. See hashToken().
-            'verify_token'   => $this->hashToken($token),
-            'verify_expires' => date('Y-m-d H:i:s', time() + $this->config->verifyTtl),
-            // Public signup is the only intake route. The source/source_url
-            // columns remain for provenance on future imports.
-            'source'         => 'public_form',
-            'source_url'     => '',
-        ];
+        // Hash only — the raw $token goes out in the email at the bottom of
+        // this method and is never written down. See hashToken().
+        $token = bin2hex(random_bytes(32));
+        $data  = $this->buildListingData($input) + $this->verifyTokenColumns($token);
+        $slug  = (string) $data['slug'];
 
         // Outside the transaction on purpose: this is a network call that can
         // take the better part of a minute (Nominatim, retries, rate-limit
@@ -153,8 +154,211 @@ class DirectoryListingMutationService
             'errors'  => [],
             'id'      => (int) $id,
             'slug'    => $slug,
-            'message' => 'Almost done — check your email to verify and publish your profile.',
+            'message' => self::SIGNUP_MESSAGE,
         ];
+    }
+
+    /**
+     * A rejected listing's owner submitting the public form again.
+     *
+     * Treated as a fresh signup — new details, back to pending, new verify
+     * link — but written onto the SAME row rather than a second one. Two rows
+     * sharing an address would leave the newer one unreachable, because
+     * findActiveByEmail() resolves to the lowest id: every manage link and
+     * every duplicate guard would answer for the dead listing instead.
+     * DirectoryAdminService::upsert() refuses the same collision for the same
+     * reason.
+     *
+     * @param array<string,mixed> $existing
+     * @param array<string,mixed> $input
+     * @return array{ok:bool,errors:array<string,string>,id?:int,slug?:string,message:string}
+     */
+    private function resubmitRejected(array $existing, array $input): array
+    {
+        $id    = (int) $existing['id'];
+        $token = bin2hex(random_bytes(32));
+        $data  = $this->buildListingData($input, $id) + $this->verifyTokenColumns($token);
+
+        // Outside the transaction, for the reason submitPublic() gives.
+        $geocoder = new ListingGeocoder();
+        $geo      = $geocoder->resolve($data, null, $input) ?? [];
+        $data     = array_merge($data, $geo);
+
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            // 'id' is carried purely so the slug rule's {id} placeholder can
+            // be filled. Without it is_unique compares the row against itself,
+            // and a resubmit that kept the same business name — so the same
+            // slug — fails validation and reports "Could not save". Same
+            // reason and same shape as DirectoryAdminService::upsert().
+            if (! $this->listings->update($id, $data + ['id' => $id])) {
+                $db->transRollback();
+
+                return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the profile.'];
+            }
+
+            $geocoder->syncPoint($id, $geo);
+
+            // Unconditional, unlike the insert path: syncListingTags() clears
+            // the pivot before writing, so passing the empty set is how a
+            // resubmit that dropped every specialization gets rid of the
+            // rejected attempt's tags.
+            $this->tags->syncListingTags($id, $this->tagNames($input['specializations'] ?? null));
+
+            // The rejected attempt's photos are not this submission's photos,
+            // and the controller appends the new ones once this returns —
+            // without this the profile comes back carrying both sets.
+            $this->discardPhotos($id);
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Rejected-listing resubmit failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+
+            return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];
+        }
+
+        // After the commit, for the reason submitPublic() gives.
+        $this->sendVerificationEmail((string) $data['email'], (string) $data['display_name'], $token);
+
+        return [
+            'ok'      => true,
+            'errors'  => [],
+            'id'      => $id,
+            'slug'    => (string) $data['slug'],
+            'message' => self::SIGNUP_MESSAGE,
+        ];
+    }
+
+    /**
+     * Drop every gallery photo a listing holds, file included.
+     *
+     * Only for a resubmit, where the stored photos belong to a superseded
+     * attempt. deleteWithFile() is the model's own row-plus-file delete.
+     */
+    private function discardPhotos(int $listingId): void
+    {
+        $photos = new DirectoryListingPhotoModel();
+
+        foreach ($photos->forListing($listingId) as $photo) {
+            $photos->deleteWithFile($photo);
+        }
+    }
+
+    /**
+     * The listing columns a public submission writes.
+     *
+     * Shared by the fresh insert in submitPublic() and by resubmitRejected(),
+     * which writes exactly this shape onto a row that already exists — hence
+     * $existingId, which stops ensure_unique_slug() from treating the row's own
+     * slug as a collision and suffixing it on every resubmit.
+     *
+     * The verify token is not here: only the caller knows whether it is going
+     * into an INSERT or an UPDATE. See verifyTokenColumns().
+     *
+     * @param array<string,mixed> $input
+     * @return array<string,mixed>
+     */
+    private function buildListingData(array $input, ?int $existingId = null): array
+    {
+        $description = $this->richText($input['description'] ?? '');
+
+        return [
+            'type'           => in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true) ? $input['type'] : 'person',
+            'display_name'   => trim((string) $input['display_name']),
+            'contact_person' => $this->clean($input['contact_person'] ?? ''),
+            'title'          => $this->clean($input['title'] ?? ''),
+            'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
+            'credentials' => $this->clean($input['credentials'] ?? ''),
+            'description'      => $description,
+            'description_text' => RichText::toPlainText($description),
+            'phone'          => $this->clean($input['phone'] ?? ''),
+            'email'          => trim((string) $input['email']),
+            'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
+            'address_line'   => $this->clean($input['address_line'] ?? ''),
+            'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
+            'city'           => normalise_place($this->clean($input['city'] ?? '')),
+            'province'       => $this->clean($input['province'] ?? ''),
+            'postal_code'    => $this->clean($input['postal_code'] ?? ''),
+            'country'        => $this->clean($input['country'] ?? '') ?: 'South Africa',
+            'logo_path'      => $this->clean($input['logo_path'] ?? ''),
+            'trading_hours'          => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []),
+            'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
+            'offers_delivery'        => empty($input['offers_delivery']) ? 0 : 1,
+            'offers_online_booking'  => empty($input['offers_online_booking']) ? 0 : 1,
+            'slug'           => ensure_unique_slug($this->listings, 'slug', (string) $input['display_name'], $existingId, listing_reserved_slugs()),
+            'status'         => 'pending',
+            'is_verified'    => 0,
+            // Public signup is the only intake route. The source/source_url
+            // columns remain for provenance on future imports.
+            'source'         => 'public_form',
+            'source_url'     => '',
+        ];
+    }
+
+    /**
+     * The two columns that together make a verify link work.
+     *
+     * Paired in one place so the hash and its expiry can never drift apart —
+     * writing one without the other leaves either a token that never expires or
+     * a window with nothing in it.
+     *
+     * @return array{verify_token:string,verify_expires:string}
+     */
+    private function verifyTokenColumns(string $token): array
+    {
+        return [
+            'verify_token'   => $this->hashToken($token),
+            'verify_expires' => date('Y-m-d H:i:s', time() + $this->config->verifyTtl),
+        ];
+    }
+
+    /**
+     * Mint a fresh verify token for an existing listing and return the raw
+     * value. Only the hash is stored; the raw token exists in the emailed URL
+     * and nowhere else. See hashToken().
+     *
+     * Any previously issued token is overwritten, so only the newest link
+     * works — same single-link rule mintManageToken() follows.
+     */
+    private function mintVerifyToken(int $listingId): string
+    {
+        $token = bin2hex(random_bytes(32));
+
+        $this->listings->update($listingId, $this->verifyTokenColumns($token));
+
+        return $token;
+    }
+
+    /**
+     * Re-send the verification email for a listing still waiting on one.
+     *
+     * The lever behind the admin "Resend verify" button, and behind the pending
+     * branch of submitPublic()'s duplicate guard. Returns whether anything went
+     * out, which is what the admin flash message reports.
+     *
+     * Restricted to 'pending' because that is the only status a verify link
+     * means anything for. verify() sets published + is_verified, so handing one
+     * to an already-published listing is a link that re-runs a transition it
+     * has already made; and a rejected listing must go back through the form,
+     * not be published by a click on a mail we sent it.
+     */
+    public function resendVerification(int $listingId): bool
+    {
+        $listing = $this->listings->find($listingId);
+        if (! is_array($listing) || ($listing['status'] ?? '') !== 'pending') {
+            return false;
+        }
+
+        $this->sendVerificationEmail(
+            (string) $listing['email'],
+            (string) $listing['display_name'],
+            $this->mintVerifyToken($listingId)
+        );
+
+        return true;
     }
 
     /**

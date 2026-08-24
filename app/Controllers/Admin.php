@@ -12,6 +12,7 @@ use App\Models\DirectorySettingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryAdminService;
+use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
@@ -247,6 +248,23 @@ class Admin extends BaseController
             (new DirectoryAdminService())->unpublish($id),
             'Profile unpublished.',
             'Could not unpublish that profile — it may be in the trash.'
+        );
+    }
+
+    /**
+     * Re-send a pending listing's verification email.
+     *
+     * Goes straight to the mutation service rather than through
+     * DirectoryAdminService, the same way the verification-queue actions below
+     * call VerificationService — the verify token and the mail that carries it
+     * belong to the signup flow, and a pass-through here would only be one.
+     */
+    public function resendVerification(int $id)
+    {
+        return $this->outcome(
+            (new DirectoryListingMutationService())->resendVerification($id),
+            'Verification email resent.',
+            'Could not resend — that profile is not awaiting verification.'
         );
     }
 

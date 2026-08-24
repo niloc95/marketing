@@ -140,6 +140,10 @@ $isTrash = $status === 'trashed';
                                     <?php else: ?>
                                         <form method="post" action="<?= base_url('admin/unpublish/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-xs">Unpublish</button></form>
                                     <?php endif; ?>
+                                    <?php // Only where a verify link still means something — resendVerification() refuses any other status anyway. ?>
+                                    <?php if ($l['status'] === 'pending'): ?>
+                                        <form method="post" action="<?= base_url('admin/resend-verify/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-xs">Resend verify</button></form>
+                                    <?php endif; ?>
                                     <form method="post" action="<?= base_url('admin/feature/' . $l['id']) ?>">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="on" value="<?= empty($l['is_featured']) ? '1' : '0' ?>">

@@ -101,6 +101,10 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('restore/(:num)', 'Admin::restore/$1');
     $routes->post('photo-delete/(:num)', 'Admin::deletePhoto/$1');
     $routes->post('purge/(:num)', 'Admin::purge/$1');
+    // For an owner whose verify link expired or never arrived. Inside this
+    // filter group, so the only way to make the app mail an arbitrary listing
+    // is to already be an admin.
+    $routes->post('resend-verify/(:num)', 'Admin::resendVerification/$1');
 
     // Taxonomy
     $routes->get('categories', 'Admin::categories');
