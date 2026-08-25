@@ -946,4 +946,92 @@ final class VerificationFlowTest extends CIUnitTestCase
 
         $this->assertNull($this->listings->find($listingId)['verified_until'], 'a crafted POST must not mint a subscription');
     }
+
+    // ------------------------------------------------------- document retention
+    //
+    // Evidence used to live exactly as long as the listing, with no ceiling of
+    // its own. That is defensible for a badge someone is still paying for and
+    // indefensible for one that lapsed years ago, and it was also more generous
+    // to ourselves than the privacy policy we publish. These three cases pin the
+    // boundary down: two that delete, and one that must never delete.
+
+    public function testSupersededDocumentsArePurgedOnceTheirWindowPasses(): void
+    {
+        $listingId = $this->makeListing();
+        $documents = new DirectoryVerificationDocumentModel();
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'first'));
+        $row = $this->verifications->forListing($listingId);
+        $this->svc->reject((int) $row['id'], 'Not legible.', 'admin@test');
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'second'));
+
+        $verificationId = (int) $this->verifications->forListing($listingId)['id'];
+        $this->assertCount(4, $this->storedFiles($listingId), 'both attempts start on disk');
+
+        $this->backdate('directory_verification_documents', 'superseded_at IS NOT NULL', [
+            'superseded_at' => date('Y-m-d H:i:s', strtotime('-120 days')),
+        ]);
+
+        $this->assertSame(2, $documents->purgeSuperseded(90));
+
+        // The replaced attempt is gone; the application in play is untouched.
+        $this->assertCount(2, $this->storedFiles($listingId));
+        $this->assertCount(2, $documents->forVerification($verificationId));
+        $this->assertCount(2, $documents->historyForVerification($verificationId), 'purged rows must go with their files');
+    }
+
+    public function testALapsedBadgesEvidenceIsPurgedOnceItsWindowPasses(): void
+    {
+        $listingId = $this->makeListing();
+        $documents = new DirectoryVerificationDocumentModel();
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'first'));
+        $verificationId = (int) $this->verifications->forListing($listingId)['id'];
+        $this->svc->approve($verificationId, 'admin@test');
+
+        $this->backdate('directory_verifications', 'id = ' . $verificationId, [
+            'state'      => DirectoryVerificationModel::STATE_LAPSED,
+            'paid_until' => date('Y-m-d', strtotime('-400 days')),
+        ]);
+
+        $this->assertSame(2, $documents->purgeForEndedVerifications(365));
+        $this->assertSame([], $this->storedFiles($listingId), 'no ID copy outlives a long-dead badge');
+    }
+
+    /**
+     * The one that matters most. purgeForEndedVerifications() filters on state,
+     * not only on date — a subscription that is still active but whose
+     * paid_until has just rolled past (the window between expiry and the sweep
+     * lapsing it, or a row mid-renewal) must keep its evidence. Getting this
+     * wrong would delete a paying customer's documents.
+     */
+    public function testAnActiveBadgeKeepsItsEvidenceHoweverOldTheDateIs(): void
+    {
+        $listingId = $this->makeListing();
+        $documents = new DirectoryVerificationDocumentModel();
+
+        $this->svc->submitApplication($listingId, $this->documentsOnDisk($listingId, 'first'));
+        $verificationId = (int) $this->verifications->forListing($listingId)['id'];
+        $this->svc->approve($verificationId, 'admin@test');
+
+        $this->backdate('directory_verifications', 'id = ' . $verificationId, [
+            'state'      => DirectoryVerificationModel::STATE_ACTIVE,
+            'paid_until' => date('Y-m-d', strtotime('-400 days')),
+        ]);
+
+        $this->assertSame(0, $documents->purgeForEndedVerifications(365));
+        $this->assertCount(2, $this->storedFiles($listingId), 'an active badge never loses its evidence');
+    }
+
+    /**
+     * Write directly, bypassing the models: every one of them sets timestamps on
+     * update, which would undo the backdating these tests depend on.
+     *
+     * @param array<string,mixed> $values
+     */
+    private function backdate(string $table, string $where, array $values): void
+    {
+        $db = db_connect();
+        $db->table($db->prefixTable($table))->where($where, null, false)->update($values);
+    }
 }

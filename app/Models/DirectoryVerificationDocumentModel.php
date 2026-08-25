@@ -98,8 +98,9 @@ class DirectoryVerificationDocumentModel extends Model
 
     /**
      * Mark this verification's live documents as replaced by a newer
-     * application. The files are deliberately left on disk: the retention
-     * boundary is the life of the listing, not the life of one attempt.
+     * application. The files stay on disk for now so a reviewer can still see
+     * what the earlier attempt looked like; purgeSuperseded() removes them once
+     * that grace period is up.
      */
     public function supersedeForVerification(int $verificationId): void
     {
@@ -174,6 +175,81 @@ class DirectoryVerificationDocumentModel extends Model
         foreach ($this->historyForVerification($verificationId) as $doc) {
             $this->deleteWithFile($doc);
         }
+    }
+
+    /**
+     * Purge documents that were replaced by a later application, once they are
+     * older than $days.
+     *
+     * supersedeForVerification() deliberately leaves the files on disk so a
+     * reviewer can still see what an earlier attempt looked like. That is a
+     * grace period, not a retention decision — an ID copy the owner has already
+     * replaced has no reason to outlive the review it informed. This is the
+     * back half of that pair.
+     *
+     * @return int documents deleted
+     */
+    public function purgeSuperseded(int $days): int
+    {
+        $cutoff = date('Y-m-d H:i:s', strtotime('-' . $days . ' days'));
+
+        $stale = $this->where('superseded_at IS NOT NULL')
+            ->where('superseded_at <', $cutoff)
+            ->findAll();
+
+        foreach ($stale as $doc) {
+            $this->deleteWithFile($doc);
+        }
+
+        return count($stale);
+    }
+
+    /**
+     * Purge documents belonging to verifications that ended more than $days ago.
+     *
+     * "Ended" means lapsed or rejected — never active, approved or submitted, so
+     * a paying badge holder never loses the evidence behind their own badge. The
+     * end date is whichever of paid_until / reviewed_at / updated_at is present:
+     * a lapsed subscription ends when its cover ran out, a rejected application
+     * when it was reviewed, and updated_at is the backstop for rows that predate
+     * either being set.
+     *
+     * Deliberately not a listing delete: that path already exists in
+     * DirectoryAdminService and removes everything at once. This one is the
+     * time-based boundary for listings that stay but whose badge did not.
+     *
+     * @return int documents deleted
+     */
+    public function purgeForEndedVerifications(int $days): int
+    {
+        $cutoff = date('Y-m-d H:i:s', strtotime('-' . $days . ' days'));
+        $table  = $this->db->prefixTable('directory_verifications');
+
+        // Raw COALESCE with an escaped literal: the query builder would treat
+        // the whole expression as an identifier and quote it into nonsense.
+        $rows = $this->db->table($table)
+            ->select('id')
+            ->whereIn('state', [
+                DirectoryVerificationModel::STATE_LAPSED,
+                DirectoryVerificationModel::STATE_REJECTED,
+            ])
+            ->where('COALESCE(paid_until, reviewed_at, updated_at) < ' . $this->db->escape($cutoff))
+            ->get()
+            ->getResultArray();
+
+        if ($rows === []) {
+            return 0;
+        }
+
+        $deleted = 0;
+        foreach (array_column($rows, 'id') as $verificationId) {
+            foreach ($this->historyForVerification((int) $verificationId) as $doc) {
+                $this->deleteWithFile($doc);
+                $deleted++;
+            }
+        }
+
+        return $deleted;
     }
 
     /**

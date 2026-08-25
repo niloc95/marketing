@@ -225,7 +225,9 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Verified Business documents</h3>
             <p>Verification documents are retained while the Verified Business badge remains active or paused, where reasonably necessary to support the verification status.</p>
-            <p>If you submit replacement verification documents, the previous documents may be deleted as part of that process.</p>
+            <p>Where a Verified Business subscription lapses or an application is rejected, the associated verification documents are retained for up to <strong>12 months</strong> from that point and are then deleted automatically. This period allows us to answer a billing or verification query raised after the fact.</p>
+            <p>If you submit replacement verification documents, the documents they replace are retained for up to <strong>90 days</strong> and are then deleted automatically.</p>
+            <p>Verification documents are deleted in full when the associated business listing is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>
 
             <h2>13. Your rights under POPIA</h2>
