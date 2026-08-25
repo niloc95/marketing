@@ -26,8 +26,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  *   - Content-Security-Policy. It IS enabled, just not from this filter —
  *     CodeIgniter emits it itself from Config\ContentSecurityPolicy, because it
  *     has to inject a per-response nonce that a static header list cannot carry.
- *     Currently report-only: violations POST to /csp-report (App\Controllers\Csp)
- *     and nothing is blocked. Flip $reportOnly there once the reports are quiet.
+ *     Enforcing, not report-only ($reportOnly = false): violations are blocked
+ *     outright, and the first symptom is usually a panel that renders empty
+ *     rather than an error. Reports still POST to /csp-report
+ *     (App\Controllers\Csp) and land in writable/logs/, which is where to look
+ *     when something disappears from a page for no visible reason.
  *   - COEP/COOP/CORP. Cross-origin isolation buys a purely public, read-mostly
  *     directory nothing, and require-corp breaks third-party embeds.
  */
