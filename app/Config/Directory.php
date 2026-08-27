@@ -71,8 +71,11 @@ class Directory extends BaseConfig
      * image/png, a valid 256×256 image — so there is no failed request, no
      * console error, no CSP violation, and nothing in the logs. Leaflet renders
      * it exactly as it would render a real tile. A *wrong* key is byte-identical
-     * to no key, which means a typo here cannot be detected by status code; the
-     * only tell is the tile payload (~3965 bytes watermarked, larger when real).
+     * to no key, which means a typo here cannot be detected by status code.
+     *
+     * Nor by size: a real tile can be *smaller* than a watermarked one — the
+     * watermark is extra pixels painted over the same map, and a sparse rural
+     * tile measured 2627 bytes keyed against 3965 unkeyed. Look at a map.
      * That is why this is documented at length rather than left as one line.
      *
      * The key is free and covers commercial use: CARTO's FAQ says no account is

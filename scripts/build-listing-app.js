@@ -260,7 +260,9 @@ directory.healthToken = CHANGE-ME-RANDOM-HEX
 # Set this. Without it every tile carries an "API KEY REQUIRED" watermark, and
 # nothing reports it: CARTO returns the watermarked tile as a valid HTTP 200 PNG,
 # so there is no error, no failed request and no log entry. A wrong key looks
-# identical to no key. Check the tiles by eye after setting it.
+# identical to no key. Check by looking at a map — not by status code, and not
+# by byte size either: an unwatermarked tile can be smaller than a watermarked
+# one, because the watermark is extra pixels over the same map.
 directory.mapTileKey = 'CHANGE-ME'
 
 email.protocol = smtp

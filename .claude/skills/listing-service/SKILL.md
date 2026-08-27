@@ -188,9 +188,10 @@ plan switch does not change — so `renderForm()` lets a posted `plan` outrank t
   (no account, 5M tiles/month, commercial use allowed). `Directory::mapTileUrl()` appends
   it as `?key=`. **Its absence is invisible**: CARTO returns tiles stamped "API KEY
   REQUIRED" as a valid HTTP 200 PNG, so there is no error, no failed request, no CSP
-  violation and nothing in the logs — and a wrong key is byte-identical to no key. The
-  only tell is the tile itself (~3965 bytes watermarked). Check maps by eye after setting
-  it; do not trust a status code.
+  violation and nothing in the logs — and a wrong key is byte-identical to no key. Check
+  a map by eye: neither the status code nor the byte size will tell you, since a real
+  tile can be *smaller* than a watermarked one (the watermark is extra pixels over the
+  same map — 2627 bytes keyed vs 3965 unkeyed on one sparse rural tile).
 
 ### Keys that must NOT survive the trip to a production `.env`
 
