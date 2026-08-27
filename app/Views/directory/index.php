@@ -121,9 +121,9 @@ if ($indexable && ! empty($result['items'])) {
                     <?php if ($shown >= 18) { break; } ?>
                     <?php if (($c['group_name'] ?? '') === $seenGroup) { continue; } ?>
                     <?php $seenGroup = $c['group_name'] ?? ''; $shown++; ?>
-                    <?= view('directory/_chip', ['label' => $c['name'], 'href' => base_url('directory/' . $c['slug'])], ['saveData' => false]) ?>
+                    <?= view('directory/_chip', ['label' => $c['name'], 'href' => base_url('directory/' . $c['slug']), 'tint' => category_group_tint($c['group_name'] ?? null)], ['saveData' => false]) ?>
                 <?php endforeach; ?>
-                <?= view('directory/_chip', ['label' => 'Browse all categories →', 'href' => base_url('directory/categories')], ['saveData' => false]) ?>
+                <?= view('directory/_chip', ['label' => 'Browse all categories', 'href' => base_url('directory/categories'), 'icon' => 'arrow-right'], ['saveData' => false]) ?>
             </div>
         <?php endif; ?>
 

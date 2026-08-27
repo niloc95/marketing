@@ -100,7 +100,7 @@ $isTrash = $status === 'trashed';
                     <tr>
                         <td>
                             <strong><?= esc($l['display_name']) ?></strong>
-                            <?php if (! empty($l['is_featured'])): ?> <span class="pill badge-featured">★</span><?php endif; ?>
+                            <?php if (! empty($l['is_featured'])): ?> <span class="pill badge-featured" title="Featured"><?= lucide('star', 'h-3.5 w-3.5') ?></span><?php endif; ?>
                             <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($l['email'] ?? '') ?></div>
                         </td>
                         <td><?= esc($l['category_name'] ?? '—') ?></td>
@@ -118,10 +118,10 @@ $isTrash = $status === 'trashed';
                             <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate — worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
                         </td>
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
-                        <td><?= ! empty($l['is_verified']) ? '✓' : '—' ?></td>
+                        <td><?= ! empty($l['is_verified']) ? lucide('check', 'h-4 w-4 text-emerald-600 dark:text-emerald-400') : '—' ?></td>
                         <td>
                             <?php if (listing_is_verified_business($l)): ?>
-                                <span class="pill pill-published" title="Paid through <?= esc($l['verified_until'], 'attr') ?>">✓</span>
+                                <span class="pill pill-published" title="Paid through <?= esc($l['verified_until'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
                             <?php elseif (! empty($l['verified_until'])): ?>
                                 <span class="pill pill-unpublished" title="Lapsed <?= esc($l['verified_until'], 'attr') ?>">lapsed</span>
                             <?php else: ?>

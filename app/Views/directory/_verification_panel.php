@@ -37,8 +37,14 @@ $prettyDate = static function (?string $date): string {
 };
 ?>
 <div class="panel verify-panel">
+    <?php // The seal appears only once the badge is live. Showing a finished
+          // VERIFIED mark to an owner whose documents are still in review would
+          // be a claim this panel cannot make — those states keep the pill. ?>
+    <?php if ($state === DirectoryVerificationModel::STATE_ACTIVE): ?>
+        <?= verified_seal('verified-seal mb-3 w-16') ?>
+    <?php endif; ?>
     <h2 class="verify-panel-title">
-        <span class="badge badge-verified">&#10003; Verified Business</span>
+        <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span>
     </h2>
 
     <?php if ($state === DirectoryVerificationModel::STATE_ACTIVE): ?>
@@ -204,7 +210,7 @@ $prettyDate = static function (?string $date): string {
         <p class="hint mt-2">
             To apply, send your company registration document and the owner's ID. We review them,
             usually within two working days.
-            <a class="verify-cta-link" href="<?= base_url('verified') ?>">What we check &rarr;</a>
+            <a class="verify-cta-link inline-flex items-center gap-1" href="<?= base_url('verified') ?>">What we check<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
         </p>
         <details class="verify-cta-details">
             <summary class="btn btn-accent">Apply for the badge</summary>

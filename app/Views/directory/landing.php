@@ -133,7 +133,7 @@ $schema = schema_page(
                 <h3>Related categories</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($siblings as $s): ?>
-                        <?= view('directory/_chip', ['label' => $s['name'], 'href' => base_url('directory/' . $s['slug'])], ['saveData' => false]) ?>
+                        <?= view('directory/_chip', ['label' => $s['name'], 'href' => base_url('directory/' . $s['slug']), 'tint' => category_group_tint($s['group_name'] ?? null)], ['saveData' => false]) ?>
                     <?php endforeach; ?>
                 </div>
             </div>

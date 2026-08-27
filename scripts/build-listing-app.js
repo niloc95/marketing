@@ -94,6 +94,23 @@ for (const file of APP_FILES) {
 fs.chmodSync(path.join(appOut, 'spark'), 0o755);
 console.log('  • ' + APP_FILES.join(', '));
 
+// 2a) The Lucide icons. lucide() reads these off disk at render time from
+//     ROOTPATH . 'resources/icons/', and ROOTPATH in this bundle resolves to
+//     directory-app/ — so without this step every page that renders an icon
+//     throws InvalidArgumentException. That is not a corner: 14 views call it,
+//     including the layout, so it is the whole site.
+//
+//     They are vendored from lucide-static by scripts/sync-icons.js and
+//     committed, which is why the server needs no node_modules to have them.
+//     Copied rather than left to resolve from the repo because the deployed app
+//     is this bundle — /var/www/listing/directory-app — and nothing else.
+const iconsFrom = path.join(projectRoot, 'resources', 'icons');
+if (!fs.existsSync(iconsFrom)) {
+  fail('Missing resources/icons/ — run `node scripts/sync-icons.js` first.');
+}
+copyDir(iconsFrom, path.join(appOut, 'resources', 'icons'));
+console.log('  • resources/icons/ (' + fs.readdirSync(iconsFrom).length + ' icons)');
+
 // 2b) writable/ skeleton: the directory structure and its deny rules, never the
 //     local cache/logs/session contents.
 const writableOut = path.join(appOut, 'writable');
@@ -134,7 +151,13 @@ try {
 }
 
 // 4) Web root, with index.php repointed at the relocated app.
-copyDir(path.join(projectRoot, 'public'), webOut);
+//
+//    The two dev-reload files are skipped rather than shipped-but-unreferenced.
+//    layouts/public.php already gates the <script> on ENVIRONMENT, so production
+//    would never load them — but a hot-reload client sitting in a production web
+//    root is a thing someone has to reason about later, and .dev-reload.json is
+//    a local timestamp that means nothing on a server.
+copyDir(path.join(projectRoot, 'public'), webOut, ['dev-reload.js', '.dev-reload.json']);
 
 // 4a) Uploaded logos and gallery photos belong to whichever environment created
 //     them. They are gitignored, so a developer's local test images would

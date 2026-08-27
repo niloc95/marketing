@@ -1,6 +1,6 @@
 /* WebScheduler Directory — small page behaviour.
-   Thirteen independent modules (theme toggle / header on scroll / mobile menu /
-   reveal / gallery lightbox / share / image uploads / verification documents /
+   Fourteen independent modules (theme toggle / header on scroll / mobile menu /
+   plan picker / reveal / gallery lightbox / share / image uploads / verification documents /
    address autocomplete / map pin picker / trading hours / description rich text /
    home hero rotation), each a no-op if its markup isn't on the page. Event delegation from one
    listener each, so this works for content injected later too.
@@ -122,6 +122,124 @@
       toggle.focus();
     });
   })();
+
+  // ------------------------------------------------------------- plan picker
+  // The Free / Verified Business comparison cards on the signup form. Their
+  // buttons are real links to /add-listing and /add-listing/verified, which is
+  // what makes them work with JS off and makes the verified path shareable.
+  //
+  // Followed as links, though, choosing a plan costs a full page load to swap
+  // between two renderings of the same form: the scroll resets to the top of a
+  // page that looks almost identical, which reads as the page jumping rather
+  // than as a choice being registered. So when we can, do the swap in place.
+  //
+  // The two server renderings differ in exactly three things — which card wears
+  // the ring, whether the documents <details> is open, and the hidden plan input
+  // — because form.php deliberately renders one block in two states. That is why
+  // this module can hold no copy of its own: everything it writes is either a
+  // class or a value the markup already carries.
+  //
+  // Note what it does NOT do: scroll. Moving the viewport is the behaviour this
+  // is here to remove. The ring lands under the cursor, which is where the
+  // person is already looking.
+  var planCards   = document.querySelector('[data-plan-cards]');
+  var planInput   = document.querySelector('[data-plan-input]');
+  var planNotice  = document.querySelector('[data-plan-cleared]');
+  var verifyOffer = document.querySelector('[data-verify-offer]');
+
+  // The URLs live on the cards' own hrefs, so no path is written twice. If the
+  // routes ever move, the markup is still the only place that says where.
+  function planHref(plan) {
+    var a = document.querySelector('[data-plan-pick="' + plan + '"]');
+    return a ? a.getAttribute('href') : null;
+  }
+
+  function currentPlan() {
+    return planInput ? planInput.value : 'free';
+  }
+
+  // Going back to free has to take the documents with it. Listing::store() starts
+  // a verification application when documents are present — it does not consult
+  // the plan field at all — so files left on a form that now says "free" would
+  // apply anyway, which is exactly the mismatch this whole change is fixing.
+  //
+  // A bare input.value = '' is the whole job: the verification-document module
+  // further down keeps no preview state, it only rewrites input.files on change,
+  // and the browser's own "No file chosen" label resets itself.
+  function clearDocuments() {
+    var cleared = false;
+    document.querySelectorAll('[data-doc-upload]').forEach(function (input) {
+      if (input.value) cleared = true;
+      input.value = '';
+    });
+    return cleared;
+  }
+
+  function applyPlan(plan) {
+    // The hidden input goes FIRST, before offer.open below. The toggle listener
+    // reads it to tell a person opening the panel from applyPlan opening it, and
+    // with these two swapped the two handlers drive each other in circles.
+    if (planInput) planInput.value = plan;
+
+    document.querySelectorAll('[data-plan-card]').forEach(function (card) {
+      card.classList.toggle('plan-card-picked', card.getAttribute('data-plan-card') === plan);
+    });
+
+    if (plan === 'free') {
+      var cleared = clearDocuments();
+      // Only announced when something was actually thrown away. Saying "your
+      // documents were removed" to someone who never attached any is noise.
+      if (planNotice && cleared) planNotice.hidden = false;
+    } else if (planNotice) {
+      planNotice.hidden = true;
+    }
+
+    if (verifyOffer) verifyOffer.open = plan === 'verified';
+  }
+
+  // history.pushState is the feature test for the whole module: without it the
+  // URL would fall out of step with the page, and a reload or a share would
+  // hand back the other plan. Older browsers just follow the links instead.
+  if (planCards && window.history && history.pushState) {
+    document.addEventListener('click', function (e) {
+      var cta = e.target.closest('[data-plan-pick]');
+      if (!cta) return;
+      // Let modified clicks through — ctrl/cmd/shift/middle open a new tab or
+      // window, where a link that quietly refused to navigate is just broken.
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+
+      e.preventDefault();
+      var plan = cta.getAttribute('data-plan-pick');
+      applyPlan(plan);
+      history.pushState({ plan: plan }, '', cta.getAttribute('href'));
+    });
+
+    // Back and forward have to land on the plan the URL names, not on whatever
+    // was last clicked. Read the path rather than the state object, so an entry
+    // pushed before this code ran still resolves.
+    window.addEventListener('popstate', function () {
+      applyPlan(/\/add-listing\/verified\/?$/.test(location.pathname) ? 'verified' : 'free');
+    });
+
+    // The other way round. Opening the panel from inside the form is the same
+    // decision as clicking the Verified card, and until this listener existed it
+    // was the one route that changed nothing else: the cards above went on
+    // showing Free while the person filled in their documents underneath.
+    //
+    // replaceState, not pushState. Opening a fold-out should not cost a press of
+    // the back button to undo — the card buttons are the navigation, this is not.
+    if (verifyOffer) {
+      verifyOffer.addEventListener('toggle', function () {
+        var plan = verifyOffer.open ? 'verified' : 'free';
+        // applyPlan set this open/closed itself and has already done the rest.
+        if (plan === currentPlan()) return;
+
+        applyPlan(plan);
+        var href = planHref(plan);
+        if (href) history.replaceState({ plan: plan }, '', href);
+      });
+    }
+  }
 
   // -------------------------------------------------- destructive-action confirm
   // Replaces onsubmit="return confirm(…)" on the admin delete/purge forms.
@@ -391,7 +509,10 @@
           remove.type = 'button';
           remove.className = 'upload-thumb-remove';
           remove.setAttribute('aria-label', 'Remove ' + item.file.name);
-          remove.innerHTML = '&times;';
+          // Lucide 'x', pasted rather than fetched: this file is the one place
+          // icons cannot come from lucide() — it builds markup in the browser,
+          // with no PHP in reach. Source of truth is resources/icons/x.svg.
+          remove.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
           remove.addEventListener('click', function () { removeAt(index); });
           fig.appendChild(remove);
         }
@@ -1074,7 +1195,8 @@
         link.href = '#';
         link.title = 'Full screen';
         link.setAttribute('role', 'button');
-        link.innerHTML = '⛶';
+        // Lucide 'maximize' — see the note on the upload remove button above.
+        link.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
 
         L.DomEvent.on(link, 'click', function (e) {
           L.DomEvent.stop(e);

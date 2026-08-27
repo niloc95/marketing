@@ -57,7 +57,7 @@ class DirectoryService
 
         $near = $this->nearPoint($filters);
 
-        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug';
+        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group';
         if ($near !== null) {
             // Metres from the visitor. Bound as a value rather than interpolated
             // — this comes off a query string.
@@ -444,7 +444,7 @@ class DirectoryService
     public function featured(int $limit = 8): array
     {
         return $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug')
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->where('xs_directory_listings.status', 'published')
             ->where('xs_directory_listings.is_featured', 1)
@@ -462,7 +462,7 @@ class DirectoryService
     public function recent(int $limit = 4): array
     {
         return $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug')
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->where('xs_directory_listings.status', 'published')
             ->orderBy('xs_directory_listings.published_at', 'DESC')
@@ -755,7 +755,7 @@ class DirectoryService
         }
 
         $builder = $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug')
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->where('xs_directory_listings.status', 'published')
             ->where('xs_directory_listings.category_id', $categoryId)

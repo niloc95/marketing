@@ -94,9 +94,10 @@ $schema = schema_page(
                             'label' => $c['name'],
                             'href'  => base_url('directory/' . $c['slug'] . '/' . slugify($province)),
                             'count' => (int) $c['listing_count'],
+                            'tint'  => category_group_tint($c['group_name'] ?? null),
                         ], ['saveData' => false]) ?>
                     <?php endforeach; ?>
-                    <?= view('directory/_chip', ['label' => 'All categories →', 'href' => base_url('directory/categories')], ['saveData' => false]) ?>
+                    <?= view('directory/_chip', ['label' => 'All categories', 'href' => base_url('directory/categories'), 'icon' => 'arrow-right'], ['saveData' => false]) ?>
                 </div>
             </div>
         <?php endif; ?>

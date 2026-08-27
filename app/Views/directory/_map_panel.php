@@ -54,6 +54,6 @@ $dirUrl  = map_directions_url($row);
         <p class="map-approx">Approximate location &mdash; use the address above for exact directions.</p>
     <?php endif; ?>
     <?php if ($dirUrl !== ''): ?>
-        <a class="mt-2 inline-block text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($dirUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions &rarr;</a>
+        <a class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($dirUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
     <?php endif; ?>
 </div>

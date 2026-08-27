@@ -6,9 +6,18 @@ use App\Services\TeamMemberService;
 /**
  * Why a business would want the Verified Business badge.
  *
- * Shared by the optional block on the public signup form, the pristine state of
- * the owner dashboard panel, and the owner section of /verified — so the offer
- * is described once and the three cannot drift into promising different things.
+ * Shared by the pristine state of the owner dashboard panel and the owner section
+ * of /verified — so the offer is described once and the two cannot drift into
+ * promising different things.
+ *
+ * There is a third surface it is NOT shared with, and it has to be kept in step
+ * by hand: _plan_cards.php, the Free-vs-Verified comparison on the signup form.
+ * It sells the same badge to the same person and repeats these four benefits as
+ * ✓/✗ rows. The two are deliberately not merged — this is prose, that is a
+ * matrix, and one source feeding both would end up carrying a presentation flag
+ * per line. So: change a claim here, change it there. Both rules below bind it
+ * too, and both partials already read the caps from the service constants, so
+ * the numbers at least cannot drift on their own.
  *
  * Two rules for anything added here.
  *

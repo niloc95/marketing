@@ -61,8 +61,11 @@ $faqs = [
 <?= $this->section('content') ?>
 <section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
     <div class="container">
-        <span class="badge badge-verified">&#10003; Verified Business</span>
-        <h1 class="mt-3 text-2xl sm:text-3xl">What the Verified Business badge means</h1>
+        <?php // The seal, not the pill: this page IS the badge's explanation, so
+              // the mark itself opens it. The <h1> beneath already names it, which
+              // is why the pill that used to sit here would have said it twice. ?>
+        <?= verified_seal('verified-seal w-24 sm:w-28') ?>
+        <h1 class="mt-4 text-2xl sm:text-3xl">What the Verified Business badge means</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
             When you see this badge on a profile, someone here has checked that the business is
             registered and that the person running the listing owns it.

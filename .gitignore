@@ -193,3 +193,7 @@ marketing-site/assets/consent.js
 public/assets/consent.js
 marketing-site/assets/consent.css
 public/assets/consent.css
+
+# Hot-reload stamp, written by scripts/dev-reload.js on every save. Local timing
+# only — it would change in every commit and mean nothing to anyone else.
+/public/assets/.dev-reload.json

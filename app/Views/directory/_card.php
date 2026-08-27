@@ -34,7 +34,7 @@ if (isset($l['distance_m'])) {
         </div>
         <div class="min-w-0">
             <?php if (! empty($l['category_name'])): ?>
-                <span class="badge mb-1"><?= esc($l['category_name']) ?></span>
+                <span class="badge badge-category mb-1 <?= category_group_tint($l['category_group'] ?? null) ?>"><?= esc($l['category_name']) ?></span>
             <?php endif; ?>
             <h3 class="truncate text-base font-semibold">
                 <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc(base_url('directory/' . ($l['slug'] ?? '')), 'attr') ?>"><?= esc($name) ?></a>
@@ -43,11 +43,11 @@ if (isset($l['distance_m'])) {
     </div>
 
     <div class="mt-auto flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-        <?php if ($place !== ''): ?><span>📍 <?= esc($place) ?></span><?php endif; ?>
+        <?php if ($place !== ''): ?><span class="inline-flex items-center gap-1"><?= lucide('map-pin', 'h-3.5 w-3.5 shrink-0') ?><?= esc($place) ?></span><?php endif; ?>
         <?php if ($distance !== ''): ?><span class="card-distance"><?= esc($distance) ?></span><?php endif; ?>
         <?php // Verified before Featured: one says we checked this business, the
               // other says we are promoting it. The stronger claim reads first. ?>
-        <?php if (listing_is_verified_business($l)): ?><span class="badge badge-verified">✓ Verified Business</span><?php endif; ?>
-        <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured">★ Featured</span><?php endif; ?>
+        <?php if (listing_is_verified_business($l)): ?><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span><?php endif; ?>
+        <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
     </div>
 </div>

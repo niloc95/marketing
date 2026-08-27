@@ -127,7 +127,7 @@ $hasSlides = $slides !== [];
                               // rather than a link into a 404. ?>
                         <?php if ($slug !== ''): ?>
                             <a class="hero-caption-link" href="<?= esc(base_url('directory/' . $slug), 'attr') ?>">
-                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z"/></svg>
+                                <?= lucide('search', 'h-3.5 w-3.5') ?>
                                 <?= esc($caption) ?>
                             </a>
                         <?php else: ?>
@@ -201,7 +201,7 @@ $hasSlides = $slides !== [];
                 <?php endforeach; ?>
             </div>
             <div class="mt-8 text-center">
-                <a class="btn btn-ghost" href="<?= base_url('directory/categories') ?>">Browse all categories &rarr;</a>
+                <a class="btn btn-ghost" href="<?= base_url('directory/categories') ?>">Browse all categories<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
             </div>
         </div>
     </section>
@@ -215,7 +215,7 @@ $hasSlides = $slides !== [];
                     <h2>Browse by Location</h2>
                     <p>Every province we cover, with the towns and cities where our profiles actually are.</p>
                 </div>
-                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">Browse everything &rarr;</a>
+                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">Browse everything<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
             </div>
             <div class="loc-grid">
                 <?php $i = 0; ?>
@@ -240,7 +240,7 @@ $hasSlides = $slides !== [];
                     <h2>Recently added</h2>
                     <p>The newest to join <?= esc($siteName) ?>.</p>
                 </div>
-                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">See all &rarr;</a>
+                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">See all<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
             </div>
             <div class="card-grid-4">
                 <?php foreach ($recent as $l): ?>

@@ -47,9 +47,33 @@
 @tailwind utilities;
 
 @layer base {
+  /* Lucide icons that have to be drawn by CSS rather than inlined by lucide(),
+     because their call site is a ::before or ::after — a tick beside a list
+     item, the disclosure chevron on an FAQ row. They are masks, not background
+     images: with `background-color: currentColor` behind the mask, each one
+     inherits the text-* class already on the element, so the emerald/slate
+     colour rules and every .dark override keep working untouched. A background
+     image would hard-code one colour per theme.
+
+     Kept in step with resources/icons/ by hand — three icons, and the encoding
+     is not worth a build step. Their sources are check.svg, x.svg and
+     chevron-down.svg. */
+  :root {
+    --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5' /%3E%3C/svg%3E");
+    --icon-x: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18' /%3E%3Cpath d='m6 6 12 12' /%3E%3C/svg%3E");
+    --icon-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6' /%3E%3C/svg%3E");
+  }
+
   /* scroll-padding is the fixed header's tax on in-page anchors: without it
-     #map and the FAQ jump links land underneath the bar. 4rem is its height. */
-  html { scroll-behavior: smooth; @apply scroll-pt-16; }
+     #map and the FAQ jump links land underneath the bar.
+
+     Not the bar's 4rem: following an in-page anchor means the page is scrolled,
+     and a scrolled header has also revealed the search row and the category
+     strip (see .header-search / .header-quick). Sized to the tallest the header
+     gets, because that is the only state an anchor jump can ever land in — and
+     it is taller on a phone, where the search is a wrapped row of its own rather
+     than a column of the bar. Measured: 109px at md and up, 149px below it. */
+  html { scroll-behavior: smooth; @apply scroll-pt-40 md:scroll-pt-28; }
   body {
     @apply bg-slate-50 font-sans text-slate-900 antialiased;
     @apply transition-colors duration-200;
@@ -99,8 +123,13 @@
   /* Deliberately NOT flex-wrap. Wrapping was the old overflow behaviour and it
      dropped the whole nav onto a second row on any phone, which is a taller,
      lopsided header rather than a graceful degradation. The bar is now a fixed
-     h-16 (matching the marketing site) and .brand absorbs the overflow instead. */
-  .site-header .container {
+     h-16 (matching the marketing site) and .brand absorbs the overflow instead.
+
+     `>` and not a descendant selector: .header-quick below wraps its links in a
+     .container too, and a descendant rule would hand that row this row's h-16
+     and justify-between. The bar is the header's direct child; the strip's
+     container is a grandchild. */
+  .site-header > .container {
     @apply flex h-16 items-center justify-between gap-2 sm:gap-3;
   }
   /* min-w-0 is what lets the truncate on the label span actually fire — a flex
@@ -136,6 +165,100 @@
   }
   .dark .theme-toggle {
     @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
+  }
+
+  /* ------------------------------------------------- header on scroll: search */
+  /* Both this and .header-quick below are revealed by .is-solid — the class
+     directory.js already writes past 8px of scroll — so neither needs a line of
+     new JavaScript, and neither can ever be out of step with the bar going solid
+     behind it. With scripting off nothing is revealed, which is the right
+     degradation: every page still carries its own .searchbar in the hero.
+
+     Hidden with `invisible` + h-0 rather than `hidden`. Two reasons, both
+     load-bearing: `display:none` cannot be transitioned, and — more importantly
+     — a search field that is merely transparent stays in the tab order, so a
+     keyboard user tabbing off the brand at the top of the page would land in an
+     input they cannot see. `visibility` takes it out of the tab order properly.
+
+     h-0 and not just opacity: the bar over a hero must measure exactly 64px, or
+     the photograph behind it shifts by however much an invisible row occupies. */
+  .header-search {
+    @apply invisible order-last flex h-0 w-full basis-full items-center gap-2
+           overflow-hidden opacity-0;
+    @apply transition-[height,opacity,visibility] duration-200;
+    /* From md up it stops being a wrapped row and becomes the middle column of
+       the bar. mx-8 is the ~30px of air on either side that keeps it from
+       crowding the brand lockup and the nav — the bar's own gap-3 is nowhere
+       near enough once the field is a real object rather than a link. */
+    @apply md:order-none md:mx-8 md:h-auto md:w-auto md:max-w-md md:flex-1
+           md:basis-auto md:overflow-visible;
+  }
+  /* h-11, not h-auto, on phones: this is the wrapped second row and it needs a
+     height to animate from 0 to. md:h-auto puts it back to hugging the bar. */
+  .site-header.is-solid .header-search { @apply visible h-11 opacity-100 md:h-auto; }
+
+  /* The wrap only ever happens below md and only while scrolled, which is why it
+     is scoped here instead of on .site-header > .container: at rest the bar must
+     stay the strictly non-wrapping h-16 row the comment up there describes.
+     .header-search is basis-full, so it takes the second line on its own and the
+     nav is never dragged down with it — the failure the old flex-wrap caused. */
+  .site-header.is-solid > .container {
+    @apply h-auto flex-wrap pb-2 md:h-16 md:flex-nowrap md:pb-0;
+    min-height: 4rem;
+  }
+
+  /* min-w-0 for the same reason .brand has it — without it the input refuses to
+     shrink below its intrinsic width and pushes the nav off the bar. */
+  .header-search input {
+    @apply h-10 w-full min-w-0 rounded-xl border-slate-200 text-sm text-slate-900
+           focus:border-primary-500 focus:ring-primary-500;
+  }
+  .dark .header-search input {
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
+           focus:border-primary-300 focus:ring-primary-300;
+  }
+  /* .btn is px-5 py-3 (~44px), which overfills a 64px bar sitting beside a 40px
+     input. Trimmed to match the field rather than the page's buttons. */
+  .header-search .btn { @apply h-10 shrink-0 gap-1.5 px-4 py-0; }
+
+  /* --------------------------------------------- header on scroll: quick strip */
+  /* Same reveal as .header-search, same reasons for h-0 + invisible. The border
+     is toggled rather than declared transparent up front because a 1px border on
+     a collapsed row is still 1px of header, and the bar over a hero has to
+     measure 64px exactly. */
+  .header-quick {
+    @apply invisible h-0 overflow-hidden border-t-0 border-transparent opacity-0;
+    @apply transition-[height,opacity,visibility,border-color] duration-200;
+  }
+  .site-header.is-solid .header-quick {
+    @apply visible h-11 border-t border-slate-200 opacity-100;
+  }
+  .dark .site-header.is-solid .header-quick { @apply border-slate-800; }
+
+  /* Scrolls sideways rather than wrapping: a second row of categories would
+     change the header's height depending on how long the category names happen
+     to be, and the h-11 above is what the reveal animates to. The scrollbar is
+     hidden because on a phone the row is a swipe, and on a desktop it never
+     overflows in the first place. */
+  .header-quick-list {
+    @apply flex h-11 items-center gap-5 overflow-x-auto overflow-y-hidden whitespace-nowrap;
+    scrollbar-width: none;
+  }
+  .header-quick-list::-webkit-scrollbar { display: none; }
+  .header-quick-list a {
+    @apply shrink-0 text-sm font-medium text-slate-600 hover:text-primary-500;
+  }
+  .dark .header-quick-list a { @apply text-slate-300 hover:text-white; }
+  /* The way out of the six, so the strip doesn't read as the whole directory. */
+  .header-quick-all { @apply text-primary-500 dark:text-primary-300; }
+
+  /* The reveal is chrome moving under the reader rather than ambience, so it
+     goes straight to its end state for anyone who has asked for less motion —
+     same call, and the same reason, as the hero rotation further down. */
+  @media (prefers-reduced-motion: reduce) {
+    .header-search,
+    .header-quick,
+    .site-header > .container { @apply transition-none; }
   }
 
   /* ------------------------------------------------------------ mobile menu */
@@ -549,13 +672,30 @@
   /* The chip that index/categories/landing/province all share. Written as its
      own rule rather than @apply .badge — .badge has a .dark override, and
      applying it would flatten that into both themes. */
+  /* The tint vars carry a category chip's group colour; a chip with no
+     cat-tint-* class — a province, or "Browse all categories" — falls back to
+     the slate it has always been, so those need no branching in the view. */
   .chip {
-    @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1
-           text-xs font-medium text-slate-600 transition-colors
-           hover:bg-primary-50 hover:text-primary-600;
+    @apply inline-flex items-center rounded-full px-2.5 py-1
+           text-xs font-medium transition-colors;
+    background-color: var(--tint-bg, theme(colors.slate.100));
+    color: var(--tint-fg, theme(colors.slate.600));
+  }
+  .chip:hover {
+    background-color: var(--tint-bg, theme(colors.primary.50));
+    color: var(--tint-fg, theme(colors.primary.600));
+    filter: brightness(0.97);
   }
   .chip-count { @apply ml-1 opacity-60; }
-  .dark .chip { @apply bg-slate-800 text-slate-300 hover:bg-primary-500/15 hover:text-primary-300; }
+  .dark .chip {
+    background-color: var(--tint-bg-dark, theme(colors.slate.800));
+    color: var(--tint-fg-dark, theme(colors.slate.300));
+  }
+  .dark .chip:hover {
+    background-color: var(--tint-bg-dark, theme(colors.primary.500 / 15%));
+    color: var(--tint-fg-dark, theme(colors.primary.300));
+    filter: brightness(1.25);
+  }
   /* ------------------------------------------------- explore by category */
   .tile-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5; }
 
@@ -563,7 +703,11 @@
     @apply flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4
            shadow-brand transition-shadow hover:shadow-brand-lg sm:p-5;
   }
-  .cat-tile-icon  { @apply mb-3 grid h-11 w-11 place-items-center rounded-xl bg-primary-50 text-xl sm:h-12 sm:w-12; }
+  .cat-tile-icon {
+    @apply mb-3 grid h-11 w-11 place-items-center rounded-xl sm:h-12 sm:w-12;
+    background-color: var(--tint-bg, theme(colors.primary.50));
+    color: var(--tint-fg, theme(colors.primary.600));
+  }
   .cat-tile-name  { @apply text-sm font-semibold text-slate-900 sm:text-base; }
   .cat-tile-group { @apply mt-1 line-clamp-1 text-xs text-slate-500; }
   .cat-tile-foot  { @apply mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs; }
@@ -573,13 +717,138 @@
   .cat-tile:hover .cat-tile-arrow { @apply translate-x-0.5; }
   .cat-tile:hover .cat-tile-more  { @apply text-primary-600; }
   .dark .cat-tile       { @apply border-slate-800 bg-[#1a202c]; }
-  .dark .cat-tile-icon  { @apply bg-primary-500/15; }
+  .dark .cat-tile-icon {
+    background-color: var(--tint-bg-dark, theme(colors.primary.500 / 15%));
+    color: var(--tint-fg-dark, theme(colors.primary.300));
+  }
   .dark .cat-tile-name  { @apply text-white; }
   .dark .cat-tile-group { @apply text-slate-400; }
   .dark .cat-tile-foot  { @apply border-slate-800; }
   .dark .cat-tile-count { @apply text-primary-300; }
   .dark .cat-tile-more  { @apply text-slate-400; }
   .dark .cat-tile:hover .cat-tile-more { @apply text-primary-300; }
+
+  /* ------------------------------------------------------ category tints */
+  /* One hue per category group, assigned by category_group_style() in
+     app/Helpers/directory_ui_helper.php. Every class is spelled out in full for
+     the same reason .loc-card-1..4 below are: Tailwind scans the views as plain
+     text, so a name built at runtime would be unmatched and tree-shaken out.
+
+     Each one only sets custom properties; the consumers (.cat-tile-icon, .chip,
+     .badge-category and the /categories headings) read them. That is what keeps
+     this at fifteen rules instead of one per hue per treatment — and it means
+     every consumer falls back to the old navy on its own when no tint class is
+     present, which is what leaves province chips and nav chips untouched.
+
+     amber, yellow and lime take a -700 foreground; their -600 is illegible on a
+     -50 ground. The rest are fine at -600.
+
+     slate is the fallback's colour and nothing else's. An unmapped group has to
+     look like nothing rather than borrow a real group's hue — which is also why
+     no group was left on it: a whole group rendered grey reads as a styling bug
+     rather than as a decision. */
+  .cat-tint-red {
+    --tint-bg: theme(colors.red.50);
+    --tint-fg: theme(colors.red.600);
+    --tint-bg-dark: theme(colors.red.500 / 15%);
+    --tint-fg-dark: theme(colors.red.300);
+  }
+  .cat-tint-pink {
+    --tint-bg: theme(colors.pink.50);
+    --tint-fg: theme(colors.pink.600);
+    --tint-bg-dark: theme(colors.pink.500 / 15%);
+    --tint-fg-dark: theme(colors.pink.300);
+  }
+  .cat-tint-fuchsia {
+    --tint-bg: theme(colors.fuchsia.50);
+    --tint-fg: theme(colors.fuchsia.600);
+    --tint-bg-dark: theme(colors.fuchsia.500 / 15%);
+    --tint-fg-dark: theme(colors.fuchsia.300);
+  }
+  .cat-tint-blue {
+    --tint-bg: theme(colors.blue.50);
+    --tint-fg: theme(colors.blue.600);
+    --tint-bg-dark: theme(colors.blue.500 / 15%);
+    --tint-fg-dark: theme(colors.blue.300);
+  }
+  .cat-tint-indigo {
+    --tint-bg: theme(colors.indigo.50);
+    --tint-fg: theme(colors.indigo.600);
+    --tint-bg-dark: theme(colors.indigo.500 / 15%);
+    --tint-fg-dark: theme(colors.indigo.300);
+  }
+  .cat-tint-amber {
+    --tint-bg: theme(colors.amber.50);
+    --tint-fg: theme(colors.amber.700);
+    --tint-bg-dark: theme(colors.amber.500 / 15%);
+    --tint-fg-dark: theme(colors.amber.300);
+  }
+  .cat-tint-purple {
+    --tint-bg: theme(colors.purple.50);
+    --tint-fg: theme(colors.purple.600);
+    --tint-bg-dark: theme(colors.purple.500 / 15%);
+    --tint-fg-dark: theme(colors.purple.300);
+  }
+  .cat-tint-orange {
+    --tint-bg: theme(colors.orange.50);
+    --tint-fg: theme(colors.orange.600);
+    --tint-bg-dark: theme(colors.orange.500 / 15%);
+    --tint-fg-dark: theme(colors.orange.300);
+  }
+  .cat-tint-violet {
+    --tint-bg: theme(colors.violet.50);
+    --tint-fg: theme(colors.violet.600);
+    --tint-bg-dark: theme(colors.violet.500 / 15%);
+    --tint-fg-dark: theme(colors.violet.300);
+  }
+  .cat-tint-yellow {
+    --tint-bg: theme(colors.yellow.50);
+    --tint-fg: theme(colors.yellow.700);
+    --tint-bg-dark: theme(colors.yellow.500 / 15%);
+    --tint-fg-dark: theme(colors.yellow.300);
+  }
+  .cat-tint-sky {
+    --tint-bg: theme(colors.sky.50);
+    --tint-fg: theme(colors.sky.600);
+    --tint-bg-dark: theme(colors.sky.500 / 15%);
+    --tint-fg-dark: theme(colors.sky.300);
+  }
+  .cat-tint-teal {
+    --tint-bg: theme(colors.teal.50);
+    --tint-fg: theme(colors.teal.600);
+    --tint-bg-dark: theme(colors.teal.500 / 15%);
+    --tint-fg-dark: theme(colors.teal.300);
+  }
+  .cat-tint-cyan {
+    --tint-bg: theme(colors.cyan.50);
+    --tint-fg: theme(colors.cyan.600);
+    --tint-bg-dark: theme(colors.cyan.500 / 15%);
+    --tint-fg-dark: theme(colors.cyan.300);
+  }
+  .cat-tint-emerald {
+    --tint-bg: theme(colors.emerald.50);
+    --tint-fg: theme(colors.emerald.600);
+    --tint-bg-dark: theme(colors.emerald.500 / 15%);
+    --tint-fg-dark: theme(colors.emerald.300);
+  }
+  .cat-tint-lime {
+    --tint-bg: theme(colors.lime.50);
+    --tint-fg: theme(colors.lime.700);
+    --tint-bg-dark: theme(colors.lime.500 / 15%);
+    --tint-fg-dark: theme(colors.lime.300);
+  }
+  .cat-tint-slate {
+    --tint-bg: theme(colors.slate.50);
+    --tint-fg: theme(colors.slate.600);
+    --tint-bg-dark: theme(colors.slate.500 / 15%);
+    --tint-fg-dark: theme(colors.slate.300);
+  }
+
+  /* The group icon on /directory/categories: colour only, no square behind it
+     — the heading already carries the group's name, so a filled tile would be
+     the third thing saying the same. */
+  .cat-group-icon { color: var(--tint-fg, theme(colors.primary.600)); }
+  .dark .cat-group-icon { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
   /* --------------------------------------------------- browse by location */
   .loc-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
@@ -643,13 +912,34 @@
            text-xs font-medium text-slate-600;
   }
   .badge-featured { @apply bg-brand-golden/25 text-amber-700; }
+  /* Its own class rather than a tinted .badge: .badge-verified and
+     .badge-featured set their own colours, and a tinted base would have them
+     fighting the cascade for which rule lands last. */
+  .badge-category {
+    background-color: var(--tint-bg, theme(colors.slate.100));
+    color: var(--tint-fg, theme(colors.slate.600));
+  }
   /* Emerald, not the Featured amber: "we checked this business" and "we are
      promoting this business" are different claims and should not look alike.
      no-underline because on the profile page this badge is a link to the FAQ. */
   .badge-verified { @apply bg-emerald-50 text-emerald-700 no-underline; }
   .dark .badge          { @apply bg-slate-800 text-slate-300; }
   .dark .badge-featured { @apply bg-brand-golden/20 text-brand-golden; }
+  .dark .badge-category {
+    background-color: var(--tint-bg-dark, theme(colors.slate.800));
+    color: var(--tint-fg-dark, theme(colors.slate.300));
+  }
   .dark .badge-verified { @apply bg-emerald-500/15 text-emerald-300; }
+
+  /* The seal is the same claim as .badge-verified, at the size where the mark
+     itself does the talking. It is fixed-colour and carries its own artwork, so
+     unlike the pill it has no dark variant — see public/assets/verified-seal.svg.
+     The drop shadow lives here and not in the file because a filter inside the
+     SVG would be re-rasterised at every size it is used at. */
+  .verified-seal {
+    @apply block h-auto shrink-0;
+    filter: drop-shadow(0 6px 14px rgba(0, 48, 73, 0.22));
+  }
 
   .taglist { @apply mt-3 flex flex-wrap gap-1.5; }
   .tag     { @apply inline-flex rounded-full bg-primary-50 px-2.5 py-0.5 text-xs text-primary-600; }
@@ -679,15 +969,18 @@
   .faq-item summary::-webkit-details-marker { display: none; }
   .faq-item summary::marker { content: ''; }
 
-  /* Rotates to an X-ish diagonal when open. Drawn in CSS rather than shipping
-     two SVGs per question. */
+  /* Was two rotated borders faking a chevron, which is why it needed the
+     margin nudges to stay optically centred through the turn. A real Lucide
+     chevron rotates about its own middle, so it does not. */
   .faq-item summary::after {
     content: '';
-    @apply h-2.5 w-2.5 flex-shrink-0 rotate-45 border-b-2 border-r-2 border-slate-400;
+    @apply h-4 w-4 flex-shrink-0 text-slate-400;
     @apply transition-transform duration-200;
-    margin-top: -0.25rem;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-chevron-down) center / contain no-repeat;
+            mask: var(--icon-chevron-down) center / contain no-repeat;
   }
-  .faq-item[open] summary::after { @apply -rotate-[135deg]; margin-top: 0.25rem; }
+  .faq-item[open] summary::after { @apply rotate-180; }
 
   .faq-item .faq-answer { @apply pb-5 pr-8 text-sm leading-relaxed text-slate-600; }
   .dark .faq-item .faq-answer { @apply text-slate-400; }
@@ -766,7 +1059,7 @@
   .lightbox-prev,
   .lightbox-next {
     @apply absolute grid h-10 w-10 cursor-pointer place-items-center rounded-full
-           border-0 bg-white/10 text-xl text-white hover:bg-white/20;
+           border-0 bg-white/10 text-white hover:bg-white/20;
   }
   .lightbox-close { @apply right-4 top-4; }
   .lightbox-prev  { @apply left-4 top-1/2 -translate-y-1/2; }
@@ -972,22 +1265,111 @@
   .dark input[type="checkbox"] { @apply focus:ring-offset-[#1a202c]; }
   .dark .hint { @apply text-slate-400; }
 
+  /* ------------------------------------------------------- plan comparison */
+
+  /* Free vs Verified Business, above the signup form. Two cards over an
+     identical set of rows — see _plan_cards.php for why the rows are shared. */
+  .plan-choose       { @apply mx-auto mb-6 max-w-3xl; }
+  .plan-choose-title { @apply mb-4 text-2xl font-extrabold text-slate-900; }
+  .dark .plan-choose-title { @apply text-white; }
+
+  /* Two up, never three. .card-grid goes to three columns at lg and would leave
+     a hole beside a pair. */
+  .plan-grid { @apply grid gap-4 sm:grid-cols-2; }
+
+  .plan-card {
+    @apply relative flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-brand;
+  }
+  /* Emerald edge to tie the paid card to the badge itself rather than to the
+     orange CTA, which is the same on both. */
+  .plan-card-featured { @apply border-emerald-300; }
+  /* Which card this page is already on. A ring, not a fill: the cards stay
+     readable as a comparison after one of them has been chosen. */
+  .plan-card-picked   { @apply ring-2 ring-primary-500 ring-offset-2; }
+
+  /* min-h keeps the two cards' rows level: the free card names itself in text,
+     the paid one in the badge pill it is selling, and those are not the same
+     height. A comparison whose rows do not line up is not much of one. */
+  .plan-name       { @apply flex min-h-6 items-center text-sm font-semibold uppercase tracking-wide text-slate-500; }
+  .plan-price      { @apply mt-1 text-3xl font-extrabold text-slate-900; }
+  .plan-price-unit { @apply ml-2 text-sm font-medium text-slate-500; }
+  .plan-blurb      { @apply mt-2 text-sm text-slate-600; }
+
+  /* Tag-qualified and list-none repeated on the item for the same reason as
+     .verify-benefits: /verified wraps its container in .prose-legal, which would
+     otherwise draw a native bullet beside every tick. */
+  ul.plan-rows { @apply my-4 grow list-none space-y-2 pl-0 text-sm text-slate-600; }
+  .plan-rows > li { @apply relative list-none pl-6; }
+  .plan-rows > li::before {
+    content: '';
+    @apply absolute left-0 top-0.5 h-4 w-4;
+    background-color: currentColor;
+    -webkit-mask: var(--row-icon) center / contain no-repeat;
+            mask: var(--row-icon) center / contain no-repeat;
+  }
+  /* Same icons and colours as .checkout-terms and .verify-nots elsewhere on the
+     site, so a tick means the same thing wherever it is read. */
+  .plan-row-yes::before { --row-icon: var(--icon-check); @apply text-emerald-600; }
+  .plan-row-no::before  { --row-icon: var(--icon-x);     @apply text-slate-400; }
+  .plan-rows strong { @apply text-slate-900; }
+  /* A ✗ row is not a warning, it is an absence — greyed, not reddened. Below
+     `.plan-rows strong` on purpose: same specificity, so order is what decides
+     whether the bold half of a crossed-out row stays black. */
+  .plan-row-no        { @apply text-slate-400; }
+  .plan-row-no strong { @apply font-semibold text-slate-400; }
+  .plan-row-note      { @apply mt-0.5 block text-xs text-slate-400; }
+
+  .plan-terms { @apply mb-4 border-t border-slate-200 pt-3; }
+  .plan-cta   { @apply mt-auto; }
+
+  .dark .plan-card          { @apply border-slate-800 bg-slate-900/40; }
+  .dark .plan-card-featured { @apply border-emerald-500/40; }
+  .dark .plan-card-picked   { @apply ring-primary-400 ring-offset-[#1a202c]; }
+  .dark .plan-name          { @apply text-slate-400; }
+  .dark .plan-price         { @apply text-white; }
+  .dark .plan-price-unit    { @apply text-slate-400; }
+  .dark .plan-blurb         { @apply text-slate-300; }
+  .dark .plan-rows          { @apply text-slate-300; }
+  .dark .plan-rows strong   { @apply text-white; }
+  .dark .plan-row-yes::before { @apply text-emerald-400; }
+  .dark .plan-row-no        { @apply text-slate-500; }
+  .dark .plan-row-no strong { @apply text-slate-500; }   /* after .dark .plan-rows strong, as above */
+  .dark .plan-row-note      { @apply text-slate-500; }
+  .dark .plan-terms         { @apply border-slate-800; }
+
   /* ------------------------------------------------ verified business badge */
 
   /* The optional upsell on the signup form. A <details>, closed by default:
      the listing is free and the page should say that first, so this stays
-     folded away until someone goes looking for it. */
-  .verify-offer {
-    @apply mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3;
-  }
+     folded away until someone goes looking for it.
+
+     Two states that swap wholesale rather than a row that unfolds. The closed
+     state is a pitch ending in a button; the open state is the documents. The
+     summary holds all of the former, so the [open] rule below retires the entire
+     pitch in one line — same technique as .verify-cta-details further down, which
+     is where this came from. */
+  .verify-pick   { @apply mb-5; }
+  .verify-offer  { @apply rounded-xl border border-slate-200 bg-slate-50 px-4 py-3; }
+  /* Stacked, not the one-line flex row this used to be: the summary is a whole
+     block of copy now. list-none plus the ::-webkit- rule drop the disclosure
+     triangle, which would otherwise sit above the button and give away that this
+     is a <summary> rather than the control it is dressed as. */
   .verify-offer > summary {
-    @apply flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-slate-700;
+    @apply flex cursor-pointer list-none flex-col items-start gap-2 text-sm font-medium text-slate-700;
   }
   .verify-offer > summary::-webkit-details-marker { display: none; }
-  .verify-offer-body { @apply mt-3 border-t border-slate-200 pt-3; }
+  .verify-offer > summary .hint { @apply mt-0; }
+  .verify-offer[open] > summary { @apply hidden; }
+  /* The open state's header — what the badge means once you have asked for it,
+     which is the one place in this block a tick belongs. */
+  .verify-chosen {
+    @apply mb-3 flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3
+           text-sm font-medium text-slate-700;
+  }
+  .verify-cleared { @apply mt-2; }
+  .dark .verify-chosen  { @apply border-slate-800 text-slate-200; }
   .dark .verify-offer      { @apply border-slate-800 bg-slate-900/40; }
   .dark .verify-offer > summary  { @apply text-slate-200; }
-  .dark .verify-offer-body { @apply border-slate-800; }
 
   /* The owner dashboard panel. Same .panel chrome as the rest of the page,
      with the state-specific content inside. */
@@ -1013,8 +1395,11 @@
   ul.verify-benefits { @apply my-3 list-none space-y-2 pl-0 text-sm text-slate-600; }
   .verify-benefits > li { @apply relative list-none pl-6; }
   .verify-benefits > li::before {
-    content: "\2713";
-    @apply absolute left-0 top-0 font-bold text-emerald-600;
+    content: '';
+    @apply absolute left-0 top-0.5 h-4 w-4 text-emerald-600;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-check) center / contain no-repeat;
+            mask: var(--icon-check) center / contain no-repeat;
   }
   .verify-benefits strong { @apply text-slate-900; }
   .verify-benefits-terms  { @apply border-t border-slate-200 pt-3; }
@@ -1055,12 +1440,26 @@
   .checkout-label   { @apply shrink-0 font-medium text-slate-500; }
   .checkout-total   { @apply text-base text-slate-900; }
   .checkout-terms   { @apply mb-5 space-y-1.5 text-xs text-slate-500; }
-  .checkout-terms li { @apply flex gap-2 before:content-['✓'] before:text-emerald-600; }
+  .checkout-terms li { @apply flex gap-2; }
+  .checkout-terms li::before {
+    content: '';
+    @apply mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-check) center / contain no-repeat;
+            mask: var(--icon-check) center / contain no-repeat;
+  }
   /* The counterpart on /verified: what the badge does NOT claim. Crossed rather
      than ticked, and in the same visual weight as the ticks beside it — that
      section only does its job if it is as readable as the reassuring one. */
   .verify-nots    { @apply space-y-1.5 text-xs text-slate-500; }
-  .verify-nots li { @apply flex gap-2 before:content-['✗'] before:text-slate-400; }
+  .verify-nots li { @apply flex gap-2; }
+  .verify-nots li::before {
+    content: '';
+    @apply mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-x) center / contain no-repeat;
+            mask: var(--icon-x) center / contain no-repeat;
+  }
   .dark .verify-nots { @apply text-slate-400; }
   .dark .checkout-summary { @apply border-slate-800 bg-slate-900/40; }
   .dark .checkout-line    { @apply border-slate-800 text-slate-300; }

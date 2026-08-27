@@ -32,6 +32,44 @@ class App extends BaseConfig
     public array $allowedHostnames = [];
 
     /**
+     * Outside production, answer to whatever host the browser actually used.
+     *
+     * This is what makes one dev server usable from another machine. Serving on
+     * 0.0.0.0 is only half of it: base_url() emits an absolute URL built from
+     * $baseURL, so from a phone on the LAN every stylesheet, script and image
+     * would point at http://localhost:8095 — that phone's own loopback. And
+     * because $CSPEnabled is true with defaultSrc 'self', the browser does not
+     * merely 404 them, it blocks them as cross-origin. The page loads unstyled.
+     *
+     * SiteURIFactory::getValidHost() trusts the request's Host header only if it
+     * is listed here, and SiteURI::determineBaseURL() then applies setHost() to
+     * the configured baseURL — keeping its scheme and its port. So listing the
+     * LAN names makes base_url() follow the request, and 'self' lines up again.
+     *
+     * The names live in .env rather than here because they are one machine's
+     * DHCP leases and Bonjour name, and .env is gitignored. Empty is the
+     * default, which leaves CI4 behaving exactly as it ships.
+     *
+     * The key is app.devHostnames and not app.allowedHostnames on purpose:
+     * BaseConfig::initEnvValue() walks an array property's existing keys, and
+     * this one starts empty, so an app.allowedHostnames line in .env would be
+     * read by nobody and silently do nothing. A separate key that is explicitly
+     * read cannot rot into that.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        if (ENVIRONMENT === 'production') {
+            return;
+        }
+
+        $this->allowedHostnames = array_values(array_filter(
+            array_map('trim', explode(',', (string) env('app.devHostnames', '')))
+        ));
+    }
+
+    /**
      * --------------------------------------------------------------------------
      * Index File
      * --------------------------------------------------------------------------

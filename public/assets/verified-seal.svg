@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img">
+  <title>WebScheduler Local Verified Business</title>
+  <!--
+    The Verified Business seal. Hand-authored geometry, not a trace: it has to
+    stay crisp from 56px to print, and a traced raster would be a 200KB blob of
+    fuzzy nodes. Sizing comes from the caller (see verified_seal() in
+    app/Helpers/directory_ui_helper.php) — there is no width/height here.
+
+    Fixed-colour on purpose. This is a mark, not an icon: it never inherits
+    currentColor and needs no dark variant, because white-on-orange over a white
+    disc reads on either theme.
+  -->
+  <defs>
+    <linearGradient id="wsl-seal-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FDA757"/><stop offset="1" stop-color="#E4690D"/>
+    </linearGradient>
+    <linearGradient id="wsl-seal-plate" x1=".1" y1="0" x2=".9" y2="1">
+      <stop offset="0" stop-color="#F98A18"/><stop offset="1" stop-color="#DE6503"/>
+    </linearGradient>
+    <linearGradient id="wsl-seal-shield" x1=".15" y1="0" x2=".85" y2="1">
+      <stop offset="0" stop-color="#FBA850"/><stop offset="1" stop-color="#F17F0B"/>
+    </linearGradient>
+    <linearGradient id="wsl-seal-ribbon" x1="0" y1="0" x2=".35" y2="1">
+      <stop offset="0" stop-color="#FB9433"/><stop offset="1" stop-color="#EA6D03"/>
+    </linearGradient>
+    <path id="wsl-seal-shield-shape" d="M128 73H160A10 10 0 0 1 170 83V119C170 142 154 159 131 167A9 9 0 0 1 125 167C102 159 86 142 86 119V83A10 10 0 0 1 96 73Z"/>
+    <clipPath id="wsl-seal-shield-clip"><use href="#wsl-seal-shield-shape"/></clipPath>
+    <path id="wsl-seal-ring" d="M52.66 107.81A78 78 0 0 1 203.34 107.81"/>
+  </defs>
+
+  <!-- Scalloped rim: 14 lobes on a sinusoid between r124 and r111, sampled four
+       times per lobe so the spline follows the wave. Sampled twice per lobe it
+       overshoots into points and the mark reads as a sun, not a seal. -->
+  <path fill="url(#wsl-seal-rim)" d="M 128 4C132.39 4 137.04 8.61 141.16 11.24C145.27 13.87 148.42 18.81 152.7 19.78C156.98 20.76 161.96 17.68 166.81 17.09C171.66 16.51 177.85 14.38 181.8 16.28C185.75 18.18 187.95 24.35 190.51 28.51C193.08 32.67 193.78 38.48 197.21 41.22C200.64 43.95 206.46 43.34 211.09 44.91C215.71 46.49 222.21 47.26 224.95 50.69C227.68 54.12 226.98 60.63 227.49 65.49C228 70.34 226.1 75.89 228.01 79.84C229.91 83.79 235.43 85.76 238.91 89.19C242.39 92.62 247.92 96.13 248.89 100.41C249.87 104.68 246.41 110.25 244.76 114.84C243.11 119.44 239 123.61 239 128C239 132.39 243.11 136.56 244.76 141.16C246.41 145.75 249.87 151.32 248.89 155.59C247.92 159.87 242.39 163.38 238.91 166.81C235.43 170.24 229.91 172.21 228.01 176.16C226.1 180.11 228 185.66 227.49 190.51C226.98 195.37 227.68 201.88 224.95 205.31C222.21 208.74 215.71 209.51 211.09 211.09C206.46 212.66 200.64 212.05 197.21 214.78C193.78 217.52 193.08 223.33 190.51 227.49C187.95 231.65 185.75 237.82 181.8 239.72C177.85 241.62 171.66 239.49 166.81 238.91C161.96 238.32 156.98 235.24 152.7 236.22C148.42 237.19 145.27 242.13 141.16 244.76C137.04 247.39 132.39 252 128 252C123.61 252 118.96 247.39 114.84 244.76C110.73 242.13 107.58 237.19 103.3 236.22C99.02 235.24 94.04 238.32 89.19 238.91C84.34 239.49 78.15 241.62 74.2 239.72C70.25 237.82 68.05 231.65 65.49 227.49C62.92 223.33 62.22 217.52 58.79 214.78C55.36 212.05 49.54 212.66 44.91 211.09C40.29 209.51 33.79 208.74 31.05 205.31C28.32 201.88 29.02 195.37 28.51 190.51C28 185.66 29.9 180.11 27.99 176.16C26.09 172.21 20.57 170.24 17.09 166.81C13.61 163.38 8.08 159.87 7.11 155.59C6.13 151.32 9.59 145.75 11.24 141.16C12.89 136.56 17 132.39 17 128C17 123.61 12.89 119.44 11.24 114.84C9.59 110.25 6.13 104.68 7.11 100.41C8.08 96.13 13.61 92.62 17.09 89.19C20.57 85.76 26.09 83.79 27.99 79.84C29.9 75.89 28 70.34 28.51 65.49C29.02 60.63 28.32 54.12 31.05 50.69C33.79 47.26 40.29 46.49 44.91 44.91C49.54 43.34 55.36 43.95 58.79 41.22C62.22 38.48 62.92 32.67 65.49 28.51C68.05 24.35 70.25 18.18 74.2 16.28C78.15 14.38 84.34 16.51 89.19 17.09C94.04 17.68 99.02 20.76 103.3 19.78C107.58 18.81 110.73 13.87 114.84 11.24C118.96 8.61 123.61 4 128 4Z"/>
+
+  <!-- The plate sits exactly on the valley radius, so the rim is its own plane. -->
+  <circle cx="128" cy="128" r="111" fill="url(#wsl-seal-plate)"/>
+  <circle cx="128" cy="128" r="100" fill="none" stroke="#fff" stroke-width="4"/>
+
+  <text fill="#fff" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700">
+    <!-- textLength pins the run to its arc whichever font actually resolves, so
+         the label cannot spill into the stars on a machine without Inter. -->
+    <textPath href="#wsl-seal-ring" startOffset="50%" text-anchor="middle" textLength="186" lengthAdjust="spacingAndGlyphs">WebScheduler | Local</textPath>
+  </text>
+
+  <path fill="#fff" d="M42 119.5L44.12 125.09L50.08 125.37L45.42 129.11L47 134.88L42 131.6L37 134.88L38.58 129.11L33.92 125.37L39.88 125.09Z"/>
+  <path fill="#fff" d="M214 119.5L216.12 125.09L222.08 125.37L217.42 129.11L219 134.88L214 131.6L209 134.88L210.58 129.11L205.92 125.37L211.88 125.09Z"/>
+
+  <circle cx="128" cy="128" r="72" fill="#fff"/>
+
+  <use href="#wsl-seal-shield-shape" fill="url(#wsl-seal-shield)"/>
+  <!-- Right half one shade deeper: a single flat facet rather than a soft
+       gradient, because a gradient this small turns to mud when scaled to 56px. -->
+  <rect x="128" y="65" width="52" height="110" fill="#E2680B" clip-path="url(#wsl-seal-shield-clip)"/>
+  <path d="M107 121L122 136L150 103" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="36" y="175" width="184" height="42" rx="21" fill="url(#wsl-seal-ribbon)" stroke="#fff" stroke-width="5"/>
+  <path d="M48 196H62M194 196H208" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <text x="128" y="204" fill="#fff" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="800" text-anchor="middle" textLength="116" lengthAdjust="spacingAndGlyphs">VERIFIED</text>
+</svg>

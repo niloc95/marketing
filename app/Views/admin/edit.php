@@ -31,7 +31,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
         <div class="form-card">
             <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New profile' : 'Edit profile' ?></h1>
-                <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>">&larr; Back to profiles</a>
+                <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>"><?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?>Back to profiles</a>
             </div>
 
             <?php // Deliberately outside the form below — each thumbnail carries its

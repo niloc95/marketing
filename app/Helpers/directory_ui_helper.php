@@ -1,38 +1,271 @@
 <?php
 
-if (! function_exists('category_group_emoji')) {
+if (! function_exists('lucide')) {
     /**
-     * The icon for a category group.
+     * One Lucide icon, inlined.
      *
-     * Categories carry no icon column, so the whole icon system is this map.
-     * It must cover every group DirectoryCategoriesSeeder creates — anything
-     * missing falls through to the generic folder and looks like an oversight
-     * on the homepage tiles.
+     * The icons are vendored into resources/icons/ by scripts/sync-icons.js and
+     * committed, so this never reaches node_modules. They are inlined rather
+     * than served as files because both properties are built to make zero
+     * external requests, and because an <img> cannot inherit currentColor —
+     * which is the whole reason every one of these icons sits inside a
+     * text-emerald-600 or dark:text-slate-300 cascade and needs no variant.
+     *
+     * $class is the caller's, and it is the only place a size comes from: the
+     * vendored files have their width/height stripped, so an icon rendered
+     * without a height/width class fills its container rather than quietly
+     * defaulting to 24px. That is deliberate — it fails visibly.
+     *
+     * aria-hidden is on by default because an icon beside its own label is
+     * decoration. Pass ['aria-hidden' => null] to drop it for the rare icon
+     * that is the only content of its control, and give that one a label.
+     *
+     * @param array<string,string|null> $attrs Extra root attributes; null removes one.
      */
-    function category_group_emoji(?string $group): string
+    function lucide(string $name, string $class = '', array $attrs = []): string
+    {
+        static $cache = [];
+
+        if (! isset($cache[$name])) {
+            $path = ROOTPATH . 'resources/icons/' . $name . '.svg';
+
+            // Loud on purpose. A missing icon that renders as nothing is the
+            // failure that survives review and ships — every call site here is
+            // a fixed literal, so this can only fire on a typo or an icon
+            // dropped from the ICONS manifest without its callers.
+            if (! is_file($path)) {
+                throw new InvalidArgumentException(
+                    'Unknown Lucide icon "' . $name . '". Add it to ICONS in scripts/sync-icons.js.'
+                );
+            }
+
+            $cache[$name] = trim(file_get_contents($path));
+        }
+
+        // += and not array_merge: the caller's value wins for a key it set,
+        // including an explicit null to drop the attribute entirely.
+        $attrs += ['aria-hidden' => 'true'];
+        if ($class !== '') {
+            $attrs['class'] = $class;
+        }
+
+        $rendered = '';
+        foreach ($attrs as $key => $value) {
+            if ($value !== null) {
+                // html, not 'attr': the attr escaper percent-encodes every
+                // non-alphanumeric, which turns a class list into
+                // "h-6&#x20;w-6". That parses, but it is unreadable in view
+                // source and bloats every page. The value sits inside double
+                // quotes we control, so escaping & < > " ' is the right set.
+                $rendered .= ' ' . $key . '="' . esc((string) $value) . '"';
+            }
+        }
+
+        return substr_replace($cache[$name], $rendered, 4, 0);
+    }
+}
+
+if (! function_exists('verified_seal')) {
+    /**
+     * The Verified Business seal, inlined.
+     *
+     * The seal and the badge-verified pill are the same claim at two sizes. The
+     * pill carries it inline at 14px; the seal is the mark itself and needs
+     * roughly 56px before its ring text and scallops stop being mush, so it is
+     * only used where there is room — see verified.php, _verification_panel.php
+     * and _plan_cards.php. Below that size, use the pill.
+     *
+     * Read from FCPATH and not ROOTPATH . 'resources/', which is where lucide()
+     * looks, for two reasons: scripts/sync-icons.js deletes anything in
+     * resources/icons/ that is not in its manifest, and build-listing-app.js
+     * never copies resources/ into the deploy bundle but does copy public/. One
+     * file, and the same file is servable if an embeddable badge is ever built.
+     *
+     * Inlined rather than an <img> so the page's Inter reaches the two text runs
+     * — the file pins both with textLength, so a fallback font shifts the
+     * letterforms but never the layout.
+     *
+     * $class is the caller's and is the only source of size, like lucide().
+     * aria-hidden is on by default because every call site sits beside its own
+     * "Verified Business" wording; pass ['aria-hidden' => null] and give it a
+     * label for one that does not.
+     *
+     * @param array<string,string|null> $attrs Extra root attributes; null removes one.
+     */
+    function verified_seal(string $class = '', array $attrs = []): string
+    {
+        static $svg = null;
+
+        if ($svg === null) {
+            $path = FCPATH . 'assets/verified-seal.svg';
+
+            // Loud on purpose, for the same reason lucide() is: a trust mark
+            // that silently renders as nothing is worse than a page that fails.
+            if (! is_file($path)) {
+                throw new RuntimeException('Missing public/assets/verified-seal.svg.');
+            }
+
+            $svg = trim(file_get_contents($path));
+        }
+
+        $attrs += ['aria-hidden' => 'true'];
+        if ($class !== '') {
+            $attrs['class'] = $class;
+        }
+
+        $rendered = '';
+        foreach ($attrs as $key => $value) {
+            if ($value !== null) {
+                $rendered .= ' ' . $key . '="' . esc((string) $value) . '"';
+            }
+        }
+
+        return substr_replace($svg, $rendered, 4, 0);
+    }
+}
+
+if (! function_exists('header_quick_categories')) {
+    /**
+     * The categories on the header's quick-access strip.
+     *
+     * This exists so layouts/public.php can fetch its own chrome data. The
+     * alternative — threading a 'quickCats' key through every controller method
+     * that renders the layout — is eight call sites that all have to remember,
+     * and one that forgets renders a header with a row missing.
+     *
+     * Delegates to DirectoryService::topCategories(), which already filters to
+     * categories with listings. That filter is load-bearing, not cosmetic:
+     * renderLanding() 404s on an empty category, so an unfiltered list would put
+     * dead links in the header of every page on the site.
+     *
+     * Every failure path returns [] and the strip simply does not render. A
+     * helper called from the layout runs on /manage, /contact and the error
+     * pages too, so a database that has gone away must cost the strip and
+     * nothing else — throwing here would turn one dead table into a site-wide
+     * 500. Same read-through shape as HeroImageService::slides().
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    function header_quick_categories(int $limit = 6): array
+    {
+        // Keyed by limit: the memo is per-request, and a caller asking for a
+        // different count must not be served the first caller's slice.
+        static $memo = [];
+
+        if (isset($memo[$limit])) {
+            return $memo[$limit];
+        }
+
+        $key = 'header_quick_cats_' . $limit;
+
+        try {
+            $cached = cache()->get($key);
+            if (is_array($cached)) {
+                return $memo[$limit] = $cached;
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'Header category cache unavailable, reading through: ' . $e->getMessage());
+        }
+
+        try {
+            $cats = (new \App\Services\DirectoryService())->topCategories($limit);
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not read header categories, dropping the strip: ' . $e->getMessage());
+
+            return $memo[$limit] = [];
+        }
+
+        try {
+            // Ten minutes. The strip is the busiest categories on the site and
+            // that ordering moves over weeks, not minutes — but it is also two
+            // queries on every page render, which is what the TTL is really for.
+            cache()->save($key, $cats, 600);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Could not cache header categories: ' . $e->getMessage());
+        }
+
+        return $memo[$limit] = $cats;
+    }
+}
+
+if (! function_exists('category_group_style')) {
+    /**
+     * How a category group is drawn: its icon and its colour.
+     *
+     * Categories carry neither an icon nor a colour column, so this map is the
+     * whole system. It must cover every group DirectoryCategoriesSeeder creates
+     * — anything missing falls through to a generic grey folder and looks like
+     * an oversight on the homepage tiles.
+     *
+     * Both halves are names, never markup, and each has a counterpart that has
+     * to exist elsewhere or it fails quietly:
+     *
+     *   icon  a Lucide name, which must also be in ICONS in
+     *         scripts/sync-icons.js — lucide() throws if it is not.
+     *   tint  a class defined in resources/directory.css. A tint with no
+     *         matching .cat-tint-* rule is NOT an error: the consumers all
+     *         fall back to navy, so the tile renders looking merely unstyled.
+     *         That is the failure worth checking for by eye when adding a group.
+     *
+     * Kept as one map rather than two because a group's icon and its colour are
+     * one design decision, and splitting them is how they drift apart.
+     *
+     * @return array{icon: string, tint: string}
+     */
+    function category_group_style(?string $group): array
     {
         static $map = [
-            'Health & Medical'      => '🩺',
-            'Beauty & Wellness'     => '💆',
-            'Hair'                  => '💇',
-            'Motoring'              => '🚗',
-            'Legal & Financial'     => '⚖️',
-            'Home & Trades'         => '🔧',
-            'Professional Services' => '💼',
-            'Fitness & Sport'       => '🏋️',
-            'Education & Training'  => '🎓',
-            'Events & Hospitality'  => '🎉',
-            'Travel & Tourism'      => '✈️',
-            'Pets & Animals'        => '🐾',
-            'Everyday Services'     => '🧺',
-            'Retail & Other'        => '🛍️',
+            'Health & Medical'      => ['stethoscope',     'cat-tint-red'],
+            'Beauty & Wellness'     => ['sparkles',        'cat-tint-pink'],
+            'Hair'                  => ['scissors',        'cat-tint-fuchsia'],
+            'Motoring'              => ['car',             'cat-tint-blue'],
+            'Legal & Financial'     => ['scale',           'cat-tint-indigo'],
+            'Home & Trades'         => ['wrench',          'cat-tint-amber'],
+            'Professional Services' => ['briefcase',       'cat-tint-purple'],
+            'Fitness & Sport'       => ['dumbbell',        'cat-tint-orange'],
+            'Education & Training'  => ['graduation-cap',  'cat-tint-violet'],
+            'Events & Hospitality'  => ['party-popper',    'cat-tint-yellow'],
+            'Travel & Tourism'      => ['plane',           'cat-tint-sky'],
+            'Pets & Animals'        => ['paw-print',       'cat-tint-teal'],
+            'Everyday Services'     => ['washing-machine', 'cat-tint-cyan'],
+            'Retail & Other'        => ['shopping-bag',    'cat-tint-emerald'],
             // Was missing since the group was added, so every home-page tile for
             // a home baker rendered the generic folder — exactly what the note
             // above warns about.
-            'Home Industry & Handmade' => '🧁',
+            'Home Industry & Handmade' => ['cake-slice',   'cat-tint-lime'],
         ];
 
-        return $map[(string) $group] ?? '📁';
+        // Grey for an unmapped group, deliberately: it should look like nothing
+        // rather than borrow a real group's colour and read as a miscategorised
+        // listing. slate is reserved for exactly this and given to no group —
+        // Professional Services had it and looked like a styling bug rather
+        // than a decision, which is the same reason nothing else gets it.
+        [$icon, $tint] = $map[(string) $group] ?? ['folder', 'cat-tint-slate'];
+
+        return ['icon' => $icon, 'tint' => $tint];
+    }
+}
+
+if (! function_exists('category_group_icon')) {
+    /** The Lucide icon name for a category group. See category_group_style(). */
+    function category_group_icon(?string $group): string
+    {
+        return category_group_style($group)['icon'];
+    }
+}
+
+if (! function_exists('category_group_tint')) {
+    /**
+     * The colour class for a category group, e.g. 'cat-tint-red'.
+     *
+     * Returned as a whole literal class name and never concatenated, for the
+     * same reason _location_card.php spells out its four gradients: Tailwind
+     * scans these files as plain text, so a name assembled at runtime is
+     * unmatched and tree-shaken out of the built stylesheet.
+     */
+    function category_group_tint(?string $group): string
+    {
+        return category_group_style($group)['tint'];
     }
 }
 

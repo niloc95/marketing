@@ -60,11 +60,11 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Does it cost anything to list my business?',
-                'a' => 'No. Adding your business is free and stays free — no commission, no card required, and nothing about your listing is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, and it adds a trust mark rather than unlocking anything.',
+                'a' => 'No. Adding your business is free and stays free — no commission, no card required, and nothing about your listing is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, which adds a trust mark plus a couple of profile features — see below.',
             ],
             [
                 'q' => 'How much is the Verified Business badge, and what do I get?',
-                'a' => 'R' . esc((new App\Services\DirectorySettings())->badgePrice()) . ' a month. Your profile and every search result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It does not move you up the search results, and it does not add features — we sell the check, not the ranking.',
+                'a' => 'R' . esc((new App\Services\DirectorySettings())->badgePrice()) . ' a month. Your profile and every search result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also lets you list your team by name and add your other branch locations, and once your team is listed a search for one of your people — or for something only one of them does — brings up your business too. What it does <em>not</em> do is move you up the search results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',

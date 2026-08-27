@@ -61,13 +61,14 @@ $schema = schema_page(
             <?php $linkable = array_filter($cats, static fn ($c) => (int) $c['listing_count'] > 0); ?>
             <?php if ($linkable === []): continue; endif; ?>
             <div class="panel mb-6">
-                <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">
-                    <?= esc(category_group_emoji($groupName)) ?> <?= esc($groupName) ?>
+                <h2 class="mb-3 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <?php $style = category_group_style($groupName); ?><span class="cat-group-icon <?= $style['tint'] ?>"><?= lucide($style['icon'], 'h-5 w-5 shrink-0') ?></span><?= esc($groupName) ?>
                 </h2>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($linkable as $c): ?>
                         <?= view('directory/_chip', [
                             'label' => $c['name'],
+                            'tint'  => $style['tint'],
                             'href'  => base_url('directory/' . $c['slug']),
                             'count' => (int) $c['listing_count'],
                         ], ['saveData' => false]) ?>

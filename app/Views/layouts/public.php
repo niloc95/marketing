@@ -75,6 +75,32 @@
                       // stays as the last resort for large text-zoom settings. ?>
                 <span class="truncate max-[359px]:hidden">WebScheduler <span class="text-brand-orange">Local</span></span>
             </a>
+            <?php // The scrolled-state search. Collapsed to nothing at the top of the
+                  // page and revealed by .is-solid, which directory.js already writes
+                  // past 8px of scroll — so the bar is untouched over a hero, and the
+                  // moment you scroll away from a page's own .searchbar this takes over.
+                  //
+                  // One form, two shapes: inline between the brand and the nav on
+                  // desktop, and a wrapped full-width row beneath them on phones, where
+                  // the bar has no horizontal room to give. See .header-search.
+                  //
+                  // Carries `q` and nothing else. The page's own .searchbar keeps its
+                  // hidden lat/lng/radius fields precisely so refining a search does not
+                  // lose your position; this is the opposite gesture — a fresh search
+                  // from anywhere — and inheriting the last one's filters would silently
+                  // narrow it.
+                  //
+                  // role="search" with a name. The pages' own .searchbar forms carry no
+                  // role, so this is currently the only search landmark on the site —
+                  // but it is the one that is on every page, and it is the one that
+                  // appears and disappears under the reader, so it is worth naming. ?>
+            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Search the directory">
+                <input type="search" name="q" placeholder="Name, service or keyword" aria-label="Search the directory">
+                <button class="btn btn-primary" type="submit">
+                    <?= lucide('search', 'h-4 w-4 shrink-0') ?>
+                    <span>Search</span>
+                </button>
+            </form>
             <nav class="nav">
                 <?php // Three links is the most that stays visible without crowding the
                       // CTA; everything else lives in the panel below. Hidden on phones,
@@ -94,8 +120,8 @@
                       // the bottom of the panel — the bar has no width to spare, and a
                       // theme switch is not something anyone reaches for twice a session. ?>
                 <button type="button" class="theme-toggle hidden md:grid" data-theme-toggle aria-pressed="false" aria-label="Toggle dark mode">
-                    <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
-                    <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+                    <?= lucide('moon', 'h-5 w-5 dark:hidden') ?>
+                    <?= lucide('sun', 'hidden h-5 w-5 dark:block') ?>
                 </button>
                 <?php // Never goes in the panel: adding a listing is what the site is for,
                       // and hidden navigation measurably costs the actions put behind it.
@@ -119,11 +145,37 @@
                 <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
                       // aria-expanded — one source of truth for open/closed. ?>
                 <button type="button" class="menu-toggle md:hidden" data-menu-toggle aria-controls="site-menu" aria-expanded="false" aria-label="Menu">
-                    <svg class="h-5 w-5" data-menu-icon="open" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
-                    <svg class="hidden h-5 w-5" data-menu-icon="close" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                    <?= lucide('menu', 'h-5 w-5', ['data-menu-icon' => 'open']) ?>
+                    <?= lucide('x', 'hidden h-5 w-5', ['data-menu-icon' => 'close']) ?>
                 </button>
             </nav>
         </div>
+        <?php // Quick access to the busiest categories, on the same .is-solid reveal as
+              // the search above: scrolled past the fold there is otherwise no way to
+              // cross from one category to another without going back to the top.
+              //
+              // The layout fetches this itself rather than taking it from the view data
+              // — see header_quick_categories(). An empty list (no listings yet, or the
+              // database is unreachable) renders no strip at all, which is why the whole
+              // block is inside the guard rather than emitting an empty <nav>.
+              //
+              // Plain links, not directory/_chip: a chip is a tinted pill with a count,
+              // which is right for a page of categories to choose from and far too loud
+              // for a row of persistent chrome. ?>
+        <?php $quickCats = header_quick_categories(); ?>
+        <?php if ($quickCats !== []): ?>
+            <nav class="header-quick" aria-label="Popular categories">
+                <div class="container header-quick-list">
+                    <?php foreach ($quickCats as $quickCat): ?>
+                        <a href="<?= base_url('directory/' . $quickCat['slug']) ?>"><?= esc($quickCat['name']) ?></a>
+                    <?php endforeach; ?>
+                    <?php // Anchors the row: the six busiest categories are not the whole
+                          // directory, and without a way out the strip implies they are. ?>
+                    <a class="header-quick-all" href="<?= base_url('directory/categories') ?>">All categories</a>
+                </div>
+            </nav>
+        <?php endif; ?>
+
         <?php // Collapsed by default and md:hidden, so it can never appear on a desktop
               // where the same links are already on the bar. Same data-attribute contract
               // as the marketing site's header, deliberately — the two properties share
@@ -141,8 +193,8 @@
                   // handler is delegated. Labels name the theme you'd be switching TO,
                   // and swap on the same dark: variants as the icons. ?>
             <button type="button" class="mobile-menu-theme" data-theme-toggle aria-pressed="false">
-                <svg class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
-                <svg class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+                <?= lucide('moon', 'h-5 w-5 dark:hidden') ?>
+                <?= lucide('sun', 'hidden h-5 w-5 dark:block') ?>
                 <span class="dark:hidden">Dark mode</span>
                 <span class="hidden dark:inline">Light mode</span>
             </button>
@@ -250,6 +302,29 @@
           // measurement ID there is nothing for the visitor to consent to. ?>
     <?php if ($analyticsId !== ''): ?>
         <script defer src="<?= base_url('assets/consent.js') ?>?v=<?= @filemtime(FCPATH . 'assets/consent.js') ?: time() ?>" data-privacy-url="<?= esc(base_url('privacy'), 'attr') ?>"></script>
+    <?php endif; ?>
+    <?php // Hot reload, development only — the page half of npm run list:watch.
+          // The watcher (scripts/dev-reload.js) stamps a file when a view, helper
+          // or the compiled stylesheet changes and this polls it.
+          //
+          // A file with a src rather than an inline block, deliberately: CSP is
+          // enforced in development too, and scriptSrcElem is 'self' with no
+          // unsafe-inline, so an inline reloader would be dropped without a word.
+          // Being same-origin, it needs no {csp-script-nonce} — that placeholder
+          // is only for inline scripts.
+          //
+          // The ENVIRONMENT guard is the belt; the braces is that
+          // scripts/build-listing-app.js skips both dev-reload files when it
+          // assembles the bundle, so there is nothing to reference in production.
+          //
+          // The stamp check is not redundant with it. The watcher writes that file
+          // on startup and removes it on exit, so it doubles as "is the watcher
+          // running": without it, `npm run list:serve` on its own would load a
+          // client that polls a URL that isn't there and print ten 404s to the
+          // console before giving up. Start the watcher and the next page load
+          // picks it up. ?>
+    <?php if (ENVIRONMENT === 'development' && is_file(FCPATH . 'assets/.dev-reload.json')): ?>
+        <script defer src="<?= base_url('assets/dev-reload.js') ?>"></script>
     <?php endif; ?>
 </body>
 </html>

@@ -19,22 +19,60 @@ class Listing extends BaseController
 
     public function create()
     {
+        return $this->renderForm('free');
+    }
+
+    /**
+     * The same form, reached from the Verified Business card.
+     *
+     * Nothing here is a second signup path: it renders the identical fields and
+     * posts to the identical endpoint. The one difference is that the documents
+     * <details> arrives already open — someone who clicked "Get verified" has
+     * said that is what they came for, so folding it away again would hide the
+     * thing they came in for.
+     */
+    public function createVerified()
+    {
+        return $this->renderForm('verified');
+    }
+
+    /**
+     * @param string $plan 'free' or 'verified' — which of the two comparison
+     *                     cards the visitor arrived from. Presentation only;
+     *                     store() saves the same listing either way.
+     */
+    private function renderForm(string $plan)
+    {
         $svc = new DirectoryService();
 
         // Stamped here, checked in store() — see the timing floor below.
         session()->set('listing_form_rendered_at', time());
 
         $verification = new VerificationService();
+        $offered      = $verification->isEnabled();
+        $old          = session()->getFlashdata('old') ?? [];
+
+        // The plan picker switches plan with pushState, which does not change the
+        // Referer — so redirect()->back() after a failed submission can land on
+        // the other plan's URL and quietly undo the choice. The posted value is
+        // what the person actually picked, so it outranks the route.
+        if (isset($old['plan']) && in_array($old['plan'], ['free', 'verified'], true)) {
+            $plan = $old['plan'];
+        }
 
         return view('directory/form', [
-            'old'         => session()->getFlashdata('old') ?? [],
+            'old'         => $old,
             'errors'      => session()->getFlashdata('errors') ?? [],
             'categories' => $svc->categories(),
             'provinces'   => $svc->provinces(),
             // Off entirely when PayFast has no credentials — better to hide the
             // offer than to take documents for a badge we cannot sell.
-            'verificationOffered' => $verification->isEnabled(),
+            'verificationOffered' => $offered,
             'verificationAmount'  => $verification->monthlyAmount(),
+            // A /add-listing/verified link that outlives the offer being switched
+            // off falls back to the free form rather than rendering an upload for
+            // a badge nobody can buy.
+            'plan' => $offered ? $plan : 'free',
         ]);
     }
 
@@ -116,6 +154,13 @@ class Listing extends BaseController
             } else {
                 $verified['errors'][] = $applied['message'];
             }
+        } elseif ($this->request->getPost('plan') === 'verified') {
+            // Came in off the Verified Business card and attached nothing. Told,
+            // not blocked — for the same reason the whole block sits after the
+            // commit. Missing documents cost you the badge, never the listing.
+            $verified['errors'][] = 'Your listing is saved, but we did not receive both documents, '
+                . 'so no badge application was started. You can send them at any time from '
+                . 'manage your profile.';
         }
 
         return $this->withUploadErrors(

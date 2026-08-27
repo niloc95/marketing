@@ -9,6 +9,10 @@ $routes->get('/', 'Directory::home');
 
 // Public submission
 $routes->get('add-listing', 'Listing::create');
+// The same form, entered from the Verified Business card on the plan comparison.
+// A GET only: it posts to add-listing below, because it IS that form — the paid
+// path differs in what it shows, never in what it saves.
+$routes->get('add-listing/verified', 'Listing::createVerified');
 $routes->post('add-listing', 'Listing::store');
 // Renamed from /list-your-practice, a leftover from the healthcare-only era.
 // Permanent and kept indefinitely: the old path was indexed and is on printed
