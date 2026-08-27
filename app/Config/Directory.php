@@ -55,8 +55,35 @@ class Directory extends BaseConfig
      *
      * Attribution is not optional, for CARTO or any replacement; it must name
      * both OpenStreetMap (the data) and the tile host. See mapTileAttribution.
+     *
+     * CARTO now requires an API key on this endpoint — see mapTileKey below.
      */
     public string $mapTileUrl = 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+    /**
+     * CARTO basemap API key, appended to mapTileUrl by mapTileUrl().
+     *
+     * Empty here and set per environment as `directory.mapTileKey`, because it
+     * is tied to a domain and this file is committed.
+     *
+     * **Without it every tile is stamped "API KEY REQUIRED" diagonally, and
+     * nothing anywhere says so.** The watermarked tile comes back as HTTP 200,
+     * image/png, a valid 256×256 image — so there is no failed request, no
+     * console error, no CSP violation, and nothing in the logs. Leaflet renders
+     * it exactly as it would render a real tile. A *wrong* key is byte-identical
+     * to no key, which means a typo here cannot be detected by status code; the
+     * only tell is the tile payload (~3965 bytes watermarked, larger when real).
+     * That is why this is documented at length rather than left as one line.
+     *
+     * The key is free and covers commercial use: CARTO's FAQ says no account is
+     * needed and that you "do not need to tell us in advance whether your
+     * project is commercial", with a fair-use limit of 5 million tile requests
+     * per calendar month and a promise to get in touch rather than cut anyone
+     * off past it. Request one at https://carto.com/basemaps/apikey — the two
+     * binding conditions are that attribution stays visible (mapTileAttribution
+     * below) and that the key is not reused across unrelated projects.
+     */
+    public string $mapTileKey = '';
 
     /** Attribution HTML shown in the map corner. Required by every tile provider. */
     public string $mapTileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
@@ -236,10 +263,36 @@ class Directory extends BaseConfig
         return is_string($env) ? trim($env) : $this->healthToken;
     }
 
+    /**
+     * The tile URL the maps actually request, key included.
+     *
+     * The key is appended here rather than being baked into the configured URL
+     * so that a deployment sets one short value instead of pasting a whole
+     * templated URL with {z}/{x}/{y}{r} in it — which is easy to mangle, and
+     * mangles silently, because a broken tile URL looks like a blank map rather
+     * than an error.
+     *
+     * CARTO names the parameter `key`. Not `api_key`, not `apikey`: the wrong
+     * name is ignored and you get the watermark back with a 200, exactly as if
+     * you had sent nothing.
+     *
+     * The `key=` guard is what keeps a provider swap working. Point
+     * directory.mapTileUrl at a source that already carries its own credential
+     * and this leaves it alone rather than appending a second, wrong one.
+     */
     public function mapTileUrl(): string
     {
         $env = env('directory.mapTileUrl');
-        return is_string($env) && trim($env) !== '' ? trim($env) : $this->mapTileUrl;
+        $url = is_string($env) && trim($env) !== '' ? trim($env) : $this->mapTileUrl;
+
+        $envKey = env('directory.mapTileKey');
+        $key    = is_string($envKey) && trim($envKey) !== '' ? trim($envKey) : $this->mapTileKey;
+
+        if ($key === '' || str_contains($url, 'key=')) {
+            return $url;
+        }
+
+        return $url . (str_contains($url, '?') ? '&' : '?') . 'key=' . rawurlencode($key);
     }
 
     public function mapTileAttribution(): string

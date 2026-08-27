@@ -253,6 +253,16 @@ directory.healthToken = CHANGE-ME-RANDOM-HEX
 # Embed API only — it is visible in the page source.
 # directory.mapsEmbedKey = 'CHANGE-ME'
 
+# CARTO basemap key for the Leaflet maps — the search map, the profile map and
+# the listing form's pin picker. Free (no account, 5M tiles/month, commercial use
+# allowed) from https://carto.com/basemaps/apikey
+#
+# Set this. Without it every tile carries an "API KEY REQUIRED" watermark, and
+# nothing reports it: CARTO returns the watermarked tile as a valid HTTP 200 PNG,
+# so there is no error, no failed request and no log entry. A wrong key looks
+# identical to no key. Check the tiles by eye after setting it.
+directory.mapTileKey = 'CHANGE-ME'
+
 email.protocol = smtp
 email.SMTPHost = CHANGE-ME
 email.SMTPUser = CHANGE-ME

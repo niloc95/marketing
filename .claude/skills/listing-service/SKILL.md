@@ -184,6 +184,13 @@ plan switch does not change — so `renderForm()` lets a posted `plan` outrank t
 - First-time setup: `php spark migrate && php spark db:seed DirectoryCategoriesSeeder`.
 - `directory.adminEmail` (new-listing notifications), `directory.adminPasswordHash` (admin
   login — generate with `php spark directory:adminhash`, prints the value to set).
+- `directory.mapTileKey` — CARTO basemap key, free from https://carto.com/basemaps/apikey
+  (no account, 5M tiles/month, commercial use allowed). `Directory::mapTileUrl()` appends
+  it as `?key=`. **Its absence is invisible**: CARTO returns tiles stamped "API KEY
+  REQUIRED" as a valid HTTP 200 PNG, so there is no error, no failed request, no CSP
+  violation and nothing in the logs — and a wrong key is byte-identical to no key. The
+  only tell is the tile itself (~3965 bytes watermarked). Check maps by eye after setting
+  it; do not trust a status code.
 
 ### Keys that must NOT survive the trip to a production `.env`
 
@@ -286,7 +293,10 @@ than an error. When editing views:
   redirect it actually refused. `writable/logs/` records what the browser enforced.
 - **`img-src` picks up the map tile host at runtime** from `directory.mapTileUrl`. A
   blank grey map is the symptom of that being wrong, and it looks identical to a tile
-  provider outage — check `writable/logs/` for `CSP violation` first.
+  provider outage — check `writable/logs/` for `CSP violation` first. `originOf()` parses
+  out scheme+host only, so the `?key=` that `mapTileUrl()` appends does not affect the
+  policy — and a *watermarked* map, as opposed to a blank one, is never CSP: that is
+  `directory.mapTileKey` missing.
 
 ## Schema history worth knowing
 
