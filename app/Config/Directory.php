@@ -13,7 +13,7 @@ class Directory extends BaseConfig
     public string $siteName = 'WebScheduler Local';
 
     /** Default Open Graph / Twitter share image, used when a page has none of its own. */
-    public string $ogImage = 'assets/og-image.jpeg';
+    public string $ogImage = 'assets/brand/social-1080.png';
 
     /** Where new-submission notifications are sent. */
     public string $adminEmail = '';

@@ -5,7 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find someone local']) ?>
-    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/favicon.svg') ?>">
+    <?php // Official WebScheduler Local mark. favicon.ico carries 16-256 for older
+          // browsers; the PNGs let modern ones skip the .ico entirely. The artwork is
+          // a circular badge, so it reads as a shape and colour at these sizes rather
+          // than as a wordmark - that is expected, not a rendering fault. ?>
+    <link rel="icon" href="<?= base_url('favicon.ico') ?>" sizes="any">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('assets/brand/favicon-16.png') ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/brand/favicon-32.png') ?>">
+    <link rel="icon" type="image/png" sizes="48x48" href="<?= base_url('assets/brand/favicon-48.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('assets/brand/apple-touch-180.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/directory.css') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.css') ?: time() ?>">
     <meta name="theme-color" content="#003049" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)">
@@ -66,8 +74,8 @@
 <body>
     <header class="site-header">
         <div class="container">
-            <a class="brand" href="<?= base_url('/') ?>">
-                <span class="brand-mark">W</span>
+            <a class="brand" href="<?= base_url('/') ?>" aria-label="WebScheduler Local">
+                <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" style="background:none;display:block;object-fit:contain;" />
                 <?php // The full lockup fits from 360px up, which is every current phone.
                       // Narrower than that (SE 1st gen, a folded cover screen) the mark
                       // stands alone rather than truncating — "WebSchedul…" reads as a
@@ -238,14 +246,58 @@
           // properties read as one system. Rebuilt with directory.css semantic classes
           // rather than copied: the marketing markup leans on container-x and nav-link,
           // neither of which exists here. ?>
+
     <footer class="site-footer">
         <div class="container site-footer-grid">
             <div>
                 <a class="brand" href="<?= base_url('/') ?>">
-                    <span class="brand-mark">W</span>
+                    <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" style="background:none;display:block;object-fit:contain;" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
                 <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>
+                <?php // Newsletter -> Mautic (updates.webscheduler.co.za, form id 1).
+                      // Plain cross-origin POST: no JS, no CORS. Mautic stores the
+                      // contact, sends the double opt-in confirmation, then returns
+                      // here via mauticform[return].
+                      //
+                      // The input uses this site's own .field component - the same
+                      // wrapper the listing views use - so label and input inherit
+                      // light AND dark styling with no utility classes and no local
+                      // <style>. Do not reach for .header-search: that is the header
+                      // search bar, a different component that only looks similar.
+                      // w-full is not compiled here, hence the inline button width.
+                      //
+                      // mauticform[...] names are Mautic's field mapping - do not rename. ?>
+                <form action="https://updates.webscheduler.co.za/form/submit?formId=1" method="post" class="mt-4">
+                    <input type="hidden" name="mauticform[formId]" value="1">
+                    <input type="hidden" name="mauticform[formName]" value="newslettersignup">
+                    <input type="hidden" name="mauticform[return]" value="<?= base_url('/') ?>?subscribed=pending">
+
+                    <?php // Honeypot: display:none via .hidden. mauticform[honeypot]
+                          // is a real captcha-type field on the Mautic form and IS
+                          // validated server-side. ?>
+                    <div class="hidden" aria-hidden="true">
+                        <label>Leave this field empty
+                            <input type="text" name="mauticform[honeypot]" tabindex="-1" autocomplete="off">
+                        </label>
+                    </div>
+
+                    <div class="field">
+                        <label for="ws_email">Stay in the know</label>
+                        <input type="email" id="ws_email" name="mauticform[email]" required
+                               autocomplete="email" placeholder="you@business.co.za">
+                    </div>
+
+                    <button type="submit" name="mauticform[submit]" value="1"
+                            class="btn btn-accent mt-2" style="width:100%;">
+                        Subscribe
+                    </button>
+
+                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        One confirmation email. Unsubscribe anytime.
+                    </p>
+                </form>
+
             </div>
             <div class="site-footer-col">
                 <h3>Browse</h3>
