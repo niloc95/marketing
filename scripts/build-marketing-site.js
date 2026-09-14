@@ -196,6 +196,12 @@ const ALLOWED_HOSTS = new Set([
   // The directory SaaS — a separate CI4 app on its own subdomain, linked from
   // the nav/footer. Built by `npm run list:build`, deployed separately.
   'listing.webscheduler.co.za',
+  // Mautic, self-hosted on our own Lightsail instance. The newsletter form in
+  // the footer posts subscriptions here; Mautic stores the contact and sends
+  // the double opt-in confirmation. This is a form `action` to a first-party
+  // host we run, not a third-party processor — which is the distinction this
+  // guard exists to force someone to make consciously.
+  'updates.webscheduler.co.za',
   'www.googletagmanager.com',
   'www.google-analytics.com',
   // Content links inside the legal pages, not loaded resources: the privacy

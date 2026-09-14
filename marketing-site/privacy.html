@@ -235,6 +235,44 @@
           <span class="text-lg font-extrabold tracking-tight text-primary-900 dark:text-white">WebScheduler</span>
         </a>
         <p class="mt-4 max-w-xs text-sm text-slate-600 dark:text-slate-400">Appointment scheduling for service businesses — on your infrastructure, under your brand.</p>
+        <!-- Newsletter -> Mautic (updates.webscheduler.co.za, form id 1).
+             Plain cross-origin POST: no JS, no CORS. Mautic stores the contact,
+             sends the double opt-in confirmation, then returns via
+             mauticform[return]. The mauticform[...] names are Mautic's field
+             mapping - do not rename.
+             Every class here is already compiled into assets/styles.css, and the
+             input carries the same class string as the contact.html fields, so
+             this needs no Tailwind rebuild. aria-label rather than a
+             visually-hidden label because .sr-only is NOT compiled. -->
+        <form action="https://updates.webscheduler.co.za/form/submit?formId=1" method="post" class="mt-8">
+          <h3 class="text-sm font-semibold text-primary-900 dark:text-white">Stay in the know</h3>
+
+          <input type="hidden" name="mauticform[formId]" value="1" />
+          <input type="hidden" name="mauticform[formName]" value="newslettersignup" />
+          <input type="hidden" name="mauticform[return]" value="https://webscheduler.co.za/?subscribed=pending" />
+
+          <!-- Honeypot. display:none via .hidden - the same idiom contact.html
+               uses for company_website_hp. mauticform[honeypot] is a real
+               captcha-type field on the Mautic form and IS validated server-side. -->
+          <div class="hidden" aria-hidden="true">
+            <label>Leave this field empty
+              <input type="text" name="mauticform[honeypot]" tabindex="-1" autocomplete="off" />
+            </label>
+          </div>
+
+          <input type="email" name="mauticform[email]" required autocomplete="email"
+                 aria-label="Email address" placeholder="you@business.co.za"
+                 class="mt-2 w-full rounded-xl border-slate-300 bg-white text-primary-900 focus:border-brand-orange focus:ring-brand-orange dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+
+          <button type="submit" name="mauticform[submit]" value="1" class="btn-accent mt-3 w-full">
+            Subscribe
+          </button>
+
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            One confirmation email. Unsubscribe anytime.
+          </p>
+        </form>
+
       </div>
       <div>
         <h3 class="text-sm font-semibold text-primary-900 dark:text-white">Product</h3>
