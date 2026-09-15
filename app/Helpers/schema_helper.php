@@ -441,6 +441,10 @@ if (! function_exists('schema_local_business')) {
 
         $hours = schema_opening_hours($l['trading_hours'] ?? null);
 
+        // The owner's own booking page, as the action a search result can offer.
+        $bookingUrl = safe_external_url($l['booking_url'] ?? '');
+        $reserve    = $bookingUrl !== '' ? ['@type' => 'ReserveAction', 'target' => $bookingUrl] : null;
+
         // Both contact numbers, in the order the profile shows them, with blanks
         // dropped — a listing with only an alternative number still gets one.
         $phones = array_values(array_filter([
@@ -490,6 +494,7 @@ if (! function_exists('schema_local_business')) {
             'openingHoursSpecification' => $hours !== [] ? $hours : null,
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
+            'potentialAction'          => $reserve,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }

@@ -287,7 +287,10 @@ class DirectoryListingMutationService
             'trading_hours'          => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []),
             'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
             'offers_delivery'        => empty($input['offers_delivery']) ? 0 : 1,
-            'offers_online_booking'  => empty($input['offers_online_booking']) ? 0 : 1,
+            // A booking link implies the flag, so the profile can never show a
+            // Book online button beside a listing that says it books offline.
+            'offers_online_booking'  => empty($input['offers_online_booking']) && (string) $this->normaliseUrl($input['booking_url'] ?? '') === '' ? 0 : 1,
+            'booking_url'            => (string) $this->normaliseUrl($input['booking_url'] ?? ''),
             'slug'           => ensure_unique_slug($this->listings, 'slug', (string) $input['display_name'], $existingId, listing_reserved_slugs()),
             'status'         => 'pending',
             'is_verified'    => 0,
@@ -528,7 +531,7 @@ class DirectoryListingMutationService
                     // naming it directly is ignored by the loop above.
                     $data[$field]             = $this->richText($input[$field]);
                     $data['description_text'] = RichText::toPlainText($data[$field]);
-                } elseif ($field === 'website') {
+                } elseif (in_array($field, ['website', 'booking_url'], true)) {
                     // validate() has already rejected anything normaliseUrl
                     // can't make safe, so the ?? '' here is belt-and-braces.
                     $data[$field] = $this->normaliseUrl($input[$field]) ?? '';
@@ -563,6 +566,13 @@ class DirectoryListingMutationService
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;
             $data['offers_delivery']       = empty($input['offers_delivery']) ? 0 : 1;
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
+        }
+
+        // A booking link implies the flag — see buildListingData(). Read from
+        // the merged row so a partial POST that leaves the link alone still
+        // cannot switch the flag off underneath it.
+        if ((string) ($data['booking_url'] ?? $listing['booking_url'] ?? '') !== '') {
+            $data['offers_online_booking'] = 1;
         }
 
         // ListingGeocoder decides whether this save needs a lookup at all — an
@@ -664,6 +674,7 @@ class DirectoryListingMutationService
         'phone'          => [40, 'phone number'],
         'email'          => [190, 'email'],
         'website'        => [255, 'website'],
+        'booking_url'    => [255, 'booking page address'],
         'address_line'   => [255, 'street address'],
         'address_line_2' => [255, 'address line 2'],
         'suburb'         => [120, 'suburb'],
@@ -725,19 +736,25 @@ class DirectoryListingMutationService
         // promotes a bare "example.co.za" to "https://example.co.za", so a
         // 250-character bare host passes a check on the input and then
         // overflows the 255-wide column once those eight characters are added.
-        $website = $this->normaliseUrl($input['website'] ?? '');
-        if ($website === null) {
-            $errors['website'] = 'Please enter a valid website address starting with http:// or https://.';
-        } elseif (mb_strlen($website) > self::MAX_LENGTHS['website'][0]) {
-            $errors['website'] = sprintf(
-                'Please keep the website address under %d characters.',
-                self::MAX_LENGTHS['website'][0] + 1
-            );
+        //
+        // booking_url is rendered into an href exactly like website, so it gets
+        // the same check — including refusing "javascript:".
+        foreach (['website' => 'website address', 'booking_url' => 'booking page address'] as $field => $label) {
+            $url = $this->normaliseUrl($input[$field] ?? '');
+            if ($url === null) {
+                $errors[$field] = sprintf('Please enter a valid %s starting with http:// or https://.', $label);
+            } elseif (mb_strlen($url) > self::MAX_LENGTHS[$field][0]) {
+                $errors[$field] = sprintf(
+                    'Please keep the %s under %d characters.',
+                    $label,
+                    self::MAX_LENGTHS[$field][0] + 1
+                );
+            }
         }
 
         foreach (self::MAX_LENGTHS as $field => [$max, $label]) {
-            // website is checked above, against its normalised form.
-            if ($field === 'website' || isset($errors[$field]) || ! isset($input[$field])) {
+            // The URL fields are checked above, against their normalised form.
+            if (in_array($field, ['website', 'booking_url'], true) || isset($errors[$field]) || ! isset($input[$field])) {
                 continue;
             }
             if (mb_strlen($this->clean($input[$field])) > $max) {

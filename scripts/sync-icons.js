@@ -43,6 +43,8 @@ const ICONS = [
   'moon', 'sun', 'menu', 'x', 'search',
   // Listing cards and profiles.
   'map-pin', 'star', 'badge-check', 'share', 'link', 'check',
+  // Profile contact card: website row and the Suggest an edit link.
+  'external-link', 'square-pen',
   // Navigation and disclosure.
   'arrow-right', 'arrow-left', 'chevron-left', 'chevron-right', 'chevron-down',
   // Map controls.

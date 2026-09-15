@@ -81,19 +81,6 @@ helper('directory_hours');
         <?php if ($err('display_name')): ?><div class="err"><?= esc($err('display_name')) ?></div><?php endif; ?>
     </div>
     <div class="field">
-        <label>Contact person</label>
-        <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150">
-        <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
-    </div>
-</div>
-
-<div class="form-row">
-    <div class="field">
-        <label>Title</label>
-        <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…">
-        <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
-    </div>
-    <div class="field">
         <label>Email *</label>
         <?php if ($lockEmail): ?>
             <input type="email" value="<?= esc($v('email'), 'attr') ?>" readonly disabled class="bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
@@ -104,6 +91,26 @@ helper('directory_hours');
         <?php endif; ?>
     </div>
 </div>
+
+<?php // Title and contact person name a private individual, so they are kept for
+      // administration only — _contact_panel.php does not render either. The
+      // fieldset says so up front rather than leaving owners to guess. ?>
+<fieldset class="form-private">
+    <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
+    <div class="form-row">
+        <div class="field">
+            <label>Title</label>
+            <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…">
+            <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
+        </div>
+        <div class="field">
+            <label>Contact person</label>
+            <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150">
+            <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
+        </div>
+    </div>
+    <div class="hint">For our records, and so we know who to address when we contact you about this listing.</div>
+</fieldset>
 
 <div class="form-row">
     <div class="field">
@@ -172,6 +179,14 @@ helper('directory_hours');
 </div>
 <div class="field">
     <label class="font-medium"><input type="checkbox" name="offers_online_booking" value="1" <?= $v('offers_online_booking') ? 'checked' : '' ?>> Offers online booking</label>
+</div>
+<?php // Always visible rather than revealed by the checkbox, so it works with
+      // JavaScript off. Filling it in ticks the box server-side anyway. ?>
+<div class="field">
+    <label for="booking_url">Online booking page</label>
+    <input type="text" id="booking_url" name="booking_url" value="<?= esc($v('booking_url'), 'attr') ?>" maxlength="255" placeholder="https://…">
+    <div class="hint">Where customers book an appointment. Shown as a <em>Book online</em> button on your profile.</div>
+    <?php if ($err('booking_url')): ?><div class="err"><?= esc($err('booking_url')) ?></div><?php endif; ?>
 </div>
 
 <div data-address-autocomplete
@@ -293,19 +308,21 @@ helper('directory_hours');
     <div class="upload-preview" data-image-preview></div>
     <div class="hint">JPEG, PNG, WebP, GIF, BMP or AVIF — up to 10 MB, resized automatically.</div>
 </div>
-<div class="field">
+<?php // Rendered even when the gallery is full, just hidden: deleting a photo
+      // happens in place now (see _gallery_manage.php), so the script needs an
+      // input to reveal when a slot frees up rather than a page reload. ?>
+<div class="field" data-gallery-upload>
     <label for="gallery-input">Photo gallery</label>
-    <?php if ($gallerySlots > 0): ?>
+    <div data-gallery-open <?= $gallerySlots > 0 ? '' : 'hidden' ?>>
         <input type="file" id="gallery-input" name="gallery[]" accept="image/*" multiple
                data-image-upload="multi" data-max-files="<?= (int) $gallerySlots ?>">
         <div class="upload-preview" data-image-preview></div>
         <div class="hint">
-            Up to <?= (int) $gallerySlots ?> more photo<?= $gallerySlots === 1 ? '' : 's' ?>, 10 MB each.
+            Up to <span data-gallery-slots><?= (int) $gallerySlots ?> more photo<?= $gallerySlots === 1 ? '' : 's' ?></span>, 10 MB each.
             Any common photo format — resized and optimised automatically.
         </div>
-    <?php else: ?>
-        <div class="hint">This profile already has the maximum number of photos. Delete one above to add another.</div>
-    <?php endif; ?>
+    </div>
+    <div class="hint" data-gallery-full <?= $gallerySlots > 0 ? 'hidden' : '' ?>>This profile already has the maximum number of photos. Delete one above to add another.</div>
 </div>
 
 <?php if ($showConsent): ?>

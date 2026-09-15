@@ -223,23 +223,34 @@ class Manage extends BaseController
      */
     public function deletePhoto(int $photoId)
     {
+        // An in-place delete from the edit page's script gets JSON, so the page
+        // does not reload and lose unsaved edits — see photoDeleteJson(). A
+        // plain form post (no JavaScript) still gets the redirect.
+        $ajax = $this->request->isAJAX();
+
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your profile.');
+            $message = 'Your session has ended. Please request a new link to manage your profile.';
+
+            return $ajax
+                ? $this->photoDeleteJson(false, $message, 401)
+                : redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
         }
 
         $model = new DirectoryListingPhotoModel();
         $photo = $model->find($photoId);
 
         if (! is_array($photo) || (int) $photo['listing_id'] !== (int) $listing['id']) {
-            return redirect()->to(base_url('manage/edit'))
-                ->with('error', 'That photo could not be found.');
+            return $ajax
+                ? $this->photoDeleteJson(false, 'That photo could not be found.', 404)
+                : redirect()->to(base_url('manage/edit'))->with('error', 'That photo could not be found.');
         }
 
         $model->deleteWithFile($photo);
 
-        return redirect()->to(base_url('manage/edit'))->with('success', 'Photo removed.');
+        return $ajax
+            ? $this->photoDeleteJson(true, 'Photo removed.', 200, (int) $listing['id'])
+            : redirect()->to(base_url('manage/edit'))->with('success', 'Photo removed.');
     }
 
     /**

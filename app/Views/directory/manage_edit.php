@@ -45,7 +45,9 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
                         <?php endif; ?>
                     </p>
                 </div>
-                <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/signout') ?>">Sign out</a>
+                <?php // data-draft-signout: signing out also drops this browser's
+                      // unsaved-draft copy, so the details don't linger on a shared PC. ?>
+                <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/signout') ?>" data-draft-signout>Sign out</a>
             </div>
 
             <?php // Same reason as the gallery below: this panel posts its own form. ?>
@@ -66,7 +68,12 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
                 'max'        => $galleryMax,
             ]) ?>
 
-            <form method="post" action="<?= base_url('manage/edit') ?>" enctype="multipart/form-data">
+            <?php // data-draft: directory.js keeps a browser-side copy of unsaved edits
+                  // and puts them back after any reload. The version is what tells a
+                  // draft apart from one made before the listing was saved elsewhere. ?>
+            <form method="post" action="<?= base_url('manage/edit') ?>" enctype="multipart/form-data"
+                  data-draft="manage-<?= (int) $listing['id'] ?>"
+                  data-draft-version="<?= esc((string) ($listing['updated_at'] ?? ''), 'attr') ?>">
                 <?= csrf_field() ?>
 
                 <?= view('directory/_form_fields', [

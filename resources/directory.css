@@ -1099,6 +1099,27 @@
   .dark .kv .k { @apply text-slate-400; }
   .dark .panel h3 { @apply text-white; }
 
+  /* The contact card: value on the left, icon on the right, one row each. Its
+     own rows rather than .kv because there is no label column — the icon is
+     the label, so the value gets the full width for a long address. */
+  .contact-book { @apply mb-3 gap-2; }
+  .contact-row {
+    @apply flex items-center justify-between gap-3 border-b border-slate-100
+           py-2.5 text-sm last:border-0;
+  }
+  .contact-row > svg { @apply h-5 w-5 shrink-0 text-slate-400; }
+  .contact-row a:not(.reveal-btn) { @apply break-words font-medium text-primary-500 hover:underline; }
+  .contact-sub       { @apply mt-0.5 block text-slate-500; }
+  .contact-suggest {
+    @apply mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500
+           hover:text-primary-500 hover:underline;
+  }
+  .contact-suggest svg { @apply h-4 w-4 shrink-0; }
+  .dark .contact-row         { @apply border-slate-800; }
+  .dark .contact-row a:not(.reveal-btn) { @apply text-primary-300; }
+  .dark .contact-sub         { @apply text-slate-400; }
+  .dark .contact-suggest     { @apply text-slate-400 hover:text-primary-300; }
+
   /* ---------------------------------------------------------------- gallery */
   /* Already dark by design (slate-900/90 scrim, white controls) — no override. */
   .gallery      { @apply mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4; }
@@ -1269,6 +1290,24 @@
   }
   .hint { @apply mt-1 text-xs text-slate-500; }
   .err  { @apply mt-1 text-xs font-medium text-brand-crimson; }
+  /* Unsaved edits put back after a reload — see "draft backup" in directory.js. */
+  .draft-banner {
+    @apply mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border
+           border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900;
+  }
+  .draft-banner p { @apply m-0 min-w-0 flex-1 basis-60; }
+  .dark .draft-banner { @apply border-amber-500/30 bg-amber-500/10 text-amber-200; }
+
+  /* Fields kept for administration only — see _form_fields.php. */
+  .form-private {
+    @apply mb-4 rounded-xl border border-dashed border-slate-300 px-4 pb-4 pt-2;
+  }
+  .form-private .field  { @apply mb-0; }
+  .form-private legend  { @apply px-1 text-sm font-semibold text-slate-700; }
+  .form-private-note    { @apply ml-1 font-normal text-slate-500; }
+  .dark .form-private        { @apply border-slate-700; }
+  .dark .form-private legend { @apply text-slate-200; }
+  .dark .form-private-note   { @apply text-slate-400; }
   .dark .form-card   { @apply border-slate-800 bg-[#1a202c]; }
   .dark .field label { @apply text-slate-200; }
   .dark .field input[type="text"],
@@ -1560,6 +1599,8 @@
   .photo-manage-head { @apply mb-3 flex flex-wrap items-baseline justify-between gap-2; }
   .photo-manage-head h2   { @apply text-sm font-semibold text-slate-700; }
   .photo-manage-head .hint { @apply mt-0; }
+  /* A delete that failed in place — see "photo delete" in directory.js. */
+  .photo-manage-error { @apply mb-3 text-xs font-medium text-brand-crimson; }
   .photo-manage-grid { @apply grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6; }
   .photo-manage-item { @apply relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white; }
   .photo-manage-item img { @apply h-full w-full object-cover; }

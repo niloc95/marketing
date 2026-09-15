@@ -201,17 +201,24 @@ class Admin extends BaseController
     /** Remove one gallery photo. Admin authority is unrestricted by listing. */
     public function deletePhoto(int $photoId)
     {
+        // JSON for the edit page's in-place delete, a redirect for a plain post —
+        // same split, and same reason, as Manage::deletePhoto().
+        $ajax  = $this->request->isAJAX();
         $model = new DirectoryListingPhotoModel();
         $photo = $model->find($photoId);
 
         if (! is_array($photo)) {
-            return redirect()->to(base_url('admin'))->with('error', 'That photo could not be found.');
+            return $ajax
+                ? $this->photoDeleteJson(false, 'That photo could not be found.', 404)
+                : redirect()->to(base_url('admin'))->with('error', 'That photo could not be found.');
         }
 
         $listingId = (int) $photo['listing_id'];
         $model->deleteWithFile($photo);
 
-        return redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Photo removed.');
+        return $ajax
+            ? $this->photoDeleteJson(true, 'Photo removed.', 200, $listingId)
+            : redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Photo removed.');
     }
 
     // ------------------------------------------------------------------ actions

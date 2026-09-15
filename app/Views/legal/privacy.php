@@ -86,12 +86,12 @@ $contact   = config('Directory')->adminEmail();
                 <li>Operating hours</li>
                 <li>Whether you accept card payments</li>
                 <li>Whether you offer delivery</li>
-                <li>Whether you accept online bookings</li>
+                <li>Whether you accept online bookings, and a link to your online booking page</li>
             </ul>
 
             <h3>Contact information</h3>
             <ul>
-                <li>Contact person's name and title</li>
+                <li>Contact person's name and title (kept for administration and not published on your profile)</li>
                 <li>Email address</li>
                 <li>Telephone number</li>
                 <li>Website address</li>

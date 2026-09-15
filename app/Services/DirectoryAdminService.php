@@ -167,6 +167,7 @@ class DirectoryAdminService
             'phone'          => null,
             'phone_alt'      => null,
             'website'        => 'url',
+            'booking_url'    => 'url',
             'address_line'   => null,
             // The form posts this and owners can edit it; leaving it out here
             // meant an admin could fix a unit number, be told "Listing saved.",
@@ -192,9 +193,11 @@ class DirectoryAdminService
                 // correctly refuses to render a link with no scheme.
                 $normalised = (new DirectoryListingMutationService())->normaliseUrl($value);
                 if ($normalised === null) {
+                    $label = $field === 'booking_url' ? 'booking page address' : 'website address';
+
                     return [
                         'ok'      => false,
-                        'errors'  => ['website' => 'Please enter a valid website address starting with http:// or https://.'],
+                        'errors'  => [$field => 'Please enter a valid ' . $label . ' starting with http:// or https://.'],
                         'message' => 'Please correct the highlighted fields.',
                     ];
                 }
@@ -260,6 +263,15 @@ class DirectoryAdminService
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;
             $data['offers_delivery']       = empty($input['offers_delivery']) ? 0 : 1;
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
+        }
+
+        // A booking link implies the flag, on the same terms as the public and
+        // owner paths in DirectoryListingMutationService. The stored row fills
+        // in when this request leaves the link alone.
+        $bookingUrl = $data['booking_url']
+            ?? ($id !== null ? (string) (($this->listings->find($id) ?? [])['booking_url'] ?? '') : '');
+        if ((string) $bookingUrl !== '') {
+            $data['offers_online_booking'] = 1;
         }
 
         // Note what is NOT here: verified_until. Even this privileged path

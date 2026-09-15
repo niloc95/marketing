@@ -134,7 +134,10 @@ class Directory extends BaseController
                 'url'      => base_url('directory/' . $l['slug']),
                 'logo'     => listing_image_url($l['logo_path'] ?? null),
                 'openNow'  => hours_is_open_now($hours),
-                'booking'  => ! empty($l['offers_online_booking']),
+                // The link itself, not the flag: a Book button needs somewhere to
+                // go, and the flag alone used to send people to a #book anchor
+                // no profile rendered.
+                'bookingUrl' => safe_external_url($l['booking_url'] ?? ''),
                 'directions' => map_directions_url($l),
                 // Metres, or null when the visitor gave no position. The browser
                 // decides how to phrase it — see 'approx' below.

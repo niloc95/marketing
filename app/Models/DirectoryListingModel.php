@@ -22,7 +22,7 @@ class DirectoryListingModel extends Model
         'logo_path', 'slug', 'status', 'is_verified',
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'verified_until', 'source', 'source_url', 'claim_token',
-        'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
+        'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
     ];
 
     /**
@@ -54,13 +54,17 @@ class DirectoryListingModel extends Model
      * only by hand-crafting a POST. Re-add them here when (and only when) the
      * edit form gains the fields and they go through
      * DirectoryListingMutationService::normaliseUrl() like `website` does.
+     *
+     * booking_url is here on exactly those terms: the form renders it, and
+     * updateOwn() and validate() put it through normaliseUrl() alongside
+     * `website`, so a "javascript:" value is refused before it reaches an href.
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
         'credentials', 'description', 'phone', 'phone_alt', 'website',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'logo_path',
-        'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking',
+        'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
     ];
 
     protected $validationRules = [

@@ -1,8 +1,9 @@
 /* WebScheduler Directory — small page behaviour.
-   Fourteen independent modules (theme toggle / header on scroll / mobile menu /
-   plan picker / reveal / gallery lightbox / share / image uploads / verification documents /
-   address autocomplete / map pin picker / trading hours / description rich text /
-   home hero rotation), each a no-op if its markup isn't on the page. Event delegation from one
+   Sixteen independent modules (theme toggle / header on scroll / mobile menu /
+   plan picker / reveal / gallery lightbox / share / image uploads / photo delete /
+   verification documents / address autocomplete / map pin picker / trading hours /
+   description rich text / home hero rotation / draft backup), each a no-op if its
+   markup isn't on the page. Event delegation from one
    listener each, so this works for content injected later too.
 
    Two modules have a dependency, both loaded ahead of this file on the three
@@ -22,6 +23,16 @@
   //   reverse-geocoded address after dragging the marker fills the fields.
   var setPinFromSuggestion = null;
   var applySuggestedAddress = null;
+
+  // Two more of the same kind, both used only by the draft backup module at the
+  // bottom of this file to put restored values back into widgets that keep
+  // their own state rather than reading their inputs.
+  //
+  // setDescriptionHtml — set by the description editor (Quill).
+  // movePinTo — set by the pin picker; the restored coordinate inputs already
+  //   hold the values, this only moves the marker onto them.
+  var setDescriptionHtml = null;
+  var movePinTo = null;
 
   // -------------------------------------------------------- theme toggle
   // The .dark class is already on <html> — the blocking guard in the layout's
@@ -400,12 +411,15 @@
     if (!preview) return;
 
     var multiple = input.getAttribute('data-image-upload') === 'multi';
-    var maxFiles = multiple ? (parseInt(input.getAttribute('data-max-files'), 10) || 8) : 1;
     var current  = []; // [{ file, url }] — the accepted, already-processed set
 
     input.addEventListener('change', function () {
       var picked = Array.prototype.slice.call(input.files || []);
       if (!picked.length) return;
+
+      // Read at pick time, not once at load: deleting a gallery photo in place
+      // (see "photo delete" below) raises the cap without reloading the page.
+      var maxFiles = multiple ? (parseInt(input.getAttribute('data-max-files'), 10) || 8) : 1;
 
       // Re-picking always replaces: the browser hands us a fresh FileList, and
       // merging it with the previous one would duplicate anything reselected.
@@ -564,6 +578,97 @@
       e.preventDefault();
     }
   });
+
+  // ------------------------------------------------------------ photo delete
+  // Deletes a gallery photo on the edit pages without leaving the page.
+  //
+  // Each thumbnail's delete button is its own small form outside the main
+  // listing form (forms cannot nest). Posted normally it redirects back to the
+  // edit page — and that reload silently threw away every unsaved change in
+  // the main form: edit the hours, delete a photo to swap it, hours gone.
+  //
+  // A cancelled confirm above stops the click, so no submit event reaches this.
+  // Without this script the forms still post and redirect exactly as before.
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest ? e.target.closest('form[data-photo-delete]') : null;
+    if (!form || !window.fetch || !window.FormData) return;
+    e.preventDefault();
+
+    var panel = form.closest('[data-photo-manage]');
+    var item  = form.closest('[data-photo-item]');
+    var errEl = panel && panel.querySelector('[data-photo-error]');
+    var btn   = form.querySelector('button');
+    if (btn) btn.disabled = true;
+    if (errEl) errEl.hidden = true;
+
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+    })
+      .then(function (res) {
+        // A redirect to the login page answers with HTML, not JSON.
+        return res.json().catch(function () { return null; });
+      })
+      .then(function (data) {
+        // The server regenerates the CSRF token on every POST, so every token
+        // field left on the page is now stale — including the main form's,
+        // which would make the next Save fail. Refresh them all, whatever the
+        // outcome of the delete itself.
+        if (data && data.csrf && data.csrf.name) {
+          document.querySelectorAll('input[name="' + data.csrf.name + '"]').forEach(function (input) {
+            input.value = data.csrf.hash;
+          });
+        }
+
+        if (!data || !data.ok) {
+          if (btn) btn.disabled = false;
+          if (errEl) {
+            errEl.textContent = (data && data.message) || 'That photo could not be deleted. Please reload the page and try again.';
+            errEl.hidden = false;
+          }
+          return;
+        }
+
+        if (item) item.remove();
+        syncGalleryCounts(panel, data.remaining, data.slots);
+      })
+      .catch(function () {
+        if (btn) btn.disabled = false;
+        if (errEl) {
+          errEl.textContent = 'That photo could not be deleted — check your connection and try again.';
+          errEl.hidden = false;
+        }
+      });
+  });
+
+  // Keep the "N of 8 used" line and the upload field's cap in step with what
+  // the server says is left, so a freed slot can be filled before saving.
+  function syncGalleryCounts(panel, remaining, slots) {
+    if (panel) {
+      var count = panel.querySelector('[data-photo-count]');
+      var max   = count ? parseInt(count.getAttribute('data-max'), 10) || 8 : 8;
+      if (remaining === 0) {
+        panel.remove();
+      } else if (count && typeof remaining === 'number') {
+        var left = max - remaining;
+        count.textContent = remaining + ' of ' + max + ' used' +
+          (left > 0 ? ' — ' + left + ' slot' + (left === 1 ? '' : 's') + ' left' : '');
+      }
+    }
+
+    var upload = document.querySelector('[data-gallery-upload]');
+    if (!upload || typeof slots !== 'number') return;
+    var open  = upload.querySelector('[data-gallery-open]');
+    var full  = upload.querySelector('[data-gallery-full]');
+    var input = upload.querySelector('input[type="file"]');
+    var label = upload.querySelector('[data-gallery-slots]');
+    if (input) input.setAttribute('data-max-files', String(slots));
+    if (label) label.textContent = slots + ' more photo' + (slots === 1 ? '' : 's');
+    if (open) open.hidden = slots <= 0;
+    if (full) full.hidden = slots > 0;
+  }
 
   // ------------------------------------------------- verification documents
   // Downscale a photographed ID or certificate before it is submitted.
@@ -1018,6 +1123,14 @@
         hideSuggestion();
         placeMarker(lat, lng, { write: false });
         say('Drag the marker if this is not the right spot.');
+      };
+
+      // For the draft backup: the coordinate inputs were restored already, so
+      // only the marker has to follow them.
+      movePinTo = function (lat, lng) {
+        hideSuggestion();
+        placeMarker(lat, lng, { write: false });
+        if (resetBtn) resetBtn.hidden = false;
       };
 
       if (suggestAccept) {
@@ -1477,8 +1590,10 @@
 
     html += '<div class="map-popup-actions">';
     html += '<a class="map-popup-btn" href="' + e(item.url) + '">View listing</a>';
-    if (item.booking) {
-      html += '<a class="map-popup-btn" href="' + e(item.url) + '#book">Book</a>';
+    // Straight to the business's booking page. The URL was vetted server-side
+    // (safe_external_url) and is escaped here like every other value.
+    if (item.bookingUrl) {
+      html += '<a class="map-popup-btn" href="' + e(item.bookingUrl) + '" target="_blank" rel="noopener nofollow">Book</a>';
     }
     if (item.directions) {
       html += '<a class="map-popup-btn" href="' + e(item.directions) + '" target="_blank" rel="noopener nofollow">Directions</a>';
@@ -1871,17 +1986,10 @@
       counter.classList.toggle('is-over', used > MAX);
     }
 
-    quill.on('text-change', function (delta, old, source) {
-      // Only undo the user's own overflow. Reverting a programmatic change
-      // would fight with the seeding above and with the clean button.
-      if (source === 'user' && plainLength() > MAX) {
-        quill.history.undo();
-      }
-      render();
-    });
-    render();
-
-    form.addEventListener('submit', function () {
+    // Copy the editor into the real field. On submit, as it always has, and now
+    // on every change too — the draft backup reads the textarea, and without
+    // this a description edit would be the one change it could not see.
+    function syncTextarea() {
       // getSemanticHTML() is Quill 2's markup export; the older editors used
       // root.innerHTML, which also carries Quill's own UI nodes.
       var html = typeof quill.getSemanticHTML === 'function'
@@ -1889,7 +1997,30 @@
         : quill.root.innerHTML;
 
       textarea.value = plainLength() === 0 ? '' : html;
+    }
+
+    quill.on('text-change', function (delta, old, source) {
+      // Only undo the user's own overflow. Reverting a programmatic change
+      // would fight with the seeding above and with the clean button.
+      if (source === 'user' && plainLength() > MAX) {
+        quill.history.undo();
+      }
+      render();
+      // Only the user's edits. Syncing the silent seed above would rewrite the
+      // server's stored HTML into Quill's export before anyone typed a thing,
+      // and every page load would look like an unsaved change.
+      if (source === 'user') syncTextarea();
     });
+    render();
+
+    setDescriptionHtml = function (html) {
+      quill.setText('', 'silent');
+      if (html) quill.clipboard.dangerouslyPasteHTML(html, 'silent');
+      textarea.value = html;
+      render();
+    };
+
+    form.addEventListener('submit', syncTextarea);
   })();
 
   // ------------------------------------------------------ home hero rotation
@@ -2014,5 +2145,287 @@
     } else {
       window.addEventListener('load', begin, { once: true });
     }
+  })();
+
+  // ------------------------------------------------------------ draft backup
+  // A browser-side copy of unsaved edits on the two edit pages (owner and
+  // admin), put back automatically after any reload.
+  //
+  // Why not auto-save to the server: a save there is a publish. It goes live on
+  // the profile, emails the admin and can spend a geocoder call — so a half-
+  // typed description would be public mid-sentence. This keeps work safe
+  // without any of that; nothing reaches the server until Save.
+  //
+  // What it protects against: a gallery delete used to reload the page and wipe
+  // the form (that one is fixed at source now — see "photo delete"), and any
+  // other way off the page still does — the verification panel's own form, an
+  // expired session on Save, a closed tab, a crash.
+  //
+  // Placed last on purpose: the repeatable rows, the description editor and
+  // the pin picker are already running, so a restore can drive them.
+  (function () {
+    var SUBMITTED = 'xs-draft-submitted';
+    var MAX_AGE   = 7 * 24 * 60 * 60 * 1000;
+
+    var local = null;
+    try {
+      local = window.localStorage;
+      local.setItem('xs-draft-probe', '1');
+      local.removeItem('xs-draft-probe');
+    } catch (e) {
+      return; // private mode, blocked storage: the form simply works as before
+    }
+
+    function drop(key) {
+      try { local.removeItem(key); } catch (e) { /* nothing to clean */ }
+    }
+
+    // A save lands on whatever page the server redirects to — for a new admin
+    // profile that is a different URL, with a different key. So the flag is
+    // consumed on the very next page load, whichever page it is, and the draft
+    // only goes when that page confirms success. An expired session lands on
+    // /manage with an error instead, and the draft survives the re-sign-in.
+    try {
+      var submitted = window.sessionStorage.getItem(SUBMITTED);
+      if (submitted) {
+        window.sessionStorage.removeItem(SUBMITTED);
+        if (document.querySelector('.alert-success') && !document.querySelector('.err')) {
+          drop(submitted);
+        }
+      }
+    } catch (e) { /* sessionStorage unavailable: the version check still catches it */ }
+
+    var form = document.querySelector('form[data-draft]');
+    if (!form) return;
+
+    var KEY     = 'xs-draft:' + form.getAttribute('data-draft');
+    var VERSION = form.getAttribute('data-draft-version') || '';
+
+    // Every named control, keyed name#occurrence so radios and repeated names
+    // stay distinct. Files cannot be put back into an input by a script, the
+    // CSRF token goes stale, and the honeypot is not the user's.
+    function controls() {
+      return Array.prototype.filter.call(form.elements, function (el) {
+        return el.name && !el.disabled
+          && el.type !== 'file' && el.type !== 'submit' && el.type !== 'button'
+          && !/csrf/i.test(el.name) && el.name !== 'company_website_hp';
+      });
+    }
+
+    function each(fn) {
+      var seen = {};
+      controls().forEach(function (el) {
+        seen[el.name] = (seen[el.name] || 0) + 1;
+        fn(el, el.name + '#' + seen[el.name]);
+      });
+    }
+
+    function snapshot() {
+      var out = {};
+      each(function (el, key) {
+        out[key] = el.type === 'checkbox' || el.type === 'radio' ? (el.checked ? '1' : '') : el.value;
+      });
+      return out;
+    }
+
+    function read() {
+      try { return JSON.parse(local.getItem(KEY) || 'null'); } catch (e) { return null; }
+    }
+
+    // Taken before any restore: this is what the server rendered, and "dirty"
+    // means different from it.
+    var baseline     = snapshot();
+    var baselineJson = JSON.stringify(baseline);
+
+    // How many rows each repeatable section started with, so Discard can take
+    // away the ones a restore added.
+    var baseRows = [];
+    form.querySelectorAll('[data-repeat-list]').forEach(function (list) {
+      baseRows.push({ list: list, count: list.querySelectorAll('[data-repeat-item]').length });
+    });
+    var lastJson     = baselineJson;
+    var leaving      = false;
+
+    function isDirty() {
+      return JSON.stringify(snapshot()) !== baselineJson;
+    }
+
+    function check() {
+      var now  = snapshot();
+      var json = JSON.stringify(now);
+      if (json === lastJson) return;
+      lastJson = json;
+      if (json === baselineJson) {
+        drop(KEY);
+        return;
+      }
+      try {
+        local.setItem(KEY, JSON.stringify({ version: VERSION, savedAt: Date.now(), fields: now }));
+      } catch (e) { /* quota: nothing better to do than keep going */ }
+    }
+
+    // Enough rows in each repeatable section to hold the draft's highest index,
+    // made by that module's own Add button so they get the same wiring.
+    function ensureRows(fields) {
+      form.querySelectorAll('[data-repeat]').forEach(function (section) {
+        var template = section.querySelector('[data-repeat-template]');
+        var list     = section.querySelector('[data-repeat-list]');
+        var add      = section.querySelector('[data-repeat-add]');
+        var named    = template && template.content && template.content.querySelector('[name]');
+        if (!list || !add || !named) return;
+
+        var prefix  = named.getAttribute('name').split('[__i__]')[0] + '[';
+        var highest = -1;
+        Object.keys(fields).forEach(function (key) {
+          if (key.indexOf(prefix) !== 0) return;
+          var idx = parseInt(key.slice(prefix.length), 10);
+          if (idx > highest) highest = idx;
+        });
+
+        var guard = 50;
+        var added = false;
+        while (list.querySelectorAll('[data-repeat-item]').length <= highest && !add.disabled && guard-- > 0) {
+          add.click();
+          added = true;
+        }
+        // The section is a <details>; restored rows inside a closed one would
+        // be changes the person cannot see.
+        if (added && 'open' in section) section.open = true;
+      });
+    }
+
+    // Values go back quietly. Only checkboxes announce the change, because
+    // that is what greys out a removed row or a closed day; firing input events
+    // on the address fields would make the autocomplete wipe the very pin
+    // being restored.
+    function apply(fields) {
+      each(function (el, key) {
+        if (!Object.prototype.hasOwnProperty.call(fields, key)) return;
+        var value = fields[key];
+
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          var want = value === '1';
+          if (el.checked !== want) {
+            el.checked = want;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        } else if (el.name === 'description' && setDescriptionHtml) {
+          if (el.value !== value) setDescriptionHtml(value);
+        } else if (el.value !== value) {
+          el.value = value;
+        }
+      });
+
+      var lat = parseFloat(fields['latitude#1']);
+      var lng = parseFloat(fields['longitude#1']);
+      if (movePinTo && isFinite(lat) && isFinite(lng) && (lat !== 0 || lng !== 0)) {
+        movePinTo(lat, lng);
+      }
+    }
+
+    function banner(message, withDiscard) {
+      var box = document.createElement('div');
+      box.className = 'draft-banner';
+      box.setAttribute('role', 'status');
+
+      var text = document.createElement('p');
+      text.textContent = message;
+      box.appendChild(text);
+
+      if (withDiscard) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-ghost btn-xs';
+        btn.textContent = 'Discard changes';
+        btn.addEventListener('click', function () {
+          // In place rather than a reload: some browsers put typed values back
+          // into a reloaded form themselves, which would undo the discard.
+          baseRows.forEach(function (entry) {
+            var items = entry.list.querySelectorAll('[data-repeat-item]');
+            for (var i = items.length - 1; i >= entry.count; i--) items[i].remove();
+            var add = entry.list.parentNode.querySelector('[data-repeat-add]');
+            var max = add ? parseInt(add.getAttribute('data-repeat-max') || '0', 10) : 0;
+            if (add) add.disabled = max > 0 && entry.count >= max;
+          });
+          apply(baseline);
+          lastJson = JSON.stringify(snapshot());
+          drop(KEY);
+          box.remove();
+        });
+        box.appendChild(btn);
+      }
+
+      form.parentNode.insertBefore(box, form);
+    }
+
+    function when(ts) {
+      var d = new Date(ts);
+      var time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return d.toDateString() === new Date().toDateString()
+        ? time
+        : d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + time;
+    }
+
+    var draft = read();
+    // A page back from a failed save already shows what was typed, flashed by
+    // the server — that is newer than any draft, so it wins.
+    var failedSave = form.querySelector('.err') || document.querySelector('.alert-error');
+
+    if (draft && draft.fields && !failedSave) {
+      if (draft.version !== VERSION) {
+        // Saved from somewhere else since. Restoring would quietly undo that.
+        drop(KEY);
+        banner('Unsaved changes from an earlier visit were discarded because this profile has been saved since.', false);
+      } else if (!draft.savedAt || Date.now() - draft.savedAt > MAX_AGE) {
+        drop(KEY);
+      } else {
+        var x = window.scrollX;
+        var y = window.scrollY;
+        ensureRows(draft.fields);
+        apply(draft.fields);
+        // The Add button focuses its new row, which would scroll the page away.
+        if (document.activeElement && form.contains(document.activeElement)) document.activeElement.blur();
+        window.scrollTo(x, y);
+
+        banner('We restored your unsaved changes from ' + when(draft.savedAt) +
+          '. Nothing is saved until you press Save' +
+          ' — and any photos you had chosen will need choosing again.', true);
+        lastJson = JSON.stringify(snapshot());
+      }
+    }
+
+    var timer = null;
+    function soon() {
+      clearTimeout(timer);
+      timer = setTimeout(check, 400);
+    }
+    form.addEventListener('input', soon);
+    form.addEventListener('change', soon);
+    // Some changes are made by script and fire nothing: a dragged pin, "Copy
+    // Monday to every day". A cheap periodic look catches those.
+    setInterval(check, 3000);
+    window.addEventListener('pagehide', check);
+
+    form.addEventListener('submit', function () {
+      leaving = true;
+      check();
+      try { window.sessionStorage.setItem(SUBMITTED, KEY); } catch (e) { /* see above */ }
+    });
+
+    // Signing out on a shared computer should not leave the business's details
+    // sitting in this browser.
+    document.querySelectorAll('[data-draft-signout]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        leaving = true;
+        drop(KEY);
+      });
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+      if (leaving || !isDirty()) return;
+      check();
+      e.preventDefault();
+      e.returnValue = '';
+    });
   })();
 })();

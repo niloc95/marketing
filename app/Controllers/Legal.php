@@ -22,7 +22,7 @@ class Legal extends BaseController
      * does not date-stamp the other two as changed when their text is untouched.
      */
     private const LAST_UPDATED = [
-        'privacy' => '2026-08-18',
+        'privacy' => '2026-09-15',
         'terms'   => '2026-08-19',
         'cookies' => '2026-08-04',
     ];

@@ -209,6 +209,7 @@ final class LocationFormRenderTest extends CIUnitTestCase
             'name'              => 'Claremont branch',
             'address_line'      => '12 Main Road',
             'city'              => 'Cape Town',
+            'contact_person'    => 'Branch Private Person',
             'phone'             => '021 555 0100',
             'latitude'          => -33.9249,
             'longitude'         => 18.4241,
@@ -221,8 +222,10 @@ final class LocationFormRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('Get directions', $html);
         $this->assertStringContainsString('Trading hours', $html);
         $this->assertStringContainsString('08:00', $html);
-        // Same scraper-resistant reveal button the primary's contact panel uses.
-        $this->assertStringContainsString('data-reveal', $html);
+        // Shown openly and tappable, exactly as on the primary's contact panel.
+        $this->assertStringContainsString('href="tel:0215550100"', html_entity_decode($html, ENT_QUOTES | ENT_HTML5));
+        // The contact person is kept for administration, never published.
+        $this->assertStringNotContainsString('Branch Private Person', $html);
     }
 
     /**

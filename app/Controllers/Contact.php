@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\Mailer;
+use App\Models\DirectoryListingModel;
 use App\Services\VerificationService;
 
 /**
@@ -65,9 +66,40 @@ class Contact extends BaseController
         session()->set('contact_form_rendered_at', time());
 
         return view('directory/contact', [
-            'old'    => session()->getFlashdata('old') ?? [],
+            // A failed submission's own input always wins over a pre-fill.
+            'old'    => session()->getFlashdata('old') ?? $this->suggestEditPrefill(),
             'errors' => session()->getFlashdata('errors') ?? [],
         ]);
+    }
+
+    /**
+     * Pre-fill for the "Suggest an edit" link on a profile's contact card.
+     *
+     * Only a slug is taken from the query string, and only a published
+     * listing's is honoured — the subject and message are built here from our
+     * own row, so the link cannot be used to put arbitrary words into this form
+     * or to confirm that an unpublished listing exists.
+     *
+     * @return array<string,string>
+     */
+    private function suggestEditPrefill(): array
+    {
+        $slug = $this->request->getGet('listing');
+        if (! is_string($slug) || $slug === '' || strlen($slug) > 255) {
+            return [];
+        }
+
+        $listing = (new DirectoryListingModel())->findPublishedBySlug($slug);
+        if ($listing === null) {
+            return [];
+        }
+
+        return [
+            // submit() caps the subject at 150; a 200-character business name
+            // must not produce a pre-fill that silently loses its end.
+            'subject' => mb_substr('Suggested edit: ' . $listing['display_name'], 0, 150),
+            'message' => 'Profile: ' . base_url('directory/' . $listing['slug']) . "\n\nWhat needs changing:\n",
+        ];
     }
 
     public function submit()

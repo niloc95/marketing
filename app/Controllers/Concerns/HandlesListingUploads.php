@@ -219,6 +219,31 @@ trait HandlesListingUploads
     }
 
     /**
+     * The answer to a photo delete sent by the edit page's script rather than
+     * by a plain form post.
+     *
+     * The plain post redirects back to the edit form, and that reload threw
+     * away every unsaved change on it — hours edited, then a photo deleted, and
+     * the hours were gone. directory.js now deletes in place and needs this
+     * instead.
+     *
+     * The fresh CSRF token is not optional. Config\Security regenerates the
+     * token on every verified POST, AJAX included, so after one in-place delete
+     * every csrf_field() still on the page is dead — and the owner's next Save
+     * would fail. The script writes this hash back into all of them.
+     */
+    protected function photoDeleteJson(bool $ok, string $message, int $status, ?int $listingId = null): \CodeIgniter\HTTP\ResponseInterface
+    {
+        return $this->response->setStatusCode($status)->setJSON([
+            'ok'        => $ok,
+            'message'   => $message,
+            'remaining' => $listingId === null ? null : self::GALLERY_MAX - $this->gallerySlots($listingId),
+            'slots'     => $listingId === null ? null : $this->gallerySlots($listingId),
+            'csrf'      => ['name' => csrf_token(), 'hash' => csrf_hash()],
+        ]);
+    }
+
+    /**
      * Attach collected upload problems to a redirect without hiding the fact
      * that the rest of the save succeeded.
      *

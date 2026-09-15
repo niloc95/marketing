@@ -42,7 +42,10 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                 'max'        => $galleryMax,
             ]) ?>
 
-            <form method="post" action="<?= esc($action, 'attr') ?>" enctype="multipart/form-data">
+            <?php // Unsaved-draft backup — see manage_edit.php. ?>
+            <form method="post" action="<?= esc($action, 'attr') ?>" enctype="multipart/form-data"
+                  data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] ?>"
+                  data-draft-version="<?= esc((string) ($base['updated_at'] ?? ''), 'attr') ?>">
                 <?= csrf_field() ?>
 
                 <?= view('directory/_form_fields', [

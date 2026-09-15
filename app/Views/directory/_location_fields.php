@@ -88,6 +88,7 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
                 <label>Contact person</label>
                 <input type="text" name="<?= $n('contact_person') ?>" maxlength="150"
                        value="<?= esc($val('contact_person'), 'attr') ?>">
+                <div class="hint">Not shown on your profile.</div>
                 <?php if ($e('contact_person')): ?><div class="err"><?= esc($e('contact_person')) ?></div><?php endif; ?>
             </div>
         </div>
