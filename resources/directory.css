@@ -72,8 +72,8 @@
      strip (see .header-search / .header-quick). Sized to the tallest the header
      gets, because that is the only state an anchor jump can ever land in — and
      it is taller on a phone, where the search is a wrapped row of its own rather
-     than a column of the bar. Measured: 109px at md and up, 149px below it. */
-  html { scroll-behavior: smooth; @apply scroll-pt-40 md:scroll-pt-28; }
+     than a column of the bar. Measured: 109px at md and up, 161px below it. */
+  html { scroll-behavior: smooth; @apply scroll-pt-44 md:scroll-pt-28; }
   body {
     @apply bg-slate-50 font-sans text-slate-900 antialiased;
     @apply transition-colors duration-200;
@@ -181,10 +181,17 @@
      input they cannot see. `visibility` takes it out of the tab order properly.
 
      h-0 and not just opacity: the bar over a hero must measure exactly 64px, or
-     the photograph behind it shifts by however much an invisible row occupies. */
+     the photograph behind it shifts by however much an invisible row occupies.
+
+     max-md:absolute because h-0 only takes care of height. At rest the bar is
+     nowrap, so a basis-full item left in the row still claims its width: flexbox
+     squeezed the brand down to its mark to pay for it, and the invisible field
+     sat after the nav and shoved the CTA and burger into the middle of the bar.
+     Out of flow it takes no width and no gap. .is-solid puts it back in flow as
+     the wrapped row, and the height transition still runs. */
   .header-search {
     @apply invisible order-last flex h-0 w-full basis-full items-center gap-2
-           overflow-hidden opacity-0;
+           overflow-hidden opacity-0 max-md:absolute;
     @apply transition-[height,opacity,visibility] duration-200;
     /* From md up it stops being a wrapped row and becomes the middle column of
        the bar. mx-8 is the ~30px of air on either side that keeps it from
@@ -195,17 +202,26 @@
   }
   /* h-11, not h-auto, on phones: this is the wrapped second row and it needs a
      height to animate from 0 to. md:h-auto puts it back to hugging the bar. */
-  .site-header.is-solid .header-search { @apply visible h-11 opacity-100 md:h-auto; }
+  .site-header.is-solid .header-search { @apply visible h-11 opacity-100 max-md:static md:h-auto; }
 
   /* The wrap only ever happens below md and only while scrolled, which is why it
      is scoped here instead of on .site-header > .container: at rest the bar must
      stay the strictly non-wrapping h-16 row the comment up there describes.
      .header-search is basis-full, so it takes the second line on its own and the
-     nav is never dragged down with it — the failure the old flex-wrap caused. */
+     nav is never dragged down with it — the failure the old flex-wrap caused.
+
+     gap-y-0 because the first line already has its own air: see the h-16 below. */
   .site-header.is-solid > .container {
-    @apply h-auto flex-wrap pb-2 md:h-16 md:flex-nowrap md:pb-0;
+    @apply h-auto flex-wrap gap-y-0 pb-2 md:h-16 md:flex-nowrap md:pb-0;
     min-height: 4rem;
   }
+  /* A wrapped container is h-auto, so its first line is only as tall as the
+     44px CTA and starts at y=0: the button and burger sat right against the top
+     of the screen. Giving brand and nav the bar's own 64px keeps that line
+     exactly where it is at rest, so nothing moves vertically when the bar goes
+     solid. A no-op at rest and from md up, where the bar is already h-16.
+     `>` for the same reason as above, and so the footer's .brand is untouched. */
+  .site-header > .container > :is(.brand, .nav) { @apply h-16; }
 
   /* min-w-0 for the same reason .brand has it — without it the input refuses to
      shrink below its intrinsic width and pushes the nav off the bar. */
