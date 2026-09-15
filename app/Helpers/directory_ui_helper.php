@@ -246,6 +246,141 @@ if (! function_exists('category_group_style')) {
     }
 }
 
+if (! function_exists('category_photo')) {
+    /**
+     * The photograph behind a category's homepage tile, or null for none.
+     *
+     * The homepage shows whichever eight categories are busiest, so which ones
+     * appear is data, not a design decision — a photo per category would be ~180
+     * of them. Instead every group has one, which guarantees a tile always has a
+     * picture, and the categories most likely to be on the homepage get their own
+     * so that two tiles from one group (a dentist beside a GP) do not repeat.
+     * Lookup is slug first, then group; null only for a group not in the map,
+     * which the tile draws the old icon way.
+     *
+     * The biggest groups have more than one photo, because two of their generic
+     * categories on the homepage at once is the ordinary case (Health & Medical
+     * alone has 41). $taken is the list of srcs already on the page: a group
+     * photo in it is skipped for the group's next one, and only when every one is
+     * taken does a photo repeat. Use category_photos() for a whole grid rather
+     * than threading $taken by hand.
+     *
+     * The files are committed under public/assets/categories/ as <name>-800.webp
+     * and <name>-400.webp: Pexels photographs, re-encoded, exactly like the hero
+     * photos in DirectoryHeroImagesSeeder. The licence needs no attribution; the
+     * credit is kept here so a photo can always be traced back. A name with no
+     * file renders a broken image over the tile — CategoryPhotoTest checks every
+     * entry against the disk, and that every seeded group has one.
+     *
+     * @return array{src: string, src_sm: string, credit: string, credit_url: string}|null
+     */
+    function category_photo(array $category, array $taken = []): ?array
+    {
+        // slug => [photographer, Pexels id]; the file is named after the slug.
+        static $bySlug = [
+            'dentist'            => ['Arda Kaykısız', 19976604],
+            'physiotherapist'    => ['Ryutaro Tsukata', 5473182],
+            'nail-bar'           => ['RDNE Stock project', 7755236],
+            'beauty-salon'       => ['Fall Fall', 19242406],
+            'barber'             => ['RDNE Stock project', 7697364],
+            'financial-adviser'  => ['Kindel Media', 7979438],
+            'accountant'         => ['RDNE Stock project', 7491011],
+            'electrician'        => ['ranjeet .', 27928760],
+            'photographer'       => ['Shantanu Kumar', 16597255],
+            'estate-agent'       => ['Alena Darmel', 7641899],
+            'training-provider'  => ['Matheus Bertelli', 18999540],
+            'dj-entertainment'   => ['Erik Mclean', 9271241],
+            'coffee-shop'        => ['Chevanon Photography', 302896],
+            'restaurant'         => ['Anna Tarazevich', 6937464],
+            'tailor-alterations' => ['Tima Miroshnichenko', 6765514],
+        ];
+
+        // group => list of [file name, photographer, Pexels id], in order of
+        // preference. Same keys as category_group_style(), and for the same
+        // reason: it must cover every group the seeder creates.
+        static $byGroup = [
+            'Health & Medical' => [
+                ['group-health-medical', 'Tessy Agbonome', 18828741],
+                ['group-health-medical-2', 'Laura James', 6097750],
+            ],
+            'Beauty & Wellness' => [
+                ['group-beauty-wellness', 'Jonathan Borba', 19641835],
+                ['group-beauty-wellness-2', 'Ron Lach', 9146364],
+            ],
+            'Hair'              => [['group-hair', 'cottonbro studio', 3993312]],
+            'Motoring'          => [['group-motoring', 'Artem Podrez', 8985455]],
+            'Legal & Financial' => [['group-legal-financial', 'Pavel Danilyuk', 8112166]],
+            'Home & Trades'     => [
+                ['group-home-trades', 'Kindel Media', 8486975],
+                ['group-home-trades-2', 'Anıl Karakaya', 6419128],
+            ],
+            'Professional Services' => [
+                ['group-professional-services', 'Ninthgrid', 30688596],
+                ['group-professional-services-2', 'Mikhail Nilov', 9301291],
+            ],
+            'Fitness & Sport'          => [['group-fitness-sport', 'Julia Larson', 6455963]],
+            'Education & Training'     => [['group-education-training', 'Tosin Olowoleni', 34162714]],
+            'Events & Hospitality'     => [['group-events-hospitality', 'Matheus Bertelli', 16935994]],
+            'Travel & Tourism'         => [['group-travel-tourism', 'Kureng Workx', 13242022]],
+            'Pets & Animals'           => [['group-pets-animals', 'Tima Miroshnichenko', 6235244]],
+            'Everyday Services'        => [['group-everyday-services', 'Tima Miroshnichenko', 8774376]],
+            'Retail & Other'           => [['group-retail-other', 'Sam Lion', 5709656]],
+            'Home Industry & Handmade' => [['group-home-industry-handmade', 'Gustavo Fring', 7447297]],
+        ];
+
+        $photo = static fn (string $name, string $credit, int $id): array => [
+            'src'        => 'assets/categories/' . $name . '-800.webp',
+            'src_sm'     => 'assets/categories/' . $name . '-400.webp',
+            'credit'     => $credit,
+            'credit_url' => 'https://www.pexels.com/photo/' . $id . '/',
+        ];
+
+        $slug  = (string) ($category['slug'] ?? '');
+        $group = (string) ($category['group_name'] ?? '');
+
+        if (isset($bySlug[$slug])) {
+            return $photo($slug, ...$bySlug[$slug]);
+        }
+        if (! isset($byGroup[$group])) {
+            return null;
+        }
+
+        $candidates = array_map(static fn (array $entry): array => $photo(...$entry), $byGroup[$group]);
+        foreach ($candidates as $candidate) {
+            if (! in_array($candidate['src'], $taken, true)) {
+                return $candidate;
+            }
+        }
+
+        return $candidates[0];
+    }
+}
+
+if (! function_exists('category_photos')) {
+    /**
+     * category_photo() for every tile of one grid, in order, so that no two tiles
+     * share a group photo while the group has another to give.
+     *
+     * @param list<array> $categories
+     *
+     * @return list<array{src: string, src_sm: string, credit: string, credit_url: string}|null>
+     */
+    function category_photos(array $categories): array
+    {
+        $taken  = [];
+        $photos = [];
+        foreach ($categories as $category) {
+            $photo    = category_photo($category, $taken);
+            $photos[] = $photo;
+            if ($photo !== null) {
+                $taken[] = $photo['src'];
+            }
+        }
+
+        return $photos;
+    }
+}
+
 if (! function_exists('category_group_icon')) {
     /** The Lucide icon name for a category group. See category_group_style(). */
     function category_group_icon(?string $group): string

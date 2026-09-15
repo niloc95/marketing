@@ -196,8 +196,9 @@ $hasSlides = $slides !== [];
                 <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — browse what South Africans search for most.</p>
             </div>
             <div class="tile-grid">
-                <?php foreach ($topCategories as $c): ?>
-                    <?= view('directory/_category_tile', ['c' => $c], ['saveData' => false]) ?>
+                <?php $tilePhotos = category_photos($topCategories); ?>
+                <?php foreach (array_values($topCategories) as $i => $c): ?>
+                    <?= view('directory/_category_tile', ['c' => $c, 'photo' => $tilePhotos[$i]], ['saveData' => false]) ?>
                 <?php endforeach; ?>
             </div>
             <div class="mt-8 text-center">

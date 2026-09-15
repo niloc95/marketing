@@ -744,6 +744,48 @@
   .dark .cat-tile-more  { @apply text-slate-400; }
   .dark .cat-tile:hover .cat-tile-more { @apply text-primary-300; }
 
+  /* Photo tiles: category_photo() found a picture. The text sits on a dark
+     gradient, so it is white in both themes — which is why these come after the
+     .dark rules above and override them at equal specificity. The ratio follows
+     the tile's width, not the viewport's: two columns on a phone are narrow and
+     need a tall tile to fit three lines of text; two columns at sm are wide; four
+     columns at md are narrow again. The dark ground shows while the lazy image
+     loads. */
+  .cat-tile-photo {
+    @apply relative isolate aspect-[4/5] overflow-hidden border-0 bg-slate-800 p-0
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-primary-500 sm:aspect-[4/3] sm:p-0 md:aspect-[4/5]
+           lg:aspect-square xl:aspect-[5/4];
+  }
+  .dark .cat-tile-photo { @apply border-0 bg-slate-800; }
+  .cat-tile-img {
+    @apply absolute inset-0 -z-10 h-full w-full object-cover transition-transform
+           duration-500 ease-out motion-reduce:transition-none;
+  }
+  .cat-tile-photo:hover .cat-tile-img { @apply scale-105; }
+  .cat-tile-shade {
+    @apply absolute inset-0 -z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/45 to-slate-950/5;
+  }
+  .cat-tile-body { @apply flex h-full flex-col justify-end p-3 sm:p-5; }
+  .cat-tile-photo .cat-tile-icon,
+  .dark .cat-tile-photo .cat-tile-icon {
+    /* Dark glass, not white: a white chip vanishes on a bright photo. */
+    @apply mb-auto h-9 w-9 rounded-lg bg-slate-950/40 text-white ring-1 ring-white/20
+           backdrop-blur-sm sm:h-10 sm:w-10;
+  }
+  .cat-tile-photo .cat-tile-name,
+  .dark .cat-tile-photo .cat-tile-name  { @apply text-white; }
+  .cat-tile-photo .cat-tile-group,
+  .dark .cat-tile-photo .cat-tile-group { @apply text-white/75; }
+  .cat-tile-photo .cat-tile-foot,
+  .dark .cat-tile-photo .cat-tile-foot  { @apply mt-3 border-white/20 sm:mt-4; }
+  .cat-tile-photo .cat-tile-count,
+  .dark .cat-tile-photo .cat-tile-count { @apply text-white; }
+  .cat-tile-photo .cat-tile-more,
+  .dark .cat-tile-photo .cat-tile-more,
+  .cat-tile-photo:hover .cat-tile-more,
+  .dark .cat-tile-photo:hover .cat-tile-more { @apply text-white; }
+
   /* ------------------------------------------------------ category tints */
   /* One hue per category group, assigned by category_group_style() in
      app/Helpers/directory_ui_helper.php. Every class is spelled out in full for
