@@ -582,28 +582,37 @@
   // ------------------------------------------------------------ photo delete
   // Deletes a gallery photo on the edit pages without leaving the page.
   //
-  // Each thumbnail's delete button is its own small form outside the main
-  // listing form (forms cannot nest). Posted normally it redirects back to the
-  // edit page — and that reload silently threw away every unsaved change in
-  // the main form: edit the hours, delete a photo to swap it, hours gone.
+  // Each thumbnail's delete is a submit button inside the listing form, carrying
+  // its own formaction (see _gallery_manage.php). Followed normally it posts the
+  // form to the delete URL and redirects back to the edit page — and that reload
+  // throws away every unsaved change in the form: edit the hours, delete a photo
+  // to swap it, hours gone.
   //
-  // A cancelled confirm above stops the click, so no submit event reaches this.
-  // Without this script the forms still post and redirect exactly as before.
-  document.addEventListener('submit', function (e) {
-    var form = e.target.closest ? e.target.closest('form[data-photo-delete]') : null;
-    if (!form || !window.fetch || !window.FormData) return;
+  // A click listener, not submit: the submit event names the form, not which
+  // button sent it. The confirm handler above is registered first, so a
+  // cancelled confirm arrives here already defaultPrevented.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('button[data-photo-delete]') : null;
+    if (!btn || e.defaultPrevented || !window.fetch || !window.FormData) return;
     e.preventDefault();
 
-    var panel = form.closest('[data-photo-manage]');
-    var item  = form.closest('[data-photo-item]');
+    // Only the CSRF token goes along — the rest of the listing form is not the
+    // delete endpoint's business, and posting the picked uploads would send
+    // megabytes for nothing.
+    var panel = btn.closest('[data-photo-manage]');
+    var body  = new FormData();
+    var name  = panel && panel.getAttribute('data-csrf-name');
+    var token = name && btn.form ? btn.form.querySelector('input[name="' + name + '"]') : null;
+    if (token) body.append(name, token.value);
+
+    var item  = btn.closest('[data-photo-item]');
     var errEl = panel && panel.querySelector('[data-photo-error]');
-    var btn   = form.querySelector('button');
-    if (btn) btn.disabled = true;
+    btn.disabled = true;
     if (errEl) errEl.hidden = true;
 
-    fetch(form.action, {
+    fetch(btn.formAction, {
       method: 'POST',
-      body: new FormData(form),
+      body: body,
       credentials: 'same-origin',
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
     })
@@ -1773,6 +1782,36 @@
     });
   });
 
+  // ------------------------------------------------------- features by category
+  // "Features & amenities" offers one fieldset per category group; only the
+  // chosen category's group applies. Hidden groups are also disabled so their
+  // boxes are not submitted — several groups share a key, and a ticked hidden
+  // copy would otherwise override the owner unticking the visible one.
+  //
+  // With this script absent the server has already shown the right group (or
+  // every group, before a category is chosen) and filters the keys on save.
+
+  (function () {
+    var panel  = document.querySelector('[data-attributes]');
+    var select = document.querySelector('select[name="category_id"]');
+    if (!panel || !select) return;
+
+    var groups = panel.querySelectorAll('[data-attr-group]');
+
+    function apply() {
+      var opt   = select.options[select.selectedIndex];
+      var group = opt ? (opt.getAttribute('data-group') || '') : '';
+      groups.forEach(function (fs) {
+        var on = group !== '' && fs.getAttribute('data-attr-group') === group;
+        fs.hidden   = !on;
+        fs.disabled = !on;
+      });
+    }
+
+    select.addEventListener('change', apply);
+    apply();
+  })();
+
   // ------------------------------------------------------------ trading hours
   // "Copy Monday to every day" on the three listing forms. Seven rows of the
   // same opening time is the tedious part of this form, and most businesses
@@ -1868,9 +1907,10 @@
     var form     = field.closest('form');
     if (!textarea || !shell || !mount || !form) return;
 
-    // Mirrors RichText::MAX_PLAIN_LENGTH. The server is the authority; this
-    // only stops someone writing 7000 characters before being told.
-    var MAX = 5000;
+    // RichText::MAX_PLAIN_LENGTH, rendered onto the field by the view. The
+    // server is the authority; this only stops someone writing 3000 characters
+    // before being told. 1000 if the attribute is somehow missing.
+    var MAX = parseInt(field.getAttribute('data-rich-text-max') || '', 10) || 1000;
 
     shell.hidden = true;
     if (counter) counter.hidden = true;
@@ -2000,9 +2040,13 @@
     }
 
     quill.on('text-change', function (delta, old, source) {
-      // Only undo the user's own overflow. Reverting a programmatic change
-      // would fight with the seeding above and with the clean button.
-      if (source === 'user' && plainLength() > MAX) {
+      // Only undo the user's own overflow, and only an edit that made it
+      // longer. A description saved under the old 5000 cap loads already over
+      // this one; undoing every keystroke would lock its owner out of the very
+      // cuts they need to make. Reverting a programmatic change would fight
+      // with the seeding above and with the clean button.
+      var before = Math.max(0, old.length() - 1);
+      if (source === 'user' && plainLength() > MAX && plainLength() > before) {
         quill.history.undo();
       }
       render();

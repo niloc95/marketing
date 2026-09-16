@@ -10,6 +10,7 @@ use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\PracticeLocationService;
+use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
 use App\Services\VerificationService;
 
@@ -148,6 +149,8 @@ class Manage extends BaseController
             'categories' => $svc->categories(),
             'provinces'  => $svc->provinces(),
             'tags'       => $svc->tagsForListing((int) $listing['id']),
+            'services'   => (new ServiceMenuService())->servicesFor((int) $listing['id']),
+            'attributes' => (new ServiceMenuService())->attributeKeysFor((int) $listing['id']),
             'photos'     => (new DirectoryListingPhotoModel())->forListing((int) $listing['id']),
             'slots'      => $this->gallerySlots((int) $listing['id']),
             'galleryMax' => self::GALLERY_MAX,

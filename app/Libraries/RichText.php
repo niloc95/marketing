@@ -35,11 +35,17 @@ final class RichText
      * The editorial cap, counted in plain text.
      *
      * Measured after markup is removed so a listing that uses formatting is not
-     * punished for it — 5000 characters of prose stays 5000 characters whether
-     * or not half of it is bold. Mirrored by the character counter in
-     * public/assets/directory.js; change both together.
+     * punished for it — 1000 characters of prose stays 1000 characters whether
+     * or not half of it is bold. The character counter in
+     * public/assets/directory.js reads this from the form's data-rich-text-max,
+     * so there is nothing to keep in step.
+     *
+     * Down from 5000. A short description plus the structured "Services &
+     * prices" and "Features & amenities" sections reads better than an essay,
+     * and the long box was the part of signup people stalled on. Profiles saved
+     * under the old cap keep their text — see exceedsCap().
      */
-    public const MAX_PLAIN_LENGTH = 5000;
+    public const MAX_PLAIN_LENGTH = 1000;
 
     /**
      * Every element permitted in stored HTML.
@@ -118,10 +124,34 @@ final class RichText
     private const MAX_NODES = 2000;
 
     /**
+     * Is this plain-text description over the cap *and* new?
+     *
+     * An unchanged description is never over the cap, whatever its length: a
+     * profile written when the limit was 5000 must still be able to save an edit
+     * to its phone number. The owner is asked to shorten it only once they
+     * actually change the text. Compared after whitespace is collapsed, because
+     * a round trip through the editor can re-flow line breaks without anyone
+     * touching a word.
+     *
+     * @param string|null $stored the listing's current description_text, or null
+     *                            for a listing that does not exist yet
+     */
+    public static function exceedsCap(string $plain, ?string $stored = null): bool
+    {
+        if (mb_strlen($plain) <= self::MAX_PLAIN_LENGTH) {
+            return false;
+        }
+
+        $squash = static fn (string $t): string => trim((string) preg_replace('/\s+/u', ' ', $t));
+
+        return $stored === null || $squash($plain) !== $squash($stored);
+    }
+
+    /**
      * Reduce arbitrary input to the allowlist above.
      *
      * Returns '' for anything with no visible content, including Quill's
-     * `<p><br></p>` idle state — the profile page gates its About panel on
+     * `<p><br></p>` idle state — the profile page gates its description panel on
      * `! empty($l['description'])`, so a "blank" description that is not
      * literally empty renders an empty panel.
      */

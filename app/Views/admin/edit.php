@@ -34,14 +34,6 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>"><?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?>Back to profiles</a>
             </div>
 
-            <?php // Deliberately outside the form below — each thumbnail carries its
-                  // own delete form, and forms cannot nest. ?>
-            <?= view('directory/_gallery_manage', [
-                'photos'     => $photos,
-                'deleteBase' => base_url('admin/photo-delete'),
-                'max'        => $galleryMax,
-            ]) ?>
-
             <?php // Unsaved-draft backup — see manage_edit.php. ?>
             <form method="post" action="<?= esc($action, 'attr') ?>" enctype="multipart/form-data"
                   data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] ?>"
@@ -59,8 +51,13 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     'gallerySlots' => $slots,
                     'vTeam'        => is_array($old['team'] ?? null) ? $old['team'] : $team,
                     'vLocations'   => is_array($old['locations'] ?? null) ? $old['locations'] : $locations,
+                    // Marker, not the array — see manage_edit.php.
+                    'vServices'    => array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services,
+                    'vAttributes'  => array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes,
                     // A new profile has no id yet, so nothing to hang child rows on.
                     'showExtras'   => ! $isNew && $showExtras,
+                    'photos'       => $photos,
+                    'deleteBase'   => base_url('admin/photo-delete'),
                 ]) ?>
 
                 <?php // Privileged fields — deliberately not in the shared partial, so the

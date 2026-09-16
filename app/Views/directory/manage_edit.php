@@ -29,6 +29,12 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listi
 // wins over what is stored, so nobody retypes a team after one bad row.
 $vTeam      = is_array($old['team'] ?? null) ? $old['team'] : $team;
 $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locations;
+
+// Keyed off the section marker, not the array: a rejected save with every box
+// unticked sends no attributes[] at all, and that must not fall back to the
+// stored set the owner was trying to clear.
+$vServices   = array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services;
+$vAttributes = array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes;
 ?>
 <section class="section">
     <div class="container">
@@ -50,7 +56,7 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/signout') ?>" data-draft-signout>Sign out</a>
             </div>
 
-            <?php // Same reason as the gallery below: this panel posts its own form. ?>
+            <?php // Outside the listing form: this panel posts its own forms. ?>
             <?php if ($verificationOffered): ?>
                 <?= view('directory/_verification_panel', [
                     'verification' => $verification,
@@ -59,14 +65,6 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
                     'pending'      => $verificationPending,
                 ]) ?>
             <?php endif; ?>
-
-            <?php // Deliberately outside the form below — each thumbnail carries its
-                  // own delete form, and forms cannot nest. ?>
-            <?= view('directory/_gallery_manage', [
-                'photos'     => $photos,
-                'deleteBase' => base_url('manage/photo-delete'),
-                'max'        => $galleryMax,
-            ]) ?>
 
             <?php // data-draft: directory.js keeps a browser-side copy of unsaved edits
                   // and puts them back after any reload. The version is what tells a
@@ -87,6 +85,10 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
                     'gallerySlots' => $slots,
                     'vTeam'        => $vTeam,
                     'vLocations'   => $vLocations,
+                    'vServices'    => $vServices,
+                    'vAttributes'  => $vAttributes,
+                    'photos'       => $photos,
+                    'deleteBase'   => base_url('manage/photo-delete'),
                     'showExtras'   => $showExtras,
                 ]) ?>
 

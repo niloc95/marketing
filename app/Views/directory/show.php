@@ -65,20 +65,6 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
             <?php endforeach; ?>
         </nav>
 
-        <?php if (! empty($l['photos'])): ?>
-            <div class="gallery" data-gallery>
-                <?php foreach ($l['photos'] as $i => $p): ?>
-                    <button type="button" class="gallery-item" data-gallery-open data-index="<?= $i ?>">
-                        <img src="<?= esc(base_url($p['path']), 'attr') ?>"
-                             <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
-                             <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
-                             alt="<?= esc($name) ?> — photo <?= $i + 1 ?>"
-                             loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
-                    </button>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
         <div class="profile-head">
             <?php // avatar-logo only when there is a logo: it swaps the square crop for
                   // a contained fit that shows a wide lockup whole. Without an image the
@@ -163,6 +149,23 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
             </div>
         </div>
 
+        <?php // Below the header: the category and the name are what tell a visitor
+              // they landed on the right business, so they come first and the
+              // photos follow — above the fold on a desktop either way. ?>
+        <?php if (! empty($l['photos'])): ?>
+            <div class="gallery" data-gallery>
+                <?php foreach ($l['photos'] as $i => $p): ?>
+                    <button type="button" class="gallery-item" data-gallery-open data-index="<?= $i ?>">
+                        <img src="<?= esc(base_url($p['path']), 'attr') ?>"
+                             <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
+                             <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
+                             alt="<?= esc($name) ?> — photo <?= $i + 1 ?>"
+                             loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
+                    </button>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <div class="lightbox" data-lightbox hidden>
             <button type="button" class="lightbox-close" data-lightbox-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
             <button type="button" class="lightbox-prev" data-lightbox-prev aria-label="Previous photo"><?= lucide('chevron-left', 'h-5 w-5') ?></button>
@@ -172,25 +175,39 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
 
         <div class="profile-grid">
             <div>
-                <?php
-                $pills = array_filter([
-                    'accepts_card_payments' => 'Accepts card payments',
-                    'offers_delivery'       => 'Delivery / mobile service',
-                    'offers_online_booking' => 'Online booking',
-                ], fn ($k) => ! empty($l[$k]), ARRAY_FILTER_USE_KEY);
-                ?>
-                <?php if (! empty($l['description']) || $pills): ?>
+                <?php if (! empty($l['description'])): ?>
                     <div class="panel mb-5">
-                        <h3>About</h3>
+                        <h3>Business description</h3>
                         <?php /* The only unescaped listing content on the site. listing_rich_text()
                                  runs it through RichText::sanitise() first — do not swap this for a
                                  bare echo, and do not add esc() (it would print the tags). */ ?>
-                        <?php if (! empty($l['description'])): ?><div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text($l['description']) ?></div><?php endif; ?>
-                        <?php if ($pills): ?>
-                            <div class="pillrow">
-                                <?php foreach ($pills as $label): ?><span class="pill pill-capability"><?= esc($label) ?></span><?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
+                        <div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text($l['description']) ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (! empty($l['services'])): ?>
+                    <div class="panel mb-5">
+                        <h3>Services</h3>
+                        <ul class="service-list">
+                            <?php foreach ($l['services'] as $svc): ?>
+                                <li>
+                                    <span class="service-name"><?= esc($svc['name']) ?></span>
+                                    <?php if (! empty($svc['price_label'])): ?><span class="service-price"><?= esc($svc['price_label']) ?></span><?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <?php $features = listing_feature_labels($l); ?>
+                <?php if ($features): ?>
+                    <div class="panel mb-5">
+                        <h3>Features &amp; amenities</h3>
+                        <ul class="feature-list">
+                            <?php foreach ($features as $label): ?>
+                                <li><?= lucide('check', 'feature-check') ?><span><?= esc($label) ?></span></li>
+                            <?php endforeach; ?>
+                        </ul>
                     </div>
                 <?php endif; ?>
 

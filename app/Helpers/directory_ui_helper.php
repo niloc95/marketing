@@ -525,3 +525,27 @@ if (! function_exists('listing_rich_text')) {
         return \App\Libraries\RichText::sanitise((string) $html);
     }
 }
+
+if (! function_exists('listing_feature_labels')) {
+    /**
+     * Everything a profile's "Features & amenities" panel lists, as labels.
+     *
+     * The three capability columns first, then the ticked features that
+     * DirectoryService::getProfile() resolved into `attributes`. One list for
+     * the panel in show.php and for amenityFeature in the JSON-LD, so the two
+     * never describe a business differently.
+     *
+     * @param array<string,mixed> $l
+     * @return array<int,string>
+     */
+    function listing_feature_labels(array $l): array
+    {
+        $labels = array_filter([
+            ! empty($l['accepts_card_payments']) ? 'Accepts card payments' : null,
+            ! empty($l['offers_delivery']) ? 'Delivery / mobile service' : null,
+            ! empty($l['offers_online_booking']) ? 'Online booking' : null,
+        ]);
+
+        return array_values(array_merge($labels, array_values($l['attributes'] ?? [])));
+    }
+}

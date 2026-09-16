@@ -85,6 +85,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     'provinces'   => $provinces,
                     'showConsent' => true,
                     'vHours'      => $vHours,
+                    'vServices'   => is_array($old['services'] ?? null) ? $old['services'] : [],
+                    'vAttributes' => is_array($old['attributes'] ?? null) ? $old['attributes'] : [],
                 ]) ?>
 
                 <?php if (! empty($verificationOffered)): ?>

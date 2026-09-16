@@ -11,14 +11,15 @@ use CodeIgniter\Test\DatabaseTestTrait;
 /**
  * The editorial cap on the business description.
  *
- * The number lives in four places that have to agree — RichText::MAX_PLAIN_LENGTH,
- * the counter in public/assets/directory.js, and the two model validation rules —
- * and until now nothing tested any of them. Raising it from 2000 to 5000 was the
- * moment that became uncomfortable: the cap is enforced against the *plain text*
- * so that formatting does not eat into an owner's allowance, and that is exactly
- * the kind of rule that quietly stops working.
+ * The number lives in RichText::MAX_PLAIN_LENGTH; the counter in
+ * public/assets/directory.js reads it from the form. It went 2000 → 5000 → 1000:
+ * the last cut came with the structured Services and Features sections, and it
+ * brought a second rule — a description saved under an older, larger cap is
+ * not refused until its owner actually edits the text. The cap is enforced
+ * against the *plain text* so that formatting does not eat into an owner's
+ * allowance, and that is exactly the kind of rule that quietly stops working.
  *
- * These tests read the constant rather than hard-coding 5000, so the next change
+ * These tests read the constant rather than hard-coding 1000, so the next change
  * moves one number and they follow. What they pin is the behaviour: the boundary
  * is inclusive, one over is refused with an error attached to the field, markup
  * is not counted, and nothing is silently truncated.
@@ -53,11 +54,55 @@ final class DescriptionLimitTest extends CIUnitTestCase
         ], true);
     }
 
-    public function testTheCapIsFiveThousandPlainCharacters(): void
+    public function testTheCapIsOneThousandPlainCharacters(): void
     {
-        // Guards the four-way agreement described above. If this number moves,
-        // directory.js and the two model rules move with it.
-        $this->assertSame(5000, RichText::MAX_PLAIN_LENGTH);
+        $this->assertSame(1000, RichText::MAX_PLAIN_LENGTH);
+    }
+
+    // ------------------------------------------------------- grandfathering
+
+    public function testAnOverLongDescriptionFromTheOldCapDoesNotBlockOtherEdits(): void
+    {
+        $long = str_repeat('Old prose. ', 300); // ~3000 characters
+        $id   = $this->listing(['description' => '<p>' . trim($long) . '</p>', 'description_text' => trim($long)]);
+
+        // The form posts the stored description back untouched alongside a new
+        // phone number.
+        $result = (new DirectoryListingMutationService())->updateOwn($id, $this->post([
+            'description' => '<p>' . trim($long) . '</p>',
+            'phone'       => '021 555 0100',
+        ]));
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $row = $this->listings->find($id);
+        $this->assertSame('021 555 0100', $row['phone']);
+        $this->assertSame(trim($long), $row['description_text']);
+    }
+
+    public function testEditingAnOverLongDescriptionMustBringItUnderTheCap(): void
+    {
+        $long = str_repeat('Old prose. ', 300);
+        $id   = $this->listing(['description' => '<p>' . trim($long) . '</p>', 'description_text' => trim($long)]);
+
+        $result = (new DirectoryListingMutationService())->updateOwn($id, $this->post([
+            'description' => '<p>' . trim($long) . ' One more sentence.</p>',
+        ]));
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('description', $result['errors']);
+    }
+
+    public function testAdminIsGrandfatheredTheSameWay(): void
+    {
+        $long = str_repeat('Old prose. ', 300);
+        $id   = $this->listing(['description' => '<p>' . trim($long) . '</p>', 'description_text' => trim($long)]);
+
+        $same = (new DirectoryAdminService())->upsert($id, $this->post(['description' => '<p>' . trim($long) . '</p>']));
+        $this->assertTrue($same['ok'], $same['message']);
+
+        $changed = (new DirectoryAdminService())->upsert($id, $this->post(['description' => '<p>' . trim($long) . ' More.</p>']));
+        $this->assertFalse($changed['ok']);
+        $this->assertArrayHasKey('description', $changed['errors']);
     }
 
     // ------------------------------------------------------------ owner edit
@@ -148,9 +193,10 @@ final class DescriptionLimitTest extends CIUnitTestCase
 
     // -------------------------------------------------------------- fixtures
 
-    private function listing(): int
+    /** @param array<string,mixed> $overrides */
+    private function listing(array $overrides = []): int
     {
-        return (int) $this->listings->insert([
+        return (int) $this->listings->insert($overrides + [
             'type'             => 'practice',
             'display_name'     => 'Test Listing',
             'email'            => 'cap@example.test',

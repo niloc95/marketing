@@ -218,7 +218,12 @@ class DirectoryAdminService
                 // at save time and surfaces as an unhighlighted "could not
                 // save". The public and owner forms get the same message from
                 // DirectoryListingMutationService::validate().
-                if (mb_strlen($data['description_text']) > RichText::MAX_PLAIN_LENGTH) {
+                //
+                // Unchanged text is exempt — see RichText::exceedsCap().
+                $storedText = $id !== null
+                    ? (string) (($this->listings->find($id) ?? [])['description_text'] ?? '')
+                    : null;
+                if (RichText::exceedsCap($data['description_text'], $storedText)) {
                     return [
                         'ok'     => false,
                         'errors' => ['description' => sprintf(
@@ -232,6 +237,14 @@ class DirectoryAdminService
             }
 
             $data[$field] = $mode === 'place' ? normalise_place($value) : $value;
+        }
+
+        // Services and features — checked before anything is written, like the
+        // fields above.
+        $menu       = new ServiceMenuService();
+        $menuErrors = $menu->validate($input);
+        if ($menuErrors !== []) {
+            return ['ok' => false, 'errors' => $menuErrors, 'message' => 'Please correct the highlighted fields.'];
         }
 
         if (array_key_exists('email', $input) || $id === null) {
@@ -341,6 +354,13 @@ class DirectoryAdminService
                     : array_map('trim', explode(',', (string) $input['specializations']));
                 $this->tags->syncListingTags($id, $names);
             }
+
+            // Filtered against the category as saved, which this request may
+            // have left alone — hence the stored row as the fallback.
+            $categoryId = array_key_exists('category_id', $data)
+                ? $data['category_id']
+                : ((int) (($this->listings->find($id) ?? [])['category_id'] ?? 0) ?: null);
+            $menu->sync($id, $categoryId, $input);
 
             // Team and branches. The admin form is privileged over everything
             // else on a listing, but not over this: both sections are part of

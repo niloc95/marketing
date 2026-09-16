@@ -18,6 +18,7 @@ use App\Services\DirectoryService;
 use App\Services\HeroImageService;
 use App\Services\PracticeLocationService;
 use App\Services\SystemStatusService;
+use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
 use App\Services\VerificationService;
 
@@ -130,6 +131,8 @@ class Admin extends BaseController
             'categories' => $dir->categories(),
             'provinces'  => $dir->provinces(),
             'tags'       => $listing ? $dir->tagsForListing((int) $listing['id']) : [],
+            'services'   => $listing ? (new ServiceMenuService())->servicesFor((int) $listing['id']) : [],
+            'attributes' => $listing ? (new ServiceMenuService())->attributeKeysFor((int) $listing['id']) : [],
             'photos'     => $listing
                 ? (new DirectoryListingPhotoModel())->forListing((int) $listing['id'])
                 : [],

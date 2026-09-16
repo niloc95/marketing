@@ -10,6 +10,7 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
 use App\Services\PracticeLocationService;
+use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
 use Config\Directory as DirectoryConfig;
 
@@ -137,6 +138,8 @@ class DirectoryListingMutationService
                 $this->tags->syncListingTags((int) $id, $names);
             }
 
+            (new ServiceMenuService())->sync((int) $id, $data['category_id'], $input);
+
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
@@ -206,6 +209,10 @@ class DirectoryListingMutationService
             // resubmit that dropped every specialization gets rid of the
             // rejected attempt's tags.
             $this->tags->syncListingTags($id, $this->tagNames($input['specializations'] ?? null));
+
+            // Same terms as the tags above: the signup form always carries both
+            // section markers, so this replaces the rejected attempt's rows.
+            (new ServiceMenuService())->sync($id, $data['category_id'], $input);
 
             // The rejected attempt's photos are not this submission's photos,
             // and the controller appends the new ones once this returns —
@@ -512,7 +519,10 @@ class DirectoryListingMutationService
         }
 
         // Reuse the signup rules, but the email is fixed to the stored one.
-        $errors = $this->validate($input + ['email' => $listing['email'], 'consent' => 1]);
+        $errors = $this->validate(
+            $input + ['email' => $listing['email'], 'consent' => 1],
+            (string) ($listing['description_text'] ?? '')
+        );
         unset($errors['consent']);
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'message' => 'Please correct the highlighted fields.'];
@@ -609,6 +619,12 @@ class DirectoryListingMutationService
                 $this->tags->syncListingTags($id, $this->tagNames($input['specializations']));
             }
 
+            // Services and features, on the same absent-vs-present terms. Free
+            // for every listing, so no badge check. Filtered against the
+            // category being saved, not the stored one, so switching category
+            // drops features the new category does not offer.
+            (new ServiceMenuService())->sync($id, $data['category_id'], $input);
+
             // Team and branches, on the same terms as tags: absent means leave
             // them alone, present means reconcile against what was submitted.
             //
@@ -696,9 +712,11 @@ class DirectoryListingMutationService
 
     /**
      * @param array<string,mixed> $input
+     * @param string|null $storedDescriptionText the listing's current plain-text
+     *                    description on an edit; null for a new signup
      * @return array<string,string>
      */
-    private function validate(array $input): array
+    private function validate(array $input, ?string $storedDescriptionText = null): array
     {
         $errors = [];
         if (trim((string) ($input['display_name'] ?? '')) === '') {
@@ -725,8 +743,14 @@ class DirectoryListingMutationService
         // now, and measuring the markup would mean a listing that uses a bullet
         // list gets a smaller allowance than one that does not — for characters
         // the owner never typed and cannot see.
+        //
+        // Only when the text changed. The cap came down from 5000 to 1000, and
+        // a profile written under the old one must not block its owner from
+        // fixing a phone number — they are asked to shorten it the first time
+        // they actually edit it. See RichText::exceedsCap().
         $description = RichText::toPlainText($this->richText($input['description'] ?? ''));
-        if (mb_strlen($description) > RichText::MAX_PLAIN_LENGTH) {
+        if (array_key_exists('description', $input)
+            && RichText::exceedsCap($description, $storedDescriptionText)) {
             $errors['description'] = sprintf(
                 'Please keep the description under %d characters.',
                 RichText::MAX_PLAIN_LENGTH
@@ -773,6 +797,8 @@ class DirectoryListingMutationService
         if (($tagError = $this->validateTags($input['specializations'] ?? null)) !== null) {
             $errors['specializations'] = $tagError;
         }
+
+        $errors += (new ServiceMenuService())->validate($input);
 
         return $errors;
     }

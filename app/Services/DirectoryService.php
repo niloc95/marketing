@@ -416,6 +416,11 @@ class DirectoryService
         );
         $listing['tags']           = $this->tags->namesForListing((int) $listing['id']);
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
+
+        // Free for every listing — see ServiceMenuService.
+        $menu                   = new ServiceMenuService();
+        $listing['services']    = $menu->servicesFor((int) $listing['id']);
+        $listing['attributes']  = $menu->attributeLabelsFor((int) $listing['id']);
         $listing['trading_hours']  = hours_decode($listing['trading_hours'] ?? null);
 
         // Team members are part of the paid badge, so the gate is here at load

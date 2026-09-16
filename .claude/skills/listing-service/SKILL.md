@@ -62,7 +62,12 @@ over `display_name`/`description`/`credentials`.
 - Other tables: `directory_categories` (seeded taxonomy, 147 categories / 12 groups),
   `directory_practice_locations` (extra locations per listing), `directory_tags` +
   `directory_listing_tags` (filterable areas of focus), `directory_listing_team` (team
-  members), `directory_settings` (admin-editable badge price/enabled), and the verification
+  members), `directory_listing_services` + `directory_listing_attributes` ("Services &
+  prices" and "Features & amenities" — free for every listing, written only through
+  `ServiceMenuService`; feature keys and labels live in `Config\ListingAttributes`, keyed
+  by category `group_name`, and saves drop keys the chosen category's group doesn't offer.
+  Both sections carry a `*_present` marker input: absent = leave alone, present-but-empty =
+  clear), `directory_settings` (admin-editable badge price/enabled), and the verification
   set — `directory_verifications`, `_verification_documents`, `_verification_events`,
   `_verification_submissions`, `_verification_itn_rejections`.
 
@@ -76,6 +81,9 @@ over `display_name`/`description`/`credentials`.
   identical on-screen message either way), `verify()` (publishes), `requestManageLink()` /
   `redeemManageToken()` (single-use, 1h TTL), `updateOwn()` (applies only
   `OWNER_EDITABLE`).
+- **Description cap** is `RichText::MAX_PLAIN_LENGTH` (1000 plain-text chars; the JS counter
+  reads it from `data-rich-text-max`). `RichText::exceedsCap()` exempts an *unchanged*
+  description, so profiles saved under the old 5000 cap can still save other edits.
 - **`App\Libraries\Mailer`** — the **one** outbound-mail path. `send($to, $subject, $body,
   $replyTo = '')` returns whether it went out and records the result in `MailHealth`. It
   logs the recipient *domain* only, never the address or body. Signup/edit callers ignore

@@ -474,6 +474,33 @@ if (! function_exists('schema_local_business')) {
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
         }
 
+        // "Services & prices" as an offer catalogue. The price label is free
+        // text ("from R150", "POA"), which schema.org's numeric `price` cannot
+        // hold honestly, so it goes in the offer's description instead.
+        $offers = [];
+        foreach ($l['services'] ?? [] as $service) {
+            $name = trim((string) ($service['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $offers[] = array_filter([
+                '@type'       => 'Offer',
+                'itemOffered' => ['@type' => 'Service', 'name' => $name],
+                'description' => trim((string) ($service['price_label'] ?? '')),
+            ], static fn ($v) => $v !== '');
+        }
+        $catalog = $offers === [] ? null : [
+            '@type'           => 'OfferCatalog',
+            'name'            => 'Services',
+            'itemListElement' => $offers,
+        ];
+
+        // The same labels the profile's panel shows.
+        $amenities = [];
+        foreach (listing_feature_labels($l) as $label) {
+            $amenities[] = ['@type' => 'LocationFeatureSpecification', 'name' => $label, 'value' => true];
+        }
+
         return array_filter([
             '@type'                    => schema_business_type((string) ($l['category']['group_name'] ?? '')),
             '@id'                      => $canonical . '#business',
@@ -495,6 +522,8 @@ if (! function_exists('schema_local_business')) {
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
             'potentialAction'          => $reserve,
+            'hasOfferCatalog'          => $catalog,
+            'amenityFeature'           => $amenities !== [] ? $amenities : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }

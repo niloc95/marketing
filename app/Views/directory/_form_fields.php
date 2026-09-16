@@ -24,6 +24,16 @@
  * @var array    $vTeam       team rows (old input wins), rendered by _team_fields.php
  * @var array    $vLocations  branch rows (old input wins), rendered by _location_fields.php
  * @var bool     $showExtras  render the team and location sections at all
+ * @var array    $vServices   service rows (old input wins), rendered by _service_fields.php
+ * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
+ * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
+ * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
+ *
+ * Layout: the essentials a profile cannot do without come first and are always
+ * open — category, name, contact, a short description and where you are. Then
+ * everything that makes a profile look good but is optional sits below in
+ * collapsed <details>, so a first signup is a two-minute job and nothing is
+ * hidden that has content or an error in it.
  */
 $lockEmail    = $lockEmail    ?? false;
 $showConsent  = $showConsent  ?? false;
@@ -40,8 +50,20 @@ $gallerySlots = $gallerySlots ?? \App\Controllers\Listing::GALLERY_MAX;
 $vTeam      = $vTeam      ?? [];
 $vLocations = $vLocations ?? [];
 $showExtras = $showExtras ?? false;
+$vServices   = $vServices   ?? [];
+$vAttributes = $vAttributes ?? [];
+$photos      = $photos      ?? [];
+$deleteBase  = $deleteBase  ?? '';
 helper('directory_hours');
 ?>
+<?php if ($photos !== [] && $deleteBase !== ''): ?>
+    <?php // Pressing Enter in a text field submits the form through its *first*
+          // submit button in tree order. The photo delete buttons further down are
+          // submit buttons, so without this one Enter would ask to delete a photo
+          // instead of saving. Off-screen rather than hidden: a button that is not
+          // rendered is not reliably used as the default. ?>
+    <button type="submit" class="form-default-submit" tabindex="-1" aria-hidden="true">Save</button>
+<?php endif; ?>
 <div class="form-row">
     <div class="field">
         <label>Profile type</label>
@@ -59,7 +81,7 @@ helper('directory_hours');
                 <?php if (($p['group_name'] ?? '') !== $cur): $cur = $p['group_name']; ?>
                     <optgroup label="<?= esc($cur, 'attr') ?>">
                 <?php endif; ?>
-                <option value="<?= (int) $p['id'] ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
             <?php endforeach; ?>
         </select>
         <?php if ($err('category_id')): ?><div class="err"><?= esc($err('category_id')) ?></div><?php endif; ?>
@@ -92,26 +114,6 @@ helper('directory_hours');
     </div>
 </div>
 
-<?php // Title and contact person name a private individual, so they are kept for
-      // administration only — _contact_panel.php does not render either. The
-      // fieldset says so up front rather than leaving owners to guess. ?>
-<fieldset class="form-private">
-    <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
-    <div class="form-row">
-        <div class="field">
-            <label>Title</label>
-            <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…">
-            <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
-        </div>
-        <div class="field">
-            <label>Contact person</label>
-            <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150">
-            <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
-        </div>
-    </div>
-    <div class="hint">For our records, and so we know who to address when we contact you about this listing.</div>
-</fieldset>
-
 <div class="form-row">
     <div class="field">
         <label>Phone</label>
@@ -132,13 +134,8 @@ helper('directory_hours');
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
-<div class="field">
-    <label>Credentials</label>
-    <textarea name="credentials" rows="2" maxlength="500"><?= esc($v('credentials')) ?></textarea>
-    <?php if ($err('credentials')): ?><div class="err"><?= esc($err('credentials')) ?></div><?php endif; ?>
-</div>
-<div class="field" data-rich-text>
-    <label for="description">Description</label>
+<div class="field" data-rich-text data-rich-text-max="<?= \App\Libraries\RichText::MAX_PLAIN_LENGTH ?>">
+    <label for="description">Business description</label>
     <?php /*
         The textarea is the real form field and stays that way. directory.js
         hides it, mounts Quill into the div below, and copies the editor's HTML
@@ -146,11 +143,12 @@ helper('directory_hours');
         load, this posts plain text and RichText::sanitise() turns it into
         paragraphs. Nothing about the form depends on the editor existing.
 
-        maxlength is gone because it counts markup, not words; the same 5000-
-        character cap is enforced against the plain text by the counter in
-        directory.js and, authoritatively, by the service on save.
+        maxlength is gone because it counts markup, not words. The cap
+        (RichText::MAX_PLAIN_LENGTH, on the wrapper above) is enforced against
+        the plain text by the counter in directory.js and, authoritatively, by
+        the service on save.
     */ ?>
-    <textarea id="description" name="description" rows="6" placeholder="What you offer, who you serve…"><?= esc($v('description')) ?></textarea>
+    <textarea id="description" name="description" rows="6" placeholder="A few sentences: what you do, who it’s for, and why people choose you."><?= esc($v('description')) ?></textarea>
     <?php /*
         The inner div is the mount and the outer one is not redundant: Quill
         turns the element it is given into .ql-container and inserts .ql-toolbar
@@ -161,32 +159,12 @@ helper('directory_hours');
         <div data-rich-text-for="description"></div>
     </div>
     <div class="rt-count" data-rich-text-count hidden></div>
-    <div class="hint">Use the toolbar to add headings, bold, lists and links.</div>
+    <div class="hint">
+        Keep it short &mdash; up to <?= number_format(\App\Libraries\RichText::MAX_PLAIN_LENGTH) ?> characters.
+        Cover <strong>what you do</strong>, <strong>who it&rsquo;s for</strong> and <strong>why choose you</strong>.
+        List individual services and prices under <em>Services &amp; prices</em> below instead.
+    </div>
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
-</div>
-<div class="field">
-    <label>Areas of focus</label>
-    <input type="text" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma-separated, e.g. Bridal packages, Emergency callouts, Home visits">
-    <div class="hint">Separate with commas — up to 20.</div>
-    <?php if ($err('specializations')): ?><div class="err"><?= esc($err('specializations')) ?></div><?php endif; ?>
-</div>
-
-<div class="field">
-    <label class="font-medium"><input type="checkbox" name="accepts_card_payments" value="1" <?= $v('accepts_card_payments') ? 'checked' : '' ?>> Accepts card payments</label>
-</div>
-<div class="field">
-    <label class="font-medium"><input type="checkbox" name="offers_delivery" value="1" <?= $v('offers_delivery') ? 'checked' : '' ?>> Offers delivery / mobile service</label>
-</div>
-<div class="field">
-    <label class="font-medium"><input type="checkbox" name="offers_online_booking" value="1" <?= $v('offers_online_booking') ? 'checked' : '' ?>> Offers online booking</label>
-</div>
-<?php // Always visible rather than revealed by the checkbox, so it works with
-      // JavaScript off. Filling it in ticks the box server-side anyway. ?>
-<div class="field">
-    <label for="booking_url">Online booking page</label>
-    <input type="text" id="booking_url" name="booking_url" value="<?= esc($v('booking_url'), 'attr') ?>" maxlength="255" placeholder="https://…">
-    <div class="hint">Where customers book an appointment. Shown as a <em>Book online</em> button on your profile.</div>
-    <?php if ($err('booking_url')): ?><div class="err"><?= esc($err('booking_url')) ?></div><?php endif; ?>
 </div>
 
 <div data-address-autocomplete
@@ -273,12 +251,55 @@ helper('directory_hours');
     </div>
 </div>
 
-<?php // Shared with every branch row — see _hours_inputs.php. ?>
+<?php // Title and contact person name a private individual, so they are kept for
+      // administration only — _contact_panel.php does not render either. The
+      // fieldset says so up front rather than leaving owners to guess. ?>
+<fieldset class="form-private">
+    <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
+    <div class="form-row">
+        <div class="field">
+            <label>Title</label>
+            <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…">
+            <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
+        </div>
+        <div class="field">
+            <label>Contact person</label>
+            <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150">
+            <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
+        </div>
+    </div>
+    <div class="hint">For our records, and so we know who to address when we contact you about this listing.</div>
+</fieldset>
+
+<div class="form-section-head">
+    <h3>Make your profile stand out</h3>
+    <p class="hint">All optional, and you can come back to any of it later. Each section you fill in adds a panel to your public profile.</p>
+</div>
+
+<?= view('directory/_service_fields', ['rows' => $vServices, 'err' => $err]) ?>
+
+<?= view('directory/_attribute_fields', [
+    'v'          => $v,
+    'err'        => $err,
+    'categories' => $categories,
+    'selected'   => $vAttributes,
+]) ?>
+
+<?php // Shared with every branch row — see _hours_inputs.php. Open once any
+      // day has something in it. ?>
+<details class="disclosure" <?= array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) ? 'open' : '' ?>>
+    <summary class="disclosure-summary">
+        <span>Opening hours</span>
+        <span class="hint">So customers know when to call</span>
+    </summary>
+    <div class="disclosure-body">
 <?= view('directory/_hours_inputs', [
     'n'     => static fn (string $f): string => $f,
     'hours' => $vHours,
     'copy'  => true,
 ]) ?>
+    </div>
+</details>
 
 <?php // Below every field belonging to the business's own address — its
       // address, its pin and its hours — because a branch repeats all three.
@@ -292,6 +313,14 @@ helper('directory_hours');
     ]) ?>
 <?php endif; ?>
 
+<?php // Open by default: photos do more for a profile than anything else on
+      // this form, so this is the one optional section that is not folded away. ?>
+<details class="disclosure" open>
+    <summary class="disclosure-summary">
+        <span>Logo &amp; photos</span>
+        <span class="hint">Profiles with photos get far more attention</span>
+    </summary>
+    <div class="disclosure-body">
 <?php // accept="image/*" on both is deliberate: it is what makes iOS offer the
       // photo library and transcode HEIC to JPEG on the way out. Narrowing it to
       // a MIME list blocks iPhone photos outright. The server re-checks anyway. ?>
@@ -313,6 +342,15 @@ helper('directory_hours');
       // input to reveal when a slot frees up rather than a page reload. ?>
 <div class="field" data-gallery-upload>
     <label for="gallery-input">Photo gallery</label>
+    <?php // The photos already saved sit right above the input that adds more.
+          // Signup has none, so this renders nothing there. ?>
+    <?php if ($photos !== [] && $deleteBase !== ''): ?>
+        <?= view('directory/_gallery_manage', [
+            'photos'     => $photos,
+            'deleteBase' => $deleteBase,
+            'max'        => \App\Controllers\Listing::GALLERY_MAX,
+        ]) ?>
+    <?php endif; ?>
     <div data-gallery-open <?= $gallerySlots > 0 ? '' : 'hidden' ?>>
         <input type="file" id="gallery-input" name="gallery[]" accept="image/*" multiple
                data-image-upload="multi" data-max-files="<?= (int) $gallerySlots ?>">
@@ -324,6 +362,28 @@ helper('directory_hours');
     </div>
     <div class="hint" data-gallery-full <?= $gallerySlots > 0 ? 'hidden' : '' ?>>This profile already has the maximum number of photos. Delete one above to add another.</div>
 </div>
+    </div>
+</details>
+
+<details class="disclosure" <?= $v('credentials') !== '' || $v('specializations') !== '' || $err('credentials') !== '' || $err('specializations') !== '' ? 'open' : '' ?>>
+    <summary class="disclosure-summary">
+        <span>More details</span>
+        <span class="hint">Qualifications and areas of focus</span>
+    </summary>
+    <div class="disclosure-body">
+<div class="field">
+    <label>Credentials</label>
+    <textarea name="credentials" rows="2" maxlength="500"><?= esc($v('credentials')) ?></textarea>
+    <?php if ($err('credentials')): ?><div class="err"><?= esc($err('credentials')) ?></div><?php endif; ?>
+</div>
+<div class="field">
+    <label>Areas of focus</label>
+    <input type="text" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma-separated, e.g. Bridal packages, Emergency callouts, Home visits">
+    <div class="hint">Separate with commas — up to 20.</div>
+    <?php if ($err('specializations')): ?><div class="err"><?= esc($err('specializations')) ?></div><?php endif; ?>
+</div>
+    </div>
+</details>
 
 <?php if ($showConsent): ?>
     <div class="field">
