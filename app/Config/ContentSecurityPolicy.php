@@ -263,6 +263,13 @@ class ContentSecurityPolicy extends BaseConfig
             // Leaflet marker icons are same-origin files, but canvas/tile
             // shims and the odd inlined SVG arrive as data: URIs.
             'data:',
+            // The upload thumbnails on the listing forms. directory.js decodes
+            // and downscales a picked photo in the browser and previews it from
+            // URL.createObjectURL(), which is a blob: URL — without this every
+            // logo and gallery preview renders as a broken image. A blob: URL
+            // can only be minted by script already running on this origin, so
+            // it admits nothing from anywhere else.
+            'blob:',
             // GA sends its beacons as image requests. Both hosts are needed:
             // measurement hits go to google-analytics.com, while gtag.js also
             // pings googletagmanager.com/a?id=… as an image. Listing only the
