@@ -319,6 +319,17 @@ class ContentSecurityPolicy extends BaseConfig
             'https://*.payfast.io',
         ];
 
+        // The footer newsletter form posts to Mautic, which then 302s back to
+        // our own origin (already covered by 'self'). Derived from the same
+        // config the form reads, so the two cannot drift. Before this was here
+        // the Subscribe button did nothing at all. If Mautic's redirect is ever
+        // pointed somewhere else, a CSP violation for form-action in
+        // writable/logs/ will name the new host.
+        $newsletterHost = $this->originOf(config('Directory')->newsletterFormUrl());
+        if ($newsletterHost !== null) {
+            $this->formAction[] = $newsletterHost;
+        }
+
         // Path-relative on purpose: base_url() is not dependable this early in
         // the boot, and the browser resolves this against the document anyway.
         $this->reportURI = '/csp-report';

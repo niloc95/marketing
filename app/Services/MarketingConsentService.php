@@ -1,0 +1,195 @@
+<?php
+
+namespace App\Services;
+
+use App\Controllers\Legal;
+use App\Models\DirectoryListingModel;
+use CodeIgniter\Database\BaseBuilder;
+
+/**
+ * The listing owner's consent record: terms acceptance and the marketing opt-in.
+ *
+ * The only writer of the terms_* and marketing_* columns. POPIA section 69 lets
+ * us send marketing email only to someone who opted in, and makes it our job to
+ * show when and how they did — so a change is never a bare flag flip, it always
+ * carries a server-stamped date and a source.
+ *
+ * Marketing is a separate, optional box and must stay one. Folding it into the
+ * required terms checkbox would make it a condition of listing, and consent
+ * that is a condition is not freely given.
+ */
+class MarketingConsentService
+{
+    public const SOURCE_SIGNUP      = 'signup';
+    public const SOURCE_MANAGE      = 'manage';
+    public const SOURCE_UNSUBSCRIBE = 'unsubscribe';
+
+    private DirectoryListingModel $listings;
+
+    public function __construct()
+    {
+        $this->listings = new DirectoryListingModel();
+    }
+
+    /**
+     * Columns for a fresh signup (or a rejected listing's resubmission).
+     *
+     * Not ticking the box is not a withdrawal — there was nothing to withdraw —
+     * so marketing_withdrawn_at stays empty and only an opt-in gets a date.
+     *
+     * @return array<string,mixed>
+     */
+    public static function signupColumns(bool $marketingOptIn): array
+    {
+        $now = date('Y-m-d H:i:s');
+
+        return [
+            'terms_accepted_at'        => $now,
+            'terms_version'            => Legal::LAST_UPDATED['terms'],
+            'marketing_opt_in'         => $marketingOptIn ? 1 : 0,
+            'marketing_consent_at'     => $marketingOptIn ? $now : null,
+            'marketing_withdrawn_at'   => null,
+            'marketing_consent_source' => $marketingOptIn ? self::SOURCE_SIGNUP : null,
+        ];
+    }
+
+    /**
+     * Record an owner's choice. Writes only when it actually changes, so saving
+     * an unrelated edit does not move the date the owner first consented.
+     *
+     * @return bool whether anything changed
+     */
+    public function setPreference(int $listingId, bool $optIn, string $source): bool
+    {
+        $listing = $this->listings->find($listingId);
+        if (! is_array($listing) || (bool) (int) ($listing['marketing_opt_in'] ?? 0) === $optIn) {
+            return false;
+        }
+
+        $now = date('Y-m-d H:i:s');
+
+        $saved = (bool) $this->listings->update($listingId, $optIn
+            ? ['marketing_opt_in' => 1, 'marketing_consent_at' => $now, 'marketing_consent_source' => $source]
+            : ['marketing_opt_in' => 0, 'marketing_withdrawn_at' => $now, 'marketing_consent_source' => $source]);
+
+        $fresh = $this->listings->find($listingId);
+        if ($saved && is_array($fresh)) {
+            $this->syncToMautic($fresh);
+        }
+
+        return $saved;
+    }
+
+    /**
+     * Mirror one listing's marketing choice into Mautic, where campaigns go out.
+     *
+     * - Opted in and email verified: create or update the contact and add it to
+     *   the owner segment. No Mautic double opt-in, because the signup
+     *   verification link already proved the address.
+     * - Withdrawn: take it out of the segment and mark it Do Not Contact.
+     * - Anything else (never opted in, or not yet verified): nothing.
+     *
+     * DNC is never lifted from here. Mautic sets it when someone unsubscribes
+     * inside Mautic, and that must stick even if this row still says opted in.
+     * That direction does not flow back into marketing_opt_in (no webhook yet),
+     * but DNC alone is enough to stop sends.
+     *
+     * Never throws and never blocks: see MauticClient. `spark mautic:sync`
+     * re-sends everything, which covers any call that failed here.
+     *
+     * @param array<string,mixed> $listing
+     * @return string what was done: synced | withdrawn | skipped | failed
+     */
+    public function syncToMautic(array $listing): string
+    {
+        $mautic = service('mautic');
+        $email  = (string) ($listing['email'] ?? '');
+        if (! $mautic->isConfigured() || $email === '') {
+            return 'skipped';
+        }
+
+        $optedIn   = ! empty($listing['marketing_opt_in']) && ! empty($listing['is_verified']);
+        $withdrawn = empty($listing['marketing_opt_in']) && ! empty($listing['marketing_withdrawn_at']);
+        if (! $optedIn && ! $withdrawn) {
+            return 'skipped';
+        }
+
+        $contactId = $mautic->upsertContact($email, [
+            'firstname' => (string) ($listing['contact_person'] ?? ''),
+            'company'   => (string) ($listing['display_name'] ?? ''),
+            'tags'      => ['listing-owner'],
+        ]);
+        if ($contactId === null) {
+            return 'failed';
+        }
+
+        if ($optedIn) {
+            return $mautic->addToSegment($contactId, $mautic->ownerSegmentId(), $email) ? 'synced' : 'failed';
+        }
+
+        $removed = $mautic->removeFromSegment($contactId, $mautic->ownerSegmentId(), $email);
+        $dnc     = $mautic->addDoNotContact($contactId, 'Opted out on WebScheduler Local (' . ($listing['marketing_consent_source'] ?? 'unknown') . ')', $email);
+
+        return $removed && $dnc ? 'withdrawn' : 'failed';
+    }
+
+    /**
+     * Every listing whose marketing state Mautic should hold: opted in and
+     * verified, or withdrawn. What `spark mautic:sync` walks.
+     */
+    public function syncCandidates(): DirectoryListingModel
+    {
+        return $this->listings
+            ->groupStart()
+                ->groupStart()->where('marketing_opt_in', 1)->where('is_verified', 1)->groupEnd()
+                ->orGroupStart()->where('marketing_opt_in', 0)->where('marketing_withdrawn_at IS NOT NULL')->groupEnd()
+            ->groupEnd();
+    }
+
+    /**
+     * The unsubscribe link for a listing's marketing email footer (and its
+     * List-Unsubscribe header). The token is minted on first use, so listings
+     * that predate the column get one the first time a campaign asks.
+     */
+    public function unsubscribeUrl(int $listingId): string
+    {
+        $listing = $this->listings->find($listingId);
+        $token   = is_array($listing) ? (string) ($listing['marketing_token'] ?? '') : '';
+
+        if ($token === '') {
+            $token = bin2hex(random_bytes(32));
+            $this->listings->update($listingId, ['marketing_token' => $token]);
+        }
+
+        return base_url('unsubscribe/' . $token);
+    }
+
+    /**
+     * The listing an unsubscribe token belongs to, or null. Refuses anything
+     * that is not the exact shape we mint before it reaches the query.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function findByToken(string $token): ?array
+    {
+        if (preg_match('/^[a-f0-9]{64}$/', $token) !== 1) {
+            return null;
+        }
+
+        $row = $this->listings->where('marketing_token', $token)->first();
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Who may be sent marketing: opted in, and the address proven by the
+     * signup verification link — that click is what makes this a double opt-in.
+     * Soft-deleted rows are excluded by the model.
+     */
+    public function audience(): DirectoryListingModel
+    {
+        return $this->listings
+            ->where('marketing_opt_in', 1)
+            ->where('is_verified', 1);
+    }
+}

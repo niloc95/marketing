@@ -4,6 +4,7 @@ namespace Config;
 
 use App\Libraries\Geocoding\GeocoderInterface;
 use App\Libraries\Geocoding\NominatimGeocoder;
+use App\Libraries\MauticClient;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -40,5 +41,18 @@ class Services extends BaseService
         }
 
         return new NominatimGeocoder();
+    }
+
+    /**
+     * The Mautic API client for the listing-owner marketing sync. A service so
+     * tests can swap in a recording fake with Services::injectMock('mautic').
+     */
+    public static function mautic(bool $getShared = true): MauticClient
+    {
+        if ($getShared) {
+            return static::getSharedInstance('mautic');
+        }
+
+        return new MauticClient();
     }
 }

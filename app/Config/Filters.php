@@ -109,7 +109,12 @@ class Filters extends BaseFilters
             // PayFastNotify — signature, source address, a confirmation
             // POST-back to PayFast, and an amount check. Do not add a route to
             // this list without an equivalent story.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify']],
+            //
+            // unsubscribe/* has one: RFC 8058 one-click unsubscribe is posted by
+            // the mail provider, not a browser, so there is no token to send.
+            // The 64-hex token in the path stands in, and the only thing the
+            // endpoint can do is opt a listing out of marketing email.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'unsubscribe/*']],
             // 'invalidchars',
         ],
         'after' => [

@@ -131,6 +131,10 @@ $groups = [
                 'a' => 'Only what is needed to run the directory and reply to you. Our <a href="' . base_url('privacy') . '">privacy policy</a> sets out exactly what we collect and why, in line with POPIA. We do not sell personal information and we do not share it for advertising.',
             ],
             [
+                'q' => 'Will you send me marketing emails?',
+                'a' => 'Only if you ask for them. Signing up has a separate, optional box for news, tips and offers, and your listing is free whether or not you tick it. Change your mind any time with the unsubscribe link in any of those emails or from <a href="' . base_url('manage') . '">Manage your profile</a>. Emails your listing needs, such as verification and edit links, are not marketing and still arrive.',
+            ],
+            [
                 'q' => 'Is this the same thing as WebScheduler, the booking software?',
                 'a' => 'Related, but separate — and worth not confusing. <strong>' . esc($siteName) . '</strong> is this free public directory: people find you, you are listed, that is it. <strong>WebScheduler</strong> is our paid appointment-scheduling software, which runs on your own infrastructure — you can read about it at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>. Listing here does not sign you up for it, and you never have to buy anything to stay listed.',
             ],

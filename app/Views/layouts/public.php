@@ -223,6 +223,12 @@
         <?php endif; ?>
     <?php endforeach; ?>
 
+    <?php // Where Mautic's redirect lands after a footer newsletter signup. Without
+          // it a working signup looked like nothing happened. Compared, never echoed. ?>
+    <?php if (service('request')->getGet('subscribed') === 'pending'): ?>
+        <div class="container mt-5"><div class="alert alert-info">Almost there. Check your inbox and click the link to confirm your subscription.</div></div>
+    <?php endif; ?>
+
     <?php // Upload problems are a list, and they accompany rather than replace the
           // success message: a save can succeed while some photos are rejected. ?>
     <?php if ($uploadErrors = session()->getFlashdata('upload_errors')): ?>
@@ -255,22 +261,27 @@
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
                 <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>
-                <?php // Newsletter -> Mautic (updates.webscheduler.co.za, form id 1).
+                <?php // Newsletter -> Mautic (updates.webscheduler.co.za), the LOCAL
+                      // form. The marketing site posts to its own form (id 1); the
+                      // two brands used to share it, and its redirect setting sent
+                      // marketing-site signups here. Form id, alias and URL come from
+                      // Config\Directory, which the CSP form-action also reads.
+                      //
                       // Plain cross-origin POST: no JS, no CORS. Mautic stores the
-                      // contact, sends the double opt-in confirmation, then returns
-                      // here via mauticform[return].
+                      // contact, sends the double opt-in confirmation, then redirects
+                      // back here with ?subscribed=pending (notice rendered above).
                       //
                       // The input uses this site's own .field component - the same
                       // wrapper the listing views use - so label and input inherit
                       // light AND dark styling with no utility classes and no local
                       // <style>. Do not reach for .header-search: that is the header
                       // search bar, a different component that only looks similar.
-                      // w-full is not compiled here, hence the inline button width.
                       //
                       // mauticform[...] names are Mautic's field mapping - do not rename. ?>
-                <form action="https://updates.webscheduler.co.za/form/submit?formId=1" method="post" class="mt-4">
-                    <input type="hidden" name="mauticform[formId]" value="1">
-                    <input type="hidden" name="mauticform[formName]" value="newslettersignup">
+                <?php $dir = config('Directory'); ?>
+                <form action="<?= esc($dir->newsletterFormUrl(), 'attr') ?>" method="post" class="mt-4">
+                    <input type="hidden" name="mauticform[formId]" value="<?= (int) $dir->newsletterFormId() ?>">
+                    <input type="hidden" name="mauticform[formName]" value="<?= esc($dir->newsletterFormName(), 'attr') ?>">
                     <input type="hidden" name="mauticform[return]" value="<?= base_url('/') ?>?subscribed=pending">
 
                     <?php // Honeypot: display:none via .hidden. mauticform[honeypot]
@@ -288,8 +299,10 @@
                                autocomplete="email" placeholder="you@business.co.za">
                     </div>
 
+                    <?php // .btn-block, not style="width:100%": style-src-attr is
+                          // 'self', so an inline style attribute is dropped by CSP. ?>
                     <button type="submit" name="mauticform[submit]" value="1"
-                            class="btn btn-accent mt-2" style="width:100%;">
+                            class="btn btn-accent btn-block mt-2">
                         Subscribe
                     </button>
 

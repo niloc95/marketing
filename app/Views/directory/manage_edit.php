@@ -35,6 +35,8 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
 // stored set the owner was trying to clear.
 $vServices   = array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services;
 $vAttributes = array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes;
+// Same reason: a rejected save with the box unticked must not fall back to a stored opt-in.
+$vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marketing_opt_in']) : ! empty($listing['marketing_opt_in']);
 ?>
 <section class="section">
     <div class="container">
@@ -91,6 +93,15 @@ $vAttributes = array_key_exists('attributes_present', $old) ? (is_array($old['at
                     'deleteBase'   => base_url('manage/photo-delete'),
                     'showExtras'   => $showExtras,
                 ]) ?>
+
+                <?php // The marker is what lets updateOwn() read an unticked box
+                      // as "opt out" — an unticked checkbox posts nothing at all. ?>
+                <div class="field">
+                    <label>Email preferences</label>
+                    <input type="hidden" name="marketing_present" value="1">
+                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> Email me occasional news, tips and offers from <?= esc(config('Directory')->siteName()) ?>.</label>
+                    <div class="hint">Optional. Emails about your listing itself — edit links and any badge billing — still arrive either way.</div>
+                </div>
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>
             </form>

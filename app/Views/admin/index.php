@@ -93,7 +93,7 @@ $isTrash = $status === 'trashed';
                           // owner clicked their confirmation link, verified_until means
                           // they pay for the Verified Business badge. One header covering
                           // both is how someone ends up refunding the wrong person. ?>
-                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Email</th><th>Badge</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Email</th><th>Badge</th><th>Marketing</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
@@ -124,6 +124,14 @@ $isTrash = $status === 'trashed';
                                 <span class="pill pill-published" title="Paid through <?= esc($l['verified_until'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
                             <?php elseif (! empty($l['verified_until'])): ?>
                                 <span class="pill pill-unpublished" title="Lapsed <?= esc($l['verified_until'], 'attr') ?>">lapsed</span>
+                            <?php else: ?>
+                                —
+                            <?php endif; ?>
+                        </td>
+                        <?php // Opted in to marketing email (POPIA s69). Read-only here — see admin/edit.php. ?>
+                        <td>
+                            <?php if (! empty($l['marketing_opt_in'])): ?>
+                                <span class="pill pill-published" title="Opted in <?= esc((string) $l['marketing_consent_at'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
                             <?php else: ?>
                                 —
                             <?php endif; ?>

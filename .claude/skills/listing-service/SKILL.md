@@ -93,6 +93,44 @@ over `display_name`/`description`/`credentials`.
   checked for an exception that CI4's `Email::send()` never throws, so outbound mail could
   stop entirely and leave no trace.
 
+## Consent: terms and marketing email (POPIA s69)
+
+- The required signup box (`consent`) confirms authority to publish **and** accepts the
+  Terms and Privacy policy. Marketing is a **separate, optional, unticked** box
+  (`marketing_opt_in`). Never merge them: consent that is a condition of listing is not
+  freely given, so it would not count.
+- `MarketingConsentService` is the only writer of `terms_*` / `marketing_*` columns.
+  They are deliberately not in `OWNER_EDITABLE`, and `DirectoryAdminService::upsert()`
+  never writes them. Every change is stamped `marketing_consent_at` /
+  `marketing_withdrawn_at` + `marketing_consent_source`.
+- The duplicate-email signup branches do not touch consent, because anyone can type another
+  person's address. `/manage/edit` uses the `marketing_present` marker.
+- The marketing audience is `MarketingConsentService::audience()`, meaning opted in **and**
+  `is_verified`. Get unsubscribe links from `unsubscribeUrl($id)`, which stores a random
+  token on first use. `GET /unsubscribe/{token}` only asks; `POST` acts, and is
+  CSRF-exempt for RFC 8058 one-click.
+- `terms_version` records `Legal::LAST_UPDATED['terms']`. Bump that date whenever the
+  terms change.
+- **Mautic sync:** `syncToMautic()` runs on `verify()` and on every preference change,
+  through `service('mautic')` (`App\Libraries\MauticClient`, which never throws). It adds
+  opted-in, verified owners to the `mauticOwnerSegmentId` segment, and on opt-out
+  removes them and sets DNC. It never lifts DNC. `php spark mautic:sync` re-sends
+  everything, so use it after a Mautic outage and once after the first deploy. Leaving
+  `directory.mautic*` unset turns the sync off, which is the local and test default.
+  Tests inject a fake with `Services::injectMock('mautic', …)` and must `resetSingle`
+  it in `tearDown`, because CIUnitTestCase doesn't clear mocks.
+
+## Footer newsletter (Mautic)
+
+- It posts to the **Local** Mautic form (`newsletterFormUrl` / `newsletterFormId` /
+  `newsletterFormName` in `Config\Directory`, default id 2, alias `localnewsletter`). The
+  marketing site uses form 1. The two used to share form 1, and that form's redirect
+  sent marketing-site signups here.
+- `Config\ContentSecurityPolicy` derives the `form-action` host from `newsletterFormUrl`.
+  Without that host, Subscribe silently does nothing; this was the original bug.
+- Mautic redirects back with `?subscribed=pending`, and `layouts/public.php` shows the
+  "check your inbox" notice.
+
 ## Verified Business — the one paid feature
 
 A monthly badge on an otherwise free listing — R29.99 at the time of writing, but the live

@@ -386,8 +386,16 @@ helper('directory_hours');
 </details>
 
 <?php if ($showConsent): ?>
+    <?php // New tab for both links, so reading the terms never costs a half-filled form. ?>
     <div class="field">
-        <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details publicly on <?= esc(config('Directory')->siteName()) ?>.</label>
+        <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details publicly on <?= esc(config('Directory')->siteName()) ?>, and I accept the <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>" target="_blank" rel="noopener">Terms of use</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>" target="_blank" rel="noopener">Privacy policy</a>.</label>
         <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
+    </div>
+    <?php // A second, optional box — never part of the one above. POPIA s69
+          // marketing consent must be opt-in and freely given, and a box you
+          // cannot list without ticking is neither. Unticked by default. ?>
+    <div class="field">
+        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $v('marketing_opt_in') ? 'checked' : '' ?>> Email me occasional news, tips and offers from <?= esc(config('Directory')->siteName()) ?>.</label>
+        <div class="hint">Optional. Your listing is free either way, and you can unsubscribe at any time.</div>
     </div>
 <?php endif; ?>

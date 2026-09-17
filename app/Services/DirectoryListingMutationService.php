@@ -72,6 +72,12 @@ class DirectoryListingMutationService
         // just told the owner to finish — with no resend route anywhere and a
         // 48h verifyTtl running out. A rejected listing was a permanent dead
         // end for the same reason: its owner could never submit again.
+        //
+        // Neither the pending nor the published branch writes the marketing
+        // box. Anyone can type someone else's address into this form, and that
+        // must never opt the real owner in (or out). The rejected branch does,
+        // but it resets the row to pending and unverified, so the choice only
+        // counts once the owner clicks the new verify link.
         $existing = $this->listings->findActiveByEmail((string) $input['email']);
         if ($existing !== null) {
             $status = (string) ($existing['status'] ?? '');
@@ -305,7 +311,7 @@ class DirectoryListingMutationService
             // columns remain for provenance on future imports.
             'source'         => 'public_form',
             'source_url'     => '',
-        ];
+        ] + MarketingConsentService::signupColumns(! empty($input['marketing_opt_in']));
     }
 
     /**
@@ -400,6 +406,12 @@ class DirectoryListingMutationService
 
         $fresh = $this->listings->find((int) $listing['id']);
         $this->notifyAdmin(is_array($fresh) ? $fresh : $listing);
+
+        // The moment a signup opt-in becomes valid: the address is now proven.
+        // A no-op for anyone who did not tick the marketing box.
+        if (is_array($fresh)) {
+            (new MarketingConsentService())->syncToMautic($fresh);
+        }
 
         return is_array($fresh) ? $fresh : $listing;
     }
@@ -625,6 +637,17 @@ class DirectoryListingMutationService
             // drops features the new category does not offer.
             (new ServiceMenuService())->sync($id, $data['category_id'], $input);
 
+            // The marketing box, on the same absent-vs-present terms: an
+            // unticked checkbox posts nothing, so the marker is the only way to
+            // tell "opted out" from "this form never showed the box".
+            if (array_key_exists('marketing_present', $input)) {
+                (new MarketingConsentService())->setPreference(
+                    $id,
+                    ! empty($input['marketing_opt_in']),
+                    MarketingConsentService::SOURCE_MANAGE
+                );
+            }
+
             // Team and branches, on the same terms as tags: absent means leave
             // them alone, present means reconcile against what was submitted.
             //
@@ -734,7 +757,7 @@ class DirectoryListingMutationService
             $errors['category_id'] = 'Please choose a category from the list.';
         }
         if (empty($input['consent'])) {
-            $errors['consent'] = 'Please confirm you may publish these details.';
+            $errors['consent'] = 'Please confirm you may publish these details and accept the terms.';
         }
         // The model enforces this too, but only at insert time, where it
         // surfaces as a generic "could not save" with no field highlighted.

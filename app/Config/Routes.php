@@ -39,6 +39,12 @@ $routes->get('privacy', 'Legal::privacy');
 $routes->get('terms', 'Legal::terms');
 $routes->get('cookie-policy', 'Legal::cookies');
 
+// Marketing email opt-out. Top-level for the same reason. GET asks, POST acts —
+// see the Unsubscribe controller for why, and Config\Filters for the CSRF
+// exemption the POST needs.
+$routes->get('unsubscribe/(:segment)', 'Unsubscribe::confirm/$1');
+$routes->post('unsubscribe/(:segment)', 'Unsubscribe::apply/$1');
+
 // AJAX address autocomplete for the signup/owner/admin listing forms, plus the
 // lookup that centres the pin picker's map on whatever has been typed so far.
 $routes->get('address-suggest', 'AddressSuggest::index');

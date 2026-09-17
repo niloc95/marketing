@@ -64,6 +64,20 @@
       });
     }
 
+    // Newsletter: Mautic redirects back with ?subscribed=pending. Show the
+    // notice once, then drop the parameter so a refresh or a shared link does
+    // not show it again.
+    var notice = document.querySelector('[data-subscribed-notice]');
+    if (notice && /[?&]subscribed=pending(&|$)/.test(window.location.search)) {
+      notice.classList.remove('hidden');
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.delete('subscribed');
+        history.replaceState(null, '', url.pathname + url.search + url.hash);
+      } catch (e) { /* old browser: the notice still shows */ }
+      setTimeout(function () { notice.classList.add('hidden'); }, 10000);
+    }
+
     // Current-year stamp
     document.querySelectorAll('[data-year]').forEach(function (el) {
       el.textContent = String(new Date().getFullYear());

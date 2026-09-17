@@ -215,6 +215,90 @@ class Directory extends BaseConfig
      */
     public bool $payfastSandbox = true;
 
+    /**
+     * The footer newsletter form: a plain cross-origin POST to our Mautic
+     * server (updates.webscheduler.co.za).
+     *
+     * This is the **Local** form, not the marketing site's. The two brands used
+     * to share Mautic form 1, whose own redirect setting outranks the
+     * mauticform[return] each page sends — so marketing-site signups landed
+     * here. Each brand now has its own form, with its own redirect, segment
+     * and confirmation email. The form's alias in Mautic must match
+     * newsletterFormName exactly, and its field aliases must match the
+     * mauticform[...] input names in layouts/public.php.
+     *
+     * Config\ContentSecurityPolicy derives form-action from this URL. The CSP
+     * is what kept this form dead: form-action does not fall back to
+     * default-src, so a host missing there blocks the submit with no visible
+     * error, only a console message.
+     */
+    public string $newsletterFormUrl = 'https://updates.webscheduler.co.za/form/submit?formId=2';
+
+    public int $newsletterFormId = 2;
+
+    public string $newsletterFormName = 'localnewsletter';
+
+    /**
+     * Mautic REST API, for syncing listing owners who opted in to marketing
+     * (MarketingConsentService::syncToMautic()).
+     *
+     * All four empty = sync off. Every Mautic call is then skipped, so local dev
+     * and the test suite never touch the network. Set them in .env only: the
+     * password belongs to a Mautic user limited to contacts and segments, and
+     * this file is committed. HTTP basic auth has to be enabled in Mautic's
+     * API settings.
+     */
+    public string $mauticBaseUrl = '';
+
+    public string $mauticUsername = '';
+
+    public string $mauticPassword = '';
+
+    /** Id of the "Listing owners (opted in)" segment in Mautic. */
+    public int $mauticOwnerSegmentId = 0;
+
+    public function newsletterFormUrl(): string
+    {
+        $env = env('directory.newsletterFormUrl');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->newsletterFormUrl;
+    }
+
+    public function newsletterFormId(): int
+    {
+        $env = env('directory.newsletterFormId');
+        return is_string($env) && ctype_digit(trim($env)) ? (int) trim($env) : $this->newsletterFormId;
+    }
+
+    public function newsletterFormName(): string
+    {
+        $env = env('directory.newsletterFormName');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->newsletterFormName;
+    }
+
+    public function mauticBaseUrl(): string
+    {
+        $env = env('directory.mauticBaseUrl');
+        return rtrim(is_string($env) && trim($env) !== '' ? trim($env) : $this->mauticBaseUrl, '/');
+    }
+
+    public function mauticUsername(): string
+    {
+        $env = env('directory.mauticUsername');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->mauticUsername;
+    }
+
+    public function mauticPassword(): string
+    {
+        $env = env('directory.mauticPassword');
+        return is_string($env) && $env !== '' ? $env : $this->mauticPassword;
+    }
+
+    public function mauticOwnerSegmentId(): int
+    {
+        $env = env('directory.mauticOwnerSegmentId');
+        return is_string($env) && ctype_digit(trim($env)) ? (int) trim($env) : $this->mauticOwnerSegmentId;
+    }
+
     public function siteName(): string
     {
         $env = env('directory.siteName');

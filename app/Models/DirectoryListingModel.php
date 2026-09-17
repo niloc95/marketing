@@ -23,6 +23,8 @@ class DirectoryListingModel extends Model
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'verified_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        'terms_accepted_at', 'terms_version',
+        'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
     ];
 
     /**
@@ -58,6 +60,11 @@ class DirectoryListingModel extends Model
      * booking_url is here on exactly those terms: the form renders it, and
      * updateOwn() and validate() put it through normaliseUrl() alongside
      * `website`, so a "javascript:" value is refused before it reaches an href.
+     *
+     * The terms_* and marketing_* columns are absent although the owner does
+     * change the marketing choice from this form: consent is only worth
+     * anything with a server-stamped date and source beside it, so updateOwn()
+     * hands the checkbox to MarketingConsentService instead of copying it here.
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',

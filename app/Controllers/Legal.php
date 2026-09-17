@@ -20,10 +20,13 @@ class Legal extends BaseController
      *
      * Kept per document rather than as one shared date, so that revising one policy
      * does not date-stamp the other two as changed when their text is untouched.
+     *
+     * Public because signup records the terms date as the version accepted
+     * (MarketingConsentService::signupColumns()), so the two cannot disagree.
      */
-    private const LAST_UPDATED = [
-        'privacy' => '2026-09-15',
-        'terms'   => '2026-08-19',
+    public const LAST_UPDATED = [
+        'privacy' => '2026-09-17',
+        'terms'   => '2026-09-17',
         'cookies' => '2026-08-04',
     ];
 

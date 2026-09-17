@@ -85,6 +85,28 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     <div class="field">
                         <label class="font-medium"><input type="checkbox" name="is_verified" value="1" <?= $v('is_verified') ? 'checked' : '' ?>> Email verified</label>
                     </div>
+                    <?php if (! $isNew): ?>
+                        <?php // Read-only on purpose. Consent has to come from the owner —
+                              // an admin can see it, never set it. See MarketingConsentService. ?>
+                        <?php
+                        $fmt = static fn ($d) => $d ? date('j M Y', strtotime((string) $d)) : '';
+                        $src = static fn () => ! empty($listing['marketing_consent_source']) ? ' (' . $listing['marketing_consent_source'] . ')' : '';
+                        ?>
+                        <div class="field">
+                            <label>Consent record</label>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">
+                                Terms: <?= $listing['terms_accepted_at'] ? 'accepted ' . esc($fmt($listing['terms_accepted_at'])) . ' (version ' . esc((string) $listing['terms_version']) . ')' : 'no record — listed before consent was stored' ?><br>
+                                Marketing emails:
+                                <?php if (! empty($listing['marketing_opt_in'])): ?>
+                                    opted in <?= esc($fmt($listing['marketing_consent_at']) . $src()) ?>
+                                <?php elseif (! empty($listing['marketing_withdrawn_at'])): ?>
+                                    withdrawn <?= esc($fmt($listing['marketing_withdrawn_at']) . $src()) ?>
+                                <?php else: ?>
+                                    not opted in
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block mt-4"><?= $isNew ? 'Create profile' : 'Save changes' ?></button>

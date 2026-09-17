@@ -39,8 +39,13 @@ $contact   = config('Directory')->adminEmail();
                 <li>You hold any licence, registration or professional accreditation your trade requires, and any credential you state is one you actually hold.</li>
                 <li>You own the images you upload, or have permission to use them, and they do not depict identifiable people who have not agreed to appear.</li>
                 <li>You understand the profile will be published publicly and may be indexed by search engines.</li>
+                <li>You have read and accept these terms and our <a href="<?= base_url('privacy') ?>">privacy policy</a>.</li>
             </ul>
             <p>A profile goes live only once you confirm it from the verification email we send.</p>
+            <?php // POPIA s69: marketing is a separate, optional opt-in and never a
+                  // condition of listing. MarketingConsentService and the signup and
+                  // manage forms implement exactly this; change them together. ?>
+            <p><strong>Emails from us.</strong> We send the emails the service needs — verification, profile-management links and, if you buy the Verified Business badge, billing notices — to the address on your profile. We send marketing emails (news, tips and offers about <?= esc($siteName) ?>) <strong>only if you opt in</strong>, using the separate box on the signup form or in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting in is never a condition of listing. You can withdraw at any time, free of charge, through the unsubscribe link in every marketing email or from Manage your profile.</p>
 
             <?php // The only thing on this site anyone pays for, so it gets its own
                   // section rather than a clause buried in another. Written to match

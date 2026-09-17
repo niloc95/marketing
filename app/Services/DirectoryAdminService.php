@@ -293,6 +293,10 @@ class DirectoryAdminService
         // who needs to hand one out should approve the application; an admin who
         // needs to take one away has the Revoke button. Adding it to the block
         // above would make a form post able to mint free subscriptions.
+        //
+        // Nor the terms_* and marketing_* columns: consent has to come from
+        // the owner, so an admin can see it (admin/edit.php) but never set it.
+        // MarketingConsentService is their only writer.
 
         if (($logo = $this->clean($input['logo_path'] ?? '')) !== '') {
             $data['logo_path'] = $logo;
