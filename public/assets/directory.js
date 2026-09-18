@@ -1,9 +1,9 @@
 /* WebScheduler Directory — small page behaviour.
-   Sixteen independent modules (theme toggle / header on scroll / mobile menu /
+   Seventeen independent modules (theme toggle / header on scroll / mobile menu /
    plan picker / reveal / gallery lightbox / share / image uploads / photo delete /
-   verification documents / address autocomplete / map pin picker / trading hours /
-   description rich text / home hero rotation / draft backup), each a no-op if its
-   markup isn't on the page. Event delegation from one
+   verification documents / address autocomplete / search typeahead / map pin
+   picker / trading hours / description rich text / home hero rotation / draft
+   backup), each a no-op if its markup isn't on the page. Event delegation from one
    listener each, so this works for content injected later too.
 
    Two modules have a dependency, both loaded ahead of this file on the three
@@ -989,6 +989,184 @@
   }
 
   document.querySelectorAll('[data-address-autocomplete]').forEach(initAddressAutocomplete);
+
+  // ------------------------------------------------------------ search typeahead
+  // One instance per [data-search-suggest] (directory/_search_input.php). Two can
+  // be on one page — the header bar and the hero form — which is why the listbox
+  // id is passed in by the view rather than minted here.
+  //
+  // Deliberately NOT live results: this suggests things to jump to, and the form
+  // underneath still submits exactly as it did before. With JS off, or with this
+  // endpoint down, the search is untouched.
+  function initSearchSuggest(wrap) {
+    if (!wrap || wrap.dataset.searchSuggestReady === '1') return;
+    wrap.dataset.searchSuggestReady = '1';
+
+    var input = wrap.querySelector('[data-search-suggest-input]');
+    var list = wrap.querySelector('[data-search-suggest-list]');
+    var url = wrap.getAttribute('data-suggest-url');
+    if (!input || !list || !url) return;
+
+    var listId = list.id || 'search-suggest';
+    var debounceTimer = null;
+    var requestSeq = 0;
+    var results = [];
+    var activeIndex = -1;
+
+    // Same three as the endpoint and the FULLTEXT index. Below it there is
+    // nothing worth asking for, and asking anyway is one request per keystroke
+    // from every visitor who starts typing.
+    var MIN_CHARS = 3;
+
+    var KIND = { category: 'Category', place: 'Place' };
+
+    var hideList = function () {
+      list.hidden = true;
+      list.innerHTML = '';
+      activeIndex = -1;
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+    };
+
+    var highlight = function (index) {
+      list.querySelectorAll('li').forEach(function (li, i) {
+        var active = i === index;
+        li.classList.toggle('is-active', active);
+        li.setAttribute('aria-selected', active ? 'true' : 'false');
+        if (active) {
+          input.setAttribute('aria-activedescendant', li.id);
+          li.scrollIntoView({ block: 'nearest' });
+        }
+      });
+      activeIndex = index;
+    };
+
+    var renderResults = function () {
+      list.innerHTML = '';
+      if (!results.length) {
+        // Zero matches has to look different from the dropdown being broken —
+        // and here it also has somewhere to send people, because the full
+        // search looks in descriptions, tags and team members, which these
+        // three lookups do not.
+        var empty = document.createElement('li');
+        empty.className = 'is-empty';
+        empty.setAttribute('aria-disabled', 'true');
+        empty.textContent = 'No quick matches — press Enter to search everything.';
+        list.appendChild(empty);
+        list.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        activeIndex = -1;
+        return;
+      }
+      results.forEach(function (r, i) {
+        var li = document.createElement('li');
+        li.id = listId + '-option-' + i;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', 'false');
+
+        // textContent throughout: every label here is owner-supplied text that
+        // the server sends as data, so this is the only place it is allowed to
+        // become markup — and it never does.
+        var label = document.createElement('span');
+        label.className = 'search-suggest-label';
+        label.textContent = r.label || '';
+        li.appendChild(label);
+
+        if (r.sub) {
+          var sub = document.createElement('span');
+          sub.className = 'search-suggest-sub';
+          sub.textContent = r.sub;
+          li.appendChild(sub);
+        }
+        // Only on the rows that are not a business. A "Business" tag on most of
+        // the list is noise; "Category" and "Place" earn their space because
+        // they explain why a row that is not a business name is in the list.
+        if (KIND[r.type]) {
+          var kind = document.createElement('span');
+          kind.className = 'search-suggest-kind';
+          kind.textContent = KIND[r.type];
+          li.appendChild(kind);
+        }
+        list.appendChild(li);
+      });
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      activeIndex = -1;
+    };
+
+    var go = function (item) {
+      if (item && item.url) window.location.assign(item.url);
+    };
+
+    var doSearch = function () {
+      var query = input.value.trim();
+      if (query.length < MIN_CHARS) {
+        hideList();
+        return;
+      }
+      var seq = ++requestSeq;
+      fetch(url + '?q=' + encodeURIComponent(query), { headers: { Accept: 'application/json' } })
+        .then(function (res) {
+          if (!res.ok) {
+            console.error('Search suggestions: /directory/suggest returned HTTP ' + res.status);
+            return { items: [] };
+          }
+          return res.json();
+        })
+        .then(function (json) {
+          if (seq !== requestSeq) return; // a newer request already resolved
+          results = (json && Array.isArray(json.items)) ? json.items : [];
+          renderResults();
+        })
+        .catch(function (err) {
+          // The form still works. Say so in the console and leave the page alone.
+          console.error('Search suggestions: fetch failed — ' + err.message);
+        });
+    };
+
+    input.addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(doSearch, 450);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (list.hidden) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlight(Math.min(activeIndex + 1, results.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlight(Math.max(activeIndex - 1, 0));
+      } else if (e.key === 'Enter') {
+        // Only when something is highlighted. Enter on a typed query must stay
+        // what it has always been: submit the search.
+        if (activeIndex >= 0 && results[activeIndex]) {
+          e.preventDefault();
+          go(results[activeIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        hideList();
+      }
+    });
+
+    list.addEventListener('click', function (e) {
+      var li = e.target.closest('li');
+      if (!li || li.classList.contains('is-empty')) return;
+      var index = Array.prototype.indexOf.call(list.querySelectorAll('li'), li);
+      if (results[index]) go(results[index]);
+    });
+
+    // Submitting with the list open would otherwise leave it hanging over the
+    // page while the next one loads.
+    var form = input.closest('form');
+    if (form) form.addEventListener('submit', hideList);
+
+    document.addEventListener('click', function (e) {
+      if (!wrap.contains(e.target)) hideList();
+    });
+  }
+
+  document.querySelectorAll('[data-search-suggest]').forEach(initSearchSuggest);
 
   // ------------------------------------------------------- map pin picker
   // No geocoder finds every South African address — OpenStreetMap has never

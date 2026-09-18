@@ -153,6 +153,35 @@ class Directory extends BaseController
     }
 
     /**
+     * Typeahead suggestions for the search boxes, as JSON.
+     *
+     * Its own throttle key, not directory-index-. Sharing that one would mean a
+     * visitor's own typing spending the 60/min budget their search page needs,
+     * and the first thing they would see is their results 429ing.
+     *
+     * Over the limit answers an empty list with a 200, the way AddressSuggest
+     * does. A suggestion list is incidental: showing nothing for a moment is
+     * the right failure, where an error would be noise about something the
+     * visitor did not ask for. The form underneath still submits.
+     *
+     * 30/min is generous against the client's 3-character floor and 450ms
+     * debounce — that is roughly one request per word typed, not per keystroke.
+     */
+    public function suggest()
+    {
+        $throttler = service('throttler');
+        if ($throttler->check('directory-suggest-' . md5((string) $this->request->getIPAddress()), 30, MINUTE) === false) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        // Through searchFilters() so this can never read a longer `q` than the
+        // page it belongs to.
+        $q = $this->searchFilters()['q'];
+
+        return $this->response->setJSON(['items' => (new DirectoryService())->suggest($q)]);
+    }
+
+    /**
      * The search filters, read once so the HTML page and the map JSON can never
      * disagree about what is being searched.
      *

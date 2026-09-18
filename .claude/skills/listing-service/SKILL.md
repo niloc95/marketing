@@ -22,6 +22,7 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET /` | `Directory::home` — featured listings, categories |
 | `GET /directory` | `Directory::index` — browse/search (`q`, `category`, `province`, `city`) |
 | `GET /directory/categories` | `Directory::categories` — all categories hub |
+| `GET /directory/suggest` | `Directory::suggest` — search typeahead JSON (see below) |
 | `GET /directory/{category}/{province}` | `Directory::place` — landing page |
 | `GET /directory/{slug}` | `Directory::segment` → category landing page **or** falls through to `show($slug)`, the listing detail page — category wins so a listing can never claim a category's slug |
 | `GET /directory/verify/{token}` | `Directory::verify` — publishes a pending listing |
@@ -92,6 +93,33 @@ over `display_name`/`description`/`credentials`.
   add a second send path — the error handling here exists because an earlier version
   checked for an exception that CI4's `Email::send()` never throws, so outbound mail could
   stop entirely and leave no trace.
+
+## Search typeahead (`/directory/suggest`)
+
+Every search box — the header bar and the four hero `.searchbar` forms — renders through
+**one partial, `directory/_search_input.php`**, which carries the markup contract
+(`[data-search-suggest]`, the combobox input, the listbox `<ul>`). The client module sits
+in `public/assets/directory.js` beside the address autocomplete and copies it: 3-character
+floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, and
+`textContent` for every label (business names are owner-supplied).
+
+- **It suggests, it does not filter.** Picking a row navigates; Enter with nothing
+  highlighted submits the form exactly as before, so search still works with JS off.
+- **`DirectoryService::suggest()` is deliberately not `browse()`** — three small indexed
+  lookups (businesses 5, categories 3, cities 3, capped at 8 total), because `browse()` is
+  FULLTEXT + four LIKEs + a correlated EXISTS and must never run per keystroke. Ordering
+  puts a prefix match above a mid-word one.
+- **Its own throttle key** (`directory-suggest-`, 30/min). Sharing `directory-index-`
+  (60/min) would have a visitor's typing 429 their own results page. Over the limit
+  answers an empty list with 200, as `AddressSuggest` does.
+- `'suggest'` is in `listing_reserved_slugs()`, like `map` and `province`.
+- **Every caller must pass ALL of the partial's variables**, even empty ones. CI4 renders
+  the content view before the layout and shares one data array, so an omitted variable
+  inherits the other box's value rather than the default — that is how the header bar,
+  which must start empty everywhere, came back pre-filled with the current search.
+- Two CSS rules exist only to stop the dropdown being clipped: `.hero-home` is
+  `overflow-x-clip` (not `overflow-hidden`), and `.header-search` becomes
+  `max-md:overflow-visible` once `.is-solid`.
 
 ## Consent: terms and marketing email (POPIA s69)
 
@@ -288,6 +316,12 @@ two-terminal split without hot reload.
 
 - **Listing detail page**: `list:serve` + `list:dev`, visit
   `http://localhost:8095/directory/{slug}` for a published, seeded listing.
+- **Search typeahead**: type two characters into any search box (nothing should happen —
+  check the network tab), then a third. Arrow keys, Enter on a highlighted row, Escape,
+  and Enter with nothing highlighted (must submit the search). Check the header bar too,
+  at phone width and scrolled, and the home hero — those are the two places the dropdown
+  has been clipped. `curl 'localhost:8095/directory/suggest?q=plu'` answers the endpoint
+  on its own.
 - **Signup flow**: submit `/add-listing`, open Mailpit
   (http://localhost:8025), click the verification link, confirm the listing is now live at
   its slug.
@@ -326,6 +360,11 @@ than an error. When editing views:
 - **No inline `<style>` without the `{csp-style-nonce}` placeholder** — `style-src` is
   `'self'` with no `'unsafe-inline'` (a nonce makes browsers ignore `'unsafe-inline'`
   anyway, so adding it back buys nothing).
+- **No `style=""` attribute on any element either** — `style-src-attr` is `'self'`, so an
+  inline style is dropped and the element silently renders unstyled. The brand `<img>`
+  carried one for months: the logo drew on the text fallback's ocean tile, and every page
+  load wrote two violations into `writable/logs/`. It is `img.brand-mark` in the
+  stylesheet now. JS setting one property at a time (`el.style.setProperty`) is fine.
 - **No inline event handlers** (`onclick=`, `javascript:` URLs) — `script-src-attr` is
   `'self'`. Bind listeners from a file instead.
 - **A new off-site form POST needs adding to `form-action`, and so does wherever it

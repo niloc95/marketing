@@ -58,7 +58,13 @@ if ($indexable && ! empty($result['items'])) {
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Browse</h1>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <input type="text" name="q" value="<?= esc($filters['q'], 'attr') ?>" placeholder="Name, service or keyword">
+            <?= view('directory/_search_input', [
+                'listId'      => 'search-suggest-hero',
+                'value'       => (string) $filters['q'],
+                'placeholder' => 'Name, service or keyword',
+                'ariaLabel'   => '',
+                'type'        => 'text',
+            ]) ?>
             <select name="category">
                 <option value="">All categories</option>
                 <?php foreach ($groups as $groupName => $cats): ?>

@@ -106,13 +106,36 @@ and the consent basis. Editing one usually means editing the other, and they mus
 production together — a normal build ships both, so the hazard is only in hand-uploading
 `contact.php` on its own.
 
+## Newsletter footer (Mautic)
+
+Every page's footer posts to **Mautic form 1** (`newslettersignup`) at
+`updates.webscheduler.co.za`, our own Lightsail instance — a plain cross-origin POST, no
+JS and no CORS. `updates.webscheduler.co.za` is in the external-host allowlist below for
+exactly this reason.
+
+- **This site's form is form 1; the directory app's footer is form 2** (`localnewsletter`).
+  They were one shared form until 2026-09-17, and form 1's own redirect setting outranks
+  the `mauticform[return]` each page sends — which is why signups here used to land on
+  listing.webscheduler.co.za. If a signup ends up on the wrong site, look at the form's
+  *Successful Submit Action* in Mautic, not at the markup here.
+- Mautic redirects back with `?subscribed=pending`, and `assets/site.js` reveals the
+  `[data-subscribed-notice]` element (index.html only — the redirect lands there) and then
+  strips the parameter with `history.replaceState`.
+- The notice's markup lives in `index.html`, not in `site.js`: **Tailwind does not scan
+  scripts**, so classes minted in JS are purged. Same rule as `contact.js` above.
+- Mautic runs its own double opt-in. Anything about who is on which list, and when they
+  are added, is configured there — not in this repo.
+
 ## Build guards (`scripts/build-marketing-site.js`) — easy to trip, know them before editing
 
 - **External-host allowlist**: any `src=`/`href=` pointing at `http(s)://` is checked
   against `webscheduler.co.za`, `www.webscheduler.co.za`, `listing.webscheduler.co.za`
-  (the directory app subdomain), `www.googletagmanager.com`, `www.google-analytics.com`.
-  Anything else (a CDN, a font host, a third-party script) fails the build. Self-host any
-  new asset instead of linking out.
+  (the directory app subdomain), `updates.webscheduler.co.za` (Mautic — the newsletter
+  form's `action`), `www.googletagmanager.com`, `www.google-analytics.com`, plus
+  `inforegulator.org.za` and `policies.google.com`, which the legal pages must link to as
+  content. Anything else (a CDN, a font host, a third-party script) fails the build.
+  Self-host any new asset instead of linking out. Read the list in the script rather than
+  trusting this copy.
 - **Positioning guard**: fails on `open-source`, `free plan`, `free tier`, `free forever`,
   `100% free` (case-insensitive). The product is positioned as paid/self-hosted from
   R160/month — never write copy implying it's free or open-source.

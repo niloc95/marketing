@@ -161,6 +161,9 @@ $routes->get('directory/categories', 'Directory::categories');
 // Pins for the search map, as JSON. Literal segment, same ordering rule — put
 // this below the catch-all and it resolves as a listing slug instead.
 $routes->get('directory/map', 'Directory::map');
+// Search typeahead suggestions, as JSON. Same ordering rule as the map above,
+// and 'suggest' is in listing_reserved_slugs() so no listing can claim it.
+$routes->get('directory/suggest', 'Directory::suggest');
 // Province landing page — /directory/province/{province}. "province" is a
 // literal first segment, so the same ordering rule applies: below the
 // two-segment route it would resolve as a category named "province" and 404.

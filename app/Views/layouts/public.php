@@ -75,7 +75,7 @@
     <header class="site-header">
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>" aria-label="WebScheduler Local">
-                <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" style="background:none;display:block;object-fit:contain;" />
+                <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" />
                 <?php // The full lockup fits from 360px up, which is every current phone.
                       // Narrower than that (SE 1st gen, a folded cover screen) the mark
                       // stands alone rather than truncating — "WebSchedul…" reads as a
@@ -103,7 +103,16 @@
                   // but it is the one that is on every page, and it is the one that
                   // appears and disappears under the reader, so it is worth naming. ?>
             <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Search the directory">
-                <input type="search" name="q" placeholder="Name, service or keyword" aria-label="Search the directory">
+                <?php // No value, deliberately — see the comment above: this bar is the
+                      // "fresh search from anywhere" gesture, so it starts empty even on
+                      // a results page, where the hero form holds the current query. ?>
+                <?= view('directory/_search_input', [
+                    'listId'      => 'search-suggest-header',
+                    'value'       => '',
+                    'placeholder' => 'Name, service or keyword',
+                    'ariaLabel'   => 'Search the directory',
+                    'type'        => 'search',
+                ]) ?>
                 <button class="btn btn-primary" type="submit">
                     <?= lucide('search', 'h-4 w-4 shrink-0') ?>
                     <span>Search</span>
@@ -257,7 +266,7 @@
         <div class="container site-footer-grid">
             <div>
                 <a class="brand" href="<?= base_url('/') ?>">
-                    <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" style="background:none;display:block;object-fit:contain;" />
+                    <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
                 <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>

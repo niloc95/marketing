@@ -144,6 +144,12 @@
     @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary-500
            text-sm font-extrabold text-white;
   }
+  /* The <img> variant of the mark. These three used to be a style="" attribute on
+     the tag, which style-src-attr 'self' blocks — so the logo was being drawn on
+     the rounded ocean tile meant for the text fallback, and every page load wrote
+     two CSP violations into writable/logs/ that had to be read past to find real
+     ones. img: because the rule above is shared with the text fallback. */
+  img.brand-mark { @apply block bg-transparent object-contain; }
   /* Header only — the footer lockup has a whole column to itself. */
   .site-header .brand-mark { @apply h-7 w-7 sm:h-8 sm:w-8; }
   .nav        { @apply flex shrink-0 items-center gap-2 sm:gap-4; }
@@ -202,7 +208,10 @@
   }
   /* h-11, not h-auto, on phones: this is the wrapped second row and it needs a
      height to animate from 0 to. md:h-auto puts it back to hugging the bar. */
-  .site-header.is-solid .header-search { @apply visible h-11 opacity-100 max-md:static md:h-auto; }
+  /* overflow-visible only once solid: at rest the bar is h-0 and the overflow
+     rule above is what keeps the collapsed field from showing, but while it is
+     open the typeahead has to be able to hang below an h-11 row. */
+  .site-header.is-solid .header-search { @apply visible h-11 opacity-100 max-md:static md:h-auto max-md:overflow-visible; }
 
   /* The wrap only ever happens below md and only while scrolled, which is why it
      is scoped here instead of on .site-header > .container: at rest the bar must
@@ -487,8 +496,13 @@
      min-height rather than adding to it, so the hero is the same size it always
      was and items-center now centres the copy in the part of it the bar isn't
      covering. */
+  /* overflow-x-clip, not overflow-hidden: the decorative artwork still must not
+     widen the page, but the search typeahead opens downwards out of this box and
+     overflow-hidden cut it off at the hero's edge. Clip on one axis leaves the
+     other genuinely visible, where `hidden` on one axis forces the other to
+     `auto` and would clip it anyway. */
   .hero-home {
-    @apply relative isolate flex min-h-[520px] items-center overflow-hidden pt-16
+    @apply relative isolate flex min-h-[520px] items-center overflow-x-clip pt-16
            bg-gradient-to-br from-primary-500 to-primary-700 text-white sm:min-h-[640px];
   }
   .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
@@ -1763,6 +1777,34 @@
   .dark .address-suggest-list li.is-empty {
     @apply text-slate-500 hover:bg-transparent hover:text-slate-500;
   }
+
+  /* search typeahead, on every search box (directory/_search_input.php).
+     Its own rules rather than sharing .address-suggest-list: this one opens over
+     the page rather than inside a form, so it needs to clear the z-40 header,
+     and its rows carry a second line the address list has no use for. */
+  .search-suggest { @apply relative w-full; }
+  .search-suggest-list {
+    @apply absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-auto rounded-xl
+           border border-slate-200 bg-white py-1 text-left text-sm shadow-brand-lg;
+  }
+  .search-suggest-list li { @apply flex cursor-pointer items-baseline gap-2 px-3 py-2 text-slate-700; }
+  .search-suggest-list li.is-active,
+  .search-suggest-list li:hover { @apply bg-primary-50 text-primary-700; }
+  .search-suggest-list li.is-empty {
+    @apply cursor-default text-slate-400 hover:bg-transparent hover:text-slate-400;
+  }
+  .search-suggest-label { @apply min-w-0 flex-1 truncate font-medium; }
+  .search-suggest-sub   { @apply shrink-0 text-xs text-slate-500; }
+  .search-suggest-kind  { @apply shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500; }
+  .dark .search-suggest-list { @apply border-slate-700 bg-[#1a202c]; }
+  .dark .search-suggest-list li { @apply text-slate-300; }
+  .dark .search-suggest-list li.is-active,
+  .dark .search-suggest-list li:hover { @apply bg-slate-800 text-white; }
+  .dark .search-suggest-list li.is-empty {
+    @apply text-slate-500 hover:bg-transparent hover:text-slate-500;
+  }
+  .dark .search-suggest-sub  { @apply text-slate-400; }
+  .dark .search-suggest-kind { @apply bg-slate-800 text-slate-400; }
 
   /* pin picker, in the shared listing form */
   .map-picker-optional  { @apply ml-1 text-xs font-normal text-slate-400; }

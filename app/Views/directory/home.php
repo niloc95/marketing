@@ -85,7 +85,13 @@ $hasSlides = $slides !== [];
         <h1>Find someone <span class="text-brand-golden">local</span> you can trust</h1>
         <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — across South Africa. Or add your own business, free.</p>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <input type="text" name="q" placeholder="Name, service or keyword">
+            <?= view('directory/_search_input', [
+                'listId'      => 'search-suggest-hero',
+                'value'       => '',
+                'placeholder' => 'Name, service or keyword',
+                'ariaLabel'   => '',
+                'type'        => 'text',
+            ]) ?>
             <select name="category">
                 <option value="">All categories</option>
                 <?php foreach ($groups as $groupName => $cats): ?>

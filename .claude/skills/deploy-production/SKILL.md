@@ -161,6 +161,26 @@ Between the copy and the migration, new code is live against the old schema. Tha
 surfaces as a 500 on whichever page touches the new column — not as an outage anyone
 notices. Keep the window to seconds.
 
+**An ADDITIVE migration is the exception: run it BEFORE the `cp -a`.** New nullable
+columns and new tables only. Copy the migration files alone into
+`/var/www/listing/directory-app/app/Database/Migrations/`, migrate as `deploy`, check the
+column exists, then copy the code:
+
+```bash
+sudo cp -a /home/deploy/src/dist/listing/directory-app/app/Database/Migrations/<file>.php \
+           /var/www/listing/directory-app/app/Database/Migrations/
+sudo chown deploy:www-data /var/www/listing/directory-app/app/Database/Migrations/<file>.php
+cd /var/www/listing/directory-app && sudo -u deploy php spark migrate --all
+```
+
+Why this way round: parts of the app name their columns explicitly —
+`DirectoryService::mapPoints()` lists every one — so new code against the old schema is
+not a quiet 500 on one page, it breaks the search map for everybody. Old code against the
+new schema is harmless: it neither selects nor writes a column outside its
+`allowedFields`. Proven on the `booking_url` release (2026-09-16) and the consent columns
+(2026-09-17), zero errors either time. A migration that **drops, renames or rewrites** a
+column has a real window and needs expand → migrate code → contract across two releases.
+
 **As `deploy`, never as root or `ubuntu`.** Spark writes to `writable/logs/`, and a
 root-owned log file shows up much later as a log that silently stopped updating.
 

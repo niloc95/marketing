@@ -125,6 +125,101 @@ class DirectoryService
     }
 
     /**
+     * Typeahead suggestions for the search boxes: businesses, categories and
+     * places that match the first few characters someone has typed.
+     *
+     * Deliberately NOT browse(). That method answers "what matches this
+     * search" — FULLTEXT in boolean mode, four unanchored LIKEs and a
+     * correlated EXISTS over two tables — and running it on every keystroke is
+     * the one thing a suggestion list must never do. These are three small
+     * indexed lookups with their own small limits.
+     *
+     * Ordering puts a prefix match above a mid-word one, so typing "plu" offers
+     * "Plumbers" before "Superb Plumbing". LOCATE() rather than a second query:
+     * one pass over the same rows, and it costs nothing at these limits.
+     *
+     * Names come back raw. Everything here is owner-supplied text that is
+     * already public on the profile, and the caller is JSON — so it is encoded
+     * once, by setJSON(), and written into the page with textContent. Escaping
+     * here as well would show a business called "Mom & Pop" as "Mom &amp; Pop".
+     *
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    public function suggest(string $q, int $limit = 8): array
+    {
+        $q = trim($q);
+        // The same floor the endpoint and the browser enforce. Three is also
+        // MySQL's default innodb_ft_min_token_size, so shorter terms are not
+        // usefully searchable anyway.
+        if (mb_strlen($q) < 3) {
+            return [];
+        }
+
+        $db      = db_connect();
+        $escaped = $db->escape($q);
+        $out     = [];
+
+        $listings = $this->listings
+            ->select('display_name, slug, city, province', false)
+            ->where('status', 'published')
+            ->like('display_name', $q)
+            ->orderBy('LOCATE(' . $escaped . ', display_name) = 1', 'DESC', false)
+            ->orderBy('is_featured', 'DESC')
+            ->orderBy('display_name', 'ASC')
+            ->limit(5)
+            ->findAll();
+
+        foreach ($listings as $row) {
+            $out[] = [
+                'type'  => 'listing',
+                'label' => (string) $row['display_name'],
+                'sub'   => trim(implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['province'] ?? '')]))),
+                'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+
+        $categories = $this->categories
+            ->where('is_active', 1)
+            ->like('name', $q)
+            ->orderBy('LOCATE(' . $escaped . ', name) = 1', 'DESC', false)
+            ->orderBy('name', 'ASC')
+            ->limit(3)
+            ->findAll();
+
+        foreach ($categories as $row) {
+            $out[] = [
+                'type'  => 'category',
+                'label' => (string) $row['name'],
+                'sub'   => (string) ($row['group_name'] ?? ''),
+                'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+
+        // Cities of published listings, not a place table — the only places
+        // worth offering are ones that will actually return results.
+        $places = $this->listings
+            ->select('city, province, COUNT(*) AS c', false)
+            ->where('status', 'published')
+            ->where('city !=', '')
+            ->like('city', $q)
+            ->groupBy('city, province')
+            ->orderBy('c', 'DESC')
+            ->limit(3)
+            ->findAll();
+
+        foreach ($places as $row) {
+            $out[] = [
+                'type'  => 'place',
+                'label' => (string) $row['city'],
+                'sub'   => (string) ($row['province'] ?? ''),
+                'url'   => base_url('directory') . '?city=' . rawurlencode((string) $row['city']),
+            ];
+        }
+
+        return array_slice($out, 0, max(1, $limit));
+    }
+
+    /**
      * Every published listing with a position inside the given viewport, for
      * the search map.
      *
