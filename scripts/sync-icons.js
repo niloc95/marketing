@@ -41,8 +41,9 @@ const outDir = path.join(projectRoot, 'resources', 'icons');
 const ICONS = [
   // Chrome: header, mobile menu, theme switch.
   'moon', 'sun', 'menu', 'x', 'search',
-  // Listing cards and profiles.
-  'map-pin', 'star', 'badge-check', 'share', 'link', 'check',
+  // Listing cards and profiles. building-2 is the venue chip — the complex,
+  // mall or building a listing sits in (directory/_card.php, show.php).
+  'map-pin', 'star', 'badge-check', 'share', 'link', 'check', 'building-2',
   // Profile contact card: website row and the Suggest an edit link.
   'external-link', 'square-pen',
   // Navigation and disclosure.

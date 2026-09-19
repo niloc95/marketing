@@ -122,6 +122,13 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('categories/(:num)', 'Admin::updateCategory/$1');
     $routes->post('categories/(:num)/delete', 'Admin::deleteCategory/$1');
 
+    // Venues — the complexes, malls and buildings listings are grouped into.
+    // Same shape as the category CRUD above.
+    $routes->get('venues', 'Admin::venues');
+    $routes->post('venues', 'Admin::storeVenue');
+    $routes->post('venues/(:num)', 'Admin::updateVenue/$1');
+    $routes->post('venues/(:num)/delete', 'Admin::deleteVenue/$1');
+
     // Verified Business review queue. The document route streams PII from
     // outside the docroot, so it lives inside this filter group and nowhere
     // else — see Admin::verificationDocument.
@@ -169,6 +176,11 @@ $routes->get('directory/suggest', 'Directory::suggest');
 // two-segment route it would resolve as a category named "province" and 404.
 // listing_reserved_slugs() keeps anything else from claiming the word.
 $routes->get('directory/province/(:segment)', 'Directory::province/$1');
+// Venue page — /directory/at/{venue}: one complex, mall or building. Same
+// ordering rule, and 'at' is in listing_reserved_slugs() so nothing can claim
+// it. The prefix is what keeps venue slugs out of the category/listing
+// namespace that Directory::segment() resolves.
+$routes->get('directory/at/(:segment)', 'Directory::venue/$1');
 // {category}/{province} landing page.
 $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
 // One segment is either a category landing page or a listing profile;

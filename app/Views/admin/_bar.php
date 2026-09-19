@@ -21,6 +21,7 @@ $awaitingReview = (new App\Models\DirectoryVerificationModel())
             <a href="<?= base_url('admin') ?>">Profiles</a> &middot;
             <a href="<?= base_url('admin/verifications') ?>">Verification<?= $awaitingReview > 0 ? ' (' . (int) $awaitingReview . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
+            <a href="<?= base_url('admin/venues') ?>">Venues</a> &middot;
             <a href="<?= base_url('admin/hero') ?>">Hero photos</a> &middot;
             <a href="<?= base_url('admin/settings') ?>">Settings</a> &middot;
             <a href="<?= base_url('admin/status') ?>">Status</a> &middot;

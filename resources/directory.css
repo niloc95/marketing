@@ -995,6 +995,9 @@
      promoting this business" are different claims and should not look alike.
      no-underline because on the profile page this badge is a link to the FAQ. */
   .badge-verified { @apply bg-emerald-50 text-emerald-700 no-underline; }
+  /* The venue chip — the complex a listing sits in. A link, hence no-underline,
+     and slate rather than a claim colour: it is a place, not a judgement. */
+  .badge-venue { @apply bg-slate-100 text-slate-600 no-underline hover:bg-slate-200 hover:text-slate-900; }
   .dark .badge          { @apply bg-slate-800 text-slate-300; }
   .dark .badge-featured { @apply bg-brand-golden/20 text-brand-golden; }
   .dark .badge-category {
@@ -1002,6 +1005,7 @@
     color: var(--tint-fg-dark, theme(colors.slate.300));
   }
   .dark .badge-verified { @apply bg-emerald-500/15 text-emerald-300; }
+  .dark .badge-venue    { @apply bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white; }
 
   /* The seal is the same claim as .badge-verified, at the size where the mark
      itself does the talking. It is fixed-colour and carries its own artwork, so

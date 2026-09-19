@@ -130,6 +130,7 @@ class Admin extends BaseController
             'errors'     => session()->getFlashdata('errors') ?? [],
             'categories' => $dir->categories(),
             'provinces'  => $dir->provinces(),
+            'venues'     => (new DirectoryAdminService())->allVenues(),
             'tags'       => $listing ? $dir->tagsForListing((int) $listing['id']) : [],
             'services'   => $listing ? (new ServiceMenuService())->servicesFor((int) $listing['id']) : [],
             'attributes' => $listing ? (new ServiceMenuService())->attributeKeysFor((int) $listing['id']) : [],
@@ -552,6 +553,37 @@ class Admin extends BaseController
     {
         $result = (new DirectoryAdminService())->deleteCategory($id);
         return $this->backTo('admin/categories', $result);
+    }
+
+    // ------------------------------------------------------------------ venues
+
+    public function venues()
+    {
+        $svc = new DirectoryAdminService();
+
+        return view('admin/venues', [
+            'venues'    => $svc->allVenues(),
+            'usage'     => $svc->venueUsage(),
+            'provinces' => (new DirectoryService())->provinces(),
+        ]);
+    }
+
+    public function storeVenue()
+    {
+        $result = (new DirectoryAdminService())->saveVenue(null, $this->request->getPost());
+        return $this->backTo('admin/venues', $result);
+    }
+
+    public function updateVenue(int $id)
+    {
+        $result = (new DirectoryAdminService())->saveVenue($id, $this->request->getPost());
+        return $this->backTo('admin/venues', $result);
+    }
+
+    public function deleteVenue(int $id)
+    {
+        $result = (new DirectoryAdminService())->deleteVenue($id);
+        return $this->backTo('admin/venues', $result);
     }
 
     // ------------------------------------------------------------ hero images

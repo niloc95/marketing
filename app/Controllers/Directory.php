@@ -283,6 +283,55 @@ class Directory extends BaseController
     }
 
     /**
+     * /directory/at/{venue} — every published business in one complex, mall or
+     * building.
+     *
+     * The `at/` prefix is deliberate. A bare segment would put venue slugs into
+     * the same namespace as categories and listings, where segment() already
+     * resolves category-then-listing; "at" is reserved instead, so a venue can
+     * never shadow a business or be shadowed by one.
+     *
+     * ?category= narrows within the venue — the chips the view renders. It
+     * reaches browse() as an ordinary filter, so paging and everything else
+     * behave as they do on any other listing page.
+     */
+    public function venue(string $slug)
+    {
+        $svc   = new DirectoryService();
+        $venue = $svc->findVenueBySlug($slug);
+        if ($venue === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $page     = (int) ($this->request->getGet('page') ?? 1);
+        $filters  = $this->searchFilters();
+        $category = $filters['category'];
+        $q        = $filters['q'];
+        $result   = $svc->browse([
+            'venue'    => (int) $venue['id'],
+            'category' => $category,
+            'q'        => $q,
+        ], $page);
+
+        // Same rule as every other landing tier: the page always renders, but
+        // stays out of the index until there is enough on it to be worth a
+        // crawler's time. A filtered view is never indexable — that is the thin
+        // duplicate of the venue page itself.
+        $min       = (int) config('Directory')->landingMinListings;
+        $indexable = (int) $result['total'] >= $min && $page === 1 && $category === '' && $q === '';
+
+        return view('directory/venue', [
+            'venue'      => $venue,
+            'result'     => $result,
+            'indexable'  => $indexable,
+            'category'   => $category,
+            'q'          => $q,
+            'categories' => $svc->categoryCountsForVenue((int) $venue['id']),
+            'total'      => $svc->venueListingCount((int) $venue['id']),
+        ]);
+    }
+
+    /**
      * @param array<string,mixed> $category
      */
     private function renderLanding(DirectoryService $svc, array $category, ?string $province)
@@ -398,6 +447,7 @@ class Directory extends BaseController
                 ],
                 $svc->sitemapLandingUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapProvinceUrls((int) config('Directory')->landingMinListings),
+                $svc->sitemapVenueUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapUrls()
             );
 

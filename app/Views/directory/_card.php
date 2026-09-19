@@ -1,5 +1,9 @@
 <?php
-/** @var array $l */
+/**
+ * @var array $l
+ * @var bool  $hideVenue  true on a venue's own page, where the chip is noise
+ */
+$hideVenue = $hideVenue ?? false;
 $name = $l['display_name'] ?? '';
 $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));
@@ -49,5 +53,11 @@ if (isset($l['distance_m'])) {
               // other says we are promoting it. The stronger claim reads first. ?>
         <?php if (listing_is_verified_business($l)): ?><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span><?php endif; ?>
         <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
+        <?php // The complex this shop sits in. Only present on the queries that
+              // join the venue (browse/featured/recent/related), so nothing else
+              // needs to know venues exist to render a card. ?>
+        <?php if (! $hideVenue && ! empty($l['venue_name'])): ?>
+            <a class="badge badge-venue gap-1" href="<?= esc(base_url('directory/at/' . $l['venue_slug']), 'attr') ?>"><?= lucide('building-2', 'h-3.5 w-3.5 shrink-0') ?><?= esc($l['venue_name']) ?></a>
+        <?php endif; ?>
     </div>
 </div>

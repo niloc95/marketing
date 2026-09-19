@@ -82,6 +82,20 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     <div class="field">
                         <label class="font-medium"><input type="checkbox" name="is_featured" value="1" <?= $v('is_featured') ? 'checked' : '' ?>> Featured</label>
                     </div>
+                    <?php // Admin-only, deliberately: a venue is a claim about a
+                          // shared building, so it is not on the owner form and not
+                          // in OWNER_EDITABLE. Manage the list at /admin/venues. ?>
+                    <div class="field">
+                        <label>Venue <span class="text-xs font-normal text-slate-400">complex, mall or building</span></label>
+                        <select name="venue_id">
+                            <option value="">— none —</option>
+                            <?php foreach ($venues as $ven): ?>
+                                <option value="<?= (int) $ven['id'] ?>" <?= (string) $v('venue_id') === (string) $ven['id'] ? 'selected' : '' ?>>
+                                    <?= esc($ven['name']) ?><?= $ven['city'] ? ' — ' . esc($ven['city']) : '' ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="field">
                         <label class="font-medium"><input type="checkbox" name="is_verified" value="1" <?= $v('is_verified') ? 'checked' : '' ?>> Email verified</label>
                     </div>

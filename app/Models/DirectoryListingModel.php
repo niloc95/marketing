@@ -23,6 +23,7 @@ class DirectoryListingModel extends Model
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'verified_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        'venue_id',
         'terms_accepted_at', 'terms_version',
         'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
     ];
@@ -60,6 +61,12 @@ class DirectoryListingModel extends Model
      * booking_url is here on exactly those terms: the form renders it, and
      * updateOwn() and validate() put it through normaliseUrl() alongside
      * `website`, so a "javascript:" value is refused before it reaches an href.
+     *
+     * venue_id is absent because a venue is an admin's statement about where a
+     * business physically is, shared by every other listing in that complex. An
+     * owner who could set it could move their shop into Oriental Plaza's page
+     * from anywhere in the country. DirectoryAdminService::upsert() writes it,
+     * in the same privileged block as status and is_featured.
      *
      * The terms_* and marketing_* columns are absent although the owner does
      * change the marketing choice from this form: consent is only worth

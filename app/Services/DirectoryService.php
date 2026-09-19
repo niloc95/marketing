@@ -9,6 +9,7 @@ use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPracticeLocationModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryTagModel;
+use App\Models\DirectoryVenueModel;
 use CodeIgniter\Database\BaseBuilder;
 use CodeIgniter\Model;
 
@@ -29,6 +30,7 @@ class DirectoryService
     private DirectoryTagModel $tags;
     private DirectoryListingPhotoModel $photos;
     private DirectoryListingTeamModel $team;
+    private DirectoryVenueModel $venues;
 
     public function __construct()
     {
@@ -39,6 +41,7 @@ class DirectoryService
         $this->tags        = new DirectoryTagModel();
         $this->photos       = new DirectoryListingPhotoModel();
         $this->team         = new DirectoryListingTeamModel();
+        $this->venues       = new DirectoryVenueModel();
     }
 
     /** Radius options offered on the search page, in kilometres. */
@@ -47,7 +50,7 @@ class DirectoryService
     /**
      * Paginated browse/search over published listings.
      *
-     * @param array{q?:string,category?:string,province?:string,city?:string,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string} $filters
+     * @param array{q?:string,category?:string,province?:string,city?:string,venue?:mixed,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string} $filters
      * @return array{items:array,total:int,page:int,perPage:int,totalPages:int,near:?array}
      */
     public function browse(array $filters, int $page = 1, int $perPage = 12): array
@@ -57,7 +60,11 @@ class DirectoryService
 
         $near = $this->nearPoint($filters);
 
-        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group';
+        // The venue join is two columns and a LEFT JOIN: the result card renders
+        // its chip from them, and a listing without a venue is untouched.
+        // mapPoints() deliberately does not join it — the map JSON has no chip.
+        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+            . ', v.name AS venue_name, v.slug AS venue_slug';
         if ($near !== null) {
             // Metres from the visitor. Bound as a value rather than interpolated
             // — this comes off a query string.
@@ -67,6 +74,7 @@ class DirectoryService
         $builder = $this->listings
             ->select($select, false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
             ->where('xs_directory_listings.status', 'published');
 
         $q = trim($filters['q'] ?? '');
@@ -84,6 +92,12 @@ class DirectoryService
         }
         if (! empty($filters['city'])) {
             $builder->like('xs_directory_listings.city', trim($filters['city']));
+        }
+        // where(), never orWhere() — see the comment above applySearch(). The
+        // venue page asks for one building, and an orWhere here would hand it
+        // every listing in the country instead.
+        if (! empty($filters['venue'])) {
+            $builder->where('xs_directory_listings.venue_id', (int) $filters['venue']);
         }
         if ($near !== null) {
             $this->applyNear($builder, $near);
@@ -125,13 +139,13 @@ class DirectoryService
     }
 
     /**
-     * Typeahead suggestions for the search boxes: businesses, categories and
-     * places that match the first few characters someone has typed.
+     * Typeahead suggestions for the search boxes: businesses, categories,
+     * venues and places matching the first few characters someone has typed.
      *
      * Deliberately NOT browse(). That method answers "what matches this
      * search" — FULLTEXT in boolean mode, four unanchored LIKEs and a
      * correlated EXISTS over two tables — and running it on every keystroke is
-     * the one thing a suggestion list must never do. These are three small
+     * the one thing a suggestion list must never do. These are four small
      * indexed lookups with their own small limits.
      *
      * Ordering puts a prefix match above a mid-word one, so typing "plu" offers
@@ -197,6 +211,23 @@ class DirectoryService
 
         // Cities of published listings, not a place table — the only places
         // worth offering are ones that will actually return results.
+        $venues = $this->venues
+            ->where('is_active', 1)
+            ->like('name', $q)
+            ->orderBy('LOCATE(' . $escaped . ', name) = 1', 'DESC', false)
+            ->orderBy('name', 'ASC')
+            ->limit(2)
+            ->findAll();
+
+        foreach ($venues as $row) {
+            $out[] = [
+                'type'  => 'venue',
+                'label' => (string) $row['name'],
+                'sub'   => trim(implode(', ', array_filter([(string) ($row['suburb'] ?? ''), (string) ($row['city'] ?? '')]))),
+                'url'   => base_url('directory/at/' . $row['slug']),
+            ];
+        }
+
         $places = $this->listings
             ->select('city, province, COUNT(*) AS c', false)
             ->where('status', 'published')
@@ -510,6 +541,14 @@ class DirectoryService
             $this->locations->forListing((int) $listing['id'])
         );
         $listing['tags']           = $this->tags->namesForListing((int) $listing['id']);
+        // The complex this business sits in, and how many others are in it, so
+        // the profile can offer "what else is in this building?".
+        $listing['venue'] = ($listing['venue_id'] ?? null)
+            ? $this->venues->find((int) $listing['venue_id'])
+            : null;
+        if (is_array($listing['venue'])) {
+            $listing['venue']['listing_count'] = $this->venueListingCount((int) $listing['venue_id']);
+        }
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
 
         // Free for every listing — see ServiceMenuService.
@@ -544,8 +583,10 @@ class DirectoryService
     public function featured(int $limit = 8): array
     {
         return $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group')
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+                . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
             ->where('xs_directory_listings.status', 'published')
             ->where('xs_directory_listings.is_featured', 1)
             ->orderBy('xs_directory_listings.published_at', 'DESC')
@@ -562,8 +603,10 @@ class DirectoryService
     public function recent(int $limit = 4): array
     {
         return $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group')
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+                . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
             ->where('xs_directory_listings.status', 'published')
             ->orderBy('xs_directory_listings.published_at', 'DESC')
             ->limit($limit)
@@ -855,8 +898,10 @@ class DirectoryService
         }
 
         $builder = $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group')
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+                . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
             ->where('xs_directory_listings.status', 'published')
             ->where('xs_directory_listings.category_id', $categoryId)
             ->where('xs_directory_listings.id !=', $listingId);
@@ -941,6 +986,71 @@ class DirectoryService
             $out[] = [
                 'loc'     => base_url('directory/' . $slugs[$cid] . '/' . slugify($province)),
                 'lastmod' => substr((string) $r['m'] ?: $today, 0, 10),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** @return array<string,mixed>|null */
+    public function findVenueBySlug(string $slug): ?array
+    {
+        return $this->venues->findBySlug($slug);
+    }
+
+    /** Published listings in a venue. */
+    public function venueListingCount(int $venueId): int
+    {
+        return $this->listings
+            ->where('status', 'published')
+            ->where('venue_id', $venueId)
+            ->countAllResults();
+    }
+
+    /**
+     * Categories present in one venue, for the chips that filter within it.
+     * Counted rather than listed flat so a 262-shop complex shows the trades
+     * that are actually in it, biggest first.
+     *
+     * @return array<int,array{name:string,slug:string,c:int}>
+     */
+    public function categoryCountsForVenue(int $venueId, int $limit = 12): array
+    {
+        $rows = $this->listings
+            ->select('p.name AS name, p.slug AS slug, COUNT(*) AS c', false)
+            ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'inner')
+            ->where('xs_directory_listings.status', 'published')
+            ->where('xs_directory_listings.venue_id', $venueId)
+            ->groupBy('p.id')
+            ->orderBy('c', 'DESC')
+            ->limit($limit)
+            ->findAll();
+
+        return array_map(
+            static fn (array $r): array => ['name' => (string) $r['name'], 'slug' => (string) $r['slug'], 'c' => (int) $r['c']],
+            $rows
+        );
+    }
+
+    /**
+     * Venue pages worth submitting — same threshold rule as the landing and
+     * province emitters. An inactive venue is never listed: its page 404s.
+     *
+     * @return array<int,array{loc:string,lastmod:string}>
+     */
+    public function sitemapVenueUrls(int $minListings): array
+    {
+        $today  = date('Y-m-d');
+        $counts = $this->venues->listingCounts();
+
+        $out = [];
+        foreach ($this->venues->active() as $venue) {
+            if (($counts[(int) $venue['id']] ?? 0) < $minListings) {
+                continue;
+            }
+            $out[] = [
+                'loc'     => base_url('directory/at/' . $venue['slug']),
+                'lastmod' => substr((string) ($venue['updated_at'] ?: $today), 0, 10),
             ];
         }
 

@@ -218,6 +218,22 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
                     </div>
                 <?php endif; ?>
 
+                <?php // The complex this business is in, and the way through to
+                      // everything else in it. getProfile() loads the row and the
+                      // count; a listing with no venue renders nothing here. ?>
+                <?php if (! empty($l['venue'])): ?>
+                    <?php $others = (int) ($l['venue']['listing_count'] ?? 0) - 1; ?>
+                    <div class="panel mb-5">
+                        <h3>In this complex</h3>
+                        <p class="text-sm text-slate-700 dark:text-slate-300">
+                            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/at/' . $l['venue']['slug']), 'attr') ?>"><?= esc($l['venue']['name']) ?></a>
+                            <?php if ($others > 0): ?>
+                                &middot; <?= $others ?> other <?= $others === 1 ? 'business' : 'businesses' ?> here
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
+
                 <?php if (! empty($l['tags'])): ?>
                     <div class="panel mb-5">
                         <h3>Areas of focus</h3>

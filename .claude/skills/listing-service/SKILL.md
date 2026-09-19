@@ -23,6 +23,7 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET /directory` | `Directory::index` — browse/search (`q`, `category`, `province`, `city`) |
 | `GET /directory/categories` | `Directory::categories` — all categories hub |
 | `GET /directory/suggest` | `Directory::suggest` — search typeahead JSON (see below) |
+| `GET /directory/at/{venue}` | `Directory::venue` — every business in one complex/mall/building |
 | `GET /directory/{category}/{province}` | `Directory::place` — landing page |
 | `GET /directory/{slug}` | `Directory::segment` → category landing page **or** falls through to `show($slug)`, the listing detail page — category wins so a listing can never claim a category's slug |
 | `GET /directory/verify/{token}` | `Directory::verify` — publishes a pending listing |
@@ -94,6 +95,35 @@ over `display_name`/`description`/`credentials`.
   checked for an exception that CI4's `Email::send()` never throws, so outbound mail could
   stop entirely and leave no trace.
 
+## Venues — one complex, mall or building
+
+`directory_venues` + `xs_directory_listings.venue_id`, added for the Oriental Plaza import
+(262 shops sharing `address_line_2` and one coordinate).
+
+- **Not a tag, deliberately.** `syncListingTags()` replaces a listing's whole tag set on
+  every save and the owner form posts tags as free text, so a venue kept there would
+  vanish the first time an owner edited their profile. The migration docblock says so.
+- **Admin-only.** `venue_id` is in `$allowedFields` but **not** `OWNER_EDITABLE`;
+  `DirectoryAdminService::upsert()` writes it in the same gated block as `status` and
+  `is_featured`. A venue is a claim about a shared building — an owner who could set it
+  could move their shop onto any complex's page.
+- **`ON DELETE SET NULL`.** Deleting a venue ungroups its businesses and deletes none;
+  `deleteVenue()` reports how many were detached. Unlike `deleteCategory()` it does not
+  refuse while in use.
+- The page is `/directory/at/{slug}` — `at` is a reserved slug, and the prefix keeps venue
+  slugs out of the category/listing namespace `Directory::segment()` resolves. Same
+  `landingMinListings` indexability rule as the other landing tiers, a fourth sitemap
+  emitter, and `?category=`/`?q=` narrow **within** the venue (both make it noindex).
+- `browse()`'s venue filter is a plain `where()` after `applySearch()` — an `orWhere()`
+  there escapes the OR group and lists the whole country. There is a test for exactly that.
+- **The map shows the venue's own single pin**, because every shop in a building geocodes
+  to the same point (`ListingGeocoder` leaves `address_line_2` out of the lookup). The
+  `/directory` results map still stacks them — not fixed yet.
+- Bulk assign with `php spark directory:venue-assign --venue <slug> --address2 "…"
+  [--dry-run] [--set-venue-point]`. `--set-venue-point` copies the shops' shared
+  coordinate onto the venue and refuses when they disagree. `--limit 20`, never
+  `--limit=20` (the CLI quirk `GeocodeListings` documents).
+
 ## Search typeahead (`/directory/suggest`)
 
 Every search box — the header bar and the four hero `.searchbar` forms — renders through
@@ -105,8 +135,8 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
 
 - **It suggests, it does not filter.** Picking a row navigates; Enter with nothing
   highlighted submits the form exactly as before, so search still works with JS off.
-- **`DirectoryService::suggest()` is deliberately not `browse()`** — three small indexed
-  lookups (businesses 5, categories 3, cities 3, capped at 8 total), because `browse()` is
+- **`DirectoryService::suggest()` is deliberately not `browse()`** — four small indexed
+  lookups (businesses 5, categories 3, venues 2, cities 3, capped at 8 total), because `browse()` is
   FULLTEXT + four LIKEs + a correlated EXISTS and must never run per keystroke. Ordering
   puts a prefix match above a mid-word one.
 - **Its own throttle key** (`directory-suggest-`, 30/min). Sharing `directory-index-`

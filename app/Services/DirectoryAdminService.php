@@ -9,11 +9,12 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryTagModel;
+use App\Models\DirectoryVenueModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
 
 /**
- * Admin operations over listings and the category taxonomy.
+ * Admin operations over listings, the category taxonomy and venues.
  *
  * Unlike DirectoryListingMutationService::updateOwn(), which writes through a
  * strict owner whitelist, everything here is privileged: status, featured flag,
@@ -25,6 +26,7 @@ class DirectoryAdminService
     private DirectoryCategoryModel $categories;
     private DirectoryTagModel $tags;
     private DirectoryListingPhotoModel $photos;
+    private DirectoryVenueModel $venues;
 
     public function __construct()
     {
@@ -33,6 +35,7 @@ class DirectoryAdminService
         $this->categories = new DirectoryCategoryModel();
         $this->tags       = new DirectoryTagModel();
         $this->photos     = new DirectoryListingPhotoModel();
+        $this->venues     = new DirectoryVenueModel();
     }
 
     /**
@@ -276,6 +279,11 @@ class DirectoryAdminService
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;
             $data['offers_delivery']       = empty($input['offers_delivery']) ? 0 : 1;
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
+            // The complex this business sits in. Privileged for the reason
+            // DirectoryListingModel::OWNER_EDITABLE gives: it is a claim about
+            // a shared building, so an owner who could set it could move their
+            // shop onto any venue's page. 0/'' clears it.
+            $data['venue_id'] = (int) ($input['venue_id'] ?? 0) ?: null;
         }
 
         // A booking link implies the flag, on the same terms as the public and
@@ -628,6 +636,91 @@ class DirectoryAdminService
         return $this->categories->delete($id)
             ? ['ok' => true, 'message' => 'Category deleted.']
             : ['ok' => false, 'message' => 'Could not delete that category.'];
+    }
+
+    // ------------------------------------------------------------------ venues
+
+    /** @return array<int,array<string,mixed>> */
+    public function allVenues(): array
+    {
+        return $this->venues->orderBy('name', 'ASC')->findAll();
+    }
+
+    /** @return array<int,int> venue_id => published listings */
+    public function venueUsage(): array
+    {
+        return $this->venues->listingCounts();
+    }
+
+    /**
+     * @param array<string,mixed> $input
+     * @return array{ok:bool,message:string}
+     */
+    public function saveVenue(?int $id, array $input): array
+    {
+        helper('slug');
+
+        $name = $this->clean($input['name'] ?? '');
+        if ($name === '') {
+            return ['ok' => false, 'message' => 'A venue name is required.'];
+        }
+
+        $data = [
+            'name'         => $name,
+            'address_line' => $this->clean($input['address_line'] ?? '') ?: null,
+            'suburb'       => normalise_place($this->clean($input['suburb'] ?? '')) ?: null,
+            'city'         => normalise_place($this->clean($input['city'] ?? '')) ?: null,
+            'province'     => $this->clean($input['province'] ?? '') ?: null,
+            'postal_code'  => $this->clean($input['postal_code'] ?? '') ?: null,
+            'description'  => $this->clean($input['description'] ?? '') ?: null,
+            'is_active'    => empty($input['is_active']) ? 0 : 1,
+        ];
+
+        // Typed in by hand, or copied off the listings by directory:venue-assign.
+        // Never geocoded here — a venue is one pin and an operator can see on
+        // the page whether it is in the right place.
+        foreach (['latitude', 'longitude'] as $coord) {
+            $value = $this->clean($input[$coord] ?? '');
+            $data[$coord] = is_numeric($value) ? $value : null;
+        }
+
+        if ($id === null) {
+            $data['slug'] = ensure_unique_slug($this->venues, 'slug', $name, null, listing_reserved_slugs(), 180);
+
+            return $this->venues->insert($data)
+                ? ['ok' => true, 'message' => 'Venue added.']
+                : ['ok' => false, 'message' => 'Could not add that venue.'];
+        }
+
+        // Slug left alone on rename, same as saveCategory(): it is the public
+        // URL of the venue page and changing it breaks every link to it.
+        return $this->venues->update($id, $data)
+            ? ['ok' => true, 'message' => 'Venue updated.']
+            : ['ok' => false, 'message' => 'Could not update that venue.'];
+    }
+
+    /**
+     * Delete a venue. Unlike deleteCategory() this does NOT refuse while in
+     * use: the FK is ON DELETE SET NULL, so the businesses survive and are
+     * simply ungrouped. The count is reported so the operator knows what the
+     * deletion just did.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    public function deleteVenue(int $id): array
+    {
+        $inUse = $this->venueUsage()[$id] ?? 0;
+
+        if (! $this->venues->delete($id)) {
+            return ['ok' => false, 'message' => 'Could not delete that venue.'];
+        }
+
+        return [
+            'ok'      => true,
+            'message' => $inUse > 0
+                ? "Venue deleted. {$inUse} profile(s) are no longer grouped; none were removed."
+                : 'Venue deleted.',
+        ];
     }
 
     private function clean($v): string
