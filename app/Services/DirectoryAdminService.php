@@ -303,6 +303,10 @@ class DirectoryAdminService
         // means "off" rather than "not submitted".
         if (array_key_exists('status', $input) || $id === null) {
             $data['status']                = in_array($input['status'] ?? '', ['pending', 'published', 'unpublished', 'rejected'], true) ? $input['status'] : 'pending';
+            // Editorial and NOT for sale. Since listings are ordered by profile
+            // completeness, this flag is the only thing that outranks a better
+            // profile — so selling featured placement would break the promise
+            // in _plan_cards.php in a way the quality score cannot repair.
             $data['is_featured']           = empty($input['is_featured']) ? 0 : 1;
             $data['is_verified']           = empty($input['is_verified']) ? 0 : 1;
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;

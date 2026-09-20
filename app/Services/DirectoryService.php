@@ -119,10 +119,28 @@ class DirectoryService
         // Nearest first when the visitor gave us a position — a featured
         // listing 40km away is not a better answer to "near me" than the one
         // down the road. Otherwise the usual editorial order.
+        //
+        // quality_score is the second key and published_at has dropped to a
+        // tiebreaker. That swap is the whole point: recency used to be the only
+        // real driver, so an empty listing created yesterday outranked a rich
+        // one from last month and nobody had a reason to finish their profile.
+        // The score is earned by filling the profile in and is free to every
+        // listing — see ListingQualityService, which cannot read anything the
+        // paid badge gates, so this does not quietly sell ranking.
+        //
+        // is_featured stays above it: editorial, admin-only, rare, and NOT for
+        // sale. It is now the only thing that outranks a better profile, so if
+        // it is ever sold the promise in _plan_cards.php breaks in a way the
+        // score cannot repair.
         if ($near !== null) {
-            $builder->orderBy('distance_m', 'ASC', false);
+            // The second key here is not decoration. A suburb-precision geocode
+            // gives every listing in that suburb the identical centroid, so
+            // distance_m ties exactly and the order used to be arbitrary.
+            $builder->orderBy('distance_m', 'ASC', false)
+                ->orderBy('xs_directory_listings.quality_score', 'DESC');
         } else {
             $builder->orderBy('xs_directory_listings.is_featured', 'DESC')
+                ->orderBy('xs_directory_listings.quality_score', 'DESC')
                 ->orderBy('xs_directory_listings.published_at', 'DESC');
         }
 
@@ -174,11 +192,15 @@ class DirectoryService
         $out     = [];
 
         $listings = $this->listings
-            ->select('display_name, slug, city, province', false)
+            ->select('display_name, slug, city, province, quality_score', false)
             ->where('status', 'published')
             ->like('display_name', $q)
             ->orderBy('LOCATE(' . $escaped . ', display_name) = 1', 'DESC', false)
             ->orderBy('is_featured', 'DESC')
+            // Five slots out of an unbounded LIKE '%q%' set, and before this
+            // the leftovers were handed out alphabetically — so an empty "AAA
+            // Plumbing" took a slot from a complete listing on every query.
+            ->orderBy('quality_score', 'DESC')
             ->orderBy('display_name', 'ASC')
             ->limit(5)
             ->findAll();
@@ -316,7 +338,20 @@ class DirectoryService
         );
 
         if ($near !== null) {
-            $builder->orderBy('distance_m', 'ASC', false);
+            $builder->orderBy('distance_m', 'ASC', false)
+                ->orderBy('xs_directory_listings.quality_score', 'DESC');
+        } else {
+            // There used to be no ORDER BY here at all, which sounds harmless
+            // next to a limit of 1000 and is not: the caller caps at 200, so a
+            // country-wide viewport kept whichever 200 rows InnoDB reached
+            // first — in practice the 200 oldest listings. If the cap has to
+            // throw pins away, throw away the emptiest profiles instead.
+            //
+            // Caveat worth knowing: this makes the surviving set geographically
+            // non-uniform at low zoom, since a city with richer profiles keeps
+            // more pins than a rural one. The honest fix is server-side
+            // clustering rather than a bigger cap.
+            $builder->orderBy('xs_directory_listings.quality_score', 'DESC');
         }
 
         return $builder->limit(max(1, min($limit, 1000)))->findAll();
@@ -598,16 +633,40 @@ class DirectoryService
      * Most recently published listings — the homepage's freshness signal, and
      * the reason featured() no longer needs a recency fallback.
      *
+     * This is the one surface still led by recency, which is exactly why it
+     * needs a floor. Search results are ordered by quality_score now, so a thin
+     * new listing sinks there; here it would land at the top by definition, and
+     * "the newest to join" would keep being a parade of empty profiles.
+     *
+     * The floor is a gate rather than a sort key on purpose: the section is
+     * still about who is new, just not about who is new and has not bothered.
+     *
+     * @param int|null $minScore overrides Config\Directory::$recentMinQuality
+     *
      * @return array<int,array<string,mixed>>
      */
-    public function recent(int $limit = 4): array
+    public function recent(int $limit = 4, ?int $minScore = null): array
     {
+        $floor = $minScore ?? (int) config('Directory')->recentMinQuality;
+
         return $this->listings
             ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
             ->where('xs_directory_listings.status', 'published')
+            // groupStart/groupEnd, not a bare orWhere — same discipline the
+            // comment above applySearch() demands. An ungrouped orWhere here
+            // would escape the status filter and put unpublished listings on
+            // the home page.
+            ->groupStart()
+                // Fail open on a listing we have never scored. A profile should
+                // not be hidden because our own sweep has not reached it yet,
+                // and during a deploy this is what stops the strip emptying
+                // between the migration and the backfill.
+                ->where('xs_directory_listings.quality_scored_at', null)
+                ->orWhere('xs_directory_listings.quality_score >=', $floor)
+            ->groupEnd()
             ->orderBy('xs_directory_listings.published_at', 'DESC')
             ->limit($limit)
             ->findAll();
@@ -910,7 +969,11 @@ class DirectoryService
             $builder->where('xs_directory_listings.province', $province);
         }
 
+        // Same three keys as browse(), for the same reason: these are three
+        // slots on someone else's profile page, and a fuller neighbour is a
+        // better suggestion than a newer one.
         return $builder->orderBy('xs_directory_listings.is_featured', 'DESC')
+            ->orderBy('xs_directory_listings.quality_score', 'DESC')
             ->orderBy('xs_directory_listings.published_at', 'DESC')
             ->limit($limit)
             ->findAll();

@@ -17,13 +17,14 @@ class DirectoryListingModel extends Model
         'type', 'display_name', 'contact_person', 'title', 'category_id',
         'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin',
-        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
+        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code', 'country',
         'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
         'logo_path', 'slug', 'status', 'is_verified',
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
-        'published_at', 'is_featured', 'verified_until', 'source', 'source_url', 'claim_token',
+        'published_at', 'is_featured', 'verified_until', 'hosting_paid_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
         'venue_id',
+        'quality_score', 'quality_scored_at',
         'terms_accepted_at', 'terms_version',
         'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
     ];
@@ -68,15 +69,32 @@ class DirectoryListingModel extends Model
      * from anywhere in the country. DirectoryAdminService::upsert() writes it,
      * in the same privileged block as status and is_featured.
      *
+     * `country` used to be here and was deliberately removed. It decides
+     * whether a listing is free (South Africa) or needs a paid International
+     * Listing subscription to publish, so leaving it owner-writable made the
+     * paywall a single POST wide: set country=South Africa, save, publish free.
+     * A field that decides what someone is charged cannot be set by the person
+     * being charged. Admin writes it; updateOwn() keeps the stored value.
+     *
+     * `region` stays, alongside `province`. It is the foreign half of the same
+     * address field and decides nothing — an owner correcting their own region
+     * is exactly as harmless as correcting their own province.
+     *
      * The terms_* and marketing_* columns are absent although the owner does
      * change the marketing choice from this form: consent is only worth
      * anything with a server-stamped date and source beside it, so updateOwn()
      * hands the checkbox to MarketingConsentService instead of copying it here.
+     *
+     * quality_score and quality_scored_at are absent for the bluntest reason on
+     * this list: quality_score is the second key in the public search order, so
+     * an owner who could write it could POST themselves to the top of every
+     * result page. It is derived, never submitted — ListingQualityService is the
+     * only writer, and the owner raises it by filling in the fields above.
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
         'credentials', 'description', 'phone', 'phone_alt', 'website',
-        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
+        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
     ];

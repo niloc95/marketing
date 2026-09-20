@@ -1521,6 +1521,34 @@
   .dark .verify-offer      { @apply border-slate-800 bg-slate-900/40; }
   .dark .verify-offer > summary  { @apply text-slate-200; }
 
+  /* Profile strength — the owner's view of what orders the search results.
+     Same .panel chrome as the badge and hosting panels above it, deliberately:
+     it is the third of three and should not shout louder than the two that can
+     be telling someone their listing is offline. */
+  .strength-panel       { @apply mb-6; }
+  .strength-panel-title { @apply text-base font-semibold text-slate-900; }
+  .strength-panel-lead  { @apply mt-3 text-sm text-slate-600; }
+  .strength-panel-note  { @apply mt-3 text-xs text-slate-500; }
+  .strength-bar         { @apply h-2 w-full overflow-hidden rounded-full bg-slate-200; }
+  /* Width is set inline from the score; the transition is here so a save that
+     moves the number reads as movement rather than a different page. */
+  .strength-bar-fill    { @apply block h-full rounded-full transition-[width] duration-500; }
+  .strength-list        { @apply mt-3 list-none space-y-2 pl-0; }
+  /* Two columns: the step and its points on one line, the hint wrapping
+     underneath. Grid rather than flex so the points stay hard right however
+     long the label wraps. */
+  .strength-step        { @apply grid grid-cols-[1fr_auto] gap-x-3 text-sm; }
+  .strength-step-link   { @apply font-medium text-primary-600 hover:underline; }
+  .strength-step-points { @apply text-xs font-semibold tabular-nums text-slate-500; }
+  .strength-step-hint   { @apply col-span-2 text-xs text-slate-500; }
+  .dark .strength-panel-title { @apply text-white; }
+  .dark .strength-panel-lead  { @apply text-slate-300; }
+  .dark .strength-panel-note  { @apply text-slate-400; }
+  .dark .strength-bar         { @apply bg-slate-800; }
+  .dark .strength-step-link   { @apply text-primary-300; }
+  .dark .strength-step-points,
+  .dark .strength-step-hint   { @apply text-slate-400; }
+
   /* The owner dashboard panel. Same .panel chrome as the rest of the page,
      with the state-specific content inside. */
   .verify-panel       { @apply mb-6; }

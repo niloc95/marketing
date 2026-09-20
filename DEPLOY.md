@@ -191,6 +191,27 @@ date comparison at render time, so a business whose payments stop loses the badg
 right day whether or not this job ever runs. Missing a day costs a late reminder and a
 briefly stale admin queue, nothing more.
 
+### Cron: the quality sweep
+
+Add a second daily job:
+
+```
+15 3 * * * cd /home/<cpuser>/<appdir> && php spark directory:quality:recalculate --quiet
+```
+
+It recomputes the profile-completeness score that orders search results
+(`ListingQualityService`).
+
+Unlike the verification sweep above, this one **is** load-bearing, and it is worth
+knowing why. Scores are written at six controller choke points, and sooner or later
+somebody adds a seventh write path and does not call `recalculate()`. That is designed
+for rather than prevented — a stale score misorders results, which is cosmetic rather
+than a correctness bug — but it is only cosmetic because this job closes the gap within a
+day. Ship it in the same deploy as the migration, not later.
+
+`--stale` restricts it to rows never scored or edited since they were last scored, which
+is cheaper if the table ever gets big enough for the full pass to matter.
+
 ### Mapping
 
 The whole mapping stack is open-source: **Leaflet** for the maps, **OpenStreetMap** for
@@ -199,6 +220,35 @@ obtain, no billing account, and nothing is charged per request. Nothing to confi
 beyond the tile source below.
 
 ### First deploy
+
+After the deploy that adds `quality_score` (migration
+`2026-09-20-100000_AddQualityScoreToListings`), run the backfill on the server:
+
+```
+php spark directory:quality:recalculate
+```
+
+Run it **between the migration and the code copy**, which is the order this project
+deploys additive columns in anyway. The command writes only the two new columns, which no
+older code reads, so it is safe against the still-running old code — and doing it here
+means the new ordering is correct from its first request rather than from the first
+nightly sweep.
+
+Skipping it is not a breakage, by design: every row then scores 0, so search order
+degenerates to `is_featured, published_at` — the behaviour from before the feature — and
+the home page's "Recently added" strip lets everything through because
+`quality_scored_at` is still NULL. The nightly sweep repairs it within a day.
+
+Before trusting the home page floor (`Config\Directory::$recentMinQuality`, default 40),
+check the real distribution once the backfill has run:
+
+```sql
+SELECT FLOOR(quality_score/10)*10 AS band, COUNT(*)
+FROM xs_directory_listings WHERE status='published' GROUP BY band;
+```
+
+If much more than a third of published listings sit under 40, set the floor to 30 and
+raise it as profiles fill in — otherwise the strip empties and it reads as a bug.
 
 After the first deploy, run `php spark directory:geocode` on the server to fill in
 coordinates for listings that have none. It also confirms the host permits outbound

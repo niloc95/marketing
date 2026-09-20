@@ -102,6 +102,29 @@ class Directory extends BaseConfig
      */
     public int $landingMinListings = 3;
 
+    /**
+     * Minimum quality score before a listing appears in the "Recently added"
+     * strip on the home page.
+     *
+     * Sibling of $landingMinListings above: both answer "how complete does this
+     * have to be before we put it in front of someone". Search results are
+     * ordered by the same score (DirectoryService::browse()); this is the one
+     * place it is a gate rather than a sort key, because the strip is the last
+     * thing on the site still led by recency and a thin new listing lands at
+     * the top of it by definition.
+     *
+     * 40 is roughly "an address, a phone number and a paragraph" — see the
+     * calibration note in ListingQualityService. A listing that has never been
+     * scored is let through regardless, so a missed backfill empties nothing;
+     * DirectoryService::recent() has the reasoning.
+     *
+     * Overridable per environment as directory.recentMinQuality, so the number
+     * can be tuned on a live server without a deploy. Check the real
+     * distribution before raising it — on a thin directory a high floor empties
+     * the strip and looks like a bug.
+     */
+    public int $recentMinQuality = 40;
+
     /** How long a verification token stays valid (seconds). */
     public int $verifyTtl = 172800; // 48h
 

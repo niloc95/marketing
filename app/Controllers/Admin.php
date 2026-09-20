@@ -16,6 +16,7 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
+use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\SystemStatusService;
 use App\Services\ServiceMenuService;
@@ -197,6 +198,11 @@ class Admin extends BaseController
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
 
+        // After the gallery, for the reason Listing::store() gives. An admin
+        // edit changes the same scored fields an owner edit does, so the score
+        // has to follow it or the admin form becomes a way to go stale.
+        (new ListingQualityService())->recalculate((int) $result['id']);
+
         return $this->withUploadErrors(
             redirect()->to(base_url('admin/edit/' . $result['id']))->with('success', $result['message']),
             array_filter(array_merge([$logo['error']], $gallery['errors'], $headshots['errors']))
@@ -220,6 +226,10 @@ class Admin extends BaseController
 
         $listingId = (int) $photo['listing_id'];
         $model->deleteWithFile($photo);
+
+        // Lowers the score without touching the listing row — same blind spot
+        // Manage::deletePhoto() covers.
+        (new ListingQualityService())->recalculate($listingId);
 
         return $ajax
             ? $this->photoDeleteJson(true, 'Photo removed.', 200, $listingId)

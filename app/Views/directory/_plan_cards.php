@@ -24,11 +24,22 @@ use App\Services\TeamMemberService;
  *    _verification_pitch.php saying the same things; they are the two places the
  *    offer is described to someone who has not bought it yet.
  *
- * 2. The badge does NOT affect search ranking — only is_featured does, and only
- *    in DirectoryService::featured(). Hence the last row, which is a ✗ on BOTH
- *    cards. It is there deliberately: it is the question everyone asks about a
- *    paid tier on a directory, and answering it before it is asked is worth more
- *    than the row costs. Do not "fix" it into a ✓.
+ * 2. The badge does NOT affect search ranking. Hence the last row, which is a ✗
+ *    on BOTH cards. It is there deliberately: it is the question everyone asks
+ *    about a paid tier on a directory, and answering it before it is asked is
+ *    worth more than the row costs. Do not "fix" it into a ✓.
+ *
+ *    What DOES decide the order, all of it in DirectoryService::browse():
+ *    is_featured first, then quality_score, then published_at. The middle one
+ *    is profile completeness — ListingQualityService — and it is free to every
+ *    listing precisely so that this row can stay a ✗. That service cannot read
+ *    anything the badge gates (no team, no branches, no verified_until), which
+ *    is what stops "pay for the badge" becoming "pay to rank" by the back door.
+ *
+ *    is_featured is now the only key above completeness, and it is editorial:
+ *    admin-set, rare, and NOT for sale. Selling featured placement would break
+ *    this row in a way the quality score cannot repair — so if that idea ever
+ *    comes up, it collides with a promise made here first.
  *
  * 3. Caps come from the service constants, never typed as numbers. Copy that
  *    says "up to 12" is a promise the sales page has no way of noticing has
@@ -64,7 +75,7 @@ $rows = [
         'label' => 'A higher position in the search results',
         'free'  => false,
         'paid'  => false,
-        'note'  => 'Not for sale to anyone. Paying does not move you up.',
+        'note'  => 'Not for sale to anyone. Filling in your profile moves you up; paying does not.',
     ],
 ];
 

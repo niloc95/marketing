@@ -82,6 +82,16 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 ]) ?>
             <?php endif; ?>
 
+            <?php // Last of the three panels, and outside the form like the other
+                  // two. It is the only one that is always relevant, so it sits
+                  // closest to the fields it is talking about — and below the
+                  // two that can be telling the owner their listing is offline,
+                  // which outranks anything about completeness. ?>
+            <?= view('directory/_strength_panel', [
+                'strength' => $strength,
+                'floor'    => $strengthFloor,
+            ]) ?>
+
             <?php // data-draft: directory.js keeps a browser-side copy of unsaved edits
                   // and puts them back after any reload. The version is what tells a
                   // draft apart from one made before the listing was saved elsewhere. ?>

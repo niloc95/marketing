@@ -89,8 +89,8 @@ helper('directory_hours');
         </select>
     </div>
     <div class="field">
-        <label>Category *</label>
-        <select name="category_id">
+        <label for="field-category">Category *</label>
+        <select id="field-category" name="category_id">
             <option value="">Choose…</option>
             <?php $cur = ''; foreach ($categories as $p): ?>
                 <?php if (($p['group_name'] ?? '') !== $cur): $cur = $p['group_name']; ?>
@@ -131,8 +131,8 @@ helper('directory_hours');
 
 <div class="form-row">
     <div class="field">
-        <label>Phone</label>
-        <input type="text" name="phone" value="<?= esc($v('phone'), 'attr') ?>" maxlength="40">
+        <label for="field-phone">Phone</label>
+        <input type="text" id="field-phone" name="phone" value="<?= esc($v('phone'), 'attr') ?>" maxlength="40">
         <?php if ($err('phone')): ?><div class="err"><?= esc($err('phone')) ?></div><?php endif; ?>
     </div>
     <div class="field">
@@ -144,8 +144,8 @@ helper('directory_hours');
 </div>
 
 <div class="field">
-    <label>Website</label>
-    <input type="text" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
+    <label for="field-website">Website</label>
+    <input type="text" id="field-website" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
@@ -182,7 +182,11 @@ helper('directory_hours');
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 
-<div data-address-autocomplete
+<?php // id: the profile-strength panel links here for the address, city and
+      // province steps. The ids for those three inputs cannot live in
+      // _address_inputs.php itself — branch rows render the same partial, so
+      // they would repeat down the page. ?>
+<div id="field-address" data-address-autocomplete
      data-suggest-url="<?= base_url('address-suggest') ?>">
     <?php // The address block itself — shared with every branch row in
           // _location_fields.php, which renders the same partial with a
@@ -213,6 +217,7 @@ helper('directory_hours');
           // the form still submits, falling back to server-side geocoding
           // exactly as before. ?>
     <div class="field map-picker"
+         id="field-map"
          data-map-picker
          data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
          data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
@@ -296,18 +301,22 @@ helper('directory_hours');
     <p class="hint">All optional, and you can come back to any of it later. Each section you fill in adds a panel to your public profile.</p>
 </div>
 
+<div id="field-services">
 <?= view('directory/_service_fields', ['rows' => $vServices, 'err' => $err]) ?>
+</div>
 
+<div id="field-features">
 <?= view('directory/_attribute_fields', [
     'v'          => $v,
     'err'        => $err,
     'categories' => $categories,
     'selected'   => $vAttributes,
 ]) ?>
+</div>
 
 <?php // Shared with every branch row — see _hours_inputs.php. Open once any
       // day has something in it. ?>
-<details class="disclosure" <?= array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) ? 'open' : '' ?>>
+<details class="disclosure" id="field-hours" <?= array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) ? 'open' : '' ?>>
     <summary class="disclosure-summary">
         <span>Opening hours</span>
         <span class="hint">So customers know when to call</span>
@@ -398,7 +407,7 @@ helper('directory_hours');
 </div>
 <div class="field">
     <label>Areas of focus</label>
-    <input type="text" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma-separated, e.g. Bridal packages, Emergency callouts, Home visits">
+    <input type="text" id="field-tags" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma-separated, e.g. Bridal packages, Emergency callouts, Home visits">
     <div class="hint">Separate with commas — up to 20.</div>
     <?php if ($err('specializations')): ?><div class="err"><?= esc($err('specializations')) ?></div><?php endif; ?>
 </div>

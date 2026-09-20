@@ -9,6 +9,7 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
@@ -139,8 +140,17 @@ class Manage extends BaseController
         $svc             = new DirectoryService();
         $verification    = new VerificationService();
         $verificationRow = $verification->forListing((int) $listing['id']);
+        $hostingRow      = $verification->forListing(
+            (int) $listing['id'],
+            DirectoryVerificationModel::PLAN_INTERNATIONAL
+        );
         $team            = new TeamMemberService();
         $locations       = new PracticeLocationService();
+
+        $photos     = (new DirectoryListingPhotoModel())->forListing((int) $listing['id']);
+        $services   = (new ServiceMenuService())->servicesFor((int) $listing['id']);
+        $attributes = (new ServiceMenuService())->attributeKeysFor((int) $listing['id']);
+        $tags       = $svc->tagsForListing((int) $listing['id']);
 
         return view('directory/manage_edit', [
             'listing'    => $listing,
@@ -148,10 +158,22 @@ class Manage extends BaseController
             'errors'     => session()->getFlashdata('errors') ?? [],
             'categories' => $svc->categories(),
             'provinces'  => $svc->provinces(),
-            'tags'       => $svc->tagsForListing((int) $listing['id']),
-            'services'   => (new ServiceMenuService())->servicesFor((int) $listing['id']),
-            'attributes' => (new ServiceMenuService())->attributeKeysFor((int) $listing['id']),
-            'photos'     => (new DirectoryListingPhotoModel())->forListing((int) $listing['id']),
+            'countries'  => config('Countries')->grouped(),
+            'tags'       => $tags,
+            'services'   => $services,
+            'attributes' => $attributes,
+            'photos'     => $photos,
+
+            // The four collections above are exactly what the rubric counts, so
+            // the strength meter costs no extra queries — that is what
+            // evaluate()'s optional $counts argument exists for.
+            'strength' => (new ListingQualityService())->strength($listing, [
+                'photos'     => count($photos),
+                'services'   => count($services),
+                'attributes' => count($attributes),
+                'tags'       => count($tags),
+            ]),
+            'strengthFloor' => (int) config('Directory')->recentMinQuality,
             'slots'      => $this->gallerySlots((int) $listing['id']),
             'galleryMax' => self::GALLERY_MAX,
 
@@ -221,6 +243,12 @@ class Manage extends BaseController
             (new DirectoryListingPhotoModel())->appendPhotos((int) $listing['id'], $gallery['photos']);
         }
 
+        // After the gallery, for the reason Listing::store() gives — photos are
+        // appended outside updateOwn()'s transaction and are worth ten points.
+        // Unconditional: this same request may have changed services, tags,
+        // features or hours, all of which score too.
+        (new ListingQualityService())->recalculate((int) $listing['id']);
+
         return $this->withUploadErrors(
             redirect()->to(base_url('manage/edit'))->with('success', $result['message']),
             array_filter(array_merge([$logo['error']], $gallery['errors'], $headshots['errors']))
@@ -258,6 +286,10 @@ class Manage extends BaseController
         }
 
         $model->deleteWithFile($photo);
+
+        // The only path that LOWERS a score without touching the listing row,
+        // so it is the one a recompute hung off the edit form would miss.
+        (new ListingQualityService())->recalculate((int) $listing['id']);
 
         return $ajax
             ? $this->photoDeleteJson(true, 'Photo removed.', 200, (int) $listing['id'])

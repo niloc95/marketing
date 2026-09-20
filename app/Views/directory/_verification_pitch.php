@@ -22,12 +22,17 @@ use App\Services\TeamMemberService;
  * Two rules for anything added here.
  *
  * The first is that every line must be something the code actually does. The
- * badge does NOT affect search ranking — only is_featured does, and only in
- * DirectoryService::featured() — so nothing here may hint that paying moves a
- * business up the results. That claim would be false today and would quietly
- * become a promise we then had to keep. The discoverability line below is about
- * matching more queries, which is real: applySearch() runs an EXISTS over the
- * team table, and the same badge date gates it.
+ * badge does NOT affect search ranking, so nothing here may hint that paying
+ * moves a business up the results. That claim would be false today and would
+ * quietly become a promise we then had to keep. The discoverability line below
+ * is about matching more queries, which is real: applySearch() runs an EXISTS
+ * over the team table, and the same badge date gates it.
+ *
+ * The order is set in DirectoryService::browse(): is_featured, then
+ * quality_score, then published_at. quality_score is how complete a profile is
+ * (ListingQualityService), it is free to every listing, and it deliberately
+ * cannot see anything the badge unlocks. See rule 2 in _plan_cards.php, which
+ * carries the long version — the two files change together.
  *
  * The second is that the caps come from the service constants rather than being
  * typed as numbers. Copy that says "up to 12" is a promise the sales page has no

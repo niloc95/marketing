@@ -11,8 +11,10 @@ use Config\ListingAttributes;
  * "Services & prices" and "Features & amenities" — the structured half of a
  * profile, so the description can stay short.
  *
- * Both are free for every listing. Neither is part of the Verified badge and
- * neither affects ordering.
+ * Both are free for every listing and neither is part of the Verified badge.
+ * Both DO now count towards search ordering — ListingQualityService scores the
+ * row counts — and they are eligible precisely because they are free: the score
+ * may only ever read things no payment gates. See that class's docblock.
  *
  * Same absent-vs-empty rule as tags, team and branches: a section whose marker
  * input is missing from the request is left alone; a present one is reconciled

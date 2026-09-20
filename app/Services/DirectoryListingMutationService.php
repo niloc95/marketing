@@ -10,9 +10,12 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
+use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
+use App\Services\VerificationService;
+use Config\Countries;
 use Config\Directory as DirectoryConfig;
 
 /**
@@ -402,13 +405,29 @@ class DirectoryListingMutationService
             return null;
         }
 
+        // Confirming the email is one question; paying to be hosted is
+        // another, and only a listing outside South Africa is asked the second.
+        //
+        // is_verified is set either way — the address IS proven, and that is
+        // all that column has ever meant. What the country decides is whether
+        // the listing also becomes public now or waits for payment, in which
+        // case it stays 'pending' and the controller sends the owner to
+        // checkout instead of to their profile.
+        $mayPublish = (new VerificationService())->mayPublish($listing);
+
         $this->listings->update((int) $listing['id'], [
             'is_verified'    => 1,
-            'status'         => 'published',
-            'published_at'   => date('Y-m-d H:i:s'),
+            'status'         => $mayPublish ? 'published' : 'pending',
+            'published_at'   => $mayPublish ? date('Y-m-d H:i:s') : null,
             'verify_token'   => null,
             'verify_expires' => null,
         ]);
+
+        // Belt and braces: this is the moment a row enters the public index, so
+        // whatever else happened it leaves here with a score rather than the
+        // default 0. The signup controller already scored it after appending
+        // the gallery; this catches the row that got there another way.
+        (new ListingQualityService())->recalculate((int) $listing['id']);
 
         $fresh = $this->listings->find((int) $listing['id']);
         $this->notifyAdmin(is_array($fresh) ? $fresh : $listing);

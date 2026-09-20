@@ -45,6 +45,10 @@ $groups = [
                 'a' => 'Search by name or keyword, then narrow it down by category, province and town. On the <a href="' . base_url('directory') . '">browse page</a> you can also press <strong>Use my location</strong> to sort by distance — your browser asks permission first, you can refuse, and we never store where you are.',
             ],
             [
+                'q' => 'How is the order of search results decided?',
+                'a' => 'If you have shared your location, by distance — nearest first. Otherwise it is a small number of listings we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website, a description, photos, a list of services and opening hours. Every one of those is free to fill in on any listing, and nothing that costs money counts towards it — the <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. We worked out how the order should work before we worked out what to sell, and we are not going to sell it.',
+            ],
+            [
                 'q' => 'Are the businesses listed here checked?',
                 'a' => 'Some more than others, and it is worth being precise. Before <em>any</em> profile appears we confirm that whoever submitted it can receive email at the address they gave — that is all, and it says nothing about the business itself. A profile carrying a green <strong>Verified Business</strong> badge has been through more: we have seen its company registration document and the owner\'s ID. Even then we do not check qualifications, licences or insurance. Please satisfy yourself as you would with any supplier, and <a href="' . base_url('contact') . '">tell us</a> if a profile looks wrong.',
             ],

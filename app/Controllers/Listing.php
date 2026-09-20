@@ -7,6 +7,7 @@ use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\ListingQualityService;
 use App\Services\VerificationService;
 
 class Listing extends BaseController
@@ -139,6 +140,13 @@ class Listing extends BaseController
         if ($gallery['photos'] !== []) {
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
+
+        // Score the profile now that everything that counts towards it exists.
+        // This has to be here rather than inside submitPublic(): the gallery is
+        // appended above, AFTER that transaction commits, and photos are worth
+        // ten of the hundred points. Scoring inside the service would read a
+        // listing with no photos every time.
+        (new ListingQualityService())->recalculate((int) $result['id']);
 
         // Optional Verified Business application. Also after the commit, and for
         // a second reason beyond needing the id: a rejected document must never
