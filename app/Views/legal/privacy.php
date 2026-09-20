@@ -172,7 +172,7 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Reviewing documents for a Verified Business badge</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
                     <tr><td>Processing payment for the Verified Business badge</td><td>Necessary to perform the agreement for the service</td></tr>
                     <tr><td>Security, rate-limiting and fraud prevention</td><td>Necessary for the security, integrity and availability of the service</td></tr>
-                    <tr><td>Sending news, tips and offers about <?= esc($siteName) ?> by email</td><td>Your consent, given by ticking the optional marketing box at signup or in Manage your profile, which you can withdraw at any time</td></tr>
+                    <tr><td>Sending news, tips and offers about <?= esc($siteName) ?> by email</td><td>Your consent, given by answering &ldquo;Yes&rdquo; to the separate marketing question at signup, or by ticking the box in Manage your profile, which you can withdraw at any time</td></tr>
                     <tr><td>Sending the newsletter to people who signed up for it</td><td>Your consent, confirmed by clicking the link we email you, which you can withdraw at any time</td></tr>
                     <tr><td>Analytics</td><td>Consent, where applicable</td></tr>
                 </tbody>
