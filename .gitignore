@@ -197,3 +197,9 @@ public/assets/consent.css
 # Hot-reload stamp, written by scripts/dev-reload.js on every save. Local timing
 # only — it would change in every commit and mean nothing to anyone else.
 /public/assets/.dev-reload.json
+
+# Outreach working files. These hold third-party personal data — tenant names,
+# phone numbers, email addresses and drafted messages — so they stay on the
+# machine that made them and never reach the remote.
+/oriental-plaza-*.csv
+/orientalplaza.co_store_listings.xlsx
