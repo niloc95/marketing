@@ -474,6 +474,50 @@ if (! function_exists('listing_is_verified_business')) {
     }
 }
 
+if (! function_exists('listing_is_international')) {
+    /**
+     * Is this listing's address outside South Africa?
+     *
+     * The render-time half of the International Listing plan. Asks only about
+     * geography, not about money — VerificationService::requiresSubscription()
+     * adds the "and the plan is switched on" clause, and that is the one a
+     * publish decision must use. This is for views that want to say where a
+     * business is.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_is_international(array $listing): bool
+    {
+        return ! config('Countries')->isLocal((string) ($listing['country'] ?? ''));
+    }
+}
+
+if (! function_exists('listing_subscription_active')) {
+    /**
+     * Is this listing's International Listing subscription paid up?
+     *
+     * The same shape as listing_is_verified_business() and for the same
+     * reasons — one date compare against a column every public query already
+     * selects, evaluated at render time so a wedged sweep cannot leave the
+     * page claiming something that is no longer true.
+     *
+     * What differs is the consequence. An expired badge hides a badge; an
+     * expired subscription means the listing should not be public at all, and
+     * that is enforced by VerificationService::lapseExpired() flipping status
+     * to 'unpublished' rather than by every read query learning about
+     * countries. So this is for the owner's own dashboard, which has to show
+     * someone their subscription state while their listing is down.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_subscription_active(array $listing): bool
+    {
+        $until = trim((string) ($listing['hosting_paid_until'] ?? ''));
+
+        return $until !== '' && $until >= date('Y-m-d');
+    }
+}
+
 if (! function_exists('form_old_value')) {
     /**
      * Flatten one flashed-input value into a string the form can redisplay.

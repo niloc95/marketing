@@ -130,6 +130,7 @@ class Admin extends BaseController
             'errors'     => session()->getFlashdata('errors') ?? [],
             'categories' => $dir->categories(),
             'provinces'  => $dir->provinces(),
+            'countries'  => config('Countries')->grouped(),
             'venues'     => (new DirectoryAdminService())->allVenues(),
             'tags'       => $listing ? $dir->tagsForListing((int) $listing['id']) : [],
             'services'   => $listing ? (new ServiceMenuService())->servicesFor((int) $listing['id']) : [],
@@ -659,6 +660,13 @@ class Admin extends BaseController
             'enabledSource' => $settings->enabledSource(),
             'lastPrice'     => $settings->lastChange(DirectorySettingModel::BADGE_PRICE),
             'lastEnabled'   => $settings->lastChange(DirectorySettingModel::BADGE_ENABLED),
+
+            'intlPrice'         => $settings->internationalPrice(),
+            'intlEnabled'       => $settings->internationalEnabled(),
+            'intlPriceSource'   => $settings->internationalPriceSource(),
+            'intlEnabledSource' => $settings->internationalEnabledSource(),
+            'lastIntlPrice'     => $settings->lastChange(DirectorySettingModel::INTERNATIONAL_PRICE),
+            'lastIntlEnabled'   => $settings->lastChange(DirectorySettingModel::INTERNATIONAL_ENABLED),
             'errors'        => session()->getFlashdata('errors') ?? [],
             'old'           => session()->getFlashdata('old') ?? [],
         ]);

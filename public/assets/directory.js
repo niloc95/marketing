@@ -901,7 +901,11 @@
 
     var doSearch = function () {
       var query = addressInput.value.trim();
-      if (query.length < 3 || !suggestUrl) {
+      // data-suggest-off is set by the country switch below. /address-suggest
+      // asks Nominatim with countrycodes=za, so for an address anywhere else
+      // it can only ever answer "nothing found" — a box that searches and
+      // always fails reads as broken, so it does not search at all.
+      if (query.length < 3 || !suggestUrl || addressWrap.hasAttribute('data-suggest-off')) {
         hideList();
         return;
       }
@@ -946,7 +950,12 @@
       setCoords('', '', '');
     });
     addressWrap.addEventListener('change', function (e) {
-      if (suppressClear || pinIsManual() || !e.target.closest('[data-address-field="province"]')) return;
+      // The country select belongs here too: changing it changes the address
+      // as completely as changing the city does, and the country switch is
+      // what decides whether the pin can even be checked against the South
+      // African bounding box.
+      if (suppressClear || pinIsManual()
+        || !e.target.closest('[data-address-field="province"], [data-address-field="country"]')) return;
       setCoords('', '', '');
     });
 
@@ -989,6 +998,75 @@
   }
 
   document.querySelectorAll('[data-address-autocomplete]').forEach(initAddressAutocomplete);
+
+  // ------------------------------------------------------------ country switch
+  // The address block asks for different things depending on the country: a
+  // South African address has a province from a fixed list of nine and a
+  // four-digit numeric postal code, everything else has a free-text state or
+  // region and a postal code of any shape.
+  //
+  // The server renders whichever half is correct for the stored (or
+  // just-posted) country, so this is enhancement only. With the script off the
+  // form is still right on arrival; change the country and the server answers
+  // with a field error, and the re-rendered form shows the other half. One
+  // round trip, nothing lost.
+  //
+  // The inactive half is BOTH hidden and disabled. Disabled is what stops it
+  // posting: without it, switching to Germany would still submit whatever
+  // province was selected, and the server would have to reject a listing that
+  // claims two mutually exclusive places at once. Both are set as properties
+  // rather than through style, because style-src-attr in the enforcing CSP
+  // drops a style="" attribute and the field would render visible but unusable.
+  (function initCountrySwitch() {
+    var select = document.querySelector('[data-country-select]');
+    if (!select) return;
+
+    // Read from the DOM rather than hardcoded: Config\Countries::SOUTH_AFRICA
+    // is the server's authority, and the first option is it.
+    var LOCAL = select.options.length ? select.options[0].value : 'South Africa';
+
+    var scope = select.closest('[data-address-autocomplete]') || document;
+    var province = scope.querySelector('[data-address-province]');
+    var region = scope.querySelector('[data-address-region]');
+    var postal = scope.querySelector('[data-address-field="postal_code"]');
+
+    var setActive = function (field, on) {
+      if (!field) return;
+      field.hidden = !on;
+      var input = field.querySelector('select, input');
+      if (input) input.disabled = !on;
+    };
+
+    var apply = function () {
+      var isLocal = select.value === LOCAL;
+
+      setActive(province, isLocal);
+      setActive(region, !isLocal);
+
+      if (postal) {
+        // Four numeric digits is the South African shape and nobody else's.
+        if (isLocal) {
+          postal.setAttribute('inputmode', 'numeric');
+          postal.setAttribute('maxlength', '4');
+        } else {
+          postal.removeAttribute('inputmode');
+          postal.setAttribute('maxlength', '20');
+        }
+      }
+
+      // The suggestion endpoint is South-Africa-only (Nominatim is called with
+      // countrycodes=za), so leaving it live abroad means a box that searches
+      // and always finds nothing — which reads as broken rather than as
+      // unavailable. initAddressAutocomplete() checks this flag before firing.
+      if (scope !== document && scope.setAttribute) {
+        if (isLocal) scope.removeAttribute('data-suggest-off');
+        else scope.setAttribute('data-suggest-off', '1');
+      }
+    };
+
+    select.addEventListener('change', apply);
+    apply();
+  })();
 
   // ------------------------------------------------------------ search typeahead
   // One instance per [data-search-suggest] (directory/_search_input.php). Two can

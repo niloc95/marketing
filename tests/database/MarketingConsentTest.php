@@ -15,11 +15,17 @@ use Config\Services;
  * The consent record: terms acceptance and the POPIA s69 marketing opt-in.
  *
  * What these pin is that marketing consent is only ever the owner's own act:
- * a separate box that defaults to off, never written by someone typing the
+ * a separate question with no default, never written by someone typing the
  * owner's address into the signup form, never set by an admin, and always
  * stamped with when and where it changed. And that the unsubscribe link works
  * without a session (one-click) but never on a bare GET, which link scanners
  * would otherwise trigger.
+ *
+ * Signup asks the question as a required yes-or-no rather than an optional
+ * tick-box: the answer is compulsory, the content of it is not. A box that
+ * could not be left unticked would make the consent a condition of listing,
+ * which POPIA s69 does not accept as freely given — so "No thanks" has to
+ * stay a real, cost-free answer.
  *
  * Requires the `tests` database group — see the Tests section of README.md.
  *
@@ -59,8 +65,10 @@ final class MarketingConsentTest extends CIUnitTestCase
 
     // --------------------------------------------------------------- signup
 
-    public function testSignupWithoutTheBoxRecordsTermsButNoMarketing(): void
+    public function testAnsweringNoRecordsTermsButNoMarketing(): void
     {
+        // signup() answers '0' by default — the same end state the old
+        // untouched tick-box produced, now arrived at deliberately.
         $result = (new DirectoryListingMutationService())->submitPublic($this->signup());
 
         $this->assertTrue($result['ok'], $result['message']);
@@ -69,10 +77,10 @@ final class MarketingConsentTest extends CIUnitTestCase
         $this->assertSame(Legal::LAST_UPDATED['terms'], $row['terms_version']);
         $this->assertSame('0', (string) $row['marketing_opt_in']);
         $this->assertNull($row['marketing_consent_at']);
-        $this->assertNull($row['marketing_withdrawn_at'], 'not ticking is not a withdrawal');
+        $this->assertNull($row['marketing_withdrawn_at'], 'answering no is not a withdrawal');
     }
 
-    public function testSignupWithTheBoxRecordsTheOptIn(): void
+    public function testAnsweringYesRecordsTheOptIn(): void
     {
         $result = (new DirectoryListingMutationService())->submitPublic($this->signup(['marketing_opt_in' => '1']));
 
@@ -81,6 +89,52 @@ final class MarketingConsentTest extends CIUnitTestCase
         $this->assertSame('1', (string) $row['marketing_opt_in']);
         $this->assertNotNull($row['marketing_consent_at']);
         $this->assertSame('signup', $row['marketing_consent_source']);
+    }
+
+    public function testSignupRefusesToProceedWithNoAnswerAtAll(): void
+    {
+        // The browser makes the radio group required; this is the half that
+        // survives a crafted POST. Silence is refused — which is the whole
+        // point of the change from an optional box, since an optional box
+        // collects silence from everyone who skims past it.
+        $input = $this->signup();
+        unset($input['marketing_opt_in']);
+
+        $result = (new DirectoryListingMutationService())->submitPublic($input);
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('marketing_opt_in', $result['errors']);
+        $this->assertSame(0, $this->listings->countAllResults());
+    }
+
+    public function testAnEmptyOrUnexpectedAnswerIsRefused(): void
+    {
+        // '' is what a form posts when nothing was picked; anything else is a
+        // crafted POST. Neither may be quietly read as "no" — that would put
+        // words in someone's mouth on a consent record.
+        foreach (['', 'yes', '2'] as $answer) {
+            $result = (new DirectoryListingMutationService())
+                ->submitPublic($this->signup(['marketing_opt_in' => $answer]));
+
+            $this->assertFalse($result['ok'], "Accepted '{$answer}'");
+            $this->assertArrayHasKey('marketing_opt_in', $result['errors']);
+        }
+    }
+
+    public function testAnsweringNoIsNotAConditionOfListing(): void
+    {
+        // The promise in the Terms, as a test: a person who declines marketing
+        // gets exactly the same listing as one who accepts.
+        $no  = (new DirectoryListingMutationService())->submitPublic($this->signup());
+        $yes = (new DirectoryListingMutationService())->submitPublic($this->signup(['marketing_opt_in' => '1']));
+
+        $this->assertTrue($no['ok'], $no['message']);
+        $this->assertTrue($yes['ok'], $yes['message']);
+
+        $a = $this->listings->find((int) $no['id']);
+        $b = $this->listings->find((int) $yes['id']);
+        $this->assertSame($b['status'], $a['status']);
+        $this->assertNotNull($a['terms_accepted_at']);
     }
 
     public function testTheTermsBoxIsStillRequired(): void
@@ -379,10 +433,20 @@ final class MarketingConsentTest extends CIUnitTestCase
     private function signup(array $overrides = []): array
     {
         return array_merge([
+            // A full address is compulsory for a new signup, and matches the
+            // Cape Town coordinates above — see
+            // DirectoryListingMutationService::REQUIRED_ADDRESS_FIELDS.
+            'address_line' => '1 Adderley Street',
+            'city'         => 'Cape Town',
+            'postal_code'  => '8001',
+            'province'     => 'Western Cape',
             'display_name' => 'Signup Plumber',
             'email'        => 'signup-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'  => $this->categoryId,
             'consent'      => 1,
+            // A new signup must ANSWER the marketing question; '0' is a
+            // complete answer and is what an untouched form used to mean.
+            'marketing_opt_in' => '0',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
         ], $overrides);

@@ -46,6 +46,12 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     'categories'   => $categories,
                     'provinces'    => $provinces,
                     'lockEmail'    => false,
+                    // Explicitly false: admin intake covers imports and phone
+                    // captures where the address genuinely is not known yet.
+                    'addressRequired' => false,
+                    'countries'   => $countries,
+                    // Admin is the only place a country can actually change.
+                    'lockCountry' => false,
                     'vHours'       => $vHours,
                     'existingLogo' => (string) ($base['logo_path'] ?? ''),
                     'gallerySlots' => $slots,

@@ -67,6 +67,16 @@ final class SignupDuplicateTest extends CIUnitTestCase
             'email'        => 'dupe-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'  => $this->categoryId,
             'consent'      => 1,
+            // A new signup must ANSWER the marketing question; '0' is a
+            // complete answer and is what an untouched form used to mean.
+            'marketing_opt_in' => '0',
+            // A full address is compulsory for a new signup, and matches the
+            // Cape Town coordinates above — see
+            // DirectoryListingMutationService::REQUIRED_ADDRESS_FIELDS.
+            'address_line' => '1 Adderley Street',
+            'city'         => 'Cape Town',
+            'postal_code'  => '8001',
+            'province'     => 'Western Cape',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
         ], $overrides);

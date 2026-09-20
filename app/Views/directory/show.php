@@ -6,7 +6,13 @@ $siteName = config('Directory')->siteName();
 $name = $l['display_name'] ?? '';
 $prof = $l['category']['name'] ?? ($l['category_name'] ?? '');
 $city = trim((string) ($l['city'] ?? ''));
-$place = trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? '', $l['province'] ?? ''])));
+// Province for a South African listing, region for any other — exactly one is
+// ever set. The $province !== '' branch below is what links through to a
+// province landing page, so a foreign listing correctly falls to the plain
+// text: there is no /directory/{category}/bavaria to link to.
+$place = trim(implode(', ', array_filter([
+    $l['suburb'] ?? '', $l['city'] ?? '', ($l['province'] ?? '') ?: ($l['region'] ?? ''),
+])));
 $logoUrl = listing_image_url($l['logo_path'] ?? null);
 $canonical = base_url('directory/' . ($l['slug'] ?? ''));
 $parts = preg_split('/\s+/', trim($name)) ?: [];

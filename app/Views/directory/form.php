@@ -84,6 +84,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     'categories'  => $categories,
                     'provinces'   => $provinces,
                     'showConsent' => true,
+                    'addressRequired' => true,
+                    'countries'   => $countries,
+                    // Signup picks its country freely; only the owner edit
+                    // locks it, because country is not in OWNER_EDITABLE.
+                    'lockCountry' => false,
                     'vHours'      => $vHours,
                     'vServices'   => is_array($old['services'] ?? null) ? $old['services'] : [],
                     'vAttributes' => is_array($old['attributes'] ?? null) ? $old['attributes'] : [],

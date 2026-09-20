@@ -28,6 +28,9 @@
  * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
  * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
+ * @var bool     $addressRequired  insist on a full address (public signup only)
+ * @var array    $countries  Config\Countries::grouped()
+ * @var bool     $lockCountry  show the country as read-only text (owner edit)
  *
  * Layout: the essentials a profile cannot do without come first and are always
  * open — category, name, contact, a short description and where you are. Then
@@ -54,6 +57,18 @@ $vServices   = $vServices   ?? [];
 $vAttributes = $vAttributes ?? [];
 $photos      = $photos      ?? [];
 $deleteBase  = $deleteBase  ?? '';
+
+// Only public signup insists on an address. The two edit pages pass false
+// explicitly: 10 of the listings that predate the rule have no street address,
+// and their owners must not be locked out of changing a phone number over it.
+// Backfilling those is a separate job. See _address_inputs.php on why every
+// caller passes this rather than leaning on the default.
+$addressRequired = $addressRequired ?? false;
+
+// The country select belongs to the listing's own address only — a branch is
+// another location of the same business and inherits it. See _address_inputs.
+$countries   = $countries   ?? [];
+$lockCountry = $lockCountry ?? false;
 helper('directory_hours');
 ?>
 <?php if ($photos !== [] && $deleteBase !== ''): ?>
@@ -183,6 +198,11 @@ helper('directory_hours');
         // false: the wrapper is opened above, because the pin picker below has
         // to sit inside it.
         'wrap'      => false,
+        'required'  => $addressRequired,
+        // The listing's own address is the one that carries a country.
+        'withCountry' => true,
+        'countries'   => $countries,
+        'lockCountry' => $lockCountry,
     ]) ?>
 
     <?php // The pin picker. No geocoder has a record of every real South African
@@ -391,11 +411,33 @@ helper('directory_hours');
         <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details publicly on <?= esc(config('Directory')->siteName()) ?>, and I accept the <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>" target="_blank" rel="noopener">Terms of use</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>" target="_blank" rel="noopener">Privacy policy</a>.</label>
         <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
     </div>
-    <?php // A second, optional box — never part of the one above. POPIA s69
-          // marketing consent must be opt-in and freely given, and a box you
-          // cannot list without ticking is neither. Unticked by default. ?>
+    <?php // A second question, never part of the one above, and deliberately
+          // NOT a tick-box.
+          //
+          // POPIA s69 marketing consent must be opt-in and freely given. A box
+          // you cannot list without ticking is neither — the consent it records
+          // would not be valid, which is worse than no consent at all because
+          // it looks like permission and is not. A pre-ticked box fails the
+          // same test.
+          //
+          // So the choice is compulsory but the ANSWER is free: the form will
+          // not submit until one of these is picked, and "No thanks" is a
+          // first-class answer that costs the person nothing. That gets a
+          // decision out of every signup rather than silence from the people
+          // who skim past an optional box, while keeping every opt-in one we
+          // can actually rely on — and keeps true the promise in the Terms
+          // that opting in is never a condition of listing.
+          //
+          // Do not "simplify" this back to a single required checkbox. ?>
     <div class="field">
-        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $v('marketing_opt_in') ? 'checked' : '' ?>> Email me occasional news, tips and offers from <?= esc(config('Directory')->siteName()) ?>.</label>
-        <div class="hint">Optional. Your listing is free either way, and you can unsubscribe at any time.</div>
+        <fieldset class="consent-choice">
+            <legend>Email me occasional news, tips and offers from <?= esc(config('Directory')->siteName()) ?>.</legend>
+            <?php // `required` on one radio makes the whole group required in
+                  // the browser; the server re-checks in validate(). ?>
+            <label><input type="radio" name="marketing_opt_in" value="1" required <?= $v('marketing_opt_in') === '1' ? 'checked' : '' ?>> Yes, email me</label>
+            <label><input type="radio" name="marketing_opt_in" value="0" <?= $v('marketing_opt_in') === '0' ? 'checked' : '' ?>> No thanks</label>
+        </fieldset>
+        <div class="hint">Please choose one. Your listing is free either way, and you can change your mind or unsubscribe at any time.</div>
+        <?php if ($err('marketing_opt_in')): ?><div class="err"><?= esc($err('marketing_opt_in')) ?></div><?php endif; ?>
     </div>
 <?php endif; ?>

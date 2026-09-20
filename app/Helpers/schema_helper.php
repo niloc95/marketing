@@ -413,7 +413,10 @@ if (! function_exists('schema_local_business')) {
             '@type'           => 'PostalAddress',
             'streetAddress'   => trim((string) ($l['address_line'] ?? '')),
             'addressLocality' => trim((string) ($l['city'] ?? '')),
-            'addressRegion'   => trim((string) ($l['province'] ?? '')),
+            // addressRegion is schema.org's one slot for "the bit between city
+            // and country", which province and region are the local and
+            // foreign halves of. Exactly one is ever populated.
+            'addressRegion'   => trim((string) ($l['province'] ?? '')) ?: trim((string) ($l['region'] ?? '')),
             'postalCode'      => trim((string) ($l['postal_code'] ?? '')),
             'addressCountry'  => trim((string) ($l['country'] ?? '')),
         ], static fn ($v) => $v !== '');

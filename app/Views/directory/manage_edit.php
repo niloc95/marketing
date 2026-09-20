@@ -58,7 +58,21 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/signout') ?>" data-draft-signout>Sign out</a>
             </div>
 
-            <?php // Outside the listing form: this panel posts its own forms. ?>
+            <?php // Outside the listing form: these panels post their own forms.
+                  //
+                  // Hosting first, deliberately. When it is unpaid the listing is
+                  // not public at all, which outranks anything the badge panel
+                  // below has to say. ?>
+            <?php if ($hostingRequired): ?>
+                <?= view('directory/_hosting_panel', [
+                    'listing'      => $listing,
+                    'subscription' => $hosting,
+                    'amount'       => $hostingAmount,
+                    'payable'      => $verificationPayable,
+                    'pending'      => $hostingPending,
+                ]) ?>
+            <?php endif; ?>
+
             <?php if ($verificationOffered): ?>
                 <?= view('directory/_verification_panel', [
                     'verification' => $verification,
@@ -82,6 +96,16 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     'categories'   => $categories,
                     'provinces'    => $provinces,
                     'lockEmail'    => true,
+                    // Explicitly false: an owner whose listing predates the
+                    // address rule must still be able to save other edits.
+                    'addressRequired' => false,
+                    'countries'   => $countries,
+                    // Read-only here: country decides whether this listing
+                    // needs an International Listing subscription, so the
+                    // person being charged does not get to set it. updateOwn()
+                    // ignores a posted country outright — this only stops the
+                    // form offering a control that would silently do nothing.
+                    'lockCountry' => true,
                     'vHours'       => $vHours,
                     'existingLogo' => (string) ($listing['logo_path'] ?? ''),
                     'gallerySlots' => $slots,

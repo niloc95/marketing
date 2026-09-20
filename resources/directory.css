@@ -1337,6 +1337,20 @@
   .draft-banner p { @apply m-0 min-w-0 flex-1 basis-60; }
   .dark .draft-banner { @apply border-amber-500/30 bg-amber-500/10 text-amber-200; }
 
+  /* The marketing question on signup — a required Yes/No, not a tick-box.
+     See the comment above it in _form_fields.php for why it is not a checkbox.
+
+     The legend carries the question and has to read as the field's label, so
+     it takes the same weight as one; the two radios sit under it as ordinary
+     choices. `.field label` is block and margin-bottom by default, which would
+     stack the radio above its own words — hence the flex override here. */
+  .consent-choice        { @apply m-0 border-0 p-0; }
+  .consent-choice legend { @apply mb-1.5 p-0 text-sm font-medium text-slate-700; }
+  .consent-choice label  { @apply mb-0 flex items-center gap-2 py-0.5 text-sm font-normal text-slate-600; }
+  .consent-choice input  { @apply m-0 shrink-0; }
+  .dark .consent-choice legend { @apply text-slate-200; }
+  .dark .consent-choice label  { @apply text-slate-300; }
+
   /* Fields kept for administration only — see _form_fields.php. */
   .form-private {
     @apply mb-4 rounded-xl border border-dashed border-slate-300 px-4 pb-4 pt-2;

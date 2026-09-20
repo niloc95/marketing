@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
+use App\Services\VerificationService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Directory extends BaseController
@@ -400,6 +401,29 @@ class Directory extends BaseController
             // pre-authentication id must die with it. See Manage::redeem().
             session()->regenerate(true);
             session()->set(Manage::SESSION_KEY, (int) $listing['id']);
+
+            // A listing outside South Africa is verified but not yet published:
+            // verify() left it 'pending' because the International Listing
+            // subscription is what publishes it. Sending them to their profile
+            // would be sending them to a 404, so they go to checkout, already
+            // signed in, with the subscription row opened for them.
+            //
+            // Both of the reasons this can be false are handled: the plan being
+            // switched off is not a foreign listing at all by then (mayPublish()
+            // returns true and we never get here), and PayFast having no
+            // credentials leaves them on the dashboard, where the EFT route and
+            // an explanation live.
+            $verification = new VerificationService();
+            if (! $verification->mayPublish($listing)) {
+                $verification->ensureInternationalSubscription((int) $listing['id']);
+
+                $to = $verification->canTakePayment() ? 'manage/verification/checkout' : 'manage/edit';
+
+                return redirect()->to(base_url($to))
+                    ->with('success', 'Your email is confirmed and you are signed in. '
+                        . 'Businesses outside South Africa need an International Listing '
+                        . 'subscription before the profile goes live — this is the last step.');
+            }
 
             return redirect()->to(base_url('directory/' . $listing['slug']))
                 ->with('success', 'Your profile is verified and now live. You are signed in — '

@@ -167,6 +167,14 @@ class Manage extends BaseController
             'verificationAmount'  => $verification->monthlyAmount(),
             'verification'        => $verificationRow,
             'verificationPending' => $this->paymentPending($verificationRow),
+
+            // The International Listing plan. Rendered only when it actually
+            // applies to this listing, so a South African owner never sees a
+            // panel about a country they are not in.
+            'hostingRequired' => $verification->requiresSubscription($listing),
+            'hostingAmount'   => $verification->internationalAmount(),
+            'hosting'         => $hostingRow,
+            'hostingPending'  => $this->paymentPending($hostingRow),
         ]);
     }
 
@@ -335,7 +343,24 @@ class Manage extends BaseController
                 ->with('error', 'Card payments are not available at the moment — we will be in touch about payment.');
         }
 
-        $current = $service->forListing((int) $listing['id']);
+        // Which subscription is being paid for.
+        //
+        // Not asked of the URL, because there is only ever one right answer: a
+        // listing that needs an International Listing subscription and does not
+        // have a live one cannot be published at all, so nothing else is worth
+        // charging for first. Once it is paid up, this falls through to the
+        // badge exactly as it always did — which is the case the
+        // (listing_id, plan) unique index exists to allow.
+        //
+        // ensureInternationalSubscription() is idempotent, so reloading this
+        // page does not open a second row.
+        $plan = DirectoryVerificationModel::PLAN_BADGE;
+        if ($service->requiresSubscription($listing) && ! $service->subscriptionActive($listing)) {
+            $plan = DirectoryVerificationModel::PLAN_INTERNATIONAL;
+            $service->ensureInternationalSubscription((int) $listing['id']);
+        }
+
+        $current = $service->forListing((int) $listing['id'], $plan);
 
         // Two states can be paid for, for two different reasons.
         //
@@ -373,7 +398,16 @@ class Manage extends BaseController
         // does not change — when m_payment_id matches nothing.
         if (trim((string) ($verification['pf_m_payment_id'] ?? '')) === ''
             || $state === DirectoryVerificationModel::STATE_LAPSED) {
-            $verification['pf_m_payment_id'] = sprintf('vb-%d-%s', (int) $verification['id'], bin2hex(random_bytes(4)));
+            // 'il-' for an International Listing, 'vb-' for the badge. The
+            // prefix is for humans reading a PayFast dashboard — the lookup is
+            // on the whole string — but a support question that starts "what
+            // is vb-41?" is worth one character to answer.
+            $verification['pf_m_payment_id'] = sprintf(
+                '%s-%d-%s',
+                $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL ? 'il' : 'vb',
+                (int) $verification['id'],
+                bin2hex(random_bytes(4))
+            );
             (new DirectoryVerificationModel())->update(
                 (int) $verification['id'],
                 ['pf_m_payment_id' => $verification['pf_m_payment_id']]
@@ -413,7 +447,21 @@ class Manage extends BaseController
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
-        $result = (new VerificationService())->cancelSubscription((int) $listing['id']);
+        // Which subscription to cancel comes from the form, because a listing
+        // outside South Africa can hold two of them and they are not remotely
+        // interchangeable: one stops a badge, the other takes the profile down.
+        // Each panel posts its own plan; anything else falls back to the badge,
+        // which is the harmless half of that pair.
+        //
+        // Whitelisted rather than trusted — this is a POST from a session that
+        // only proves ownership of a listing, and an unknown value would
+        // otherwise reach a query.
+        $plan = (string) ($this->request->getPost('plan') ?? '');
+        if (! in_array($plan, DirectoryVerificationModel::PLANS, true)) {
+            $plan = DirectoryVerificationModel::PLAN_BADGE;
+        }
+
+        $result = (new VerificationService())->cancelSubscription((int) $listing['id'], $plan);
 
         return redirect()->to(base_url('manage/edit'))
             ->with($result['ok'] ? 'success' : 'error', $result['message']);

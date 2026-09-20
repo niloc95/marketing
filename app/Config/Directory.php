@@ -177,6 +177,41 @@ class Directory extends BaseConfig
     public string $verifiedMonthlyAmount = '29.99';
 
     /**
+     * Is the International Listing plan on offer?
+     *
+     * When false, a listing outside South Africa is neither charged nor
+     * blocked: it publishes on email verification like any other. That is the
+     * right failure mode for a plan that gates publication rather than a
+     * decoration — switching the plan off must not silently take a paying
+     * business's listing down, and must not leave a new one stuck pending with
+     * no way to pay.
+     *
+     * Kept separate from verifiedBadgeEnabled for the same reason that one is
+     * separate from PayFast::isConfigured(): they answer different questions
+     * and will be switched at different times.
+     */
+    public bool $internationalListingEnabled = true;
+
+    /**
+     * Monthly price of the International Listing plan, in rand, as a decimal
+     * string.
+     *
+     * Everything the verifiedMonthlyAmount docblock says applies here: a string
+     * because it is signed and byte-compared against PayFast, a POINT and not a
+     * comma, and changing it affects new subscriptions only because the amount
+     * is snapshotted on the row.
+     *
+     * Priced at the badge's rate to start with, deliberately as its own setting
+     * so the two can move apart without one dragging the other.
+     *
+     * Note what the buyer is paying in: rand. PayFast settles in ZAR, so an
+     * international subscriber needs a card that will accept a South African
+     * merchant. Confirm cross-border acceptance on the live merchant account
+     * before switching this on.
+     */
+    public string $internationalMonthlyAmount = '29.99';
+
+    /**
      * PayFast credentials for the Verified Business subscription.
      *
      * The whole feature is dark until merchant id and key are both set:
@@ -418,6 +453,25 @@ class Directory extends BaseConfig
     {
         $env = env('directory.verifiedMonthlyAmount');
         $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->verifiedMonthlyAmount;
+
+        return $this->normaliseAmount($raw);
+    }
+
+    /** On unless explicitly switched off — see verifiedBadgeEnabled(). */
+    public function internationalListingEnabled(): bool
+    {
+        $env = env('directory.internationalListingEnabled');
+        if ($env === null) {
+            return $this->internationalListingEnabled;
+        }
+
+        return ! in_array(strtolower(trim((string) $env)), ['false', '0', 'no', 'off', ''], true);
+    }
+
+    public function internationalMonthlyAmount(): string
+    {
+        $env = env('directory.internationalMonthlyAmount');
+        $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->internationalMonthlyAmount;
 
         return $this->normaliseAmount($raw);
     }

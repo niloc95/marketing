@@ -127,6 +127,13 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
             // true, unlike the listing's: a branch has no pin picker to keep
             // inside the wrapper, so the partial can own it.
             'wrap'      => true,
+            // A branch address is never compulsory — the listing's own is the
+            // one signup insists on. Passed explicitly all the same, because an
+            // omitted variable inherits the listing block's value.
+            'required'  => false,
+            // A branch inherits the listing's country; offering a second one
+            // only invites someone to contradict it.
+            'withCountry' => false,
         ]) ?>
 
         <?php // And the same seven-row hours grid. ?>

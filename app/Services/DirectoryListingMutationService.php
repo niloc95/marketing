@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\ListingGeocoder;
 use App\Libraries\Mailer;
 use App\Libraries\RichText;
@@ -36,6 +37,9 @@ class DirectoryListingMutationService
     private DirectoryConfig $config;
     private DirectorySettings $settings;
 
+    /** Resolved lazily — validate() and the write paths both want it. */
+    private ?Countries $countries = null;
+
     public function __construct()
     {
         helper(['slug', 'directory_hours']);
@@ -54,7 +58,7 @@ class DirectoryListingMutationService
      */
     public function submitPublic(array $input): array
     {
-        $errors = $this->validate($input);
+        $errors = $this->validate($input, null, true);
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'message' => 'Please correct the highlighted fields.'];
         }
@@ -293,9 +297,11 @@ class DirectoryListingMutationService
             'address_line'   => $this->clean($input['address_line'] ?? ''),
             'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
             'city'           => normalise_place($this->clean($input['city'] ?? '')),
+            // Exactly one of these is ever set — see normaliseCountry().
             'province'       => $this->clean($input['province'] ?? ''),
+            'region'         => $this->clean($input['region'] ?? ''),
             'postal_code'    => $this->clean($input['postal_code'] ?? ''),
-            'country'        => $this->clean($input['country'] ?? '') ?: 'South Africa',
+            'country'        => $this->normaliseCountry($input['country'] ?? ''),
             'logo_path'      => $this->clean($input['logo_path'] ?? ''),
             'trading_hours'          => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []),
             'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
@@ -531,9 +537,26 @@ class DirectoryListingMutationService
         }
 
         // Reuse the signup rules, but the email is fixed to the stored one.
+        //
+        // Third argument false: the compulsory-address rule applies to new
+        // signups only. Most of the listings that predate it have no street
+        // address, and requiring one here would mean an owner cannot correct a
+        // phone number until they also produce an address — the same trap the
+        // description cap hit when it came down from 5000 to 1000, which
+        // RichText::exceedsCap() solved the same way, by exempting what the
+        // owner is not touching. Those rows get backfilled separately.
+        //
+        // The country is forced to the STORED one rather than merged in, and
+        // the distinction matters: `+` keeps the left-hand side, so a posted
+        // country would win and the province/region rules would be judged
+        // against a country this listing is not in. A crafted POST could then
+        // have a German listing validated as South African and slip a province
+        // through — which the write path below would strip anyway, but there
+        // is no reason to let validation disagree with the row it is checking.
         $errors = $this->validate(
-            $input + ['email' => $listing['email'], 'consent' => 1],
-            (string) ($listing['description_text'] ?? '')
+            ['country' => $listing['country'] ?? ''] + $input + ['email' => $listing['email'], 'consent' => 1],
+            (string) ($listing['description_text'] ?? ''),
+            false
         );
         unset($errors['consent']);
         if ($errors !== []) {
@@ -566,7 +589,27 @@ class DirectoryListingMutationService
             ? $input['type']
             : ($listing['type'] ?? 'person');
         $data['category_id'] = (int) ($input['category_id'] ?? 0) ?: null;
-        $data['country']     = $this->clean($input['country'] ?? '') ?: 'South Africa';
+        // Country is deliberately NOT read from $input and NOT copied here.
+        //
+        // This line used to be `$this->clean($input['country'] ?? '') ?: 'South
+        // Africa'`, which had two faults. It sat outside the OWNER_EDITABLE
+        // loop, so a posted country was written despite the allowlist — and
+        // with no country on the form, an owner saving anything reset an
+        // admin-set country back to South Africa. Once a non-South-African
+        // address needs a paid subscription to publish, that second fault
+        // becomes a one-POST bypass of the paywall.
+        //
+        // So: nothing is assigned. The stored value stands, and only
+        // DirectoryAdminService::upsert() can change it.
+        //
+        // Province and region are different and stay owner-editable through
+        // OWNER_EDITABLE — but only one of them may hold a value, so the
+        // country decides which survives the save.
+        if ($this->countries()->isLocal((string) ($listing['country'] ?? ''))) {
+            $data['region'] = '';
+        } elseif (array_key_exists('province', $data)) {
+            $data['province'] = '';
+        }
 
         // An empty upload must not wipe an existing logo.
         if (($data['logo_path'] ?? '') === '') {
@@ -719,7 +762,25 @@ class DirectoryListingMutationService
         'suburb'         => [120, 'suburb'],
         'city'           => [120, 'city'],
         'postal_code'    => [20, 'postal code'],
+        'region'         => [120, 'state or region'],
         'country'        => [80, 'country'],
+    ];
+
+    /**
+     * Address fields a *new* listing cannot be submitted without, and what the
+     * visitor is told when one is blank.
+     *
+     * Applied only when validate() is called with $isNew — see updateOwn() for
+     * why an existing profile is exempt. Ordered as the form renders them, so
+     * the first error the eye lands on is the first empty field.
+     *
+     * province and region are not here: which of the two is compulsory depends
+     * on the country, so validate() picks one of them straight after this loop.
+     */
+    private const REQUIRED_ADDRESS_FIELDS = [
+        'address_line' => 'A street address is required, so customers can find you.',
+        'city'         => 'Please enter the city or town.',
+        'postal_code'  => 'Please enter the postal code.',
     ];
 
     /** Tag name column is VARCHAR(120) — see CreateDirectoryTags. */
@@ -737,10 +798,15 @@ class DirectoryListingMutationService
      * @param array<string,mixed> $input
      * @param string|null $storedDescriptionText the listing's current plain-text
      *                    description on an edit; null for a new signup
+     * @param bool $isNew public signup, which must carry a full address. False
+     *                    on an owner edit — see the call in updateOwn().
      * @return array<string,string>
      */
-    private function validate(array $input, ?string $storedDescriptionText = null): array
-    {
+    private function validate(
+        array $input,
+        ?string $storedDescriptionText = null,
+        bool $isNew = false
+    ): array {
         $errors = [];
         if (trim((string) ($input['display_name'] ?? '')) === '') {
             $errors['display_name'] = 'A business or trading name is required.';
@@ -758,6 +824,25 @@ class DirectoryListingMutationService
         }
         if (empty($input['consent'])) {
             $errors['consent'] = 'Please confirm you may publish these details and accept the terms.';
+        }
+        // The marketing question must be ANSWERED on a new signup — not
+        // answered yes. '0' is a complete, valid answer and costs the person
+        // nothing; what is refused is silence, which is what an optional
+        // tick-box collects from everyone who skims past it.
+        //
+        // Deliberately not `! empty()`: that cannot tell "No thanks" from "the
+        // field never reached us", and those mean opposite things here. Only
+        // the two literal answers count, so a crafted POST that drops the
+        // field is refused rather than being read as a no.
+        //
+        // New signups only, like the address rules above. An owner edit posts
+        // this through the marketing_present marker instead — see updateOwn()
+        // — where absence genuinely does mean "leave the stored choice alone".
+        if ($isNew) {
+            $marketing = (string) ($input['marketing_opt_in'] ?? '');
+            if ($marketing !== '1' && $marketing !== '0') {
+                $errors['marketing_opt_in'] = 'Please choose whether you would like our emails.';
+            }
         }
         // The model enforces this too, but only at insert time, where it
         // surfaces as a generic "could not save" with no field highlighted.
@@ -810,11 +895,94 @@ class DirectoryListingMutationService
         }
 
         // The form renders a <select>, so this only ever fires on a crafted
-        // POST — but province is echoed on the public profile and slugified
-        // into canonical URLs, so it does not get to be free text.
+        // POST — but the country is echoed on the public profile, published as
+        // addressCountry in the JSON-LD, and (after the International Listing
+        // plan) decides whether this listing has to be paid for. It does not
+        // get to be free text.
+        //
+        // On an owner edit the posted value is ignored entirely — see
+        // updateOwn() — so this check protects signup and the admin form.
+        $country = $this->clean($input['country'] ?? '');
+        if ($country !== '' && ! in_array($country, $this->countries()->all(), true)) {
+            $errors['country'] = 'Please choose a country from the list.';
+        }
+        $isLocal = $country === '' || $this->countries()->isLocal($country);
+
+        // province is echoed on the public profile and slugified into the
+        // canonical /directory/{category}/{province} URLs, so it is whitelisted
+        // for the same reason. region is the foreign half and is free text —
+        // nothing routes on it (see the AddRegionToListings migration).
         $province = $this->clean($input['province'] ?? '');
         if ($province !== '' && ! in_array($province, DirectoryService::SA_PROVINCES, true)) {
             $errors['province'] = 'Please choose a province from the list.';
+        }
+        if (! $isLocal && $province !== '') {
+            // The form disables whichever half is not in play, so this means a
+            // crafted POST or a no-JS submission whose country just changed.
+            // Refusing it keeps the "exactly one of the two" invariant true in
+            // the table rather than silently dropping half the address.
+            $errors['province'] = 'A province applies to South African addresses only.';
+        }
+        if ($isLocal && $this->clean($input['region'] ?? '') !== '') {
+            $errors['region'] = 'Please choose a province instead.';
+        }
+
+        // A new listing must say where it is. This is a directory of places
+        // people walk into, and an address-less profile is both unfindable on
+        // the map and unplaceable by the geocoder — which is how businesses
+        // with no connection to South Africa ended up listed at all.
+        //
+        // suburb and address_line_2 stay optional on purpose: plenty of real
+        // South African addresses have no suburb, and line 2 is a unit number.
+        if ($isNew) {
+            foreach (self::REQUIRED_ADDRESS_FIELDS as $field => $message) {
+                if (! isset($errors[$field]) && $this->clean($input[$field] ?? '') === '') {
+                    $errors[$field] = $message;
+                }
+            }
+            // Whichever of the pair the country calls for. Only one is ever
+            // asked for, so only one can ever be missing.
+            $pair = $isLocal
+                ? ['province', 'Please choose a province.']
+                : ['region', 'Please enter the state or region.'];
+            if (! isset($errors[$pair[0]]) && $this->clean($input[$pair[0]] ?? '') === '') {
+                $errors[$pair[0]] = $pair[1];
+            }
+        }
+
+        // Four digits, and only checked once something was typed — an owner
+        // editing a pre-rule listing is not asked for one at all (see $isNew
+        // above), but a value that IS supplied has to be usable.
+        //
+        // South African shape only: postal codes elsewhere are six characters,
+        // alphanumeric, or absent altogether, and the column takes 20. The
+        // form carries maxlength="4" and inputmode="numeric" for local
+        // addresses and relaxes both otherwise, but all of that is
+        // browser-side: neither survives a crafted POST, and maxlength does
+        // not stop a paste of "Sandton" either.
+        $postal = $this->clean($input['postal_code'] ?? '');
+        if ($isLocal && $postal !== '' && ! isset($errors['postal_code'])
+            && preg_match('/^\d{4}$/', $postal) !== 1) {
+            $errors['postal_code'] = 'A South African postal code is four digits.';
+        }
+
+        // A pin dropped outside South Africa on a listing that claims to be in
+        // it. ListingGeocoder::submittedCoords() already drops these, silently,
+        // which leaves the person with a listing they believe they pinned —
+        // so say so instead.
+        //
+        // It catches a contradiction, not a lie: SA_BBOX is a rectangle that
+        // contains Lesotho and Eswatini, so passing it proves only "not
+        // obviously somewhere else". Someone who simply types a Sandton
+        // address and drops no pin at all is not caught here by design.
+        if ($isLocal && ! isset($errors['address_line'])) {
+            $lat = trim((string) ($input['latitude'] ?? ''));
+            $lng = trim((string) ($input['longitude'] ?? ''));
+            if ($lat !== '' && $lng !== '' && is_numeric($lat) && is_numeric($lng)
+                && ! NominatimGeocoder::isPlausible((float) $lat, (float) $lng)) {
+                $errors['address_line'] = 'That map pin is not in South Africa. '
+                    . 'Move it to the business address, or change the country above.';
+            }
         }
 
         if (($tagError = $this->validateTags($input['specializations'] ?? null)) !== null) {
@@ -824,6 +992,34 @@ class DirectoryListingMutationService
         $errors += (new ServiceMenuService())->validate($input);
 
         return $errors;
+    }
+
+    /** The country list, resolved once per request. */
+    private function countries(): Countries
+    {
+        return $this->countries ??= config('Countries');
+    }
+
+    /**
+     * A stored country is always one of Config\Countries::all(), and an empty
+     * or unrecognised one falls back to South Africa.
+     *
+     * The fallback is not laziness about validation — validate() rejects an
+     * unknown country with a field error before any write path runs, so this
+     * only ever sees a good value in practice. It matters for the paths that
+     * do not go through validate() at all, and for the column's own history:
+     * `country` has been NOT NULL DEFAULT 'South Africa' since the first
+     * migration, and every row in the table holds that string. Defaulting to
+     * anything else would quietly turn an incomplete write into a listing that
+     * has to be paid for.
+     */
+    private function normaliseCountry(mixed $raw): string
+    {
+        $country = $this->clean(is_string($raw) ? $raw : '');
+
+        return in_array($country, $this->countries()->all(), true)
+            ? $country
+            : Countries::SOUTH_AFRICA;
     }
 
     /**

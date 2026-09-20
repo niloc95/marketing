@@ -180,6 +180,10 @@ class DirectoryAdminService
             'suburb'         => 'place',
             'city'           => 'place',
             'province'       => null,
+            // The foreign half of province — see the AddRegionToListings
+            // migration. Which of the two is kept is decided by the country,
+            // below, after both have been read.
+            'region'         => null,
         ];
 
         $data = ['display_name' => $name];
@@ -259,8 +263,33 @@ class DirectoryAdminService
         if (array_key_exists('category_id', $input) || $id === null) {
             $data['category_id'] = (int) ($input['category_id'] ?? 0) ?: null;
         }
+        // Admin is the only write path that may change a country: it is out of
+        // OWNER_EDITABLE, and updateOwn() ignores a posted one outright,
+        // because it decides whether a listing needs a paid International
+        // Listing subscription to publish.
+        //
+        // Whitelisted for the same reason the owner form's value is — the
+        // column is echoed on the profile and published as addressCountry in
+        // the JSON-LD — and falling back to South Africa keeps the behaviour
+        // this line has always had for an empty value.
         if (array_key_exists('country', $input) || $id === null) {
-            $data['country'] = $this->clean($input['country'] ?? '') ?: 'South Africa';
+            $country = $this->clean($input['country'] ?? '');
+            $data['country'] = in_array($country, config('Countries')->all(), true)
+                ? $country
+                : \Config\Countries::SOUTH_AFRICA;
+        }
+
+        // Province and region are mutually exclusive, and the country picks the
+        // winner. Only applied when the country is actually known for this
+        // save — a partial update that touches neither must leave both alone.
+        if (isset($data['country'])) {
+            if (config('Countries')->isLocal($data['country'])) {
+                if (array_key_exists('region', $data)) {
+                    $data['region'] = '';
+                }
+            } elseif (array_key_exists('province', $data)) {
+                $data['province'] = '';
+            }
         }
         if (array_key_exists('hours', $input) || $id === null) {
             $data['trading_hours'] = hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []);

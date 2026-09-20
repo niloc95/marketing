@@ -89,7 +89,8 @@ if (! function_exists('map_address_text')) {
             trim((string) ($listing['address_line_2'] ?? '')),
             trim((string) ($listing['suburb'] ?? '')),
             trim((string) ($listing['city'] ?? '')),
-            trim((string) ($listing['province'] ?? '')),
+            // Province or region, never both — see AddRegionToListings.
+            trim((string) ($listing['province'] ?? '')) ?: trim((string) ($listing['region'] ?? '')),
             trim((string) ($listing['postal_code'] ?? '')),
         ];
 

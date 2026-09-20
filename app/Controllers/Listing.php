@@ -65,6 +65,7 @@ class Listing extends BaseController
             'errors'      => session()->getFlashdata('errors') ?? [],
             'categories' => $svc->categories(),
             'provinces'   => $svc->provinces(),
+            'countries'   => config('Countries')->grouped(),
             // Off entirely when PayFast has no credentials — better to hide the
             // offer than to take documents for a badge we cannot sell.
             'verificationOffered' => $offered,
@@ -161,6 +162,25 @@ class Listing extends BaseController
             $verified['errors'][] = 'Your listing is saved, but we did not receive both documents, '
                 . 'so no badge application was started. You can send them at any time from '
                 . 'manage your profile.';
+        }
+
+        // A business outside South Africa is about to be told to check its
+        // email "to verify and publish", and publishing is not what will
+        // happen — the International Listing subscription is what publishes it.
+        // Say so here rather than letting them find out after clicking.
+        //
+        // Safe to branch on, unlike the message itself: the country comes from
+        // what this visitor just typed, not from anything stored, so it cannot
+        // tell them whether an address is already in the directory. That is the
+        // property DirectoryListingMutationService::SIGNUP_MESSAGE exists to
+        // protect, and adding to it here does not weaken it — every duplicate
+        // branch still returns the same $message.
+        if ((new VerificationService())->requiresSubscription(
+            ['country' => (string) $this->request->getPost('country')]
+        )) {
+            $message .= ' Because your business is outside South Africa, your profile '
+                . 'also needs an International Listing subscription before it goes live — '
+                . 'we will take you to it once your email is confirmed.';
         }
 
         return $this->withUploadErrors(
