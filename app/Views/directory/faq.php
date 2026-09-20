@@ -180,7 +180,7 @@ $schema = schema_page(
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
+<section class="hero">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Frequently asked questions</h1>
         <p class="mt-2 text-sm text-white/80">What it costs, how to list your business, and how to reach us.</p>

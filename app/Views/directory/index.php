@@ -68,7 +68,7 @@ if ($indexable && ! empty($result['items'])) {
 $vertical      = $category !== null ? category_group_style($category['group_name'] ?? null) : null;
 $verticalPhoto = $category !== null ? category_photo($category) : null;
 ?>
-<section class="hero<?= $vertical !== null ? ' hero-vertical vertical-scope ' . $vertical['tint'] : '' ?> pt-24 pb-8 sm:pt-28 sm:pb-10">
+<section class="hero<?= $vertical !== null ? ' hero-vertical vertical-scope ' . $vertical['tint'] : '' ?>">
     <?php if ($verticalPhoto !== null): ?>
         <?php // Decorative, and eager — see landing.php, which draws the same
               // photograph for the same category. ?>

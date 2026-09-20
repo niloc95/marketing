@@ -67,7 +67,7 @@ $schema = schema_page(
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
+<section class="hero">
     <div class="container">
         <nav class="mb-2 text-sm text-white/70">
             <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>

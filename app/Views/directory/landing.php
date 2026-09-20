@@ -71,7 +71,7 @@ $schema = schema_page(
       // the padding, the type scale and the header's transparent-over-hero
       // treatment all depend on both of those, so this is a modifier on the band
       // rather than a replacement for it and must not be wrapped in anything. ?>
-<section class="hero hero-vertical vertical-scope <?= $style['tint'] ?> pt-24 pb-8 sm:pt-28 sm:pb-10">
+<section class="hero hero-vertical vertical-scope <?= $style['tint'] ?>">
     <?php if ($photo !== null): ?>
         <?php // Decorative: the heading says what this page is, and a photograph of
               // a generic clinic tells a screen reader nothing it needs. Eager, no

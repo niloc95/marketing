@@ -469,8 +469,28 @@
   }
   .dark .eyebrow { @apply bg-primary-500/15 text-primary-300; }
 
+  /* The same band the home page gets, so moving between the home page, a
+     category, a search and the legal pages never jumps the fold — the site reads
+     as one continuous surface rather than a stack of differently proportioned
+     pages.
+
+     min-height + flex + items-center rather than tall padding: the content of
+     these pages varies from a breadcrumb and a heading (the legal pages) to a
+     heading, a count and a search bar (a category), and centring absorbs that
+     difference where a fixed padding would leave each one sitting at a different
+     height. The section still grows past the minimum if content ever exceeds it.
+
+     pt-16 is the fixed header's height, and box-sizing: border-box means it
+     comes out of the minimum rather than adding to it — so the band is 640px
+     and the copy is centred in the part of it the bar is not covering. Same
+     reasoning, and the same numbers, as .hero-home.
+
+     The padding used to be `pt-24 pb-8 sm:pt-28 sm:pb-10`, repeated verbatim on
+     all ten pages that use this class. It lives here now; do not put it back on
+     the sections, or they stop matching each other the moment one is edited. */
   .hero {
-    @apply bg-gradient-to-br from-primary-500 to-primary-700 py-14 text-white sm:py-20;
+    @apply relative flex min-h-[520px] items-center
+           bg-gradient-to-br from-primary-500 to-primary-700 pt-16 text-white sm:min-h-[640px];
   }
   /* The ocean gradient is already dark, but against a #0f1419 page it reads as
      a bright band — start it at the page colour so it recedes instead. */
@@ -535,7 +555,15 @@
   }
   .hero-home p  { @apply mt-4 max-w-2xl text-base text-white/85 sm:text-lg; }
 
-  .hero-media { @apply absolute inset-0 -z-10; }
+  /* overflow-hidden HERE rather than on .hero-home, which is the distinction
+     that matters: .hero-slide runs a 12s Ken Burns zoom to scale(1.06), and on a
+     640px band that is ~19px of growth — ~7px past each edge by the end. The
+     hero is overflow-x-clip (it must be: the search typeahead opens downwards
+     out of it), so Y was left visible and the photograph painted over the top of
+     the stat bar below, by an amount that grew as the animation ran.
+     .hero-media holds only the photographs — no form, no typeahead — so clipping
+     it costs nothing and bounds the zoom to the band. */
+  .hero-media { @apply absolute inset-0 -z-10 overflow-hidden; }
   /* Every slide is stacked in the same box and only opacity separates them, so
      nothing reflows as the rotation runs — a cross-fade must not be a layout
      change. object-cover because the frame is a viewport, not the photo's
