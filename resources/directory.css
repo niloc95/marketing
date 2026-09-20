@@ -807,13 +807,26 @@
      text, so a name built at runtime would be unmatched and tree-shaken out.
 
      Each one only sets custom properties; the consumers (.cat-tile-icon, .chip,
-     .badge-category and the /categories headings) read them. That is what keeps
-     this at fifteen rules instead of one per hue per treatment — and it means
-     every consumer falls back to the old navy on its own when no tint class is
+     .badge-category, the /categories headings, .hero-vertical and the panel
+     headings inside .vertical-scope) read them. That is what keeps this at
+     fifteen rules instead of one per hue per treatment — and it means every
+     consumer falls back to the old navy on its own when no tint class is
      present, which is what leaves province chips and nav chips untouched.
+
+     Because they are custom properties they also inherit, which is what makes a
+     whole-page treatment possible: put the class on a wrapper rather than on a
+     chip and every consumer beneath it picks up the group's hue. That is all
+     .vertical-scope is — see the landing page and the profile.
 
      amber, yellow and lime take a -700 foreground; their -600 is illegible on a
      -50 ground. The rest are fine at -600.
+
+     --tint-hero-from/-to are the category hero's gradient. They are darker than
+     the foreground pair because white body text sits on them: -700 to -900
+     clears 4.5:1 for every hue except amber, yellow and lime, which start at
+     -800 for the same reason they take a -700 foreground above. There is no
+     dark-mode pair — .dark .hero-vertical starts from the page colour and runs
+     to this same -to, which is the trick .dark .hero already plays.
 
      slate is the fallback's colour and nothing else's. An unmapped group has to
      look like nothing rather than borrow a real group's hue — which is also why
@@ -824,96 +837,128 @@
     --tint-fg: theme(colors.red.600);
     --tint-bg-dark: theme(colors.red.500 / 15%);
     --tint-fg-dark: theme(colors.red.300);
+    --tint-hero-from: theme(colors.red.700);
+    --tint-hero-to: theme(colors.red.900);
   }
   .cat-tint-pink {
     --tint-bg: theme(colors.pink.50);
     --tint-fg: theme(colors.pink.600);
     --tint-bg-dark: theme(colors.pink.500 / 15%);
     --tint-fg-dark: theme(colors.pink.300);
+    --tint-hero-from: theme(colors.pink.700);
+    --tint-hero-to: theme(colors.pink.900);
   }
   .cat-tint-fuchsia {
     --tint-bg: theme(colors.fuchsia.50);
     --tint-fg: theme(colors.fuchsia.600);
     --tint-bg-dark: theme(colors.fuchsia.500 / 15%);
     --tint-fg-dark: theme(colors.fuchsia.300);
+    --tint-hero-from: theme(colors.fuchsia.700);
+    --tint-hero-to: theme(colors.fuchsia.900);
   }
   .cat-tint-blue {
     --tint-bg: theme(colors.blue.50);
     --tint-fg: theme(colors.blue.600);
     --tint-bg-dark: theme(colors.blue.500 / 15%);
     --tint-fg-dark: theme(colors.blue.300);
+    --tint-hero-from: theme(colors.blue.700);
+    --tint-hero-to: theme(colors.blue.900);
   }
   .cat-tint-indigo {
     --tint-bg: theme(colors.indigo.50);
     --tint-fg: theme(colors.indigo.600);
     --tint-bg-dark: theme(colors.indigo.500 / 15%);
     --tint-fg-dark: theme(colors.indigo.300);
+    --tint-hero-from: theme(colors.indigo.700);
+    --tint-hero-to: theme(colors.indigo.900);
   }
   .cat-tint-amber {
     --tint-bg: theme(colors.amber.50);
     --tint-fg: theme(colors.amber.700);
     --tint-bg-dark: theme(colors.amber.500 / 15%);
     --tint-fg-dark: theme(colors.amber.300);
+    --tint-hero-from: theme(colors.amber.800);
+    --tint-hero-to: theme(colors.amber.900);
   }
   .cat-tint-purple {
     --tint-bg: theme(colors.purple.50);
     --tint-fg: theme(colors.purple.600);
     --tint-bg-dark: theme(colors.purple.500 / 15%);
     --tint-fg-dark: theme(colors.purple.300);
+    --tint-hero-from: theme(colors.purple.700);
+    --tint-hero-to: theme(colors.purple.900);
   }
   .cat-tint-orange {
     --tint-bg: theme(colors.orange.50);
     --tint-fg: theme(colors.orange.600);
     --tint-bg-dark: theme(colors.orange.500 / 15%);
     --tint-fg-dark: theme(colors.orange.300);
+    --tint-hero-from: theme(colors.orange.700);
+    --tint-hero-to: theme(colors.orange.900);
   }
   .cat-tint-violet {
     --tint-bg: theme(colors.violet.50);
     --tint-fg: theme(colors.violet.600);
     --tint-bg-dark: theme(colors.violet.500 / 15%);
     --tint-fg-dark: theme(colors.violet.300);
+    --tint-hero-from: theme(colors.violet.700);
+    --tint-hero-to: theme(colors.violet.900);
   }
   .cat-tint-yellow {
     --tint-bg: theme(colors.yellow.50);
     --tint-fg: theme(colors.yellow.700);
     --tint-bg-dark: theme(colors.yellow.500 / 15%);
     --tint-fg-dark: theme(colors.yellow.300);
+    --tint-hero-from: theme(colors.yellow.800);
+    --tint-hero-to: theme(colors.yellow.900);
   }
   .cat-tint-sky {
     --tint-bg: theme(colors.sky.50);
     --tint-fg: theme(colors.sky.600);
     --tint-bg-dark: theme(colors.sky.500 / 15%);
     --tint-fg-dark: theme(colors.sky.300);
+    --tint-hero-from: theme(colors.sky.700);
+    --tint-hero-to: theme(colors.sky.900);
   }
   .cat-tint-teal {
     --tint-bg: theme(colors.teal.50);
     --tint-fg: theme(colors.teal.600);
     --tint-bg-dark: theme(colors.teal.500 / 15%);
     --tint-fg-dark: theme(colors.teal.300);
+    --tint-hero-from: theme(colors.teal.700);
+    --tint-hero-to: theme(colors.teal.900);
   }
   .cat-tint-cyan {
     --tint-bg: theme(colors.cyan.50);
     --tint-fg: theme(colors.cyan.600);
     --tint-bg-dark: theme(colors.cyan.500 / 15%);
     --tint-fg-dark: theme(colors.cyan.300);
+    --tint-hero-from: theme(colors.cyan.700);
+    --tint-hero-to: theme(colors.cyan.900);
   }
   .cat-tint-emerald {
     --tint-bg: theme(colors.emerald.50);
     --tint-fg: theme(colors.emerald.600);
     --tint-bg-dark: theme(colors.emerald.500 / 15%);
     --tint-fg-dark: theme(colors.emerald.300);
+    --tint-hero-from: theme(colors.emerald.700);
+    --tint-hero-to: theme(colors.emerald.900);
   }
   .cat-tint-lime {
     --tint-bg: theme(colors.lime.50);
     --tint-fg: theme(colors.lime.700);
     --tint-bg-dark: theme(colors.lime.500 / 15%);
     --tint-fg-dark: theme(colors.lime.300);
+    --tint-hero-from: theme(colors.lime.800);
+    --tint-hero-to: theme(colors.lime.900);
   }
   .cat-tint-slate {
     --tint-bg: theme(colors.slate.50);
     --tint-fg: theme(colors.slate.600);
     --tint-bg-dark: theme(colors.slate.500 / 15%);
     --tint-fg-dark: theme(colors.slate.300);
+    --tint-hero-from: theme(colors.slate.700);
+    --tint-hero-to: theme(colors.slate.900);
   }
 
   /* The group icon on /directory/categories: colour only, no square behind it
@@ -921,6 +966,110 @@
      the third thing saying the same. */
   .cat-group-icon { color: var(--tint-fg, theme(colors.primary.600)); }
   .dark .cat-group-icon { color: var(--tint-fg-dark, theme(colors.primary.300)); }
+
+  /* The group's name on /directory/categories, in the group's own colour.
+     An opt-in class rather than a blanket rule on h2, because that page is the
+     one place where the fifteen groups ARE the content — everywhere else a
+     tinted section heading tips the treatment from "its own zone" into "a
+     differently coloured site", which is why .vertical-scope stops at .panel h3. */
+  .cat-group-title { color: var(--tint-fg, theme(colors.primary.600)); }
+  .dark .cat-group-title { color: var(--tint-fg-dark, theme(colors.primary.300)); }
+
+  /* ------------------------------------------- the category's own colour world */
+  /* A category landing page in its group's hue instead of the shared navy, so a
+     doctor's listing page and a spice retailer's no longer open identically.
+
+     A modifier on .hero rather than a replacement for it: the padding, the type
+     scale and the h1/p rules all still come from .hero, and this overrides the
+     one thing that differs. That also means a group with no tint class on the
+     wrapper renders the navy gradient it always did, via the var() fallbacks —
+     which is what a listing with no category (category_id is nullable) gets.
+
+     background-image, not @apply bg-gradient-to-br: the utility sets
+     --tw-gradient-* and composes a gradient from them, and there is no way to
+     feed it a custom property per stop. Written out longhand it is one
+     declaration and reads the tint vars directly.
+
+     isolate + a stacking context, because the photograph below is positioned
+     inside it. */
+  .hero-vertical {
+    /* overflow-x-clip, never overflow-hidden — the same trap .hero-home
+       documents. This band contains a .searchbar, and its typeahead listbox is
+       absolutely positioned below the input with a max height of 18rem, so it
+       opens well past the bottom edge of a band this short. overflow-hidden
+       clipped it at the hero's edge; clip on one axis leaves the other genuinely
+       visible, where `hidden` on one axis forces the other to `auto` and would
+       clip it anyway.
+
+       The image cannot overflow regardless — it is inset-0 with object-cover —
+       so this is insurance against a future child widening the page, not load
+       bearing for the photograph. */
+    @apply relative isolate overflow-x-clip;
+    background-image: linear-gradient(
+      to bottom right,
+      var(--tint-hero-from, theme(colors.primary.500)),
+      var(--tint-hero-to, theme(colors.primary.700))
+    );
+  }
+  /* Same recede-into-the-page move .dark .hero makes: against a #0f1419 body an
+     already-dark gradient reads as a bright band, so it starts at the page
+     colour and only arrives at the hue. No second set of vars needed. */
+  .dark .hero-vertical {
+    background-image: linear-gradient(
+      to bottom right,
+      #0f1419,
+      var(--tint-hero-to, theme(colors.primary.700))
+    );
+  }
+
+  /* The group photograph behind the band. -z-10 puts it above the gradient but
+     below the copy, which stays in flow — so the photo is tinted by the hue
+     rather than sitting on top of it.
+
+     multiply is the whole reason this is safe rather than merely tuned. White
+     text sits on this band, and a plain overlay at any opacity lets a blown-out
+     highlight in the photograph lift the ground under a line — a bright, warm
+     shot behind the yellow gradient was visibly doing it. multiply can only ever
+     darken: the result is never lighter than the gradient alone, so the contrast
+     floor for every one of the sixteen hues is the gradient's own, which is what
+     the -700/-800 starts were chosen for. No photograph can make a line
+     unreadable, whatever ends up in it.
+
+     It also means the opacity can be generous — the photo reads as a real
+     photograph rather than a wash, and still cannot cost contrast.
+
+     That is also why there is no .hero-veil here: the veil is a left-to-right
+     fade sized for the home page's tall photo hero, and it leaves the right-hand
+     end of a line in this short band unprotected.
+
+     The isolate on .hero-vertical is what keeps the blend inside the hero; without
+     it the photo would multiply with whatever the page painted behind it.
+
+     No width/height and no aspect box — a full-bleed cover crop in a band whose
+     height is already fixed, so there is no layout to shift. */
+  .hero-vertical-img {
+    @apply absolute inset-0 -z-10 h-full w-full object-cover opacity-60;
+    mix-blend-mode: multiply;
+  }
+  /* Dark mode cannot use multiply: the gradient starts at the near-black page
+     colour, and multiplying against that erases the photograph completely. A
+     plain overlay is safe here for the opposite reason to light mode — the
+     ground is so dark that even a pure-white highlight at this opacity lands
+     around #303539, which white text still clears by a wide margin. */
+  .dark .hero-vertical-img {
+    @apply opacity-[0.14];
+    mix-blend-mode: normal;
+  }
+
+  /* Panel headings take the group's hue inside a tinted scope. The selector is
+     the whole point of .vertical-scope: one class on a wrapper, and every panel
+     beneath it follows, with no per-panel plumbing and no per-hue rule.
+
+     Scoped to .panel h3 deliberately — h2 section headings stay slate, because
+     tinting every heading on the page tips this from "its own zone" into "a
+     differently coloured site". */
+  .vertical-scope .panel h3 { color: var(--tint-fg, theme(colors.primary.600)); }
+  .dark .vertical-scope .panel h3 { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
   /* --------------------------------------------------- browse by location */
   .loc-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }

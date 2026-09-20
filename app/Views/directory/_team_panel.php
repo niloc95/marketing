@@ -3,20 +3,28 @@
 use App\Services\TeamMemberService;
 
 /**
- * "Our team" — the people inside a business, on its public profile.
+ * The people inside a business, on its public profile.
  *
  * Only ever reached with rows to show: DirectoryService::getProfile() hands
  * back an empty array unless the listing has a live Verified Business badge, so
- * the gate is not repeated here.
+ * the gate is not repeated here. _panel_team.php is the caller, and is where
+ * the heading comes from.
  *
  * Everything is escaped. Unlike the business description there is deliberately
  * no rich text on this page — see the migration for why bios are plain.
  *
- * @var array $members rows from DirectoryListingTeamModel::forListing()
+ * $teamHeading rather than $heading for the reason _location_panel.php spells
+ * out: CI4 keeps view data between render() calls, and 'heading' is already
+ * spoken for by the contact, map and hours panels, so an optional $heading here
+ * would inherit one of theirs instead of falling back to its own default.
+ *
+ * @var array  $members     rows from DirectoryListingTeamModel::forListing()
+ * @var string $teamHeading panel heading; the vertical's word for these people
  */
+$teamHeading = $teamHeading ?? 'Our team';
 ?>
 <div class="panel mb-5">
-    <h3>Our team</h3>
+    <h3><?= esc($teamHeading) ?></h3>
     <div class="team-list">
         <?php foreach ($members as $m): ?>
             <div class="team-member">

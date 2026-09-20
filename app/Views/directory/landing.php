@@ -11,6 +11,20 @@ $heading  = $plural . $where;
 $canonical = base_url('directory/' . $catSlug . ($province !== null ? '/' . slugify($province) : ''));
 $total    = (int) $result['total'];
 
+// This category's own identity: its group's colour and icon, its vocabulary, and
+// the photograph behind the hero. $category is the full row, so group_name is
+// already here — no extra query for any of it.
+//
+// category_photo() needs nothing new: it already prefers a photo named for this
+// exact slug and falls back to the group's, and CategoryPhotoTest already holds
+// every entry to a file on disk. A category whose group has no photo returns null
+// and the hero is the plain gradient band, which is what every one of them was
+// before this existed.
+$group  = $category['group_name'] ?? null;
+$style  = category_group_style($group);
+$v      = vertical_profile($group, $catSlug);
+$photo  = category_photo($category);
+
 // No FAQ block here any more, visible or structured. It used to be templated
 // from the category name, which meant the same two questions repeated verbatim
 // across all 147 categories × 9 provinces — the thin-content pattern itself.
@@ -51,7 +65,23 @@ $schema = schema_page(
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
+<?php // hero-vertical swaps the shared navy gradient for this group's hue, and
+      // vertical-scope carries the tint vars down to the panel headings further
+      // down the page. Still .hero, and still a direct first child of .site-main:
+      // the padding, the type scale and the header's transparent-over-hero
+      // treatment all depend on both of those, so this is a modifier on the band
+      // rather than a replacement for it and must not be wrapped in anything. ?>
+<section class="hero hero-vertical vertical-scope <?= $style['tint'] ?> pt-24 pb-8 sm:pt-28 sm:pb-10">
+    <?php if ($photo !== null): ?>
+        <?php // Decorative: the heading says what this page is, and a photograph of
+              // a generic clinic tells a screen reader nothing it needs. Eager, no
+              // lazy attribute — it is the only image above the fold, and lazy on
+              // an in-viewport hero image costs a round trip for nothing. ?>
+        <img class="hero-vertical-img"
+             src="<?= esc(base_url($photo['src']), 'attr') ?>"
+             srcset="<?= esc(base_url($photo['src_sm']), 'attr') ?> 400w, <?= esc(base_url($photo['src']), 'attr') ?> 800w"
+             sizes="100vw" alt="" decoding="async" fetchpriority="high">
+    <?php endif; ?>
     <div class="container">
         <nav class="mb-2 text-sm text-white/70">
             <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
@@ -63,7 +93,13 @@ $schema = schema_page(
                 <span class="text-white"><?= esc($catName) ?></span>
             <?php endif; ?>
         </nav>
-        <h1 class="text-2xl sm:text-3xl"><?= esc($heading) ?></h1>
+        <?php // The same icon the homepage tile and the /categories heading use for
+              // this group, so the three surfaces agree on what a category looks
+              // like. shrink-0 because the heading wraps on a phone. ?>
+        <h1 class="flex items-center gap-2.5 text-2xl sm:text-3xl">
+            <?= lucide($style['icon'], 'h-7 w-7 shrink-0 opacity-80 sm:h-8 sm:w-8') ?>
+            <span><?= esc($heading) ?></span>
+        </h1>
         <p class="mt-2 text-sm text-white/80">
             <?= $total ?> <?= $total === 1 ? 'profile' : 'profiles' ?><?= $province !== null ? ' in ' . esc($province) : '' ?>.
         </p>
@@ -83,10 +119,14 @@ $schema = schema_page(
 </section>
 
 <section class="section">
-    <div class="container">
+    <div class="container vertical-scope <?= $style['tint'] ?>">
         <?php if ($total === 0): ?>
             <div class="empty">
-                <p class="mb-4">No <?= esc(strtolower($plural)) ?> here yet<?= esc($where) ?>. Be the first!</p>
+                <?php // The vertical's noun, not the category name pluralised: "No
+                      // practices here yet" reads as a category with room in it,
+                      // where "No general practitioners here yet" reads as a
+                      // search that failed. ?>
+                <p class="mb-4">No <?= esc($v['nounPlural']) ?> here yet<?= esc($where) ?>. Be the first!</p>
                 <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
             </div>
         <?php else: ?>

@@ -24,6 +24,17 @@ $business = schema_local_business($l, $canonical);
 
 $catSlug  = $l['category']['slug'] ?? ($l['category_slug'] ?? '');
 $province = (string) ($l['province'] ?? '');
+
+// This category's colour and its vocabulary. getProfile() already loads the whole
+// category row, so group_name is here for free — no extra query.
+//
+// A listing with no category at all is the case to keep in mind: category_id is
+// nullable and ON DELETE SET NULL, so both of these fall back on their own — grey
+// tint, generic headings, today's panel order — and the page renders as it always
+// did rather than half-themed.
+$group = $l['category']['group_name'] ?? null;
+$style = category_group_style($group);
+$v     = vertical_profile($group, $catSlug !== '' ? $catSlug : null);
 $crumbs   = [
     ['name' => 'Browse', 'url' => base_url('directory')],
 ];
@@ -59,7 +70,13 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
 
 <?= $this->section('content') ?>
 <section class="section">
-    <div class="container">
+    <?php // vertical-scope plus the group's tint class is the whole per-category
+          // treatment on this page: the tint class sets custom properties, and
+          // .vertical-scope .panel h3 reads them, so every panel heading below —
+          // the listing's own and each branch's — arrives in the group's hue with
+          // no per-panel plumbing. An unmapped group resolves to cat-tint-slate
+          // and every consumer falls back to navy on its own. ?>
+    <div class="container vertical-scope <?= $style['tint'] ?>">
         <nav class="mb-4 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>
                 <?php if ($i > 0): ?><span class="mx-1">/</span><?php endif; ?>
@@ -181,85 +198,29 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
 
         <div class="profile-grid">
             <div>
-                <?php if (! empty($l['description'])): ?>
-                    <div class="panel mb-5">
-                        <h3>Business description</h3>
-                        <?php /* The only unescaped listing content on the site. listing_rich_text()
-                                 runs it through RichText::sanitise() first — do not swap this for a
-                                 bare echo, and do not add esc() (it would print the tags). */ ?>
-                        <div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text($l['description']) ?></div>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (! empty($l['services'])): ?>
-                    <div class="panel mb-5">
-                        <h3>Services</h3>
-                        <ul class="service-list">
-                            <?php foreach ($l['services'] as $svc): ?>
-                                <li>
-                                    <span class="service-name"><?= esc($svc['name']) ?></span>
-                                    <?php if (! empty($svc['price_label'])): ?><span class="service-price"><?= esc($svc['price_label']) ?></span><?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-
-                <?php $features = listing_feature_labels($l); ?>
-                <?php if ($features): ?>
-                    <div class="panel mb-5">
-                        <h3>Features &amp; amenities</h3>
-                        <ul class="feature-list">
-                            <?php foreach ($features as $label): ?>
-                                <li><?= lucide('check', 'feature-check') ?><span><?= esc($label) ?></span></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (! empty($l['credentials'])): ?>
-                    <div class="panel mb-5">
-                        <h3>Credentials</h3>
-                        <p class="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300"><?= esc($l['credentials']) ?></p>
-                    </div>
-                <?php endif; ?>
-
-                <?php // The complex this business is in, and the way through to
-                      // everything else in it. getProfile() loads the row and the
-                      // count; a listing with no venue renders nothing here. ?>
-                <?php if (! empty($l['venue'])): ?>
-                    <?php $others = (int) ($l['venue']['listing_count'] ?? 0) - 1; ?>
-                    <div class="panel mb-5">
-                        <h3>In this complex</h3>
-                        <p class="text-sm text-slate-700 dark:text-slate-300">
-                            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/at/' . $l['venue']['slug']), 'attr') ?>"><?= esc($l['venue']['name']) ?></a>
-                            <?php if ($others > 0): ?>
-                                &middot; <?= $others ?> other <?= $others === 1 ? 'business' : 'businesses' ?> here
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (! empty($l['tags'])): ?>
-                    <div class="panel mb-5">
-                        <h3>Areas of focus</h3>
-                        <div class="taglist">
-                            <?php foreach ($l['tags'] as $t): ?><span class="tag"><?= esc($t) ?></span><?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <?php // Empty unless the listing carries a live badge — the gate is
-                      // in getProfile(), not here. ?>
-                <?php if (! empty($l['team'])): ?>
-                    <?= view('directory/_team_panel', ['members' => $l['team']]) ?>
-                <?php endif; ?>
-
-                <?php // Branches, rendered by the same three panels as the address
-                      // below — see _location_panel.php. ?>
-                <?php if (! empty($l['locations'])): ?>
-                    <?= view('directory/_location_panel', ['locations' => $l['locations']]) ?>
-                <?php endif; ?>
+                <?php // The left column, in the order this vertical asks for.
+                      //
+                      // One line instead of eight inline blocks: Config\Verticals
+                      // decides both what each panel is called and which order they
+                      // come in, so a practice leads with its qualifications and a
+                      // restaurant with its menu, from a config file rather than
+                      // from a branch in this view.
+                      //
+                      // Every _panel_* partial takes the same two variables and
+                      // returns early when it has nothing to draw, so there is no
+                      // emptiness check here and no panel that has to know where in
+                      // the order it sits. 'order' always carries all eight keys —
+                      // see the note on Verticals::$defaults.
+                      //
+                      // saveData false for the reason _chip.php spells out: CI4's
+                      // renderer keeps data between render() calls, and two of these
+                      // panels delegate to partials that take an optional $heading.
+                      // Nothing leaks today because every call passes one explicitly,
+                      // but eight repeated renders in a loop is exactly the shape
+                      // that bug takes. ?>
+                <?php foreach ($v['order'] as $panel): ?>
+                    <?= view('directory/_panel_' . $panel, ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
+                <?php endforeach; ?>
             </div>
 
             <div>
@@ -280,7 +241,7 @@ $metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') .
 
                 <?= view('directory/_hours_panel', [
                     'hours'   => $l['trading_hours'] ?? null,
-                    'heading' => 'Trading hours',
+                    'heading' => $v['headings']['hours'],
                     'class'   => 'mt-5',
                 ]) ?>
             </div>

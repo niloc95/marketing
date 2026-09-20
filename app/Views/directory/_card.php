@@ -38,7 +38,13 @@ if (isset($l['distance_m'])) {
         </div>
         <div class="min-w-0">
             <?php if (! empty($l['category_name'])): ?>
-                <span class="badge badge-category mb-1 <?= category_group_tint($l['category_group'] ?? null) ?>"><?= esc($l['category_name']) ?></span>
+                <?php // The group's icon and colour, and deliberately nothing more.
+                      // A result grid is a mix of categories, and giving each card a
+                      // full colour treatment reads as noise rather than as identity
+                      // — the vertical belongs to the pages you arrive AT. The badge
+                      // already carries enough signal to tell two verticals apart at
+                      // a glance. ?>
+                <span class="badge badge-category mb-1 gap-1 <?= category_group_tint($l['category_group'] ?? null) ?>"><?= lucide(category_group_icon($l['category_group'] ?? null), 'h-3 w-3 shrink-0') ?><?= esc($l['category_name']) ?></span>
             <?php endif; ?>
             <h3 class="truncate text-base font-semibold">
                 <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc(base_url('directory/' . ($l['slug'] ?? '')), 'attr') ?>"><?= esc($name) ?></a>

@@ -60,15 +60,21 @@ $schema = schema_page(
         <?php foreach ($groups as $groupName => $cats): ?>
             <?php $linkable = array_filter($cats, static fn ($c) => (int) $c['listing_count'] > 0); ?>
             <?php if ($linkable === []): continue; endif; ?>
-            <div class="panel mb-6">
-                <h2 class="mb-3 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                    <?php $style = category_group_style($groupName); ?><span class="cat-group-icon <?= $style['tint'] ?>"><?= lucide($style['icon'], 'h-5 w-5 shrink-0') ?></span><?= esc($groupName) ?>
+            <?php $style = category_group_style($groupName); ?>
+            <?php // The tint class on the band rather than on each of the three
+                  // things that read it: the icon, the heading and every chip below
+                  // all inherit the custom properties from here, so the group is
+                  // one colour decision instead of three. ?>
+            <div class="panel mb-6 <?= $style['tint'] ?>">
+                <h2 class="cat-group-title mb-3 flex items-center gap-2 text-lg font-bold">
+                    <span class="cat-group-icon"><?= lucide($style['icon'], 'h-5 w-5 shrink-0') ?></span><?= esc($groupName) ?>
                 </h2>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($linkable as $c): ?>
                         <?= view('directory/_chip', [
                             'label' => $c['name'],
-                            'tint'  => $style['tint'],
+                            // No 'tint': the band above already sets the vars and
+                            // .chip reads them by inheritance.
                             'href'  => base_url('directory/' . $c['slug']),
                             'count' => (int) $c['listing_count'],
                         ], ['saveData' => false]) ?>

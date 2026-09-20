@@ -404,6 +404,27 @@ if (! function_exists('category_group_tint')) {
     }
 }
 
+if (! function_exists('vertical_profile')) {
+    /**
+     * What this category calls things: headings, nouns, CTA and panel order.
+     *
+     * A thin wrapper over Config\Verticals, for the same reason
+     * category_group_tint() wraps category_group_style() — the views ask one
+     * function rather than reaching into a config object, and the fallback for a
+     * category with no group (category_id is nullable) lives in one place.
+     *
+     * Always returns a complete key set, so a view can index straight in:
+     * $v['headings']['services'] is safe for every one of the 160 categories,
+     * mapped or not.
+     *
+     * @return array<string,mixed>
+     */
+    function vertical_profile(?string $group, ?string $categorySlug = null): array
+    {
+        return config('Verticals')->forCategory($group, $categorySlug);
+    }
+}
+
 if (! function_exists('safe_external_url')) {
     /**
      * A stored URL that is safe to put in an href, or '' if it isn't.

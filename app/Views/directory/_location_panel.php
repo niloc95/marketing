@@ -1,6 +1,6 @@
 <?php
 /**
- * "Other locations" — a business's branches, on its public profile.
+ * A business's branches, on its public profile.
  *
  * Each branch is rendered by exactly the partials the listing's own address uses
  * (_contact_panel, _map_panel, _hours_panel), which is the point: a branch is
@@ -18,14 +18,29 @@
  * _map_panel returns early without coordinates, _hours_panel without hours. So a
  * pre-existing branch renders exactly as much as it has, and nothing breaks.
  *
- * Reached only when there is at least one branch; show.php checks.
+ * Reached only when there is at least one branch; _panel_locations.php checks,
+ * and is also where the heading comes from.
  *
- * @var array $locations rows from DirectoryPracticeLocationModel::forListing(),
- *                       each with trading_hours already decoded by getProfile()
+ * $sectionHeading is NOT called $heading, deliberately, and renaming it back
+ * will reintroduce a bug a test already caught once. CI4's renderer keeps view
+ * data between render() calls, and the three panels below are all passed a
+ * 'heading' — so by the time anything renders this partial a second time,
+ * 'heading' is still set to whichever one went last. An optional $heading here
+ * would therefore inherit "Trading hours" rather than fall back to its own
+ * default. Same failure mode _chip.php and _search_input.php both document; the
+ * cure there is saveData, and the cure here is a name nothing else uses.
+ *
+ * @var array  $locations      rows from DirectoryPracticeLocationModel::forListing(),
+ *                             each with trading_hours already decoded by getProfile()
+ * @var string $sectionHeading section heading; the vertical's word for a branch
+ * @var string $hoursHeading   what this vertical calls trading hours, so a branch
+ *                             agrees with the listing's own hours panel
  */
+$sectionHeading = $sectionHeading ?? 'Other locations';
+$hoursHeading   = $hoursHeading ?? 'Trading hours';
 ?>
 <section class="branch-section">
-    <h3 class="branch-section-title">Other locations</h3>
+    <h3 class="branch-section-title"><?= esc($sectionHeading) ?></h3>
 
     <?php foreach ($locations as $i => $loc): ?>
         <?php
@@ -55,7 +70,7 @@
 
             <?= view('directory/_hours_panel', [
                 'hours'   => $loc['trading_hours'] ?? null,
-                'heading' => 'Trading hours',
+                'heading' => $hoursHeading,
                 'class'   => 'mt-3',
             ]) ?>
         </div>

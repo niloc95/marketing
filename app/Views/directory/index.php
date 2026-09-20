@@ -54,9 +54,43 @@ if ($indexable && ! empty($result['items'])) {
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero pt-24 pb-8 sm:pt-28 sm:pb-10">
+<?php
+// A browse filtered to exactly one category is the same set of businesses as
+// that category's landing page — it canonicalises to it a few lines above — so it
+// arrives in the same colour world rather than the shared navy. Anything else
+// stays navy on purpose: with no category, an unrecognised one, or a province on
+// its own, the results are a mix of verticals and the band would have to pick a
+// hue for all of them.
+//
+// $category is the row the controller already resolved against the category
+// table, so this cannot be driven from the raw query string — the same reason
+// the title and canonical above are built from it.
+$vertical      = $category !== null ? category_group_style($category['group_name'] ?? null) : null;
+$verticalPhoto = $category !== null ? category_photo($category) : null;
+?>
+<section class="hero<?= $vertical !== null ? ' hero-vertical vertical-scope ' . $vertical['tint'] : '' ?> pt-24 pb-8 sm:pt-28 sm:pb-10">
+    <?php if ($verticalPhoto !== null): ?>
+        <?php // Decorative, and eager — see landing.php, which draws the same
+              // photograph for the same category. ?>
+        <img class="hero-vertical-img"
+             src="<?= esc(base_url($verticalPhoto['src']), 'attr') ?>"
+             srcset="<?= esc(base_url($verticalPhoto['src_sm']), 'attr') ?> 400w, <?= esc(base_url($verticalPhoto['src']), 'attr') ?> 800w"
+             sizes="100vw" alt="" decoding="async" fetchpriority="high">
+    <?php endif; ?>
     <div class="container">
-        <h1 class="text-2xl sm:text-3xl">Browse</h1>
+        <?php // The heading follows the band. A coloured hero still headed "Browse"
+              // reads as a styling accident, and this page already knew the better
+              // wording: $title is what the <title> and the ItemList both use, so
+              // the three now agree instead of the h1 saying "Browse" while the tab
+              // says "Dentist profiles in Gauteng". Unfiltered, it is still Browse. ?>
+        <?php if ($vertical !== null): ?>
+            <h1 class="flex items-center gap-2.5 text-2xl sm:text-3xl">
+                <?= lucide($vertical['icon'], 'h-7 w-7 shrink-0 opacity-80 sm:h-8 sm:w-8') ?>
+                <span><?= esc($title) ?></span>
+            </h1>
+        <?php else: ?>
+            <h1 class="text-2xl sm:text-3xl">Browse</h1>
+        <?php endif; ?>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
             <?= view('directory/_search_input', [
                 'listId'      => 'search-suggest-hero',
