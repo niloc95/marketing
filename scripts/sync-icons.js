@@ -46,6 +46,10 @@ const ICONS = [
   'map-pin', 'star', 'badge-check', 'share', 'link', 'check', 'building-2',
   // Profile contact card: website row and the Suggest an edit link.
   'external-link', 'square-pen',
+  // The International Listing panel on the owner dashboard
+  // (directory/_hosting_panel.php) — a listing whose address is outside
+  // South Africa and which publishes only while its subscription is paid.
+  'globe',
   // Navigation and disclosure.
   'arrow-right', 'arrow-left', 'chevron-left', 'chevron-right', 'chevron-down',
   // Map controls.

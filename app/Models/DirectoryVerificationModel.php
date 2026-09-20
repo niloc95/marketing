@@ -15,7 +15,7 @@ class DirectoryVerificationModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'listing_id', 'state', 'paid_until', 'amount',
+        'listing_id', 'plan', 'state', 'paid_until', 'amount',
         'pf_subscription_token', 'billing_anchor_day', 'pf_m_payment_id', 'rejection_reason',
         'submitted_at', 'reviewed_at', 'reviewed_by', 'activated_at', 'cancelled_at',
     ];
@@ -45,9 +45,33 @@ class DirectoryVerificationModel extends Model
         self::STATE_REJECTED,
     ];
 
-    public function forListing(int $listingId): ?array
+    /**
+     * What is being paid for. A listing may hold one row of each — a business
+     * outside South Africa that also wants the badge has two subscriptions,
+     * which is what the (listing_id, plan) unique index exists for.
+     *
+     *   badge         → the Verified Business badge. Optional, for anyone.
+     *                   Documents, then admin review, then payment.
+     *   international → the right to publish at all, for a listing whose
+     *                   address is not in South Africa. No documents and no
+     *                   review: there is nothing to check, so it is created
+     *                   already approved and goes straight to payment.
+     *
+     * PLAN_BADGE is the column's DEFAULT, so every row that predates the
+     * international plan is correctly labelled without a backfill.
+     */
+    public const PLAN_BADGE         = 'badge';
+    public const PLAN_INTERNATIONAL = 'international';
+
+    public const PLANS = [self::PLAN_BADGE, self::PLAN_INTERNATIONAL];
+
+    /**
+     * Defaults to the badge so every caller that predates the second plan keeps
+     * asking the question it was already asking.
+     */
+    public function forListing(int $listingId, string $plan = self::PLAN_BADGE): ?array
     {
-        $row = $this->where('listing_id', $listingId)->first();
+        $row = $this->where('listing_id', $listingId)->where('plan', $plan)->first();
 
         return is_array($row) ? $row : null;
     }
@@ -78,7 +102,8 @@ class DirectoryVerificationModel extends Model
             'xs_directory_verifications.*,'
             . ' l.display_name AS listing_name, l.slug AS listing_slug,'
             . ' l.email AS listing_email, l.city AS listing_city,'
-            . ' l.status AS listing_status, l.is_verified AS listing_email_verified'
+            . ' l.status AS listing_status, l.is_verified AS listing_email_verified,'
+            . ' l.country AS listing_country'
         )->join('xs_directory_listings AS l', 'l.id = xs_directory_verifications.listing_id', 'left');
 
         if (in_array($state, self::STATES, true)) {

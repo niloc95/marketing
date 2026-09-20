@@ -78,6 +78,24 @@ class DirectorySettings
             : $this->isTruthy($stored);
     }
 
+    public function internationalPrice(): string
+    {
+        $stored = $this->stored(DirectorySettingModel::INTERNATIONAL_PRICE);
+
+        return $stored === null
+            ? $this->config->internationalMonthlyAmount()
+            : $this->config->normaliseAmount($stored);
+    }
+
+    public function internationalEnabled(): bool
+    {
+        $stored = $this->stored(DirectorySettingModel::INTERNATIONAL_ENABLED);
+
+        return $stored === null
+            ? $this->config->internationalListingEnabled()
+            : $this->isTruthy($stored);
+    }
+
     /**
      * Where the live price is actually coming from.
      *
@@ -103,6 +121,28 @@ class DirectorySettings
         }
 
         return env('directory.verifiedBadgeEnabled') !== null
+            ? self::SOURCE_ENVIRONMENT
+            : self::SOURCE_DEFAULT;
+    }
+
+    public function internationalPriceSource(): string
+    {
+        if ($this->stored(DirectorySettingModel::INTERNATIONAL_PRICE) !== null) {
+            return self::SOURCE_DATABASE;
+        }
+
+        return env('directory.internationalMonthlyAmount') !== null
+            ? self::SOURCE_ENVIRONMENT
+            : self::SOURCE_DEFAULT;
+    }
+
+    public function internationalEnabledSource(): string
+    {
+        if ($this->stored(DirectorySettingModel::INTERNATIONAL_ENABLED) !== null) {
+            return self::SOURCE_DATABASE;
+        }
+
+        return env('directory.internationalListingEnabled') !== null
             ? self::SOURCE_ENVIRONMENT
             : self::SOURCE_DEFAULT;
     }
@@ -140,37 +180,46 @@ class DirectorySettings
     {
         $errors = [];
 
-        $rawPrice = trim((string) ($input['badge_price'] ?? ''));
-        $price    = null;
+        // Each plan is one section of the form, and a section is saved only if
+        // its price field was posted.
+        //
+        // That test is doing real work, and it is the price field specifically.
+        // An unticked checkbox sends nothing, so "absent" and "off" look
+        // identical in a POST — the only thing that distinguishes them is
+        // whether the section was on screen at all, and the price input is
+        // always present when it was. Keying off the checkbox instead would
+        // mean a form that omitted a section silently switched that feature
+        // off; keying off nothing at all would mean this method could not be
+        // called with a subset of the settings, which is how every existing
+        // caller uses it.
+        $writes = [];
 
-        if ($rawPrice === '') {
-            $errors['badge_price'] = 'Enter a monthly price.';
-        } else {
-            $price = $this->config->normaliseAmount($rawPrice);
+        if (array_key_exists('badge_price', $input)) {
+            $price = $this->validatePrice($input, 'badge_price', $errors);
 
-            // normaliseAmount() always returns a formatted number, so a
-            // non-numeric input arrives here as "0.00" rather than as a
-            // failure. Check the raw string actually contained a digit before
-            // trusting it — otherwise "abc" would quietly become free.
-            if (! preg_match('/\d/', $rawPrice) || (float) $price <= 0) {
-                $errors['badge_price'] = 'The price must be a number greater than zero.';
-            } elseif ((float) $price > self::MAX_PRICE) {
-                $errors['badge_price'] = 'That price looks like a typo — the maximum is R' . number_format(self::MAX_PRICE, 2) . '.';
-            }
+            $writes[DirectorySettingModel::BADGE_PRICE]   = static fn (): string => (string) $price;
+            $writes[DirectorySettingModel::BADGE_ENABLED] = static fn (): string => empty($input['badge_enabled']) ? '0' : '1';
+        }
+
+        if (array_key_exists('international_price', $input)) {
+            $internationalPrice = $this->validatePrice($input, 'international_price', $errors);
+
+            $writes[DirectorySettingModel::INTERNATIONAL_PRICE]   = static fn (): string => (string) $internationalPrice;
+            $writes[DirectorySettingModel::INTERNATIONAL_ENABLED] = static fn (): string => empty($input['international_enabled']) ? '0' : '1';
         }
 
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'message' => 'Nothing was saved — please check the highlighted field.'];
         }
 
-        // An unticked checkbox sends nothing, so absence means off. Safe here
-        // because this form always posts the price alongside it, so an empty
-        // POST could not silently disable the feature.
-        $enabled = empty($input['badge_enabled']) ? '0' : '1';
+        if ($writes === []) {
+            return ['ok' => false, 'errors' => [], 'message' => 'Nothing to save.'];
+        }
 
         try {
-            $this->model->put(DirectorySettingModel::BADGE_PRICE, (string) $price, $by);
-            $this->model->put(DirectorySettingModel::BADGE_ENABLED, $enabled, $by);
+            foreach ($writes as $name => $value) {
+                $this->model->put($name, $value(), $by);
+            }
         } catch (\Throwable $e) {
             log_message('error', 'Could not save directory settings: ' . $e->getMessage());
 
@@ -179,7 +228,42 @@ class DirectorySettings
 
         $this->forget();
 
-        return ['ok' => true, 'errors' => [], 'message' => 'Settings saved. The new price applies to new applications only.'];
+        return ['ok' => true, 'errors' => [], 'message' => 'Settings saved. A new price applies to new subscriptions only.'];
+    }
+
+    /**
+     * One price field, validated.
+     *
+     * Shared by the badge and the International Listing plan so the two can
+     * never drift into different ideas of what counts as a price — which is
+     * exactly what a copied-and-edited second block would do the first time
+     * one of them gained a rule.
+     *
+     * @param array<string,mixed>   $input
+     * @param array<string,string> &$errors collected by field name
+     */
+    private function validatePrice(array $input, string $field, array &$errors): ?string
+    {
+        $raw = trim((string) ($input[$field] ?? ''));
+        if ($raw === '') {
+            $errors[$field] = 'Enter a monthly price.';
+
+            return null;
+        }
+
+        $price = $this->config->normaliseAmount($raw);
+
+        // normaliseAmount() always returns a formatted number, so a
+        // non-numeric input arrives here as "0.00" rather than as a failure.
+        // Check the raw string actually contained a digit before trusting it —
+        // otherwise "abc" would quietly become free.
+        if (! preg_match('/\d/', $raw) || (float) $price <= 0) {
+            $errors[$field] = 'The price must be a number greater than zero.';
+        } elseif ((float) $price > self::MAX_PRICE) {
+            $errors[$field] = 'That price looks like a typo — the maximum is R' . number_format(self::MAX_PRICE, 2) . '.';
+        }
+
+        return $price;
     }
 
     /** Drop the cached map. Called on every write, and by tests. */

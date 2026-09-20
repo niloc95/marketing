@@ -21,7 +21,21 @@ class DirectorySettingModel extends Model
     public const BADGE_PRICE   = 'verified_badge_price';
     public const BADGE_ENABLED = 'verified_badge_enabled';
 
-    public const KNOWN = [self::BADGE_PRICE, self::BADGE_ENABLED];
+    /**
+     * The International Listing plan — what a business outside South Africa
+     * pays monthly to stay published. Its own rows rather than a reuse of the
+     * badge's, because the two prices are independent and switching one off
+     * must not switch the other off with it.
+     */
+    public const INTERNATIONAL_PRICE   = 'international_listing_price';
+    public const INTERNATIONAL_ENABLED = 'international_listing_enabled';
+
+    public const KNOWN = [
+        self::BADGE_PRICE,
+        self::BADGE_ENABLED,
+        self::INTERNATIONAL_PRICE,
+        self::INTERNATIONAL_ENABLED,
+    ];
 
     /**
      * Every stored setting, keyed by name.

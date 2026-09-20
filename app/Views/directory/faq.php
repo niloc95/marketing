@@ -34,7 +34,7 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Is ' . esc($siteName) . ' free to use?',
-                'a' => 'Yes. Searching is free, and so is listing your own business — no card, no trial that runs out. The only thing we charge for is the optional <strong>Verified Business</strong> badge, described further down; nothing about your listing depends on buying it.',
+                'a' => 'Yes. Searching is free, and so is listing a business with a South African address — no card, no trial that runs out. Two things are paid, and neither affects a South African listing: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Listing</strong> subscription for a business based outside South Africa. Nothing about a South African listing depends on buying anything.',
             ],
             [
                 'q' => 'Do I need an account to search?',
@@ -60,7 +60,11 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Does it cost anything to list my business?',
-                'a' => 'No. Adding your business is free and stays free — no commission, no card required, and nothing about your listing is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, which adds a trust mark plus a couple of profile features — see below.',
+                'a' => 'Not if your business is in South Africa. Adding it is free and stays free — no commission, no card required, and nothing about your listing is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, which adds a trust mark plus a couple of profile features — see below.',
+            ],
+            [
+                'q' => 'My business is not in South Africa. Can I still list it?',
+                'a' => 'Yes, on a paid <strong>International Listing</strong> subscription. This is a South African directory — the search, the categories and the province pages are all built around South African places — so a South African address lists free and always will. A business based anywhere else is welcome, and its profile goes live once the monthly subscription is paid. You fill in the same form, confirm your email the same way, and your profile is saved either way; it publishes when the first payment clears. Cancel any time: the profile stays live until the paid period ends and then comes down, and nothing you entered is deleted — if you subscribe again later it comes back exactly as it was. Payment is taken in South African rand.',
             ],
             [
                 'q' => 'How much is the Verified Business badge, and what do I get?',
@@ -132,7 +136,7 @@ $groups = [
             ],
             [
                 'q' => 'Will you send me marketing emails?',
-                'a' => 'Only if you ask for them. Signing up has a separate, optional box for news, tips and offers, and your listing is free whether or not you tick it. Change your mind any time with the unsubscribe link in any of those emails or from <a href="' . base_url('manage') . '">Manage your profile</a>. Emails your listing needs, such as verification and edit links, are not marketing and still arrive.',
+                'a' => 'Only if you ask for them. Signing up asks you a separate yes-or-no question about news, tips and offers, and you have to answer it &mdash; but "No thanks" is a perfectly good answer and your listing is free either way. Change your mind any time with the unsubscribe link in any of those emails or from <a href="' . base_url('manage') . '">Manage your profile</a>. Emails your listing needs, such as verification and edit links, are not marketing and still arrive.',
             ],
             [
                 'q' => 'Is this the same thing as WebScheduler, the booking software?',

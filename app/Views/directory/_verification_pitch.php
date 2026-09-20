@@ -65,5 +65,5 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 <p class="hint verify-benefits-terms">
     <strong>R<?= esc($amount) ?> a month, and nothing to pay now.</strong>
     We review your documents first and only ask for payment if they check out.
-    Cancel any time. Your listing itself is free either way, and stays free.
+    Cancel any time. A South African listing is free either way, and stays free.
 </p>

@@ -97,14 +97,140 @@ class VerificationService
     }
 
     /**
+     * Is the International Listing plan on offer?
+     *
+     * When false, nothing about a foreign listing changes: it publishes on
+     * email verification like any other and nobody is charged. That is the
+     * deliberate failure mode for a plan that gates publication rather than a
+     * decoration — switching it off must never strand a listing pending with
+     * no way to pay, and must never take a paying business down.
+     */
+    public function internationalEnabled(): bool
+    {
+        return $this->settings->internationalEnabled();
+    }
+
+    /** As monthlyAmount(), for the other plan. */
+    public function internationalAmount(): string
+    {
+        return $this->settings->internationalPrice();
+    }
+
+    /**
+     * Does this listing have to pay to be published at all?
+     *
+     * The one question the publish gate asks. Reads the listing's country
+     * rather than any flag on the row, so an admin correcting a country
+     * corrects the answer in the same edit.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function requiresSubscription(array $listing): bool
+    {
+        return $this->internationalEnabled()
+            && ! config('Countries')->isLocal((string) ($listing['country'] ?? ''));
+    }
+
+    /**
+     * Is that subscription paid up right now?
+     *
+     * A date compare, exactly like listing_is_verified_business() — see the
+     * helper's docblock for why the comparison is made at read time rather
+     * than trusting a boolean somebody has to remember to flip.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function subscriptionActive(array $listing): bool
+    {
+        $until = trim((string) ($listing['hosting_paid_until'] ?? ''));
+
+        return $until !== '' && $until >= date('Y-m-d');
+    }
+
+    /**
+     * May this listing be published?
+     *
+     * Every publish path asks this and nothing else: a South African listing
+     * always may, a foreign one only while it is paid for. Keeping it in one
+     * method is what stops the ITN handler, verify() and the admin form from
+     * drifting into three slightly different answers.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function mayPublish(array $listing): bool
+    {
+        return ! $this->requiresSubscription($listing) || $this->subscriptionActive($listing);
+    }
+
+    /**
+     * The International Listing subscription for a listing, created if it has
+     * none.
+     *
+     * Created directly in `approved`, which is the state the badge reaches only
+     * after an admin has looked at two documents. That is not a shortcut around
+     * review — there is nothing to review. The badge asserts "we checked who
+     * these people are"; this plan asserts nothing at all, it is the price of
+     * being hosted. So it goes straight to payable.
+     *
+     * The amount is snapshotted here for the same reason the badge's is: a
+     * later price change must not start failing an existing subscriber's
+     * renewal when the ITN amount is compared against what we asked for.
+     *
+     * Idempotent — an owner who reloads the checkout page twice gets the same
+     * row, not a second one. The (listing_id, plan) unique index is the
+     * backstop if two requests race.
+     *
+     * @return array<string,mixed>|null the row, or null if it could not be made
+     */
+    public function ensureInternationalSubscription(int $listingId): ?array
+    {
+        $existing = $this->verifications->forListing(
+            $listingId,
+            DirectoryVerificationModel::PLAN_INTERNATIONAL
+        );
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $listing = $this->listings->find($listingId);
+        if (! is_array($listing) || ! $this->requiresSubscription($listing)) {
+            return null;
+        }
+
+        try {
+            $this->verifications->insert([
+                'listing_id'   => $listingId,
+                'plan'         => DirectoryVerificationModel::PLAN_INTERNATIONAL,
+                'state'        => DirectoryVerificationModel::STATE_APPROVED,
+                'amount'       => $this->internationalAmount(),
+                'submitted_at' => date('Y-m-d H:i:s'),
+                'reviewed_at'  => date('Y-m-d H:i:s'),
+                'reviewed_by'  => 'system',
+            ]);
+        } catch (Throwable $e) {
+            log_message('error', 'Could not open an international subscription for listing '
+                . $listingId . ': ' . $this->oneLine($e->getMessage()));
+
+            return null;
+        }
+
+        return $this->verifications->forListing(
+            $listingId,
+            DirectoryVerificationModel::PLAN_INTERNATIONAL
+        );
+    }
+
+    /**
      * A listing's application plus its documents, or null if it has never
      * applied. The shape the manage panel and the review queue both render from.
      *
      * @return array{verification:array<string,mixed>,documents:array<int,array<string,mixed>>}|null
      */
-    public function forListing(int $listingId): ?array
-    {
-        $row = $this->verifications->forListing($listingId);
+    public function forListing(
+        int $listingId,
+        string $plan = DirectoryVerificationModel::PLAN_BADGE
+    ): ?array {
+        $row = $this->verifications->forListing($listingId, $plan);
         if ($row === null) {
             return null;
         }
@@ -326,16 +452,31 @@ class VerificationService
      *
      * @return array{ok:bool,message:string}
      */
-    public function cancelSubscription(int $listingId): array
-    {
-        $row = $this->verifications->forListing($listingId);
+    public function cancelSubscription(
+        int $listingId,
+        string $plan = DirectoryVerificationModel::PLAN_BADGE
+    ): array {
+        $row = $this->verifications->forListing($listingId, $plan);
+
+        // What the owner loses differs, so what they are told differs. Cancel
+        // a badge and a decoration stops renewing; cancel an International
+        // Listing and the profile itself comes down at the end of the term.
+        // Saying "badge" in both would be the more convenient code and the
+        // wrong thing to tell somebody.
+        $isInternational = $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL;
+        $what            = $isInternational ? 'subscription' : 'badge';
 
         if ($row === null || $row['state'] !== DirectoryVerificationModel::STATE_ACTIVE) {
-            return ['ok' => false, 'message' => 'There is no active badge to cancel.'];
+            return ['ok' => false, 'message' => 'There is no active ' . $what . ' to cancel.'];
         }
 
         if (! empty($row['cancelled_at'])) {
-            return ['ok' => true, 'message' => 'Your badge is already cancelled — it stays up until it expires.'];
+            return [
+                'ok'      => true,
+                'message' => $isInternational
+                    ? 'Your subscription is already cancelled — your profile stays live until it expires.'
+                    : 'Your badge is already cancelled — it stays up until it expires.',
+            ];
         }
 
         $token = trim((string) ($row['pf_subscription_token'] ?? ''));
@@ -346,12 +487,15 @@ class VerificationService
         // human, since somebody may be invoicing them by EFT.
         if ($token === '') {
             $this->verifications->update((int) $row['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
-            $this->notifyAdminOfCancellation($listingId, 'manually-activated badge, no PayFast subscription to cancel');
+            $this->notifyAdminOfCancellation($listingId, 'manually-activated ' . $what . ', no PayFast subscription to cancel');
 
             return [
                 'ok'      => true,
-                'message' => 'Your badge will not renew. It stays on your profile until '
-                    . $this->prettyDate($row['paid_until']) . '.',
+                'message' => $isInternational
+                    ? 'Your subscription will not renew. Your profile stays live until '
+                        . $this->prettyDate($row['paid_until']) . ', then comes down.'
+                    : 'Your badge will not renew. It stays on your profile until '
+                        . $this->prettyDate($row['paid_until']) . '.',
             ];
         }
 
@@ -370,8 +514,11 @@ class VerificationService
 
         return [
             'ok'      => true,
-            'message' => 'Cancelled — you will not be charged again. Your badge stays on your profile until '
-                . $this->prettyDate($row['paid_until']) . '.',
+            'message' => $isInternational
+                ? 'Cancelled — you will not be charged again. Your profile stays live until '
+                    . $this->prettyDate($row['paid_until']) . ', then comes down.'
+                : 'Cancelled — you will not be charged again. Your badge stays on your profile until '
+                    . $this->prettyDate($row['paid_until']) . '.',
         ];
     }
 
@@ -422,7 +569,19 @@ class VerificationService
                 'activated_at' => $row['activated_at'] ?? date('Y-m-d H:i:s'),
                 'reviewed_by'  => $by,
             ]);
-            $this->applyPaidUntil((int) $row['listing_id'], $paidUntil);
+            // Same split as recordPayment(): the EFT path has to grant the
+            // same thing the card path does, or activating by hand would take
+            // the money and leave an international listing unpublished.
+            if ($this->isInternational($row)) {
+                $this->applyHostingPaidUntil((int) $row['listing_id'], $paidUntil);
+
+                $listing = $this->listings->find((int) $row['listing_id']);
+                if (is_array($listing)) {
+                    $this->publishIfPaidFor($listing);
+                }
+            } else {
+                $this->applyPaidUntil((int) $row['listing_id'], $paidUntil);
+            }
 
             $db->transCommit();
         } catch (\Throwable $e) {
@@ -465,7 +624,17 @@ class VerificationService
                 'reviewed_at' => date('Y-m-d H:i:s'),
                 'reviewed_by' => $by,
             ]);
-            $this->applyPaidUntil((int) $row['listing_id'], null);
+            // Revoking an international subscription takes the listing down
+            // with it, exactly as a lapse does — the plan IS the publication.
+            // Deliberate and worth an admin knowing: revoke here is not the
+            // same act as revoking a badge.
+            if ($this->isInternational($row)) {
+                $this->applyHostingPaidUntil((int) $row['listing_id'], null);
+                $this->listings->update((int) $row['listing_id'], ['status' => 'unpublished']);
+            } else {
+                $this->applyPaidUntil((int) $row['listing_id'], null);
+            }
+
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
@@ -551,7 +720,23 @@ class VerificationService
                 }
 
                 $this->verifications->update($verificationId, $update);
-                $this->applyPaidUntil($listingId, $paidUntil);
+
+                // Which column this payment extends is the plan's to decide.
+                // The badge writes verified_until, which only makes a badge
+                // render; the International Listing plan writes
+                // hosting_paid_until, which is what lets the listing be
+                // published at all — so it also has to publish it, or the
+                // owner pays and nothing visibly happens.
+                if ($this->isInternational($verification)) {
+                    $this->applyHostingPaidUntil($listingId, $paidUntil);
+
+                    $listing = $this->listings->find($listingId);
+                    if (is_array($listing)) {
+                        $this->publishIfPaidFor($listing);
+                    }
+                } else {
+                    $this->applyPaidUntil($listingId, $paidUntil);
+                }
             }
 
             $db->transCommit();
@@ -599,7 +784,27 @@ class VerificationService
                 $this->verifications->update((int) $row['id'], [
                     'state' => DirectoryVerificationModel::STATE_LAPSED,
                 ]);
-                $this->applyPaidUntil((int) $row['listing_id'], null);
+
+                if ($this->isInternational($row)) {
+                    // Unlike the badge, this plan is what keeps the listing
+                    // public, so lapsing has to take it down. 'unpublished' is
+                    // already in the status ENUM and every read path filters
+                    // on status = 'published', so nothing else needs changing —
+                    // and nothing is deleted, so paying again brings the
+                    // listing back exactly as it was.
+                    //
+                    // Not a render-time check like the badge's, deliberately.
+                    // A badge outliving its payment is a claim we are not
+                    // being paid to make; a listing staying up a few hours
+                    // longer is not, and the alternative is a country
+                    // comparison bolted onto browse(), the map, the sitemap
+                    // and every other query that filters on status.
+                    $this->applyHostingPaidUntil((int) $row['listing_id'], null);
+                    $this->listings->update((int) $row['listing_id'], ['status' => 'unpublished']);
+                } else {
+                    $this->applyPaidUntil((int) $row['listing_id'], null);
+                }
+
                 $db->transCommit();
                 $lapsed++;
             } catch (\Throwable $e) {
@@ -648,6 +853,21 @@ class VerificationService
     // ---------------------------------------------------------------- internals
 
     /**
+     * Is this verification row the International Listing plan?
+     *
+     * Defaults to the badge when `plan` is absent, which is what every row
+     * written before the column existed looks like to old code paths and to a
+     * row array assembled in a test.
+     *
+     * @param array<string,mixed> $verification
+     */
+    private function isInternational(array $verification): bool
+    {
+        return ($verification['plan'] ?? DirectoryVerificationModel::PLAN_BADGE)
+            === DirectoryVerificationModel::PLAN_INTERNATIONAL;
+    }
+
+    /**
      * The one place xs_directory_listings.verified_until is written.
      *
      * Goes through the model rather than a raw builder so the column stays
@@ -657,6 +877,46 @@ class VerificationService
     private function applyPaidUntil(int $listingId, ?string $paidUntil): void
     {
         $this->listings->update($listingId, ['verified_until' => $paidUntil]);
+    }
+
+    /**
+     * The one place xs_directory_listings.hosting_paid_until is written.
+     *
+     * The International Listing plan's twin of applyPaidUntil(), and held to
+     * the same rule for the same reason: one writer means one place to read
+     * when asking "how is this listing published?". Neither column is in
+     * OWNER_EDITABLE nor in DirectoryAdminService::upsert()'s privileged
+     * block, so no form post of any kind can reach either.
+     */
+    private function applyHostingPaidUntil(int $listingId, ?string $paidUntil): void
+    {
+        $this->listings->update($listingId, ['hosting_paid_until' => $paidUntil]);
+    }
+
+    /**
+     * Publish a listing whose subscription has just been paid.
+     *
+     * Only ever moves a listing that is waiting on money, and only once its
+     * owner has confirmed their email — `is_verified` is a separate question
+     * from payment and paying does not answer it. A listing an admin has
+     * rejected stays rejected: money does not overturn a moderation decision.
+     *
+     * @param array<string,mixed> $listing
+     */
+    private function publishIfPaidFor(array $listing): void
+    {
+        $status = (string) ($listing['status'] ?? '');
+
+        if (empty($listing['is_verified']) || ! in_array($status, ['pending', 'unpublished'], true)) {
+            return;
+        }
+
+        $update = ['status' => 'published'];
+        if (empty($listing['published_at'])) {
+            $update['published_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->listings->update((int) $listing['id'], $update);
     }
 
     /**

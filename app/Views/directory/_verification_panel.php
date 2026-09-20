@@ -67,6 +67,12 @@ $prettyDate = static function (?string $date): string {
                 <form method="post" action="<?= base_url('manage/verification/cancel') ?>" class="mt-4"
                       data-confirm="Cancel your Verified Business badge? It stays up until <?= esc($prettyDate($row['paid_until']), 'attr') ?>, then comes down.">
                     <?= csrf_field() ?>
+                    <?php // Which subscription this cancels. A listing outside
+                          // South Africa can hold both this and an International
+                          // Listing, and without this the route would have to
+                          // guess — cancelling the wrong one would take their
+                          // whole profile down instead of a badge. ?>
+                    <input type="hidden" name="plan" value="<?= esc(DirectoryVerificationModel::PLAN_BADGE, 'attr') ?>">
                     <button class="btn btn-ghost btn-xs text-brand-crimson">Cancel my badge</button>
                 </form>
             <?php else: ?>

@@ -2,6 +2,7 @@
 
 namespace App\Libraries;
 
+use App\Models\DirectoryVerificationModel;
 use Config\Directory as DirectoryConfig;
 
 /**
@@ -95,6 +96,12 @@ class PayFast
         $amount = number_format((float) $verification['amount'], 2, '.', '');
         $name   = (string) ($listing['display_name'] ?? '');
 
+        // Read off the row rather than passed in, so the wording can never
+        // disagree with the subscription it is signing for. Absent means badge:
+        // that is what every row written before the plan column looks like.
+        $isInternational = ($verification['plan'] ?? DirectoryVerificationModel::PLAN_BADGE)
+            === DirectoryVerificationModel::PLAN_INTERNATIONAL;
+
         $fields = [
             'merchant_id'  => $this->config->payfastMerchantId(),
             'merchant_key' => $this->config->payfastMerchantKey(),
@@ -106,10 +113,18 @@ class PayFast
 
             'm_payment_id' => (string) $verification['pf_m_payment_id'],
             'amount'       => $amount,
-            'item_name'    => 'Verified Business badge',
+            // What the buyer sees on the PayFast page and on their card
+            // statement, so it has to name the thing they are actually buying.
+            // An international subscriber charged for a "Verified Business
+            // badge" they never asked for is a chargeback waiting to happen.
+            'item_name'        => $isInternational ? 'International Listing' : 'Verified Business badge',
             // Truncated because PayFast caps this field and silently rejects
             // the whole request rather than trimming it for us.
-            'item_description' => mb_substr('Monthly Verified Business badge for ' . $name, 0, 200),
+            'item_description' => mb_substr(
+                ($isInternational ? 'Monthly International Listing for ' : 'Monthly Verified Business badge for ') . $name,
+                0,
+                200
+            ),
 
             // Correlation of last resort. m_payment_id is what we look up on,
             // but if a notification ever arrives without it these two are enough

@@ -70,6 +70,7 @@ $prettyDate = static function (?string $date): string {
                     <thead>
                         <tr>
                             <th>Business</th>
+                            <th>Plan</th>
                             <th>Documents</th>
                             <th>Submitted</th>
                             <th>Paid through</th>
@@ -91,6 +92,20 @@ $prettyDate = static function (?string $date): string {
                                 <?php endif; ?>
                                 <?php if (! empty($r['rejection_reason'])): ?>
                                     <div class="text-xs text-brand-crimson">Rejected: <?= esc($r['rejection_reason']) ?></div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php // Which of the two subscriptions this row is. It changes
+                                      // what approving or revoking it DOES — revoke a badge and a
+                                      // decoration goes away, revoke an International Listing and
+                                      // the business's profile comes down — so an admin has to be
+                                      // able to see it without opening the row. ?>
+                                <?php if (($r['plan'] ?? '') === \App\Models\DirectoryVerificationModel::PLAN_INTERNATIONAL): ?>
+                                    <span class="pill">International</span>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($r['listing_country'] ?? '') ?></div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">publication, not a badge</div>
+                                <?php else: ?>
+                                    <span class="pill pill-verified">Badge</span>
                                 <?php endif; ?>
                             </td>
                             <td>

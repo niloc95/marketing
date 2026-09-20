@@ -88,6 +88,18 @@ $row = static function (array $r, string $col): string {
             A full profile that customers can find and contact. No card, no trial that
             runs out, nothing held back later.
         </p>
+        <?php // "Free, always" is an unqualified promise and it has to stay true,
+              // so the one condition on it is stated on the card that makes it
+              // rather than left for somebody to discover at the end of the form.
+              //
+              // Only the country qualifies it — free vs Verified is a separate
+              // axis entirely, which is why this sits on the Free card and not in
+              // the ✓/✗ matrix below. ?>
+        <p class="hint plan-terms">
+            For a business with a <strong>South African address</strong>. Listing a
+            business based elsewhere needs an
+            <a href="<?= base_url('faq') ?>">International Listing</a> subscription.
+        </p>
         <ul class="plan-rows">
             <?php foreach ($rows as $r): ?>
                 <?= $row($r, 'free') ?>
@@ -121,7 +133,7 @@ $row = static function (array $r, string $col): string {
         <?php // Same terms as _verification_pitch.php, and they must stay the same. ?>
         <p class="hint plan-terms">
             <strong>Nothing to pay now.</strong> We review your documents first and only ask
-            for payment if they check out. Cancel any time. Your listing itself is free
+            for payment if they check out. Cancel any time. A South African listing is free
             either way, and stays free.
         </p>
         <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
