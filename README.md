@@ -302,6 +302,6 @@ php spark directory:adminhash                  # then set adminPasswordHash
 7. Verify — the checks in dist/listing/DEPLOY.txt, especially:
 
 curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/   # 200
-# Use GET, not curl -I: routes are registered with $routes->get(), so HEAD returns 404
-# from a perfectly healthy app. Same trap when configuring an uptime monitor.
+# HEAD works too, as of 21 Sep 2026 — Config/Routes.php mirrors every GET route onto
+# HEAD at the foot of the file. Before that it 404'd from a perfectly healthy app.
 curl -sI https://webscheduler.co.za/directory/          # 404 — old broken copy gone

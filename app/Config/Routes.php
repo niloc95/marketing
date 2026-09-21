@@ -187,3 +187,34 @@ $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
 // Directory::segment() resolves category first. listing_reserved_slugs() stops a
 // listing ever claiming a category's slug.
 $routes->get('directory/(:segment)', 'Directory::segment/$1');
+
+// ---------------------------------------------------------------------------
+// HEAD
+// ---------------------------------------------------------------------------
+// Every GET route above also answers HEAD.
+//
+// CodeIgniter keys its route table by verb and does not fall back: a HEAD
+// request is matched only against the HEAD bucket (RouteCollection::getRoutes),
+// so with nothing registered there the entire app 404s to HEAD while GET
+// returns 200 — which is what link checkers, uptime monitors and several social
+// scrapers use. RFC 9110 §9.3.2 defines HEAD as GET without the body, so any
+// URL that answers one has to answer the other.
+//
+// Mirroring here rather than writing a ->head() beside each of the forty-odd
+// ->get() calls is what keeps the two from drifting: a route added above is
+// covered without anyone remembering this rule existed. The trade is that this
+// block MUST stay at the bottom of the file — a route defined below it is
+// silently GET-only again.
+//
+// Options are copied across with the route, so the group filters still apply:
+// without that, HEAD /admin/verifications would skip the 'admin' filter and
+// answer unauthenticated.
+//
+// Only the GET bucket needs this. Routes registered with addRedirect() live in
+// the '*' bucket, which getRoutes() already merges into every verb — verified
+// against production: HEAD /list-your-practice returns its 301 today.
+//
+// App\Filters\HeadRequest drops the response body afterwards.
+foreach ($routes->getRoutes('GET', false) as $from => $handler) {
+    $routes->head($from, $handler, $routes->getRoutesOptions($from, 'GET'));
+}

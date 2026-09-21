@@ -620,23 +620,24 @@ them isn't.
    `https://listing.webscheduler.co.za/health`, 5-minute interval, alerting on any
    non-2xx.
 
-   ⚠️ **Configure the monitor to send `GET`, not `HEAD`.** Routes are registered with
-   `$routes->get(...)`, which does not match `HEAD`, so a HEAD request to `/health`
-   returns **404** from a completely healthy app. Several monitoring services default
-   to HEAD because it is cheaper. Set the method explicitly and confirm the first check
-   passes before you walk away, or you will have built an alarm that is always ringing
-   — which is worse than no alarm, because you will learn to ignore it.
+   Either method works. **This was not always true** — until 21 Sep 2026 every route
+   was registered with `$routes->get(...)`, which does not match `HEAD`, and CodeIgniter
+   matches a request only against its own verb's bucket. A HEAD request to `/health`
+   returned **404** from a completely healthy app, and several monitoring services
+   default to HEAD because it is cheaper. That was an alarm that would ring forever,
+   which is worse than no alarm — you learn to ignore it.
 
-   Verify by hand, which is also why `curl -I` is the wrong tool here:
+   Fixed at the cause rather than configured around: the foot of `app/Config/Routes.php`
+   mirrors the GET bucket onto HEAD, and `App\Filters\HeadRequest` strips the body back
+   off. `tests/unit/HeadRouteTest.php` holds it in place. Both should agree:
 
    ```bash
    curl -s  -o /dev/null -w 'GET  %{http_code}\n' https://listing.webscheduler.co.za/health
    curl -sI -o /dev/null -w 'HEAD %{http_code}\n' https://listing.webscheduler.co.za/health
    ```
 
-   If you would rather fix the cause than configure around it, register the health
-   route with `$routes->match(['get', 'head'], 'health', 'Health::index')` — but do that
-   as its own change with its own verification, not as part of a release.
+   If a future route ever answers GET but 404s to HEAD, it was added *below* that
+   mirroring loop. Move it above.
 3. When it alerts, open `/health?token=…` yourself to see which check failed.
 
 **Why not email alerts:** the single most likely thing to break is outbound mail, and a

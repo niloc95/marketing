@@ -122,11 +122,14 @@ curl -sD- -o /dev/null https://listing.webscheduler.co.za/ \
   | grep -oiE '^content-security-policy(-report-only)?:'
 ```
 
-**Use GET, not HEAD, when probing app routes.** CI4 routes registered with
-`$routes->get(...)` do not match `HEAD`, so `curl -I` on `/` returns a `404` JSON body
-from an app that is working perfectly. `curl -sI` is safe against the static marketing
-site and misleading against the directory app — use `curl -s -o /dev/null -w '%{http_code}'`
-there instead.
+**`curl -I` against the directory app is safe as of 21 Sep 2026, and was not before.**
+CI4 matches a request only against its own verb's bucket, and every route here was
+registered with `$routes->get(...)` — so `curl -I` on `/` returned a `404` JSON body
+from an app that was working perfectly, and more than one person read that as an
+outage. The foot of `app/Config/Routes.php` now mirrors GET onto HEAD.
+
+On a box running code older than that commit, the old trap is still live: probe with
+`curl -s -o /dev/null -w '%{http_code}'` instead.
 
 The strongest check is a content diff against what you just built, run on the server
 where both halves are present:
@@ -300,4 +303,5 @@ at rest. Carry the old one over instead.
 
 Plus: the Cloudflare origin certificate, `/var/www/.ws-contact.env` (`640
 deploy:www-data`, above the docroot), the `/etc/cron.d/webscheduler` jobs, Lightsail
-automatic snapshots, and an uptime monitor on `GET /health` — **GET, not HEAD**.
+automatic snapshots, and an uptime monitor on `/health` (either method — see DEPLOY.md
+for why that used to have to be GET).

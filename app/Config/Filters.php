@@ -37,6 +37,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'admin'         => \App\Filters\AdminFilter::class,
         'bottrap'       => \App\Filters\BotTrap::class,
+        'headrequest'   => \App\Filters\HeadRequest::class,
     ];
 
     /**
@@ -134,6 +135,11 @@ class Filters extends BaseFilters
             // that would fail loudly if it drifted.
             'honeypot' => ['except' => ['payfast/notify', 'manage/verification/checkout']],
             'secureheaders',
+            // Strips the body from a HEAD response, which Config\Routes now
+            // routes to the same controllers as GET. Last on purpose: every
+            // filter above still sees the finished page, and this one only
+            // decides how much of it goes on the wire.
+            'headrequest',
         ],
     ];
 
