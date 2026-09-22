@@ -429,33 +429,27 @@ helper('directory_hours');
         <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details publicly on <?= esc(config('Directory')->siteName()) ?>, and I accept the <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>" target="_blank" rel="noopener">Terms of use</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>" target="_blank" rel="noopener">Privacy policy</a>.</label>
         <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
     </div>
-    <?php // A second question, never part of the one above, and deliberately
-          // NOT a tick-box.
+    <?php // A second question, never part of the one above.
           //
-          // POPIA s69 marketing consent must be opt-in and freely given. A box
-          // you cannot list without ticking is neither — the consent it records
-          // would not be valid, which is worse than no consent at all because
-          // it looks like permission and is not. A pre-ticked box fails the
-          // same test.
+          // Ticked by default, which the old marketing question could not be:
+          // POPIA s69 consent must be freely given, and a pre-ticked box does
+          // not collect that. What this box offers is not marketing — it is a
+          // report about the owner's own listing, on the same footing as the
+          // verify and badge-billing email we send without asking. So the
+          // default is on and unticking is the whole opt-out.
           //
-          // So the choice is compulsory but the ANSWER is free: the form will
-          // not submit until one of these is picked, and "No thanks" is a
-          // first-class answer that costs the person nothing. That gets a
-          // decision out of every signup rather than silence from the people
-          // who skim past an optional box, while keeping every opt-in one we
-          // can actually rely on — and keeps true the promise in the Terms
-          // that opting in is never a condition of listing.
+          // If this ever grows back into news, tips or offers, it has to go
+          // back to a deliberate opt-in. The wording below is the limit of
+          // what the permission covers.
           //
-          // Do not "simplify" this back to a single required checkbox. ?>
+          // marketing_present is the sticky-render marker only: on a rejected
+          // save, a box the person unticked must come back unticked rather
+          // than falling back to the default. Same mechanism as
+          // manage_edit.php, where the fallback is the stored value instead.
+          $vMarketing = $v('marketing_present') === '1' ? $v('marketing_opt_in') === '1' : true; ?>
     <div class="field">
-        <fieldset class="consent-choice">
-            <legend>Email me occasional news, tips and offers from <?= esc(config('Directory')->siteName()) ?>.</legend>
-            <?php // `required` on one radio makes the whole group required in
-                  // the browser; the server re-checks in validate(). ?>
-            <label><input type="radio" name="marketing_opt_in" value="1" required <?= $v('marketing_opt_in') === '1' ? 'checked' : '' ?>> Yes, email me</label>
-            <label><input type="radio" name="marketing_opt_in" value="0" <?= $v('marketing_opt_in') === '0' ? 'checked' : '' ?>> No thanks</label>
-        </fieldset>
-        <div class="hint">Please choose one. Your listing is free either way, and you can change your mind or unsubscribe at any time.</div>
-        <?php if ($err('marketing_opt_in')): ?><div class="err"><?= esc($err('marketing_opt_in')) ?></div><?php endif; ?>
+        <input type="hidden" name="marketing_present" value="1">
+        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your listing — how many views it got and where your leads came from.</label>
+        <div class="hint">Untick if you'd rather not. You can change this any time in Manage your profile, and every report has an unsubscribe link.</div>
     </div>
 <?php endif; ?>

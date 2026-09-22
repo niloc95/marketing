@@ -297,7 +297,19 @@ class Directory extends BaseConfig
     public string $newsletterFormName = 'localnewsletter';
 
     /**
-     * Mautic REST API, for syncing listing owners who opted in to marketing
+     * Whether the monthly listing-analytics report actually sends yet.
+     *
+     * Off until the reports are built. Preferences are still recorded on every
+     * signup and edit — this only holds back the push into Mautic, so nobody
+     * sits in a segment that would receive something the signup box did not
+     * describe. Flip it on and `spark mautic:sync` backfills everyone at once.
+     *
+     * Opt-outs are deliberately not gated by this: see syncToMautic().
+     */
+    public bool $analyticsEmailsLive = false;
+
+    /**
+     * Mautic REST API, for syncing listing owners who want the analytics report
      * (MarketingConsentService::syncToMautic()).
      *
      * All four empty = sync off. Every Mautic call is then skipped, so local dev
@@ -312,7 +324,7 @@ class Directory extends BaseConfig
 
     public string $mauticPassword = '';
 
-    /** Id of the "Listing owners (opted in)" segment in Mautic. */
+    /** Id of the listing-owner segment in Mautic: everyone who wants the report. */
     public int $mauticOwnerSegmentId = 0;
 
     public function newsletterFormUrl(): string
@@ -355,6 +367,18 @@ class Directory extends BaseConfig
     {
         $env = env('directory.mauticOwnerSegmentId');
         return is_string($env) && ctype_digit(trim($env)) ? (int) trim($env) : $this->mauticOwnerSegmentId;
+    }
+
+    public function analyticsEmailsLive(): bool
+    {
+        $env = env('directory.analyticsEmailsLive');
+        if (is_bool($env)) {
+            return $env;
+        }
+
+        return is_string($env) && trim($env) !== ''
+            ? filter_var(trim($env), FILTER_VALIDATE_BOOLEAN)
+            : $this->analyticsEmailsLive;
     }
 
     public function siteName(): string

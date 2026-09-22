@@ -7,10 +7,13 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 
 /**
- * Re-send every listing owner's marketing choice to Mautic.
+ * Re-send every listing owner's analytics-report choice to Mautic.
  *
  *   php spark mautic:sync             # opted-in (verified) and withdrawn listings
  *   php spark mautic:sync --dry-run   # counts only, no API calls
+ *
+ * While Directory::analyticsEmailsLive() is off, opt-ins report as skipped —
+ * there is nothing to send yet. Flip that on and one run backfills the segment.
  *
  * The live sync (MarketingConsentService::syncToMautic(), called on verify,
  * owner edit and unsubscribe) never blocks on Mautic, so a call made while the
@@ -25,7 +28,7 @@ class MauticSync extends BaseCommand
 {
     protected $group       = 'Directory';
     protected $name        = 'mautic:sync';
-    protected $description = 'Sync listing owners\' marketing opt-ins and opt-outs to Mautic.';
+    protected $description = 'Sync listing owners\' analytics-report opt-ins and opt-outs to Mautic.';
     protected $usage       = 'mautic:sync [--dry-run]';
     protected $options     = [
         '--dry-run' => 'Count what would be sent without calling Mautic.',
@@ -47,7 +50,12 @@ class MauticSync extends BaseCommand
 
         foreach ($rows as $listing) {
             if ($dryRun) {
-                $counts[! empty($listing['marketing_opt_in']) ? 'synced' : 'withdrawn']++;
+                // Mirrors syncToMautic()'s own gate, or a dry run would promise
+                // to send opt-ins that the real run skips.
+                $optIn = ! empty($listing['marketing_opt_in']);
+                $counts[$optIn && ! config('Directory')->analyticsEmailsLive()
+                    ? 'skipped'
+                    : ($optIn ? 'synced' : 'withdrawn')]++;
 
                 continue;
             }

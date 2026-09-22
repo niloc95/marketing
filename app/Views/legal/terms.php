@@ -42,10 +42,13 @@ $contact   = config('Directory')->adminEmail();
                 <li>You have read and accept these terms and our <a href="<?= base_url('privacy') ?>">privacy policy</a>.</li>
             </ul>
             <p>A profile goes live only once you confirm it from the verification email we send.</p>
-            <?php // POPIA s69: marketing is a separate, optional opt-in and never a
-                  // condition of listing. MarketingConsentService and the signup and
-                  // manage forms implement exactly this; change them together. ?>
-            <p><strong>Emails from us.</strong> We send the emails the service needs — verification, profile-management links and, if you buy the Verified Business badge, billing notices — to the address on your profile. We send marketing emails (news, tips and offers about <?= esc($siteName) ?>) <strong>only if you opt in</strong>, using the separate question on the signup form or the box in <a href="<?= base_url('manage') ?>">Manage your profile</a>. The signup form requires an answer to that question, but &ldquo;No thanks&rdquo; is one: opting in is never a condition of listing. You can withdraw at any time, free of charge, through the unsubscribe link in every marketing email or from Manage your profile.</p>
+            <?php // The monthly report is a service email about the reader's own
+                  // listing, which is why it may default on. It is NOT marketing:
+                  // we send no news, tips or offers to profile owners, and if that
+                  // ever changes it needs a fresh opt-in under POPIA s69.
+                  // MarketingConsentService and the signup and manage forms
+                  // implement exactly this; change them together. ?>
+            <p><strong>Emails from us.</strong> We send the emails the service needs — verification, profile-management links and, if you buy the Verified Business badge, billing notices — to the address on your profile. We also send a <strong>monthly analytics report about your own listing</strong>: how many views it got and where your leads came from. That report is switched on by default when you sign up, and you can switch it off — on the signup form itself, in <a href="<?= base_url('manage') ?>">Manage your profile</a>, or with the unsubscribe link in every report. Switching it off is free and never affects your listing. We do not send you marketing about other products, and we do not sell or share your address for advertising.</p>
 
             <?php // The only thing on this site anyone pays for, so it gets its own
                   // section rather than a clause buried in another. Written to match

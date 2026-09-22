@@ -320,7 +320,9 @@ class DirectoryListingMutationService
             // columns remain for provenance on future imports.
             'source'         => 'public_form',
             'source_url'     => '',
-        ] + MarketingConsentService::signupColumns(! empty($input['marketing_opt_in']));
+            // Only the literal value the checkbox posts counts, so a crafted
+            // POST of marketing_opt_in=yes cannot opt anybody in.
+        ] + MarketingConsentService::signupColumns((string) ($input['marketing_opt_in'] ?? '') === '1');
     }
 
     /**
@@ -699,13 +701,14 @@ class DirectoryListingMutationService
             // drops features the new category does not offer.
             (new ServiceMenuService())->sync($id, $data['category_id'], $input);
 
-            // The marketing box, on the same absent-vs-present terms: an
+            // The analytics-report box, on the same absent-vs-present terms: an
             // unticked checkbox posts nothing, so the marker is the only way to
-            // tell "opted out" from "this form never showed the box".
+            // tell "opted out" from "this form never showed the box". Matched
+            // against the literal posted value, like the signup path.
             if (array_key_exists('marketing_present', $input)) {
                 (new MarketingConsentService())->setPreference(
                     $id,
-                    ! empty($input['marketing_opt_in']),
+                    (string) ($input['marketing_opt_in'] ?? '') === '1',
                     MarketingConsentService::SOURCE_MANAGE
                 );
             }
@@ -867,25 +870,10 @@ class DirectoryListingMutationService
         if (empty($input['consent'])) {
             $errors['consent'] = 'Please confirm you may publish these details and accept the terms.';
         }
-        // The marketing question must be ANSWERED on a new signup — not
-        // answered yes. '0' is a complete, valid answer and costs the person
-        // nothing; what is refused is silence, which is what an optional
-        // tick-box collects from everyone who skims past it.
-        //
-        // Deliberately not `! empty()`: that cannot tell "No thanks" from "the
-        // field never reached us", and those mean opposite things here. Only
-        // the two literal answers count, so a crafted POST that drops the
-        // field is refused rather than being read as a no.
-        //
-        // New signups only, like the address rules above. An owner edit posts
-        // this through the marketing_present marker instead — see updateOwn()
-        // — where absence genuinely does mean "leave the stored choice alone".
-        if ($isNew) {
-            $marketing = (string) ($input['marketing_opt_in'] ?? '');
-            if ($marketing !== '1' && $marketing !== '0') {
-                $errors['marketing_opt_in'] = 'Please choose whether you would like our emails.';
-            }
-        }
+        // No rule for marketing_opt_in: the analytics box is ticked by default
+        // and there is no answer that can be missing. Absence simply means not
+        // opted in — see signupColumns() at the call site, which only accepts
+        // the literal '1'.
         // The model enforces this too, but only at insert time, where it
         // surfaces as a generic "could not save" with no field highlighted.
         //

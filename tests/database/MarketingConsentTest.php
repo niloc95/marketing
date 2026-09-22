@@ -6,26 +6,30 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\MarketingConsentService;
+use CodeIgniter\Config\Factories;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 
 /**
- * The consent record: terms acceptance and the POPIA s69 marketing opt-in.
+ * The consent record: terms acceptance, and whether the owner wants the monthly
+ * analytics report about their own listing (the historically named marketing_*
+ * columns — see MarketingConsentService).
  *
- * What these pin is that marketing consent is only ever the owner's own act:
- * a separate question with no default, never written by someone typing the
- * owner's address into the signup form, never set by an admin, and always
- * stamped with when and where it changed. And that the unsubscribe link works
- * without a session (one-click) but never on a bare GET, which link scanners
- * would otherwise trigger.
+ * The report box is ticked by default, which the marketing question it replaced
+ * could not be. What these pin is that the default never becomes a licence:
+ * only the literal value the checkbox posts counts, a crafted or truncated POST
+ * records no opt-in rather than inheriting the default, an admin still cannot
+ * set it, a second signup on someone else's address still cannot flip it, and
+ * every change still carries a server-stamped date and source.
  *
- * Signup asks the question as a required yes-or-no rather than an optional
- * tick-box: the answer is compulsory, the content of it is not. A box that
- * could not be left unticked would make the consent a condition of listing,
- * which POPIA s69 does not accept as freely given — so "No thanks" has to
- * stay a real, cost-free answer.
+ * They also pin that nothing reaches Mautic while the reports do not exist
+ * (Directory::analyticsEmailsLive), and that opt-outs are deliberately not held
+ * back by that gate.
+ *
+ * And that the unsubscribe link works without a session (one-click) but never
+ * on a bare GET, which link scanners would otherwise trigger.
  *
  * Requires the `tests` database group — see the Tests section of README.md.
  *
@@ -60,73 +64,121 @@ final class MarketingConsentTest extends CIUnitTestCase
     {
         // CIUnitTestCase does not clear injected service mocks between tests.
         Services::resetSingle('mautic');
+        // Nor a config mocked by reportsAreLive() — config('Directory') hands
+        // back a shared instance, so the flag would leak into the next test.
+        Factories::reset('config');
         parent::tearDown();
     }
 
     // --------------------------------------------------------------- signup
 
-    public function testAnsweringNoRecordsTermsButNoMarketing(): void
+    public function testADefaultSignupIsOptedIn(): void
     {
-        // signup() answers '0' by default — the same end state the old
-        // untouched tick-box produced, now arrived at deliberately.
+        // signup() posts what the form posts with the box left alone: ticked.
         $result = (new DirectoryListingMutationService())->submitPublic($this->signup());
 
         $this->assertTrue($result['ok'], $result['message']);
         $row = $this->listings->find((int) $result['id']);
         $this->assertNotNull($row['terms_accepted_at']);
         $this->assertSame(Legal::LAST_UPDATED['terms'], $row['terms_version']);
-        $this->assertSame('0', (string) $row['marketing_opt_in']);
-        $this->assertNull($row['marketing_consent_at']);
-        $this->assertNull($row['marketing_withdrawn_at'], 'answering no is not a withdrawal');
-    }
-
-    public function testAnsweringYesRecordsTheOptIn(): void
-    {
-        $result = (new DirectoryListingMutationService())->submitPublic($this->signup(['marketing_opt_in' => '1']));
-
-        $this->assertTrue($result['ok'], $result['message']);
-        $row = $this->listings->find((int) $result['id']);
         $this->assertSame('1', (string) $row['marketing_opt_in']);
         $this->assertNotNull($row['marketing_consent_at']);
         $this->assertSame('signup', $row['marketing_consent_source']);
     }
 
-    public function testSignupRefusesToProceedWithNoAnswerAtAll(): void
+    public function testTheSignupBoxRendersTicked(): void
     {
-        // The browser makes the radio group required; this is the half that
-        // survives a crafted POST. Silence is refused — which is the whole
-        // point of the change from an optional box, since an optional box
-        // collects silence from everyone who skims past it.
+        // The whole change lives or dies on this: the default the person sees.
+        $body = (string) $this->get('add-listing')->response()->getBody();
+
+        $this->assertMatchesRegularExpression(
+            '/<input type="checkbox" name="marketing_opt_in" value="1" checked>/',
+            $body
+        );
+    }
+
+    public function testARejectedSaveKeepsTheBoxUnticked(): void
+    {
+        // The regression the marker exists to prevent: a person who unticked
+        // the box and then tripped an unrelated validation error must not get
+        // it silently re-ticked on the way back. Only the marker is flashed,
+        // because an unticked checkbox posts nothing.
+        $body = (string) $this->withSession($this->flashedOld(['marketing_present' => '1']))
+            ->get('add-listing')->response()->getBody();
+
+        $this->assertStringContainsString(
+            '<input type="checkbox" name="marketing_opt_in" value="1" >',
+            $body
+        );
+    }
+
+    public function testARejectedSaveKeepsTheBoxTicked(): void
+    {
+        $body = (string) $this->withSession($this->flashedOld(['marketing_present' => '1', 'marketing_opt_in' => '1']))
+            ->get('add-listing')->response()->getBody();
+
+        $this->assertStringContainsString(
+            '<input type="checkbox" name="marketing_opt_in" value="1" checked>',
+            $body
+        );
+    }
+
+    public function testUntickingRecordsTermsButNoOptIn(): void
+    {
+        // An unticked checkbox posts nothing; only the marker arrives.
         $input = $this->signup();
         unset($input['marketing_opt_in']);
 
         $result = (new DirectoryListingMutationService())->submitPublic($input);
 
-        $this->assertFalse($result['ok']);
-        $this->assertArrayHasKey('marketing_opt_in', $result['errors']);
-        $this->assertSame(0, $this->listings->countAllResults());
+        $this->assertTrue($result['ok'], $result['message']);
+        $row = $this->listings->find((int) $result['id']);
+        $this->assertNotNull($row['terms_accepted_at']);
+        $this->assertSame('0', (string) $row['marketing_opt_in']);
+        $this->assertNull($row['marketing_consent_at']);
+        $this->assertNull($row['marketing_withdrawn_at'], 'never ticking is not a withdrawal');
     }
 
-    public function testAnEmptyOrUnexpectedAnswerIsRefused(): void
+    public function testAFieldThatNeverArrivesIsNotAnOptIn(): void
     {
-        // '' is what a form posts when nothing was picked; anything else is a
-        // crafted POST. Neither may be quietly read as "no" — that would put
-        // words in someone's mouth on a consent record.
-        foreach (['', 'yes', '2'] as $answer) {
+        // A crafted or truncated POST that carries neither the marker nor the
+        // box. The default lives in the form, not in the writer: silence here
+        // records no opt-in rather than inheriting the ticked default.
+        $input = $this->signup();
+        unset($input['marketing_opt_in'], $input['marketing_present']);
+
+        $result = (new DirectoryListingMutationService())->submitPublic($input);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertSame('0', (string) $this->listings->find((int) $result['id'])['marketing_opt_in']);
+    }
+
+    public function testOnlyTheLiteralOneOptsIn(): void
+    {
+        // '' is what some clients post for an unticked box; the rest are
+        // crafted. None may be read as consent just because they are truthy.
+        foreach (['', 'yes', '2', '0'] as $answer) {
             $result = (new DirectoryListingMutationService())
                 ->submitPublic($this->signup(['marketing_opt_in' => $answer]));
 
-            $this->assertFalse($result['ok'], "Accepted '{$answer}'");
-            $this->assertArrayHasKey('marketing_opt_in', $result['errors']);
+            $this->assertTrue($result['ok'], $result['message']);
+            $this->assertSame(
+                '0',
+                (string) $this->listings->find((int) $result['id'])['marketing_opt_in'],
+                "'{$answer}' was read as an opt-in"
+            );
         }
     }
 
-    public function testAnsweringNoIsNotAConditionOfListing(): void
+    public function testUntickingIsNotAConditionOfListing(): void
     {
-        // The promise in the Terms, as a test: a person who declines marketing
-        // gets exactly the same listing as one who accepts.
-        $no  = (new DirectoryListingMutationService())->submitPublic($this->signup());
-        $yes = (new DirectoryListingMutationService())->submitPublic($this->signup(['marketing_opt_in' => '1']));
+        // The promise in the Terms, as a test: a person who switches the report
+        // off gets exactly the same listing as one who leaves it on.
+        $off = $this->signup();
+        unset($off['marketing_opt_in']);
+
+        $no  = (new DirectoryListingMutationService())->submitPublic($off);
+        $yes = (new DirectoryListingMutationService())->submitPublic($this->signup());
 
         $this->assertTrue($no['ok'], $no['message']);
         $this->assertTrue($yes['ok'], $yes['message']);
@@ -139,7 +191,7 @@ final class MarketingConsentTest extends CIUnitTestCase
 
     public function testTheTermsBoxIsStillRequired(): void
     {
-        $input = $this->signup(['marketing_opt_in' => '1']);
+        $input = $this->signup();
         unset($input['consent']);
 
         $result = (new DirectoryListingMutationService())->submitPublic($input);
@@ -150,10 +202,17 @@ final class MarketingConsentTest extends CIUnitTestCase
 
     public function testADuplicateSignupCannotOptTheRealOwnerIn(): void
     {
-        $svc     = new DirectoryListingMutationService();
-        $email   = 'owner-' . bin2hex(random_bytes(4)) . '@example.test';
-        $created = $svc->submitPublic($this->signup(['email' => $email]));
+        // Matters more now that the box defaults on: someone typing a stranger's
+        // address into a fresh signup must not be able to switch their report
+        // back on after they turned it off.
+        $svc   = new DirectoryListingMutationService();
+        $email = 'owner-' . bin2hex(random_bytes(4)) . '@example.test';
+
+        $off = $this->signup(['email' => $email]);
+        unset($off['marketing_opt_in']);
+        $created = $svc->submitPublic($off);
         $id      = (int) $created['id'];
+        $this->assertSame('0', (string) $this->listings->find($id)['marketing_opt_in']);
 
         // Pending: the verification resend branch.
         $svc->submitPublic($this->signup(['email' => $email, 'marketing_opt_in' => '1']));
@@ -232,7 +291,7 @@ final class MarketingConsentTest extends CIUnitTestCase
         $result = $this->get($this->path($url));
 
         $result->assertStatus(200);
-        $result->assertSee('Unsubscribe from marketing emails?');
+        $result->assertSee('Stop the monthly analytics email?');
         $this->assertSame('1', (string) $this->listings->find($id)['marketing_opt_in'], 'a link scanner must not unsubscribe anyone');
     }
 
@@ -288,6 +347,7 @@ final class MarketingConsentTest extends CIUnitTestCase
 
     public function testOwnerOptInOnAVerifiedListingSyncsToTheSegment(): void
     {
+        $this->reportsAreLive();
         $fake = $this->fakeMautic();
         $id   = $this->publishedListing(false);
 
@@ -297,8 +357,24 @@ final class MarketingConsentTest extends CIUnitTestCase
         $this->assertSame(['listing-owner'], $fake->calls[0][1]['tags']);
     }
 
+    public function testNobodyIsSyncedInWhileTheReportsAreOff(): void
+    {
+        // The gate: preferences are recorded, but nobody is put in a segment
+        // that would receive something the signup box did not describe. Not
+        // even a contact is created.
+        $fake = $this->fakeMautic();
+        $id   = $this->publishedListing(false);
+
+        (new MarketingConsentService())->setPreference($id, true, MarketingConsentService::SOURCE_MANAGE);
+
+        $this->assertSame([], $fake->calls);
+        $this->assertSame('1', (string) $this->listings->find($id)['marketing_opt_in'], 'the choice is still recorded');
+    }
+
     public function testOptOutLeavesTheSegmentAndAddsDoNotContact(): void
     {
+        // Deliberately does NOT set the flag: opt-outs are never held back by
+        // it. An unsent report harms nobody, a swallowed opt-out does.
         $fake = $this->fakeMautic();
         $id   = $this->publishedListing(true);
 
@@ -309,6 +385,7 @@ final class MarketingConsentTest extends CIUnitTestCase
 
     public function testAnUnverifiedOptInIsNotSynced(): void
     {
+        $this->reportsAreLive();
         $fake = $this->fakeMautic();
         $id   = $this->publishedListing(false);
         $this->listings->update($id, ['is_verified' => 0, 'status' => 'pending']);
@@ -318,10 +395,11 @@ final class MarketingConsentTest extends CIUnitTestCase
         $this->assertSame([], $fake->calls);
     }
 
-    public function testVerifyingAnOptedInSignupSyncsIt(): void
+    public function testVerifyingAnOptedInSignupSyncsOnceReportsAreLive(): void
     {
+        $this->reportsAreLive();
         $svc    = new DirectoryListingMutationService();
-        $result = $svc->submitPublic($this->signup(['marketing_opt_in' => '1']));
+        $result = $svc->submitPublic($this->signup());
         $token  = bin2hex(random_bytes(32));
         $this->listings->update((int) $result['id'], [
             'verify_token'   => hash('sha256', $token),
@@ -333,10 +411,29 @@ final class MarketingConsentTest extends CIUnitTestCase
         $this->assertSame(['upsert', 'add:77'], array_column($fake->calls, 0));
     }
 
-    public function testVerifyingWithoutTheBoxDoesNotSync(): void
+    public function testVerifyingDoesNotSyncWhileReportsAreOff(): void
     {
         $svc    = new DirectoryListingMutationService();
         $result = $svc->submitPublic($this->signup());
+        $token  = bin2hex(random_bytes(32));
+        $this->listings->update((int) $result['id'], [
+            'verify_token'   => hash('sha256', $token),
+            'verify_expires' => date('Y-m-d H:i:s', time() + 3600),
+        ]);
+        $fake = $this->fakeMautic();
+
+        $this->assertNotNull($svc->verify($token));
+
+        $this->assertSame([], $fake->calls);
+    }
+
+    public function testVerifyingWithoutTheBoxDoesNotSync(): void
+    {
+        $this->reportsAreLive();
+        $svc   = new DirectoryListingMutationService();
+        $input = $this->signup();
+        unset($input['marketing_opt_in']);
+        $result = $svc->submitPublic($input);
         $token  = bin2hex(random_bytes(32));
         $this->listings->update((int) $result['id'], [
             'verify_token'   => hash('sha256', $token),
@@ -386,6 +483,28 @@ final class MarketingConsentTest extends CIUnitTestCase
         Services::injectMock('mautic', $fake);
 
         return $fake;
+    }
+
+    /**
+     * Session state as the controller's redirect-back leaves it: the rejected
+     * input under `old`, as flashdata rather than plain session data — which is
+     * the only form Listing::create() reads.
+     *
+     * @param array<string,mixed> $old
+     *
+     * @return array<string,mixed>
+     */
+    private function flashedOld(array $old): array
+    {
+        return ['old' => $old, '__ci_vars' => ['old' => 'new']];
+    }
+
+    /** Pretend the monthly reports have shipped, so opt-ins reach Mautic. */
+    private function reportsAreLive(): void
+    {
+        $config                      = config('Directory');
+        $config->analyticsEmailsLive = true;
+        Factories::injectMock('config', 'Directory', $config);
     }
 
     private function publishedListing(bool $optedIn): int
@@ -452,9 +571,11 @@ final class MarketingConsentTest extends CIUnitTestCase
             'title'          => 'Mr',
             'contact_person' => 'Test Owner',
             'consent'      => 1,
-            // A new signup must ANSWER the marketing question; '0' is a
-            // complete answer and is what an untouched form used to mean.
-            'marketing_opt_in' => '0',
+            // What the form posts with the analytics box left alone: the marker
+            // plus the ticked value. Unset marketing_opt_in (keeping the marker)
+            // for the unticked case.
+            'marketing_present' => '1',
+            'marketing_opt_in'  => '1',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
         ], $overrides);

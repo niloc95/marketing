@@ -7,16 +7,24 @@ use App\Models\DirectoryListingModel;
 use CodeIgniter\Database\BaseBuilder;
 
 /**
- * The listing owner's consent record: terms acceptance and the marketing opt-in.
+ * The listing owner's email record: terms acceptance, and whether they want the
+ * monthly analytics report about their own listing.
  *
- * The only writer of the terms_* and marketing_* columns. POPIA section 69 lets
- * us send marketing email only to someone who opted in, and makes it our job to
- * show when and how they did — so a change is never a bare flag flip, it always
- * carries a server-stamped date and a source.
+ * The only writer of the terms_* and marketing_* columns. The marketing_* names
+ * are historical — they were a POPIA s69 marketing opt-in before the report
+ * replaced it, and renaming five live columns and their unique index was not
+ * worth it. What they hold now is a service-email preference.
  *
- * Marketing is a separate, optional box and must stay one. Folding it into the
- * required terms checkbox would make it a condition of listing, and consent
- * that is a condition is not freely given.
+ * That difference is the whole reason the signup box may be ticked by default.
+ * A report on the owner's own listing sits with the verify and badge-billing
+ * email we send without asking; news, tips and offers would not, and POPIA s69
+ * would want a deliberate opt-in for those. If the content ever widens that far,
+ * the default has to go back off — see the comment on the signup form.
+ *
+ * A change is never a bare flag flip: it always carries a server-stamped date
+ * and a source, so we can show when and how the owner chose, and the preference
+ * is never written by an admin or by someone typing the owner's address into a
+ * fresh signup.
  */
 class MarketingConsentService
 {
@@ -34,7 +42,7 @@ class MarketingConsentService
     /**
      * Columns for a fresh signup (or a rejected listing's resubmission).
      *
-     * Not ticking the box is not a withdrawal — there was nothing to withdraw —
+     * Unticking the box is not a withdrawal — there was nothing to withdraw —
      * so marketing_withdrawn_at stays empty and only an opt-in gets a date.
      *
      * @return array<string,mixed>
@@ -81,11 +89,12 @@ class MarketingConsentService
     }
 
     /**
-     * Mirror one listing's marketing choice into Mautic, where campaigns go out.
+     * Mirror one listing's report preference into Mautic, where sends go out.
      *
      * - Opted in and email verified: create or update the contact and add it to
      *   the owner segment. No Mautic double opt-in, because the signup
-     *   verification link already proved the address.
+     *   verification link already proved the address. Held entirely while
+     *   Directory::analyticsEmailsLive() is off — see below.
      * - Withdrawn: take it out of the segment and mark it Do Not Contact.
      * - Anything else (never opted in, or not yet verified): nothing.
      *
@@ -114,6 +123,15 @@ class MarketingConsentService
             return 'skipped';
         }
 
+        // Opt-ins wait for the reports to exist; opt-outs never wait. An unsent
+        // report harms nobody, a swallowed opt-out does — and the DNC below is
+        // the same one-way safety rule as the note above about never lifting it.
+        // Held here rather than at the branch so an opted-in owner is not even
+        // created as a contact until there is something to send them.
+        if ($optedIn && ! config('Directory')->analyticsEmailsLive()) {
+            return 'skipped';
+        }
+
         $contactId = $mautic->upsertContact($email, [
             'firstname' => (string) ($listing['contact_person'] ?? ''),
             'company'   => (string) ($listing['display_name'] ?? ''),
@@ -134,7 +152,7 @@ class MarketingConsentService
     }
 
     /**
-     * Every listing whose marketing state Mautic should hold: opted in and
+     * Every listing whose report preference Mautic should hold: opted in and
      * verified, or withdrawn. What `spark mautic:sync` walks.
      */
     public function syncCandidates(): DirectoryListingModel
@@ -147,9 +165,9 @@ class MarketingConsentService
     }
 
     /**
-     * The unsubscribe link for a listing's marketing email footer (and its
+     * The unsubscribe link for a listing's report email footer (and its
      * List-Unsubscribe header). The token is minted on first use, so listings
-     * that predate the column get one the first time a campaign asks.
+     * that predate the column get one the first time a send asks.
      */
     public function unsubscribeUrl(int $listingId): string
     {
@@ -182,8 +200,8 @@ class MarketingConsentService
     }
 
     /**
-     * Who may be sent marketing: opted in, and the address proven by the
-     * signup verification link — that click is what makes this a double opt-in.
+     * Who may be sent the report: opted in, and the address proven by the
+     * signup verification link — that click is what confirms the address.
      * Soft-deleted rows are excluded by the model.
      */
     public function audience(): DirectoryListingModel

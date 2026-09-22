@@ -30,16 +30,17 @@ $siteName = config('Directory')->siteName();
             <?php elseif ($done): ?>
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">You're unsubscribed</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">
-                    We won't send news, tips or offers to <?= esc($listing['display_name']) ?> any more.
+                    We won't send monthly listing analytics to <?= esc($listing['display_name']) ?> any more.
                     Emails about the listing itself — edit links and any badge billing — still arrive.
                     Changed your mind? Opt back in from
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Manage your profile</a>.
                 </p>
             <?php else: ?>
-                <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Unsubscribe from marketing emails?</h1>
+                <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Stop the monthly analytics email?</h1>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
-                    This stops news, tips and offers from <?= esc($siteName) ?> for
-                    <strong><?= esc($listing['display_name']) ?></strong>. Your listing stays exactly as it is.
+                    This stops the monthly report on views and where your leads came from for
+                    <strong><?= esc($listing['display_name']) ?></strong>. Your listing stays exactly as it is,
+                    and emails it needs — edit links and any badge billing — still arrive.
                 </p>
                 <form method="post" action="<?= esc(base_url('unsubscribe/' . $token), 'attr') ?>">
                     <button type="submit" class="btn btn-accent btn-block">Unsubscribe</button>

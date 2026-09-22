@@ -35,7 +35,9 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
 // stored set the owner was trying to clear.
 $vServices   = array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services;
 $vAttributes = array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes;
-// Same reason: a rejected save with the box unticked must not fall back to a stored opt-in.
+// Same reason: a rejected save with the box unticked must not fall back to a
+// stored opt-in. Signup uses the same marker, but falls back to ticked — there
+// is no stored value there, and the report is on by default.
 $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marketing_opt_in']) : ! empty($listing['marketing_opt_in']);
 ?>
 <section class="section">
@@ -137,7 +139,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 <div class="field">
                     <label>Email preferences</label>
                     <input type="hidden" name="marketing_present" value="1">
-                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> Email me occasional news, tips and offers from <?= esc(config('Directory')->siteName()) ?>.</label>
+                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your listing — how many views it got and where your leads came from.</label>
                     <div class="hint">Optional. Emails about your listing itself — edit links and any badge billing — still arrive either way.</div>
                 </div>
 

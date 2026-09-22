@@ -139,8 +139,8 @@ $groups = [
                 'a' => 'Only what is needed to run the directory and reply to you. Our <a href="' . base_url('privacy') . '">privacy policy</a> sets out exactly what we collect and why, in line with POPIA. We do not sell personal information and we do not share it for advertising.',
             ],
             [
-                'q' => 'Will you send me marketing emails?',
-                'a' => 'Only if you ask for them. Signing up asks you a separate yes-or-no question about news, tips and offers, and you have to answer it &mdash; but "No thanks" is a perfectly good answer and your listing is free either way. Change your mind any time with the unsubscribe link in any of those emails or from <a href="' . base_url('manage') . '">Manage your profile</a>. Emails your listing needs, such as verification and edit links, are not marketing and still arrive.',
+                'q' => 'What emails will you send me?',
+                'a' => 'The ones your listing needs &mdash; verification, edit links and, if you buy the Verified Business badge, billing notices &mdash; plus a monthly report on your own listing: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('manage') . '">Manage your profile</a>, or use the unsubscribe link in any report. Doing so is free and changes nothing about your listing. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
             ],
             [
                 'q' => 'Is this the same thing as WebScheduler, the booking software?',

@@ -81,9 +81,10 @@ class DirectoryListingModel extends Model
      * is exactly as harmless as correcting their own province.
      *
      * The terms_* and marketing_* columns are absent although the owner does
-     * change the marketing choice from this form: consent is only worth
-     * anything with a server-stamped date and source beside it, so updateOwn()
-     * hands the checkbox to MarketingConsentService instead of copying it here.
+     * change the analytics-report choice from this form: the choice is only
+     * worth anything with a server-stamped date and source beside it, so
+     * updateOwn() hands the checkbox to MarketingConsentService instead of
+     * copying it here.
      *
      * quality_score and quality_scored_at are absent for the bluntest reason on
      * this list: quality_score is the second key in the public search order, so

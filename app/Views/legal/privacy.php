@@ -142,7 +142,7 @@ $contact   = config('Directory')->adminEmail();
             <p>We use this information to respond to your enquiry, provide assistance and address potential misuse of the service.</p>
 
             <h3>Newsletter</h3>
-            <p>The newsletter sign-up in the footer of every page is a separate, deliberate opt-in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business listing does not subscribe you.</p>
+            <p>The newsletter sign-up in the footer of every page is a separate, deliberate opt-in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business listing does not subscribe you to this newsletter &mdash; the listing carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
             <p>Once you are subscribed we keep your email address, the date you confirmed, and ordinary delivery records (whether a message reached you, and whether you opened it or clicked a link in it) so that the list works and unsubscribes are honoured. Every newsletter carries an unsubscribe link.</p>
 
             <h2>8. Information collected automatically</h2>
@@ -172,7 +172,7 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Reviewing documents for a Verified Business badge</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
                     <tr><td>Processing payment for the Verified Business badge</td><td>Necessary to perform the agreement for the service</td></tr>
                     <tr><td>Security, rate-limiting and fraud prevention</td><td>Necessary for the security, integrity and availability of the service</td></tr>
-                    <tr><td>Sending news, tips and offers about <?= esc($siteName) ?> by email</td><td>Your consent, given by answering &ldquo;Yes&rdquo; to the separate marketing question at signup, or by ticking the box in Manage your profile, which you can withdraw at any time</td></tr>
+                    <tr><td>Sending a profile owner the monthly analytics report about their own listing</td><td>Necessary to provide the service you requested, and our legitimate interest in showing you how your listing performs. It is on by default and you can switch it off at any time, at signup, in Manage your profile, or from any report</td></tr>
                     <tr><td>Sending the newsletter to people who signed up for it</td><td>Your consent, confirmed by clicking the link we email you, which you can withdraw at any time</td></tr>
                     <tr><td>Analytics</td><td>Consent, where applicable</td></tr>
                 </tbody>
@@ -196,7 +196,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Email services</h3>
             <p>We use an email service provider to deliver verification, profile-management and other necessary service communications.</p>
-            <p>The newsletter, and marketing emails to profile owners who have opted in, are sent through our own mailing system at <code>updates.webscheduler.co.za</code>. When a profile owner opts in, we pass their email address, contact name and business name to that system; when they opt out, we mark them there as not to be contacted.</p>
+            <p>The newsletter, and the monthly analytics report to profile owners who have it switched on, are sent through our own mailing system at <code>updates.webscheduler.co.za</code>. While the report is switched on we pass the owner's email address, contact name and business name to that system; when it is switched off, we mark them there as not to be contacted.</p>
 
             <h3>Payment processing</h3>
             <p>If you purchase a Verified Business badge, payment processing is handled by <strong>PayFast</strong>. See <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
@@ -225,7 +225,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Unverified submissions may expire and be deleted if they are not completed within the applicable verification period.</p>
 
             <h3>Consent records</h3>
-            <p>We keep a record of when you accepted our terms and of your marketing email choice — when you opted in or out, and how — for as long as your business listing exists, so that we can show that consent was given and make sure an opt-out is respected.</p>
+            <p>We keep a record of when you accepted our terms and of your analytics email choice — when you switched it on or off, and where — for as long as your business listing exists, so that we can show what you chose and make sure an opt-out is respected.</p>
 
             <h3>Verification links</h3>
             <p>Verification and profile-management links are designed to expire after limited periods for security purposes.</p>
@@ -252,7 +252,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Lodge a complaint concerning the processing of your personal information.</li>
             </ul>
             <p>Where profile-management functionality is available, you can also update or remove your business listing directly using <a href="<?= base_url('manage') ?>">Manage your profile</a>.</p>
-            <p>You can stop marketing emails at any time, free of charge, using the unsubscribe link in any marketing email or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your listing needs, such as profile-management links.</p>
+            <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your listing needs, such as profile-management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy-related request.</p>
 
             <h2>14. Complaints</h2>

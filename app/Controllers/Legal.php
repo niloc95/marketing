@@ -25,8 +25,8 @@ class Legal extends BaseController
      * (MarketingConsentService::signupColumns()), so the two cannot disagree.
      */
     public const LAST_UPDATED = [
-        'privacy' => '2026-09-20',
-        'terms'   => '2026-09-20',
+        'privacy' => '2026-09-22',
+        'terms'   => '2026-09-22',
         'cookies' => '2026-08-04',
     ];
 
