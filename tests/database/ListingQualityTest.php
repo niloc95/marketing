@@ -392,6 +392,10 @@ final class ListingQualityTest extends CIUnitTestCase
             'display_name'     => 'Flow Yoga',
             'email'            => 'quality-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'      => $this->categoryId,
+            // The private "Your details" pair — compulsory on both write
+            // paths since they became required; see validate().
+            'title'            => 'Mr',
+            'contact_person'   => 'Test Owner',
             'consent'          => 1,
             'marketing_opt_in' => '0',
             'latitude'         => '-33.9249',

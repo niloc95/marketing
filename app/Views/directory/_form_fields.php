@@ -29,6 +29,7 @@
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
  * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
  * @var bool     $addressRequired  insist on a full address (public signup only)
+ * @var bool     $privateDetailsRequired  insist on a title and a contact person (not admin intake)
  * @var array    $countries  Config\Countries::grouped()
  * @var bool     $lockCountry  show the country as read-only text (owner edit)
  *
@@ -64,6 +65,14 @@ $deleteBase  = $deleteBase  ?? '';
 // Backfilling those is a separate job. See _address_inputs.php on why every
 // caller passes this rather than leaning on the default.
 $addressRequired = $addressRequired ?? false;
+
+// The private "Your details" pair. Required wherever the business itself is
+// filling the form in — signup and the owner edit both pass true, and
+// DirectoryListingMutationService::validate() enforces it on both paths.
+// Admin passes false for the same reason it passes addressRequired false:
+// intake covers imports and phone captures where nobody has yet said who to
+// ask for.
+$privateDetailsRequired = $privateDetailsRequired ?? false;
 
 // The country select belongs to the listing's own address only — a branch is
 // another location of the same business and inherits it. See _address_inputs.
@@ -283,13 +292,13 @@ helper('directory_hours');
     <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
     <div class="form-row">
         <div class="field">
-            <label>Title</label>
-            <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…">
+            <label>Title<?= $privateDetailsRequired ? ' *' : '' ?></label>
+            <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…" <?= $privateDetailsRequired ? 'required' : '' ?>>
             <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
         </div>
         <div class="field">
-            <label>Contact person</label>
-            <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150">
+            <label>Contact person<?= $privateDetailsRequired ? ' *' : '' ?></label>
+            <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" <?= $privateDetailsRequired ? 'required' : '' ?>>
             <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
         </div>
     </div>

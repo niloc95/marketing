@@ -191,6 +191,10 @@ final class BookingUrlTest extends CIUnitTestCase
             'display_name' => 'Test Salon',
             'email'        => 'salon@example.test',
             'category_id'  => $this->categoryId,
+            // The private "Your details" pair — compulsory on both write
+            // paths since they became required; see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
         ];
@@ -214,6 +218,10 @@ final class BookingUrlTest extends CIUnitTestCase
             'display_name' => 'Booking Link Salon',
             'email'        => 'booking-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'  => $this->categoryId,
+            // The private "Your details" pair — compulsory on both write
+            // paths since they became required; see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'consent'      => 1,
             // A new signup must ANSWER the marketing question; '0' is a
             // complete answer and is what an untouched form used to mean.

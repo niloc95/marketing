@@ -109,6 +109,10 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     // Explicitly false: an owner whose listing predates the
                     // address rule must still be able to save other edits.
                     'addressRequired' => false,
+                    // True, unlike the address above: the owner's own name and
+                    // title are always to hand, and this form is where the
+                    // listings that predate the rule get them filled in.
+                    'privateDetailsRequired' => true,
                     'countries'   => $countries,
                     // Read-only here: country decides whether this listing
                     // needs an International Listing subscription, so the

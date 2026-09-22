@@ -152,6 +152,9 @@ final class RequiredAddressTest extends CIUnitTestCase
         $result = $this->svc->updateOwn($id, [
             'display_name' => 'Legacy Plumbing',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'phone'        => '021 555 0100',
         ]);
 
@@ -167,6 +170,9 @@ final class RequiredAddressTest extends CIUnitTestCase
         $result = $this->svc->updateOwn($id, [
             'display_name' => 'Flow Plumbing',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'address_line' => '',
             'city'         => '',
             'postal_code'  => '',
@@ -236,6 +242,10 @@ final class RequiredAddressTest extends CIUnitTestCase
             'display_name'   => 'Flow Plumbing',
             'email'          => 'addr-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'    => $this->categoryId,
+            // The private "Your details" pair — compulsory on both write
+            // paths; see DirectoryListingMutationService::validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'consent'        => 1,
             // A new signup must ANSWER the marketing question; '0' is a
             // complete answer and is what an untouched form used to mean.

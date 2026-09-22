@@ -159,6 +159,9 @@ final class VenueTest extends CIUnitTestCase
         $result = (new DirectoryListingMutationService())->updateOwn($id, [
             'display_name' => 'Owned Shop',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'latitude'     => '-26.2055556',
             'longitude'    => '28.0222222',
             // Both a move and a clear, in one crafted POST.

@@ -223,6 +223,10 @@ final class DescriptionLimitTest extends CIUnitTestCase
         return $fields + [
             'display_name' => 'Test Listing',
             'category_id'  => $this->categoryId,
+            // The private "Your details" pair — compulsory on both write
+            // paths since they became required; see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
         ];
     }
 }

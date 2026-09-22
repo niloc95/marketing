@@ -184,6 +184,9 @@ final class ListingCountryTest extends CIUnitTestCase
         $result = $this->svc->updateOwn($id, [
             'display_name' => 'Brezel Bakery',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'country'      => Countries::SOUTH_AFRICA,
         ]);
 
@@ -203,6 +206,9 @@ final class ListingCountryTest extends CIUnitTestCase
         $result = $this->svc->updateOwn($id, [
             'display_name' => 'Brezel Bakery',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'country'      => Countries::SOUTH_AFRICA,
             'province'     => 'Gauteng',
         ]);
@@ -227,6 +233,9 @@ final class ListingCountryTest extends CIUnitTestCase
         $result = $this->svc->updateOwn($id, [
             'display_name' => 'Brezel Bakery',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'phone'        => '+49 89 555 0100',
         ]);
 
@@ -243,6 +252,9 @@ final class ListingCountryTest extends CIUnitTestCase
         $result = $this->svc->updateOwn($id, [
             'display_name' => 'Brezel Bakery',
             'category_id'  => $this->categoryId,
+            // Required on an owner save too — see validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'region'       => 'Berlin',
         ]);
 
@@ -342,6 +354,10 @@ final class ListingCountryTest extends CIUnitTestCase
             'display_name' => 'Cape Bakery',
             'email'        => 'country-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'  => $this->categoryId,
+            // The private "Your details" pair — compulsory on both write
+            // paths; see DirectoryListingMutationService::validate().
+            'title'          => 'Mr',
+            'contact_person' => 'Test Owner',
             'consent'      => 1,
             // A new signup must ANSWER the marketing question; '0' is a
             // complete answer and is what an untouched form used to mean.

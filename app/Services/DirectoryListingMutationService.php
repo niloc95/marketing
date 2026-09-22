@@ -834,6 +834,29 @@ class DirectoryListingMutationService
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'A valid email is required — we send a verification link to it.';
         }
+
+        // The two fields in the private "Your details" fieldset. Neither is
+        // rendered on the public profile — _contact_panel.php shows neither,
+        // and ListingQualityService scores neither — but every mail this
+        // directory sends about the listing is addressed from them, and
+        // MarketingConsentService pushes contact_person as the Mautic
+        // firstname. A listing nobody at this end can address is one that
+        // cannot be verified by anything but its own claims.
+        //
+        // Held to on an owner edit as well as at signup, unlike
+        // REQUIRED_ADDRESS_FIELDS below: a street address a listing never
+        // captured may genuinely not be to hand, but the owner's own name and
+        // title always are, and their edit form is the only place the rows
+        // that predate this rule can be backfilled at all. Admin intake is
+        // exempt — it does not come through validate() (see
+        // DirectoryAdminService), so an import or a phone capture can still be
+        // entered with neither.
+        if ($this->clean($input['contact_person'] ?? '') === '') {
+            $errors['contact_person'] = 'Please tell us who we should speak to about this listing.';
+        }
+        if ($this->clean($input['title'] ?? '') === '') {
+            $errors['title'] = 'Please give a title — Mr, Mrs, Dr and so on.';
+        }
         if ((int) ($input['category_id'] ?? 0) <= 0) {
             $errors['category_id'] = 'Please choose a category.';
         } elseif (! $this->categoryExists((int) $input['category_id'])) {

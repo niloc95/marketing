@@ -36,7 +36,9 @@ use App\Models\DirectoryListingModel;
  *  - Fields required at signup anyway — display_name, email, postal_code,
  *    country, type. A point everybody has is not a point.
  *  - contact_person and title: they sit in the "for our records" fieldset and
- *    are never shown publicly, so they do nothing for a searcher.
+ *    are never shown publicly, so they do nothing for a searcher. They are also
+ *    compulsory on both write paths now, which puts them in the bracket above
+ *    as well — a point everybody has is not a point.
  *  - accepts_card_payments, offers_delivery, offers_online_booking: one click,
  *    unverifiable. If they scored, every listing would tick all three within a
  *    month and the rubric would carry three dead points.

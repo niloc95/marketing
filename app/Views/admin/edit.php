@@ -49,6 +49,10 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     // Explicitly false: admin intake covers imports and phone
                     // captures where the address genuinely is not known yet.
                     'addressRequired' => false,
+                    // False for the same reason, and DirectoryAdminService does
+                    // not apply the rule either: an imported row often has no
+                    // named contact until somebody phones it.
+                    'privateDetailsRequired' => false,
                     'countries'   => $countries,
                     // Admin is the only place a country can actually change.
                     'lockCountry' => false,
