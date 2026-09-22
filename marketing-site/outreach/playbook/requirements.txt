@@ -1,0 +1,6 @@
+# Local Visibility Playbook generator.
+#   python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+reportlab>=4.0
+Pillow>=10.0
+fonttools[woff]>=4.40   # unpacks the repo's Inter .woff2 → .ttf (needs brotli)
+qrcode>=7.4             # CTA slide; the deck still builds without it

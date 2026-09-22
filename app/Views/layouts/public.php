@@ -339,6 +339,15 @@
                           // not what someone here is asking for. ?>
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
                     <li><a href="<?= base_url('verified') ?>">Verified businesses</a></li>
+                    <?php // The free local visibility playbook. Generated from
+                          // marketing-site/outreach/playbook/ and published here by
+                          // `build_playbook.py --publish`, which always copies the WEB
+                          // build: the print one carries crop marks and a 3mm bleed.
+                          // public/ ships wholesale in the deploy bundle, so the file
+                          // needs no separate upload. New tab because leaving the site
+                          // to open a PDF loses whatever the visitor was doing. ?>
+                    <li><a href="<?= base_url('assets/playbook/webscheduler-local-visibility-playbook.pdf') ?>"
+                           target="_blank" rel="noopener">Local visibility playbook (PDF)</a></li>
                     <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                     <li><a href="https://webscheduler.co.za/">WebScheduler</a></li>
                 </ul>

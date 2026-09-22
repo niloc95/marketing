@@ -203,3 +203,10 @@ public/assets/consent.css
 # machine that made them and never reach the remote.
 /oriental-plaza-*.csv
 /orientalplaza.co_store_listings.xlsx
+
+#-------------------------
+# Playbook generator
+#-------------------------
+marketing-site/outreach/playbook/build/
+marketing-site/outreach/playbook/.venv/
+marketing-site/outreach/playbook/assets/*.webp
