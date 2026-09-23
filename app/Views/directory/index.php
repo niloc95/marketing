@@ -25,7 +25,20 @@ $page      = (int) ($result['page'] ?? 1);
 // An unrecognised category or province is noindexed as well: without that, any
 // query string is a 200 that asks to be indexed under a title of its author's
 // choosing.
-$indexable = ! $hasQuery && $page === 1 && ! $unknownFilter;
+// A faceted view is a filtered view: thin, endlessly combinable, and a
+// duplicate of the landing page it canonicalises to. Same rule as ?q=.
+$hasFacets = ($filters['facets'] ?? []) !== [];
+$indexable = ! $hasQuery && ! $hasFacets && $page === 1 && ! $unknownFilter;
+
+// Every link on this page rebuilds the query string from scratch, and facets
+// travel as ?f[key][]=value while the filter array calls them 'facets'. Without
+// this rename the pager and the radius chips would drop every facet — the kind
+// of bug that only shows up on page 2.
+$urlFilters = $filters;
+unset($urlFilters['facets']);
+if ($hasFacets) {
+    $urlFilters['f'] = $filters['facets'];
+}
 $canonical = base_url('directory');
 if (! $hasQuery && $category !== null) {
     $canonical = base_url('directory/' . $category['slug']
@@ -136,11 +149,11 @@ $verticalPhoto = $category !== null ? category_photo($category) : null;
             <?php if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== ''): ?>
                 <span class="near-bar-label">Within</span>
                 <?php foreach ($radii as $km): ?>
-                    <?php $q = array_filter($filters + ['radius' => (string) $km], static fn ($v) => $v !== ''); unset($q['bounds']); ?>
+                    <?php $q = array_filter($urlFilters + ['radius' => (string) $km], static fn ($v) => $v !== ''); unset($q['bounds']); ?>
                     <a class="near-chip<?= (int) ($filters['radius'] ?? 0) === $km ? ' is-active' : '' ?>"
                        href="<?= esc(base_url('directory') . '?' . http_build_query($q), 'attr') ?>"><?= $km ?> km</a>
                 <?php endforeach; ?>
-                <?php $clear = array_filter($filters, static fn ($v) => $v !== ''); unset($clear['lat'], $clear['lng'], $clear['radius'], $clear['bounds']); ?>
+                <?php $clear = array_filter($urlFilters, static fn ($v) => $v !== ''); unset($clear['lat'], $clear['lng'], $clear['radius'], $clear['bounds']); ?>
                 <a class="near-chip" href="<?= esc(base_url('directory') . ($clear ? '?' . http_build_query($clear) : ''), 'attr') ?>">Clear</a>
             <?php endif; ?>
             <span class="near-bar-note" role="status" data-near-me-note></span>
@@ -150,8 +163,6 @@ $verticalPhoto = $category !== null ? category_photo($category) : null;
 
 <section class="section">
     <div class="container">
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
-
         <?php // Category chips: crawlable links into the landing pages, which
               // query-string filters alone would never provide. ?>
         <?php if (! $hasQuery && ($filters['category'] ?? '') === ''): ?>
@@ -167,84 +178,113 @@ $verticalPhoto = $category !== null ? category_photo($category) : null;
             </div>
         <?php endif; ?>
 
-        <?php
-        // Where the map opens. Null when nothing on this page is mappable, in
-        // which case no map renders at all — an empty map of South Africa
-        // answers no question.
-        //
-        // The opening zoom has to frame the whole search, not just its centre.
-        // The map only ever loads pins for the viewport it is showing, so a
-        // "within 25km" search opened at street zoom reports "no businesses in
-        // this part of the map" while the list underneath lists three. These
-        // zooms are chosen so the radius fits comfortably inside the viewport.
-        $radiusZoom = [1 => 14, 5 => 12, 10 => 11, 25 => 10, 50 => 9];
-
-        $mapCentre = null;
-        if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '') {
-            $zoom      = $radiusZoom[(int) ($filters['radius'] ?? 0)] ?? 11;
-            $mapCentre = $filters['lat'] . ',' . $filters['lng'] . ',' . $zoom;
-        } else {
-            foreach ($result['items'] as $l) {
-                if (! empty($l['latitude']) && ! empty($l['longitude'])) {
-                    $mapCentre = $l['latitude'] . ',' . $l['longitude'] . ',11';
-                    break;
-                }
-            }
-        }
-        ?>
-        <?php if ($mapCentre !== null): ?>
-            <?php // id + scroll-mt: the header's "Map" link is /directory#map, and the
-                  // header is sticky h-16 — without the margin the map's top edge lands
-                  // underneath it. Nothing else links here, so if this block is ever made
-                  // conditional on something new, the anchor degrades to the page top. ?>
-            <div class="results-map scroll-mt-20"
-                 id="map"
-                 data-results-map
-                 data-endpoint="<?= base_url('directory/map') ?>"
-                 data-centre="<?= esc($mapCentre, 'attr') ?>"
-                 data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
-                 data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
-                 data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
-                 data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
-                 data-leaflet-js="<?= base_url('assets/vendor/leaflet/leaflet.js') ?>"
-                 data-cluster-js="<?= base_url('assets/vendor/leaflet/markercluster.js') ?>"
-                 data-cluster-css="<?= base_url('assets/vendor/leaflet/markercluster.css') ?>"
-                 data-cluster-default-css="<?= base_url('assets/vendor/leaflet/markercluster.default.css') ?>">
-                <div class="results-map-canvas" data-results-map-canvas role="application"
-                     aria-label="Map of results matching your search"></div>
-                <p class="results-map-status" role="status" data-results-map-status></p>
-            </div>
-        <?php endif; ?>
-
-        <?php if (empty($result['items'])): ?>
-            <div class="empty">
-                <p class="mb-4">Nothing matches your search.</p>
-                <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
-            </div>
-        <?php else: ?>
-            <div class="card-grid">
-                <?php foreach ($result['items'] as $l): ?>
-                    <?= view('directory/_card', ['l' => $l]) ?>
-                <?php endforeach; ?>
-            </div>
-
-            <?php if ($result['totalPages'] > 1): ?>
-                <nav class="pager">
-                    <?php
-                    $q = $filters;
-                    for ($i = 1; $i <= $result['totalPages']; $i++):
-                        $q['page'] = $i;
-                        $href = base_url('directory') . '?' . http_build_query(array_filter($q, fn ($v) => $v !== '' && $v !== null));
-                    ?>
-                        <?php if ($i === $result['page']): ?>
-                            <span class="current"><?= $i ?></span>
-                        <?php else: ?>
-                            <a href="<?= esc($href, 'attr') ?>"><?= $i ?></a>
-                        <?php endif; ?>
-                    <?php endfor; ?>
-                </nav>
+        <?php // Two columns only where there is a sidebar to put in one — see
+              // listing_has_facet_rail(). The chips above and the sidebar are
+              // mutually exclusive by construction: chips render only when there
+              // is no category, and there is no rail without one. ?>
+        <?php $hasRail = listing_has_facet_rail($category); ?>
+        <div<?= $hasRail ? ' class="results-layout"' : '' ?>>
+            <?php if ($hasRail): ?>
+                <?php // Carries every other filter as hidden inputs so ticking a
+                      // box cannot lose the province or the near-me position. ?>
+                <div class="results-filters">
+                    <?= view('directory/_facet_filters', [
+                        'category' => $category,
+                        'facets'   => $filters['facets'] ?? [],
+                        'action'   => base_url('directory'),
+                        'carry'    => array_diff_key($urlFilters, ['f' => null, 'page' => null]),
+                    ], ['saveData' => false]) ?>
+                </div>
             <?php endif; ?>
-        <?php endif; ?>
+
+            <div>
+                <p class="mb-4 text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
+
+                <?php
+                // Where the map opens. Null when nothing on this page is mappable, in
+                // which case no map renders at all — an empty map of South Africa
+                // answers no question.
+                //
+                // The opening zoom has to frame the whole search, not just its centre.
+                // The map only ever loads pins for the viewport it is showing, so a
+                // "within 25km" search opened at street zoom reports "no businesses in
+                // this part of the map" while the list underneath lists three. These
+                // zooms are chosen so the radius fits comfortably inside the viewport.
+                $radiusZoom = [1 => 14, 5 => 12, 10 => 11, 25 => 10, 50 => 9];
+
+                $mapCentre = null;
+                if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '') {
+                    $zoom      = $radiusZoom[(int) ($filters['radius'] ?? 0)] ?? 11;
+                    $mapCentre = $filters['lat'] . ',' . $filters['lng'] . ',' . $zoom;
+                } else {
+                    foreach ($result['items'] as $l) {
+                        if (! empty($l['latitude']) && ! empty($l['longitude'])) {
+                            $mapCentre = $l['latitude'] . ',' . $l['longitude'] . ',11';
+                            break;
+                        }
+                    }
+                }
+                ?>
+                <?php if ($mapCentre !== null): ?>
+                    <?php // id + scroll-mt: the header's "Map" link is /directory#map, and
+                          // without the margin the map's top edge lands underneath the bar.
+                          // scroll-mt-28 (7rem), matching html's md:scroll-pt-28 and the
+                          // sidebar's lg:top-28 — .site-header is fixed and GROWS to a
+                          // measured 109px once .is-solid is on, which is its state after
+                          // any scroll. The old scroll-mt-20 was sized for the resting bar
+                          // and left the map tucked under the solid one.
+                          // Nothing else links here, so if this block is ever made
+                          // conditional on something new, the anchor degrades to the page top. ?>
+                    <div class="results-map scroll-mt-28"
+                         id="map"
+                         data-results-map
+                         data-endpoint="<?= base_url('directory/map') ?>"
+                         data-centre="<?= esc($mapCentre, 'attr') ?>"
+                         data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+                         data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
+                         data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
+                         data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
+                         data-leaflet-js="<?= base_url('assets/vendor/leaflet/leaflet.js') ?>"
+                         data-cluster-js="<?= base_url('assets/vendor/leaflet/markercluster.js') ?>"
+                         data-cluster-css="<?= base_url('assets/vendor/leaflet/markercluster.css') ?>"
+                         data-cluster-default-css="<?= base_url('assets/vendor/leaflet/markercluster.default.css') ?>">
+                        <div class="results-map-canvas" data-results-map-canvas role="application"
+                             aria-label="Map of results matching your search"></div>
+                        <p class="results-map-status" role="status" data-results-map-status></p>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (empty($result['items'])): ?>
+                    <div class="empty">
+                        <p class="mb-4">Nothing matches your search.</p>
+                        <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
+                    </div>
+                <?php else: ?>
+                    <div class="card-grid">
+                        <?php foreach ($result['items'] as $l): ?>
+                            <?= view('directory/_card', ['l' => $l]) ?>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <?php if ($result['totalPages'] > 1): ?>
+                        <nav class="pager">
+                            <?php
+                            $q = $urlFilters;
+                            for ($i = 1; $i <= $result['totalPages']; $i++):
+                                $q['page'] = $i;
+                                $href = base_url('directory') . '?' . http_build_query(array_filter($q, fn ($v) => $v !== '' && $v !== null));
+                            ?>
+                                <?php if ($i === $result['page']): ?>
+                                    <span class="current"><?= $i ?></span>
+                                <?php else: ?>
+                                    <a href="<?= esc($href, 'attr') ?>"><?= $i ?></a>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+                        </nav>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </section>
 <?= $this->endSection() ?>

@@ -53,6 +53,52 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('LocalBusiness', schema_business_type(''));
     }
 
+    public function testSchoolCategoriesNarrowTheEducationPair(): void
+    {
+        $g = 'Education & Training';
+
+        $this->assertSame(['LocalBusiness', 'Preschool'], schema_business_type($g, 'preschool-daycare'));
+        $this->assertSame(['LocalBusiness', 'ElementarySchool'], schema_business_type($g, 'primary-school'));
+        $this->assertSame(['LocalBusiness', 'HighSchool'], schema_business_type($g, 'high-school'));
+        $this->assertSame(['LocalBusiness', 'CollegeOrUniversity'], schema_business_type($g, 'university'));
+    }
+
+    public function testEverySchoolTypeKeepsLocalBusinessFirst(): void
+    {
+        // The whole reason the education entry is a pair: the narrower school
+        // types must not drop LocalBusiness, or address, geo and opening hours
+        // have nothing to hang off — the exact bug the group-level entry fixed.
+        foreach (['preschool-daycare', 'aftercare-holiday-care', 'primary-school', 'high-school',
+            'combined-school', 'special-needs-school', 'remedial-school', 'online-school',
+            'training-college', 'university'] as $slug) {
+            $type = schema_business_type('Education & Training', $slug);
+
+            $this->assertIsArray($type, $slug . ' should emit a type pair');
+            $this->assertSame('LocalBusiness', $type[0], $slug . ' must lead with LocalBusiness');
+            $this->assertCount(2, $type);
+        }
+    }
+
+    public function testAnEducationCategoryWithoutItsOwnTypeFallsBackToTheGroup(): void
+    {
+        // Tutors, driving schools and music teachers are not schema.org schools.
+        $this->assertSame(
+            ['LocalBusiness', 'EducationalOrganization'],
+            schema_business_type('Education & Training', 'tutor')
+        );
+        $this->assertSame(
+            ['LocalBusiness', 'EducationalOrganization'],
+            schema_business_type('Education & Training', 'driving-school')
+        );
+    }
+
+    public function testASlugNeverOverridesAnotherGroupsType(): void
+    {
+        // The slug tier is checked first, so a slug that is not in it must not
+        // disturb the group lookup.
+        $this->assertSame('HairSalon', schema_business_type('Hair', 'hair-salon'));
+    }
+
     // ---- schema_opening_hours -------------------------------------------
 
     /**

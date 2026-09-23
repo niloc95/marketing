@@ -16,6 +16,7 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
+use App\Services\ListingFacetService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\SystemStatusService;
@@ -136,6 +137,7 @@ class Admin extends BaseController
             'tags'       => $listing ? $dir->tagsForListing((int) $listing['id']) : [],
             'services'   => $listing ? (new ServiceMenuService())->servicesFor((int) $listing['id']) : [],
             'attributes' => $listing ? (new ServiceMenuService())->attributeKeysFor((int) $listing['id']) : [],
+            'facets'     => $listing ? (new ListingFacetService())->storedFor((int) $listing['id']) : [],
             'photos'     => $listing
                 ? (new DirectoryListingPhotoModel())->forListing((int) $listing['id'])
                 : [],

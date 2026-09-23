@@ -614,3 +614,160 @@ if (! function_exists('listing_feature_labels')) {
         return array_values(array_merge($labels, array_values($l['attributes'] ?? [])));
     }
 }
+
+if (! function_exists('facet_range_label')) {
+    /**
+     * A stored range rendered the way a person says it.
+     *
+     * Ages are stored in months throughout (see Config\ListingFacets) because
+     * one unit is the only way the two ends of a range cannot drift apart — but
+     * "72 months to 216 months" is not how anyone describes a high school. This
+     * is the single place that conversion happens, so the card, the profile
+     * panel and the filter rail can never disagree about what 18 means.
+     *
+     * A null high bound is a one-sided facet ("fees from R2 500"), not a gap.
+     */
+    function facet_range_label(?int $low, ?int $high, ?string $unit): string
+    {
+        if ($low === null && $high === null) {
+            return '';
+        }
+
+        if ($unit === 'months') {
+            $part = static function (?int $m): string {
+                if ($m === null) {
+                    return '';
+                }
+                if ($m < 24) {
+                    return $m === 1 ? '1 month' : $m . ' months';
+                }
+                // Whole years read better and are what the form asks for above
+                // toddler age; a stray 30 months stays "2 yrs 6 mths" rather
+                // than being rounded into a claim the school did not make.
+                $years  = intdiv($m, 12);
+                $months = $m % 12;
+
+                return $months === 0
+                    ? $years . ' years'
+                    : $years . ' yrs ' . $months . ' mths';
+            };
+
+            if ($low !== null && $high !== null) {
+                return $part($low) . ' – ' . $part($high);
+            }
+
+            return $low !== null ? 'From ' . $part($low) : 'Up to ' . $part($high);
+        }
+
+        $money = static fn (int $n): string => 'R' . number_format($n, 0, '.', ' ');
+        $per   = $unit === 'rand-hour' ? ' an hour' : ' a month';
+
+        if ($low !== null && $high !== null) {
+            return $money($low) . ' – ' . $money($high) . $per;
+        }
+
+        return $low !== null
+            ? 'From ' . $money($low) . $per
+            : 'Up to ' . $money($high) . $per;
+    }
+}
+
+if (! function_exists('listing_card_facets')) {
+    /**
+     * The short facet line a search-result card prints under the category —
+     * "Ages 18 months – 6 years · Montessori".
+     *
+     * Only facets flagged card => true, in config order, capped at three so a
+     * school with every field filled in does not outgrow a card next to one
+     * with none. Takes the raw stored shape from
+     * DirectoryListingFacetModel::forListings() rather than a resolved profile,
+     * because a card never loads a profile.
+     *
+     * @param array<string,list<array{value:string,num_low:?int,num_high:?int}>> $stored
+     * @return array<int,string>
+     */
+    function listing_card_facets(array $stored, ?string $group, ?string $categorySlug): array
+    {
+        if ($stored === []) {
+            return [];
+        }
+
+        $out = [];
+        foreach (config('ListingFacets')->forCategory($group, $categorySlug) as $key => $facet) {
+            if (($facet['card'] ?? false) !== true || ! isset($stored[$key]) || count($out) >= 3) {
+                continue;
+            }
+
+            if (($facet['type'] ?? '') === 'range') {
+                $label = facet_range_label($stored[$key][0]['num_low'] ?? null, $stored[$key][0]['num_high'] ?? null, $facet['unit'] ?? null);
+                if ($label !== '') {
+                    $out[] = ($facet['unit'] === 'months' ? 'Ages ' : '') . $label;
+                }
+                continue;
+            }
+
+            $chosen = array_flip(array_column($stored[$key], 'value'));
+            $labels = array_values(array_intersect_key($facet['options'] ?? [], $chosen));
+            if ($labels === []) {
+                continue;
+            }
+            // Two named, then a count: "CAPS, IEB +1" beats a card-wide wrap.
+            $out[] = count($labels) > 2
+                ? implode(', ', array_slice($labels, 0, 2)) . ' +' . (count($labels) - 2)
+                : implode(', ', $labels);
+        }
+
+        return $out;
+    }
+}
+
+if (! function_exists('facet_set_for')) {
+    /**
+     * Which named set in Config\ListingFacets a category draws its questions
+     * from, or '' when it has none.
+     *
+     * The listing form renders one fieldset per *set* rather than per category —
+     * fourteen education categories share three sets — so the category picker
+     * needs to name the set, not the category. Kept here rather than in the view
+     * so the form and the client-side swap agree on one answer.
+     */
+    function facet_set_for(?string $group, ?string $categorySlug): string
+    {
+        $config = config('ListingFacets');
+
+        $refs = $config->byCategory[(string) $categorySlug]['use']
+            ?? $config->byGroup[(string) $group]['use']
+            ?? [];
+
+        return (string) ($refs[0] ?? '');
+    }
+}
+
+if (! function_exists('listing_has_facet_rail')) {
+    /**
+     * Whether this category has anything to put in a filter sidebar.
+     *
+     * Most categories have no facets at all, and _facet_filters.php returns
+     * early for them — so a results page that laid itself out in two columns
+     * regardless would show an empty 20rem gutter on the great majority of
+     * landing pages. The views ask this before wrapping, and the partial's own
+     * early return is the same test, so the layout and the panel cannot
+     * disagree about whether there is a sidebar.
+     *
+     * Null (an unresolved or absent category) is a no: "IEB" is not a question
+     * you can ask of every business in the country.
+     *
+     * @param array<string,mixed>|null $category a resolved directory_categories row
+     */
+    function listing_has_facet_rail(?array $category): bool
+    {
+        if ($category === null) {
+            return false;
+        }
+
+        return config('ListingFacets')->filterableFor(
+            $category['group_name'] ?? null,
+            $category['slug'] ?? null
+        ) !== [];
+    }
+}

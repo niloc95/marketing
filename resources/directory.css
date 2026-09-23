@@ -1499,6 +1499,10 @@
   .field input[type="text"],
   .field input[type="email"],
   .field input[type="password"],
+  /* number arrived with the listing facets (ages, fees) and was missing here,
+     so those boxes drew as raw browser inputs — square, and white on a dark
+     page. The admin "months" box had the same gap. */
+  .field input[type="number"],
   .field select,
   .field textarea {
     @apply w-full rounded-xl border-slate-200 text-sm
@@ -1543,6 +1547,7 @@
   .dark .field input[type="text"],
   .dark .field input[type="email"],
   .dark .field input[type="password"],
+  .dark .field input[type="number"],
   .dark .field select,
   .dark .field textarea {
     @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
@@ -1730,11 +1735,16 @@
      with the state-specific content inside. */
   .verify-panel       { @apply mb-6; }
   .verify-panel-title { @apply mb-3; }
+  /* Mirrors .strength-panel-lead, the same paragraph in the panel beside it.
+     Used by _hosting_panel.php and never defined, so that panel's opening line
+     rendered at body size in the default colour while its twin did not. */
+  .verify-panel-lead  { @apply mt-3 text-sm text-slate-600; }
   .verify-form        { @apply mt-4 border-t border-slate-200 pt-4; }
   .verify-reason      { @apply my-3; }
   .verify-doclist     { @apply mt-3 space-y-1 text-sm text-slate-600; }
   .verify-doclist .hint { @apply ml-1 inline; }
   .dark .verify-form    { @apply border-slate-800; }
+  .dark .verify-panel-lead { @apply text-slate-300; }
   .dark .verify-doclist { @apply text-slate-300; }
 
   /* First-time call to action. Emerald edge to tie it to the badge itself and to
@@ -1929,6 +1939,123 @@
   .attr-group legend { @apply p-0 text-xs font-semibold uppercase tracking-wide text-slate-500; }
   .dark .attr-option        { @apply text-slate-200; }
   .dark .attr-group legend  { @apply text-slate-400; }
+
+  /* ------------------------------------------ facets: ages, curriculum, fees */
+  /* One fieldset per set in Config\ListingFacets; only the chosen category's is
+     shown. Borderless like .attr-group so the panel reads as one list of
+     questions rather than a stack of boxes. */
+  .facet-set        { @apply m-0 border-0 p-0; }
+  .facet-set .field { @apply mt-4; }
+  .facet-range      { @apply mt-1 flex flex-wrap items-center gap-2; }
+  /* Narrow on purpose: these take an age or a rand amount, and a full-width box
+     invites a sentence. Matched on [type="number"] so this ties with the shared
+     `.field input[type="number"]` rule above on specificity and wins on order —
+     a bare `.facet-range input` loses to it and draws full width. */
+  .facet-range input[type="number"] { @apply w-28; }
+
+  /* The public "At a glance" panel. A two-column grid rather than a <dl> with
+     floats, so a long value wraps under its own label and not across the term. */
+  .facet-list { @apply m-0 grid gap-y-2 p-0; }
+  .facet-row  { @apply grid gap-x-4 gap-y-0.5 sm:grid-cols-[minmax(0,10rem)_1fr]; }
+  .facet-row dt { @apply text-sm font-semibold text-slate-500; }
+  .facet-row dd { @apply m-0 text-sm text-slate-700; }
+  .dark .facet-row dt { @apply text-slate-400; }
+  .dark .facet-row dd { @apply text-slate-200; }
+
+  /* The one-line summary on a search result card. */
+  .card-facets { @apply mt-1 text-xs text-slate-500; }
+  .dark .card-facets { @apply text-slate-400; }
+
+  /* ------------------------------------------------- results: filter sidebar */
+  /* The two-column results page, modelled on .profile-grid — the app's only
+     other two-column layout — so the pages read as siblings.
+
+     Deliberately NOT items-start. A sticky element can only travel inside its
+     own containing block, which for a grid item is its grid area — so putting
+     the sticky on the column itself and then shrink-wrapping that column to its
+     contents leaves it nowhere to go, and it never pins. The default `stretch`
+     is what makes the left column as tall as the results beside it; the panel
+     inside it is what sticks. Getting this backwards looks like sticky being
+     broken rather than like a layout mistake. */
+  .results-layout { @apply grid gap-6 lg:grid-cols-[20rem_1fr]; }
+
+  /* The column. Nothing positional here on purpose — see above; it exists to
+     stretch, and to scope the tick-box grid below. */
+  .results-filters { @apply min-w-0; }
+
+  /* Tailwind's breakpoints are viewport-based, not container-based, so
+     .card-grid's lg:grid-cols-3 would keep firing inside a ~630px results
+     column and hand us three 200px cards. Scoped here rather than changed on
+     .card-grid, whose own comment says index.php and landing.php depend on it.
+     At lg the column is ~632px (2 cards ≈ 308px); at xl ~888px (3 ≈ 285px). */
+  .results-layout .card-grid { @apply lg:grid-cols-2 xl:grid-cols-3; }
+
+  /* Same reason in the other direction: .attr-grid is two-up from sm, which is
+     right while the panel is full width above the results, and far too narrow
+     once it is a 20rem sidebar. */
+  .results-filters .attr-grid { @apply lg:grid-cols-1; }
+
+  /* The panel itself is .panel — the same surface as .form-card (rounded-2xl,
+     slate border, white / #1a202c, shadow-brand) at p-5 instead of p-6 sm:p-8.
+     That is the whole of "make it look like the listing form": no new surface,
+     just stop using .disclosure's slate-50 band.
+
+     This, not the column, is the first position:sticky in the stylesheet. It
+     works because nothing sets overflow on html, body or .site-main — an
+     overflow:hidden ancestor is the usual thing that silently kills sticky, and
+     there isn't one.
+
+     top-32 (8rem), not top-16. .site-header is FIXED and grows once scrolled:
+     .is-solid reveals .header-search and .header-quick, taking its bottom edge
+     to a measured 109px at md and up (the same number html's md:scroll-pt-28 is
+     sized for). A sticky panel only ever exists in that scrolled state, so it
+     has to clear the tall header, not the resting one — 7rem clears it by 3px,
+     which reads as the panel touching the bar, so this is 8rem for a 19px
+     gutter.
+
+     max-h + overflow-y-auto because the preschool set is about 25 controls: on
+     a laptop the tail would otherwise hang past the bottom of the screen with
+     no way to reach it, the panel being pinned. 9rem = the 8rem offset plus the
+     same gutter again at the bottom. */
+  .results-filter-panel {
+    @apply mb-6 lg:sticky lg:top-32 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto;
+  }
+
+  /* Hidden from lg up: the sidebar is always open there, so a toggle that
+     cannot be used is just a heading pretending to be a control. Below lg it is
+     the real disclosure control for the collapsed panel above the results. */
+  .results-filter-summary {
+    @apply flex cursor-pointer flex-wrap items-baseline justify-between gap-2
+           text-sm font-semibold text-slate-900
+           focus-visible:outline focus-visible:outline-2
+           focus-visible:outline-offset-2 focus-visible:outline-primary-500
+           lg:hidden;
+  }
+  .results-filter-summary .hint { @apply mt-0 font-normal; }
+  .dark .results-filter-summary { @apply text-white; }
+
+  /* .field gives the block its mb-4; the fieldset resets are what a <fieldset>
+     needs to stop looking like one. The first field sits under the summary on
+     mobile and at the top of the card on desktop, hence the lg:first:mt-0. */
+  .facet-field { @apply mt-4 border-0 p-0 lg:first:mt-0; }
+  /* Deliberately .field label's exact values. A <label> heading a checkbox
+     group points at nothing, so this stays a <legend> — but it must not read as
+     a different kind of heading from the same question on the listing form,
+     which is what the old small-caps treatment did. */
+  .facet-field legend { @apply mb-1.5 p-0 text-sm font-medium text-slate-700; }
+  /* The number boxes sit in a fieldset, not a .field, so the shared input rule
+     above does not reach them. */
+  .facet-field input[type="number"] {
+    @apply w-full rounded-xl border-slate-200 text-sm
+           focus:border-primary-500 focus:ring-primary-500;
+  }
+  .results-filter-actions { @apply mt-5 flex items-center gap-2; }
+
+  .dark .facet-field legend { @apply text-slate-200; }
+  .dark .facet-field input[type="number"] {
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
+           focus:border-primary-300 focus:ring-primary-300;
+  }
 
   /* The divider between the essentials and the optional sections. */
   .form-section-head    { @apply mb-3 mt-8 border-t border-slate-200 pt-6; }
@@ -2168,10 +2295,16 @@
   .pill-published   { @apply bg-emerald-100 text-emerald-800; }
   .pill-unpublished { @apply bg-slate-100 text-slate-600; }
   .pill-rejected    { @apply bg-red-100 text-red-700; }
+  /* Emerald, the colour the paid badge carries everywhere else on the site —
+     see .badge-verified. Referenced by the verifications queue since it was
+     written; without a rule the "Badge" pill drew as bare text in a colourless
+     rounded box, next to status pills that were all filled. */
+  .pill-verified    { @apply bg-emerald-100 text-emerald-800; }
   .dark .pill-pending     { @apply bg-amber-500/15 text-amber-300; }
   .dark .pill-published   { @apply bg-emerald-500/15 text-emerald-300; }
   .dark .pill-unpublished { @apply bg-slate-500/20 text-slate-300; }
   .dark .pill-rejected    { @apply bg-red-500/15 text-red-300; }
+  .dark .pill-verified    { @apply bg-emerald-500/15 text-emerald-300; }
 
   /* ---------------------------------------------------------------- pager */
   .pager        { @apply mt-6 flex flex-wrap justify-center gap-1.5; }

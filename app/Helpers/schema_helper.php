@@ -272,10 +272,35 @@ if (! function_exists('schema_business_type')) {
      * opening hours had no LocalBusiness to hang off. JSON-LD allows an array
      * of types, which keeps both meanings.
      *
+     * $slug is a second, narrower tier consulted first, and education is the
+     * only group that needs one: schema.org distinguishes Preschool,
+     * ElementarySchool, HighSchool and CollegeOrUniversity, and the group alone
+     * cannot tell them apart — every school on the site used to publish as the
+     * same generic pair. Each keeps LocalBusiness as its first type for exactly
+     * the reason above. A slug with no entry falls through to its group, so
+     * this map only names the categories whose type is genuinely narrower.
+     *
      * @return string|list<string>
      */
-    function schema_business_type(string $group)
+    function schema_business_type(string $group, string $slug = '')
     {
+        $bySlug = [
+            'preschool-daycare'      => ['LocalBusiness', 'Preschool'],
+            'aftercare-holiday-care' => ['LocalBusiness', 'Preschool'],
+            'primary-school'         => ['LocalBusiness', 'ElementarySchool'],
+            'high-school'            => ['LocalBusiness', 'HighSchool'],
+            'combined-school'        => ['LocalBusiness', 'School'],
+            'special-needs-school'   => ['LocalBusiness', 'School'],
+            'remedial-school'        => ['LocalBusiness', 'School'],
+            'online-school'          => ['LocalBusiness', 'School'],
+            'training-college'       => ['LocalBusiness', 'CollegeOrUniversity'],
+            'university'             => ['LocalBusiness', 'CollegeOrUniversity'],
+        ];
+
+        if (isset($bySlug[$slug])) {
+            return $bySlug[$slug];
+        }
+
         $map = [
             'Health & Medical'      => 'MedicalBusiness',
             'Beauty & Wellness'     => 'HealthAndBeautyBusiness',
@@ -505,7 +530,7 @@ if (! function_exists('schema_local_business')) {
         }
 
         return array_filter([
-            '@type'                    => schema_business_type((string) ($l['category']['group_name'] ?? '')),
+            '@type'                    => schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? '')),
             '@id'                      => $canonical . '#business',
             'name'                     => (string) ($l['display_name'] ?? ''),
             'url'                      => $canonical,

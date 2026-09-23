@@ -12,6 +12,7 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
+use App\Services\ListingFacetService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
 use App\Services\VerificationService;
@@ -152,6 +153,7 @@ class DirectoryListingMutationService
             }
 
             (new ServiceMenuService())->sync((int) $id, $data['category_id'], $input);
+            (new ListingFacetService())->sync((int) $id, $data['category_id'], $input);
 
             $db->transCommit();
         } catch (\Throwable $e) {
@@ -226,6 +228,7 @@ class DirectoryListingMutationService
             // Same terms as the tags above: the signup form always carries both
             // section markers, so this replaces the rejected attempt's rows.
             (new ServiceMenuService())->sync($id, $data['category_id'], $input);
+            (new ListingFacetService())->sync($id, $data['category_id'], $input);
 
             // The rejected attempt's photos are not this submission's photos,
             // and the controller appends the new ones once this returns —
@@ -700,6 +703,7 @@ class DirectoryListingMutationService
             // category being saved, not the stored one, so switching category
             // drops features the new category does not offer.
             (new ServiceMenuService())->sync($id, $data['category_id'], $input);
+            (new ListingFacetService())->sync($id, $data['category_id'], $input);
 
             // The analytics-report box, on the same absent-vs-present terms: an
             // unticked checkbox posts nothing, so the marker is the only way to
@@ -1020,8 +1024,24 @@ class DirectoryListingMutationService
         }
 
         $errors += (new ServiceMenuService())->validate($input);
+        $errors += (new ListingFacetService())->validate($input, $this->submittedCategoryId($input));
 
         return $errors;
+    }
+
+    /**
+     * The category this submission is asking for, as an id.
+     *
+     * Facet validation needs it because what a listing may state depends on the
+     * category — a preschool is asked for ages, a high school for grades — and
+     * validate() runs before anything is written, so the stored row is the
+     * wrong answer whenever this request is the one changing the category.
+     */
+    private function submittedCategoryId(array $input): ?int
+    {
+        $id = (int) ($input['category_id'] ?? 0);
+
+        return $id > 0 ? $id : null;
     }
 
     /** The country list, resolved once per request. */

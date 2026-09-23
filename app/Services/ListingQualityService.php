@@ -113,7 +113,7 @@ class ListingQualityService
      * Manage::edit() renders the meter for free off rows it has already loaded.
      *
      * @param array<string,mixed>                                          $listing a listings row
-     * @param array{photos:int,services:int,attributes:int,tags:int}|null  $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int}|null  $counts
      *
      * @return array{score:int,max:int,band:string,percent:int,items:list<array{
      *     key:string,label:string,points:int,earned:int,done:bool,hint:string,anchor:string}>}
@@ -147,7 +147,7 @@ class ListingQualityService
      * Just the number.
      *
      * @param array<string,mixed>                                         $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int}|null $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int}|null $counts
      */
     public function score(array $listing, ?array $counts = null): int
     {
@@ -162,7 +162,7 @@ class ListingQualityService
      * rubric and the UI drifting apart.
      *
      * @param array<string,mixed>                                         $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int}|null $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int}|null $counts
      *
      * @return array{score:int,max:int,band:string,percent:int,items:list<array<string,mixed>>,next:list<array<string,mixed>>}
      */
@@ -250,7 +250,7 @@ class ListingQualityService
      * Child-row counts for one listing. The four tables here are the whole
      * list, and it is short for the reason the class docblock gives.
      *
-     * @return array{photos:int,services:int,attributes:int,tags:int}
+     * @return array{photos:int,services:int,attributes:int,tags:int,facets:int}
      */
     public function countsFor(int $listingId): array
     {
@@ -264,7 +264,7 @@ class ListingQualityService
     /**
      * @param list<int> $ids
      *
-     * @return array<int,array{photos:int,services:int,attributes:int,tags:int}>
+     * @return array<int,array{photos:int,services:int,attributes:int,tags:int,facets:int}>
      */
     public function countsForMany(array $ids): array
     {
@@ -283,6 +283,7 @@ class ListingQualityService
             'services'   => 'xs_directory_listing_services',
             'attributes' => 'xs_directory_listing_attributes',
             'tags'       => 'xs_directory_listing_tags',
+            'facets'     => 'xs_directory_listing_facets',
         ];
 
         $db = $this->listings->db;
@@ -411,7 +412,7 @@ class ListingQualityService
      * C. Can I size you up? What someone reads before deciding to call.
      *
      * @param array<string,mixed>                                    $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int} $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int} $counts
      *
      * @return list<array<string,mixed>>
      */
@@ -466,7 +467,7 @@ class ListingQualityService
      * D. Do you answer the question the searcher actually typed?
      *
      * @param array<string,mixed>                                    $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int} $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int} $counts
      *
      * @return list<array<string,mixed>>
      */
@@ -497,13 +498,27 @@ class ListingQualityService
             // worth a point each with a hard ceiling of three. Tags also
             // already earn a discoverability reward in applySearch(); they do
             // not need a large ranking one on top.
+            //
+            // Facets (ages, curriculum, fees — Config\ListingFacets) share this
+            // allowance rather than getting one of their own, and the choice is
+            // deliberate: the rubric has to total exactly MAX_SCORE, the FAQ
+            // publishes it, and the home page gates on 40. A new bucket would
+            // have to take its points from somewhere, which lowers scores that
+            // are already earned and can drop a listing off the home page it
+            // was on yesterday. Sharing a *cap* cannot: a + b >= a, so this
+            // only ever moves a score up.
+            //
+            // Sharing is also honest about what these are. Both answer "what is
+            // true about you", both are owner-asserted and unverifiable, and a
+            // preschool that has stated its ages and curriculum has told a
+            // visitor at least as much as one that ticked three tick-boxes.
             $this->countable(
                 'features',
-                'Features and amenities',
-                $counts['attributes'],
+                'Features and details',
+                $counts['attributes'] + ($counts['facets'] ?? 0),
                 self::CAP_ATTRIBUTES,
                 self::PTS_ATTRIBUTE,
-                'Parking, wheelchair access, medical aid — tick what applies.',
+                'Parking, wheelchair access, ages taken, curriculum — whatever applies.',
                 'field-features'
             ),
             $this->countable(
@@ -674,9 +689,9 @@ class ListingQualityService
         }
     }
 
-    /** @return array{photos:int,services:int,attributes:int,tags:int} */
+    /** @return array{photos:int,services:int,attributes:int,tags:int,facets:int} */
     private function emptyCounts(): array
     {
-        return ['photos' => 0, 'services' => 0, 'attributes' => 0, 'tags' => 0];
+        return ['photos' => 0, 'services' => 0, 'attributes' => 0, 'tags' => 0, 'facets' => 0];
     }
 }

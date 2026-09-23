@@ -93,6 +93,12 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     'vHours'      => $vHours,
                     'vServices'   => is_array($old['services'] ?? null) ? $old['services'] : [],
                     'vAttributes' => is_array($old['attributes'] ?? null) ? $old['attributes'] : [],
+                    // Nothing is stored yet, so there is no marker question to
+                    // ask here: whatever survives validation is all there is.
+                    'vFacets'     => (new App\Services\ListingFacetService())->groupedFromInput(
+                        ((int) ($old['category_id'] ?? 0)) ?: null,
+                        $old['facets'] ?? null,
+                    ),
                 ]) ?>
 
                 <?php if (! empty($verificationOffered)): ?>

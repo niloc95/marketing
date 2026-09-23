@@ -55,7 +55,15 @@ class Directory extends BaseController
         $svc     = new DirectoryService();
         $filters = $this->searchFilters();
         $page    = (int) ($this->request->getGet('page') ?? 1);
-        $result  = $svc->browse($filters, $page);
+
+        // Facets are resolved before the browse rather than after it, unlike
+        // the category and province below, because the view has to draw the
+        // rail showing exactly which filters were honoured — and a filter the
+        // sanitiser dropped but the rail still shows ticked is a bug nobody
+        // reports, because the page looks like it worked.
+        $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
+
+        $result = $svc->browse($filters, $page);
 
         // Resolved here rather than in the view, because the view turns these
         // into the <title>, the og:title and a rel=canonical, and then asks for
@@ -115,8 +123,10 @@ class Directory extends BaseController
                 ->setJSON(['items' => []]);
         }
 
-        $svc   = new DirectoryService();
-        $items = $svc->mapPoints($this->searchFilters(), 200);
+        $svc               = new DirectoryService();
+        $filters           = $this->searchFilters();
+        $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
+        $items             = $svc->mapPoints($filters, 200);
 
         helper(['map', 'directory_hours']);
 
@@ -193,7 +203,8 @@ class Directory extends BaseController
      * pins a database core. Nobody searches a directory with more than a few
      * words, so the cap costs real visitors nothing.
      *
-     * @return array<string,string>
+     * @return array<string,mixed> every value a string but 'facets', which is
+     *                               the raw ?f[] array awaiting sanitiseFacets()
      */
     private function searchFilters(): array
     {
@@ -208,7 +219,38 @@ class Directory extends BaseController
             'lng'      => trim((string) $this->request->getGet('lng')),
             'radius'   => trim((string) $this->request->getGet('radius')),
             'bounds'   => trim((string) $this->request->getGet('bounds')),
+            // Raw here, and whitelisted by DirectoryService::sanitiseFacets()
+            // against the category before either the query or the rail sees it:
+            // what a facet may be called and may hold depends on the category,
+            // which this method does not resolve. The caps are only to stop a
+            // crafted query string making the sanitiser walk a huge array.
+            'facets'   => $this->facetParams(),
         ];
+    }
+
+    /**
+     * ?f[curriculum][]=ieb&f[ages]=36, capped but not yet validated.
+     *
+     * @return array<string,mixed>
+     */
+    private function facetParams(): array
+    {
+        $raw = $this->request->getGet('f');
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $out = [];
+        foreach (array_slice($raw, 0, 8, true) as $key => $value) {
+            if (! is_string($key) || mb_strlen($key) > 40) {
+                continue;
+            }
+            $out[$key] = is_array($value)
+                ? array_slice(array_filter($value, 'is_string'), 0, 20)
+                : mb_substr(trim((string) $value), 0, 60);
+        }
+
+        return $out;
     }
 
     /** /directory/categories — browse every category, grouped, with counts. */
@@ -308,10 +350,12 @@ class Directory extends BaseController
         $filters  = $this->searchFilters();
         $category = $filters['category'];
         $q        = $filters['q'];
+        $facets   = $svc->sanitiseFacets($filters['facets'], $category);
         $result   = $svc->browse([
             'venue'    => (int) $venue['id'],
             'category' => $category,
             'q'        => $q,
+            'facets'   => $facets,
         ], $page);
 
         // Same rule as every other landing tier: the page always renders, but
@@ -337,23 +381,35 @@ class Directory extends BaseController
      */
     private function renderLanding(DirectoryService $svc, array $category, ?string $province)
     {
-        $page   = (int) ($this->request->getGet('page') ?? 1);
+        $page = (int) ($this->request->getGet('page') ?? 1);
+
+        // The landing page is where facets earn their keep: it is already
+        // scoped to one category, which is the only scope in which "IEB" or
+        // "takes a 3-year-old" means anything.
+        $facets = $svc->sanitiseFacets($this->facetParams(), (string) $category['slug']);
+
         $result = $svc->browse([
             'category' => (string) $category['slug'],
             'province' => (string) ($province ?? ''),
+            'facets'   => $facets,
         ], $page);
 
         // Even at zero listings the page still renders — with an empty-state
         // "be the first to list" CTA instead of a dead end — since the category
         // itself is real and valid. It's noindexed until it clears the
         // threshold below, same as any other thin/empty landing page.
+        //
+        // A faceted view is never indexable, for the reason the venue page
+        // gives: it is a thin duplicate of the landing page itself, and the
+        // combinations multiply without limit.
         $min        = (int) config('Directory')->landingMinListings;
-        $indexable  = (int) $result['total'] >= $min && $page === 1;
+        $indexable  = (int) $result['total'] >= $min && $page === 1 && $facets === [];
 
         return view('directory/landing', [
             'category'       => $category,
             'province'       => $province,
             'result'         => $result,
+            'facets'         => $facets,
             'indexable'      => $indexable,
             'provinceCounts' => $svc->provinceCountsForCategory((int) $category['id']),
             'siblings'       => $svc->categoriesInGroup((string) ($category['group_name'] ?? ''), (int) $category['id']),
