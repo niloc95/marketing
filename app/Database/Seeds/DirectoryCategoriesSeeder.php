@@ -88,8 +88,19 @@ class DirectoryCategoriesSeeder extends Seeder
             // enrols at; "Training Provider" is the accredited outfit that runs
             // short courses for people already working. Different searches, and
             // the directory launched with only the second one.
+            //
+            // The school types below are the *kind of institution* someone is
+            // looking for. How a school teaches — Montessori, Waldorf, CAPS,
+            // IEB, Cambridge — is deliberately NOT a category: it is the
+            // 'curriculum' facet in Config\ListingFacets, because a Montessori
+            // preschool and a Montessori primary are two rungs of the ladder
+            // sharing one method, and a category cannot express that. Same for
+            // boarding, which is a facet rather than a "Boarding School" row.
             'Education & Training' => [
-                'Preschool & Daycare', 'Primary School', 'High School',
+                'Preschool & Daycare', 'Aftercare & Holiday Care',
+                'Primary School', 'High School', 'Combined School',
+                'Special Needs School', 'Remedial School',
+                'Online School', 'Homeschooling Support',
                 'Training College', 'University',
                 'Tutor', 'Driving School', 'Language School', 'Music Teacher',
                 'Computer Training', 'Training Provider',

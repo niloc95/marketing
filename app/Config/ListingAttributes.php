@@ -110,6 +110,11 @@ class ListingAttributes extends BaseConfig
             'showers_changerooms' => 'Showers & change rooms',
             'kids_classes'        => 'Classes for kids',
         ],
+        // The first six were written for tutors and short-course providers, and
+        // a school could claim none of them. The five after are what a parent
+        // actually scans a school listing for. Anything with a *value* — ages
+        // taken, curriculum, fees, medium of instruction — is not here: that is
+        // Config\ListingFacets, because a tick-box cannot say "2 to 6 years".
         'Education & Training' => [
             'online_lessons'     => 'Online lessons',
             'one_on_one'         => 'One-on-one lessons',
@@ -117,6 +122,11 @@ class ListingAttributes extends BaseConfig
             'accredited_courses' => 'Accredited courses',
             'home_visits'        => 'Home visits',
             'exam_prep'          => 'Exam preparation',
+            'aftercare'          => 'Aftercare',
+            'school_transport'   => 'School transport',
+            'meals_provided'     => 'Meals provided',
+            'extra_murals'       => 'Extra-murals',
+            'sports_facilities'  => 'Sports facilities',
         ],
         'Events & Hospitality' => [
             'outdoor_seating'  => 'Outdoor seating',

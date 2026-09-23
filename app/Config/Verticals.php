@@ -64,9 +64,10 @@ class Verticals extends BaseConfig
             'team'        => 'Our team',
             'locations'   => 'Other branches',
             'hours'       => 'Trading hours',
+            'ataglance'   => 'At a glance',
         ],
         'cta'   => 'Get in touch',
-        'order' => ['description', 'services', 'features', 'credentials', 'venue', 'tags', 'team', 'locations'],
+        'order' => ['ataglance', 'description', 'services', 'features', 'credentials', 'venue', 'tags', 'team', 'locations'],
     ];
 
     /**
@@ -90,7 +91,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other rooms & practices',
             ],
             'cta'   => 'Book an appointment',
-            'order' => ['credentials', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations'],
+            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations'],
         ],
         'Beauty & Wellness' => [
             'noun'       => 'salon',
@@ -102,7 +103,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Book a treatment',
-            'order' => ['services', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
         ],
         'Hair' => [
             'noun'       => 'salon',
@@ -114,7 +115,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Book an appointment',
-            'order' => ['services', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
         ],
         'Motoring' => [
             'noun'       => 'workshop',
@@ -126,7 +127,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other workshops',
             ],
             'cta'   => 'Request a quote',
-            'order' => ['services', 'description', 'features', 'credentials', 'tags', 'venue', 'team', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'features', 'credentials', 'tags', 'venue', 'team', 'locations'],
         ],
         'Legal & Financial' => [
             'noun'       => 'firm',
@@ -140,7 +141,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other offices',
             ],
             'cta'   => 'Request a consultation',
-            'order' => ['credentials', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations'],
+            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations'],
         ],
         'Home & Trades' => [
             'noun'       => 'tradesperson',
@@ -152,7 +153,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other depots',
             ],
             'cta'   => 'Request a quote',
-            'order' => ['services', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations'],
         ],
         'Professional Services' => [
             'noun'       => 'practice',
@@ -165,7 +166,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other offices',
             ],
             'cta'   => 'Request a quote',
-            'order' => ['description', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations'],
+            'order' => ['ataglance', 'description', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations'],
         ],
         'Fitness & Sport' => [
             'noun'       => 'studio',
@@ -178,7 +179,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Book a session',
-            'order' => ['services', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
         ],
         'Education & Training' => [
             'noun'       => 'provider',
@@ -191,7 +192,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other campuses',
             ],
             'cta'   => 'Enquire about enrolment',
-            'order' => ['description', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations'],
+            'order' => ['ataglance', 'description', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations'],
         ],
         'Events & Hospitality' => [
             'noun'       => 'venue',
@@ -203,7 +204,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Check availability',
-            'order' => ['services', 'description', 'features', 'tags', 'venue', 'team', 'credentials', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'team', 'credentials', 'locations'],
         ],
         'Travel & Tourism' => [
             'noun'       => 'operator',
@@ -215,7 +216,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other properties',
             ],
             'cta'   => 'Check availability',
-            'order' => ['description', 'services', 'features', 'tags', 'venue', 'team', 'credentials', 'locations'],
+            'order' => ['ataglance', 'description', 'services', 'features', 'tags', 'venue', 'team', 'credentials', 'locations'],
         ],
         'Pets & Animals' => [
             'noun'       => 'practice',
@@ -228,7 +229,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other branches',
             ],
             'cta'   => 'Book an appointment',
-            'order' => ['services', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations'],
         ],
         'Everyday Services' => [
             'noun'       => 'service',
@@ -239,7 +240,7 @@ class Verticals extends BaseConfig
                 'tags'     => 'Specialities',
             ],
             'cta'   => 'Get in touch',
-            'order' => ['services', 'description', 'features', 'tags', 'venue', 'credentials', 'team', 'locations'],
+            'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'credentials', 'team', 'locations'],
         ],
         'Retail & Other' => [
             'noun'       => 'shop',
@@ -251,7 +252,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other stores',
             ],
             'cta'   => 'Visit the shop',
-            'order' => ['description', 'services', 'features', 'venue', 'tags', 'team', 'credentials', 'locations'],
+            'order' => ['ataglance', 'description', 'services', 'features', 'venue', 'tags', 'team', 'credentials', 'locations'],
         ],
         // A maker rather than a shop: most of these trade from home, so "shop"
         // and "opening hours" both overclaim. Tags carry more weight here than
@@ -265,7 +266,7 @@ class Verticals extends BaseConfig
                 'tags'     => 'What we are known for',
             ],
             'cta'   => 'Place an order',
-            'order' => ['description', 'services', 'tags', 'features', 'venue', 'credentials', 'team', 'locations'],
+            'order' => ['ataglance', 'description', 'services', 'tags', 'features', 'venue', 'credentials', 'team', 'locations'],
         ],
     ];
 
@@ -361,6 +362,138 @@ class Verticals extends BaseConfig
             'nounPlural' => 'lodges',
             'headings'   => ['services' => 'Packages & rates'],
             'cta'        => 'Check availability',
+        ],
+        // The Education & Training group speaks for tutors and short-course
+        // providers — "provider", "Courses & fees", "Enquire about enrolment".
+        // Every entry below exists because that wording is wrong for a school:
+        // a parent is not enrolling on a course, and a preschool does not teach
+        // subjects. The group's noun was the worst of it — an empty
+        // /directory/primary-school read "No providers here yet".
+        'preschool-daycare' => [
+            'noun'       => 'preschool',
+            'nounPlural' => 'preschools',
+            'headings'   => [
+                'services' => 'Fees',
+                'hours'    => 'Opening hours',
+                'team'     => 'Our teachers',
+                'tags'     => 'Activities & extra-murals',
+            ],
+            'cta' => 'Book a visit',
+        ],
+        'aftercare-holiday-care' => [
+            'noun'       => 'centre',
+            'nounPlural' => 'centres',
+            'headings'   => [
+                'services' => 'Fees',
+                'hours'    => 'Opening hours',
+                'team'     => 'Our staff',
+                'tags'     => 'Activities',
+            ],
+            'cta' => 'Enquire about a place',
+        ],
+        'primary-school' => [
+            'noun'       => 'school',
+            'nounPlural' => 'schools',
+            'headings'   => [
+                'services' => 'Fees',
+                'hours'    => 'School hours',
+                'team'     => 'Our staff',
+                'tags'     => 'Subjects & extra-murals',
+            ],
+            'cta' => 'Book a school tour',
+        ],
+        'high-school' => [
+            'noun'       => 'school',
+            'nounPlural' => 'schools',
+            'headings'   => [
+                'services' => 'Fees',
+                'hours'    => 'School hours',
+                'team'     => 'Our staff',
+                'tags'     => 'Subjects & extra-murals',
+            ],
+            'cta' => 'Book a school tour',
+        ],
+        'combined-school' => [
+            'noun'       => 'school',
+            'nounPlural' => 'schools',
+            'headings'   => [
+                'services' => 'Fees',
+                'hours'    => 'School hours',
+                'team'     => 'Our staff',
+                'tags'     => 'Subjects & extra-murals',
+            ],
+            'cta' => 'Book a school tour',
+        ],
+        // Credentials lead for both of these, the way they do for a practice:
+        // a parent looking for a remedial or special needs place is asking who
+        // is qualified to work with their child before anything else.
+        'special-needs-school' => [
+            'noun'       => 'school',
+            'nounPlural' => 'schools',
+            'headings'   => [
+                'services'    => 'Fees',
+                'hours'       => 'School hours',
+                'credentials' => 'Accreditation & therapeutic staff',
+                'team'        => 'Our staff & therapists',
+                'tags'        => 'Support we offer',
+            ],
+            'cta'   => 'Arrange a visit',
+            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations'],
+        ],
+        'remedial-school' => [
+            'noun'       => 'school',
+            'nounPlural' => 'schools',
+            'headings'   => [
+                'services'    => 'Fees',
+                'hours'       => 'School hours',
+                'credentials' => 'Accreditation & therapeutic staff',
+                'team'        => 'Our staff & therapists',
+                'tags'        => 'Support we offer',
+            ],
+            'cta'   => 'Arrange a visit',
+            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations'],
+        ],
+        // No "Other campuses" and no trading hours worth the name: the whole
+        // point is that there is nowhere to go and no bell.
+        'online-school' => [
+            'noun'       => 'school',
+            'nounPlural' => 'schools',
+            'headings'   => [
+                'services'  => 'Fees',
+                'hours'     => 'When support is available',
+                'team'      => 'Our staff',
+                'tags'      => 'Subjects offered',
+                'locations' => 'Other offices',
+            ],
+            'cta' => 'Enquire about enrolment',
+        ],
+        'homeschooling-support' => [
+            'headings' => [
+                'services' => 'Packages & fees',
+                'tags'     => 'Subjects & curricula supported',
+            ],
+            'cta' => 'Enquire about support',
+        ],
+        'tutor' => [
+            'noun'       => 'tutor',
+            'nounPlural' => 'tutors',
+            'headings'   => [
+                'services' => 'Subjects & rates',
+                'team'     => 'Our tutors',
+                'tags'     => 'Subjects',
+            ],
+            'cta' => 'Enquire about lessons',
+        ],
+        'university' => [
+            'noun'       => 'university',
+            'nounPlural' => 'universities',
+            'headings'   => [
+                'services'  => 'Courses & fees',
+                'hours'     => 'Office hours',
+                'tags'      => 'Faculties & fields of study',
+                'locations' => 'Other campuses',
+            ],
+            'cta' => 'Enquire about admission',
         ],
         'driving-school' => [
             'noun'       => 'school',
