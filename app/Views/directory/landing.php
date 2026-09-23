@@ -120,34 +120,60 @@ $schema = schema_page(
 
 <section class="section">
     <div class="container vertical-scope <?= $style['tint'] ?>">
-        <?php if ($total === 0): ?>
-            <div class="empty">
-                <?php // The vertical's noun, not the category name pluralised: "No
-                      // practices here yet" reads as a category with room in it,
-                      // where "No general practitioners here yet" reads as a
-                      // search that failed. ?>
-                <p class="mb-4">No <?= esc($v['nounPlural']) ?> here yet<?= esc($where) ?>. Be the first!</p>
-                <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
-            </div>
-        <?php else: ?>
-            <div class="card-grid">
-                <?php foreach ($result['items'] as $l): ?>
-                    <?= view('directory/_card', ['l' => $l]) ?>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+        <?php // Two columns only where there is a sidebar to put in one. Most
+              // categories have no facets at all and _facet_filters returns
+              // early for them — wrapping regardless would leave an empty 20rem
+              // gutter on the great majority of landing pages. Same test the
+              // partial makes, so the two cannot disagree. ?>
+        <?php $hasRail = listing_has_facet_rail($category); ?>
+        <div<?= $hasRail ? ' class="results-layout"' : '' ?>>
+            <?php if ($hasRail): ?>
+                <?php // Nothing to carry — the category and province are in the
+                      // path, not the query string. ?>
+                <div class="results-filters">
+                    <?= view('directory/_facet_filters', [
+                        'category' => $category,
+                        'facets'   => $facets,
+                        'action'   => $canonical,
+                        'carry'    => [],
+                    ], ['saveData' => false]) ?>
+                </div>
+            <?php endif; ?>
 
-        <?php if ($result['totalPages'] > 1): ?>
-            <nav class="pager">
-                <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                    <?php if ($i === $result['page']): ?>
-                        <span class="current"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="<?= esc($canonical . '?page=' . $i, 'attr') ?>"><?= $i ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-            </nav>
-        <?php endif; ?>
+            <div>
+                <?php if ($total === 0): ?>
+                    <div class="empty">
+                        <?php // The vertical's noun, not the category name pluralised: "No
+                              // practices here yet" reads as a category with room in it,
+                              // where "No general practitioners here yet" reads as a
+                              // search that failed. ?>
+                        <p class="mb-4">No <?= esc($v['nounPlural']) ?> here yet<?= esc($where) ?>. Be the first!</p>
+                        <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
+                    </div>
+                <?php else: ?>
+                    <div class="card-grid">
+                        <?php foreach ($result['items'] as $l): ?>
+                            <?= view('directory/_card', ['l' => $l]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($result['totalPages'] > 1): ?>
+                    <nav class="pager">
+                        <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
+                            <?php if ($i === $result['page']): ?>
+                                <span class="current"><?= $i ?></span>
+                            <?php else: ?>
+                                <?php // http_build_query nests ?f[curriculum][]=ieb correctly;
+                                      // without it page 2 of a narrowed list is the whole
+                                      // category again. ?>
+                                <a href="<?= esc($canonical . '?' . http_build_query($facets === [] ? ['page' => $i] : ['f' => $facets, 'page' => $i]), 'attr') ?>"><?= $i ?></a>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    </nav>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <?php // Internal links: without these the landing pages are orphans. ?>
         <?php if ($provinceCounts !== []): ?>

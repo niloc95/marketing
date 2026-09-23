@@ -73,7 +73,7 @@ $prettyDate = static function (?string $date): string {
                 <?php // See _verification_panel.php — the route cancels the plan
                       // it is told to, never the one it guesses. ?>
                 <input type="hidden" name="plan" value="<?= esc(\App\Models\DirectoryVerificationModel::PLAN_INTERNATIONAL, 'attr') ?>">
-                <button type="submit" class="btn btn-ghost btn-sm text-brand-crimson">Cancel subscription</button>
+                <button type="submit" class="btn btn-ghost btn-xs text-brand-crimson">Cancel subscription</button>
             </form>
         <?php endif; ?>
 

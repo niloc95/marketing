@@ -1813,6 +1813,26 @@
 
     map.on('moveend', load);
     setTimeout(function () { map.invalidateSize(); load(); }, 0);
+
+    // Leaflet measures its container once, at init, and nothing here has ever
+    // watched for that measurement going stale — invalidateSize() is called on
+    // four one-off events and never on a resize. The results map is now inside
+    // the results column, whose width changes at the lg breakpoint when the
+    // filter sidebar appears, so crossing that width left half the map as grey
+    // tiles until the visitor happened to pan. Cheap to observe, and it covers
+    // ordinary window resizing too, which had the same fault.
+    if (typeof ResizeObserver === 'function') {
+      var pending = 0;
+      new ResizeObserver(function () {
+        // Coalesce to one frame: a drag-resize fires this continuously, and
+        // invalidateSize forces a full re-layout of every pane each time.
+        if (pending) return;
+        pending = requestAnimationFrame(function () {
+          pending = 0;
+          map.invalidateSize();
+        });
+      }).observe(wrap);
+    }
   }
 
   /**
@@ -2065,6 +2085,87 @@
     }
 
     select.addEventListener('change', apply);
+    apply();
+  })();
+
+  // --------------------------------------------------------- facets by category
+  // "Ages, curriculum & fees" offers one fieldset per facet SET, and the chosen
+  // category names its set on the <option> as data-facet-set. Same swap as the
+  // features panel above and the same reason for disabling rather than merely
+  // hiding: sets share facet keys — 'ages' and 'curriculum' are in both the
+  // school and the preschool set with different options — so an enabled hidden
+  // copy would submit a value the owner just changed in the visible one.
+  //
+  // Keyed on the set and not the category because fourteen education categories
+  // resolve to three sets; one fieldset per category would put the same inputs
+  // on the page fourteen times.
+  //
+  // With this script absent the server has already shown the right set (or every
+  // set, before a category is chosen) and ListingFacetService filters on save.
+
+  (function () {
+    var panel  = document.querySelector('[data-facets]');
+    var select = document.querySelector('select[name="category_id"]');
+    if (!panel || !select) return;
+
+    var sets  = panel.querySelectorAll('[data-facet-set]');
+    var empty = panel.querySelector('[data-facet-empty]');
+
+    function apply() {
+      var opt = select.options[select.selectedIndex];
+      // '' is a real answer here — "this category asks nothing" — and is not
+      // the same as no category chosen, which the server renders as every set
+      // enabled. Once the visitor has touched the picker there is always a
+      // category, so '' can only mean the first.
+      var want = opt ? (opt.getAttribute('data-facet-set') || '') : '';
+
+      sets.forEach(function (fs) {
+        var on = want !== '' && fs.getAttribute('data-facet-set') === want;
+        fs.hidden   = !on;
+        fs.disabled = !on;
+      });
+
+      if (empty) empty.hidden = want !== '';
+    }
+
+    select.addEventListener('change', apply);
+    apply();
+  })();
+
+  // ------------------------------------------------- filter sidebar by breakpoint
+  // The results filter panel is one element in two guises: a sticky sidebar from
+  // lg up, and a collapsed <details> above the results below that.
+  //
+  // It ships `open` in the HTML on purpose. That is the only state that is
+  // correct with this script absent — the filters are then visible and usable at
+  // every width — so everything here only ever *closes* it, never opens access.
+  //
+  // The matchMedia listener is not optional. From lg up the CSS hides the
+  // <summary>, because a sidebar that is always shown has nothing to toggle; so
+  // a visitor who collapsed the panel on a phone and then widened the window
+  // would be left with a hidden summary above closed content and no way back to
+  // the filters at all.
+
+  (function () {
+    var panel = document.querySelector('[data-facet-rail]');
+    if (!panel || !window.matchMedia) return;
+
+    // Same 1024px as Tailwind's lg, which is where .results-layout splits.
+    var wide = window.matchMedia('(min-width: 1024px)');
+
+    // Someone who has filtered wants to see what they filtered by, so a narrow
+    // page keeps the panel open when it is carrying applied filters.
+    var applied = panel.querySelectorAll('input:checked, input[type="number"][value]:not([value=""])').length > 0;
+
+    function apply() {
+      panel.open = wide.matches || applied;
+    }
+
+    // addEventListener on a MediaQueryList is the modern form; addListener is
+    // the deprecated one older Safari needs.
+    if (wide.addEventListener) wide.addEventListener('change', apply);
+    else if (wide.addListener) wide.addListener(apply);
+
     apply();
   })();
 
