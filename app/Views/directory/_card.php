@@ -49,6 +49,15 @@ if (isset($l['distance_m'])) {
             <h3 class="truncate text-base font-semibold">
                 <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc(base_url('directory/' . ($l['slug'] ?? '')), 'attr') ?>"><?= esc($name) ?></a>
             </h3>
+            <?php // "Ages 18 months – 6 years · Montessori" — the line a parent
+                  // actually scans a list of preschools for, and the reason the
+                  // facets are worth collecting at all. Only present on queries
+                  // that attach them (browse), and empty for every category that
+                  // has no card facets, which is most of the site. ?>
+            <?php $cardFacets = listing_card_facets($l['facets'] ?? [], $l['category_group'] ?? null, $l['category_slug'] ?? null); ?>
+            <?php if ($cardFacets !== []): ?>
+                <p class="card-facets"><?= esc(implode(' · ', $cardFacets)) ?></p>
+            <?php endif; ?>
         </div>
     </div>
 

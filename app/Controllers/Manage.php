@@ -9,6 +9,7 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\ListingFacetService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\ServiceMenuService;
@@ -151,6 +152,7 @@ class Manage extends BaseController
         $services   = (new ServiceMenuService())->servicesFor((int) $listing['id']);
         $attributes = (new ServiceMenuService())->attributeKeysFor((int) $listing['id']);
         $tags       = $svc->tagsForListing((int) $listing['id']);
+        $facets     = (new ListingFacetService())->storedFor((int) $listing['id']);
 
         return view('directory/manage_edit', [
             'listing'    => $listing,
@@ -162,16 +164,20 @@ class Manage extends BaseController
             'tags'       => $tags,
             'services'   => $services,
             'attributes' => $attributes,
+            'facets'     => $facets,
             'photos'     => $photos,
 
-            // The four collections above are exactly what the rubric counts, so
+            // The five collections above are exactly what the rubric counts, so
             // the strength meter costs no extra queries — that is what
-            // evaluate()'s optional $counts argument exists for.
+            // evaluate()'s optional $counts argument exists for. Facets are a
+            // map of facet key => rows, so the count the rubric wants is the
+            // number of stated values, not the number of facets answered.
             'strength' => (new ListingQualityService())->strength($listing, [
                 'photos'     => count($photos),
                 'services'   => count($services),
                 'attributes' => count($attributes),
                 'tags'       => count($tags),
+                'facets'     => array_sum(array_map('count', $facets)),
             ]),
             'strengthFloor' => (int) config('Directory')->recentMinQuality,
             'slots'      => $this->gallerySlots((int) $listing['id']),

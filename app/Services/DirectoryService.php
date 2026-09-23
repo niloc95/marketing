@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Models\DirectoryListingModel;
+use App\Models\DirectoryListingFacetModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPracticeLocationModel;
@@ -60,6 +61,19 @@ class DirectoryService
 
         $near = $this->nearPoint($filters);
 
+        // Resolved BEFORE the builder is created, and that ordering is not
+        // cosmetic. sanitiseFacets() runs a query (it resolves the category),
+        // and CodeIgniter keeps its table-alias registry on the *connection*,
+        // not on the builder: any query that completes mid-build calls
+        // setAliasedTables([]) and forgets that `p` and `v` are aliases. The
+        // next countAllResults() then re-protects the identifiers and asks for
+        // `xs_p`.`slug`, which is a 500 on any search that carries a facet and
+        // a category — that is, every faceted search. Nothing about the failure
+        // points at facets; the column it names is the category filter.
+        $facets = ! empty($filters['facets']) && ! empty($filters['category'])
+            ? $this->sanitiseFacets($filters['facets'], (string) $filters['category'])
+            : [];
+
         // The venue join is two columns and a LEFT JOIN: the result card renders
         // its chip from them, and a listing without a venue is untouched.
         // mapPoints() deliberately does not join it — the map JSON has no chip.
@@ -105,6 +119,12 @@ class DirectoryService
         if (! empty($filters['bounds'])) {
             $this->applyBounds($builder, (string) $filters['bounds']);
         }
+        // Last, and like the venue filter it is a plain where() — see the note
+        // above applySearch(). Facets only mean anything inside a category, so
+        // an unscoped /directory ignores them entirely.
+        if ($facets !== []) {
+            $this->applyFacets($builder, $facets);
+        }
 
         $total = $builder->countAllResults(false);
 
@@ -145,6 +165,17 @@ class DirectoryService
         }
 
         $items = $builder->limit($perPage, ($page - 1) * $perPage)->findAll();
+
+        // The card's facet line — "Ages 18 months – 6 years · Montessori" — in
+        // one indexed query for the whole page. Asking per card would be twelve
+        // to forty-eight round trips for data that is a single IN away, which
+        // is the same reason the venue chip is a join rather than a lookup.
+        if ($items !== []) {
+            $facetRows = (new DirectoryListingFacetModel())->forListings(array_column($items, 'id'));
+            foreach ($items as $i => $item) {
+                $items[$i]['facets'] = $facetRows[(int) $item['id']] ?? [];
+            }
+        }
 
         return [
             'items'      => $items,
@@ -289,6 +320,11 @@ class DirectoryService
     {
         $near = $this->nearPoint($filters);
 
+        // Before the builder, for the alias-registry reason browse() explains.
+        $facets = ! empty($filters['facets']) && ! empty($filters['category'])
+            ? $this->sanitiseFacets($filters['facets'], (string) $filters['category'])
+            : [];
+
         $select = 'xs_directory_listings.id, xs_directory_listings.slug, xs_directory_listings.display_name,'
             . ' xs_directory_listings.latitude, xs_directory_listings.longitude,'
             . ' xs_directory_listings.geocode_precision, xs_directory_listings.logo_path,'
@@ -326,6 +362,12 @@ class DirectoryService
         }
         if (! empty($filters['bounds'])) {
             $this->applyBounds($builder, (string) $filters['bounds']);
+        }
+        // The list and the map are read from one filter array precisely so they
+        // cannot disagree; leaving facets out here would put pins on the map for
+        // schools the list beside it has just filtered away.
+        if ($facets !== []) {
+            $this->applyFacets($builder, $facets);
         }
 
         // A listing with no coordinates cannot be a pin. The join to the
@@ -475,6 +517,122 @@ class DirectoryService
     }
 
     /**
+     * Narrow a browse to listings that state particular facet values.
+     *
+     * One EXISTS per facet, ANDed: choosing IEB *and* boarding means both, the
+     * way every faceted search behaves. Within one facet the values are ORed
+     * through an IN, because ticking two curricula asks for either.
+     *
+     * where(), never orWhere() — the same trap the venue filter documents.
+     * Everything applySearch() adds is one OR group, and an orWhere here
+     * escapes it, turning "IEB schools matching 'montessori'" into every
+     * listing in the country. VerticalFacetTest pins exactly that.
+     *
+     * Every key and value must already have been through sanitiseFacets(),
+     * which keeps only keys the category offers, values from that facet's own
+     * option list and integers clamped to its bounds — so what reaches escape()
+     * here cannot be attacker-shaped. The escaping is belt and braces, the way
+     * distanceSelect() vets its coordinates before interpolating them.
+     *
+     * Deliberately runs no queries of its own, and must not be made to: the
+     * caller is half-way through building a query, and a completed query here
+     * would clear the connection's table-alias registry. See the note in
+     * browse() where the sanitising happens instead.
+     *
+     * @param array<string,list<string>|int> $facets
+     */
+    private function applyFacets(BaseBuilder|Model $builder, array $facets): void
+    {
+        $db = $this->listings->db;
+
+        foreach ($facets as $key => $chosen) {
+            $scope = 'SELECT 1 FROM xs_directory_listing_facets f'
+                . ' WHERE f.listing_id = xs_directory_listings.id'
+                . ' AND f.facet_key = ' . $db->escape($key);
+
+            if (is_int($chosen)) {
+                // "Takes a 3-year-old" and "fees up to R5 000" are the same
+                // question of a stored range: does it reach this number. A null
+                // high bound is a one-sided facet ('fees from'), not a gap, so
+                // it must not fail the test.
+                $builder->where(
+                    'EXISTS (' . $scope
+                    . ' AND f.num_low <= ' . $chosen
+                    . ' AND (f.num_high IS NULL OR f.num_high >= ' . $chosen . '))',
+                    null,
+                    false
+                );
+                continue;
+            }
+
+            $builder->where(
+                'EXISTS (' . $scope
+                . ' AND f.value IN (' . implode(', ', array_map([$db, 'escape'], $chosen)) . '))',
+                null,
+                false
+            );
+        }
+    }
+
+    /**
+     * Submitted facet filters reduced to what the category actually offers.
+     *
+     * Public because the results view needs to render the rail showing exactly
+     * what was honoured, and the pager needs to carry exactly that forward —
+     * a filter silently dropped here but still drawn as ticked is the kind of
+     * bug nobody reports, because the page looks like it worked.
+     *
+     * Returns facet key => list of option keys, or a single int for a range.
+     *
+     * @return array<string,list<string>|int>
+     */
+    public function sanitiseFacets(mixed $raw, string $categorySlug): array
+    {
+        if (! is_array($raw) || $raw === [] || $categorySlug === '') {
+            return [];
+        }
+
+        $category = $this->findCategoryBySlug($categorySlug);
+        if ($category === null) {
+            return [];
+        }
+
+        $offered = config('ListingFacets')->filterableFor(
+            $category['group_name'] ?? null,
+            $category['slug'] ?? null
+        );
+
+        $out = [];
+        foreach ($offered as $key => $facet) {
+            if (! isset($raw[$key])) {
+                continue;
+            }
+
+            if (($facet['type'] ?? '') === 'range') {
+                $n = is_array($raw[$key]) ? null : trim((string) $raw[$key]);
+                if ($n === null || $n === '' || ! is_numeric($n)) {
+                    continue;
+                }
+                $out[$key] = max((int) $facet['min'], min((int) $facet['max'], (int) $n));
+                continue;
+            }
+
+            $submitted = is_array($raw[$key]) ? $raw[$key] : [$raw[$key]];
+            $kept      = [];
+            foreach ($submitted as $value) {
+                if (is_string($value) && isset($facet['options'][$value]) && ! in_array($value, $kept, true)) {
+                    $kept[] = $value;
+                }
+            }
+            if ($kept !== []) {
+                $out[$key] = $kept;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Free-text search across everything a visitor would reasonably type.
      *
      * People search by service ("hair salon") far more than by business name, so
@@ -591,6 +749,15 @@ class DirectoryService
         $listing['services']    = $menu->servicesFor((int) $listing['id']);
         $listing['attributes']  = $menu->attributeLabelsFor((int) $listing['id']);
         $listing['trading_hours']  = hours_decode($listing['trading_hours'] ?? null);
+
+        // Also free, and resolved against the listing's *current* category, so
+        // a school later re-filed as a tutor stops showing the grades it used
+        // to offer rather than showing them under the wrong labels.
+        $listing['facets'] = (new ListingFacetService())->displayFor(
+            (int) $listing['id'],
+            $listing['category']['group_name'] ?? null,
+            $listing['category']['slug'] ?? null,
+        );
 
         // Team members are part of the paid badge, so the gate is here at load
         // rather than in the view: one place decides, the panel and the

@@ -35,6 +35,15 @@ $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locatio
 // stored set the owner was trying to clear.
 $vServices   = array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services;
 $vAttributes = array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes;
+// Same marker rule again. Old input is re-filtered on the way back, against the
+// category the rejected save was *asking for* rather than the stored one, so a
+// save that changed the category redraws the new category's questions.
+$vFacets = array_key_exists('facets_present', $old)
+    ? (new App\Services\ListingFacetService())->groupedFromInput(
+        ((int) ($old['category_id'] ?? $listing['category_id'] ?? 0)) ?: null,
+        $old['facets'] ?? null,
+    )
+    : $facets;
 // Same reason: a rejected save with the box unticked must not fall back to a
 // stored opt-in. Signup uses the same marker, but falls back to ticked — there
 // is no stored value there, and the report is on by default.
@@ -129,6 +138,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     'vLocations'   => $vLocations,
                     'vServices'    => $vServices,
                     'vAttributes'  => $vAttributes,
+                    'vFacets'      => $vFacets,
                     'photos'       => $photos,
                     'deleteBase'   => base_url('manage/photo-delete'),
                     'showExtras'   => $showExtras,

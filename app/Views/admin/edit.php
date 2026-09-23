@@ -64,6 +64,12 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     // Marker, not the array — see manage_edit.php.
                     'vServices'    => array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services,
                     'vAttributes'  => array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes,
+                    'vFacets'      => array_key_exists('facets_present', $old)
+                        ? (new App\Services\ListingFacetService())->groupedFromInput(
+                            ((int) ($old['category_id'] ?? $listing['category_id'] ?? 0)) ?: null,
+                            $old['facets'] ?? null,
+                        )
+                        : $facets,
                     // A new profile has no id yet, so nothing to hang child rows on.
                     'showExtras'   => ! $isNew && $showExtras,
                     'photos'       => $photos,

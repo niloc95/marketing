@@ -26,6 +26,7 @@
  * @var bool     $showExtras  render the team and location sections at all
  * @var array    $vServices   service rows (old input wins), rendered by _service_fields.php
  * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
+ * @var array    $vFacets     stored facet rows keyed by facet (old input wins), rendered by _facet_fields.php
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
  * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
  * @var bool     $addressRequired  insist on a full address (public signup only)
@@ -105,7 +106,11 @@ helper('directory_hours');
                 <?php if (($p['group_name'] ?? '') !== $cur): $cur = $p['group_name']; ?>
                     <optgroup label="<?= esc($cur, 'attr') ?>">
                 <?php endif; ?>
-                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                <?php // data-group swaps the features fieldset, data-facet-set the
+                      // ages/curriculum one. The second cannot be derived from the
+                      // first: a preschool and a driving school share a group and
+                      // are asked completely different questions. ?>
+                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
             <?php endforeach; ?>
         </select>
         <?php if ($err('category_id')): ?><div class="err"><?= esc($err('category_id')) ?></div><?php endif; ?>
@@ -320,6 +325,17 @@ helper('directory_hours');
     'err'        => $err,
     'categories' => $categories,
     'selected'   => $vAttributes,
+]) ?>
+</div>
+
+<?php // After the tick-boxes on purpose: both answer "what is true about you",
+      // and the tick-boxes are the easier question to start on. ?>
+<div id="field-facets">
+<?= view('directory/_facet_fields', [
+    'v'           => $v,
+    'err'         => $err,
+    'categories'  => $categories,
+    'facetValues' => $vFacets,
 ]) ?>
 </div>
 

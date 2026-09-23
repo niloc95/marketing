@@ -246,10 +246,12 @@ class DirectoryAdminService
             $data[$field] = $mode === 'place' ? normalise_place($value) : $value;
         }
 
-        // Services and features — checked before anything is written, like the
-        // fields above.
+        // Services, features and facets — checked before anything is written,
+        // like the fields above.
         $menu       = new ServiceMenuService();
-        $menuErrors = $menu->validate($input);
+        $facets     = new ListingFacetService();
+        $menuErrors = $menu->validate($input)
+            + $facets->validate($input, ((int) ($input['category_id'] ?? 0)) ?: null);
         if ($menuErrors !== []) {
             return ['ok' => false, 'errors' => $menuErrors, 'message' => 'Please correct the highlighted fields.'];
         }
@@ -406,6 +408,7 @@ class DirectoryAdminService
                 ? $data['category_id']
                 : ((int) (($this->listings->find($id) ?? [])['category_id'] ?? 0) ?: null);
             $menu->sync($id, $categoryId, $input);
+            $facets->sync($id, $categoryId, $input);
 
             // Team and branches. The admin form is privileged over everything
             // else on a listing, but not over this: both sections are part of
