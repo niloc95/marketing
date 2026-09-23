@@ -29,9 +29,9 @@ final class ListingQualityRubricTest extends CIUnitTestCase
     }
 
     /** No counts, nothing filled in. */
-    private function counts(int $photos = 0, int $services = 0, int $attributes = 0, int $tags = 0): array
+    private function counts(int $photos = 0, int $services = 0, int $attributes = 0, int $tags = 0, int $facets = 0): array
     {
-        return compact('photos', 'services', 'attributes', 'tags');
+        return compact('photos', 'services', 'attributes', 'tags', 'facets');
     }
 
     /** A listing row with every scored field empty. */
@@ -367,5 +367,55 @@ final class ListingQualityRubricTest extends CIUnitTestCase
         }
 
         $this->fail('No rubric item named ' . $key);
+    }
+
+    // ---------------------------------------- facets share the features cap
+
+    public function testFacetsEarnTheSamePointsAsFeatureTickBoxes(): void
+    {
+        $onlyFeatures = $this->quality->score($this->blank(), $this->counts(0, 0, 2, 0, 0));
+        $onlyFacets   = $this->quality->score($this->blank(), $this->counts(0, 0, 0, 0, 2));
+
+        $this->assertSame($onlyFeatures, $onlyFacets, 'a stated facet is worth what a ticked feature is worth');
+        $this->assertGreaterThan($this->quality->score($this->blank(), $this->counts()), $onlyFacets);
+    }
+
+    public function testFacetsAndFeaturesShareOneCeiling(): void
+    {
+        // The whole reason facets went in this bucket rather than a new one:
+        // the rubric has to total exactly MAX_SCORE, so the combined ceiling
+        // must not move. Three of each is six items and still only the cap.
+        $capped = ListingQualityService::CAP_ATTRIBUTES * ListingQualityService::PTS_ATTRIBUTE;
+        $base   = $this->quality->score($this->blank(), $this->counts());
+
+        $this->assertSame(
+            $base + $capped,
+            $this->quality->score($this->blank(), $this->counts(0, 0, 3, 0, 3))
+        );
+    }
+
+    public function testAddingFacetsCanNeverLowerAScore(): void
+    {
+        // The property that made this design safe to ship without rescoring
+        // anyone downward: a + b >= a, so no existing listing can lose points.
+        foreach ([0, 1, 2, 3, 9] as $attributes) {
+            $without = $this->quality->score($this->blank(), $this->counts(0, 0, $attributes, 0, 0));
+            foreach ([1, 2, 5] as $facets) {
+                $with = $this->quality->score($this->blank(), $this->counts(0, 0, $attributes, 0, $facets));
+                $this->assertGreaterThanOrEqual($without, $with, "{$attributes} features + {$facets} facets went down");
+            }
+        }
+    }
+
+    public function testAMissingFacetCountIsTreatedAsNone(): void
+    {
+        // Callers that build their own counts array predate facets; an absent
+        // key must not warn or fatal, it must simply score zero for them.
+        $legacy = ['photos' => 0, 'services' => 0, 'attributes' => 1, 'tags' => 0];
+
+        $this->assertSame(
+            $this->quality->score($this->blank(), $this->counts(0, 0, 1, 0, 0)),
+            $this->quality->score($this->blank(), $legacy)
+        );
     }
 }

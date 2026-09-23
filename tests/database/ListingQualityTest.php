@@ -183,6 +183,49 @@ final class ListingQualityTest extends CIUnitTestCase
         );
     }
 
+    public function testAStatedFacetRaisesTheScoreLikeAFeatureDoes(): void
+    {
+        $id = $this->listing();
+        $this->quality->recalculate($id);
+        $before = (int) $this->listings->find($id)['quality_score'];
+
+        // A preschool saying it takes 18 months to 6 years. One row, and the
+        // rubric counts it in the same allowance as a ticked feature.
+        (new App\Models\DirectoryListingFacetModel())->insert([
+            'listing_id' => $id, 'facet_key' => 'ages', 'value' => '',
+            'num_low' => 18, 'num_high' => 72,
+        ]);
+
+        $this->assertSame(
+            $before + ListingQualityService::PTS_ATTRIBUTE,
+            $this->quality->recalculate($id),
+            'A stated facet must be worth what a ticked feature is worth.'
+        );
+    }
+
+    public function testFacetsCannotPushTheFeatureAllowancePastItsCap(): void
+    {
+        // The guarantee that let facets share this bucket instead of taking
+        // points from another one: the combined ceiling does not move, so the
+        // rubric still totals MAX_SCORE.
+        $id     = $this->listing();
+        $facets = new App\Models\DirectoryListingFacetModel();
+
+        foreach (['caps', 'ieb', 'cambridge', 'ib', 'other'] as $i => $value) {
+            $facets->insert([
+                'listing_id' => $id, 'facet_key' => 'curriculum', 'value' => $value,
+                'num_low' => null, 'num_high' => null,
+            ]);
+        }
+
+        $capped = $this->quality->recalculate($id);
+
+        // Two ticked features on top of five facets is still only the cap.
+        (new App\Models\DirectoryListingAttributeModel())->sync($id, ['parking', 'free_wifi']);
+
+        $this->assertSame($capped, $this->quality->recalculate($id), 'the shared allowance grew past its cap');
+    }
+
     public function testDeletingAPhotoLowersTheScore(): void
     {
         $id     = $this->listing();
