@@ -182,6 +182,7 @@ final class LocationFormRenderTest extends CIUnitTestCase
             'vHours'     => [],
             'vTeam'      => [],
             'vLocations' => [],
+            'vFacets'    => [],
             'showExtras' => true,
         ]);
 
