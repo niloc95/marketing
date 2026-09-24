@@ -31,6 +31,7 @@ class ListingAttributes extends BaseConfig
     public array $common = [
         'wheelchair_accessible' => 'Wheelchair accessible',
         'parking'               => 'Parking available',
+        'ev_charging'           => 'EV charging on site',
         'free_wifi'             => 'Free Wi-Fi',
         'kid_friendly'          => 'Kid friendly',
         'pet_friendly'          => 'Pet friendly',
