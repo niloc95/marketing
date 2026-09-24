@@ -142,7 +142,9 @@ if (! function_exists('schema_listing_item')) {
         ], static fn ($v) => $v !== '');
 
         return array_filter([
-            '@type'     => 'LocalBusiness',
+            // The same type the profile page publishes for this business —
+            // the search query already selects both category columns.
+            '@type'     => schema_business_type((string) ($row['category_group'] ?? ''), (string) ($row['category_slug'] ?? '')),
             '@id'       => $url . '#business',
             'name'      => (string) ($row['display_name'] ?? ''),
             'url'       => $url,
@@ -272,19 +274,88 @@ if (! function_exists('schema_business_type')) {
      * opening hours had no LocalBusiness to hang off. JSON-LD allows an array
      * of types, which keeps both meanings.
      *
-     * $slug is a second, narrower tier consulted first, and education is the
-     * only group that needs one: schema.org distinguishes Preschool,
-     * ElementarySchool, HighSchool and CollegeOrUniversity, and the group alone
-     * cannot tell them apart — every school on the site used to publish as the
-     * same generic pair. Each keeps LocalBusiness as its first type for exactly
-     * the reason above. A slug with no entry falls through to its group, so
-     * this map only names the categories whose type is genuinely narrower.
+     * $slug is a second, narrower tier consulted first. The group alone cannot
+     * tell a nail bar from a spa, a GP from a pharmacy or an attorney from an
+     * accountant, and every one of them used to publish as its group's generic
+     * type. A category belongs in the slug tier only when schema.org has a
+     * type that is clearly what it is. A type that sits outside LocalBusiness
+     * (the schools, VeterinaryCare) goes in as a pair with LocalBusiness
+     * first, for the reason above. A slug with no entry falls through to its
+     * group, so a slug that does not match — a renamed legacy row, say — costs
+     * precision, never correctness.
+     *
+     * Keys are slugify() of the names in DirectoryCategoriesSeeder.
      *
      * @return string|list<string>
      */
     function schema_business_type(string $group, string $slug = '')
     {
         $bySlug = [
+            // Health & Medical
+            'general-practitioner'   => 'Physician',
+            'specialist-physician'   => 'Physician',
+            'paediatrician'          => 'Physician',
+            'cardiologist'           => 'Physician',
+            'dermatologist'          => 'Physician',
+            'gynaecologist'          => 'Physician',
+            'neurologist'            => 'Physician',
+            'oncologist'             => 'Physician',
+            'urologist'              => 'Physician',
+            'ent-specialist'         => 'Physician',
+            'ophthalmologist'        => 'Physician',
+            'general-surgeon'        => 'Physician',
+            'orthopaedic-surgeon'    => 'Physician',
+            'anaesthetist'           => 'Physician',
+            'radiologist'            => 'Physician',
+            'psychiatrist'           => 'Physician',
+            'dentist'                => 'Dentist',
+            'orthodontist'           => 'Dentist',
+            'optometrist'            => 'Optician',
+            'physiotherapist'        => 'Physiotherapy',
+            'pharmacy'               => 'Pharmacy',
+            'medical-clinic'         => 'MedicalClinic',
+            'hospital'               => 'Hospital',
+            // Beauty & Wellness, Hair
+            'nail-bar'               => 'NailSalon',
+            'beauty-salon'           => 'BeautySalon',
+            'spa'                    => 'DaySpa',
+            'tattoo-piercing'        => 'TattooParlor',
+            'barber'                 => 'HairSalon',
+            // Motoring
+            'auto-repair'            => 'AutoRepair',
+            'auto-electrician'       => 'AutoRepair',
+            'motorcycle-service'     => 'MotorcycleRepair',
+            'panel-beater'           => 'AutoBodyShop',
+            'auto-body-paint'        => 'AutoBodyShop',
+            'car-wash-valet'         => 'AutoWash',
+            'tyres-exhaust'          => 'TireShop',
+            'vehicle-dealership'     => 'AutoDealer',
+            // Legal & Financial
+            'attorney'               => 'Attorney',
+            'notary'                 => 'Notary',
+            'conveyancer'            => 'LegalService',
+            'accountant'             => 'AccountingService',
+            'bookkeeper'             => 'AccountingService',
+            'tax-practitioner'       => 'AccountingService',
+            'auditor'                => 'AccountingService',
+            'financial-adviser'      => 'FinancialService',
+            'debt-counsellor'        => 'FinancialService',
+            'insurance-broker'       => 'InsuranceAgency',
+            // Home & Trades
+            'plumber'                => 'Plumber',
+            'electrician'            => 'Electrician',
+            'builder'                => 'GeneralContractor',
+            'painter-decorator'      => 'HousePainter',
+            'roofing'                => 'RoofingContractor',
+            'locksmith'              => 'Locksmith',
+            'air-conditioning-refrigeration' => 'HVACBusiness',
+            'removals-storage'       => 'MovingCompany',
+            // Professional Services
+            'estate-agent'           => 'RealEstateAgent',
+            'recruitment-agency'     => 'EmploymentAgency',
+            // Fitness & Sport
+            'gym-fitness-centre'     => 'ExerciseGym',
+            // Education & Training
             'preschool-daycare'      => ['LocalBusiness', 'Preschool'],
             'aftercare-holiday-care' => ['LocalBusiness', 'Preschool'],
             'primary-school'         => ['LocalBusiness', 'ElementarySchool'],
@@ -295,6 +366,27 @@ if (! function_exists('schema_business_type')) {
             'online-school'          => ['LocalBusiness', 'School'],
             'training-college'       => ['LocalBusiness', 'CollegeOrUniversity'],
             'university'             => ['LocalBusiness', 'CollegeOrUniversity'],
+            // Events & Hospitality
+            'restaurant'             => 'Restaurant',
+            'coffee-shop'            => 'CafeOrCoffeeShop',
+            'bakery'                 => 'Bakery',
+            'florist'                => 'Florist',
+            // Travel & Tourism
+            'guest-house-accommodation' => 'LodgingBusiness',
+            'game-lodge-safari'      => 'LodgingBusiness',
+            'travel-agency'          => 'TravelAgency',
+            'car-rental'             => 'AutoRental',
+            // Pets & Animals — VeterinaryCare is a MedicalOrganization only.
+            'veterinarian'           => ['LocalBusiness', 'VeterinaryCare'],
+            'pet-shop'               => 'PetStore',
+            // Everyday Services
+            'laundry-dry-cleaning'   => 'DryCleaningOrLaundry',
+            // Retail & Other
+            'clothing-apparel'       => 'ClothingStore',
+            'jewellery'              => 'JewelryStore',
+            'furniture'              => 'FurnitureStore',
+            'hardware-store'         => 'HardwareStore',
+            'nursery-garden-centre'  => 'GardenStore',
         ];
 
         if (isset($bySlug[$slug])) {
@@ -319,7 +411,8 @@ if (! function_exists('schema_business_type')) {
         // categories whose schema.org types diverge — a game lodge is a
         // LodgingBusiness and the travel agent selling the stay is a TravelAgency
         // — and this map only sees the group. LocalBusiness is true of all of
-        // them; a wrong subtype would not be.
+        // them; a wrong subtype would not be. The categories in them that do
+        // have a clear type get it from the slug tier above.
         //
         // Everyday Services exists partly for this: laundry, tailoring, couriers
         // and funeral parlours used to sit in Retail & Other and were published
@@ -412,6 +505,80 @@ if (! function_exists('schema_plain_description')) {
     }
 }
 
+if (! function_exists('schema_postal_address')) {
+    /**
+     * PostalAddress from any row carrying the address columns — the listing
+     * itself or one of its branches. Null when nothing but the @type would be
+     * left: a bare PostalAddress with no address in it is noise.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array<string,mixed>|null
+     */
+    function schema_postal_address(array $row): ?array
+    {
+        $address = array_filter([
+            '@type'           => 'PostalAddress',
+            'streetAddress'   => trim((string) ($row['address_line'] ?? '')),
+            'addressLocality' => trim((string) ($row['city'] ?? '')),
+            // addressRegion is schema.org's one slot for "the bit between city
+            // and country", which province and region are the local and
+            // foreign halves of. Exactly one is ever populated.
+            'addressRegion'   => trim((string) ($row['province'] ?? '')) ?: trim((string) ($row['region'] ?? '')),
+            'postalCode'      => trim((string) ($row['postal_code'] ?? '')),
+            'addressCountry'  => trim((string) ($row['country'] ?? '')),
+        ], static fn ($v) => $v !== '');
+
+        return count($address) > 1 ? $address : null;
+    }
+}
+
+if (! function_exists('schema_geo')) {
+    /**
+     * GeoCoordinates only when both coordinates are actually set — a
+     * half-populated or 0,0 GeoCoordinates is worse than none.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array<string,mixed>|null
+     */
+    function schema_geo(array $row): ?array
+    {
+        if (($row['latitude'] ?? null) === null || ($row['longitude'] ?? null) === null
+            || (float) $row['latitude'] === 0.0 || (float) $row['longitude'] === 0.0) {
+            return null;
+        }
+
+        return [
+            '@type'     => 'GeoCoordinates',
+            'latitude'  => (float) $row['latitude'],
+            'longitude' => (float) $row['longitude'],
+        ];
+    }
+}
+
+if (! function_exists('schema_telephone')) {
+    /**
+     * Both contact numbers, in the order the profile shows them, with blanks
+     * dropped — a row with only an alternative number still gets one. A bare
+     * string for the common single-number case, since a one-element array
+     * would be noise in every profile's markup; schema.org allows either.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return string|list<string>|null
+     */
+    function schema_telephone(array $row)
+    {
+        $phones = array_values(array_filter([
+            trim((string) ($row['phone'] ?? '')),
+            trim((string) ($row['phone_alt'] ?? '')),
+        ], static fn (string $p) => $p !== ''));
+
+        return $phones === [] ? null : (count($phones) === 1 ? $phones[0] : $phones);
+    }
+}
+
 if (! function_exists('schema_local_business')) {
     /**
      * The full business node for a profile page, from a complete listing record.
@@ -434,30 +601,6 @@ if (! function_exists('schema_local_business')) {
     {
         helper('directory_ui');
 
-        $address = array_filter([
-            '@type'           => 'PostalAddress',
-            'streetAddress'   => trim((string) ($l['address_line'] ?? '')),
-            'addressLocality' => trim((string) ($l['city'] ?? '')),
-            // addressRegion is schema.org's one slot for "the bit between city
-            // and country", which province and region are the local and
-            // foreign halves of. Exactly one is ever populated.
-            'addressRegion'   => trim((string) ($l['province'] ?? '')) ?: trim((string) ($l['region'] ?? '')),
-            'postalCode'      => trim((string) ($l['postal_code'] ?? '')),
-            'addressCountry'  => trim((string) ($l['country'] ?? '')),
-        ], static fn ($v) => $v !== '');
-
-        // Only emit geo when both coordinates are actually set — a
-        // half-populated or 0,0 GeoCoordinates is worse than none.
-        $geo = null;
-        if (($l['latitude'] ?? null) !== null && ($l['longitude'] ?? null) !== null
-            && (float) $l['latitude'] !== 0.0 && (float) $l['longitude'] !== 0.0) {
-            $geo = [
-                '@type'     => 'GeoCoordinates',
-                'latitude'  => (float) $l['latitude'],
-                'longitude' => (float) $l['longitude'],
-            ];
-        }
-
         // sameAs carries only the socials actually filled in, and only the ones
         // that are real http(s) URLs — sameAs is a link target like any other.
         $sameAs = array_values(array_filter([
@@ -472,13 +615,6 @@ if (! function_exists('schema_local_business')) {
         // The owner's own booking page, as the action a search result can offer.
         $bookingUrl = safe_external_url($l['booking_url'] ?? '');
         $reserve    = $bookingUrl !== '' ? ['@type' => 'ReserveAction', 'target' => $bookingUrl] : null;
-
-        // Both contact numbers, in the order the profile shows them, with blanks
-        // dropped — a listing with only an alternative number still gets one.
-        $phones = array_values(array_filter([
-            trim((string) ($l['phone'] ?? '')),
-            trim((string) ($l['phone_alt'] ?? '')),
-        ], static fn (string $p) => $p !== ''));
 
         // The named people inside the business. Present only for a listing with
         // a live badge, because that is the only case getProfile() populates.
@@ -529,29 +665,92 @@ if (! function_exists('schema_local_business')) {
             $amenities[] = ['@type' => 'LocationFeatureSpecification', 'name' => $label, 'value' => true];
         }
 
+        // The "At a glance" facts (grades, curriculum, fees band…), worded as
+        // the panel words them. additionalProperty rather than amenityFeature:
+        // "Curriculum: IEB" is a fact about the business, not a feature of the
+        // premises.
+        $properties = [];
+        foreach ($l['facets'] ?? [] as $facet) {
+            $value = ($facet['type'] ?? '') === 'range'
+                ? facet_range_label($facet['num_low'] ?? null, $facet['num_high'] ?? null, $facet['unit'] ?? null)
+                : implode(', ', (array) ($facet['values'] ?? []));
+            $label = trim((string) ($facet['label'] ?? ''));
+            if ($label === '' || trim($value) === '') {
+                continue;
+            }
+            $properties[] = ['@type' => 'PropertyValue', 'name' => $label, 'value' => $value];
+        }
+
+        // Logo first, then the gallery in the order the profile shows it.
+        $images = array_values(array_filter(array_merge(
+            [listing_image_url($l['logo_path'] ?? null)],
+            array_map(static fn (array $p): string => listing_image_url($p['path'] ?? null), $l['photos'] ?? [])
+        )));
+
+        // The category, then the owner's own "areas of focus" — the tags panel.
+        $topics = array_values(array_unique(array_filter(array_map(
+            static fn ($t): string => trim((string) $t),
+            array_merge([$l['category']['name'] ?? ($l['category_name'] ?? '')], $l['tags'] ?? [])
+        ))));
+
+        // One credential per line of the free-text box, which is how owners
+        // list them ("BDS (Wits)" / "HPCSA registered"). Named only: the text
+        // is the owner's claim and there is nothing verified to add to it.
+        $credentials = [];
+        foreach (preg_split('/\R/', trim((string) ($l['credentials'] ?? ''))) ?: [] as $line) {
+            if (trim($line) !== '') {
+                $credentials[] = ['@type' => 'EducationalOccupationalCredential', 'name' => trim($line)];
+            }
+        }
+
+        $type = schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? ''));
+
+        // Other branches, each a business of the same type in its own right —
+        // what a search for that suburb should find. Everything the branch
+        // panel shows except email, which is withheld for the reason above.
+        $branches = [];
+        foreach (array_values($l['locations'] ?? []) as $i => $loc) {
+            $branchName = trim((string) ($loc['name'] ?? ''));
+            $city       = trim((string) ($loc['city'] ?? ''));
+            $hoursSpec  = schema_opening_hours($loc['trading_hours'] ?? null);
+
+            $branches[] = array_filter([
+                '@type'                     => $type,
+                '@id'                       => $canonical . '#branch-' . ($i + 2),
+                'name'                      => $branchName !== ''
+                    ? $branchName
+                    : trim((string) ($l['display_name'] ?? '')) . ($city !== '' ? ' — ' . $city : ''),
+                'telephone'                 => schema_telephone($loc),
+                'address'                   => schema_postal_address($loc),
+                'geo'                       => schema_geo($loc),
+                'openingHoursSpecification' => $hoursSpec !== [] ? $hoursSpec : null,
+            ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
+        }
+
         return array_filter([
-            '@type'                    => schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? '')),
+            '@type'                    => $type,
             '@id'                      => $canonical . '#business',
             'name'                     => (string) ($l['display_name'] ?? ''),
             'url'                      => $canonical,
-            // An array when a listing carries both numbers, a bare string when
-            // it has one. Schema.org allows either, and a single-element array
-            // for the common case would be noise in every profile's markup.
-            'telephone'                => $phones === [] ? null : (count($phones) === 1 ? $phones[0] : $phones),
-            'image'                    => listing_image_url($l['logo_path'] ?? null),
+            'telephone'                => schema_telephone($l),
+            // A bare string for a logo-only listing, like telephone.
+            'image'                    => count($images) === 1 ? $images[0] : $images,
             // The plain-text twin, never the HTML column: Google's parser wants
             // text here, and markup in it is a structured-data warning.
             'description'              => schema_plain_description($l),
-            'knowsAbout'               => (string) ($l['category']['name'] ?? ($l['category_name'] ?? '')),
+            'knowsAbout'               => count($topics) === 1 ? $topics[0] : $topics,
             'areaServed'               => trim((string) ($l['province'] ?? '')),
-            'address'                  => count($address) > 1 ? $address : null,
-            'geo'                      => $geo,
+            'address'                  => schema_postal_address($l),
+            'geo'                      => schema_geo($l),
             'openingHoursSpecification' => $hours !== [] ? $hours : null,
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
+            'department'               => $branches !== [] ? $branches : null,
+            'hasCredential'            => $credentials !== [] ? $credentials : null,
             'potentialAction'          => $reserve,
             'hasOfferCatalog'          => $catalog,
             'amenityFeature'           => $amenities !== [] ? $amenities : null,
+            'additionalProperty'       => $properties !== [] ? $properties : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }
@@ -563,7 +762,8 @@ if (! function_exists('schema_page')) {
      *
      * Sitewide singletons are referenced by @id rather than repeated: only the
      * homepage carries the full Organization and WebSite definitions (pass
-     * $full = true), and every other page emits a bare {"@id": ...} pointer.
+     * $full = true), and every other page emits a pointer: @id plus just
+     * enough (@type, name) that a validator does not flag it.
      * That is what merges them into one entity — repeating full definitions on
      * every page invites search engines to treat them as separate things.
      *
@@ -604,9 +804,17 @@ if (! function_exists('schema_page')) {
             }
         }
 
+        // The references carry @type and name as well as @id. A bare {"@id"}
+        // is valid JSON-LD, but validators report it as "Unspecified Type",
+        // which reads as broken markup to anyone checking a page. Type and name
+        // agree with the full definitions, so the nodes still merge.
+        $siteName   = config('Directory')->siteName();
         $singletons = $full
             ? [schema_organization(), schema_website()]
-            : [['@id' => schema_id('organization')], ['@id' => schema_id('website')]];
+            : [
+                ['@type' => 'Organization', '@id' => schema_id('organization'), 'name' => $siteName],
+                ['@type' => 'WebSite', '@id' => schema_id('website'), 'name' => $siteName],
+            ];
 
         return [
             '@context' => 'https://schema.org',

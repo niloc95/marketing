@@ -99,6 +99,49 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('HairSalon', schema_business_type('Hair', 'hair-salon'));
     }
 
+    public function testCategoriesWithAClearSchemaTypeGetIt(): void
+    {
+        $this->assertSame('NailSalon', schema_business_type('Beauty & Wellness', 'nail-bar'));
+        $this->assertSame('Physician', schema_business_type('Health & Medical', 'general-practitioner'));
+        $this->assertSame('Attorney', schema_business_type('Legal & Financial', 'attorney'));
+        $this->assertSame('AccountingService', schema_business_type('Legal & Financial', 'accountant'));
+        $this->assertSame('Plumber', schema_business_type('Home & Trades', 'plumber'));
+        $this->assertSame('TravelAgency', schema_business_type('Travel & Tourism', 'travel-agency'));
+    }
+
+    public function testVeterinaryCareIsPairedWithLocalBusiness(): void
+    {
+        // VeterinaryCare is a MedicalOrganization only — same trap as the schools.
+        $this->assertSame(['LocalBusiness', 'VeterinaryCare'], schema_business_type('Pets & Animals', 'veterinarian'));
+    }
+
+    public function testACategoryWithoutItsOwnTypeFallsBackToItsGroup(): void
+    {
+        $this->assertSame('HealthAndBeautyBusiness', schema_business_type('Beauty & Wellness', 'massage-therapist'));
+        $this->assertSame('ProfessionalService', schema_business_type('Legal & Financial', 'not-a-seeded-slug'));
+        $this->assertSame('LocalBusiness', schema_business_type('Travel & Tourism', 'tour-operator-guide'));
+    }
+
+    public function testEverySlugKeyIsASeededCategory(): void
+    {
+        // A typo in the table would silently cost that category its type, so
+        // every key must be one the seeder can produce.
+        helper('slug');
+        $seeder = file_get_contents(APPPATH . 'Database/Seeds/DirectoryCategoriesSeeder.php');
+        preg_match_all("/'([^'\\n]+)'/", $seeder, $m);
+        $seeded = array_map('slugify', $m[1]);
+
+        $helper = file_get_contents(APPPATH . 'Helpers/schema_helper.php');
+        $start  = strpos($helper, '$bySlug = [');
+        $table  = substr($helper, $start, strpos($helper, '];', $start) - $start);
+        preg_match_all("/^\s*'([a-z0-9-]+)'\s*=>/m", $table, $keys);
+
+        $this->assertNotEmpty($keys[1]);
+        foreach ($keys[1] as $slug) {
+            $this->assertContains($slug, $seeded, $slug . ' is not a seeded category slug');
+        }
+    }
+
     // ---- schema_opening_hours -------------------------------------------
 
     /**
@@ -205,6 +248,20 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertArrayNotHasKey('image', $item);
     }
 
+    public function testListingItemUsesTheSameTypeAsTheProfile(): void
+    {
+        $item = schema_listing_item([
+            'slug'           => 'acme',
+            'display_name'   => 'Acme',
+            'category_group' => 'Beauty & Wellness',
+            'category_slug'  => 'nail-bar',
+        ]);
+        $this->assertSame('NailSalon', $item['@type']);
+
+        // A row without the category columns still types as LocalBusiness.
+        $this->assertSame('LocalBusiness', schema_listing_item(['slug' => 'b', 'display_name' => 'B'])['@type']);
+    }
+
     public function testListingItemBuildsAddressWhenAnyComponentIsPresent(): void
     {
         $item = schema_listing_item([
@@ -256,10 +313,15 @@ final class SchemaHelperTest extends CIUnitTestCase
     {
         $graph = $this->graph(schema_page([], base_url('directory/hair')));
 
-        // Reference-only: @id and nothing else, so the homepage stays the one
-        // canonical definition of each.
-        $this->assertSame(['@id' => schema_id('organization')], $graph[0]);
-        $this->assertSame(['@id' => schema_id('website')], $graph[1]);
+        // References: @id plus @type and name, and nothing else, so the
+        // homepage stays the one canonical definition of each while a validator
+        // no longer reports "Unspecified Type".
+        $this->assertSame(['@type', '@id', 'name'], array_keys($graph[0]));
+        $this->assertSame('Organization', $graph[0]['@type']);
+        $this->assertSame(schema_id('organization'), $graph[0]['@id']);
+        $this->assertSame(['@type', '@id', 'name'], array_keys($graph[1]));
+        $this->assertSame('WebSite', $graph[1]['@type']);
+        $this->assertSame(schema_id('website'), $graph[1]['@id']);
 
         $full = schema_page([], base_url('/'), 'WebPage', 'Home', true);
         $this->assertSame('Organization', $this->nodeOfType($full, 'Organization')['@type']);
@@ -350,6 +412,66 @@ final class SchemaHelperTest extends CIUnitTestCase
     {
         $business = schema_local_business(['display_name' => 'Acme', 'trading_hours' => null], 'https://example.test/directory/acme');
         $this->assertArrayNotHasKey('openingHoursSpecification', $business);
+    }
+
+    public function testLocalBusinessPublishesGalleryTagsCredentialsAndFacets(): void
+    {
+        $business = schema_local_business([
+            'display_name' => 'Smile Co',
+            'logo_path'    => 'uploads/logo.jpg',
+            'photos'       => [['path' => 'uploads/a.jpg'], ['path' => 'uploads/b.jpg']],
+            'category'     => ['group_name' => 'Health & Medical', 'slug' => 'dentist', 'name' => 'Dentist'],
+            'tags'         => ['Implants', 'Dentist', ' Whitening '],
+            'credentials'  => "BDS (Wits)\r\n\nHPCSA registered",
+            'facets'       => [
+                ['label' => 'Languages', 'type' => 'multi', 'values' => ['English', 'Zulu']],
+                ['label' => 'Empty', 'type' => 'multi', 'values' => []],
+            ],
+        ], 'https://example.test/directory/smile-co');
+
+        $this->assertSame('Dentist', $business['@type']);
+        $this->assertSame([base_url('uploads/logo.jpg'), base_url('uploads/a.jpg'), base_url('uploads/b.jpg')], $business['image']);
+        // Category first, duplicates and whitespace dropped.
+        $this->assertSame(['Dentist', 'Implants', 'Whitening'], $business['knowsAbout']);
+        $this->assertSame(['BDS (Wits)', 'HPCSA registered'], array_column($business['hasCredential'], 'name'));
+        $this->assertSame([['@type' => 'PropertyValue', 'name' => 'Languages', 'value' => 'English, Zulu']], $business['additionalProperty']);
+    }
+
+    public function testLocalBusinessOmitsTheNewFieldsWhenEmpty(): void
+    {
+        $business = schema_local_business(
+            ['display_name' => 'Acme', 'logo_path' => 'uploads/logo.jpg', 'credentials' => "  \n ", 'facets' => [], 'locations' => []],
+            'https://example.test/directory/acme'
+        );
+
+        // A logo-only listing keeps the bare-string form.
+        $this->assertSame(base_url('uploads/logo.jpg'), $business['image']);
+        foreach (['hasCredential', 'additionalProperty', 'department', 'knowsAbout'] as $key) {
+            $this->assertArrayNotHasKey($key, $business);
+        }
+    }
+
+    public function testBranchesBecomeDepartmentsOfTheSameTypeWithoutEmail(): void
+    {
+        $business = schema_local_business([
+            'display_name' => 'Smile Co',
+            'category'     => ['group_name' => 'Health & Medical', 'slug' => 'dentist'],
+            'locations'    => [
+                ['name' => 'Rosebank rooms', 'city' => 'Johannesburg', 'phone' => '0115550000', 'email' => 'branch@example.test', 'latitude' => -26.14, 'longitude' => 28.04],
+                ['name' => '', 'city' => 'Pretoria'],
+            ],
+        ], 'https://example.test/directory/smile-co');
+
+        $this->assertCount(2, $business['department']);
+        [$first, $second] = $business['department'];
+        $this->assertSame('Dentist', $first['@type']);
+        $this->assertSame('https://example.test/directory/smile-co#branch-2', $first['@id']);
+        $this->assertSame('Rosebank rooms', $first['name']);
+        $this->assertSame('0115550000', $first['telephone']);
+        $this->assertArrayHasKey('geo', $first);
+        // An unnamed branch borrows the business name and its town.
+        $this->assertSame('Smile Co — Pretoria', $second['name']);
+        $this->assertStringNotContainsString('branch@example.test', json_encode($business));
     }
 
     // ---- schema_faq_page -------------------------------------------------
