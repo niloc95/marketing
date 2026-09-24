@@ -77,3 +77,35 @@ if (! function_exists('seo_meta')) {
         return $out;
     }
 }
+
+if (! function_exists('seo_excerpt')) {
+    /**
+     * Plain text trimmed to at most $max characters for a meta description,
+     * cut at a word break with an ellipsis rather than mid-word.
+     *
+     * Whitespace collapses first: owner descriptions carry paragraph breaks,
+     * and a newline inside a content attribute is noise in every snippet.
+     * Counted in characters, not bytes — "’" and "–" are common in owner text
+     * and a byte cut would split one into mojibake.
+     */
+    function seo_excerpt(string $text, int $max): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? '');
+        if (mb_strlen($text) <= $max) {
+            return $text;
+        }
+
+        // The last space within the first $max characters is where the text
+        // ends, leaving room for the ellipsis — including a space sitting
+        // exactly at the limit, which means the word before it is whole.
+        // A single unbroken word longer than $max is cut hard.
+        $space = mb_strrpos(mb_substr($text, 0, $max), ' ');
+        $cut   = $space !== false && $space > 0
+            ? mb_substr($text, 0, $space)
+            : mb_substr($text, 0, $max - 1);
+
+        // A regex, not rtrim(): rtrim's charlist is bytes, and listing the dash
+        // characters there would also shave bytes off e.g. "Ā" (C4 80).
+        return (preg_replace('/[\s,;:\-–—]+$/u', '', $cut) ?? $cut) . '…';
+    }
+}
