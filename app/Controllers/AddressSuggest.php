@@ -7,10 +7,16 @@ namespace App\Controllers;
  * and unauthenticated (used during signup, before an owner/admin session
  * exists), so every action is throttled by IP.
  *
- * All three proxy to Nominatim, which is donation-funded and free — the
- * throttle is what stops this app becoming a way to hammer it. Nothing here is
- * ever called from a page render or a search; coordinates are resolved once,
- * when an address is created or changed, and cached on the listing row.
+ * All three proxy to service('geocoder'): Mapbox when a token is set, which is
+ * billed per request, otherwise Nominatim, which is donation-funded. Either way
+ * the throttle is what stops this app becoming a way to run up the bill or
+ * hammer someone else's server. Nothing here is ever called from a page render
+ * or a search; coordinates are resolved once, when an address is created or
+ * changed, and cached on the listing row.
+ *
+ * index() answers from temporary Mapbox results with no coordinates. The
+ * browser then calls locate(), which is a permanent lookup, for the pin it
+ * saves. With Nominatim, index() is always empty (see NominatimGeocoder::suggest).
  */
 class AddressSuggest extends BaseController
 {

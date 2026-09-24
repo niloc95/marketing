@@ -68,9 +68,15 @@ $isLocal = ! $withCountry || trim($val('country')) === ''
 // to a round trip.
 $req  = $required ? ' required' : '';
 $star = $required ? ' *' : '';
+
+// Only Mapbox offers suggestions (Services::geocoder()). Without it there is
+// no dropdown to credit and no suggest URL for the script to call.
+$autocomplete = config('Directory')->addressAutocompleteEnabled();
 ?>
 <?php if ($wrap): ?>
-<div data-address-autocomplete data-suggest-url="<?= base_url('address-suggest') ?>">
+<div data-address-autocomplete
+     <?php if ($autocomplete): ?>data-suggest-url="<?= base_url('address-suggest') ?>"<?php endif; ?>
+     data-locate-url="<?= base_url('address-locate') ?>">
 <?php endif; ?>
 <?php if ($withCountry): ?>
     <?php // First, because it changes what the rest of the block asks for.
@@ -107,6 +113,11 @@ $star = $required ? ' *' : '';
                    data-address-field="address_line" autocomplete="off"<?= $req ?>
                    role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="<?= esc($listId, 'attr') ?>">
             <ul class="address-suggest-list" id="<?= esc($listId, 'attr') ?>" role="listbox" data-address-suggest-list hidden></ul>
+            <?php if ($autocomplete): ?>
+                <?php // Mapbox's terms ask for attribution wherever its results
+                      // are shown off a Mapbox map. ?>
+                <div class="hint address-suggest-credit">Start typing for suggestions. Address search by <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a>.</div>
+            <?php endif; ?>
             <?php if ($e('address_line')): ?><div class="err"><?= esc($e('address_line')) ?></div><?php endif; ?>
         </div>
         <div class="field">

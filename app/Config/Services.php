@@ -3,6 +3,7 @@
 namespace Config;
 
 use App\Libraries\Geocoding\GeocoderInterface;
+use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\MauticClient;
 use CodeIgniter\Config\BaseService;
@@ -25,14 +26,15 @@ class Services extends BaseService
     /**
      * Whoever answers this app's address lookups.
      *
-     * Nominatim (OpenStreetMap) — free, keyless, and the only provider this app
-     * uses, by design. The mapping stack is open-source end to end.
+     * Mapbox when `directory.mapboxToken` is set, which gives the form its
+     * address typeahead. Otherwise Nominatim (OpenStreetMap), free and keyless,
+     * for single lookups only, since its usage policy forbids autocomplete.
+     * Either way this is lookup only: maps stay on Leaflet/CARTO, and "near me"
+     * stays a query against our own spatial index.
      *
      * The indirection is not dead weight: the autocomplete endpoints,
      * ListingGeocoder and `spark directory:geocode` all resolve through here, so
-     * they can never end up on different providers, and swapping in Photon or
-     * Pelias later is a one-line change behind GeocoderInterface rather than a
-     * hunt through four call sites.
+     * they can never end up on different providers.
      */
     public static function geocoder(bool $getShared = true): GeocoderInterface
     {
@@ -40,7 +42,9 @@ class Services extends BaseService
             return static::getSharedInstance('geocoder');
         }
 
-        return new NominatimGeocoder();
+        $token = config('Directory')->mapboxToken();
+
+        return $token !== '' ? new MapboxGeocoder($token) : new NominatimGeocoder();
     }
 
     /**

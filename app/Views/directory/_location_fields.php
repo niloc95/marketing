@@ -18,9 +18,9 @@ use App\Services\PracticeLocationService;
  *
  * Two deliberate differences from the primary, neither cosmetic:
  *
- *   - No pin picker and no address autocomplete. Both scripts bind one element
- *     per page, and the autocomplete's listbox id would be duplicated across
- *     rows. A branch is geocoded server-side on save instead —
+ *   - No pin picker. It binds one element per page. A branch gets the same
+ *     address autocomplete as the listing (each row passes its own listbox id),
+ *     and is otherwise geocoded server-side on save:
  *     PracticeLocationService runs the same ListingGeocoder the listing does.
  *   - No "Copy Monday to every day" on the hours grid. That button is unhidden
  *     by directory.js per grid, but a cloned row's copy would be one more

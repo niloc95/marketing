@@ -32,7 +32,6 @@ class NominatimGeocoder implements GeocoderInterface
     private const ENDPOINT         = 'https://nominatim.openstreetmap.org/search';
     private const REVERSE_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse';
     private const TIMEOUT          = 8;
-    private const MIN_QUERY_LEN    = 3;
 
     /**
      * How many times one lookup may be attempted before giving up.
@@ -219,41 +218,20 @@ class NominatimGeocoder implements GeocoderInterface
     }
 
     /**
-     * Structured suggestions for interactive autocomplete — South Africa
-     * only, matching this directory's scope. Free-form `q=` is the right call
-     * here (unlike geocodeParts): the user is mid-typing, so there are no
-     * discrete components to map onto structured parameters yet.
+     * Always empty: the public Nominatim server's usage policy forbids
+     * autocomplete, and proxying keystrokes through our server doesn't change
+     * whose server is answering them. Without a Mapbox token the form hides the
+     * dropdown entirely (see Config\Directory::addressAutocompleteEnabled()), so
+     * this is only reached by a direct request to /address-suggest.
+     *
+     * Single lookups (geocodeParts, reverse) stay: one rate-spaced request per
+     * save or pin drag is the use the policy permits.
      *
      * @return list<array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}>
      */
     public function suggest(string $query, int $limit = 5): array
     {
-        $query = trim($query);
-        if (mb_strlen($query) < self::MIN_QUERY_LEN) {
-            return [];
-        }
-
-        $results = $this->call([
-            'format'         => 'json',
-            'addressdetails' => 1,
-            'countrycodes'   => 'za',
-            'limit'          => max(1, min($limit, 10)),
-            'q'              => $query,
-        ], 'suggest("' . $query . '")');
-
-        if ($results === null) {
-            return [];
-        }
-
-        $suggestions = [];
-        foreach (array_values($results) as $result) {
-            $mapped = $this->mapSuggestion(is_array($result) ? $result : []);
-            if ($mapped !== null) {
-                $suggestions[] = $mapped;
-            }
-        }
-
-        return $suggestions;
+        return [];
     }
 
     /**

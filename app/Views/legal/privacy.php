@@ -188,7 +188,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Mapping and address services</h3>
             <p>We may use mapping and geocoding services to convert an address into geographic coordinates and display or support location-based search functionality.</p>
-            <p>For example, the address entered during a listing or location search may be sent to <strong>OpenStreetMap's Nominatim service</strong> for geocoding. See the <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">OSM Foundation privacy policy</a>.</p>
+            <p>For example, the address entered on a listing form, including as you type it, may be sent to <strong>Mapbox</strong> for address suggestions and geocoding. See <a href="https://www.mapbox.com/legal/privacy" rel="noopener">Mapbox's privacy policy</a>. The address may also be sent to <strong>OpenStreetMap's Nominatim service</strong>. See the <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">OSM Foundation privacy policy</a>. These requests are made by our server, not your browser, so neither service receives your IP address from them.</p>
             <p>Mapping services such as <strong>CARTO</strong> may also receive technical information, including your IP address, when your browser loads map content directly from their infrastructure. See <a href="https://carto.com/privacy/" rel="noopener">CARTO's privacy policy</a>.</p>
 
             <h3>Analytics</h3>

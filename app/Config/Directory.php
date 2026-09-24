@@ -88,6 +88,20 @@ class Directory extends BaseConfig
      */
     public string $mapTileKey = '';
 
+    /**
+     * Mapbox access token for address lookup (Services::geocoder()). Empty here
+     * and set per environment as `directory.mapboxToken`, because it is a
+     * credential and this file is committed.
+     *
+     * Empty means Nominatim, with no address typeahead on the forms. Use a
+     * public (pk.) token with NO URL restriction. It is only ever sent server
+     * to server, and Mapbox checks URL restrictions against the browser's
+     * Referer, which a server request doesn't send, so a restricted token can
+     * fail every lookup. It is never rendered into a page, so it can't leak
+     * from one.
+     */
+    public string $mapboxToken = '';
+
     /** Attribution HTML shown in the map corner. Required by every tile provider. */
     public string $mapTileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -462,6 +476,22 @@ class Directory extends BaseConfig
         }
 
         return $url . (str_contains($url, '?') ? '&' : '?') . 'key=' . rawurlencode($key);
+    }
+
+    public function mapboxToken(): string
+    {
+        $env = env('directory.mapboxToken');
+
+        return is_string($env) && trim($env) !== '' ? trim($env) : trim($this->mapboxToken);
+    }
+
+    /**
+     * Whether the address fields offer suggestions as you type. Only Mapbox
+     * provides them. See NominatimGeocoder::suggest() for why Nominatim can't.
+     */
+    public function addressAutocompleteEnabled(): bool
+    {
+        return $this->mapboxToken() !== '';
     }
 
     public function mapTileAttribution(): string

@@ -99,10 +99,17 @@
 # they don't pollute the production property.
 # directory.analyticsId = ''
 
-# The mapping stack is deliberately open-source end to end — Leaflet for the
-# maps, OpenStreetMap for the data, Nominatim for geocoding. There is no API key
-# to set anywhere and nothing is billed per request. Do not reintroduce a
-# commercial provider without revisiting that decision.
+# Maps are Leaflet on OpenStreetMap data (tiles below), and "near me" is a query
+# against our own database, so neither is billed per request. Address LOOKUP is
+# the one paid piece, and only when this token is set: Mapbox answers the form's
+# typeahead (temporary requests, never stored) and the lookups whose coordinates
+# are saved (permanent requests, which Mapbox's terms require for storage).
+#
+# Unset, lookups fall back to Nominatim with no typeahead, because the public
+# Nominatim server's policy forbids autocomplete. Use a public (pk.) token with no
+# URL restriction: it is only sent server to server, and a URL restriction is
+# checked against a browser Referer that these requests don't carry.
+# directory.mapboxToken = 'pk.CHANGE-ME'
 
 # Tile source for every map in the app. Defaults to CARTO's Voyager
 # raster basemap — the same OpenStreetMap data, served from a CDN built for

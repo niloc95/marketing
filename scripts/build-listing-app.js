@@ -247,11 +247,10 @@ directory.adminPasswordHash = 'CHANGE-ME-RUN-SPARK-DIRECTORY-ADMINHASH'
 # Generate with: php -r "echo bin2hex(random_bytes(16));"
 directory.healthToken = CHANGE-ME-RANDOM-HEX
 
-# Optional. Google Maps Embed API key for listing mini-maps (free, unlimited).
-# Without it, maps fall back to OpenStreetMap and only appear on listings that
-# geocoded successfully. Restrict the key by HTTP referrer and to the Maps
-# Embed API only — it is visible in the page source.
-# directory.mapsEmbedKey = 'CHANGE-ME'
+# Optional. Mapbox token for address lookup on the listing forms. Without it,
+# addresses are geocoded by Nominatim and the form has no address typeahead.
+# See the env template for the temporary/permanent split.
+# directory.mapboxToken = 'pk.CHANGE-ME'
 
 # CARTO basemap key for the Leaflet maps — the search map, the profile map and
 # the listing form's pin picker. Free (no account, 5M tiles/month, commercial use

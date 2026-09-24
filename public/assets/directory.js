@@ -763,6 +763,24 @@
     }
   });
 
+  // Ask /address-locate for the point the address fields currently describe.
+  // Shared by the autocomplete (to pin a picked suggestion) and the pin
+  // picker's "Find on map" button. Resolves to the locate JSON, or null when
+  // there is nothing to search for or nothing was found.
+  function locateAddress(url, scope) {
+    var params = [];
+    ['address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code'].forEach(function (key) {
+      var field = scope && scope.querySelector('[data-address-field="' + key + '"]');
+      if (field && field.value.trim()) {
+        params.push(key + '=' + encodeURIComponent(field.value.trim()));
+      }
+    });
+    if (!url || !params.length) return Promise.resolve(null);
+    return fetch(url + '?' + params.join('&'))
+      .then(function (res) { return res.ok ? res.json() : {}; })
+      .then(function (data) { return data && data.lat ? data : null; });
+  }
+
   // --------------------------------------------------------- address autocomplete
   // One instance per [data-address-autocomplete]: the listing's own address, and
   // one for every branch row on the forms that offer them. Everything below was
@@ -786,8 +804,12 @@
     if (!addressInput) return;
     var suggestList = addressWrap.querySelector('[data-address-suggest-list]');
     var suggestUrl = addressWrap.getAttribute('data-suggest-url');
+    var locateUrl = addressWrap.getAttribute('data-locate-url');
     var debounceTimer = null;
     var requestSeq = 0;
+    // Bumped by every pick and every hand edit, so a slow /address-locate
+    // answer for an address the user has since changed is dropped.
+    var locateSeq = 0;
     var results = [];
     var activeIndex = -1;
 
@@ -823,17 +845,13 @@
       if (!results.length) {
         // A completed search with zero matches must look different from the
         // dropdown simply not working — otherwise both look like nothing
-        // happened. Nominatim genuinely has no coverage for plenty of real
-        // South African addresses (e.g. informally-named suburbs), so this
-        // is an expected, not exceptional, outcome.
+        // happened. No provider covers every real South African address
+        // (e.g. informally-named suburbs), so this is an expected, not
+        // exceptional, outcome.
         var empty = document.createElement('li');
         empty.className = 'is-empty';
         empty.setAttribute('aria-disabled', 'true');
         empty.textContent = 'No matching addresses found — you can still type the address manually.';
-        // Not an error state. On the Nominatim path this is routine: OSM has no
-        // record of plenty of real South African addresses. On the Google path
-        // it is rare, but it must still look different from the dropdown simply
-        // not working, or both read as nothing having happened.
         suggestList.appendChild(empty);
         suggestList.hidden = false;
         addressInput.setAttribute('aria-expanded', 'true');
@@ -873,19 +891,33 @@
       var province = addressWrap.querySelector('[data-address-field="province"]');
       if (province && r.province) province.value = r.province;
 
-      // The coordinates Nominatim returned for the entry the user actually
-      // chose — far better than anything the server could re-derive from the
-      // address text afterwards, so carry them through with the form.
+      // A row that carries coordinates (a reverse-geocoded pin) is complete.
+      // A Mapbox suggestion deliberately has none: it is a temporary result
+      // that may not be stored, so the pin comes from a permanent lookup of
+      // the fields just filled. If that fails, the server geocodes on save.
+      var seq = ++locateSeq;
       if (r.lat && r.lng) {
-        setCoords(r.lat, r.lng, precision || r.precision || 'exact');
-        // Only the listing's own suggestion moves the pin. Picking one in a
-        // branch row must leave the listing's marker where it is — it is a
-        // different place entirely.
-        if (isPrimary && setPinFromSuggestion) setPinFromSuggestion(r.lat, r.lng);
+        placeFromCoords(r.lat, r.lng, precision || r.precision || 'exact');
       } else {
         setCoords('', '', '');
+        locateAddress(locateUrl, addressWrap)
+          .then(function (data) {
+            if (!data || seq !== locateSeq) return;
+            placeFromCoords(data.lat, data.lng, data.precision || 'street');
+          })
+          .catch(function (err) {
+            console.error('Address autocomplete: /address-locate failed — ' + err.message);
+          });
       }
       suppressClear = false;
+    };
+
+    var placeFromCoords = function (lat, lng, precision) {
+      setCoords(lat, lng, precision);
+      // Only the listing's own suggestion moves the pin. Picking one in a
+      // branch row must leave the listing's marker where it is — it is a
+      // different place entirely.
+      if (isPrimary && setPinFromSuggestion) setPinFromSuggestion(lat, lng);
     };
     // Exposed for the pin picker's "use this address" button, further down.
     // Guarded: every instance would otherwise overwrite this, leaving the
@@ -894,17 +926,16 @@
 
     var selectSuggestion = function (r) {
       hideList();
-      // Nominatim returns components AND coordinates with every suggestion, so
-      // picking one is complete in itself — no follow-up request.
       fillAddress(r);
     };
 
     var doSearch = function () {
       var query = addressInput.value.trim();
+      // No suggestUrl means no provider offers autocomplete (no Mapbox token).
       // data-suggest-off is set by the country switch below. /address-suggest
-      // asks Nominatim with countrycodes=za, so for an address anywhere else
-      // it can only ever answer "nothing found" — a box that searches and
-      // always fails reads as broken, so it does not search at all.
+      // is South-Africa-only, so for an address anywhere else it can only
+      // ever answer "nothing found" — a box that searches and always fails
+      // reads as broken, so it does not search at all.
       if (query.length < 3 || !suggestUrl || addressWrap.hasAttribute('data-suggest-off')) {
         hideList();
         return;
@@ -947,6 +978,7 @@
 
     addressWrap.addEventListener('input', function (e) {
       if (suppressClear || pinIsManual() || !e.target.closest('[data-address-field]')) return;
+      locateSeq++;
       setCoords('', '', '');
     });
     addressWrap.addEventListener('change', function (e) {
@@ -956,6 +988,7 @@
       // African bounding box.
       if (suppressClear || pinIsManual()
         || !e.target.closest('[data-address-field="province"], [data-address-field="country"]')) return;
+      locateSeq++;
       setCoords('', '', '');
     });
 
@@ -1054,8 +1087,8 @@
         }
       }
 
-      // The suggestion endpoint is South-Africa-only (Nominatim is called with
-      // countrycodes=za), so leaving it live abroad means a box that searches
+      // The suggestion endpoint is South-Africa-only (the geocoder is called with
+      // country=za), so leaving it live abroad means a box that searches
       // and always finds nothing — which reads as broken rather than as
       // unavailable. initAddressAutocomplete() checks this flag before firing.
       if (scope !== document && scope.setAttribute) {
@@ -1306,7 +1339,7 @@
       if (statusEl) statusEl.textContent = message || '';
     };
 
-    // The address Nominatim reports for the current pin, held until the user
+    // The address the geocoder reports for the current pin, held until the user
     // accepts or dismisses it. Never applied on its own.
     var pendingSuggestion = null;
     var reverseSeq = 0;
@@ -1419,24 +1452,20 @@
 
       if (locateBtn && locateUrl) {
         locateBtn.addEventListener('click', function () {
-          var params = [];
-          ['address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code'].forEach(function (key) {
+          var hasAddress = ['address_line', 'suburb', 'city', 'province', 'postal_code'].some(function (key) {
             var field = addressScope && addressScope.querySelector('[data-address-field="' + key + '"]');
-            if (field && field.value.trim()) {
-              params.push(key + '=' + encodeURIComponent(field.value.trim()));
-            }
+            return field && field.value.trim();
           });
-          if (!params.length) {
+          if (!hasAddress) {
             say('Fill in your address above first.');
             return;
           }
 
           locateBtn.disabled = true;
           say('Searching…');
-          fetch(locateUrl + '?' + params.join('&'))
-            .then(function (res) { return res.ok ? res.json() : {}; })
+          locateAddress(locateUrl, addressScope)
             .then(function (data) {
-              if (!data || !data.lat) {
+              if (!data) {
                 // Expected, not exceptional — some real addresses resolve to
                 // nothing. The map stays usable, so the user can still place
                 // the pin by hand.

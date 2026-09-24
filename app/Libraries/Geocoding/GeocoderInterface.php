@@ -6,10 +6,9 @@ namespace App\Libraries\Geocoding;
  * The address lookups the listing form and the mapping module need, independent
  * of who answers them.
  *
- * One implementation today — NominatimGeocoder, over OpenStreetMap data, free
- * and keyless. The interface exists because the mapping layer is meant to stay
- * replaceable: swapping in Photon or Pelias, or adding a country-specific
- * provider, should be a change in Services::geocoder() and nowhere else.
+ * Two implementations: MapboxGeocoder when `directory.mapboxToken` is set, and
+ * NominatimGeocoder (OpenStreetMap, free and keyless) otherwise. Choosing
+ * between them happens in Services::geocoder() and nowhere else.
  *
  * Implementations must never throw. Every method has a "nothing useful" return
  * value ([] or null) and callers rely on it: these run behind a public,
@@ -26,10 +25,13 @@ interface GeocoderInterface
      * Suggestions for a partly-typed address, South Africa only.
      *
      * These rows are what the browser renders in the autocomplete dropdown, and
-     * picking one fills the address fields and drops the pin — so each carries
-     * both its components and its coordinates, complete, with no follow-up call.
+     * picking one fills the address fields. lat/lng are optional. Mapbox's
+     * suggestions are temporary results that may not be stored, so they omit
+     * them, and the browser asks /address-locate (geocodeParts) for the pin
+     * after the pick instead. An empty list is also a valid answer from a
+     * provider that doesn't offer autocomplete at all (Nominatim).
      *
-     * @return list<array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}>
+     * @return list<array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat?:float,lng?:float,precision:string}>
      */
     public function suggest(string $query, int $limit = 5): array;
 

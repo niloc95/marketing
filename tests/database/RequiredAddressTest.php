@@ -111,6 +111,18 @@ final class RequiredAddressTest extends CIUnitTestCase
         $this->assertSame('Western Cape', $row['province']);
     }
 
+    /**
+     * Signup used to validate address line 2 and then drop it: buildListingData()
+     * never copied it, so the unit number an owner typed was lost on the way in.
+     */
+    public function testSignupKeepsAddressLine2(): void
+    {
+        $result = $this->svc->submitPublic($this->signup(['address_line_2' => 'Unit 4B, Harbour House']));
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertSame('Unit 4B, Harbour House', $this->listings->find((int) $result['id'])['address_line_2']);
+    }
+
     // ----------------------------------------------------------- postal code
 
     /**

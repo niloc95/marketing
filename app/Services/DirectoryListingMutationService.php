@@ -301,6 +301,7 @@ class DirectoryListingMutationService
             'email'          => trim((string) $input['email']),
             'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
             'address_line'   => $this->clean($input['address_line'] ?? ''),
+            'address_line_2' => $this->clean($input['address_line_2'] ?? ''),
             'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
             'city'           => normalise_place($this->clean($input['city'] ?? '')),
             // Exactly one of these is ever set — see normaliseCountry().

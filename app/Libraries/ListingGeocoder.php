@@ -8,17 +8,16 @@ use App\Libraries\Geocoding\NominatimGeocoder;
 /**
  * Decides *whether* a listing needs geocoding and *where* its pin comes from,
  * so the owner form and the admin form can't drift apart on the policy. The
- * raw lookup work lives behind GeocoderInterface — Nominatim or Google,
+ * raw lookup work lives behind GeocoderInterface — Mapbox or Nominatim,
  * depending on configuration; this is the surrounding bookkeeping, and it is
  * the same either way.
  *
  * Three sources of coordinates, in order of preference:
  *
- * 1. Coordinates posted by the browser, captured at the moment the user
- *    picked an autocomplete suggestion. These are the best answer available —
- *    they're the exact point the provider returned for the entry the user
- *    actually chose, so there's nothing to re-derive and no second API call
- *    to spend.
+ * 1. Coordinates posted by the browser: a pin the user dragged, or the point
+ *    /address-locate returned right after they picked a suggestion (a
+ *    permanent Mapbox lookup, so it may be stored). Either way there's nothing
+ *    to re-derive and no second API call to spend.
  * 2. The structured lookup ladder, for addresses typed by hand (or by anyone
  *    whose suburb OSM has never heard of, which in South Africa is common).
  * 3. Nothing — coordinates are cleared rather than left stale, because an old

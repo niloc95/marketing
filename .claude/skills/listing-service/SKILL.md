@@ -124,6 +124,29 @@ over `display_name`/`description`/`credentials`.
   coordinate onto the venue and refuses when they disagree. `--limit 20`, never
   `--limit=20` (the CLI quirk `GeocodeListings` documents).
 
+## Geocoding provider: Mapbox for lookup, Nominatim as fallback
+
+`Services::geocoder()` returns `MapboxGeocoder` when `directory.mapboxToken` is set and
+`NominatimGeocoder` otherwise. Only address **lookup** is involved. Maps stay on
+Leaflet/CARTO, and "near me" stays a query against `xs_directory_listing_points`.
+
+- **Temporary vs permanent is a licensing line.** Mapbox forbids storing or caching
+  temporary results. `MapboxGeocoder::suggest()` is temporary: it is never cached, and its
+  rows carry **no lat/lng**. After a pick, the address script calls `/address-locate`
+  (`geocodeParts()`, `permanent=true`) for the pin it posts. `geocodeParts()` and `reverse()`
+  are permanent and cached for 30 days. Do not add coordinates back to suggestion rows.
+  `MapboxGeocoderTest` pins all of this.
+- **No token means no typeahead.** The public Nominatim server's policy forbids
+  autocomplete, so `NominatimGeocoder::suggest()` returns `[]`, and the views leave out
+  `data-suggest-url` (`Config\Directory::addressAutocompleteEnabled()`). With no URL,
+  the script never searches. Single lookups on save, the pin picker, reverse lookups and
+  `spark directory:geocode` still use Nominatim.
+- The dropdown's "Address search by Mapbox" credit line is required by Mapbox's terms.
+  The privacy policy names Mapbox as a recipient of entered addresses.
+- The token is sent server to server only, never rendered. Use a `pk.` token with **no URL
+  restriction**. Mapbox checks those against the browser's `Referer`, which a server request
+  doesn't send, so adding one can make every lookup fail.
+
 ## Search typeahead (`/directory/suggest`)
 
 Every search box — the header bar and the four hero `.searchbar` forms — renders through
@@ -288,6 +311,8 @@ plan switch does not change — so `renderForm()` lets a posted `plan` outrank t
 - First-time setup: `php spark migrate && php spark db:seed DirectoryCategoriesSeeder`.
 - `directory.adminEmail` (new-listing notifications), `directory.adminPasswordHash` (admin
   login — generate with `php spark directory:adminhash`, prints the value to set).
+- `directory.mapboxToken` — Mapbox token for address lookup and typeahead. Optional; see
+  "Geocoding provider" above.
 - `directory.mapTileKey` — CARTO basemap key, free from https://carto.com/basemaps/apikey
   (no account, 5M tiles/month, commercial use allowed). `Directory::mapTileUrl()` appends
   it as `?key=`. **Its absence is invisible**: CARTO returns tiles stamped "API KEY

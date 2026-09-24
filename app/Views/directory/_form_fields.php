@@ -200,11 +200,15 @@ helper('directory_hours');
       // province steps. The ids for those three inputs cannot live in
       // _address_inputs.php itself — branch rows render the same partial, so
       // they would repeat down the page. ?>
+<?php // No data-suggest-url without a Mapbox token: the script then never
+      // searches, and the fields are plain inputs. data-locate-url is always
+      // there, because a picked suggestion gets its pin from it. ?>
 <div id="field-address" data-address-autocomplete
-     data-suggest-url="<?= base_url('address-suggest') ?>">
+     <?php if (config('Directory')->addressAutocompleteEnabled()): ?>data-suggest-url="<?= base_url('address-suggest') ?>"<?php endif; ?>
+     data-locate-url="<?= base_url('address-locate') ?>">
     <?php // The address block itself — shared with every branch row in
           // _location_fields.php, which renders the same partial with a
-          // 'locations[i]' prefix and no autocomplete. ?>
+          // 'locations[i]' prefix. ?>
     <?= view('directory/_address_inputs', [
         'n'         => static fn (string $f): string => $f,
         'val'       => $v,
