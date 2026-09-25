@@ -1,5 +1,6 @@
 <?php
 
+use App\Libraries\Geocoding\FallbackGeocoder;
 use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
 use CodeIgniter\Test\CIUnitTestCase;
@@ -27,7 +28,10 @@ final class MapboxGeocoderTest extends CIUnitTestCase
         parent::tearDown();
     }
 
-    /** A geocoder that answers every call with $respond($endpoint, $query). */
+    /**
+     * A geocoder that answers every call with $respond($endpoint, $query).
+     * A null answer stands for a call that failed (non-200 or transport error).
+     */
     private function stub(callable $respond): MapboxGeocoder
     {
         $calls = &$this->calls;
@@ -50,7 +54,14 @@ final class MapboxGeocoderTest extends CIUnitTestCase
             {
                 $this->calls[] = ['endpoint' => $endpoint, 'query' => $query];
 
-                return ($this->respond)($endpoint, $query);
+                $features = ($this->respond)($endpoint, $query);
+                if ($features === null) {
+                    $this->failed = true;
+
+                    return [];
+                }
+
+                return $features;
             }
         };
     }
@@ -267,12 +278,54 @@ final class MapboxGeocoderTest extends CIUnitTestCase
         $this->assertNull($coords);
     }
 
+    // -------------------------------------------------------------- failure
+
+    public function testAFailedCallIsReportedAndNotCachedAsNoMatch(): void
+    {
+        $down     = true;
+        $geocoder = $this->stub(function () use (&$down) {
+            return $down ? null : [$this->address('32 Outage Street')];
+        });
+
+        $this->assertNull($geocoder->geocodeParts($this->parts('32 Outage Street')));
+        $this->assertTrue($geocoder->failed());
+
+        $down = false;
+        $this->assertNotNull(
+            $geocoder->geocodeParts($this->parts('32 Outage Street')),
+            'an outage must not be remembered as "no such address"'
+        );
+        $this->assertFalse($geocoder->failed());
+    }
+
+    public function testANoMatchIsNotAFailure(): void
+    {
+        $geocoder = $this->stub(fn () => []);
+
+        $this->assertNull($geocoder->geocodeParts($this->parts('34 Unmapped Street')));
+        $this->assertFalse($geocoder->failed());
+    }
+
+    public function testAFailedReverseIsReportedAndNotCached(): void
+    {
+        $down     = true;
+        $geocoder = $this->stub(function () use (&$down) {
+            return $down ? null : [$this->address('36 Reverse Outage Street')];
+        });
+
+        $this->assertNull($geocoder->reverse(-33.9311111, 18.4211111));
+        $this->assertTrue($geocoder->failed());
+
+        $down = false;
+        $this->assertNotNull($geocoder->reverse(-33.9311111, 18.4211111));
+    }
+
     // --------------------------------------------------------------- wiring
 
     public function testTheTokenPicksTheProvider(): void
     {
         $_ENV['directory.mapboxToken'] = $_SERVER['directory.mapboxToken'] = 'pk.test-token';
-        $this->assertInstanceOf(MapboxGeocoder::class, Services::geocoder(false));
+        $this->assertInstanceOf(FallbackGeocoder::class, Services::geocoder(false));
 
         $_ENV['directory.mapboxToken'] = $_SERVER['directory.mapboxToken'] = '';
         $config              = config('Directory');

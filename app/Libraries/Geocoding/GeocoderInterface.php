@@ -6,7 +6,8 @@ namespace App\Libraries\Geocoding;
  * The address lookups the listing form and the mapping module need, independent
  * of who answers them.
  *
- * Two implementations: MapboxGeocoder when `directory.mapboxToken` is set, and
+ * Two providers: MapboxGeocoder when `directory.mapboxToken` is set (wrapped in
+ * FallbackGeocoder, so Nominatim answers when Mapbox can't), and
  * NominatimGeocoder (OpenStreetMap, free and keyless) otherwise. Choosing
  * between them happens in Services::geocoder() and nowhere else.
  *

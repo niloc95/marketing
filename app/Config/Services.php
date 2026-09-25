@@ -2,6 +2,7 @@
 
 namespace Config;
 
+use App\Libraries\Geocoding\FallbackGeocoder;
 use App\Libraries\Geocoding\GeocoderInterface;
 use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
@@ -27,8 +28,10 @@ class Services extends BaseService
      * Whoever answers this app's address lookups.
      *
      * Mapbox when `directory.mapboxToken` is set, which gives the form its
-     * address typeahead. Otherwise Nominatim (OpenStreetMap), free and keyless,
-     * for single lookups only, since its usage policy forbids autocomplete.
+     * address typeahead, with Nominatim behind it for pins whenever Mapbox
+     * can't be reached (see FallbackGeocoder). Otherwise Nominatim
+     * (OpenStreetMap) alone, free and keyless, for single lookups only, since
+     * its usage policy forbids autocomplete.
      * Either way this is lookup only: maps stay on Leaflet/CARTO, and "near me"
      * stays a query against our own spatial index.
      *
@@ -44,7 +47,9 @@ class Services extends BaseService
 
         $token = config('Directory')->mapboxToken();
 
-        return $token !== '' ? new MapboxGeocoder($token) : new NominatimGeocoder();
+        return $token !== ''
+            ? new FallbackGeocoder(new MapboxGeocoder($token), new NominatimGeocoder())
+            : new NominatimGeocoder();
     }
 
     /**

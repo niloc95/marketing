@@ -58,8 +58,26 @@ class MapboxGeocoder implements GeocoderInterface
      */
     private const TYPES = 'address,street,neighborhood,locality,place,postcode';
 
+    /**
+     * Whether a call in the latest lookup never got an answer: a non-200 or a
+     * transport error, as opposed to a 200 with no match. Reset by each public
+     * method, set by request(). FallbackGeocoder reads it through failed() to
+     * decide whether a null means "no such address" or "Mapbox is down".
+     */
+    protected bool $failed = false;
+
     public function __construct(private readonly string $token)
     {
+    }
+
+    /**
+     * True when the latest suggest(), geocodeParts() or reverse() came back
+     * empty because Mapbox couldn't be reached or refused, e.g. a paused
+     * account or a revoked token, rather than because nothing matched.
+     */
+    public function failed(): bool
+    {
+        return $this->failed;
     }
 
     /**
@@ -70,7 +88,8 @@ class MapboxGeocoder implements GeocoderInterface
      */
     public function suggest(string $query, int $limit = 5): array
     {
-        $query = trim($query);
+        $this->failed = false;
+        $query        = trim($query);
         if (mb_strlen($query) < self::MIN_QUERY_LEN) {
             return [];
         }
@@ -114,6 +133,7 @@ class MapboxGeocoder implements GeocoderInterface
      */
     public function geocodeParts(array $parts): ?array
     {
+        $this->failed = false;
         $street   = $this->clean($parts['address_line'] ?? '');
         $suburb   = $this->clean($parts['suburb'] ?? '');
         $city     = $this->clean($parts['city'] ?? '');
@@ -191,7 +211,11 @@ class MapboxGeocoder implements GeocoderInterface
             return $coords;
         }
 
-        cache()->save($cacheKey, 'none', HOUR);
+        // Only a real "no match" is remembered. A lookup that failed must not
+        // hide the address for an hour once Mapbox is back.
+        if (! $this->failed) {
+            cache()->save($cacheKey, 'none', HOUR);
+        }
 
         return null;
     }
@@ -204,6 +228,7 @@ class MapboxGeocoder implements GeocoderInterface
      */
     public function reverse(float $lat, float $lng): ?array
     {
+        $this->failed = false;
         if (! NominatimGeocoder::isPlausible($lat, $lng)) {
             return null;
         }
@@ -228,7 +253,9 @@ class MapboxGeocoder implements GeocoderInterface
 
         $mapped = isset($features[0]) ? $this->mapFeature($features[0]) : null;
         if ($mapped === null) {
-            cache()->save($cacheKey, 'none', HOUR);
+            if (! $this->failed) {
+                cache()->save($cacheKey, 'none', HOUR);
+            }
 
             return null;
         }
@@ -243,7 +270,8 @@ class MapboxGeocoder implements GeocoderInterface
     }
 
     /**
-     * One API call. Returns the response's features, [] on any failure (logged).
+     * One API call. Returns the response's features, [] on any failure (logged,
+     * and recorded in $failed so callers can tell it from an empty answer).
      *
      * Protected as a test seam, like NominatimGeocoder::request(): every call
      * to Mapbox goes through here, so overriding it lets the tests see exactly
@@ -279,7 +307,10 @@ class MapboxGeocoder implements GeocoderInterface
                     'MapboxGeocoder: HTTP ' . $status . ' for ' . $context . ' (attempt ' . $attempt . ')'
                 );
                 if (! $retryable) {
-                    // 401/403 is a bad or URL-restricted token. Retrying can't fix it.
+                    // 401/403 is a bad or URL-restricted token, or a paused
+                    // account. Retrying can't fix it.
+                    $this->failed = true;
+
                     return [];
                 }
             } catch (\Throwable $e) {
@@ -288,6 +319,8 @@ class MapboxGeocoder implements GeocoderInterface
                     . ' for ' . $context . ' (attempt ' . $attempt . ')');
             }
         }
+
+        $this->failed = true;
 
         return [];
     }
