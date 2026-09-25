@@ -72,6 +72,14 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('12 Main Road', $html);
     }
 
+    public function testWazeLinkSitsBesideDirections(): void
+    {
+        $html = $this->render([]);
+
+        $this->assertStringContainsString('https://waze.com/ul?q=' . rawurlencode('12 Main Road, Cape Town') . '&navigate=yes', $html);
+        $this->assertStringContainsString('>Waze</a>', $html);
+    }
+
     public function testSuggestAnEditIsBusinessWideOnly(): void
     {
         $this->assertStringContainsString('contact?listing=hana-nail', $this->render([]));

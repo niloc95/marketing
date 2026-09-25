@@ -34,6 +34,31 @@ if (! function_exists('map_directions_url')) {
     }
 }
 
+if (! function_exists('map_waze_url')) {
+    /**
+     * Deep link that opens Waze in navigation mode, for the many South African
+     * drivers who use it rather than whatever their phone opens by default.
+     *
+     * Same deal as map_directions_url(): a plain URL, no API, no key, and the
+     * same rule for when our coordinates are trusted over the address text.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return string '' when there is nothing to navigate to.
+     */
+    function map_waze_url(array $listing): string
+    {
+        $point = map_destination_point($listing);
+        if ($point !== null) {
+            return 'https://waze.com/ul?ll=' . rawurlencode($point) . '&navigate=yes';
+        }
+
+        $address = map_address_text($listing);
+
+        return $address === '' ? '' : 'https://waze.com/ul?q=' . rawurlencode($address) . '&navigate=yes';
+    }
+}
+
 if (! function_exists('map_destination')) {
     /**
      * What to hand the visitor's navigation app: coordinates, or address text.
@@ -55,20 +80,32 @@ if (! function_exists('map_destination')) {
      */
     function map_destination(array $listing): string
     {
+        return map_destination_point($listing) ?? map_address_text($listing);
+    }
+}
+
+if (! function_exists('map_destination_point')) {
+    /**
+     * "lat,lng" when map_destination() should hand over coordinates, null when
+     * it should hand over the address text instead. Split out so a link that
+     * needs the two in different parameters (Waze's ll= and q=) applies the
+     * same trust rule.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function map_destination_point(array $listing): ?string
+    {
         $lat       = $listing['latitude'] ?? null;
         $lng       = $listing['longitude'] ?? null;
         $precision = $listing['geocode_precision'] ?? null;
 
-        $hasCoords = $lat !== null && $lng !== null && (float) $lat !== 0.0 && (float) $lng !== 0.0;
+        $hasCoords  = $lat !== null && $lng !== null && (float) $lat !== 0.0 && (float) $lng !== 0.0;
         $pinpointed = in_array($precision, ['manual', 'exact'], true);
 
-        $address = map_address_text($listing);
-
-        if ($hasCoords && ($pinpointed || $address === '')) {
-            return $lat . ',' . $lng;
-        }
-
-        return $address !== '' ? $address : ($hasCoords ? $lat . ',' . $lng : '');
+        // A loose pin still beats nothing when there is no address to hand over.
+        return $hasCoords && ($pinpointed || map_address_text($listing) === '')
+            ? $lat . ',' . $lng
+            : null;
     }
 }
 

@@ -204,4 +204,32 @@ final class MapHelperTest extends CIUnitTestCase
             'latitude' => null, 'longitude' => null,
         ]));
     }
+
+    // ----------------------------------------------------------- map_waze_url
+
+    public function testWazeNavigatesToAPinpointedListingByCoordinates(): void
+    {
+        $url = map_waze_url($this->listing(['geocode_precision' => 'exact']));
+
+        $this->assertSame('https://waze.com/ul?ll=' . rawurlencode('-26.1294840,28.0678351') . '&navigate=yes', $url);
+    }
+
+    public function testWazeGetsTheAddressTextWhenThePinIsOnlyApproximate(): void
+    {
+        $url = map_waze_url($this->listing(['geocode_precision' => 'street']));
+
+        $this->assertStringStartsWith('https://waze.com/ul?q=', $url);
+        $this->assertStringContainsString(rawurlencode('21 Delta Road'), $url);
+        $this->assertStringNotContainsString('ll=', $url);
+        $this->assertStringEndsWith('&navigate=yes', $url);
+    }
+
+    public function testWazeIsEmptyWithNothingToNavigateTo(): void
+    {
+        $this->assertSame('', map_waze_url([
+            'address_line' => '', 'suburb' => '', 'city' => '',
+            'province' => '', 'postal_code' => '',
+            'latitude' => null, 'longitude' => null,
+        ]));
+    }
 }

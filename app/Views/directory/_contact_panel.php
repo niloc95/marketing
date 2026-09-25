@@ -38,6 +38,7 @@ $showWeb = $showWeb ?? true;
 // implode dropped address_line_2 and did exactly that).
 $addr    = map_address_text($row);
 $dirUrl  = map_directions_url($row);
+$wazeUrl = map_waze_url($row);
 
 $socials = $showWeb ? array_filter([
     'Facebook'  => safe_external_url($row['social_facebook'] ?? ''),
@@ -103,6 +104,7 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
         <div class="contact-row">
             <span class="min-w-0">
                 <?php if ($dirUrl !== ''): ?><a href="<?= esc($dirUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions</a><?php endif; ?>
+                <?php if ($wazeUrl !== ''): ?><span aria-hidden="true">&middot;</span> <a href="<?= esc($wazeUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Waze</a><?php endif; ?>
                 <span class="contact-sub"><?= esc($addr) ?></span>
             </span>
             <?= lucide('map-pin') ?>
