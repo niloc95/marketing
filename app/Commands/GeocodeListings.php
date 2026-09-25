@@ -126,6 +126,18 @@ class GeocodeListings extends BaseCommand
 
                 continue;
             }
+
+            // Same rule as ListingGeocoder::resolve(): every lookup is limited
+            // to South Africa, so a foreign address can only come back as a
+            // same-named place here ("Lisboa" → Lisbon, Mpumalanga).
+            if (! config('Countries')->isLocal((string) ($listing['country'] ?? ''))) {
+                $skipped++;
+                CLI::write($label, 'white');
+                CLI::write('  → skipped (outside South Africa; place the pin by hand)', 'dark_gray');
+                CLI::newLine();
+
+                continue;
+            }
             $addr = map_address_text($listing);
 
             CLI::write($label, 'white');
@@ -177,7 +189,7 @@ class GeocodeListings extends BaseCommand
                 'Done — %d resolved, %d without a match%s.',
                 $resolved,
                 $failed,
-                $skipped > 0 ? sprintf(', %d hand-placed pin(s) left alone', $skipped) : ''
+                $skipped > 0 ? sprintf(', %d skipped (hand-placed or outside South Africa)', $skipped) : ''
             ),
             $failed > 0 ? 'yellow' : 'green'
         );
