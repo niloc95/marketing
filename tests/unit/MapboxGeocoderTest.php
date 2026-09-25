@@ -278,6 +278,37 @@ final class MapboxGeocoderTest extends CIUnitTestCase
         $this->assertNull($coords);
     }
 
+    /** @return array<string,array{0:array<string,string>,1:string}> */
+    public static function foreignAddresses(): array
+    {
+        // Both seen on production, 25 Sep 2026: a South Africa-only search
+        // settles for the nearest-looking local street.
+        return [
+            'Lisbon'    => [['address_line' => 'Av. D. João II, 50, 4º Piso', 'city' => 'Lisboa'], 'Avenue D'],
+            'Hyderabad' => [['address_line' => 'Dilshuknagar', 'city' => 'Hyderabad'], 'Road Za'],
+        ];
+    }
+
+    /**
+     * @dataProvider foreignAddresses
+     *
+     * @param array<string,string> $parts
+     */
+    public function testAStreetSharingNoNameWithTheAddressIsRejected(array $parts, string $matched): void
+    {
+        $feature = $this->address($matched, ['feature_type' => 'street'], 'Eastern Cape');
+
+        $this->assertNull($this->stub(fn () => [$feature])->geocodeParts($parts));
+    }
+
+    public function testASpellingVariantOfTheStreetIsAccepted(): void
+    {
+        $coords = $this->stub(fn () => [$this->address('38 Voortrekkerweg')])
+            ->geocodeParts($this->parts('38 Voortrekker Road'));
+
+        $this->assertNotNull($coords);
+    }
+
     // -------------------------------------------------------------- failure
 
     public function testAFailedCallIsReportedAndNotCachedAsNoMatch(): void

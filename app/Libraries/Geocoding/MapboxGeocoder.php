@@ -59,6 +59,17 @@ class MapboxGeocoder implements GeocoderInterface
     private const TYPES = 'address,street,neighborhood,locality,place,postcode';
 
     /**
+     * Words that say what kind of road it is, not which one. Two addresses
+     * that share only these are not the same street.
+     */
+    private const STREET_WORDS = [
+        'road', 'street', 'avenue', 'drive', 'lane', 'way', 'crescent', 'close',
+        'place', 'boulevard', 'highway', 'circle', 'court', 'terrace', 'extension',
+        'straat', 'weg', 'laan', 'rylaan', 'singel', 'the', 'and', 'unit', 'shop',
+        'floor', 'piso', 'suite', 'south', 'africa',
+    ];
+
+    /**
      * Whether a call in the latest lookup never got an answer: a non-200 or a
      * transport error, as opposed to a 200 with no match. Reset by each public
      * method, set by request(). FallbackGeocoder reads it through failed() to
@@ -184,6 +195,7 @@ class MapboxGeocoder implements GeocoderInterface
         $attempts[] = ['q' => $full];
 
         $locality = implode(', ', array_filter([$suburb, $city, $province], static fn ($v) => $v !== ''));
+        $asked    = implode(' ', [$street, $suburb, $city]);
         if ($street !== '' && $locality !== '') {
             $attempts[] = ['q' => $locality];
         }
@@ -196,7 +208,7 @@ class MapboxGeocoder implements GeocoderInterface
             }
 
             $mapped = $this->mapFeature($feature);
-            if ($mapped === null || ! $this->accept($mapped, $feature, $province)) {
+            if ($mapped === null || ! $this->accept($mapped, $feature, $province, $asked)) {
                 continue;
             }
 
@@ -329,11 +341,22 @@ class MapboxGeocoder implements GeocoderInterface
      * Should we believe this match? Structured input can quietly settle for a
      * same-named street in another city, and Mapbox says so in match_code.
      *
-     * @param array{lat:float,lng:float,province:string,precision:string} $mapped
-     * @param array<string,mixed>                                         $feature
+     * A street-level match must also share a real word with what was asked.
+     * Every lookup is limited to South Africa, so a foreign address gets the
+     * nearest-looking South African street instead of nothing: "Av. D. João
+     * II, Lisboa" came back as "Avenue D, iBhayi", and "Dilshuknagar,
+     * Hyderabad" as "Road Za, Motherwell". Neither has a word in common with
+     * the address beyond the kind of road.
+     *
+     * @param array{lat:float,lng:float,province:string,precision:string,address_line:string} $mapped
+     * @param array<string,mixed>                                                             $feature
      */
-    private function accept(array $mapped, array $feature, string $province): bool
+    private function accept(array $mapped, array $feature, string $province, string $asked): bool
     {
+        if ($mapped['address_line'] !== '' && ! $this->sharesAName($mapped['address_line'], $asked)) {
+            return false;
+        }
+
         if (! NominatimGeocoder::isPlausible($mapped['lat'], $mapped['lng'])) {
             return false;
         }
@@ -416,6 +439,34 @@ class MapboxGeocoder implements GeocoderInterface
             'neighborhood', 'locality' => 'suburb',
             default                   => 'city',
         };
+    }
+
+    /**
+     * Whether the matched street and the asked-for address have a naming word
+     * in common. Words of three letters or more, not numbers, not road types.
+     * One may be a prefix of the other, so "Voortrekker" still matches
+     * "Voortrekkerweg".
+     */
+    private function sharesAName(string $matched, string $asked): bool
+    {
+        $words = static function (string $text): array {
+            $tokens = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($text), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            return array_values(array_filter($tokens, static fn (string $t): bool => mb_strlen($t) >= 3
+                && ! ctype_digit($t)
+                && ! in_array($t, self::STREET_WORDS, true)));
+        };
+
+        $askedWords = $words($asked);
+        foreach ($words($matched) as $m) {
+            foreach ($askedWords as $a) {
+                if ($m === $a || (min(mb_strlen($m), mb_strlen($a)) >= 4 && (str_starts_with($m, $a) || str_starts_with($a, $m)))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** @param mixed $v */
