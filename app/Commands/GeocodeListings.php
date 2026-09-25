@@ -20,6 +20,7 @@ use CodeIgniter\CLI\CLI;
  *   php spark directory:geocode --limit=20
  *
  *   php spark directory:geocode --status failed   # retry only what failed
+ *   php spark directory:geocode --id 294          # just this one listing
  *
  * Note the space: CodeIgniter's CLI parser reads `--option value`, not
  * `--option=value`. The equals form is silently swallowed as a valueless flag,
@@ -43,9 +44,10 @@ class GeocodeListings extends BaseCommand
     protected $group       = 'Directory';
     protected $name        = 'directory:geocode';
     protected $description = 'Backfill latitude/longitude for listings that have none.';
-    protected $usage       = 'directory:geocode [--all] [--status X] [--limit N] [--dry-run] [--force]';
+    protected $usage       = 'directory:geocode [--all] [--id N] [--status X] [--limit N] [--dry-run] [--force]';
     protected $options     = [
         '--all'      => 'Re-geocode every listing, not just those missing coordinates.',
+        '--id'       => 'Only this listing, whatever its coordinates or status.',
         '--status'   => 'Only listings with this geocoding_status (pending|ok|failed|manual).',
         '--limit'    => 'Stop after N listings.',
         '--dry-run'  => 'Show what would change without writing.',
@@ -59,6 +61,13 @@ class GeocodeListings extends BaseCommand
         $force  = array_key_exists('force', $params) || CLI::getOption('force');
         $limit  = (int) (CLI::getOption('limit') ?: 0);
         $status = trim((string) (CLI::getOption('status') ?: ''));
+        $id     = trim((string) (CLI::getOption('id') ?: ''));
+
+        if ($id !== '' && ! ctype_digit($id)) {
+            CLI::error('--id takes a listing id, e.g. --id 294.');
+
+            return EXIT_ERROR;
+        }
 
         if ($status !== '' && ! in_array($status, ['pending', 'ok', 'failed', 'manual'], true)) {
             CLI::error('Unknown --status. Use one of: pending, ok, failed, manual.');
@@ -70,7 +79,9 @@ class GeocodeListings extends BaseCommand
         $query = $model->select('id, display_name, address_line, address_line_2, suburb, city, province, postal_code, country, latitude, longitude, geocode_precision')
             ->orderBy('id', 'ASC');
 
-        if ($status !== '') {
+        if ($id !== '') {
+            $query->where('id', (int) $id);
+        } elseif ($status !== '') {
             $query->where('geocoding_status', $status);
         } elseif (! $all) {
             $query->groupStart()->where('latitude', null)->orWhere('longitude', null)->groupEnd();
@@ -81,7 +92,9 @@ class GeocodeListings extends BaseCommand
 
         $listings = $query->findAll();
         if ($listings === []) {
-            if ($status !== '') {
+            if ($id !== '') {
+                CLI::write('No listing with id ' . $id . '.', 'green');
+            } elseif ($status !== '') {
                 CLI::write('No listings with geocoding_status "' . $status . '".', 'green');
             } else {
                 CLI::write($all ? 'No listings found.' : 'Every listing already has coordinates.', 'green');
