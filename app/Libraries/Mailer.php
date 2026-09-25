@@ -36,6 +36,7 @@ class Mailer
      *                        reply reaches the visitor; the From address stays
      *                        ours either way, because putting a visitor-supplied
      *                        address in From fails SPF/DMARC at the recipient.
+     *                        Empty falls back to Config\Email::$replyTo.
      *
      * @return bool Whether it went out. Callers that must not block on mail
      *              (signup, owner edit) can ignore it; the contact form uses it
@@ -46,6 +47,7 @@ class Mailer
         try {
             $email = service('email');
             $email->setTo($to);
+            $replyTo = $replyTo !== '' ? $replyTo : config('Email')->replyTo;
             if ($replyTo !== '') {
                 $email->setReplyTo($replyTo);
             }

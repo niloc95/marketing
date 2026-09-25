@@ -11,6 +11,15 @@ class Email extends BaseConfig
     public string $recipients = '';
 
     /**
+     * Default Reply-To for every message (email.replyTo in .env).
+     *
+     * Mail goes out through SES from a subdomain that has no mailbox, so without
+     * this CodeIgniter falls back to Reply-To = From and replies vanish. Point it
+     * at a real inbox. A per-message Reply-To (the contact form) still wins.
+     */
+    public string $replyTo = '';
+
+    /**
      * The "user agent"
      */
     public string $userAgent = 'CodeIgniter';

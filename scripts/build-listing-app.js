@@ -272,6 +272,8 @@ email.SMTPPort = 587
 email.SMTPCrypto = tls
 email.fromEmail = 'CHANGE-ME'
 email.fromName = 'WebScheduler Directory'
+# From is on a send-only SES subdomain; replies go to a real inbox instead.
+email.replyTo = 'CHANGE-ME'
 email.mailType = html
 `;
 fs.writeFileSync(path.join(appOut, '.env.example'), envExample);
