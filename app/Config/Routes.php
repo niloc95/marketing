@@ -181,6 +181,11 @@ $routes->get('directory/province/(:segment)', 'Directory::province/$1');
 // it. The prefix is what keeps venue slugs out of the category/listing
 // namespace that Directory::segment() resolves.
 $routes->get('directory/at/(:segment)', 'Directory::venue/$1');
+// A food listing's PDF menu — /directory/{listing}/menu. Two segments, so it
+// MUST precede the {category}/{province} route below, which would otherwise
+// read "menu" as a province and 404. No province is called "menu", so no
+// landing page is shadowed.
+$routes->get('directory/(:segment)/menu', 'Directory::menu/$1');
 // {category}/{province} landing page.
 $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
 // One segment is either a category landing page or a listing profile;

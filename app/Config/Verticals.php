@@ -206,6 +206,22 @@ class Verticals extends BaseConfig
             'cta'   => 'Check availability',
             'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'team', 'credentials', 'locations'],
         ],
+        // The menu leads: it is the first thing anyone opens a restaurant page
+        // for, ahead of the blurb. At a glance (open now, takeaway, delivery)
+        // comes second because it answers "can I eat there tonight".
+        'Restaurants & Food' => [
+            'noun'       => 'restaurant',
+            'nounPlural' => 'restaurants',
+            'headings'   => [
+                'services'  => 'Menu',
+                'hours'     => 'Opening hours',
+                'tags'      => 'Cuisine',
+                'team'      => 'Our kitchen',
+                'locations' => 'Other branches',
+            ],
+            'cta'   => 'Reserve a table',
+            'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'team', 'credentials', 'locations'],
+        ],
         'Travel & Tourism' => [
             'noun'       => 'operator',
             'nounPlural' => 'operators',
@@ -273,7 +289,7 @@ class Verticals extends BaseConfig
     /**
      * category slug => the parts of its group it changes.
      *
-     * Deliberately short. The group is the unit of design — fifteen identities
+     * Deliberately short. The group is the unit of design — sixteen identities
      * cover all 160 categories — and this is only for the categories whose own
      * vocabulary is plainly different from their group's: a restaurant has a
      * menu, not "what we offer & prices".
@@ -284,8 +300,11 @@ class Verticals extends BaseConfig
      * Several entries exist only to fix a noun. A group's noun is chosen for the
      * group and is wrong for some of its members — Events & Hospitality is
      * "venues", which made an empty /directory/restaurant read "No venues here
-     * yet" — so the noun is overridden wherever the group's word does not
-     * actually describe the category.
+     * yet" back when restaurants lived there — so the noun is overridden
+     * wherever the group's word does not actually describe the category.
+     *
+     * The restaurant entry now says what its group already says. It stays so
+     * the restaurant keeps its wording if it is ever regrouped again.
      *
      * @var array<string,array<string,mixed>>
      */
@@ -307,6 +326,21 @@ class Verticals extends BaseConfig
             'nounPlural' => 'bakeries',
             'headings'   => ['services' => 'What we bake'],
             'cta'        => 'Place an order',
+        ],
+        'pizza' => [
+            'noun'       => 'pizzeria',
+            'nounPlural' => 'pizzerias',
+        ],
+        'fast-food-takeaway' => [
+            'noun'       => 'takeaway',
+            'nounPlural' => 'takeaways',
+            'cta'        => 'Order now',
+        ],
+        'sports-bar-pub' => [
+            'noun'       => 'pub',
+            'nounPlural' => 'pubs',
+            'headings'   => ['services' => 'Menu & drinks', 'tags' => 'What we show'],
+            'cta'        => 'Book a table',
         ],
         'caterer' => [
             'noun'       => 'caterer',

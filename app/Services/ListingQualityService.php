@@ -22,9 +22,10 @@ use App\Models\DirectoryListingModel;
  * _plan_cards.php, _verification_pitch.php and faq.php all tell the public that
  * paying never moves a business up the results, and the only way that stays
  * true is if this class cannot see anything money buys. That is why it opens
- * FOUR child tables — photos, services, attributes, tags — and not six. Adding
- * a fifth that TeamMemberService::canManage() gates would make the ranking
- * purchasable, which is the one thing the directory has promised it is not.
+ * the free child tables — photos, services, attributes, tags, facets and the
+ * uploaded menu — and not team or branches. Adding one that
+ * TeamMemberService::canManage() gates would make the ranking purchasable,
+ * which is the one thing the directory has promised it is not.
  *
  * ListingQualityTest::testPayingForTheBadgeDoesNotMoveTheScore() pins this.
  *
@@ -113,7 +114,7 @@ class ListingQualityService
      * Manage::edit() renders the meter for free off rows it has already loaded.
      *
      * @param array<string,mixed>                                          $listing a listings row
-     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int}|null  $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int,menu?:int}|null  $counts
      *
      * @return array{score:int,max:int,band:string,percent:int,items:list<array{
      *     key:string,label:string,points:int,earned:int,done:bool,hint:string,anchor:string}>}
@@ -147,7 +148,7 @@ class ListingQualityService
      * Just the number.
      *
      * @param array<string,mixed>                                         $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int}|null $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int,menu?:int}|null $counts
      */
     public function score(array $listing, ?array $counts = null): int
     {
@@ -162,7 +163,7 @@ class ListingQualityService
      * rubric and the UI drifting apart.
      *
      * @param array<string,mixed>                                         $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int}|null $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int,menu?:int}|null $counts
      *
      * @return array{score:int,max:int,band:string,percent:int,items:list<array<string,mixed>>,next:list<array<string,mixed>>}
      */
@@ -247,10 +248,10 @@ class ListingQualityService
     }
 
     /**
-     * Child-row counts for one listing. The four tables here are the whole
+     * Child-row counts for one listing. The tables here are the whole
      * list, and it is short for the reason the class docblock gives.
      *
-     * @return array{photos:int,services:int,attributes:int,tags:int,facets:int}
+     * @return array{photos:int,services:int,attributes:int,tags:int,facets:int,menu:int}
      */
     public function countsFor(int $listingId): array
     {
@@ -264,7 +265,7 @@ class ListingQualityService
     /**
      * @param list<int> $ids
      *
-     * @return array<int,array{photos:int,services:int,attributes:int,tags:int,facets:int}>
+     * @return array<int,array{photos:int,services:int,attributes:int,tags:int,facets:int,menu:int}>
      */
     public function countsForMany(array $ids): array
     {
@@ -284,6 +285,7 @@ class ListingQualityService
             'attributes' => 'xs_directory_listing_attributes',
             'tags'       => 'xs_directory_listing_tags',
             'facets'     => 'xs_directory_listing_facets',
+            'menu'       => 'xs_directory_listing_menu_files',
         ];
 
         $db = $this->listings->db;
@@ -412,7 +414,7 @@ class ListingQualityService
      * C. Can I size you up? What someone reads before deciding to call.
      *
      * @param array<string,mixed>                                    $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int} $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int,menu?:int} $counts
      *
      * @return list<array<string,mixed>>
      */
@@ -467,7 +469,7 @@ class ListingQualityService
      * D. Do you answer the question the searcher actually typed?
      *
      * @param array<string,mixed>                                    $listing
-     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int} $counts
+     * @param array{photos:int,services:int,attributes:int,tags:int,facets?:int,menu?:int} $counts
      *
      * @return list<array<string,mixed>>
      */
@@ -477,10 +479,15 @@ class ListingQualityService
             // Four named services answers "do you do X, and roughly what does
             // it cost". Thirty is a menu dump, so the cap is well under
             // ServiceMenuService::MAX_SERVICES.
+            //
+            // An uploaded menu (ListingMenuService — food listings only) answers
+            // the same question, so each file shares this cap rather than
+            // getting a bucket of its own, for the reason the features line
+            // below gives: sharing a cap can only move a score up.
             $this->countable(
                 'services',
                 'Services and prices',
-                $counts['services'],
+                $counts['services'] + ($counts['menu'] ?? 0),
                 self::CAP_SERVICES,
                 self::PTS_SERVICE,
                 'Name the handful of things people actually ask you for.',
@@ -689,9 +696,9 @@ class ListingQualityService
         }
     }
 
-    /** @return array{photos:int,services:int,attributes:int,tags:int,facets:int} */
+    /** @return array{photos:int,services:int,attributes:int,tags:int,facets:int,menu:int} */
     private function emptyCounts(): array
     {
-        return ['photos' => 0, 'services' => 0, 'attributes' => 0, 'tags' => 0, 'facets' => 0];
+        return ['photos' => 0, 'services' => 0, 'attributes' => 0, 'tags' => 0, 'facets' => 0, 'menu' => 0];
     }
 }

@@ -980,6 +980,14 @@
     --tint-hero-from: theme(colors.lime.800);
     --tint-hero-to: theme(colors.lime.900);
   }
+  .cat-tint-rose {
+    --tint-bg: theme(colors.rose.50);
+    --tint-fg: theme(colors.rose.600);
+    --tint-bg-dark: theme(colors.rose.500 / 15%);
+    --tint-fg-dark: theme(colors.rose.300);
+    --tint-hero-from: theme(colors.rose.700);
+    --tint-hero-to: theme(colors.rose.900);
+  }
   .cat-tint-slate {
     --tint-bg: theme(colors.slate.50);
     --tint-fg: theme(colors.slate.600);
@@ -1348,6 +1356,14 @@
 
   /* ------------------------------------------- services & features (profile) */
   /* Services read like a price list: name left, price right, a rule between. */
+  /* The uploaded menu, above the typed list (directory/_panel_services.php).
+     Pages sit in a grid of portrait tiles: a menu page is taller than wide. */
+  .menu-file  { @apply gap-2; }
+  .menu-pages { @apply grid grid-cols-2 gap-3 sm:grid-cols-4; }
+  .menu-page  { @apply block overflow-hidden rounded-lg border border-slate-200; }
+  .menu-page img { @apply aspect-[3/4] h-auto w-full object-cover object-top; }
+  .dark .menu-page { @apply border-slate-700; }
+
   .service-list    { @apply m-0 list-none p-0; }
   .service-list li {
     @apply flex items-baseline justify-between gap-4 border-b border-slate-100 py-2
@@ -1423,6 +1439,10 @@
   }
   .results-map-status:empty { @apply hidden; }
   .dark .results-map { @apply border-slate-800; }
+
+  /* "Sort: Best match | Newest", above the results (directory/_sort_toggle.php). */
+  .results-head  { @apply mb-4 flex flex-wrap items-center justify-between gap-2; }
+  .sort-toggle   { @apply flex items-center gap-2; }
 
   /* "Near me" and the radius chips. */
   .near-bar        { @apply mt-3 flex flex-wrap items-center gap-2; }

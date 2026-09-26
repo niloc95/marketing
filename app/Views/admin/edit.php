@@ -74,6 +74,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     'showExtras'   => ! $isNew && $showExtras,
                     'photos'       => $photos,
                     'deleteBase'   => base_url('admin/photo-delete'),
+                    'menuFiles'    => $menuFiles ?? [],
                 ]) ?>
 
                 <?php // Privileged fields — deliberately not in the shared partial, so the

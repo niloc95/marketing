@@ -86,6 +86,10 @@ Vagrantfile
 /writable/verification/*
 !/writable/verification/index.html
 
+# Food listings' uploaded PDF menus — see ListingMenuService.
+/writable/menus/*
+!/writable/menus/index.html
+
 php_errors.log
 
 #-------------------------

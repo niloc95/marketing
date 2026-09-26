@@ -20,7 +20,7 @@ module.exports = {
   // which shows up as an unstyled control rather than as a build error.
   //
   // app/Helpers likewise: category_group_style() in directory_ui_helper.php is
-  // where the fifteen .cat-tint-* class names are written down, and nowhere
+  // where the sixteen .cat-tint-* class names are written down, and nowhere
   // else. Without this glob every category tile builds green and renders navy.
   content: ['./app/Views/**/*.php', './app/Helpers/**/*.php', './public/assets/directory.js'],
   theme: {

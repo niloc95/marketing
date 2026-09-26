@@ -225,6 +225,7 @@ if (! function_exists('category_group_style')) {
             'Fitness & Sport'       => ['dumbbell',        'cat-tint-orange'],
             'Education & Training'  => ['graduation-cap',  'cat-tint-violet'],
             'Events & Hospitality'  => ['party-popper',    'cat-tint-yellow'],
+            'Restaurants & Food'    => ['utensils',        'cat-tint-rose'],
             'Travel & Tourism'      => ['plane',           'cat-tint-sky'],
             'Pets & Animals'        => ['paw-print',       'cat-tint-teal'],
             'Everyday Services'     => ['washing-machine', 'cat-tint-cyan'],
@@ -321,6 +322,10 @@ if (! function_exists('category_photo')) {
             'Fitness & Sport'          => [['group-fitness-sport', 'Julia Larson', 6455963]],
             'Education & Training'     => [['group-education-training', 'Tosin Olowoleni', 34162714]],
             'Events & Hospitality'     => [['group-events-hospitality', 'Matheus Bertelli', 16935994]],
+            // The restaurant category's own photo, reused rather than a second
+            // file: a pizzeria or a pub tile gets a dining room, which is right.
+            // Swap in a dedicated group-restaurants-food photo when there is one.
+            'Restaurants & Food'       => [['restaurant', 'Anna Tarazevich', 6937464]],
             'Travel & Tourism'         => [['group-travel-tourism', 'Kureng Workx', 13242022]],
             'Pets & Animals'           => [['group-pets-animals', 'Tima Miroshnichenko', 6235244]],
             'Everyday Services'        => [['group-everyday-services', 'Tima Miroshnichenko', 8774376]],

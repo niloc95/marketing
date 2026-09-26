@@ -141,6 +141,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     'vFacets'      => $vFacets,
                     'photos'       => $photos,
                     'deleteBase'   => base_url('manage/photo-delete'),
+                    'menuFiles'    => $menuFiles ?? [],
                     'showExtras'   => $showExtras,
                 ]) ?>
 

@@ -53,8 +53,9 @@ const APP_FILES = ['composer.json', 'composer.lock', 'preload.php', 'spark'];
  * with @mkdir(..., 0700, true) on first upload, which silently no-ops if the
  * parent writable/ is not writable by the PHP user. Shipping the directory in
  * the bundle means a fresh install has it before the first upload rather than
- * discovering the permission problem as a failed document submission. */
-const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification'];
+ * discovering the permission problem as a failed document submission.
+ * `menus` (restaurants' PDF menus, ListingMenuService) is the same case. */
+const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification', 'menus'];
 
 /** The line in public/index.php that resolves the app root. */
 const PATHS_REQUIRE_FROM = "require FCPATH . '../app/Config/Paths.php';";

@@ -291,20 +291,59 @@ class ListingFacets extends BaseConfig
                 'card'   => false,
             ],
         ],
+
+        // Restaurants, coffee shops, pubs. The two questions a hungry visitor
+        // filters on before cuisine: can I get it the way I want it, and are
+        // they open for the meal I am after. Yelp's "Takeout", "Delivery" and
+        // "Breakfast & Brunch" / "Lunch" / "Dinner" menu entries, as filters
+        // rather than categories, because a place is all of them at once.
+        //
+        // 'delivery' overlaps the listing's offers_delivery column, which is a
+        // generic "Delivery / mobile service" tick shared with plumbers and
+        // cannot be filtered on. This is the food-specific answer.
+        'dining' => [
+            'service_options' => [
+                'label'   => 'How to order',
+                'type'    => 'multi',
+                'options' => [
+                    'dine-in'    => 'Dine-in',
+                    'takeaway'   => 'Takeaway',
+                    'delivery'   => 'Delivery',
+                    'drive-thru' => 'Drive-thru',
+                ],
+                'filter' => true,
+                'card'   => true,
+            ],
+            'meals_served' => [
+                'label'   => 'Meals served',
+                'type'    => 'multi',
+                'options' => [
+                    'breakfast'  => 'Breakfast',
+                    'brunch'     => 'Brunch',
+                    'lunch'      => 'Lunch',
+                    'dinner'     => 'Dinner',
+                    'late-night' => 'Late night',
+                ],
+                'filter' => true,
+                'card'   => false,
+            ],
+        ],
     ];
 
     /**
      * group_name => a set reference and/or facets of its own.
      *
-     * Empty today, and that is deliberate rather than an oversight: within
-     * "Education & Training" a preschool, a high school and a driving school
-     * want three different sets, so there is nothing true of the whole group to
-     * put here. It exists because every other vertical that gets facets later
-     * will want exactly this tier — a group where one set fits all of it.
+     * "Education & Training" is not here, deliberately: a preschool, a high
+     * school and a driving school want three different sets, so there is
+     * nothing true of the whole group. Restaurants & Food is the case this tier
+     * was kept for — a pizzeria, a coffee shop and a pub all answer the same
+     * two questions.
      *
      * @var array<string,array<string,mixed>>
      */
-    public array $byGroup = [];
+    public array $byGroup = [
+        'Restaurants & Food' => ['use' => ['dining']],
+    ];
 
     /**
      * category slug => the facets that category offers.

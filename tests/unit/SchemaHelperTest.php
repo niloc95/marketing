@@ -109,6 +109,20 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('TravelAgency', schema_business_type('Travel & Tourism', 'travel-agency'));
     }
 
+    public function testFoodCategoriesGetTheirFoodEstablishmentSubtype(): void
+    {
+        $g = 'Restaurants & Food';
+
+        // All FoodEstablishment subtypes, which are LocalBusiness already —
+        // so, unlike the schools, a bare string rather than a pair.
+        $this->assertSame('Restaurant', schema_business_type($g, 'pizza'));
+        $this->assertSame('Restaurant', schema_business_type($g, 'chinese-restaurant'));
+        $this->assertSame('FastFoodRestaurant', schema_business_type($g, 'fast-food-takeaway'));
+        $this->assertSame('BarOrPub', schema_business_type($g, 'sports-bar-pub'));
+        $this->assertSame('CafeOrCoffeeShop', schema_business_type($g, 'coffee-shop'));
+        $this->assertSame('FoodEstablishment', schema_business_type($g, 'not-a-seeded-slug'));
+    }
+
     public function testVeterinaryCareIsPairedWithLocalBusiness(): void
     {
         // VeterinaryCare is a MedicalOrganization only — same trap as the schools.

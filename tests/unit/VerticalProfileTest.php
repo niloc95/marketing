@@ -98,7 +98,7 @@ final class VerticalProfileTest extends CIUnitTestCase
 
         $cases = [
             'a mapped group'              => ['Health & Medical', 'general-practitioner'],
-            'a mapped group + override'   => ['Events & Hospitality', 'restaurant'],
+            'a mapped group + override'   => ['Restaurants & Food', 'restaurant'],
             'an unmapped group'           => ['Widgets', 'widget-polisher'],
             'no category at all'          => [null, null],
         ];
@@ -126,7 +126,7 @@ final class VerticalProfileTest extends CIUnitTestCase
      */
     public function testACategoryOverrideKeepsTheHeadingsItDoesNotName(): void
     {
-        $v = $this->verticals->forCategory('Events & Hospitality', 'restaurant');
+        $v = $this->verticals->forCategory('Restaurants & Food', 'restaurant');
 
         $this->assertSame('Menu', $v['headings']['services'], "the category's own heading wins");
         $this->assertSame('Cuisine', $v['headings']['tags']);
@@ -319,7 +319,7 @@ final class VerticalProfileTest extends CIUnitTestCase
         // service list is a menu.
         $menu = view('directory/_panel_services', [
             'l' => ['services' => [['name' => 'Bunny chow', 'price_label' => 'R85']]],
-            'v' => vertical_profile('Events & Hospitality', 'restaurant'),
+            'v' => vertical_profile('Restaurants & Food', 'restaurant'),
         ], ['saveData' => false]);
         $this->assertStringContainsString('<h3>Menu</h3>', $menu);
     }

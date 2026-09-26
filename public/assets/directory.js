@@ -2117,6 +2117,31 @@
     apply();
   })();
 
+  // ----------------------------------------------------------- menu by category
+  // The menu upload is for food businesses only, and each category <option>
+  // says whether it is one as data-menu. Hidden AND disabled when it is not, so
+  // a file chosen under "Restaurant" and then abandoned by switching to
+  // "Plumber" is not uploaded only to be refused. "Choose…" leaves it showing,
+  // matching what the server renders before a category is picked.
+
+  (function () {
+    var field  = document.querySelector('[data-menu-field]');
+    var select = document.querySelector('select[name="category_id"]');
+    if (!field || !select) return;
+
+    var inputs = field.querySelectorAll('input');
+
+    function apply() {
+      var opt = select.options[select.selectedIndex];
+      var on  = !opt || opt.value === '' || opt.getAttribute('data-menu') === '1';
+      field.hidden = !on;
+      inputs.forEach(function (input) { input.disabled = !on; });
+    }
+
+    select.addEventListener('change', apply);
+    apply();
+  })();
+
   // --------------------------------------------------------- facets by category
   // "Ages, curriculum & fees" offers one fieldset per facet SET, and the chosen
   // category names its set on the <option> as data-facet-set. Same swap as the

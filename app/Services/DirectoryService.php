@@ -51,7 +51,7 @@ class DirectoryService
     /**
      * Paginated browse/search over published listings.
      *
-     * @param array{q?:string,category?:string,province?:string,city?:string,venue?:mixed,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string} $filters
+     * @param array{q?:string,category?:string,province?:string,city?:string,venue?:mixed,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string,facets?:array,sort?:string} $filters
      * @return array{items:array,total:int,page:int,perPage:int,totalPages:int,near:?array}
      */
     public function browse(array $filters, int $page = 1, int $perPage = 12): array
@@ -157,6 +157,13 @@ class DirectoryService
             // gives every listing in that suburb the identical centroid, so
             // distance_m ties exactly and the order used to be arbitrary.
             $builder->orderBy('distance_m', 'ASC', false)
+                ->orderBy('xs_directory_listings.quality_score', 'DESC');
+        } elseif (($filters['sort'] ?? '') === 'new') {
+            // "What opened lately". Distance still wins above: a visitor who
+            // asked for near me asked a different question. is_featured is not
+            // a key here — pinning an old listing above the new ones would make
+            // the sort lie about what it is sorting by.
+            $builder->orderBy('xs_directory_listings.published_at', 'DESC')
                 ->orderBy('xs_directory_listings.quality_score', 'DESC');
         } else {
             $builder->orderBy('xs_directory_listings.is_featured', 'DESC')
@@ -758,6 +765,13 @@ class DirectoryService
             $listing['category']['group_name'] ?? null,
             $listing['category']['slug'] ?? null,
         );
+
+        // The uploaded menu — free, and gated on the CURRENT category for the
+        // facets' reason: a restaurant re-filed as a florist stops showing it.
+        $listing['menu'] = ListingMenuService::offersMenu(
+            $listing['category']['group_name'] ?? null,
+            $listing['category']['slug'] ?? null,
+        ) ? (new ListingMenuService())->forListing((int) $listing['id']) : [];
 
         // Team members are part of the paid badge, so the gate is here at load
         // rather than in the view: one place decides, the panel and the

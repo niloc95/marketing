@@ -3,11 +3,14 @@
 namespace App\Controllers\Concerns;
 
 use App\Libraries\ListingImageProcessor;
+use App\Models\DirectoryCategoryModel;
+use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
+use App\Services\ListingMenuService;
 use App\Services\TeamMemberService;
 
 /**
- * Logo and gallery upload handling for the three controllers that own a
+ * Logo, gallery and menu upload handling for the three controllers that own a
  * listing form: Listing (public signup), Manage (owner self-service) and
  * Admin. Each used to carry its own byte-identical copy of these two methods
  * plus its own GALLERY_MAX — the same drift risk the shared _form_fields.php
@@ -216,6 +219,50 @@ trait HandlesListingUploads
         }
 
         return ['team' => $team, 'errors' => $errors];
+    }
+
+    /**
+     * Store, replace or remove the listing's uploaded menu.
+     *
+     * Runs after the save, like the gallery, for two reasons: it needs the id,
+     * and it must judge eligibility against the category the listing has NOW —
+     * an owner switching from "Florist" to "Restaurant" in this same submit is
+     * a restaurant by the time the menu is looked at.
+     *
+     * @return list<string> problems to flash; the rest of the save stands
+     */
+    protected function applyMenuUpload(int $listingId): array
+    {
+        $uploads = array_values(array_filter(
+            $this->request->getFileMultiple('menu') ?? [],
+            static fn ($f) => $f && $f->getError() !== UPLOAD_ERR_NO_FILE
+        ));
+        $remove = $this->request->getPost('menu_remove') === '1';
+
+        if ($uploads === [] && ! $remove) {
+            return [];
+        }
+
+        $listing  = (new DirectoryListingModel())->find($listingId);
+        $category = is_array($listing) && ! empty($listing['category_id'])
+            ? (new DirectoryCategoryModel())->find((int) $listing['category_id'])
+            : null;
+
+        $menus = new ListingMenuService();
+
+        if (! ListingMenuService::offersMenu($category['group_name'] ?? null, $category['slug'] ?? null)) {
+            return $uploads === []
+                ? []
+                : ['The menu was not added — menus are for restaurants and other food businesses.'];
+        }
+
+        if ($uploads !== []) {
+            return $menus->replace($listingId, $uploads);
+        }
+
+        $menus->remove($listingId);
+
+        return [];
     }
 
     /**

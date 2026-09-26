@@ -10,6 +10,7 @@ $where    = $province !== null ? ' in ' . $province : ' in South Africa';
 $heading  = $plural . $where;
 $canonical = base_url('directory/' . $catSlug . ($province !== null ? '/' . slugify($province) : ''));
 $total    = (int) $result['total'];
+$sort     = (string) ($sort ?? '');            // '' or 'new' — see Directory::sortParam()
 
 // This category's own identity: its group's colour and icon, its vocabulary, and
 // the photograph behind the hero. $category is the full row, so group_name is
@@ -128,19 +129,28 @@ $schema = schema_page(
         <?php $hasRail = listing_has_facet_rail($category); ?>
         <div<?= $hasRail ? ' class="results-layout"' : '' ?>>
             <?php if ($hasRail): ?>
-                <?php // Nothing to carry — the category and province are in the
-                      // path, not the query string. ?>
+                <?php // Only the sort to carry — the category and province are in
+                      // the path, not the query string. ?>
                 <div class="results-filters">
                     <?= view('directory/_facet_filters', [
                         'category' => $category,
                         'facets'   => $facets,
                         'action'   => $canonical,
-                        'carry'    => [],
+                        'carry'    => ['sort' => $sort],
                     ], ['saveData' => false]) ?>
                 </div>
             <?php endif; ?>
 
             <div>
+                <?php if ($total > 1): ?>
+                    <div class="results-head justify-end">
+                        <?= view('directory/_sort_toggle', [
+                            'base'  => $canonical,
+                            'query' => $facets === [] ? [] : ['f' => $facets],
+                            'sort'  => $sort,
+                        ], ['saveData' => false]) ?>
+                    </div>
+                <?php endif; ?>
                 <?php if ($total === 0): ?>
                     <div class="empty">
                         <?php // The vertical's noun, not the category name pluralised: "No
@@ -167,7 +177,7 @@ $schema = schema_page(
                                 <?php // http_build_query nests ?f[curriculum][]=ieb correctly;
                                       // without it page 2 of a narrowed list is the whole
                                       // category again. ?>
-                                <a href="<?= esc($canonical . '?' . http_build_query($facets === [] ? ['page' => $i] : ['f' => $facets, 'page' => $i]), 'attr') ?>"><?= $i ?></a>
+                                <a href="<?= esc($canonical . '?' . http_build_query(array_filter(['f' => $facets, 'sort' => $sort, 'page' => $i], static fn ($v): bool => $v !== [] && $v !== '')), 'attr') ?>"><?= $i ?></a>
                             <?php endif; ?>
                         <?php endfor; ?>
                     </nav>

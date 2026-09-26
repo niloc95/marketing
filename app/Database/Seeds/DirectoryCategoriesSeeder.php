@@ -105,9 +105,28 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Tutor', 'Driving School', 'Language School', 'Music Teacher',
                 'Computer Training', 'Training Provider',
             ],
+            // Caterer stays: it is hired for an event, not walked into for a meal.
             'Events & Hospitality' => [
                 'Event Planner', 'Caterer', 'Venue Hire', 'Florist',
-                'DJ & Entertainment', 'Restaurant', 'Coffee Shop', 'Bakery',
+                'DJ & Entertainment',
+            ],
+            // Somewhere to eat is what a hungry visitor searches for, not a party
+            // supplier — so Restaurant, Coffee Shop and Bakery move out of Events
+            // and lead here. Their slugs are untouched, so /directory/restaurant
+            // and every saved filter link still resolve. The names stay too:
+            // renaming "Coffee Shop" to "Coffee & Cafés" would mint a second slug
+            // rather than rename the first.
+            //
+            // Same rule as the schools above: the *kind of place* is a category.
+            // Takeaway, delivery and which meals are served are the 'dining'
+            // facets in Config\ListingFacets, not rows — a pizzeria that delivers
+            // is still a pizzeria. The cuisines carry "Restaurant" so the slug is
+            // /directory/chinese-restaurant rather than a bare /directory/chinese.
+            'Restaurants & Food' => [
+                'Restaurant', 'Coffee Shop', 'Bakery',
+                'Pizza', 'Italian Restaurant', 'Chinese Restaurant', 'Mexican Restaurant',
+                'Indian Restaurant', 'Sushi & Asian', 'Steakhouse & Grill',
+                'Fast Food & Takeaway', 'Sports Bar & Pub',
             ],
             // Somewhere to sleep is what a visitor searches for, not a party
             // supplier — so Guest House & Accommodation moves out of Events and

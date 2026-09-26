@@ -28,7 +28,9 @@ $page      = (int) ($result['page'] ?? 1);
 // A faceted view is a filtered view: thin, endlessly combinable, and a
 // duplicate of the landing page it canonicalises to. Same rule as ?q=.
 $hasFacets = ($filters['facets'] ?? []) !== [];
-$indexable = ! $hasQuery && ! $hasFacets && $page === 1 && ! $unknownFilter;
+// A re-sorted list is the same set in another order: a duplicate, never indexed.
+$isSorted  = ($filters['sort'] ?? '') !== '';
+$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && $page === 1 && ! $unknownFilter;
 
 // Every link on this page rebuilds the query string from scratch, and facets
 // travel as ?f[key][]=value while the filter array calls them 'facets'. Without
@@ -198,7 +200,18 @@ $verticalPhoto = $category !== null ? category_photo($category) : null;
             <?php endif; ?>
 
             <div>
-                <p class="mb-4 text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
+                <div class="results-head">
+                    <p class="text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
+                    <?php // Not offered on a near-me search: that list is ordered by
+                          // distance, which browse() keeps above any sort. ?>
+                    <?php if (($filters['lat'] ?? '') === '' && $result['total'] > 1): ?>
+                        <?= view('directory/_sort_toggle', [
+                            'base'  => base_url('directory'),
+                            'query' => $urlFilters,
+                            'sort'  => (string) ($filters['sort'] ?? ''),
+                        ], ['saveData' => false]) ?>
+                    <?php endif; ?>
+                </div>
 
                 <?php
                 // Where the map opens. Null when nothing on this page is mappable, in

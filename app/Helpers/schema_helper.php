@@ -367,10 +367,23 @@ if (! function_exists('schema_business_type')) {
             'training-college'       => ['LocalBusiness', 'CollegeOrUniversity'],
             'university'             => ['LocalBusiness', 'CollegeOrUniversity'],
             // Events & Hospitality
+            'florist'                => 'Florist',
+            // Restaurants & Food. Every one of these is already a LocalBusiness
+            // subtype (via FoodEstablishment), so unlike the schools no pair is
+            // needed. A cuisine is a Restaurant; the cuisine itself would be
+            // servesCuisine, not a type.
             'restaurant'             => 'Restaurant',
             'coffee-shop'            => 'CafeOrCoffeeShop',
             'bakery'                 => 'Bakery',
-            'florist'                => 'Florist',
+            'pizza'                  => 'Restaurant',
+            'italian-restaurant'     => 'Restaurant',
+            'chinese-restaurant'     => 'Restaurant',
+            'mexican-restaurant'     => 'Restaurant',
+            'indian-restaurant'      => 'Restaurant',
+            'sushi-asian'            => 'Restaurant',
+            'steakhouse-grill'       => 'Restaurant',
+            'fast-food-takeaway'     => 'FastFoodRestaurant',
+            'sports-bar-pub'         => 'BarOrPub',
             // Travel & Tourism
             'guest-house-accommodation' => 'LodgingBusiness',
             'game-lodge-safari'      => 'LodgingBusiness',
@@ -403,6 +416,7 @@ if (! function_exists('schema_business_type')) {
             'Professional Services' => 'ProfessionalService',
             'Fitness & Sport'       => 'SportsActivityLocation',
             'Education & Training'  => ['LocalBusiness', 'EducationalOrganization'],
+            'Restaurants & Food'    => 'FoodEstablishment',
             'Retail & Other'        => 'Store',
         ];
 
@@ -727,6 +741,18 @@ if (! function_exists('schema_local_business')) {
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
         }
 
+        // hasMenu is a FoodEstablishment property, so it is emitted only for the
+        // food group — a caterer is typed LocalBusiness, where it would be a
+        // validator warning. The PDF has a stable URL; a photographed menu is
+        // pointed at by its first page.
+        $hasMenu = null;
+        if (($l['category']['group_name'] ?? null) === 'Restaurants & Food' && ! empty($l['menu'])) {
+            $first   = $l['menu'][0];
+            $hasMenu = $first['kind'] === 'pdf'
+                ? base_url('directory/' . $l['slug'] . '/menu')
+                : base_url((string) $first['path']);
+        }
+
         return array_filter([
             '@type'                    => $type,
             '@id'                      => $canonical . '#business',
@@ -749,6 +775,7 @@ if (! function_exists('schema_local_business')) {
             'hasCredential'            => $credentials !== [] ? $credentials : null,
             'potentialAction'          => $reserve,
             'hasOfferCatalog'          => $catalog,
+            'hasMenu'                  => $hasMenu,
             'amenityFeature'           => $amenities !== [] ? $amenities : null,
             'additionalProperty'       => $properties !== [] ? $properties : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);

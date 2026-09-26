@@ -28,6 +28,7 @@
  * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
  * @var array    $vFacets     stored facet rows keyed by facet (old input wins), rendered by _facet_fields.php
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
+ * @var array    $menuFiles   stored menu files (edit pages only), rendered by _menu_fields.php
  * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
  * @var bool     $addressRequired  insist on a full address (public signup only)
  * @var bool     $privateDetailsRequired  insist on a title and a contact person (not admin intake)
@@ -58,6 +59,7 @@ $showExtras = $showExtras ?? false;
 $vServices   = $vServices   ?? [];
 $vAttributes = $vAttributes ?? [];
 $photos      = $photos      ?? [];
+$menuFiles   = $menuFiles   ?? [];
 $deleteBase  = $deleteBase  ?? '';
 
 // Only public signup insists on an address. The two edit pages pass false
@@ -110,7 +112,7 @@ helper('directory_hours');
                       // ages/curriculum one. The second cannot be derived from the
                       // first: a preschool and a driving school share a group and
                       // are asked completely different questions. ?>
-                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" data-menu="<?= \App\Services\ListingMenuService::offersMenu($p['group_name'] ?? null, $p['slug'] ?? null) ? '1' : '' ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
             <?php endforeach; ?>
         </select>
         <?php if ($err('category_id')): ?><div class="err"><?= esc($err('category_id')) ?></div><?php endif; ?>
@@ -420,6 +422,11 @@ helper('directory_hours');
     </div>
     <div class="hint" data-gallery-full <?= $gallerySlots > 0 ? 'hidden' : '' ?>>This profile already has the maximum number of photos. Delete one above to add another.</div>
 </div>
+<?= view('directory/_menu_fields', [
+    'v'          => $v,
+    'categories' => $categories,
+    'menuFiles'  => $menuFiles,
+], ['saveData' => false]) ?>
     </div>
 </details>
 

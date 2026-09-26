@@ -99,7 +99,7 @@ final class SystemHealthTest extends CIUnitTestCase
         // Losing any one of these breaks something silently: sessions, the
         // rate limiter, the log the admin page reads, or uploads.
         $this->assertSame(
-            ['writable/logs', 'writable/session', 'writable/cache', 'public/assets/listings'],
+            ['writable/logs', 'writable/session', 'writable/cache', 'public/assets/listings', 'writable/menus'],
             array_keys($this->health->storagePaths())
         );
     }

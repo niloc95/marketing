@@ -126,6 +126,9 @@ class SystemHealth
             'writable/session'       => WRITEPATH . 'session',
             'writable/cache'         => WRITEPATH . 'cache',
             'public/assets/listings' => FCPATH . 'assets/listings',
+            // Restaurants' PDF menus. Created by git with the deploy user's
+            // ownership, so this is where a wrong owner would show up first.
+            'writable/menus'         => WRITEPATH . 'menus',
         ];
     }
 

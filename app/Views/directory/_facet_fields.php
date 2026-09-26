@@ -4,7 +4,7 @@ use App\Services\ListingFacetService;
 
 /**
  * The structured facts panel inside the listing form — ages taken, curriculum,
- * grades offered, fees from.
+ * grades offered, fees from; for a restaurant, how to order and meals served.
  *
  * Sibling of _attribute_fields.php and it copies that file's two hard-won
  * rules, because the failure modes are identical:
@@ -63,8 +63,10 @@ foreach ($stored as $rows) {
 ?>
 <details class="disclosure" <?= $filled > 0 ? 'open' : '' ?> data-facets>
     <summary class="disclosure-summary">
-        <span>Ages, curriculum &amp; fees</span>
-        <span class="hint"><?= $filled > 0 ? 'Filled in' : 'Helps parents find you' ?></span>
+        <?php // Generic on purpose: the same panel carries a school's ages and fees
+              // and a restaurant's takeaway and meal times. ?>
+        <span>Details visitors filter on</span>
+        <span class="hint"><?= $filled > 0 ? 'Filled in' : 'Helps customers find you' ?></span>
     </summary>
 
     <div class="disclosure-body">

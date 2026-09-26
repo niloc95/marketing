@@ -10,6 +10,7 @@ use App\Models\DirectoryVerificationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\ListingFacetService;
+use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\ServiceMenuService;
@@ -153,6 +154,7 @@ class Manage extends BaseController
         $attributes = (new ServiceMenuService())->attributeKeysFor((int) $listing['id']);
         $tags       = $svc->tagsForListing((int) $listing['id']);
         $facets     = (new ListingFacetService())->storedFor((int) $listing['id']);
+        $menuFiles  = (new ListingMenuService())->forListing((int) $listing['id']);
 
         return view('directory/manage_edit', [
             'listing'    => $listing,
@@ -166,6 +168,7 @@ class Manage extends BaseController
             'attributes' => $attributes,
             'facets'     => $facets,
             'photos'     => $photos,
+            'menuFiles'  => $menuFiles,
 
             // The five collections above are exactly what the rubric counts, so
             // the strength meter costs no extra queries — that is what
@@ -178,6 +181,7 @@ class Manage extends BaseController
                 'attributes' => count($attributes),
                 'tags'       => count($tags),
                 'facets'     => array_sum(array_map('count', $facets)),
+                'menu'       => count($menuFiles),
             ]),
             'strengthFloor' => (int) config('Directory')->recentMinQuality,
             'slots'      => $this->gallerySlots((int) $listing['id']),
@@ -248,6 +252,7 @@ class Manage extends BaseController
         if ($gallery['photos'] !== []) {
             (new DirectoryListingPhotoModel())->appendPhotos((int) $listing['id'], $gallery['photos']);
         }
+        $menuErrors = $this->applyMenuUpload((int) $listing['id']);
 
         // After the gallery, for the reason Listing::store() gives — photos are
         // appended outside updateOwn()'s transaction and are worth ten points.
@@ -257,7 +262,7 @@ class Manage extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('manage/edit'))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $headshots['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $headshots['errors']))
         );
     }
 

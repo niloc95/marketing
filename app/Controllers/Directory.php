@@ -2,14 +2,21 @@
 
 namespace App\Controllers;
 
+use App\Controllers\Concerns\LocksDownDocumentCsp;
+use App\Models\DirectoryCategoryModel;
+use App\Models\DirectoryListingMenuFileModel;
+use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
+use App\Services\ListingMenuService;
 use App\Services\VerificationService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Directory extends BaseController
 {
+    use LocksDownDocumentCsp;
+
     public function home()
     {
         $svc            = new DirectoryService();
@@ -225,7 +232,20 @@ class Directory extends BaseController
             // which this method does not resolve. The caps are only to stop a
             // crafted query string making the sanitiser walk a huge array.
             'facets'   => $this->facetParams(),
+            'sort'     => $this->sortParam(),
         ];
+    }
+
+    /**
+     * ?sort=new, or '' for the default editorial order.
+     *
+     * A whitelist of one. Yelp's "New Restaurants", for every category: the
+     * default order ranks by profile quality, which is right for "who is good"
+     * and wrong for "what opened lately", where the answer is the newest first.
+     */
+    private function sortParam(): string
+    {
+        return $this->request->getGet('sort') === 'new' ? 'new' : '';
     }
 
     /**
@@ -387,11 +407,13 @@ class Directory extends BaseController
         // scoped to one category, which is the only scope in which "IEB" or
         // "takes a 3-year-old" means anything.
         $facets = $svc->sanitiseFacets($this->facetParams(), (string) $category['slug']);
+        $sort   = $this->sortParam();
 
         $result = $svc->browse([
             'category' => (string) $category['slug'],
             'province' => (string) ($province ?? ''),
             'facets'   => $facets,
+            'sort'     => $sort,
         ], $page);
 
         // Even at zero listings the page still renders — with an empty-state
@@ -401,15 +423,17 @@ class Directory extends BaseController
         //
         // A faceted view is never indexable, for the reason the venue page
         // gives: it is a thin duplicate of the landing page itself, and the
-        // combinations multiply without limit.
+        // combinations multiply without limit. A re-sorted view is the same
+        // page in a different order — a duplicate by definition.
         $min        = (int) config('Directory')->landingMinListings;
-        $indexable  = (int) $result['total'] >= $min && $page === 1 && $facets === [];
+        $indexable  = (int) $result['total'] >= $min && $page === 1 && $facets === [] && $sort === '';
 
         return view('directory/landing', [
             'category'       => $category,
             'province'       => $province,
             'result'         => $result,
             'facets'         => $facets,
+            'sort'           => $sort,
             'indexable'      => $indexable,
             'provinceCounts' => $svc->provinceCountsForCategory((int) $category['id']),
             'siblings'       => $svc->categoriesInGroup((string) ($category['group_name'] ?? ''), (int) $category['id']),
@@ -432,6 +456,57 @@ class Directory extends BaseController
                 (string) ($listing['province'] ?? '')
             ),
         ]);
+    }
+
+    /**
+     * A food listing's PDF menu, streamed from outside the docroot.
+     *
+     * The same headers the admin document viewer sends, for the same reason: the
+     * bytes are the uploader's, the origin is ours. nosniff stops a browser
+     * deciding our application/pdf is really HTML; the sandboxed CSP stops it
+     * doing anything if it did. Unlike an ID document this is public, so it may
+     * be cached — for an hour, short enough that a replaced menu shows up the
+     * same day.
+     *
+     * 404 for anything that is not a published food listing with a PDF menu, so
+     * a listing that has since moved out of the food group stops serving its old
+     * menu without anyone having to delete it.
+     */
+    public function menu(string $slug)
+    {
+        $listing = (new DirectoryListingModel())->findPublishedBySlug($slug);
+        if ($listing === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $category = ! empty($listing['category_id'])
+            ? (new DirectoryCategoryModel())->find((int) $listing['category_id'])
+            : null;
+        if (! ListingMenuService::offersMenu($category['group_name'] ?? null, $category['slug'] ?? null)) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $row  = (new DirectoryListingMenuFileModel())->pdfFor((int) $listing['id']);
+        $full = $row !== null ? (new ListingMenuService())->pdfPath($row) : null;
+        if ($full === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $contents = (string) file_get_contents($full);
+
+        $this->lockDownCspForDocument();
+
+        // The slug is [a-z0-9-] by construction, so it is safe in a header as-is;
+        // the uploader's own filename never goes near one.
+        return $this->response
+            ->setStatusCode(200)
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Length', (string) strlen($contents))
+            ->setHeader('Content-Disposition', 'inline; filename="' . $listing['slug'] . '-menu.pdf"')
+            ->setHeader('X-Content-Type-Options', 'nosniff')
+            ->setHeader('X-Robots-Tag', 'noindex')
+            ->setHeader('Cache-Control', 'public, max-age=3600')
+            ->setBody($contents);
     }
 
     /**

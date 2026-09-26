@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesListingUploads;
+use App\Controllers\Concerns\LocksDownDocumentCsp;
 use App\Libraries\LogReader;
 use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
@@ -17,6 +18,7 @@ use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
 use App\Services\ListingFacetService;
+use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\SystemStatusService;
@@ -27,6 +29,7 @@ use App\Services\VerificationService;
 class Admin extends BaseController
 {
     use HandlesListingUploads;
+    use LocksDownDocumentCsp;
 
     public function login()
     {
@@ -141,6 +144,9 @@ class Admin extends BaseController
             'photos'     => $listing
                 ? (new DirectoryListingPhotoModel())->forListing((int) $listing['id'])
                 : [],
+            'menuFiles'  => $listing
+                ? (new ListingMenuService())->forListing((int) $listing['id'])
+                : [],
             'slots'      => $this->gallerySlots($listing ? (int) $listing['id'] : null),
             'galleryMax' => self::GALLERY_MAX,
             // Same badge rule as the owner form, deliberately. The admin session
@@ -199,6 +205,7 @@ class Admin extends BaseController
         if ($gallery['photos'] !== []) {
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
+        $menuErrors = $this->applyMenuUpload((int) $result['id']);
 
         // After the gallery, for the reason Listing::store() gives. An admin
         // edit changes the same scored fields an owner edit does, so the score
@@ -207,7 +214,7 @@ class Admin extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('admin/edit/' . $result['id']))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $headshots['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $headshots['errors']))
         );
     }
 
@@ -459,50 +466,6 @@ class Admin extends BaseController
             ->setHeader('Cache-Control', 'no-store, private, max-age=0')
             ->setHeader('Pragma', 'no-cache')
             ->setBody($contents);
-    }
-
-    /**
-     * Replace this response's Content-Security-Policy with a deny-everything one.
-     *
-     * Setting the header directly does not work: $CSPEnabled is on, so CI4
-     * rebuilds both CSP headers from Config\ContentSecurityPolicy during
-     * finalize() and overwrites whatever a controller set. That is worth knowing
-     * — the first version of this method sent a sandbox policy that arrived at
-     * the browser as an empty header, which is the kind of protection that
-     * exists only in the source code.
-     *
-     * So it goes through the response's own policy object instead. The site-wide
-     * policy is report-only and permits Google Tag Manager, both correct for a
-     * page and both wrong for a file uploaded by a member of the public:
-     * reportOnly(false) makes this one actually enforce, and the cleared
-     * directives stop the inherited allowances applying to it.
-     */
-    private function lockDownCspForDocument(): void
-    {
-        $csp = $this->response->getCSP();
-
-        $csp->reportOnly(false);
-
-        foreach ([
-            'base-uri', 'child-src', 'connect-src', 'font-src', 'form-action',
-            'frame-src', 'img-src', 'media-src', 'manifest-src',
-            'script-src', 'script-src-elem', 'script-src-attr',
-            'style-src', 'style-src-elem', 'style-src-attr',
-        ] as $directive) {
-            $csp->clearDirective($directive);
-        }
-
-        // The policy that actually goes out is:
-        //   default-src 'none'; object-src 'none'; sandbox allow-downloads;
-        //   frame-ancestors 'none'
-        // object-src 'none' is inherited from the site config and kept. It does
-        // not stop the reviewer reading a PDF, because the queue opens documents
-        // as a top-level navigation, where the browser's built-in viewer handles
-        // the file and object-src governs only <object>/<embed> inside a
-        // document. If a future change ever embeds one of these in an iframe
-        // instead, that assumption breaks and the file will render blank.
-        $csp->setDefaultSrc("'none'");
-        $csp->addSandbox(['allow-downloads']);
     }
 
     /**

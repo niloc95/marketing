@@ -140,6 +140,7 @@ class Listing extends BaseController
         if ($gallery['photos'] !== []) {
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
+        $menuErrors = $this->applyMenuUpload((int) $result['id']);
 
         // Score the profile now that everything that counts towards it exists.
         // This has to be here rather than inside submitPublic(): the gallery is
@@ -193,7 +194,7 @@ class Listing extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('/'))->with('success', $message),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $verified['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $verified['errors']))
         );
     }
 

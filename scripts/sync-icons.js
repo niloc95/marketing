@@ -60,7 +60,7 @@ const ICONS = [
   // This list must stay in step with that map, including its 'folder' fallback.
   'stethoscope', 'sparkles', 'scissors', 'car', 'scale', 'wrench', 'briefcase',
   'dumbbell', 'graduation-cap', 'party-popper', 'plane', 'paw-print',
-  'washing-machine', 'shopping-bag', 'cake-slice', 'folder',
+  'washing-machine', 'shopping-bag', 'cake-slice', 'utensils', 'folder',
 ];
 
 /**

@@ -137,6 +137,22 @@ class ListingAttributes extends BaseConfig
             'vegetarian'       => 'Vegetarian options',
             'licensed'         => 'Licensed to sell alcohol',
         ],
+        // The same keys and labels as Events & Hospitality where the two
+        // overlap, because restaurants moved here from there and their stored
+        // ticks must keep rendering. Takeaway and delivery are not here: they
+        // are the 'service_options' facet, which can be filtered on.
+        'Restaurants & Food' => [
+            'outdoor_seating'   => 'Outdoor seating',
+            'private_functions' => 'Private functions',
+            'catering'          => 'Catering',
+            'halaal'            => 'Halaal options',
+            'vegetarian'        => 'Vegetarian options',
+            'vegan'             => 'Vegan options',
+            'licensed'          => 'Licensed to sell alcohol',
+            'bring_own_wine'    => 'Bring your own wine',
+            'play_area'         => "Kids' play area",
+            'live_sport'        => 'Shows live sport',
+        ],
         'Travel & Tourism' => [
             'airport_transfers' => 'Airport transfers',
             'guided_tours'      => 'Guided tours',

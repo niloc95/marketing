@@ -1,6 +1,7 @@
 <?php
 /**
- * The filter sidebar on a search-results page — "Ages, curriculum, grades".
+ * The filter sidebar on a search-results page — "Ages, curriculum, grades" for
+ * a school, "How to order, meals served" for a restaurant.
  *
  * Renders only inside a category. An unscoped /directory has nothing sensible
  * to offer: "IEB" is not a question you can ask of every business in the
@@ -50,6 +51,11 @@ $chosen = static function (string $key) use ($facets): array {
 };
 
 $applied = count($facets);
+
+// The collapsed hint names what this category actually filters on — "Ages,
+// Curriculum, Fees from" for a school, "How to order, Meals served" for a
+// restaurant — rather than one vertical's wording for all of them.
+$offeredHint = implode(', ', array_slice(array_column($offered, 'label'), 0, 3));
 ?>
 <?php // `open` in the markup, always: with JavaScript off this must be usable at
       // every width, and from lg up the summary is hidden because the sidebar is
@@ -58,7 +64,7 @@ $applied = count($facets);
     <summary class="results-filter-summary">
         <span>Narrow these results</span>
         <span class="hint"><?= $applied === 0
-            ? 'Ages, curriculum, fees'
+            ? $offeredHint
             : $applied . ' filter' . ($applied === 1 ? '' : 's') . ' applied' ?></span>
     </summary>
 
