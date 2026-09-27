@@ -51,13 +51,24 @@ over `display_name`/`description`/`credentials`.
 
 - `OWNER_EDITABLE` allowlist (what `/manage/edit` may write): business fields only —
   `type, display_name, contact_person, title, category_id, credentials, description,
-  phone, phone_alt, website, address_line, address_line_2, suburb, city, province,
-  postal_code, country, logo_path, trading_hours, accepts_card_payments, offers_delivery,
-  offers_online_booking`. Deliberately **excludes** `email`, `slug`, `status`,
-  `is_featured`, `is_verified` — a crafted owner POST can't publish/feature a listing,
-  hijack the address, or break the SEO'd URL. Note the `social_*` columns exist on the
-  table but are **not** on this list; read the constant rather than trusting this copy of
-  it, since it is a security boundary and this doc has drifted from it before.
+  phone, phone_alt, whatsapp, website, social_facebook, social_instagram,
+  social_linkedin, social_tiktok, address_line, address_line_2, suburb, city, province,
+  region, postal_code, logo_path, trading_hours, accepts_card_payments, offers_delivery,
+  offers_online_booking, booking_url`. Deliberately **excludes** `email`, `slug`,
+  `status`, `is_featured`, `is_verified`, `country` (it decides whether a listing is
+  free) and `venue_id` — a crafted owner POST can't publish/feature a listing, hijack the
+  address, dodge the International Listing paywall, or break the SEO'd URL. Read the
+  constant rather than trusting this copy of it, since it is a security boundary and
+  this doc has drifted from it before.
+- **Links and the WhatsApp number are checked on every write path *and* at render.**
+  `website`/`booking_url` go through `normaliseUrl()` + `safe_external_url()`. The four
+  `social_*` fields go through `social_profile_url()` (in `directory_ui_helper.php`),
+  which also requires the host to match the network (so the Instagram icon cannot link
+  anywhere else) and turns an `@handle` into a link for Instagram/TikTok. `whatsapp` is
+  stored as international digits via `whatsapp_digits()` (leading `0` → `27`), and
+  `whatsapp_chat_url()` builds the profile's "Chat on WhatsApp" wa.me button. Signup,
+  owner edit and `DirectoryAdminService::upsert()` all use these helpers. A new
+  link field needs the same treatment on all three.
 - **`is_verified` and `verified_until` are unrelated.** `is_verified` (bool) means the
   signup email was confirmed — `verify()` sets it alongside `status = published`.
   `verified_until` (date) is the paid Verified Business badge. Neither implies the other.
