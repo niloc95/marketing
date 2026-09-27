@@ -18,10 +18,20 @@ MAILTO=""
 # anything. Same job, same time as it ran on Hostinger.
 0 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:verifications:sweep --quiet
 
+# --- Listing quality sweep ----------------------------------------------------
+# Recomputes the profile-completeness score that orders search results.
+# Unlike the verification sweep above, this one IS load-bearing: scores are
+# written at six controller choke points, and the day somebody adds a seventh
+# and forgets to call recalculate(), this is the only thing that repairs it.
+# A stale score misorders results rather than breaking them, which is only
+# acceptable because this runs nightly. --stale limits it to rows never scored
+# or edited since their last score.
+15 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:quality:recalculate --stale --quiet
+
 # --- Jobs board housekeeping --------------------------------------------------
 # Renew reminders, expiry, deleting posts never confirmed, and wiping poster
 # contact details 12 months after a post ends (POPIA retention). Like the badge
-# sweep, not correctness-load-bearing for visitors: the pages check each post's
+# sweep, not correctness-load-bearing for visitors: the pages check the
 # closing date themselves. It IS load-bearing for the retention promise in the
 # privacy policy, so keep it installed.
 30 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark jobs:expire --quiet
