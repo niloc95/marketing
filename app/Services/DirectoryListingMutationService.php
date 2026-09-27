@@ -299,8 +299,13 @@ class DirectoryListingMutationService
             'description'      => $description,
             'description_text' => RichText::toPlainText($description),
             'phone'          => $this->clean($input['phone'] ?? ''),
+            'whatsapp'       => (string) $this->normaliseWhatsapp($input['whatsapp'] ?? ''),
             'email'          => trim((string) $input['email']),
             'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
+            'social_facebook'  => (string) $this->normaliseSocial('social_facebook', $input['social_facebook'] ?? ''),
+            'social_instagram' => (string) $this->normaliseSocial('social_instagram', $input['social_instagram'] ?? ''),
+            'social_linkedin'  => (string) $this->normaliseSocial('social_linkedin', $input['social_linkedin'] ?? ''),
+            'social_tiktok'    => (string) $this->normaliseSocial('social_tiktok', $input['social_tiktok'] ?? ''),
             'address_line'   => $this->clean($input['address_line'] ?? ''),
             'address_line_2' => $this->clean($input['address_line_2'] ?? ''),
             'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
@@ -606,6 +611,12 @@ class DirectoryListingMutationService
                     // validate() has already rejected anything normaliseUrl
                     // can't make safe, so the ?? '' here is belt-and-braces.
                     $data[$field] = $this->normaliseUrl($input[$field]) ?? '';
+                } elseif (str_starts_with($field, 'social_')) {
+                    // Same belt-and-braces: validate() has refused a link that
+                    // is not to this network.
+                    $data[$field] = $this->normaliseSocial($field, $input[$field]) ?? '';
+                } elseif ($field === 'whatsapp') {
+                    $data[$field] = $this->normaliseWhatsapp($input[$field]) ?? '';
                 } else {
                     $data[$field] = $this->clean($input[$field]);
                 }
@@ -785,6 +796,11 @@ class DirectoryListingMutationService
         'email'          => [190, 'email'],
         'website'        => [255, 'website'],
         'booking_url'    => [255, 'booking page address'],
+        'whatsapp'       => [40, 'WhatsApp number'],
+        'social_facebook'  => [255, 'Facebook link'],
+        'social_instagram' => [255, 'Instagram link'],
+        'social_linkedin'  => [255, 'LinkedIn link'],
+        'social_tiktok'    => [255, 'TikTok link'],
         'address_line'   => [255, 'street address'],
         'address_line_2' => [255, 'address line 2'],
         'suburb'         => [120, 'suburb'],
@@ -920,9 +936,27 @@ class DirectoryListingMutationService
             }
         }
 
+        // Social links go into an href too, and must also point at the network
+        // their label names — see social_profile_url().
+        foreach (listing_social_networks() as $field => [$network, , $handleUrl]) {
+            $url = $this->normaliseSocial($field, $input[$field] ?? '');
+            if ($url === null) {
+                $errors[$field] = $handleUrl !== null
+                    ? sprintf('Please enter your %s profile link or @handle.', $network)
+                    : sprintf('Please enter a link to your %s page.', $network);
+            } elseif (mb_strlen($url) > self::MAX_LENGTHS[$field][0]) {
+                $errors[$field] = sprintf('Please keep the %s link under %d characters.', $network, self::MAX_LENGTHS[$field][0] + 1);
+            }
+        }
+        if ($this->normaliseWhatsapp($input['whatsapp'] ?? '') === null) {
+            $errors['whatsapp'] = 'Please enter a WhatsApp number, e.g. 082 123 4567 or +44 7700 900123.';
+        }
+
         foreach (self::MAX_LENGTHS as $field => [$max, $label]) {
-            // The URL fields are checked above, against their normalised form.
-            if (in_array($field, ['website', 'booking_url'], true) || isset($errors[$field]) || ! isset($input[$field])) {
+            // The URL fields are checked above, against their normalised form,
+            // and so is WhatsApp — its stored digits are always shorter.
+            if (in_array($field, ['website', 'booking_url', 'whatsapp'], true) || str_starts_with($field, 'social_')
+                || isset($errors[$field]) || ! isset($input[$field])) {
                 continue;
             }
             if (mb_strlen($this->clean($input[$field])) > $max) {
@@ -1152,6 +1186,25 @@ class DirectoryListingMutationService
         }
 
         return filter_var($url, FILTER_VALIDATE_URL) === false ? null : $url;
+    }
+
+    /**
+     * A social profile link for $column, '' when empty, or null when it is not
+     * a link to that network. The rules live in social_profile_url() so the
+     * contact panel can apply the same check at render.
+     */
+    public function normaliseSocial(string $column, $value): ?string
+    {
+        return social_profile_url($column, $value);
+    }
+
+    /**
+     * A WhatsApp number as wa.me digits, '' when empty, or null when invalid.
+     * See whatsapp_digits().
+     */
+    public function normaliseWhatsapp($value): ?string
+    {
+        return whatsapp_digits($value);
     }
 
     private function clean($v): string

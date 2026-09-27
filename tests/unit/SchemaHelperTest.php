@@ -422,6 +422,17 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertArrayNotHasKey('potentialAction', schema_local_business(['display_name' => 'Acme', 'booking_url' => 'javascript:alert(1)'], $url));
     }
 
+    public function testSameAsCarriesOnlySocialsThatPointAtTheirNetwork(): void
+    {
+        $business = schema_local_business([
+            'display_name'     => 'Acme',
+            'social_tiktok'    => 'https://www.tiktok.com/@acme',
+            'social_instagram' => 'https://evil.test/acme',
+        ], 'https://example.test/directory/acme');
+
+        $this->assertSame(['https://www.tiktok.com/@acme'], $business['sameAs']);
+    }
+
     public function testLocalBusinessOmitsHoursKeyEntirelyWhenThereAreNone(): void
     {
         $business = schema_local_business(['display_name' => 'Acme', 'trading_hours' => null], 'https://example.test/directory/acme');

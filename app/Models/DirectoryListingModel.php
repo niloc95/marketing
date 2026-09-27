@@ -15,8 +15,8 @@ class DirectoryListingModel extends Model
 
     protected $allowedFields = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
-        'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'email', 'website',
-        'social_facebook', 'social_instagram', 'social_linkedin',
+        'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'whatsapp', 'email', 'website',
+        'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code', 'country',
         'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
         'logo_path', 'slug', 'status', 'is_verified',
@@ -53,13 +53,13 @@ class DirectoryListingModel extends Model
      * them here would route a public form's raw input straight into the column
      * and bypass that check.
      *
-     * social_facebook, social_instagram and social_linkedin are absent for a
-     * third reason: no form in the app renders them, so nothing validates them
-     * either — but show.php puts them straight into an href, where a
-     * "javascript:" value is a click away from running. They were reachable
-     * only by hand-crafting a POST. Re-add them here when (and only when) the
-     * edit form gains the fields and they go through
-     * DirectoryListingMutationService::normaliseUrl() like `website` does.
+     * The four social_* columns were absent until the edit form gained them,
+     * because show.php puts them straight into an href, where a "javascript:"
+     * value is a click away from running. They are here now on the same terms
+     * as booking_url below, and one more: social_profile_url() also checks the
+     * link points at that network, so the "Instagram" label cannot be spent on
+     * an arbitrary outbound link. whatsapp goes through whatsapp_digits(), so
+     * only international digits are ever stored.
      *
      * booking_url is here on exactly those terms: the form renders it, and
      * updateOwn() and validate() put it through normaliseUrl() alongside
@@ -96,7 +96,8 @@ class DirectoryListingModel extends Model
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'category_id',
-        'credentials', 'description', 'phone', 'phone_alt', 'website',
+        'credentials', 'description', 'phone', 'phone_alt', 'whatsapp', 'website',
+        'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',
         'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',

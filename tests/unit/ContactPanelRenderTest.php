@@ -86,4 +86,34 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Suggest an edit', $this->render(['booking_url' => 'https://book.example.test/hana'], false));
         $this->assertStringNotContainsString('Book online', $this->render(['booking_url' => 'https://book.example.test/hana'], false));
     }
+
+    public function testChatOnWhatsappOpensAChatWithTheStoredNumber(): void
+    {
+        $html = $this->render(['whatsapp' => '27821234567']);
+
+        $this->assertStringContainsString('Chat on WhatsApp', $html);
+        $this->assertStringContainsString('href="https://wa.me/27821234567?text=', $html);
+        $this->assertStringNotContainsString('Chat on WhatsApp', $this->render([]));
+        $this->assertStringNotContainsString('Chat on WhatsApp', $this->render(['whatsapp' => 'nope']));
+        // Business-wide, like Book online — a branch panel does not repeat it.
+        $this->assertStringNotContainsString('Chat on WhatsApp', $this->render(['whatsapp' => '27821234567'], false));
+    }
+
+    public function testSocialsRenderAsLabelledIconsOnlyForTheirOwnNetwork(): void
+    {
+        $html = $this->render([
+            'social_instagram' => 'https://www.instagram.com/hana',
+            'social_tiktok'    => 'https://www.tiktok.com/@hana',
+            // Rows written before the host check existed.
+            'social_facebook'  => 'javascript:alert(1)',
+            'social_linkedin'  => 'https://evil.test/hana',
+        ]);
+
+        $this->assertStringContainsString('href="https://www.instagram.com/hana"', $html);
+        $this->assertStringContainsString('aria-label="Hana Nail on Instagram"', $html);
+        $this->assertStringContainsString('href="https://www.tiktok.com/@hana"', $html);
+        $this->assertStringNotContainsString('javascript:', $html);
+        $this->assertStringNotContainsString('evil.test', $html);
+        $this->assertStringNotContainsString('instagram.com', $this->render(['social_instagram' => 'https://www.instagram.com/hana'], false));
+    }
 }

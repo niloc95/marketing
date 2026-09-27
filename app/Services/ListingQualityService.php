@@ -46,8 +46,9 @@ use App\Models\DirectoryListingModel;
  *  - credentials: a physiotherapist has some, a plumber has none. Scoring it
  *    would depress whole categories for something they cannot fix.
  *  - phone_alt, address_line_2, suburb: marginal.
- *  - social_facebook/instagram/linkedin: no form writes them today (see the
- *    OWNER_EDITABLE docblock). Revisit if they ever gain one.
+ *  - social_* and whatsapp: the form writes them since 2026-09-29, but they
+ *    are unscored until there is data on how many listings fill them in.
+ *    Adding points is a recalibration of the brackets above, not a one-liner.
  *
  * ── Calibration ────────────────────────────────────────────────────────────
  *

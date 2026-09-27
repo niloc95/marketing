@@ -8,7 +8,8 @@
  * the ExpandPracticeLocations migration for why that naming is load-bearing.
  *
  * Laid out as action rows — value on the left, icon on the right — in the order
- * a customer reaches for them: book, visit the site, call, email, get there.
+ * a customer reaches for them: book, chat, visit the site, call, email, get
+ * there.
  *
  * title and contact_person are deliberately NOT rendered. They name a private
  * individual and are kept for administration only; the signup form tells the
@@ -16,8 +17,8 @@
  *
  * @var array  $row      a listing row, or a practice-location row
  * @var string $heading  panel heading
- * @var bool   $showWeb  render the business-wide rows: Book online, website,
- *                       socials and Suggest an edit. False for a branch: a
+ * @var bool   $showWeb  render the business-wide rows: Book online, Chat on
+ *                       WhatsApp, website, socials and Suggest an edit. False for a branch: a
  *                       per-branch copy would only go stale against the
  *                       listing's own, and one edit link per profile is enough.
  */
@@ -40,11 +41,21 @@ $addr    = map_address_text($row);
 $dirUrl  = map_directions_url($row);
 $wazeUrl = map_waze_url($row);
 
-$socials = $showWeb ? array_filter([
-    'Facebook'  => safe_external_url($row['social_facebook'] ?? ''),
-    'Instagram' => safe_external_url($row['social_instagram'] ?? ''),
-    'LinkedIn'  => safe_external_url($row['social_linkedin'] ?? ''),
-]) : [];
+// social_profile_url() at render as well as on save, for the same reason as
+// safe_external_url() below — and it also refuses a link that is not to the
+// network its icon claims. Keyed by the brand_icon() name.
+$socials = [];
+if ($showWeb) {
+    foreach (listing_social_networks() as $field => [$network]) {
+        $url = social_profile_url($field, $row[$field] ?? '');
+        if ($url !== null && $url !== '') {
+            $socials[strtolower($network)] = [$network, $url];
+        }
+    }
+}
+
+// wa.me with the digits whatsapp_digits() stores; '' hides the button.
+$whatsappUrl = $showWeb ? whatsapp_chat_url($row['whatsapp'] ?? '', (string) ($row['display_name'] ?? '')) : '';
 
 // safe_external_url() at render time as well as normaliseUrl() on save: a row
 // written before either check existed must still never reach an href unvetted.
@@ -73,6 +84,10 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
     <?php if ($bookingUrl !== ''): ?>
         <?php // id="book" keeps any old "#book" link landing on the right spot. ?>
         <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
+    <?php endif; ?>
+
+    <?php if ($whatsappUrl !== ''): ?>
+        <a class="btn btn-whatsapp btn-block contact-book" href="<?= esc($whatsappUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= brand_icon('whatsapp', 'h-5 w-5 shrink-0') ?>Chat on WhatsApp</a>
     <?php endif; ?>
 
     <?php if ($websiteUrl !== ''): ?>
@@ -113,8 +128,10 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
 
     <?php if ($socials): ?>
         <div class="contact-row">
-            <span>
-                <?php foreach ($socials as $label => $url): ?><a href="<?= esc($url, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc($label) ?></a>&nbsp; <?php endforeach; ?>
+            <span class="contact-socials">
+                <?php foreach ($socials as $icon => [$network, $url]): ?>
+                    <a href="<?= esc($url, 'attr') ?>" target="_blank" rel="noopener nofollow" aria-label="<?= esc(($row['display_name'] ?? '') !== '' ? $row['display_name'] . ' on ' . $network : $network, 'attr') ?>" title="<?= esc($network, 'attr') ?>"><?= brand_icon($icon, 'h-5 w-5') ?></a>
+                <?php endforeach; ?>
             </span>
             <?= lucide('link') ?>
         </div>

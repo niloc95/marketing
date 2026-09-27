@@ -167,10 +167,10 @@ if ($aboutText !== '') {
                     <?= lucide('share') ?>
                 </button>
                 <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['whatsapp'], 'attr') ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.42-1.36a9.87 9.87 0 0 0 4.62 1.15h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.83 14.02c-.25.7-1.24 1.29-1.99 1.44-.53.11-1.22.19-3.55-.76-2.98-1.23-4.9-4.24-5.05-4.44-.15-.2-1.2-1.6-1.2-3.05 0-1.45.76-2.16 1.03-2.46.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.85 2.06.92 2.21.07.15.12.33.02.53-.1.2-.15.33-.3.5-.15.18-.31.4-.44.53-.15.15-.3.31-.13.61.17.3.76 1.25 1.63 2.02 1.12.99 2.06 1.3 2.36 1.45.3.15.48.13.66-.08.18-.2.76-.89.96-1.19.2-.3.4-.25.67-.15.27.1 1.73.82 2.03.97.3.15.5.22.57.35.08.13.08.73-.17 1.43Z"/></svg>
+                    <?= brand_icon('whatsapp') ?>
                 </a>
                 <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['facebook'], 'attr') ?>" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Share on Facebook">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 22v-8.5H16l.5-3.5h-3V7.8c0-1 .3-1.8 1.8-1.8H16.6V2.8C16.2 2.7 15.2 2.6 14 2.6c-2.5 0-4.2 1.5-4.2 4.3V10H7v3.5h2.8V22h3.7Z"/></svg>
+                    <?= brand_icon('facebook') ?>
                 </a>
                 <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['x'], 'attr') ?>" target="_blank" rel="noopener" aria-label="Share on X" title="Share on X">
                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7.2 8.2L23 22h-6.6l-5.2-6.8L5.2 22H2l7.7-8.8L1.5 2h6.8l4.7 6.2L18.9 2Zm-1.2 18h1.8L7.4 4H5.5l12.2 16Z"/></svg>

@@ -159,6 +159,15 @@ helper('directory_hours');
     </div>
 </div>
 
+<div class="form-row">
+    <div class="field">
+        <label for="field-whatsapp">WhatsApp number</label>
+        <input type="text" id="field-whatsapp" name="whatsapp" value="<?= esc($v('whatsapp'), 'attr') ?>" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="082 123 4567">
+        <div class="hint">Adds a <em>Chat on WhatsApp</em> button to your profile. Leave blank to hide it.</div>
+        <?php if ($err('whatsapp')): ?><div class="err"><?= esc($err('whatsapp')) ?></div><?php endif; ?>
+    </div>
+</div>
+
 <div class="field">
     <label for="field-website">Website</label>
     <input type="text" id="field-website" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
@@ -358,6 +367,31 @@ helper('directory_hours');
     'hours' => $vHours,
     'copy'  => true,
 ]) ?>
+    </div>
+</details>
+
+<?php
+$socialNetworks = listing_social_networks();
+$socialFilled   = count(array_filter(array_keys($socialNetworks), static fn (string $f): bool => $v($f) !== ''));
+$socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f): bool => $err($f) !== '') !== [];
+?>
+<details class="disclosure" id="field-socials" <?= $socialFilled > 0 || $socialErrored ? 'open' : '' ?>>
+    <summary class="disclosure-summary">
+        <span>Social profiles</span>
+        <span class="hint"><?= $socialFilled > 0 ? $socialFilled . ' added' : 'Facebook, Instagram, LinkedIn, TikTok' ?></span>
+    </summary>
+    <div class="disclosure-body">
+        <p class="hint">Paste a link to your page. For Instagram and TikTok your @handle is enough. Each one shows as an icon on your profile.</p>
+        <div class="form-row">
+            <?php foreach ($socialNetworks as $field => [$network, , $handleUrl]): ?>
+                <div class="field">
+                    <label for="field-<?= $field ?>"><?= esc($network) ?></label>
+                    <input type="text" id="field-<?= $field ?>" name="<?= $field ?>" value="<?= esc($v($field), 'attr') ?>" maxlength="255"
+                           placeholder="<?= $handleUrl !== null ? '@yourhandle' : 'https://' . esc(strtolower($network), 'attr') . '.com/…' ?>">
+                    <?php if ($err($field)): ?><div class="err"><?= esc($err($field)) ?></div><?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 </details>
 

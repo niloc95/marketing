@@ -616,13 +616,15 @@ if (! function_exists('schema_local_business')) {
         helper('directory_ui');
 
         // sameAs carries only the socials actually filled in, and only the ones
-        // that are real http(s) URLs — sameAs is a link target like any other.
-        $sameAs = array_values(array_filter([
-            safe_external_url($l['social_facebook'] ?? ''),
-            safe_external_url($l['social_instagram'] ?? ''),
-            safe_external_url($l['social_linkedin'] ?? ''),
-            safe_external_url($l['website'] ?? ''),
-        ]));
+        // that are real http(s) links to the network they are stored under —
+        // sameAs is a link target like any other. The same check the contact
+        // panel renders through, so the two can never disagree.
+        $sameAs = [];
+        foreach (array_keys(listing_social_networks()) as $field) {
+            $sameAs[] = (string) social_profile_url($field, $l[$field] ?? '');
+        }
+        $sameAs[] = safe_external_url($l['website'] ?? '');
+        $sameAs   = array_values(array_filter($sameAs));
 
         $hours = schema_opening_hours($l['trading_hours'] ?? null);
 

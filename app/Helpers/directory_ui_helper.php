@@ -451,6 +451,146 @@ if (! function_exists('safe_external_url')) {
     }
 }
 
+if (! function_exists('listing_social_networks')) {
+    /**
+     * The social profiles a listing can carry: column => [label, hosts, handle URL].
+     *
+     * hosts is what the link must point at — a "Facebook" field that accepts
+     * any URL is a free, labelled outbound link to wherever the owner likes.
+     * The handle URL, when set, lets someone type "@acme" instead of pasting a
+     * link; LinkedIn and Facebook have no handle form worth guessing at.
+     *
+     * @return array<string, array{0: string, 1: list<string>, 2: string|null}>
+     */
+    function listing_social_networks(): array
+    {
+        return [
+            'social_facebook'  => ['Facebook', ['facebook.com', 'fb.com'], null],
+            'social_instagram' => ['Instagram', ['instagram.com'], 'https://www.instagram.com/%s'],
+            'social_linkedin'  => ['LinkedIn', ['linkedin.com'], null],
+            'social_tiktok'    => ['TikTok', ['tiktok.com'], 'https://www.tiktok.com/@%s'],
+        ];
+    }
+}
+
+if (! function_exists('social_profile_url')) {
+    /**
+     * A social profile URL for $column that is safe to link to, '' for empty,
+     * or null when the value is not a link to that network.
+     *
+     * Used on save (both validators) and again at render, like
+     * safe_external_url(): rows written before this check existed must not
+     * reach an href on the strength of a label alone.
+     */
+    function social_profile_url(string $column, $value): ?string
+    {
+        $networks = listing_social_networks();
+        $value    = is_scalar($value) ? trim((string) $value) : '';
+        if ($value === '' || ! isset($networks[$column])) {
+            return $value === '' ? '' : null;
+        }
+        [, $hosts, $handleUrl] = $networks[$column];
+
+        // "@acme" or a bare "acme" — a handle, not a host, when it has no dot
+        // or slash in it. Handles may contain dots, so "@acme.za" is still a
+        // handle; without the @ a dot means the owner pasted a host.
+        if ($handleUrl !== null && preg_match('/^@?([A-Za-z0-9._]{1,30})$/', $value, $m) === 1
+            && (str_starts_with($value, '@') || ! str_contains($value, '.'))) {
+            return sprintf($handleUrl, $m[1]);
+        }
+
+        if (! preg_match('#^[a-z][a-z0-9+.\-]*:#i', $value)) {
+            $value = 'https://' . $value;
+        }
+        $url = safe_external_url($value);
+        if ($url === '') {
+            return null;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        foreach ($hosts as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+}
+
+if (! function_exists('whatsapp_digits')) {
+    /**
+     * A WhatsApp number as the international digits wa.me takes, or null.
+     *
+     * "082 123 4567", "+27 82 123 4567" and "27821234567" all come out as
+     * "27821234567". A leading 0 is read as South African because this is a
+     * South African directory; anyone abroad types their + and country code.
+     * Returns '' for empty input so callers can tell "cleared" from "invalid".
+     */
+    function whatsapp_digits($value): ?string
+    {
+        $value = is_scalar($value) ? trim((string) $value) : '';
+        if ($value === '') {
+            return '';
+        }
+        // Anything but digits, spaces and the usual separators is not a phone
+        // number someone mistyped — it is something else entirely.
+        if (preg_match('/^\+?[\d\s().\-]+$/', $value) !== 1) {
+            return null;
+        }
+        $digits = (string) preg_replace('/\D+/', '', $value);
+        if (! str_starts_with($value, '+') && str_starts_with($digits, '0')) {
+            $digits = '27' . substr($digits, 1);
+        }
+
+        return preg_match('/^[1-9]\d{9,14}$/', $digits) === 1 ? $digits : null;
+    }
+}
+
+if (! function_exists('whatsapp_chat_url')) {
+    /**
+     * The wa.me link for a listing's Chat on WhatsApp button, or '' when the
+     * stored number does not make a valid one. The prefilled message tells the
+     * owner where the enquiry came from.
+     */
+    function whatsapp_chat_url($number, string $businessName = ''): string
+    {
+        $digits = whatsapp_digits($number);
+        if ($digits === null || $digits === '') {
+            return '';
+        }
+        $text = $businessName !== ''
+            ? 'Hi, I found ' . $businessName . ' on the WebScheduler Directory.'
+            : 'Hi, I found you on the WebScheduler Directory.';
+
+        return 'https://wa.me/' . $digits . '?text=' . rawurlencode($text);
+    }
+}
+
+if (! function_exists('brand_icon')) {
+    /**
+     * An inline brand glyph. Lucide dropped brand marks, so these few live
+     * here rather than in resources/icons/. fill="currentColor" so they take
+     * the surrounding text colour like the Lucide icons do.
+     */
+    function brand_icon(string $name, string $class = ''): string
+    {
+        $paths = [
+            'whatsapp'  => 'M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.42-1.36a9.87 9.87 0 0 0 4.62 1.15h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.83 14.02c-.25.7-1.24 1.29-1.99 1.44-.53.11-1.22.19-3.55-.76-2.98-1.23-4.9-4.24-5.05-4.44-.15-.2-1.2-1.6-1.2-3.05 0-1.45.76-2.16 1.03-2.46.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.85 2.06.92 2.21.07.15.12.33.02.53-.1.2-.15.33-.3.5-.15.18-.31.4-.44.53-.15.15-.3.31-.13.61.17.3.76 1.25 1.63 2.02 1.12.99 2.06 1.3 2.36 1.45.3.15.48.13.66-.08.18-.2.76-.89.96-1.19.2-.3.4-.25.67-.15.27.1 1.73.82 2.03.97.3.15.5.22.57.35.08.13.08.73-.17 1.43Z',
+            'facebook'  => 'M13.5 22v-8.5H16l.5-3.5h-3V7.8c0-1 .3-1.8 1.8-1.8H16.6V2.8C16.2 2.7 15.2 2.6 14 2.6c-2.5 0-4.2 1.5-4.2 4.3V10H7v3.5h2.8V22h3.7Z',
+            'instagram' => 'M12 2.2c3.2 0 3.6 0 4.8.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2-.1-1.3-.1-1.6-.1-4.8s0-3.6.1-4.8c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4 1.2-.1 1.6-.1 4.8-.1Zm0 4.7a5.1 5.1 0 1 0 0 10.2 5.1 5.1 0 0 0 0-10.2Zm0 8.4a3.3 3.3 0 1 1 0-6.6 3.3 3.3 0 0 1 0 6.6Zm5.3-9.8a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z',
+            'linkedin'  => 'M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z',
+            'tiktok'    => 'M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.6 2.6 0 0 1-2.6-2.6 2.6 2.6 0 0 1 3.37-2.48V9.66A5.73 5.73 0 0 0 4.1 15.3a5.72 5.72 0 0 0 5.76 5.7 5.72 5.72 0 0 0 5.73-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.29-1.48Z',
+        ];
+        if (! isset($paths[$name])) {
+            throw new InvalidArgumentException('Unknown brand icon "' . $name . '".');
+        }
+        $cls = $class !== '' ? ' class="' . esc($class) . '"' : '';
+
+        return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"' . $cls . '><path d="' . $paths[$name] . '"/></svg>';
+    }
+}
+
 if (! function_exists('listing_image_url')) {
     /**
      * Resolve a stored image path to something an <img src> can use.

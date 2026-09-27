@@ -169,8 +169,13 @@ class DirectoryAdminService
             'description'    => 'richtext',
             'phone'          => null,
             'phone_alt'      => null,
+            'whatsapp'       => 'whatsapp',
             'website'        => 'url',
             'booking_url'    => 'url',
+            'social_facebook'  => 'social',
+            'social_instagram' => 'social',
+            'social_linkedin'  => 'social',
+            'social_tiktok'    => 'social',
             'address_line'   => null,
             // The form posts this and owners can edit it; leaving it out here
             // meant an admin could fix a unit number, be told "Listing saved.",
@@ -205,6 +210,27 @@ class DirectoryAdminService
                     return [
                         'ok'      => false,
                         'errors'  => [$field => 'Please enter a valid ' . $label . ' starting with http:// or https://.'],
+                        'message' => 'Please correct the highlighted fields.',
+                    ];
+                }
+                $data[$field] = $normalised;
+                continue;
+            }
+
+            if ($mode === 'social' || $mode === 'whatsapp') {
+                // The owner form's rules, for the same reason as 'url' above:
+                // a link the contact panel would refuse to render must not be
+                // reported as saved.
+                $mut        = new DirectoryListingMutationService();
+                $normalised = $mode === 'social' ? $mut->normaliseSocial($field, $value) : $mut->normaliseWhatsapp($value);
+                if ($normalised === null) {
+                    $message = $mode === 'social'
+                        ? 'Please enter a valid ' . listing_social_networks()[$field][0] . ' link.'
+                        : 'Please enter a valid WhatsApp number, e.g. 082 123 4567.';
+
+                    return [
+                        'ok'      => false,
+                        'errors'  => [$field => $message],
                         'message' => 'Please correct the highlighted fields.',
                     ];
                 }

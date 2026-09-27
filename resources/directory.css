@@ -1313,6 +1313,13 @@
   .contact-row > svg { @apply h-5 w-5 shrink-0 text-slate-400; }
   .contact-row a:not(.reveal-btn) { @apply break-words font-medium text-primary-500 hover:underline; }
   .contact-sub       { @apply mt-0.5 block text-slate-500; }
+  /* WhatsApp's own green (#25D366) fails contrast under white text, so the
+     button uses its darker teal: recognisably WhatsApp, and legible. */
+  .btn-whatsapp { @apply btn bg-[#0f7a6c] text-white hover:bg-[#075e54] focus:ring-[#0f7a6c]; }
+  .dark .btn-whatsapp { @apply ring-offset-[#0f1419]; }
+  .contact-socials   { @apply flex flex-wrap items-center gap-3; }
+  .contact-row .contact-socials a:not(.reveal-btn) { @apply text-slate-500 hover:text-primary-500 hover:no-underline; }
+  .dark .contact-row .contact-socials a:not(.reveal-btn) { @apply text-slate-400 hover:text-primary-300; }
   .contact-suggest {
     @apply mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500
            hover:text-primary-500 hover:underline;
