@@ -190,6 +190,16 @@ trait HandlesListingUploads
         $team  = is_array($team) ? $team : [];
         $files = $this->request->getFileMultiple('team_photo') ?? [];
 
+        // A photo_path can only come from an upload in THIS request. The form
+        // never posts one, so any that arrives was typed by hand — and every
+        // path in the returned rows is later either stored or unlinked, so a
+        // forged one would let the poster delete a file of their choosing.
+        foreach ($team as $index => $row) {
+            if (is_array($row)) {
+                unset($team[$index]['photo_path']);
+            }
+        }
+
         $errors    = [];
         $processor = new ListingImageProcessor();
 

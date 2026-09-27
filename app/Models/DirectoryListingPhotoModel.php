@@ -15,6 +15,14 @@ class DirectoryListingPhotoModel extends Model
     ];
 
     /**
+     * The only FCPATH-relative directories deleteFileAt() will unlink from:
+     * every listing upload (logo, gallery, team, menu images) and the admin's
+     * hero uploads. The committed hero photos in assets/hero/ are deliberately
+     * outside it — they are part of the release, not content.
+     */
+    public const UPLOAD_ROOTS = ['assets/listings', 'assets/hero/uploads'];
+
+    /**
      * @return array<int,array<string,mixed>>
      */
     public function forListing(int $listingId): array
@@ -80,8 +88,13 @@ class DirectoryListingPhotoModel extends Model
      * the same containment check rather than a second, subtly different copy.
      *
      * Silently does nothing for an empty path, a missing file, or anything that
-     * resolves outside FCPATH: this runs during cleanup, where refusing to
-     * delete is always the safe failure.
+     * resolves outside UPLOAD_ROOTS: this runs during cleanup, where refusing
+     * to delete is always the safe failure.
+     *
+     * Inside FCPATH is not enough. public/ also holds index.php, .htaccess and
+     * committed assets, and a path that ever reaches here from a request
+     * (see HandlesListingUploads::resolveTeamPhotos) must not be able to name
+     * them. A refusal is logged, because nothing legitimate produces one.
      */
     public function deleteFileAt(string $path): void
     {
@@ -99,8 +112,18 @@ class DirectoryListingPhotoModel extends Model
         $root = rtrim(realpath(FCPATH) ?: FCPATH, '/');
         $full = realpath($root . '/' . $path);
 
-        if ($full !== false && str_starts_with($full, $root . '/') && is_file($full)) {
-            @unlink($full);
+        if ($full === false || ! is_file($full)) {
+            return;
         }
+
+        foreach (self::UPLOAD_ROOTS as $dir) {
+            if (str_starts_with($full, $root . '/' . $dir . '/')) {
+                @unlink($full);
+
+                return;
+            }
+        }
+
+        log_message('warning', 'Refused to delete a file outside the upload directories: {path}', ['path' => $path]);
     }
 }
