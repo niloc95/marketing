@@ -126,7 +126,8 @@ $routes->post('payfast/notify', 'PayFastNotify::index');
 // Admin oversight
 $routes->get('admin/login', 'Admin::login');
 $routes->post('admin/login', 'Admin::attemptLogin');
-$routes->get('admin/logout', 'Admin::logout');
+// POST, not GET: a GET sign-out can be fired by any page that embeds the URL.
+$routes->post('admin/logout', 'Admin::logout');
 $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('', 'Admin::index');
 

@@ -29,7 +29,10 @@ $jobsPending = (new App\Models\JobPostModel())
             <a href="<?= base_url('admin/hero') ?>">Hero photos</a> &middot;
             <a href="<?= base_url('admin/settings') ?>">Settings</a> &middot;
             <a href="<?= base_url('admin/status') ?>">Status</a> &middot;
-            <a href="<?= base_url('admin/logout') ?>">Sign out</a>
+            <form method="post" action="<?= base_url('admin/logout') ?>" class="inline">
+                <?= csrf_field() ?>
+                <button type="submit" class="admin-bar-link">Sign out</button>
+            </form>
         </span>
     </div>
 </div>

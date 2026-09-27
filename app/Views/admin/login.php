@@ -10,6 +10,9 @@
         <div class="form-card max-w-md">
             <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Admin sign in</h1>
             <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Moderation.</p>
+            <?php if (! empty($notice)): ?>
+                <div class="alert alert-info mb-5"><?= esc($notice) ?></div>
+            <?php endif ?>
             <form method="post" action="<?= base_url('admin/login') ?>">
                 <?= csrf_field() ?>
                 <div class="field">

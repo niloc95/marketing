@@ -1,6 +1,6 @@
 # WebScheduler Directory — Security Posture
 
-**Last reviewed:** 25 August 2026
+**Last reviewed:** 27 September 2026
 **Applies to:** the WebScheduler Directory service at webscheduler.co.za
 
 This document answers the questions that supplier security questionnaires and tender
@@ -120,6 +120,10 @@ statements of intent.
 
 - Administrative login is **rate-limited to 5 attempts per 15 minutes per IP address**, and
   the session identifier is regenerated on successful login to prevent session fixation.
+  Failed attempts are logged with the source IP (never the attempted password).
+- An administrative session ends after **30 minutes of inactivity**, and signing out destroys
+  the whole session. Sign-out accepts only a CSRF-protected POST, so a third-party page
+  cannot trigger it.
 - Business owners authenticate by single-use magic link. Management tokens expire after
   **1 hour**; verification tokens after **48 hours**. A management token is consumed on
   redemption and exchanged for a session.
@@ -127,6 +131,9 @@ statements of intent.
   submission cannot alter a listing's publication status, URL slug, owner email address,
   featured flag, or verified flag — those fields are not in the allowlist and are
   unreachable from the owner-facing form regardless of what is posted.
+- File deletion is confined to the upload directories. The cleanup routine refuses, and
+  logs, any path outside them, and upload paths are only ever produced by the server, never
+  taken from a submitted form.
 - **Verification documents are stored outside the web root** and are never served directly
   by the web server. They are readable only by streaming through a route inside the
   administrator-authenticated area.

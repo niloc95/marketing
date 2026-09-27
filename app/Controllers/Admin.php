@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesListingUploads;
 use App\Controllers\Concerns\LocksDownDocumentCsp;
+use App\Filters\AdminFilter;
 use App\Libraries\LogReader;
 use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
@@ -39,7 +40,16 @@ class Admin extends BaseController
         if (session()->get('dir_admin')) {
             return redirect()->to(base_url('admin'));
         }
-        return view('admin/login');
+
+        // Both arrive on the query string because the session they would have
+        // been flashed into was just destroyed. Fixed strings, never echoed.
+        $notice = match (true) {
+            $this->request->getGet('signed_out') !== null => 'Signed out.',
+            $this->request->getGet('expired') !== null    => 'You were signed out after 30 minutes of inactivity.',
+            default                                        => null,
+        };
+
+        return view('admin/login', ['notice' => $notice]);
     }
 
     public function attemptLogin()
@@ -63,16 +73,24 @@ class Admin extends BaseController
             // reach here — it only feeds Session::start()'s periodic rotation.
             session()->regenerate(true); // the session now carries authority
             session()->set('dir_admin', true);
+            session()->set(AdminFilter::SEEN_KEY, time());
             return redirect()->to(base_url('admin'));
         }
+
+        // The IP only — never the attempted password, which is often a typo of
+        // the real one. A burst of these in the log is a brute-force attempt.
+        log_message('notice', 'Admin login failed from {ip}', ['ip' => $this->request->getIPAddress()]);
 
         return redirect()->to(base_url('admin/login'))->with('error', 'Incorrect password.');
     }
 
     public function logout()
     {
-        session()->remove('dir_admin');
-        return redirect()->to(base_url('admin/login'))->with('info', 'Signed out.');
+        // The whole session, not just the dir_admin key: nothing from the
+        // admin session should outlive it. That takes the flash data with it,
+        // so the message travels on the query string instead.
+        AdminFilter::endSession();
+        return redirect()->to(base_url('admin/login?signed_out=1'));
     }
 
     public function index()

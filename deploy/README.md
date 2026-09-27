@@ -245,3 +245,56 @@ Apache refuses to start with "Invalid command". Disarm PHP in a directory with
 
 **Outbound port 25 is blocked by AWS** on new accounts. Irrelevant here — mail
 goes out over 465 — but it is the trap if anyone later reaches for `sendmail`.
+
+## Admin behind Cloudflare Access
+
+`/admin` is protected by one shared password (gap #1 in `SECURITY-POSTURE.md`).
+Cloudflare Access adds a second factor in front of it: an emailed one-time PIN,
+checked at the edge before the request reaches the server. This is dashboard
+configuration only, so nothing in the repo applies it or can tell whether it is
+live. Check it with the curls below.
+
+**1. The Access application.** Zero Trust → *Access → Applications → Add →
+Self-hosted*.
+- Application domain: `listing.webscheduler.co.za`, path `admin`. Add a second
+  domain row for the same host with path `admin/*`, because the bare path does not
+  cover sub-paths.
+- Session duration: 24 hours.
+- Policy: *Allow*, with Include set to *Emails* `za_admin@webscheduler.co.za`.
+  Add any other admin address individually. Do not use a domain rule.
+- Login method: *One-time PIN*, which is on by default.
+
+Only `/admin*` is gated. `/payfast/notify`, `/manage/*`, `/health` and the rest
+must stay reachable without Access. PayFast's server cannot answer a PIN
+challenge.
+
+**2. Close the bypass.** Access only sees traffic that comes through Cloudflare.
+Anyone who finds the Lightsail IP can connect to it directly and meet only the
+password. In Lightsail → instance → *Networking*:
+- Restrict **HTTP (80)** and **HTTPS (443)** (IPv4 and IPv6) to the Cloudflare
+  ranges listed in `App\Config\App::$proxyIPs`. If they have changed, re-fetch
+  them from https://www.cloudflare.com/ips/.
+- Leave **SSH (22)** open to any address. The GitHub Actions deploy connects from
+  runner IPs that cannot be listed in advance, and key-only authentication is the
+  control on that port.
+
+After this, the `--resolve <static-ip>` rehearsal curls above stop working. That
+is expected.
+
+**3. Verify.**
+```bash
+# Expect a 302 to <team>.cloudflareaccess.com, not the app's own login page
+curl -sI https://listing.webscheduler.co.za/admin/login | grep -i '^location'
+
+# Expect 200: the public site is not gated
+curl -sI https://listing.webscheduler.co.za/directory | head -1
+
+# Expect a timeout: the origin no longer answers when Cloudflare is skipped
+curl -sk --max-time 10 --resolve listing.webscheduler.co.za:443:<static-ip> \
+     https://listing.webscheduler.co.za/ -o /dev/null -w '%{http_code}\n'
+```
+Also sign in once in a private window. You should get the PIN email, then the
+app's password prompt.
+
+**Rollback:** delete the Access application, and set 80/443 back to *Any IPv4 /
+Any IPv6*. Both take effect within a minute.

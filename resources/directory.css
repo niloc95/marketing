@@ -430,6 +430,8 @@
   .dark .admin-bar { @apply border-slate-800; }
   .admin-bar .container { @apply flex items-center justify-between; }
   .admin-bar a { @apply text-white/80 hover:text-white; }
+  /* Sign out is a POST (see Routes.php), so it is a button dressed as a link. */
+  .admin-bar-link { @apply cursor-pointer border-0 bg-transparent p-0 text-white/80 hover:text-white; }
 
   /* --------------------------------------------------------------- buttons */
   .btn {
