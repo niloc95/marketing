@@ -1523,6 +1523,10 @@
      so those boxes drew as raw browser inputs — square, and white on a dark
      page. The admin "months" box had the same gap. */
   .field input[type="number"],
+  /* tel, url and date arrived with the Jobs board forms. */
+  .field input[type="tel"],
+  .field input[type="url"],
+  .field input[type="date"],
   .field select,
   .field textarea {
     @apply w-full rounded-xl border-slate-200 text-sm
@@ -1568,6 +1572,9 @@
   .dark .field input[type="email"],
   .dark .field input[type="password"],
   .dark .field input[type="number"],
+  .dark .field input[type="tel"],
+  .dark .field input[type="url"],
+  .dark .field input[type="date"],
   .dark .field select,
   .dark .field textarea {
     @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400

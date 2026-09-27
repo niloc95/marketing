@@ -6,6 +6,7 @@ use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\ListingGeocoder;
 use App\Libraries\Mailer;
 use App\Libraries\RichText;
+use App\Libraries\TokenHash;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
@@ -116,7 +117,7 @@ class DirectoryListingMutationService
 
         // Hash only — the raw $token goes out in the email at the bottom of
         // this method and is never written down. See hashToken().
-        $token = bin2hex(random_bytes(32));
+        $token = TokenHash::mint();
         $data  = $this->buildListingData($input) + $this->verifyTokenColumns($token);
         $slug  = (string) $data['slug'];
 
@@ -194,7 +195,7 @@ class DirectoryListingMutationService
     private function resubmitRejected(array $existing, array $input): array
     {
         $id    = (int) $existing['id'];
-        $token = bin2hex(random_bytes(32));
+        $token = TokenHash::mint();
         $data  = $this->buildListingData($input, $id) + $this->verifyTokenColumns($token);
 
         // Outside the transaction, for the reason submitPublic() gives.
@@ -356,7 +357,7 @@ class DirectoryListingMutationService
      */
     private function mintVerifyToken(int $listingId): string
     {
-        $token = bin2hex(random_bytes(32));
+        $token = TokenHash::mint();
 
         $this->listings->update($listingId, $this->verifyTokenColumns($token));
 
@@ -502,7 +503,7 @@ class DirectoryListingMutationService
      */
     public function mintManageToken(int $listingId, ?int $ttl = null): string
     {
-        $token = bin2hex(random_bytes(32));
+        $token = TokenHash::mint();
 
         $this->listings->update($listingId, [
             'manage_token'   => $this->hashToken($token),
@@ -1200,7 +1201,7 @@ class DirectoryListingMutationService
      */
     private function hashToken(string $token): string
     {
-        return hash('sha256', $token);
+        return TokenHash::hash($token);
     }
 
     private function sendVerificationEmail(string $to, string $name, string $token): void

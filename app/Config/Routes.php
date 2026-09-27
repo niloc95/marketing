@@ -59,6 +59,15 @@ $routes->get('manage/edit', 'Manage::edit');
 $routes->post('manage/edit', 'Manage::update');
 $routes->get('manage/signout', 'Manage::signout');
 $routes->post('manage/photo-delete/(:num)', 'Manage::deletePhoto/$1');
+// A listed business posting to the Jobs board. Handled by Jobs, which owns
+// the board, but under manage/ because the manage session is the credential.
+$routes->get('manage/jobs/new', 'Jobs::ownerCreate');
+$routes->post('manage/jobs', 'Jobs::ownerStore');
+$routes->post('manage/jobs/alerts', 'Jobs::ownerAlerts');
+$routes->get('manage/jobs/(:num)/edit', 'Jobs::ownerEdit/$1');
+$routes->post('manage/jobs/(:num)/edit', 'Jobs::ownerUpdate/$1');
+$routes->post('manage/jobs/(:num)/close', 'Jobs::ownerClose/$1');
+$routes->post('manage/jobs/(:num)/renew', 'Jobs::ownerRenew/$1');
 // Verified Business: apply, pay, and where PayFast returns the browser to.
 // Like every literal above, these must stay ahead of the catch-all below —
 // 'manage/verification' would otherwise be read as a magic-link token.
@@ -67,6 +76,30 @@ $routes->get('manage/verification/checkout', 'Manage::checkout');
 $routes->post('manage/verification/cancel', 'Manage::cancelVerification');
 $routes->get('manage/verification/done', 'Manage::verificationDone');
 $routes->get('manage/(:segment)', 'Manage::redeem/$1');
+
+// Jobs board: vacancies and "service required" requests. Top-level, so it
+// never meets the directory/{segment} catch-all. The literal segments MUST
+// precede jobs/manage/{token}, which would otherwise read "close" as a token.
+$routes->get('jobs', 'Jobs::index');
+// Lead-alert stop link. GET asks, POST acts, as for unsubscribe/*: mail
+// scanners prefetch GET links, and a prefetch must not switch alerts off.
+$routes->get('jobs/alerts/off/(:segment)', 'Jobs::alertsOffConfirm/$1');
+$routes->post('jobs/alerts/off/(:segment)', 'Jobs::alertsOff/$1');
+$routes->get('jobs/post', 'Jobs::create');
+$routes->post('jobs/post', 'Jobs::store');
+$routes->get('jobs/verify/(:segment)', 'Jobs::verify/$1');
+$routes->get('jobs/manage', 'Jobs::manage');
+$routes->post('jobs/manage', 'Jobs::manageUpdate');
+$routes->post('jobs/manage/close', 'Jobs::manageClose');
+$routes->post('jobs/manage/renew', 'Jobs::manageRenew');
+$routes->get('jobs/manage/(:segment)', 'Jobs::manageRedeem/$1');
+$routes->post('jobs/(:num)/apply', 'Jobs::apply/$1');
+$routes->post('jobs/(:num)/respond', 'Jobs::respond/$1');
+$routes->post('jobs/(:num)/report', 'Jobs::report/$1');
+// A post's page is /jobs/{id}-{slug}. The id is what is looked up; a wrong or
+// old slug 301s to the current one, so editing a title never breaks a link.
+$routes->get('jobs/([0-9]+)-([a-z0-9-]+)', 'Jobs::show/$1/$2');
+$routes->get('jobs/([0-9]+)', 'Jobs::show/$1');
 
 // SEO
 $routes->get('sitemap.xml', 'Directory::sitemap');
@@ -138,6 +171,13 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('verifications/(:num)/activate', 'Admin::activateVerification/$1');
     $routes->post('verifications/(:num)/revoke', 'Admin::revokeVerification/$1');
     $routes->get('verification/document/(:num)', 'Admin::verificationDocument/$1');
+
+    // Jobs board moderation: unlisted posts, flagged posts and reported posts
+    // all land in the pending tab.
+    $routes->get('jobs', 'Admin::jobs');
+    $routes->post('jobs/(:num)/approve', 'Admin::approveJob/$1');
+    $routes->post('jobs/(:num)/reject', 'Admin::rejectJob/$1');
+    $routes->post('jobs/(:num)/close', 'Admin::closeJob/$1');
 
     // The home page hero rotation. Content, not configuration — which photo
     // represents which category is an editorial call, so it lives here rather

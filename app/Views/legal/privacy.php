@@ -145,7 +145,29 @@ $contact   = config('Directory')->adminEmail();
             <p>The newsletter sign-up in the footer of every page is a separate, deliberate opt-in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business listing does not subscribe you to this newsletter &mdash; the listing carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
             <p>Once you are subscribed we keep your email address, the date you confirmed, and ordinary delivery records (whether a message reached you, and whether you opened it or clicked a link in it) so that the list works and unsubscribes are honoured. Every newsletter carries an unsubscribe link.</p>
 
-            <h2>8. Information collected automatically</h2>
+            <h2>8. The Jobs board</h2>
+            <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries job vacancies and requests for a service. What we receive depends on how you use it.</p>
+
+            <h3>If you post a job or a request</h3>
+            <ul>
+                <li>Your name, email address and, optionally, phone number. <strong>These are never published.</strong> We use them to confirm the post, to tell you when it is live, closing or declined, and to pass on applications and replies.</li>
+                <li>The content of the post &mdash; title, description, area, company name, pay or budget &mdash; which <strong>is published</strong> while the post is open and may be indexed by search engines, including Google for Jobs.</li>
+            </ul>
+            <p>If you post from a listed business, the post shows the business's name and links to its profile.</p>
+
+            <h3>If you apply for a job</h3>
+            <p>The name, email address, optional phone number, optional CV link and message you enter are sent by email to the address the employer gave for applications, with your email address set as the reply address. <strong>We do not store the application.</strong> You are asked to agree to this before it is sent. Once the employer receives it, the employer decides how it is used and is responsible for it under POPIA.</p>
+
+            <h3>If your business replies to a request</h3>
+            <p>Your message, together with your business name, profile link, phone number and email address, is sent to the person who posted the request. We keep your message and a record that you replied, so that each business replies only once and the reply limit is applied. The requester's own email address is not shown to you unless they reply.</p>
+
+            <h3>Request alerts to listed businesses</h3>
+            <p>When a request for a service is published, we may email it to a small number of listed businesses in the same category and province. The email contains the request as published and a link to it; it does not contain the requester's contact details. These alerts are on for listed businesses by default, and can be switched off from any alert or from Manage your profile.</p>
+
+            <h3>Reports</h3>
+            <p>If you report a post, we keep the reason you give and a one-way hash of your IP address, so that one visitor's reports count once. The hash cannot be turned back into your IP address.</p>
+
+            <h2>9. Information collected automatically</h2>
             <p>When you use <?= esc($siteName) ?>, certain information may be processed automatically.</p>
 
             <h3>IP addresses</h3>
@@ -161,7 +183,7 @@ $contact   = config('Directory')->adminEmail();
             <p>You can refuse this request.</p>
             <p>Where you allow access, the location information is used to help sort search results by distance for that search. We do not intentionally store your location for the purpose of building a personal location profile.</p>
 
-            <h2>9. Why we process personal information</h2>
+            <h2>10. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">
                 <thead><tr><th>Purpose</th><th>Basis for processing</th></tr></thead>
@@ -171,6 +193,10 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Responding to enquiries submitted through the contact form</td><td>Necessary to respond to your request</td></tr>
                     <tr><td>Reviewing documents for a Verified Business badge</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
                     <tr><td>Processing payment for the Verified Business badge</td><td>Necessary to perform the agreement for the service</td></tr>
+                    <tr><td>Confirming, reviewing and publishing a Jobs board post, and emailing the poster about it</td><td>Consent provided when you submit the post, and processing necessary to provide the service you requested</td></tr>
+                    <tr><td>Passing a job application to the employer</td><td>Your consent, given on the application form before it is sent</td></tr>
+                    <tr><td>Passing a listed business's reply to the person who asked for a service</td><td>Necessary to provide the service both of you requested</td></tr>
+                    <tr><td>Emailing listed businesses about matching service requests</td><td>Our legitimate interest, and theirs, in connecting requests with businesses that offer the service. On by default and can be switched off at any time</td></tr>
                     <tr><td>Security, rate-limiting and fraud prevention</td><td>Necessary for the security, integrity and availability of the service</td></tr>
                     <tr><td>Sending a profile owner the monthly analytics report about their own listing</td><td>Necessary to provide the service you requested, and our legitimate interest in showing you how your listing performs. It is on by default and you can switch it off at any time, at signup, in Manage your profile, or from any report</td></tr>
                     <tr><td>Sending the newsletter to people who signed up for it</td><td>Your consent, confirmed by clicking the link we email you, which you can withdraw at any time</td></tr>
@@ -179,7 +205,7 @@ $contact   = config('Directory')->adminEmail();
             </table>
             <p>We do not sell personal information.</p>
 
-            <h2>10. Who we share information with</h2>
+            <h2>11. Who we share information with</h2>
             <p>We do not sell personal information or share personal information with third parties for their own advertising purposes.</p>
             <p>Information may be disclosed or made available in the following circumstances:</p>
 
@@ -198,6 +224,9 @@ $contact   = config('Directory')->adminEmail();
             <p>We use an email service provider to deliver verification, profile-management and other necessary service communications.</p>
             <p>The newsletter, and the monthly analytics report to profile owners who have it switched on, are sent through our own mailing system at <code>updates.webscheduler.co.za</code>. While the report is switched on we pass the owner's email address, contact name and business name to that system; when it is switched off, we mark them there as not to be contacted.</p>
 
+            <h3>Employers, requesters and listed businesses</h3>
+            <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to listed businesses; the requester's contact details are not included.</p>
+
             <h3>Payment processing</h3>
             <p>If you purchase a Verified Business badge, payment processing is handled by <strong>PayFast</strong>. See <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
             <p>Payment information is processed through PayFast's payment environment. We do not store your full card details on our servers.</p>
@@ -206,13 +235,13 @@ $contact   = config('Directory')->adminEmail();
             <h3>Legal requirements</h3>
             <p>We may disclose information where required or permitted by applicable law, including in response to a valid court order, legal process or lawful request from an authorised authority.</p>
 
-            <h2>11. Cross-border transfers</h2>
+            <h2>12. Cross-border transfers</h2>
             <p>Because our application infrastructure is currently hosted in the AWS Asia Pacific (Mumbai) Region, personal information processed through that infrastructure may be transferred to and processed outside South Africa.</p>
             <p>Some third-party service providers used by <?= esc($siteName) ?> may also process information outside South Africa.</p>
             <p>Where personal information is transferred across borders, we take reasonable steps to ensure that the transfer is undertaken in accordance with applicable requirements of POPIA, including the requirements applicable to cross-border transfers under section 72.</p>
             <p>Depending on the service involved, this may include reliance on contractual protections, data-processing terms, applicable regulatory safeguards and other appropriate measures provided by our service providers.</p>
 
-            <h2>12. How long we keep personal information</h2>
+            <h2>13. How long we keep personal information</h2>
             <p>We retain personal information only for as long as reasonably necessary for the purposes for which it was collected, to provide the relevant service, to comply with legal obligations, resolve disputes, enforce agreements and protect the security of our services.</p>
 
             <h3>Business listings</h3>
@@ -233,6 +262,14 @@ $contact   = config('Directory')->adminEmail();
             <h3>Deleted profiles</h3>
             <p>Where technically appropriate, deleted profiles may initially be soft-deleted before being permanently removed. This allows us to address accidental deletion and maintain appropriate system integrity.</p>
 
+            <h3>Jobs board</h3>
+            <ul>
+                <li>A post whose email address is never confirmed is deleted about a week after its confirmation link expires.</li>
+                <li>A poster's name, email address and phone number, and the address applications were sent to, are deleted <strong>12 months</strong> after the post closes, expires or is declined. The published text of the post may be kept as a record.</li>
+                <li>Replies to service requests are kept with the request, and their messages are deleted 12 months after it ends.</li>
+                <li>Job applications are not stored.</li>
+            </ul>
+
             <h3>Verified Business documents</h3>
             <p>Verification documents are retained while the Verified Business badge remains active or paused, where reasonably necessary to support the verification status.</p>
             <p>Where a Verified Business subscription lapses or an application is rejected, the associated verification documents are retained for up to <strong>12 months</strong> from that point and are then deleted automatically. This period allows us to answer a billing or verification query raised after the fact.</p>
@@ -240,7 +277,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Verification documents are deleted in full when the associated business listing is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>
 
-            <h2>13. Your rights under POPIA</h2>
+            <h2>14. Your rights under POPIA</h2>
             <p>Subject to applicable legal requirements and limitations, you may have the right to:</p>
             <ul>
                 <li>Request confirmation of whether we hold personal information about you;</li>
@@ -255,27 +292,27 @@ $contact   = config('Directory')->adminEmail();
             <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your listing needs, such as profile-management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy-related request.</p>
 
-            <h2>14. Complaints</h2>
+            <h2>15. Complaints</h2>
             <p>If you believe that your personal information has been processed unlawfully or that your privacy rights have not been adequately addressed, you may contact us first so that we can investigate and attempt to resolve the matter.</p>
             <p>You may also lodge a complaint with the <strong>Information Regulator of South Africa</strong> through its official channels — <a href="https://inforegulator.org.za/" rel="noopener">inforegulator.org.za</a>.</p>
 
-            <h2>15. Security</h2>
+            <h2>16. Security</h2>
             <p>We use reasonable technical and organisational measures designed to protect personal information against unauthorised access, disclosure, loss, alteration, misuse or destruction.</p>
             <p>The <?= esc($siteName) ?> website is served using HTTPS/TLS.</p>
             <p>Where available, profile-management access may use single-use, time-limited emailed links rather than a traditional stored password.</p>
             <p>However, no internet-based service can be guaranteed to be completely secure. We therefore cannot guarantee absolute security of information transmitted to or stored by the service.</p>
 
-            <h2>16. Children</h2>
+            <h2>17. Children</h2>
             <p><?= esc($siteName) ?> is intended for businesses, professionals and service providers and is not directed at children.</p>
             <p>We do not knowingly seek to collect personal information from children under the age of 18 through the business listing service.</p>
             <p>If you believe that a child has provided personal information to us, please <a href="<?= base_url('contact') ?>">contact us</a> so that we can investigate and take appropriate action.</p>
 
-            <h2>17. Changes to this Privacy Policy</h2>
+            <h2>18. Changes to this Privacy Policy</h2>
             <p>We may update this Privacy Policy from time to time to reflect changes to our services, technology, legal requirements or information-processing practices.</p>
             <p>When we make changes, we will update the <strong>Last updated</strong> date displayed at the beginning of this policy.</p>
             <p>Where we make a material change that affects how we process personal information already provided to us, we may provide additional notice where appropriate, including by email to affected profile owners.</p>
 
-            <h2>18. Contact us</h2>
+            <h2>19. Contact us</h2>
             <p>If you have questions about this Privacy Policy, want to exercise a privacy right, or have a concern about how your personal information is being processed, please contact us:</p>
             <ul>
                 <li><strong>WebScheduler (Pty) Ltd</strong></li>

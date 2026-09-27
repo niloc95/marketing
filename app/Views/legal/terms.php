@@ -88,7 +88,23 @@ $contact   = config('Directory')->adminEmail();
             <p><strong>If a payment fails, or you cancel.</strong> Your profile is unpublished when the paid period ends. <strong>Nothing you entered is deleted.</strong> Your profile, photos, services and everything else are kept, and subscribing again republishes them as they were. We will tell you before this happens and when it has.</p>
             <p><strong>Refunds.</strong> As in section 4: we do not refund part-months, because cancelling leaves you with the full month you bought. If we stop offering international listings we will unpublish your profile and refund the unused part of the month. This does not affect your rights under the Consumer Protection Act, 2008.</p>
 
-            <h2>6. What you may not do</h2>
+            <?php // Added with the Jobs board. Kept after the two paid sections so
+                  // their cross-references ("section 4", "section 5") stay true. ?>
+            <h2>6. The Jobs board</h2>
+            <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries two kinds of post: <strong>job vacancies</strong>, and <strong>requests for a service</strong> (someone looking for a business to do a piece of work). Posting is free. Anyone may post; a listed business posts from its profile dashboard.</p>
+            <p><strong>By posting you confirm that:</strong></p>
+            <ul>
+                <li>the vacancy or request is real, and you are entitled to offer it;</li>
+                <li><strong>nobody who applies or replies will be asked to pay anything</strong> &mdash; no registration, application, training, uniform, placement or similar fee, and no deposit;</li>
+                <li>the post does not discriminate unfairly, as prohibited by the Employment Equity Act, 1998 and the Promotion of Equality and Prevention of Unfair Discrimination Act, 2000. Stating that a vacancy is an employment equity position is permitted;</li>
+                <li>you will use the personal information applicants send you only to consider them for that vacancy, and handle it as the Protection of Personal Information Act, 2013 requires.</li>
+            </ul>
+            <p><strong>Review.</strong> Posts from people who are not listed are checked before they are published. Posts from listed businesses are published straight away, unless they contain wording we associate with job scams, in which case they are checked first. We may decline, edit, hide or remove any post, and a post reported by several visitors is hidden until we have looked at it.</p>
+            <p><strong>Closing dates.</strong> Every post has a closing date no more than 60 days away, and comes down on that date. You can close it earlier, and renew it for another 30 days in the week before it closes.</p>
+            <p><strong>Applying and replying.</strong> Applications and replies are passed on by email; we do not keep a copy of a job application. Only businesses listed on the directory can reply to a service request, and each request takes a limited number of replies. When a service request is published, we may email it to a small number of listed businesses in the same category and area; a business can switch those emails off at any time.</p>
+            <p><strong>We are not a party to any job or work.</strong> We do not employ, recruit for, vet or recommend anyone who posts, applies or replies, and we do not guarantee that a vacancy is filled, a reply received, or work done well. Any agreement is between you and the other party. Agree the price and terms of any work before it starts, and never pay in advance to be considered for a job.</p>
+
+            <h2>7. What you may not do</h2>
             <ul>
                 <li>Submit a business you have no connection to, or impersonate anyone.</li>
                 <li>Post false, misleading, unlawful, defamatory, hateful or obscene content.</li>
@@ -98,37 +114,37 @@ $contact   = config('Directory')->adminEmail();
                 <li>Attempt to gain unauthorised access to any part of the service, or interfere with its operation.</li>
             </ul>
 
-            <h2>7. Moderation</h2>
+            <h2>8. Moderation</h2>
             <p>We may edit, decline, unpublish or delete any profile, at our discretion and without notice, if we believe it breaches these terms or damages the usefulness of the site. Where it is practical and appropriate we will tell the profile owner why.</p>
 
-            <h2>8. Your content</h2>
+            <h2>9. Your content</h2>
             <p>You keep ownership of everything you submit. You grant us a non-exclusive, royalty-free licence to host, reproduce, resize and display it for the purpose of operating and promoting the site. That licence ends when the profile is removed, save for backups and any copies already cached by search engines, which are outside our control.</p>
 
-            <h2>9. Managing and removing your profile</h2>
+            <h2>10. Managing and removing your profile</h2>
             <p>Use <a href="<?= base_url('manage') ?>">Manage your profile</a> to edit or delete a profile at any time. Access is by a short-lived, single-use link sent to the verified email address — keep that address current and do not forward those links.</p>
 
-            <h2>10. Availability</h2>
+            <h2>11. Availability</h2>
             <p>The site is provided "as is" and "as available". We do not promise it will be uninterrupted or error-free, and we may change or discontinue any part of it.</p>
 
-            <h2>11. Third-party links and services</h2>
+            <h2>12. Third-party links and services</h2>
             <p>Profiles link to third-party websites and social accounts, and our maps are supplied by OpenStreetMap and CARTO. We do not control any of these and are not responsible for them.</p>
 
-            <h2>12. Limitation of liability</h2>
+            <h2>13. Limitation of liability</h2>
             <p>To the fullest extent the law allows, we are not liable for any indirect, incidental or consequential loss, or any loss of profit, data or goodwill, arising from your use of the site or from any dealing with a business on it. Nothing here excludes liability that cannot lawfully be excluded, including your rights under the Consumer Protection Act, 2008.</p>
 
-            <h2>13. Indemnity</h2>
+            <h2>14. Indemnity</h2>
             <p>You agree to indemnify us against claims arising from content you submit or from your breach of these terms.</p>
 
-            <h2>14. Privacy</h2>
+            <h2>15. Privacy</h2>
             <p>Our <a href="<?= base_url('privacy') ?>">privacy policy</a> and <a href="<?= base_url('cookie-policy') ?>">cookie policy</a> form part of these terms.</p>
 
-            <h2>15. Changes</h2>
+            <h2>16. Changes</h2>
             <p>We may update these terms. The date at the top of this page shows when they last changed, and continuing to use the site afterwards means you accept the revised version.</p>
 
-            <h2>16. Governing law</h2>
+            <h2>17. Governing law</h2>
             <p>These terms are governed by the law of the Republic of South Africa, and the South African courts have jurisdiction.</p>
 
-            <h2>17. Contact</h2>
+            <h2>18. Contact</h2>
             <?php if ($contact !== ''): ?>
                 <p><a href="mailto:<?= esc($contact, 'attr') ?>"><?= esc($contact) ?></a></p>
             <?php else: ?>

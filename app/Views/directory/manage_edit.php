@@ -156,6 +156,12 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>
             </form>
+
+            <?= view('directory/_jobs_panel', [
+                'listing' => $listing,
+                'posts'   => $jobPosts ?? [],
+                'svc'     => new App\Services\JobBoardService(),
+            ], ['saveData' => false]) ?>
         </div>
     </div>
 </section>

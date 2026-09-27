@@ -212,6 +212,50 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
 - Mautic redirects back with `?subscribed=pending`, and `layouts/public.php` shows the
   "check your inbox" notice.
 
+## Jobs board (`/jobs`)
+
+Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
+`directory_job_posts`. Rules live in `JobBoardService`; `Jobs` is the controller for all of
+`/jobs/*` and the owner routes under `/manage/jobs/*`. Limits are in `Config\JobBoard`.
+
+- **Two posting paths, deliberately unequal.** A listed business posts from its manage
+  session and goes live at once. Anyone else posts at `/jobs/post`, clicks an email link,
+  then waits in `/admin/jobs` for approval and is emailed a reusable manage link
+  (`/jobs/manage/{token}`, valid until a month after the closing date).
+- **Editing:** `updatePost()` serves both paths. Listed businesses use
+  `/manage/jobs/{id}/edit`; unlisted posters use `/jobs/manage`, which the confirm link
+  opens straight away so they can edit while waiting for review. A clean edit to a live post
+  stays live; a flagged edit goes back to the queue. A listed post always keeps the
+  listing's name.
+- **`scamFlags()`** matches `Config\JobBoard::$scamPhrases` ("registration fee", "WhatsApp
+  only"…). A match sends even a listed business's post, or an edit, to the queue. It never
+  rejects on its own. Three reports from distinct IPs (`directory_job_reports`) also hide a
+  post for review.
+- **Every post closes** (`valid_through`, default 30 days, max 60). The list and post pages
+  check the date themselves; a closed or expired page answers **410**. `php spark
+  jobs:expire` (daily cron) sends renew reminders, marks posts expired, deletes posts never
+  confirmed, and wipes poster contact details 12 months after a post ends.
+- **Google for Jobs:** `jobPostingSchema()` emits JobPosting JSON-LD only for a live `job`.
+  Service requests have no schema, are `noindex`, and are left out of the sitemap. Keep the
+  markup matching the visible page; Google's manual actions remove every job on the site.
+- **No CVs are stored.** Applications and replies are relayed by `Mailer` with Reply-To set
+  to the sender (`emails/job-relay`). The poster's address is never rendered.
+- **Service requests:** only published listings can reply (`respond()`), once each, at most
+  `maxResponses` (5).
+- **Lead alerts:** when a service request goes live, `alertMatchingBusinesses()` emails up to
+  10 listings in the same category and province (published, email confirmed,
+  `job_alerts = 1`). Badge holders come first, then `quality_score`. No listing gets more than
+  3 in 24h. `directory_job_alerts` has a unique (post, listing) key, so re-runs and renewals
+  never double-send, and the cap of 10 is per request, not per run. Alerts are on by
+  default. The email's stop link (`/jobs/alerts/off/{token}`, GET asks, POST acts) and the
+  dashboard checkbox (`POST /manage/jobs/alerts`) turn them off. `job_alerts` is not in
+  `OWNER_EDITABLE`.
+- **Every board email renders with `saveData => false` and defaults for optional keys.**
+  CI4 keeps view data between renders, so without that a notice with no button or stop link
+  inherits the previous email's.
+- **Feature-test POSTs meet the real CSRF filter.** Send `[csrf_token() => csrf_hash()]`
+  (see `JobBoardFlowTest::csrf()`).
+
 ## Verified Business — the one paid feature
 
 A monthly badge on an otherwise free listing — R29.99 at the time of writing, but the live

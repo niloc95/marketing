@@ -12,11 +12,14 @@ use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectorySettingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
+use App\Models\JobPostModel;
+use App\Models\JobReportModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
 use App\Services\HeroImageService;
+use App\Services\JobBoardService;
 use App\Services\ListingFacetService;
 use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
@@ -332,6 +335,61 @@ class Admin extends BaseController
         return $ok
             ? $this->back($success)
             : redirect()->back()->with('error', $failure);
+    }
+
+    // ------------------------------------------------------------ jobs board
+
+    /**
+     * The Jobs board moderation queue. Pending first: unlisted posts, flagged
+     * posts and posts hidden by reports all wait there.
+     */
+    public function jobs()
+    {
+        $model  = new JobPostModel();
+        $status = (string) ($this->request->getGet('status') ?? JobPostModel::STATUS_PENDING);
+        $page   = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $result = $model->queue($status, $page);
+
+        return view('admin/jobs', [
+            'status'  => $status,
+            'rows'    => $result['rows'],
+            'pager'   => $result['pager'],
+            'counts'  => $model->counts(),
+            'svc'     => new JobBoardService(),
+            'reports' => new JobReportModel(),
+        ]);
+    }
+
+    public function approveJob(int $id)
+    {
+        return $this->outcome(
+            (new JobBoardService())->approve($id),
+            'Approved. The post is live and the poster has been emailed.',
+            'Could not approve that post. Only a post awaiting review can be approved.'
+        );
+    }
+
+    public function rejectJob(int $id)
+    {
+        $reason = trim((string) $this->request->getPost('reason'));
+        if ($reason === '') {
+            return redirect()->back()->with('error', 'Give a reason. The poster is emailed it.');
+        }
+
+        return $this->outcome(
+            (new JobBoardService())->reject($id, $reason),
+            'Rejected. The poster has been emailed the reason.',
+            'Could not reject that post.'
+        );
+    }
+
+    public function closeJob(int $id)
+    {
+        return $this->outcome(
+            (new JobBoardService())->close($id),
+            'Post closed.',
+            'That post is already closed.'
+        );
     }
 
     // ----------------------------------------------------- verified business

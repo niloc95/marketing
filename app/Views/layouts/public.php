@@ -127,7 +127,10 @@
                 <?php // NOT /directory/map — that route is the JSON pin feed the map
                       // widget fetches, not a page. The map itself is embedded in the
                       // browse results, so the link anchors to it there. ?>
-                <a class="hidden md:inline" href="<?= base_url('directory') ?>#map">Map</a>
+                <a class="hidden md:inline" href="<?= base_url('jobs') ?>">Jobs</a>
+                <?php // Map drops to lg-and-up since Jobs arrived, keeping the md bar
+                      // at three links. ?>
+                <a class="hidden lg:inline" href="<?= base_url('directory') ?>#map">Map</a>
                 <?php // Both icons stay in the DOM and are swapped with dark:hidden /
                       // hidden dark:block — no JS icon logic, so they can't desync from
                       // the class the FOUC guard already set. aria-pressed is corrected
@@ -201,6 +204,7 @@
             <a href="<?= base_url('directory') ?>">Browse everything</a>
             <a href="<?= base_url('directory/categories') ?>">All categories</a>
             <a href="<?= base_url('directory') ?>#map">Map</a>
+            <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>
             <a href="<?= base_url('verified') ?>">Verified businesses</a>
             <a href="<?= base_url('manage') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
@@ -326,6 +330,8 @@
                 <ul>
                     <li><a href="<?= base_url('directory') ?>">Browse everything</a></li>
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
+                    <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
+                    <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
                     <li><a href="<?= base_url('add-listing') ?>">List your business</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>

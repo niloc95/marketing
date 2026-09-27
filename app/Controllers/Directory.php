@@ -8,6 +8,7 @@ use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\JobBoardService;
 use App\Services\HeroImageService;
 use App\Services\ListingMenuService;
 use App\Services\VerificationService;
@@ -575,6 +576,7 @@ class Directory extends BaseController
             // Owner and admin areas hold no public content and should not be
             // crawled; both are noindex too, this just saves the crawl.
             . "Disallow: /manage\n"
+            . "Disallow: /jobs/manage\n"
             . "Disallow: /admin\n"
             . "\n"
             . 'Sitemap: ' . base_url('sitemap.xml') . "\n";
@@ -595,6 +597,7 @@ class Directory extends BaseController
                     ['loc' => base_url('add-listing'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('faq'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('verified'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('jobs'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('contact'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('privacy'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('terms'), 'lastmod' => date('Y-m-d')],
@@ -603,7 +606,9 @@ class Directory extends BaseController
                 $svc->sitemapLandingUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapProvinceUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapVenueUrls((int) config('Directory')->landingMinListings),
-                $svc->sitemapUrls()
+                $svc->sitemapUrls(),
+                // Live vacancies only; service requests are noindex.
+                (new JobBoardService())->sitemapUrls()
             );
 
             $xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
