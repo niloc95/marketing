@@ -241,7 +241,10 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
 - **`scamFlags()`** matches `Config\JobBoard::$scamPhrases` ("registration fee", "WhatsApp
   only"…). A match sends even a listed business's post, or an edit, to the queue. It never
   rejects on its own. Three reports from distinct IPs (`directory_job_reports`) also hide a
-  post for review.
+  post for review. Below that nobody is emailed at the time. `reportDigest()`, run by
+  `jobs:expire`, sends the admin one email a night covering every report where
+  `digested_at` is NULL, and stamps them only if the send succeeds. The poster is
+  never told about a report.
 - **Every post closes** (`valid_through`, default 30 days, max 60). The list and post pages
   check the date themselves; a closed or expired page answers **410**. `php spark
   jobs:expire` (daily cron) sends renew reminders, marks posts expired, deletes posts never

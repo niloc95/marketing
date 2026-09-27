@@ -876,6 +876,65 @@ class JobBoardService
         return $out;
     }
 
+    /**
+     * One email to the admin listing every report not yet sent in a digest,
+     * grouped by post. Below the hide threshold a report emails nobody, so
+     * this is the only way an admin hears about it without going looking.
+     *
+     * Reports are stamped only after the email goes out: no admin address or
+     * a failed send leaves them for the next run rather than losing them.
+     *
+     * @return int how many reports the email covered (0 when none was sent)
+     */
+    public function reportDigest(): int
+    {
+        $admin = $this->site->adminEmail();
+        if ($admin === '') {
+            return 0;
+        }
+
+        $reports = (new JobReportModel())->where('digested_at', null)
+            ->orderBy('post_id', 'ASC')->orderBy('created_at', 'ASC')->findAll(500);
+        if ($reports === []) {
+            return 0;
+        }
+
+        $byPost = [];
+        foreach ($reports as $r) {
+            $byPost[(int) $r['post_id']][] = $r;
+        }
+
+        $paragraphs = [];
+        foreach ($byPost as $postId => $rows) {
+            $post = (new JobPostModel())->withDeleted()->find($postId);
+            if (! is_array($post)) {
+                continue;
+            }
+            $reasons = array_filter(array_map(static fn ($r) => trim((string) $r['reason']), $rows), 'strlen');
+
+            $paragraphs[] = $post['title'] . ' (' . $this->hiringName($post) . ', now ' . $post['status'] . ')'
+                . ' - ' . count($rows) . ' new, ' . (int) $post['report_count'] . ' in total. '
+                . ($reasons === [] ? 'No reason given.' : 'Reasons: ' . implode('; ', $reasons) . '.')
+                . ' ' . $this->url($post);
+        }
+
+        $count = count($reports);
+        $sent  = $paragraphs === [] || $this->notice($admin, $count . ' new job post report' . ($count === 1 ? '' : 's'), [
+            'heading'    => $count . ' new report' . ($count === 1 ? '' : 's') . ' on ' . count($paragraphs) . ' post' . (count($paragraphs) === 1 ? '' : 's'),
+            'paragraphs' => $paragraphs,
+            'button'     => ['Open the jobs queue', base_url('admin/jobs?status=published')],
+            'footnote'   => 'A post is hidden for review automatically after ' . $this->cfg->reportThreshold . ' reports from different visitors.',
+        ]);
+        if (! $sent) {
+            return 0;
+        }
+
+        (new JobReportModel())->builder()->whereIn('id', array_map('intval', array_column($reports, 'id')))
+            ->update(['digested_at' => date('Y-m-d H:i:s')]);
+
+        return $paragraphs === [] ? 0 : $count;
+    }
+
     // ----------------------------------------------------------- lead alerts
 
     /**
@@ -1206,10 +1265,10 @@ class JobBoardService
     /**
      * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
      */
-    private function notice(string $to, string $subject, array $content): void
+    private function notice(string $to, string $subject, array $content): bool
     {
         if ($to === '') {
-            return;
+            return false;
         }
 
         // Every optional key defaulted, and saveData off: CI4's renderer keeps
@@ -1221,7 +1280,7 @@ class JobBoardService
             'footnote'     => null,
             'footnoteLink' => null,
         ], ['saveData' => false]);
-        (new Mailer())->send($to, $subject, $body);
+        return (new Mailer())->send($to, $subject, $body);
     }
 
     /** @param array<string,mixed> $d */

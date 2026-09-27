@@ -11,7 +11,7 @@ class JobReportModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = true;
-    protected $allowedFields = ['post_id', 'reason', 'ip_hash'];
+    protected $allowedFields = ['post_id', 'reason', 'ip_hash', 'digested_at'];
 
     /** @return list<array<string,mixed>> */
     public function forPost(int $postId): array

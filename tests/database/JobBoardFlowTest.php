@@ -379,6 +379,34 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertSame(3, (int) $post['report_count']);
     }
 
+    public function testTheDailyDigestTellsTheAdminAboutEachReportOnce(): void
+    {
+        $id = $this->livePost(['title' => 'Cashier wanted']);
+        $this->svc->report($id, '10.0.0.1', 'asks for a registration fee');
+
+        $prev                          = $_ENV['directory.adminEmail'] ?? null;
+        $_ENV['directory.adminEmail'] = 'admin@example.test';
+
+        try {
+            $this->assertSame(1, $this->svc->reportDigest());
+            $body = (string) (service('email')->archive['body'] ?? '');
+            $this->assertStringContainsString('Cashier wanted', $body);
+            $this->assertStringContainsString('asks for a registration fee', $body);
+            $this->assertSame(JobPostModel::STATUS_PUBLISHED, $this->posts->find($id)['status'], 'one report still hides nothing');
+
+            $this->assertSame(0, $this->svc->reportDigest(), 'a report goes in one digest only');
+
+            $this->svc->report($id, '10.0.0.2', 'fake');
+            $this->assertSame(1, $this->svc->reportDigest(), 'a later report makes the next digest');
+        } finally {
+            if ($prev === null) {
+                unset($_ENV['directory.adminEmail']);
+            } else {
+                $_ENV['directory.adminEmail'] = $prev;
+            }
+        }
+    }
+
     // ------------------------------------------------------ ending a post
 
     public function testAClosedOrExpiredPostAnswers410(): void
