@@ -10,6 +10,7 @@ use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
+use App\Models\DirectoryReferralModel;
 use App\Models\DirectorySettingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
@@ -25,6 +26,7 @@ use App\Services\ListingFacetService;
 use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
+use App\Services\ReferralService;
 use App\Services\SystemStatusService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
@@ -407,6 +409,43 @@ class Admin extends BaseController
             (new JobBoardService())->close($id),
             'Post closed.',
             'That post is already closed.'
+        );
+    }
+
+    // ------------------------------------------------------------- referrals
+
+    /**
+     * The "Recommend a business" queue. Pending first: it is the only tab
+     * with work in it. Invite is the one way the app emails a recommended
+     * business — see ReferralService.
+     */
+    public function referrals()
+    {
+        $model  = new DirectoryReferralModel();
+        $status = (string) ($this->request->getGet('status') ?? DirectoryReferralModel::STATUS_PENDING);
+        $page   = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $result = $model->queue($status, $page);
+
+        return view('admin/referrals', [
+            'status' => $status,
+            'rows'   => $result['rows'],
+            'pager'  => $result['pager'],
+            'counts' => $model->counts(),
+            'svc'    => new ReferralService(),
+        ]);
+    }
+
+    public function inviteReferral(int $id)
+    {
+        return $this->backTo('admin/referrals', (new ReferralService())->invite($id));
+    }
+
+    public function dismissReferral(int $id)
+    {
+        return $this->outcome(
+            (new ReferralService())->dismiss($id),
+            'Referral dismissed. Nobody was emailed.',
+            'Could not dismiss that referral.'
         );
     }
 

@@ -34,6 +34,16 @@ $routes->get('faq', 'Contact::faq');
 // every verified profile links here, so visitors can check the claim.
 $routes->get('verified', 'Contact::verified');
 
+// "Recommend a business". Top-level for the same reason as contact. The form
+// only queues a referral for /admin/referrals; the business is emailed from
+// there or not at all. The stop link from that one invite is GET-asks,
+// POST-acts, like jobs/alerts/off/*. Not CSRF-exempt: the invite carries no
+// List-Unsubscribe-Post header, so the POST always comes from our own page.
+$routes->get('recommend', 'Referral::index');
+$routes->post('recommend', 'Referral::submit');
+$routes->get('recommend/stop/(:segment)', 'Referral::stopConfirm/$1');
+$routes->post('recommend/stop/(:segment)', 'Referral::stop/$1');
+
 // Legal. Top-level, so they never meet the directory/{segment} catch-all.
 $routes->get('privacy', 'Legal::privacy');
 $routes->get('terms', 'Legal::terms');
@@ -180,6 +190,12 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('jobs/(:num)/approve', 'Admin::approveJob/$1');
     $routes->post('jobs/(:num)/reject', 'Admin::rejectJob/$1');
     $routes->post('jobs/(:num)/close', 'Admin::closeJob/$1');
+
+    // "Recommend a business" queue. Invite is the only way the app emails a
+    // recommended business, which is why it lives behind this filter.
+    $routes->get('referrals', 'Admin::referrals');
+    $routes->post('referrals/(:num)/invite', 'Admin::inviteReferral/$1');
+    $routes->post('referrals/(:num)/dismiss', 'Admin::dismissReferral/$1');
 
     // The home page hero rotation. Content, not configuration — which photo
     // represents which category is an editorial call, so it lives here rather

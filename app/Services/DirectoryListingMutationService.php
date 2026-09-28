@@ -448,6 +448,10 @@ class DirectoryListingMutationService
         // A no-op for anyone who did not tick the marketing box.
         if (is_array($fresh)) {
             (new MarketingConsentService())->syncToMautic($fresh);
+
+            // Close any "Recommend a business" referral this listing answers,
+            // and tell the referrers who asked. Never throws.
+            (new ReferralService())->markListed($fresh);
         }
 
         return is_array($fresh) ? $fresh : $listing;

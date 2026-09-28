@@ -333,6 +333,7 @@
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
                     <li><a href="<?= base_url('add-listing') ?>">List your business</a></li>
+                    <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
             </div>

@@ -145,6 +145,11 @@ $contact   = config('Directory')->adminEmail();
             <p>The newsletter sign-up in the footer of every page is a separate, deliberate opt-in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business listing does not subscribe you to this newsletter &mdash; the listing carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
             <p>Once you are subscribed we keep your email address, the date you confirmed, and ordinary delivery records (whether a message reached you, and whether you opened it or clicked a link in it) so that the list works and unsubscribes are honoured. Every newsletter carries an unsubscribe link.</p>
 
+            <h3>Recommending a business</h3>
+            <p>If you use <a href="<?= base_url('recommend') ?>">Recommend a business</a>, we receive the business details you enter (its name, category, area, email address, phone number and, if you give one, its website) and your name, your email address, how you know the business and your reason for recommending it. We also keep a one-way hash of your IP address to limit abuse. Nothing you enter is published.</p>
+            <p>We review each recommendation. We do not contact the business automatically. If we decide to invite it, we send it <strong>one</strong> email. That email may mention your first name if you said you are a customer. It never includes your email address. The email contains a link that stops us ever sending another invitation to that address, whoever recommends it. If you asked us to, we email you once when the business is listed.</p>
+            <p>Businesses: if you received an invitation, the details in it came from the person who recommended you. You can ask us to delete them at any time through the <a href="<?= base_url('contact') ?>">contact form</a>.</p>
+
             <h2>8. The Jobs board</h2>
             <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries job vacancies and requests for a service. What we receive depends on how you use it.</p>
 
@@ -269,6 +274,9 @@ $contact   = config('Directory')->adminEmail();
                 <li>Replies to service requests are kept with the request, and their messages are deleted 12 months after it ends.</li>
                 <li>Job applications are not stored.</li>
             </ul>
+
+            <h3>Recommendations</h3>
+            <p>The contact details in a recommendation, both the business's and yours, are deleted <strong>12 months</strong> after it is submitted, or 30 days after we decide not to invite the business, whichever is sooner. If a business asks not to be invited again, we keep only a one-way hash of its email address so that we can honour the request.</p>
 
             <h3>Verified Business documents</h3>
             <p>Verification documents are retained while the Verified Business badge remains active or paused, where reasonably necessary to support the verification status.</p>

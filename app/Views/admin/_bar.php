@@ -16,6 +16,9 @@ $awaitingReview = (new App\Models\DirectoryVerificationModel())
 $jobsPending = (new App\Models\JobPostModel())
     ->where('status', App\Models\JobPostModel::STATUS_PENDING)
     ->countAllResults();
+$referralsPending = (new App\Models\DirectoryReferralModel())
+    ->where('status', App\Models\DirectoryReferralModel::STATUS_PENDING)
+    ->countAllResults();
 ?>
 <div class="admin-bar">
     <div class="container">
@@ -24,6 +27,7 @@ $jobsPending = (new App\Models\JobPostModel())
             <a href="<?= base_url('admin') ?>">Profiles</a> &middot;
             <a href="<?= base_url('admin/verifications') ?>">Verification<?= $awaitingReview > 0 ? ' (' . (int) $awaitingReview . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/jobs') ?>">Jobs<?= $jobsPending > 0 ? ' (' . (int) $jobsPending . ')' : '' ?></a> &middot;
+            <a href="<?= base_url('admin/referrals') ?>">Referrals<?= $referralsPending > 0 ? ' (' . (int) $referralsPending . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
             <a href="<?= base_url('admin/venues') ?>">Venues</a> &middot;
             <a href="<?= base_url('admin/hero') ?>">Hero photos</a> &middot;

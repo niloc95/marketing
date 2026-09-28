@@ -37,6 +37,7 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET /manage/{token}` | `Manage::redeem` — single-use, trades the token for a session |
 | `GET/POST /manage/edit` | `Manage::edit` / `Manage::update` — the owner's edit form |
 | `GET/POST /contact` | `Contact::index` / `Contact::submit` — emails `directory.adminEmail`, stores nothing |
+| `GET/POST /recommend`, `GET/POST /recommend/stop/{token}` | `Referral::*` — "Recommend a business"; see that section. Admin queue at `/admin/referrals` |
 | `GET /faq` | `Contact::faq` — copy lives in the view as one `$groups` array that renders the page **and** builds the `FAQPage` JSON-LD, so the two cannot drift. Edit answers there, not in two places. |
 | `GET/POST /admin`, `/admin/login` | `Admin::*` — admin backend |
 
@@ -269,6 +270,31 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
   inherits the previous email's.
 - **Feature-test POSTs meet the real CSRF filter.** Send `[csrf_token() => csrf_hash()]`
   (see `JobBoardFlowTest::csrf()`).
+
+## Recommend a business (`/recommend`)
+
+A visitor names a business that should be listed. The rules are in `ReferralService`, and
+the rows are `directory_referrals`.
+
+- **The form never emails the business.** It stores a row and emails the admin. Only
+  **Invite** at `/admin/referrals` contacts the business: one email with
+  `/add-listing?invite={token}` and a "don't contact me again" link. There is one invite
+  per address, however many people recommend it (`inviteBlocker()`). Anything that emails a
+  business straight from the public form turns our domain into a way to mail any address.
+- **The invite pre-fills signup.** `Listing::renderForm()` maps the token through
+  `prefillFor()` and carries it as a hidden `invite` input. `store()` calls
+  `attachListing()` after the save. `verify()` calls `markListed()`, which also matches
+  by email, so a business that listed without clicking the invite still counts. It
+  emails the referrer only when `notify_referrer` is set. Both hooks swallow their own
+  errors, so a referral can never cost anyone their listing.
+- **Suppression is permanent and hashed** (`directory_invite_suppressions`). The stop
+  link is GET-asks, POST-acts, and it is **not** CSRF-exempt, because the invite has no
+  List-Unsubscribe-Post header.
+- **Retention:** `php spark referrals:prune` (daily cron, in `deploy/cron/webscheduler`) wipes
+  contact details 12 months after submission, or 30 days after dismissal. The privacy
+  policy promises exactly this.
+- Emails go through `emails/job-notice` with an `$eyebrow`, and render with `saveData => false`.
+- Tests: `tests/database/ReferralFlowTest.php`.
 
 ## Verified Business — the one paid feature
 

@@ -2,8 +2,10 @@
 /**
  * Every plain notice the Jobs board sends: confirm, live, rejected, closing
  * soon, and the admin alert. One template because they differ only in words.
+ * ReferralService sends through it too, with its own $eyebrow.
  *
  * @var string                       $site
+ * @var string|null                  $eyebrow   the small line above the heading; defaults to "<site> Jobs"
  * @var string                       $heading
  * @var list<string>                 $paragraphs plain text; escaped here
  * @var array{0:string,1:string}|null $button    [label, url]
@@ -15,7 +17,7 @@
 <html lang="en">
 <body style="font-family:Inter,Arial,sans-serif;color:#0f172a;background:#f8fafc;padding:24px">
     <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:28px">
-        <p style="font-size:13px;color:#64748b;margin:0 0 6px"><?= esc($site) ?> Jobs</p>
+        <p style="font-size:13px;color:#64748b;margin:0 0 6px"><?= esc($eyebrow ?? ($site . ' Jobs')) ?></p>
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px"><?= esc($heading) ?></h1>
         <?php foreach ($paragraphs as $p): ?>
             <p style="font-size:15px;line-height:1.6"><?= esc($p) ?></p>

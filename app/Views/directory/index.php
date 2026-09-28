@@ -285,6 +285,19 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                     <div class="empty">
                         <p class="mb-4">Nothing matches your search.</p>
                         <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
+                        <?php // The moment someone knows a business we are missing. Carries
+                              // the category and province over, but only as the controller
+                              // resolved them, never the raw query string: an unknown
+                              // ?category= must not get its words into this page.
+                              // VerticalHeroTest pins that. ?>
+                        <?php $recommend = array_filter([
+                            'category' => is_array($category ?? null) ? (string) $category['slug'] : '',
+                            'province' => (string) ($province ?? ''),
+                        ], static fn ($v) => $v !== ''); ?>
+                        <p class="mt-4 text-sm">
+                            Know a business that should be here?
+                            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('recommend') . ($recommend === [] ? '' : '?' . http_build_query($recommend)), 'attr') ?>">Recommend it</a>
+                        </p>
                     </div>
                 <?php else: ?>
                     <div class="card-grid">

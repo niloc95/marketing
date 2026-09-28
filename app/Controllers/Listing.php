@@ -8,6 +8,7 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\ListingQualityService;
+use App\Services\ReferralService;
 use App\Services\VerificationService;
 
 class Listing extends BaseController
@@ -53,6 +54,17 @@ class Listing extends BaseController
         $offered      = $verification->isEnabled();
         $old          = session()->getFlashdata('old') ?? [];
 
+        // Arrived from a "Recommend a business" invite: pre-fill what the
+        // referrer told us. A failed submission's own input still wins, and
+        // the token rides along as a hidden field so store() can close the
+        // referral. An unknown or expired token just gives the empty form.
+        $invite = (string) ($old['invite'] ?? $this->request->getGet('invite') ?? '');
+        if ($invite !== '' && $old === []) {
+            $prefill = (new ReferralService())->prefillFor($invite);
+            $old     = $prefill;
+            $invite  = $prefill === [] ? '' : $invite;
+        }
+
         // The plan picker switches plan with pushState, which does not change the
         // Referer — so redirect()->back() after a failed submission can land on
         // the other plan's URL and quietly undo the choice. The posted value is
@@ -75,6 +87,7 @@ class Listing extends BaseController
             // off falls back to the free form rather than rendering an upload for
             // a badge nobody can buy.
             'plan' => $offered ? $plan : 'free',
+            'invite' => ctype_xdigit($invite) && strlen($invite) === 64 ? $invite : '',
         ]);
     }
 
@@ -141,6 +154,13 @@ class Listing extends BaseController
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
         $menuErrors = $this->applyMenuUpload((int) $result['id']);
+
+        // Close the referral this signup was invited from. After the save, and
+        // it swallows its own failures: it must never cost anyone their listing.
+        $invite = (string) $this->request->getPost('invite');
+        if ($invite !== '') {
+            (new ReferralService())->attachListing($invite, (int) $result['id']);
+        }
 
         // Score the profile now that everything that counts towards it exists.
         // This has to be here rather than inside submitPublic(): the gallery is

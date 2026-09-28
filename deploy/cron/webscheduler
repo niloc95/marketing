@@ -36,6 +36,12 @@ MAILTO=""
 # privacy policy, so keep it installed.
 30 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark jobs:expire --quiet
 
+# --- Recommend-a-business retention -------------------------------------------
+# Wipes business and referrer contact details from referrals 12 months after
+# submission, or 30 days after dismissal. Load-bearing for the retention
+# promise in the privacy policy, like jobs:expire.
+45 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark referrals:prune --quiet
+
 # --- Nightly database dump ----------------------------------------------------
 # Replaces Hostinger's plan backups. Credentials come from /home/deploy/.my.cnf
 # (chmod 600) so no password appears in the process list or in this file.

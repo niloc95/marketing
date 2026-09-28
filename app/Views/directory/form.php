@@ -75,6 +75,10 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <?= csrf_field() ?>
                 <!-- honeypot -->
                 <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                <?php // From a "Recommend a business" invite; closes that referral. See Listing::renderForm(). ?>
+                <?php if (($invite ?? '') !== ''): ?>
+                    <input type="hidden" name="invite" value="<?= esc($invite, 'attr') ?>">
+                <?php endif; ?>
 
                 <?php // view() (not $this->include) — the partial needs $v/$err, which are
                       // locals here and so are not in the view's shared data. ?>
