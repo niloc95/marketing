@@ -46,7 +46,7 @@ class Legal extends BaseController
             'lastUpdated' => self::LAST_UPDATED['cookies'],
             // The list of third parties below must stay true: a YouTube hero
             // background puts Google's player on the home page.
-            'youtubeHero' => ((new \App\Services\DirectorySettings())->heroBackground()['type'] ?? '') === 'youtube',
+            'youtubeHero' => ((new \App\Services\HeroImageService())->background()['type'] ?? '') === 'youtube',
         ]);
     }
 }

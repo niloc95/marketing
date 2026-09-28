@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\DirectoryHeroImageModel;
+use App\Models\DirectoryHeroVideoModel;
 use App\Models\DirectorySettingModel;
 use App\Services\DirectorySettings;
 use App\Services\HeroImageService;
@@ -90,8 +91,8 @@ final class HeroBackgroundTest extends CIUnitTestCase
         $this->assertSame(0, HeroImageService::youtubeStart('https://youtu.be/dQw4w9WgXcQ'));
         $this->assertSame(0, HeroImageService::youtubeStart('https://youtu.be/dQw4w9WgXcQ?t=soon'));
 
-        (new HeroImageService())->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'https://youtu.be/dQw4w9WgXcQ?t=15'], null, 'admin@test');
-        $this->assertSame(15, (new DirectorySettings())->heroBackground()['start']);
+        (new HeroImageService())->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'https://youtu.be/dQw4w9WgXcQ?t=15'], 'admin@test');
+        $this->assertSame(15, (new HeroImageService())->background()['start']);
     }
 
     // --------------------------------------------------------------- saving
@@ -102,11 +103,10 @@ final class HeroBackgroundTest extends CIUnitTestCase
 
         $result = (new HeroImageService())->saveBackground(
             ['hero_media' => 'youtube', 'youtube_url' => 'https://youtu.be/dQw4w9WgXcQ'],
-            null,
             'admin@test'
         );
         $this->assertTrue($result['ok'], $result['message']);
-        $this->assertSame(['type' => 'youtube', 'id' => 'dQw4w9WgXcQ', 'start' => 0], (new DirectorySettings())->heroBackground());
+        $this->assertSame(['type' => 'youtube', 'id' => 'dQw4w9WgXcQ', 'start' => 0], (new HeroImageService())->background());
 
         $html = $this->get('/')->getBody();
         $this->assertStringContainsString('data-hero-youtube="dQw4w9WgXcQ"', $html);
@@ -119,53 +119,89 @@ final class HeroBackgroundTest extends CIUnitTestCase
 
     public function testYouTubeWithoutALinkIsRefusedAndNothingChanges(): void
     {
-        $result = (new HeroImageService())->saveBackground(['hero_media' => 'youtube'], null, 'admin@test');
+        $result = (new HeroImageService())->saveBackground(['hero_media' => 'youtube'], 'admin@test');
 
         $this->assertFalse($result['ok']);
         $this->assertArrayHasKey('youtube_url', $result['errors']);
-        $this->assertNull((new DirectorySettings())->heroBackground());
+        $this->assertNull((new HeroImageService())->background());
     }
 
-    public function testVideoWithoutAFileIsRefused(): void
+    public function testTheVideoRotationNeedsAClipFirst(): void
     {
-        $result = (new HeroImageService())->saveBackground(['hero_media' => 'video'], null, 'admin@test');
+        $result = (new HeroImageService())->saveBackground(['hero_media' => 'video'], 'admin@test');
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('hero_media', $result['errors']);
+    }
+
+    public function testEveryActiveClipRendersInOrderWithNoControls(): void
+    {
+        $this->photo();
+        $second = $this->clip('second', 1);
+        $first  = $this->clip('first', 0);
+        $this->clip('switched-off', 2, false);
+        $this->setting(DirectorySettingModel::HERO_MEDIA, 'video');
+
+        $html = $this->get('/')->getBody();
+
+        preg_match_all('/<video class="hero-video" data-hero-video[^>]*data-src="[^"]*\/([^"\/]+)"/', $html, $m);
+        $this->assertSame([basename($first), basename($second)], $m[1], 'active clips only, in sort order');
+        $this->assertDoesNotMatchRegularExpression('/<video[^>]*\scontrols/', $html);
+        // More than one clip rotates rather than looping any one of them.
+        $this->assertDoesNotMatchRegularExpression('/<video class="hero-video"[^>]*\sloop/', $html);
+        // Video only: no photo before it.
+        $this->assertStringNotContainsString('hero-slide', $html);
+    }
+
+    public function testASingleClipLoops(): void
+    {
+        $this->clip('only', 0);
+        $this->setting(DirectorySettingModel::HERO_MEDIA, 'video');
+
+        $this->assertMatchesRegularExpression('/<video class="hero-video" data-hero-video[^>]*\sloop/', $this->get('/')->getBody());
+    }
+
+    public function testAClipWhoseFileHasGoneIsSkippedAndNoneLeftFallsBackToPhotos(): void
+    {
+        $this->photo();
+        (new DirectoryHeroVideoModel())->insert(['path' => 'assets/hero/uploads/deleted-by-hand.mp4', 'sort_order' => 0, 'is_active' => 1]);
+        $this->setting(DirectorySettingModel::HERO_MEDIA, 'video');
+        (new HeroImageService())->forget();
+
+        $this->assertNull((new HeroImageService())->background());
+        $this->assertStringContainsString('hero-slide', $this->get('/')->getBody());
+    }
+
+    public function testAddingAClipNeedsAFile(): void
+    {
+        $result = (new HeroImageService())->saveVideo(null, ['sort_order' => 0, 'is_active' => 1], null);
 
         $this->assertFalse($result['ok']);
         $this->assertArrayHasKey('video', $result['errors']);
     }
 
-    public function testAStoredVideoRendersWithNoControls(): void
+    public function testAClipCanBeSwitchedOffAndDeletedWithItsFile(): void
     {
-        $this->photo();
-        $path = $this->videoFile();
-        $this->setting(DirectorySettingModel::HERO_MEDIA, 'video');
-        $this->setting(DirectorySettingModel::HERO_VIDEO_PATH, $path);
+        $path = $this->clip('gone', 0);
+        $id   = (int) (new DirectoryHeroVideoModel())->where('path', $path)->first()['id'];
+        $svc  = new HeroImageService();
 
-        $html = $this->get('/')->getBody();
+        $this->assertTrue($svc->saveVideo($id, ['sort_order' => 3], null)['ok']);
+        $this->assertSame([], $svc->videos(), 'unticked Active switches it off');
 
-        $this->assertMatchesRegularExpression('/<video class="hero-video" data-hero-video muted loop playsinline/', $html);
-        $this->assertStringContainsString($path, $html);
-        $this->assertDoesNotMatchRegularExpression('/<video[^>]*\scontrols/', $html);
-    }
-
-    public function testAVideoFileThatHasGoneFallsBackToThePhotos(): void
-    {
-        $this->photo();
-        $this->setting(DirectorySettingModel::HERO_MEDIA, 'video');
-        $this->setting(DirectorySettingModel::HERO_VIDEO_PATH, 'assets/hero/uploads/deleted-by-hand.mp4');
-
-        $this->assertNull((new DirectorySettings())->heroBackground());
-        $this->assertStringNotContainsString('data-hero-video', $this->get('/')->getBody());
+        $this->assertTrue($svc->deleteVideo($id)['ok']);
+        $this->assertFileDoesNotExist(FCPATH . $path);
+        $this->assertNull((new DirectoryHeroVideoModel())->find($id));
     }
 
     public function testSwitchingBackToPhotosKeepsTheYouTubeLinkForLater(): void
     {
         $svc = new HeroImageService();
-        $svc->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'dQw4w9WgXcQ'], null, 'admin@test');
-        $svc->saveBackground(['hero_media' => 'photos'], null, 'admin@test');
+        $svc->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'dQw4w9WgXcQ'], 'admin@test');
+        $svc->saveBackground(['hero_media' => 'photos'], 'admin@test');
 
         $settings = new DirectorySettings();
-        $this->assertNull($settings->heroBackground());
+        $this->assertNull($svc->background());
         $this->assertSame('dQw4w9WgXcQ', $settings->heroSettings()['youtube']);
     }
 
@@ -173,7 +209,7 @@ final class HeroBackgroundTest extends CIUnitTestCase
     {
         $this->assertStringNotContainsString('<strong>YouTube</strong>', $this->get('cookie-policy')->getBody());
 
-        (new HeroImageService())->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'dQw4w9WgXcQ'], null, 'admin@test');
+        (new HeroImageService())->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'dQw4w9WgXcQ'], 'admin@test');
 
         $this->assertStringContainsString('<strong>YouTube</strong>', $this->get('cookie-policy')->getBody());
     }
@@ -208,15 +244,19 @@ final class HeroBackgroundTest extends CIUnitTestCase
         (new DirectorySettings())->forget();
     }
 
-    private function videoFile(): string
+    /** A clip row with a real (dummy) file under FCPATH; returns its path. */
+    private function clip(string $stem, int $sort, bool $active = true): string
     {
         $dir = FCPATH . 'assets/hero/uploads';
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
-        $rel  = 'assets/hero/uploads/test-hero-video.mp4';
+        $rel = 'assets/hero/uploads/test-hero-video-' . $stem . '.mp4';
         file_put_contents(FCPATH . $rel, 'not-really-an-mp4');
         $this->written[] = FCPATH . $rel;
+
+        (new DirectoryHeroVideoModel())->insert(['path' => $rel, 'sort_order' => $sort, 'is_active' => $active ? 1 : 0]);
+        (new HeroImageService())->forget();
 
         return $rel;
     }

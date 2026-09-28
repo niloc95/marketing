@@ -81,15 +81,19 @@ $hasMedia  = $hasSlides || $heroBg !== null;
                      alt="" decoding="async"
                      <?= $i === 0 ? 'fetchpriority="high"' : '' ?>>
             <?php endforeach; ?>
-            <?php // No controls attribute, muted, looped, and started by directory.js
-                  // rather than autoplay — so reduced-motion visitors never download
-                  // it, and it fades in only once it is really playing. ?>
+            <?php // The video rotation. No controls attribute, muted, and started by
+                  // directory.js rather than autoplay: the src is only set when a clip
+                  // is about to be needed, so a visitor downloads the first clip, and
+                  // each next one only as the current one passes its halfway mark —
+                  // and a reduced-motion visitor downloads none. Each fades in only
+                  // once it is really playing. A single clip loops on its own. ?>
             <?php if ($heroBg !== null && $heroBg['type'] === 'video'): ?>
-                <video class="hero-video" data-hero-video muted loop playsinline preload="none"
-                       disablepictureinpicture disableremoteplayback tabindex="-1">
-                    <source src="<?= esc(base_url($heroBg['src']), 'attr') ?>"
-                            type="<?= str_ends_with($heroBg['src'], '.webm') ? 'video/webm' : 'video/mp4' ?>">
-                </video>
+                <?php foreach ($heroBg['videos'] as $clip): ?>
+                    <video class="hero-video" data-hero-video muted playsinline preload="none"
+                           <?= count($heroBg['videos']) === 1 ? 'loop' : '' ?>
+                           disablepictureinpicture disableremoteplayback tabindex="-1"
+                           data-src="<?= esc(base_url($clip['src']), 'attr') ?>" data-type="<?= esc($clip['type'], 'attr') ?>"></video>
+                <?php endforeach; ?>
             <?php elseif ($heroBg !== null && $heroBg['type'] === 'youtube'): ?>
                 <?php // Filled by directory.js after load: the player is a third-party
                       // page, so it must not hold up the first paint. ?>

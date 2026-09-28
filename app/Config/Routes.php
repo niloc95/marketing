@@ -187,6 +187,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('hero', 'Admin::heroImages');
     $routes->post('hero', 'Admin::storeHeroImage');
     $routes->post('hero/background', 'Admin::saveHeroBackground');
+    $routes->post('hero/videos', 'Admin::storeHeroVideo');
+    $routes->post('hero/videos/(:num)', 'Admin::updateHeroVideo/$1');
+    $routes->post('hero/videos/(:num)/delete', 'Admin::deleteHeroVideo/$1');
     $routes->post('hero/(:num)', 'Admin::updateHeroImage/$1');
     $routes->post('hero/(:num)/delete', 'Admin::deleteHeroImage/$1');
 

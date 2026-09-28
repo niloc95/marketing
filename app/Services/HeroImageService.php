@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Libraries\ListingImageProcessor;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryHeroImageModel;
+use App\Models\DirectoryHeroVideoModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectorySettingModel;
 use CodeIgniter\HTTP\Files\UploadedFile;
@@ -24,6 +25,9 @@ class HeroImageService
 {
     /** One entry for the whole rotation — a handful of rows, read on every home hit. */
     private const CACHE_KEY = 'directory_hero_slides';
+
+    /** The active background videos, cached the same way as the slides. */
+    private const VIDEO_CACHE_KEY = 'directory_hero_videos';
 
     /**
      * An hour. Like the settings cache the number barely matters, because the
@@ -57,6 +61,13 @@ class HeroImageService
      * second loop at 1080p compresses well under it.
      */
     public const MAX_VIDEO_BYTES = 12 * 1024 * 1024;
+
+    /**
+     * Clips in the rotation. Each one is a separate download for a visitor who
+     * stays long enough to see it, so the cap is about their data as much as
+     * about the admin screen.
+     */
+    public const MAX_VIDEOS = 6;
 
     /** Extension => the MIME types finfo reports for it. */
     private const VIDEO_TYPES = [
@@ -130,6 +141,7 @@ class HeroImageService
 
         try {
             cache()->delete(self::CACHE_KEY);
+            cache()->delete(self::VIDEO_CACHE_KEY);
         } catch (\Throwable $e) {
             log_message('warning', 'Could not clear the hero cache: ' . $e->getMessage());
         }
@@ -251,17 +263,91 @@ class HeroImageService
     }
 
     /**
-     * Choose what plays behind the home hero: the photo rotation, an uploaded
-     * video, or a YouTube video. Kept in the settings table — it is one choice
-     * for the whole hero, not a slide — and the photos stay put either way:
-     * the first one is the poster a video shows until it plays, and what a
-     * visitor who prefers reduced motion sees instead.
+     * What plays behind the home hero right now, or null for the photos.
+     *
+     * A mode with nothing to play — video with no active clip whose file is
+     * still on disk, YouTube with no saved id — reads as null too, so the hero
+     * falls back to its photos rather than an empty band.
+     *
+     * @return array{type:'video',videos:list<array{src:string,type:string}>}|array{type:'youtube',id:string,start:int}|null
+     */
+    public function background(): ?array
+    {
+        $settings = new DirectorySettings();
+        $mode     = $settings->heroMode();
+
+        if ($mode === 'youtube') {
+            $yt = $settings->heroYoutube();
+
+            return $yt === null ? null : ['type' => 'youtube'] + $yt;
+        }
+
+        if ($mode === 'video') {
+            $videos = [];
+            foreach ($this->videos() as $row) {
+                $path = (string) $row['path'];
+                if ($path !== '' && is_file(rtrim(FCPATH, '/') . '/' . $path)) {
+                    $videos[] = ['src' => $path, 'type' => str_ends_with($path, '.webm') ? 'video/webm' : 'video/mp4'];
+                }
+            }
+
+            return $videos === [] ? null : ['type' => 'video', 'videos' => $videos];
+        }
+
+        return null;
+    }
+
+    /**
+     * Active background videos in play order, cached. Same failure posture as
+     * slides(): any read problem is an empty list, never an exception.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function videos(): array
+    {
+        try {
+            $cached = cache()->get(self::VIDEO_CACHE_KEY);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'Hero video cache unavailable, reading through: ' . $e->getMessage());
+        }
+
+        try {
+            $rows = (new DirectoryHeroVideoModel())->activeOrdered();
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not read hero videos: ' . $e->getMessage());
+
+            return [];
+        }
+
+        try {
+            cache()->save(self::VIDEO_CACHE_KEY, $rows, self::CACHE_TTL);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Could not cache hero videos: ' . $e->getMessage());
+        }
+
+        return $rows;
+    }
+
+    /** @return array<int,array<string,mixed>> every clip, for the admin screen, uncached */
+    public function allVideos(): array
+    {
+        return (new DirectoryHeroVideoModel())->allOrdered();
+    }
+
+    /**
+     * Choose what plays behind the home hero: the photo rotation, the video
+     * rotation, or a YouTube video. One choice for the whole hero, kept in the
+     * settings table; the photos and videos themselves stay put whichever is
+     * showing, so switching back loses nothing.
      *
      * @param array<string,mixed> $input
      *
      * @return array{ok:bool,errors:array<string,string>,message:string}
      */
-    public function saveBackground(array $input, ?UploadedFile $file, string $by): array
+    public function saveBackground(array $input, string $by): array
     {
         $settings = new DirectorySettings();
         $current  = $settings->heroSettings();
@@ -273,7 +359,7 @@ class HeroImageService
 
         $errors = [];
 
-        $youtubeRaw = trim((string) ($input['youtube_url'] ?? ''));
+        $youtubeRaw   = trim((string) ($input['youtube_url'] ?? ''));
         $youtubeId    = $current['youtube'];
         $youtubeStart = $current['start'];
         if ($youtubeRaw !== '') {
@@ -286,53 +372,126 @@ class HeroImageService
             }
         }
 
-        $newVideo = '';
-        if ($file !== null && $file->getError() !== UPLOAD_ERR_NO_FILE) {
-            $stored = $this->storeVideo($file);
-            if ($stored['error'] !== '') {
-                $errors['video'] = $stored['error'];
-            } else {
-                $newVideo = $stored['path'];
-            }
-        }
-        $videoPath = $newVideo !== '' ? $newVideo : $current['video'];
-
-        if ($mode === 'video' && $videoPath === '' && ! isset($errors['video'])) {
-            $errors['video'] = 'Upload a video to use as the background.';
+        if ($mode === 'video' && (new DirectoryHeroVideoModel())->where('is_active', 1)->countAllResults() === 0) {
+            $errors['hero_media'] = 'Add at least one active video below before switching to the video rotation.';
         }
         if ($mode === 'youtube' && $youtubeId === '' && ! isset($errors['youtube_url'])) {
             $errors['youtube_url'] = 'Paste the YouTube link to use as the background.';
         }
 
         if ($errors !== []) {
-            $this->discard($newVideo);
-
             return $this->fail($errors, 'The hero background was not changed — see the notes below.');
         }
 
         $model = new DirectorySettingModel();
         try {
             $model->put(DirectorySettingModel::HERO_MEDIA, $mode, $by);
-            $model->put(DirectorySettingModel::HERO_VIDEO_PATH, $videoPath, $by);
             $model->put(DirectorySettingModel::HERO_YOUTUBE_ID, $youtubeId, $by);
             $model->put(DirectorySettingModel::HERO_YOUTUBE_START, (string) $youtubeStart, $by);
         } catch (\Throwable $e) {
             log_message('error', 'Could not save the hero background: ' . $e->getMessage());
-            $this->discard($newVideo);
 
             return $this->fail([], 'The hero background could not be saved. Please try again.');
         }
 
-        // The replaced file is unreferenced only now the new path is stored.
-        if ($newVideo !== '' && $current['video'] !== '' && $current['video'] !== $newVideo) {
-            $this->discard($current['video']);
-        }
-
         $settings->forget();
 
-        $label = ['photos' => 'the photo rotation', 'video' => 'the uploaded video', 'youtube' => 'the YouTube video'][$mode];
+        $label = ['photos' => 'the photo rotation', 'video' => 'the video rotation', 'youtube' => 'the YouTube video'][$mode];
 
         return ['ok' => true, 'errors' => [], 'message' => 'The hero now shows ' . $label . '.'];
+    }
+
+    /**
+     * Add a clip to the video rotation, or update one (order, on/off, credit).
+     * A file is required to add and optional to update.
+     *
+     * @param array<string,mixed> $input
+     *
+     * @return array{ok:bool,errors:array<string,string>,message:string}
+     */
+    public function saveVideo(?int $id, array $input, ?UploadedFile $file): array
+    {
+        $model    = new DirectoryHeroVideoModel();
+        $existing = $id === null ? null : $model->find($id);
+        if ($id !== null && $existing === null) {
+            return $this->fail([], 'That video no longer exists.');
+        }
+        if ($id === null && $model->countAllResults() >= self::MAX_VIDEOS) {
+            return $this->fail([], sprintf('The video rotation is full at %d. Delete one before adding another.', self::MAX_VIDEOS));
+        }
+
+        $errors    = [];
+        $creditUrl = trim((string) ($input['credit_url'] ?? ''));
+        if ($creditUrl !== '' && ! preg_match('#^https://#i', $creditUrl)) {
+            $errors['video_credit_url'] = 'The credit link must start with https://.';
+        }
+
+        $newPath = '';
+        if ($file !== null && $file->getError() !== UPLOAD_ERR_NO_FILE) {
+            $stored = $this->storeVideo($file);
+            if ($stored['error'] !== '') {
+                $errors['video'] = $stored['error'];
+            } else {
+                $newPath = $stored['path'];
+            }
+        } elseif ($id === null) {
+            $errors['video'] = 'Choose a video to add.';
+        }
+
+        if ($errors !== []) {
+            $this->discard($newPath);
+
+            return $this->fail($errors, 'That video could not be saved — see the notes below.');
+        }
+
+        $data = [
+            'credit'     => trim((string) ($input['credit'] ?? '')) ?: null,
+            'credit_url' => $creditUrl ?: null,
+            'sort_order' => (int) ($input['sort_order'] ?? 0),
+            'is_active'  => empty($input['is_active']) ? 0 : 1,
+        ];
+        if ($newPath !== '') {
+            $data['path'] = $newPath;
+        }
+
+        try {
+            $id === null ? $model->insert($data) : $model->update($id, $data);
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not save a hero video: ' . $e->getMessage());
+            $this->discard($newPath);
+
+            return $this->fail([], 'That video could not be saved. Please try again.');
+        }
+
+        if ($newPath !== '' && $existing !== null) {
+            $this->discard((string) $existing['path']);
+        }
+
+        $this->forget();
+
+        return ['ok' => true, 'errors' => [], 'message' => $id === null ? 'Video added to the rotation.' : 'Video updated.'];
+    }
+
+    /** @return array{ok:bool,message:string} */
+    public function deleteVideo(int $id): array
+    {
+        $model = new DirectoryHeroVideoModel();
+        $row   = $model->find($id);
+        if ($row === null) {
+            return ['ok' => false, 'message' => 'That video no longer exists.'];
+        }
+
+        try {
+            $model->deleteWithFile($row);
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not delete a hero video: ' . $e->getMessage());
+
+            return ['ok' => false, 'message' => 'That video could not be deleted. Please try again.'];
+        }
+
+        $this->forget();
+
+        return ['ok' => true, 'message' => 'Video deleted.'];
     }
 
     /**

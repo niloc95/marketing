@@ -32,6 +32,7 @@ class DirectorySettingModel extends Model
 
     /** Home hero background: 'photos' (the rotation), 'video' or 'youtube'. */
     public const HERO_MEDIA      = 'hero_media';
+    /** Superseded by xs_directory_hero_videos; read once by that migration. */
     public const HERO_VIDEO_PATH = 'hero_video_path';
     public const HERO_YOUTUBE_ID = 'hero_youtube_id';
     /** Seconds into the YouTube video to start (and loop back to). */

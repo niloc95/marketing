@@ -9,7 +9,6 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\JobBoardService;
-use App\Services\DirectorySettings;
 use App\Services\HeroImageService;
 use App\Services\ListingMenuService;
 use App\Services\VerificationService;
@@ -44,8 +43,8 @@ class Directory extends BaseController
             // Cached whole, and an empty array on any failure — the hero falls
             // back to its gradient rather than taking the home page with it.
             'slides'         => (new HeroImageService())->slides(),
-            // Null for the photo rotation, and on any settings read failure.
-            'heroBackground' => (new DirectorySettings())->heroBackground(),
+            // Null for the photo rotation, and on any read failure.
+            'heroBackground' => (new HeroImageService())->background(),
         ]);
     }
 

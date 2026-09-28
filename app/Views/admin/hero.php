@@ -13,7 +13,11 @@ use App\Services\HeroImageService;
 // Flashed input wins so a rejected add keeps what was typed. Only the add form
 // reads it — a rejected row edit redraws from the stored row, because `old` has
 // no id on it and would otherwise repopulate every row with one row's input.
-$v   = fn (string $field) => array_key_exists($field, $old) ? (string) $old[$field] : '';
+// The video add form flashes its input under the same field names (credit,
+// credit_url), tagged form=video, so each form only redraws its own.
+$fromVideo = ($old['form'] ?? '') === 'video';
+$v   = fn (string $field) => ! $fromVideo && array_key_exists($field, $old) ? (string) $old[$field] : '';
+$vv  = fn (string $field) => $fromVideo && array_key_exists($field, $old) ? (string) $old[$field] : '';
 $err = fn (string $field) => $errors[$field] ?? '';
 
 // Grouped the same way the signup form groups them, so the operator picks from
@@ -61,51 +65,126 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
         <div class="panel mb-8">
             <h3>Hero background</h3>
             <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                What plays behind the search box. A video plays muted and on a loop, with no controls and no YouTube buttons,
-                and replaces the photos completely &mdash; they are kept here and come back if you switch to the photo rotation.
-                Visitors whose phone or computer is set to reduce motion see a plain dark background instead of the video.
+                What plays behind the search box. Videos play muted, with no controls and no YouTube buttons,
+                and replace the photos completely &mdash; the photos are kept and come back if you switch to the photo rotation.
+                Visitors whose phone or computer is set to reduce motion see a plain dark background instead of a video.
             </p>
-            <form method="post" action="<?= base_url('admin/hero/background') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('admin/hero/background') ?>">
                 <?= csrf_field() ?>
                 <div class="field">
                     <label>Show</label>
                     <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                        <?php foreach (['photos' => 'Photo rotation', 'video' => 'Uploaded video', 'youtube' => 'YouTube video'] as $key => $label): ?>
+                        <?php foreach (['photos' => 'Photo rotation', 'video' => 'Video rotation', 'youtube' => 'YouTube video'] as $key => $label): ?>
                             <label class="inline-flex items-center gap-2 font-normal">
                                 <input type="radio" name="hero_media" value="<?= $key ?>" <?= $bgMode === $key ? 'checked' : '' ?>>
                                 <?= esc($label) ?>
                             </label>
                         <?php endforeach; ?>
                     </div>
+                    <?php if ($err('hero_media')): ?>
+                        <div class="err"><?= esc($err('hero_media')) ?></div>
+                    <?php endif; ?>
                 </div>
-                <div class="form-row">
-                    <div class="field">
-                        <label for="hero-video">Video file</label>
-                        <input type="file" id="hero-video" name="video" accept="video/mp4,video/webm">
-                        <?php if ($err('video')): ?>
-                            <div class="err"><?= esc($err('video')) ?></div>
-                        <?php endif; ?>
-                        <div class="hint">
-                            MP4 or WebM, up to 12&nbsp;MB. A 10&ndash;20 second clip at 1080p with the sound removed is ideal.
-                            <?php if ($background['video'] !== ''): ?>
-                                <br>Current: <a class="underline" href="<?= base_url($background['video']) ?>" target="_blank" rel="noopener"><?= esc(basename($background['video'])) ?></a>. Uploading a new one replaces it.
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label for="hero-youtube">YouTube link</label>
-                        <input type="text" id="hero-youtube" name="youtube_url" maxlength="255"
-                               value="<?= esc(array_key_exists('youtube_url', $old) ? (string) $old['youtube_url'] : ($background['youtube'] !== '' ? 'https://youtu.be/' . $background['youtube'] . ($background['start'] > 0 ? '?t=' . $background['start'] : '') : ''), 'attr') ?>"
-                               placeholder="https://www.youtube.com/watch?v=...">
-                        <?php if ($err('youtube_url')): ?>
-                            <div class="err"><?= esc($err('youtube_url')) ?></div>
-                        <?php endif; ?>
-                        <div class="hint">A share link (youtu.be/…), watch or Shorts link, or YouTube's embed code all work. The video must allow embedding.
-                            To skip an intro, add a start time: <code>?t=15</code> starts 15 seconds in (YouTube&rsquo;s <em>Share &rarr; Start at</em> does this for you).</div>
-                    </div>
+                <div class="field">
+                    <label for="hero-youtube">YouTube link</label>
+                    <input type="text" id="hero-youtube" name="youtube_url" maxlength="255"
+                           value="<?= esc(array_key_exists('youtube_url', $old) ? (string) $old['youtube_url'] : ($background['youtube'] !== '' ? 'https://youtu.be/' . $background['youtube'] . ($background['start'] > 0 ? '?t=' . $background['start'] : '') : ''), 'attr') ?>"
+                           placeholder="https://www.youtube.com/watch?v=...">
+                    <?php if ($err('youtube_url')): ?>
+                        <div class="err"><?= esc($err('youtube_url')) ?></div>
+                    <?php endif; ?>
+                    <div class="hint">Only used with <strong>YouTube video</strong>. A share link (youtu.be/…), watch or Shorts link, or YouTube's embed code all work, and the video must allow embedding.
+                        To skip an intro, add a start time: <code>?t=15</code> starts 15 seconds in.</div>
                 </div>
                 <button class="btn btn-primary btn-xs">Save background</button>
             </form>
+        </div>
+
+        <?php $videosFull = count($videos) >= HeroImageService::MAX_VIDEOS; ?>
+        <div class="panel mb-8">
+            <h3>Background videos <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= count($videos) ?> of <?= HeroImageService::MAX_VIDEOS ?>)</span></h3>
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                Used with <strong>Video rotation</strong>. Each clip plays to its end and fades into the next, in <strong>Sort</strong> order;
+                after the last it starts again from the first. One clip on its own simply loops.
+                Short clips of 10&ndash;20 seconds work best, and each one is a separate download for visitors, so keep the list short.
+            </p>
+            <form method="post" action="<?= base_url('admin/hero/videos') ?>" enctype="multipart/form-data">
+                <?= csrf_field() ?>
+                <div class="form-row">
+                    <div class="field">
+                        <label for="hero-video">Video file</label>
+                        <input type="file" id="hero-video" name="video" accept="video/mp4,video/webm" required>
+                        <?php if ($err('video')): ?>
+                            <div class="err"><?= esc($err('video')) ?></div>
+                        <?php endif; ?>
+                        <div class="hint">MP4 or WebM, up to 12&nbsp;MB. Pexels videos are free to use here, with no credit required.</div>
+                    </div>
+                    <div class="field">
+                        <label for="hero-video-credit">Credit <span class="text-slate-400">(optional)</span></label>
+                        <input type="text" id="hero-video-credit" name="credit" maxlength="120" value="<?= esc($vv('credit'), 'attr') ?>" placeholder="e.g. the Pexels creator">
+                    </div>
+                    <div class="field">
+                        <label for="hero-video-credit-url">Credit link <span class="text-slate-400">(optional)</span></label>
+                        <input type="url" id="hero-video-credit-url" name="credit_url" maxlength="255" value="<?= esc($vv('credit_url'), 'attr') ?>" placeholder="https://www.pexels.com/video/...">
+                        <?php if ($err('video_credit_url')): ?>
+                            <div class="err"><?= esc($err('video_credit_url')) ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="field">
+                        <label for="hero-video-sort">Sort</label>
+                        <input type="text" id="hero-video-sort" name="sort_order" class="w-20" value="<?= count($videos) ?>">
+                    </div>
+                </div>
+                <input type="hidden" name="is_active" value="1">
+                <input type="hidden" name="form" value="video">
+                <button class="btn btn-primary btn-xs" <?= $videosFull ? 'disabled' : '' ?>>Add video</button>
+                <?php if ($videosFull): ?>
+                    <div class="hint">The video rotation is full. Delete one before adding another.</div>
+                <?php endif; ?>
+            </form>
+
+            <?php if ($videos !== []): ?>
+                <div class="mt-5 grid gap-3">
+                    <?php foreach ($videos as $vid): ?>
+                        <div class="card flex flex-wrap items-start gap-4 p-3">
+                            <?php // A preview the admin can play; preload metadata only, so the
+                                  // screen does not pull every clip in full. ?>
+                            <video class="h-24 w-40 rounded-lg bg-black object-cover" src="<?= esc(base_url($vid['path']), 'attr') ?>"
+                                   muted controls preload="metadata"></video>
+                            <form method="post" action="<?= base_url('admin/hero/videos/' . (int) $vid['id']) ?>" enctype="multipart/form-data"
+                                  class="flex flex-1 flex-wrap items-end gap-3">
+                                <?= csrf_field() ?>
+                                <div class="field mb-0">
+                                    <label class="text-xs">Sort</label>
+                                    <input type="text" name="sort_order" value="<?= (int) $vid['sort_order'] ?>" class="w-16">
+                                </div>
+                                <div class="field mb-0">
+                                    <label class="text-xs">Credit</label>
+                                    <input type="text" name="credit" maxlength="120" value="<?= esc((string) $vid['credit'], 'attr') ?>" class="w-40">
+                                </div>
+                                <div class="field mb-0">
+                                    <label class="text-xs">Credit link</label>
+                                    <input type="url" name="credit_url" maxlength="255" value="<?= esc((string) $vid['credit_url'], 'attr') ?>" class="w-56">
+                                </div>
+                                <div class="field mb-0">
+                                    <label class="text-xs">Active</label>
+                                    <input type="checkbox" name="is_active" value="1" <?= $vid['is_active'] ? 'checked' : '' ?>>
+                                </div>
+                                <div class="field mb-0">
+                                    <label class="text-xs">Replace video</label>
+                                    <input type="file" name="video" accept="video/mp4,video/webm" class="w-56 text-xs">
+                                </div>
+                                <button class="btn btn-primary btn-xs">Save</button>
+                            </form>
+                            <form method="post" action="<?= base_url('admin/hero/videos/' . (int) $vid['id'] . '/delete') ?>"
+                                  data-confirm="Delete this video? The file goes too.">
+                                <?= csrf_field() ?>
+                                <button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="panel mb-8">

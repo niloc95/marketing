@@ -660,6 +660,7 @@ class Admin extends BaseController
         return view('admin/hero', [
             'images'     => (new HeroImageService())->all(),
             'background' => (new DirectorySettings())->heroSettings(),
+            'videos'     => (new HeroImageService())->allVideos(),
             'categories' => (new DirectoryAdminService())->allCategories(),
             'errors'     => session()->getFlashdata('errors') ?? [],
             'old'        => session()->getFlashdata('old') ?? [],
@@ -680,8 +681,32 @@ class Admin extends BaseController
     public function saveHeroBackground()
     {
         $post   = $this->request->getPost();
-        $result = (new HeroImageService())->saveBackground($post, $this->request->getFile('video'), $this->adminActor());
+        $result = (new HeroImageService())->saveBackground($post, $this->adminActor());
 
+        return $this->heroResult($result, $post);
+    }
+
+    public function storeHeroVideo()
+    {
+        $post = $this->request->getPost();
+
+        return $this->heroResult((new HeroImageService())->saveVideo(null, $post, $this->request->getFile('video')), $post);
+    }
+
+    public function updateHeroVideo(int $id)
+    {
+        // Row edits redraw from the stored row, not the flash — see hero.php.
+        return $this->heroResult((new HeroImageService())->saveVideo($id, $this->request->getPost(), $this->request->getFile('video')), []);
+    }
+
+    public function deleteHeroVideo(int $id)
+    {
+        return $this->backTo('admin/hero', (new HeroImageService())->deleteVideo($id));
+    }
+
+    /** Back to the hero screen with the result, and the input when it failed. */
+    private function heroResult(array $result, array $post)
+    {
         if (! $result['ok']) {
             return redirect()->to(base_url('admin/hero'))
                 ->with('errors', $result['errors'])

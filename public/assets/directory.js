@@ -2558,27 +2558,88 @@
   })();
 
   // ---------------------------------------------------- home hero background video
-  // An uploaded video or a YouTube video in place of the photo rotation (see
-  // home.php). Neither has controls. Both sit over the poster photo at opacity
-  // 0 and gain .is-playing only once they are actually playing, so anything
-  // that stops them — Low Power Mode, a blocked embed, a deleted YouTube video —
-  // leaves the photograph showing instead of a black box or an error card.
+  // The uploaded video rotation, or a YouTube video, in place of the photos
+  // (see home.php). Neither has controls. Both sit at opacity 0 over a plain
+  // dark band and gain .is-playing only once they are actually playing, so
+  // anything that stops them — Low Power Mode, a blocked embed, a deleted
+  // YouTube video — leaves the dark band rather than a black box or an error
+  // card.
   //
   // Reduced motion: nothing starts, nothing downloads, the poster stays.
   (function () {
-    var video = document.querySelector('[data-hero-video]');
-    var yt    = document.querySelector('[data-hero-youtube]');
-    if (!video && !yt) return;
+    var videos = Array.prototype.slice.call(document.querySelectorAll('[data-hero-video]'));
+    var yt     = document.querySelector('[data-hero-youtube]');
+    if (!videos.length && !yt) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    if (video) {
-      video.addEventListener('playing', function () {
-        video.classList.add('is-playing');
-      }, { once: true });
-      video.preload = 'auto';
-      var started = video.play();
-      // A refused autoplay is not an error worth reporting: the poster stays.
-      if (started && started.catch) started.catch(function () {});
+    if (videos.length) {
+      // The rotation. Each clip plays to its end; FADE seconds before that the
+      // next one starts underneath-then-on-top and fades in over it (the same
+      // "only the incoming one animates" dissolve the photo rotation uses, so
+      // the dark band never shows through mid-fade). The next clip's file is
+      // fetched only once the current one is halfway through.
+      var FADE    = 1.2;
+      var layer   = 3;
+      var current = -1;
+
+      var load = function (v) {
+        if (v.getAttribute('src')) return;
+        v.src = v.getAttribute('data-src');
+        v.preload = 'auto';
+      };
+
+      var show = function (i) {
+        var v    = videos[i];
+        var prev = current >= 0 ? videos[current] : null;
+        current  = i;
+        v.handedOff = false;
+        load(v);
+        try { v.currentTime = 0; } catch (err) { /* not seekable yet: it starts at 0 anyway */ }
+        v.style.zIndex = String(++layer);
+        v.addEventListener('playing', function () {
+          v.classList.add('is-playing');
+          // Once the new clip covers the band, retire the old one beneath it.
+          if (prev && prev !== v) {
+            setTimeout(function () { prev.classList.remove('is-playing'); prev.pause(); }, FADE * 1000 + 200);
+          }
+        }, { once: true });
+        var started = v.play();
+        // A refused autoplay (Low Power Mode) leaves the dark band; not an error.
+        if (started && started.catch) started.catch(function () {});
+      };
+
+      var next = function () { return (current + 1) % videos.length; };
+
+      if (videos.length > 1) {
+        videos.forEach(function (v, i) {
+          v.addEventListener('timeupdate', function () {
+            if (i !== current || !v.duration || v.handedOff) return;
+            if (v.currentTime > v.duration / 2) load(videos[next()]);
+            if (v.duration - v.currentTime <= FADE + 0.2) {
+              v.handedOff = true;
+              show(next());
+            }
+          });
+          // Belt and braces for a clip too short for timeupdate to catch the
+          // hand-off, and a clip that fails outright is skipped.
+          v.addEventListener('ended', function () {
+            if (i === current && !v.handedOff) { v.handedOff = true; show(next()); }
+          });
+          v.addEventListener('error', function () {
+            if (i === current) show(next());
+          });
+        });
+      }
+
+      // Nothing is worth streaming to a tab nobody is looking at.
+      document.addEventListener('visibilitychange', function () {
+        var v = videos[current];
+        if (!v) return;
+        if (document.hidden) v.pause();
+        else { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+      });
+
+      show(0);
     }
 
     if (yt) {
