@@ -75,6 +75,24 @@ class Exceptions extends BaseConfig
     ];
 
     /**
+     * Masking needs the arguments it masks. With `zend.exception_ignore_args`
+     * on — PHP's recommended production setting, and on for this server —
+     * traces carry no arguments, so there is nothing to hide. CI4 (4.7.4 and
+     * develop) then reads `$line['args']` unguarded in maskSensitiveData(), and
+     * the error handler itself crashes: every 404 went out as a blank page
+     * and logged a CRITICAL "Undefined array key args" instead. Masking stays
+     * on wherever arguments are recorded (local dev), which is where it helps.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        if (filter_var(ini_get('zend.exception_ignore_args'), FILTER_VALIDATE_BOOL)) {
+            $this->sensitiveDataInTrace = [];
+        }
+    }
+
+    /**
      * --------------------------------------------------------------------------
      * WHETHER TO THROW AN EXCEPTION ON DEPRECATED ERRORS
      * --------------------------------------------------------------------------
