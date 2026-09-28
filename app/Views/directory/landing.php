@@ -28,7 +28,7 @@ $photo  = category_photo($category);
 
 // No FAQ block here any more, visible or structured. It used to be templated
 // from the category name, which meant the same two questions repeated verbatim
-// across all 147 categories × 9 provinces — the thin-content pattern itself.
+// across every category × 9 provinces — the thin-content pattern itself.
 // FAQ rich results have also been Google-deprecated since August 2023, so
 // there was nothing being earned in exchange. The search box, province chips
 // and related-category links below cover the same ground more usefully.

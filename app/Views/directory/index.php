@@ -13,7 +13,9 @@ $askedCategory = ($filters['category'] ?? '') !== '';
 $askedProvince = ($filters['province'] ?? '') !== '';
 $unknownFilter = ($askedCategory && $category === null) || ($askedProvince && $province === null);
 
+$group = $group ?? null;
 $title = 'Browse everything';
+if ($group !== null) { $title = $group['name']; }
 if ($category !== null) { $title = $category['name'] . ' profiles'; }
 if ($province !== null) { $title .= ' in ' . $province; }
 
@@ -30,7 +32,10 @@ $page      = (int) ($result['page'] ?? 1);
 $hasFacets = ($filters['facets'] ?? []) !== [];
 // A re-sorted list is the same set in another order: a duplicate, never indexed.
 $isSorted  = ($filters['sort'] ?? '') !== '';
-$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && $page === 1 && ! $unknownFilter;
+// A main-category filter has no landing page of its own to canonicalise to,
+// so indexing it would be a duplicate of /directory under another title.
+$hasGroup  = $group !== null;
+$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && ! $hasGroup && $page === 1 && ! $unknownFilter;
 
 // Every link on this page rebuilds the query string from scratch, and facets
 // travel as ?f[key][]=value while the filter array calls them 'facets'. Without
@@ -80,8 +85,10 @@ if ($indexable && ! empty($result['items'])) {
 // $category is the row the controller already resolved against the category
 // table, so this cannot be driven from the raw query string — the same reason
 // the title and canonical above are built from it.
-$vertical      = $category !== null ? category_group_style($category['group_name'] ?? null) : null;
-$verticalPhoto = $category !== null ? category_photo($category) : null;
+// A main-category filter on its own gets its group's look the same way.
+$styled        = $category ?? ($group !== null ? ['slug' => '', 'group_name' => $group['name']] : null);
+$vertical      = $styled !== null ? category_group_style($styled['group_name'] ?? null) : null;
+$verticalPhoto = $styled !== null ? category_photo($styled) : null;
 ?>
 <section class="hero<?= $vertical !== null ? ' hero-vertical vertical-scope ' . $vertical['tint'] : '' ?>">
     <?php if ($verticalPhoto !== null): ?>
@@ -114,13 +121,17 @@ $verticalPhoto = $category !== null ? category_photo($category) : null;
                 'ariaLabel'   => '',
                 'type'        => 'text',
             ]) ?>
-            <select name="category">
+            <?php // See home.php. data-selected-group re-selects a ?group= search
+                  // that has no category in it. ?>
+            <select name="category" aria-label="Category" data-category-picker data-group-param="group"
+                    data-selected-group="<?= esc((string) ($filters['group'] ?? ''), 'attr') ?>">
                 <option value="">All categories</option>
                 <?php foreach ($groups as $groupName => $cats): ?>
-                    <optgroup label="<?= esc($groupName, 'attr') ?>">
+                    <optgroup label="<?= esc($groupName, 'attr') ?>" data-slug="<?= esc((string) ($cats[0]['group_slug'] ?? ''), 'attr') ?>">
                     <?php foreach ($cats as $p): ?>
                         <option value="<?= esc($p['slug'], 'attr') ?>" <?= ($filters['category'] === $p['slug']) ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
                     <?php endforeach; ?>
+                    </optgroup>
                 <?php endforeach; ?>
             </select>
             <select name="province">
@@ -170,9 +181,12 @@ $verticalPhoto = $category !== null ? category_photo($category) : null;
         <?php if (! $hasQuery && ($filters['category'] ?? '') === ''): ?>
             <div class="mb-6 flex flex-wrap gap-2">
                 <?php $shown = 0; $seenGroup = ''; ?>
+                <?php // One chip per group, or — on a ?group= page — that group's
+                      // own categories, which is where the visitor goes next. ?>
                 <?php foreach ($categories as $c): ?>
                     <?php if ($shown >= 18) { break; } ?>
-                    <?php if (($c['group_name'] ?? '') === $seenGroup) { continue; } ?>
+                    <?php if ($group !== null) { if (($c['group_name'] ?? '') !== $group['name']) { continue; } }
+                          elseif (($c['group_name'] ?? '') === $seenGroup) { continue; } ?>
                     <?php $seenGroup = $c['group_name'] ?? ''; $shown++; ?>
                     <?= view('directory/_chip', ['label' => $c['name'], 'href' => base_url('directory/' . $c['slug']), 'tint' => category_group_tint($c['group_name'] ?? null)], ['saveData' => false]) ?>
                 <?php endforeach; ?>

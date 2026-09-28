@@ -72,7 +72,7 @@ over `display_name`/`description`/`credentials`.
 - **`is_verified` and `verified_until` are unrelated.** `is_verified` (bool) means the
   signup email was confirmed — `verify()` sets it alongside `status = published`.
   `verified_until` (date) is the paid Verified Business badge. Neither implies the other.
-- Other tables: `directory_categories` (seeded taxonomy, 147 categories / 12 groups),
+- Other tables: `directory_categories` (seeded taxonomy, 182 categories / 16 groups, ordered by `directory_category_groups`),
   `directory_practice_locations` (extra locations per listing), `directory_tags` +
   `directory_listing_tags` (filterable areas of focus), `directory_listing_team` (team
   members), `directory_listing_services` + `directory_listing_attributes` ("Services &

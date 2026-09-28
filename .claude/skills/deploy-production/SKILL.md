@@ -293,7 +293,7 @@ Ubuntu to live, in the browser terminal. These are the app-level pieces of it, r
 php spark key:generate                        # encryption.key — NOT on a migrated app
 php spark directory:adminhash                 # then set directory.adminPasswordHash
 php spark migrate --all
-php spark db:seed DirectoryCategoriesSeeder   # 147 categories; without it, none anywhere
+php spark db:seed DirectoryCategoriesSeeder   # 182 categories; without it, none anywhere
 php spark directory:geocode                   # slow by design; also proves outbound HTTPS
 ```
 

@@ -217,7 +217,6 @@ if (! function_exists('category_group_style')) {
         static $map = [
             'Health & Medical'      => ['stethoscope',     'cat-tint-red'],
             'Beauty & Wellness'     => ['sparkles',        'cat-tint-pink'],
-            'Hair'                  => ['scissors',        'cat-tint-fuchsia'],
             'Motoring'              => ['car',             'cat-tint-blue'],
             'Legal & Financial'     => ['scale',           'cat-tint-indigo'],
             'Home & Trades'         => ['wrench',          'cat-tint-amber'],
@@ -234,6 +233,8 @@ if (! function_exists('category_group_style')) {
             // a home baker rendered the generic folder — exactly what the note
             // above warns about.
             'Home Industry & Handmade' => ['cake-slice',   'cat-tint-lime'],
+            // Fuchsia came free when Hair folded into Beauty & Wellness.
+            'Alternative & Traditional Medicine' => ['leaf', 'cat-tint-fuchsia'],
         ];
 
         // Grey for an unmapped group, deliberately: it should look like nothing
@@ -284,6 +285,9 @@ if (! function_exists('category_photo')) {
             'nail-bar'           => ['RDNE Stock project', 7755236],
             'beauty-salon'       => ['Fall Fall', 19242406],
             'barber'             => ['RDNE Stock project', 7697364],
+            // Was the Hair group's photo; the group folded into Beauty & Wellness
+            // and the salon kept its picture.
+            'hair-salon'         => ['cottonbro studio', 3993312],
             'financial-adviser'  => ['Kindel Media', 7979438],
             'accountant'         => ['RDNE Stock project', 7491011],
             'electrician'        => ['ranjeet .', 27928760],
@@ -308,7 +312,6 @@ if (! function_exists('category_photo')) {
                 ['group-beauty-wellness', 'Jonathan Borba', 19641835],
                 ['group-beauty-wellness-2', 'Ron Lach', 9146364],
             ],
-            'Hair'              => [['group-hair', 'cottonbro studio', 3993312]],
             'Motoring'          => [['group-motoring', 'Artem Podrez', 8985455]],
             'Legal & Financial' => [['group-legal-financial', 'Pavel Danilyuk', 8112166]],
             'Home & Trades'     => [
@@ -331,6 +334,10 @@ if (! function_exists('category_photo')) {
             'Everyday Services'        => [['group-everyday-services', 'Tima Miroshnichenko', 8774376]],
             'Retail & Other'           => [['group-retail-other', 'Sam Lion', 5709656]],
             'Home Industry & Handmade' => [['group-home-industry-handmade', 'Gustavo Fring', 7447297]],
+            // Borrows Beauty & Wellness's hands-on treatment photo, as Restaurants
+            // & Food borrows the restaurant's. Swap in a dedicated
+            // group-alternative-traditional-medicine photo when there is one.
+            'Alternative & Traditional Medicine' => [['group-beauty-wellness-2', 'Ron Lach', 9146364]],
         ];
 
         $photo = static fn (string $name, string $credit, int $id): array => [

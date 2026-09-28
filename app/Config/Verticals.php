@@ -105,18 +105,6 @@ class Verticals extends BaseConfig
             'cta'   => 'Book a treatment',
             'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
         ],
-        'Hair' => [
-            'noun'       => 'salon',
-            'nounPlural' => 'salons',
-            'headings'   => [
-                'services'  => 'Services & prices',
-                'team'      => 'Our stylists',
-                'tags'      => 'Specialities',
-                'locations' => 'Other locations',
-            ],
-            'cta'   => 'Book an appointment',
-            'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations'],
-        ],
         'Motoring' => [
             'noun'       => 'workshop',
             'nounPlural' => 'workshops',
@@ -284,6 +272,22 @@ class Verticals extends BaseConfig
             'cta'   => 'Place an order',
             'order' => ['ataglance', 'description', 'services', 'tags', 'features', 'venue', 'credentials', 'team', 'locations'],
         ],
+        // A person rather than a premises, and a session rather than a
+        // consultation. Credentials stay high for the same reason as Health &
+        // Medical: "is this practitioner registered" is the first question.
+        'Alternative & Traditional Medicine' => [
+            'noun'       => 'practitioner',
+            'nounPlural' => 'practitioners',
+            'headings'   => [
+                'credentials' => 'Training & registrations',
+                'services'    => 'Treatments & fees',
+                'team'        => 'Practitioners',
+                'tags'        => 'Special interests',
+                'locations'   => 'Other practice rooms',
+            ],
+            'cta'   => 'Book a session',
+            'order' => ['ataglance', 'credentials', 'description', 'services', 'features', 'team', 'venue', 'tags', 'locations'],
+        ],
     ];
 
     /**
@@ -309,6 +313,22 @@ class Verticals extends BaseConfig
      * @var array<string,array<string,mixed>>
      */
     public array $byCategory = [
+        // What the Hair group said before it folded into Beauty & Wellness.
+        // Beauty's "Treatments" and "Our therapists" are wrong for a haircut.
+        'hair-salon' => [
+            'headings' => ['services' => 'Services & prices', 'team' => 'Our stylists'],
+            'cta'      => 'Book an appointment',
+        ],
+        'barber' => [
+            'noun'       => 'barbershop',
+            'nounPlural' => 'barbershops',
+            'headings'   => ['services' => 'Services & prices', 'team' => 'Our barbers'],
+            'cta'        => 'Book an appointment',
+        ],
+        'braiding-extensions' => [
+            'headings' => ['services' => 'Styles & prices', 'team' => 'Our stylists'],
+            'cta'      => 'Book an appointment',
+        ],
         'restaurant' => [
             'noun'       => 'restaurant',
             'nounPlural' => 'restaurants',

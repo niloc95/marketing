@@ -87,6 +87,12 @@ class Directory extends BaseController
         $province = in_array($filters['province'], DirectoryService::SA_PROVINCES, true)
             ? $filters['province']
             : null;
+        // An unknown ?group= is dropped outright — browse() already ignored it,
+        // and clearing it here keeps it off the pager and every rebuilt link.
+        $group = $filters['group'] !== '' ? $svc->findGroupBySlug($filters['group']) : null;
+        if ($group === null) {
+            $filters['group'] = '';
+        }
 
         return view('directory/index', [
             'result'      => $result,
@@ -94,6 +100,7 @@ class Directory extends BaseController
             // Null means "asked for, but no such thing" — the view must not
             // treat that page as indexable or name it after the raw input.
             'category'    => $category,
+            'group'       => $group,
             'province'    => $province,
             'categories' => $svc->categories(),
             'groups'      => $svc->categoriesGrouped(),
@@ -220,6 +227,9 @@ class Directory extends BaseController
 
         return [
             'q'        => $cap($this->request->getGet('q'), 100),
+            // A main-category slug (DirectoryCategoryGroupModel). Broader than
+            // category and combinable with it; an unknown one is ignored.
+            'group'    => $cap($this->request->getGet('group'), 120),
             'category' => $cap($this->request->getGet('category'), 190),
             'province' => $cap($this->request->getGet('province'), 100),
             'city'     => $cap($this->request->getGet('city'), 100),

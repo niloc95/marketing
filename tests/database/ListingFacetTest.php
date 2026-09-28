@@ -61,7 +61,7 @@ final class ListingFacetTest extends CIUnitTestCase
         $categories         = new DirectoryCategoryModel();
         $this->preschoolId  = (int) $categories->insert(['name' => 'Preschool & Daycare', 'slug' => 'preschool-daycare', 'group_name' => 'Education & Training', 'is_active' => 1], true);
         $this->highSchoolId = (int) $categories->insert(['name' => 'High School', 'slug' => 'high-school', 'group_name' => 'Education & Training', 'is_active' => 1], true);
-        $this->salonId      = (int) $categories->insert(['name' => 'Hair Salon', 'slug' => 'hair-salon', 'group_name' => 'Hair', 'is_active' => 1], true);
+        $this->salonId      = (int) $categories->insert(['name' => 'Hair Salon', 'slug' => 'hair-salon', 'group_name' => 'Beauty & Wellness', 'is_active' => 1], true);
     }
 
     // ------------------------------------------------------------- the filter

@@ -8,6 +8,7 @@ use App\Models\DirectoryListingFacetModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPracticeLocationModel;
+use App\Models\DirectoryCategoryGroupModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryTagModel;
 use App\Models\DirectoryVenueModel;
@@ -27,6 +28,7 @@ class DirectoryService
 
     private DirectoryListingModel $listings;
     private DirectoryCategoryModel $categories;
+    private DirectoryCategoryGroupModel $groups;
     private DirectoryPracticeLocationModel $locations;
     private DirectoryTagModel $tags;
     private DirectoryListingPhotoModel $photos;
@@ -38,6 +40,7 @@ class DirectoryService
         helper(['directory_hours', 'directory_ui']);
         $this->listings    = new DirectoryListingModel();
         $this->categories = new DirectoryCategoryModel();
+        $this->groups     = new DirectoryCategoryGroupModel();
         $this->locations   = new DirectoryPracticeLocationModel();
         $this->tags        = new DirectoryTagModel();
         $this->photos       = new DirectoryListingPhotoModel();
@@ -51,7 +54,7 @@ class DirectoryService
     /**
      * Paginated browse/search over published listings.
      *
-     * @param array{q?:string,category?:string,province?:string,city?:string,venue?:mixed,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string,facets?:array,sort?:string} $filters
+     * @param array{q?:string,group?:string,category?:string,province?:string,city?:string,venue?:mixed,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string,facets?:array,sort?:string} $filters
      * @return array{items:array,total:int,page:int,perPage:int,totalPages:int,near:?array}
      */
     public function browse(array $filters, int $page = 1, int $perPage = 12): array
@@ -73,6 +76,9 @@ class DirectoryService
         $facets = ! empty($filters['facets']) && ! empty($filters['category'])
             ? $this->sanitiseFacets($filters['facets'], (string) $filters['category'])
             : [];
+        // Also a query, so also here. Null for no group or an unknown slug, and
+        // an unknown slug is ignored rather than returning nothing.
+        $groupName = $this->groupNameFor($filters);
 
         // The venue join is two columns and a LEFT JOIN: the result card renders
         // its chip from them, and a listing without a venue is untouched.
@@ -100,6 +106,9 @@ class DirectoryService
         }
         if (! empty($filters['category'])) {
             $builder->where('p.slug', $filters['category']);
+        }
+        if ($groupName !== null) {
+            $builder->where('p.group_name', $groupName);
         }
         if (! empty($filters['province'])) {
             $builder->where('xs_directory_listings.province', $filters['province']);
@@ -331,6 +340,7 @@ class DirectoryService
         $facets = ! empty($filters['facets']) && ! empty($filters['category'])
             ? $this->sanitiseFacets($filters['facets'], (string) $filters['category'])
             : [];
+        $groupName = $this->groupNameFor($filters);
 
         $select = 'xs_directory_listings.id, xs_directory_listings.slug, xs_directory_listings.display_name,'
             . ' xs_directory_listings.latitude, xs_directory_listings.longitude,'
@@ -357,6 +367,9 @@ class DirectoryService
         }
         if (! empty($filters['category'])) {
             $builder->where('p.slug', $filters['category']);
+        }
+        if ($groupName !== null) {
+            $builder->where('p.group_name', $groupName);
         }
         if (! empty($filters['province'])) {
             $builder->where('xs_directory_listings.province', $filters['province']);
@@ -853,6 +866,28 @@ class DirectoryService
             ->findAll();
     }
 
+    /**
+     * A main-category group by its ?group= slug, or null.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function findGroupBySlug(string $slug): ?array
+    {
+        return $this->groups->findBySlug($slug);
+    }
+
+    /** The group_name a ?group= filter narrows to, or null for none or an unknown slug. */
+    private function groupNameFor(array $filters): ?string
+    {
+        $slug = (string) ($filters['group'] ?? '');
+        if ($slug === '') {
+            return null;
+        }
+        $group = $this->groups->findBySlug($slug);
+
+        return $group === null ? null : (string) $group['name'];
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function categories(): array
     {
@@ -884,8 +919,8 @@ class DirectoryService
 
     /**
      * All active categories grouped by group_name, each annotated with its
-     * published listing count. categories() already orders by group_name,
-     * so insertion order gives alphabetical groups for free.
+     * published listing count. categories() already orders by the groups'
+     * admin-set position, so insertion order gives that order for free.
      *
      * @return array<string,array<int,array<string,mixed>>>
      */

@@ -46,7 +46,7 @@ final class ServiceMenuTest extends CIUnitTestCase
         $this->listings  = new DirectoryListingModel();
         $categories      = new DirectoryCategoryModel();
         $this->fitnessId = (int) $categories->insert(['name' => 'Yoga Studios', 'slug' => 'yoga-studios', 'group_name' => 'Fitness & Sport', 'is_active' => 1], true);
-        $this->hairId    = (int) $categories->insert(['name' => 'Hair Salons', 'slug' => 'hair-salons', 'group_name' => 'Hair', 'is_active' => 1], true);
+        $this->hairId    = (int) $categories->insert(['name' => 'Hair Salons', 'slug' => 'hair-salons', 'group_name' => 'Beauty & Wellness', 'is_active' => 1], true);
     }
 
     // --------------------------------------------------------------- config
@@ -87,7 +87,7 @@ final class ServiceMenuTest extends CIUnitTestCase
         $this->assertSame('R120', $services[0]['price_label']);
         $this->assertNull($services[1]['price_label']);
 
-        // kids_cuts belongs to Hair, made_up_key to nobody.
+        // kids_cuts belongs to Beauty & Wellness (Hair's set, merged in), made_up_key to nobody.
         $this->assertSame(['group_classes', 'parking'], $menu->attributeKeysFor((int) $result['id']));
     }
 
@@ -224,8 +224,9 @@ final class ServiceMenuTest extends CIUnitTestCase
             $this->assertStringContainsString('value="Hot yoga"', $html);
             $this->assertStringContainsString('value="R150"', $html);
             $this->assertMatchesRegularExpression('/value="group_classes"\s+checked/', $html);
-            // Fitness is the saved category, so Hair's features are off.
-            $this->assertMatchesRegularExpression('/data-attr-group="Hair"\s+hidden disabled/', $html);
+            // Fitness is the saved category, so the salon group's features are off.
+            // The space may come out literal or as &#x20;, depending on the escaper path.
+            $this->assertMatchesRegularExpression('/data-attr-group="Beauty(?: |&#x20;)&amp;(?: |&#x20;)Wellness"\s+hidden disabled/', $html);
             $this->assertStringContainsString('data-rich-text-max="1000"', $html);
         }
     }

@@ -102,11 +102,16 @@ helper('directory_hours');
     </div>
     <div class="field">
         <label for="field-category">Category *</label>
-        <select id="field-category" name="category_id">
+        <?php // data-category-picker: directory.js splits this into "Main
+              // category" then "Subcategory". Without it, this one grouped list
+              // is the whole picker, and still the only field that submits. ?>
+        <select id="field-category" name="category_id" data-category-picker>
             <option value="">Choose…</option>
-            <?php $cur = ''; foreach ($categories as $p): ?>
-                <?php if (($p['group_name'] ?? '') !== $cur): $cur = $p['group_name']; ?>
-                    <optgroup label="<?= esc($cur, 'attr') ?>">
+            <?php $cur = null; foreach ($categories as $p): ?>
+                <?php if (($p['group_name'] ?? '') !== $cur): ?>
+                    <?= $cur !== null ? '</optgroup>' : '' ?>
+                    <?php $cur = $p['group_name'] ?? ''; ?>
+                    <optgroup label="<?= esc($cur, 'attr') ?>" data-slug="<?= esc((string) ($p['group_slug'] ?? ''), 'attr') ?>">
                 <?php endif; ?>
                 <?php // data-group swaps the features fieldset, data-facet-set the
                       // ages/curriculum one. The second cannot be derived from the
@@ -114,6 +119,7 @@ helper('directory_hours');
                       // are asked completely different questions. ?>
                 <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" data-menu="<?= \App\Services\ListingMenuService::offersMenu($p['group_name'] ?? null, $p['slug'] ?? null) ? '1' : '' ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
             <?php endforeach; ?>
+            <?= $cur !== null ? '</optgroup>' : '' ?>
         </select>
         <?php if ($err('category_id')): ?><div class="err"><?= esc($err('category_id')) ?></div><?php endif; ?>
     </div>

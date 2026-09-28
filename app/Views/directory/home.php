@@ -92,13 +92,16 @@ $hasSlides = $slides !== [];
                 'ariaLabel'   => '',
                 'type'        => 'text',
             ]) ?>
-            <select name="category">
+            <?php // data-group-param: the "Main category" select directory.js adds
+                  // submits as ?group=, so a main category alone searches all of it. ?>
+            <select name="category" aria-label="Category" data-category-picker data-group-param="group">
                 <option value="">All categories</option>
                 <?php foreach ($groups as $groupName => $cats): ?>
-                    <optgroup label="<?= esc($groupName, 'attr') ?>">
+                    <optgroup label="<?= esc($groupName, 'attr') ?>" data-slug="<?= esc((string) ($cats[0]['group_slug'] ?? ''), 'attr') ?>">
                     <?php foreach ($cats as $p): ?>
                         <option value="<?= esc($p['slug'], 'attr') ?>"><?= esc($p['name']) ?></option>
                     <?php endforeach; ?>
+                    </optgroup>
                 <?php endforeach; ?>
             </select>
             <select name="province">

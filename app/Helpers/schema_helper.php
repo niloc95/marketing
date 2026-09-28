@@ -315,7 +315,9 @@ if (! function_exists('schema_business_type')) {
             'pharmacy'               => 'Pharmacy',
             'medical-clinic'         => 'MedicalClinic',
             'hospital'               => 'Hospital',
-            // Beauty & Wellness, Hair
+            // Beauty & Wellness (Hair folded in; its rows keep HairSalon)
+            'hair-salon'             => 'HairSalon',
+            'braiding-extensions'    => 'HairSalon',
             'nail-bar'               => 'NailSalon',
             'beauty-salon'           => 'BeautySalon',
             'spa'                    => 'DaySpa',

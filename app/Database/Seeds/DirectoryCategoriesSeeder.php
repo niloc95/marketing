@@ -2,6 +2,7 @@
 
 namespace App\Database\Seeds;
 
+use App\Models\DirectoryCategoryGroupModel;
 use CodeIgniter\Database\Seeder;
 
 /**
@@ -40,19 +41,25 @@ class DirectoryCategoriesSeeder extends Seeder
                 // Beauty & Wellness, where the legacy "Wellness" group left it —
                 // Nutritionist carries more listings than any other category on the
                 // site, and it was the only clinical row filed under beauty.
-                'Dietician', 'Nutritionist', 'Homeopath',
+                // Homeopath moved to Alternative & Traditional Medicine.
+                'Dietician', 'Nutritionist',
                 'Psychologist', 'Psychiatrist', 'Counsellor', 'Social Worker',
                 'Nurse', 'Midwife', 'Pharmacist',
                 'Pharmacy', 'Medical Clinic', 'Hospital', 'Pathology Laboratory',
                 'Radiology Practice',
             ],
+            // Hair folded in here, as Yelp files hair under "Beauty & Spas": a
+            // four-row group was the smallest main category in the picker, and
+            // someone looking for a salon does not decide first whether it is
+            // hair or beauty. Hair Removal sits beside Waxing & Laser, which is
+            // what it is. The slugs are untouched, so every link still resolves;
+            // the Hair-only features and wording now come from the merged
+            // Beauty & Wellness attribute set and Verticals' per-slug overrides.
             'Beauty & Wellness' => [
+                'Hair Salon', 'Barber', 'Braiding & Extensions',
                 'Spa', 'Nail Bar', 'Beauty Salon', 'Massage Therapist',
-                'Skin & Aesthetics Clinic', 'Waxing & Laser', 'Tattoo & Piercing',
-                'Wellness Centre',
-            ],
-            'Hair' => [
-                'Hair Salon', 'Barber', 'Braiding & Extensions', 'Hair Removal',
+                'Skin & Aesthetics Clinic', 'Waxing & Laser', 'Hair Removal',
+                'Tattoo & Piercing', 'Wellness Centre',
             ],
             'Motoring' => [
                 'Auto Repair', 'Auto Electrician', 'Panel Beater', 'Car Wash & Valet',
@@ -161,6 +168,16 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Home Baker', 'Cake Artist', 'Preserves & Jams', 'Crafts & Handmade',
                 'Sewing & Crochet', 'Farm Produce & Farm Stall', 'Home Decor',
             ],
+            // Complementary and traditional practice, kept apart from Health &
+            // Medical so a search for a GP does not surface a healer and the
+            // other way round. Last in DirectoryCategoryGroupModel::DEFAULT_ORDER.
+            // Traditional Healer first: a sangoma or inyanga is the most
+            // searched-for practitioner of this kind in South Africa.
+            'Alternative & Traditional Medicine' => [
+                'Traditional Healer', 'Homeopath', 'Naturopath', 'Acupuncturist',
+                'Reiki Practitioner', 'Ayurvedic Practitioner', 'Herbalist',
+                'Reflexologist',
+            ],
         ];
 
         $now  = date('Y-m-d H:i:s');
@@ -182,6 +199,30 @@ class DirectoryCategoriesSeeder extends Seeder
 
         $db    = $this->db;
         $table = 'xs_directory_categories';
+
+        // A healer category was added by hand from /admin/categories before
+        // this group existed, under a longer name ("Alternative Medicine
+        // Traditional Healer"). Adopt that row rather than inserting a second
+        // "Traditional Healer" beside it: the listing on it keeps its category,
+        // and its slug — which saveCategory() never rewrites — keeps its links.
+        $healer = $db->table($table)->select('slug')
+            ->where('slug !=', 'traditional-healer')
+            ->like('name', 'Traditional Healer')
+            ->orderBy('id', 'ASC')
+            ->get()->getRowArray();
+        $healerTaken = $db->table($table)->where('slug', 'traditional-healer')->countAllResults() > 0;
+        if ($healer !== null && ! $healerTaken) {
+            foreach ($rows as $i => $r) {
+                if ($r['slug'] === 'traditional-healer') {
+                    $rows[$i]['slug'] = $healer['slug'];
+                }
+            }
+            $db->table($table)->where('slug', $healer['slug'])->update([
+                'name'       => 'Traditional Healer',
+                'updated_at' => $now,
+            ]);
+        }
+
         $have  = array_column($db->table($table)->select('slug')->get()->getResultArray(), 'slug');
 
         // Insert what's missing.
@@ -214,6 +255,7 @@ class DirectoryCategoriesSeeder extends Seeder
             'Nursing & Pharmacy'    => 'Health & Medical',
             'Facilities'            => 'Health & Medical',
             'Wellness'              => 'Beauty & Wellness',
+            'Hair'                  => 'Beauty & Wellness',
         ];
         foreach ($legacyGroups as $from => $to) {
             $db->table($table)->where('group_name', $from)->update([
@@ -250,6 +292,25 @@ class DirectoryCategoriesSeeder extends Seeder
                     'updated_at' => $now,
                 ]);
             }
+        }
+
+        // One groups row per group now in use, placed by DEFAULT_ORDER. A row
+        // that already exists keeps the position the admin gave it. Rows for
+        // groups this run emptied — Hair, and whatever group the hand-made
+        // healer row sat in — go, or they would linger in the admin panel as
+        // main categories with nothing under them.
+        $groupModel = new DirectoryCategoryGroupModel($db);
+        $groupNames = array_column(
+            $db->table($table)->distinct()->select('group_name')
+                ->where('group_name IS NOT NULL')->where('group_name !=', '')
+                ->get()->getResultArray(),
+            'group_name'
+        );
+        foreach ($groupNames as $name) {
+            $groupModel->ensure((string) $name);
+        }
+        if ($groupNames !== []) {
+            $db->table('xs_directory_category_groups')->whereNotIn('name', $groupNames)->delete();
         }
     }
 }

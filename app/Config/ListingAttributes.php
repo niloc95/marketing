@@ -62,15 +62,12 @@ class ListingAttributes extends BaseConfig
             'gift_vouchers'   => 'Gift vouchers',
             'couples_treatments' => 'Couples treatments',
             'mens_grooming'   => "Men's grooming",
-        ],
-        'Hair' => [
-            'kids_cuts'      => "Kids' cuts",
-            'mens_grooming'  => "Men's grooming",
-            'bridal'         => 'Bridal & events',
-            'natural_hair'   => 'Natural hair specialist',
-            'braids_weaves'  => 'Braids, weaves & extensions',
+            // Hair's own set, merged in when that group folded into this one.
+            // Same keys, so every value a salon or barber saved still shows.
+            'kids_cuts'       => "Kids' cuts",
+            'natural_hair'    => 'Natural hair specialist',
+            'braids_weaves'   => 'Braids, weaves & extensions',
             'colour_specialist' => 'Colour specialist',
-            'home_visits'    => 'Home visits',
         ],
         'Motoring' => [
             'free_quotes'        => 'Free quotes',
@@ -185,6 +182,15 @@ class ListingAttributes extends BaseConfig
             'nationwide_shipping' => 'Nationwide shipping',
             'markets'             => 'Sells at markets',
             'gift_vouchers'       => 'Gift vouchers',
+        ],
+        // The Health & Medical keys where they still apply, so a Homeopath
+        // moved here from that group keeps every feature it had saved.
+        'Alternative & Traditional Medicine' => [
+            'medical_aid_accepted' => 'Medical aid accepted',
+            'telehealth'           => 'Online / video consultations',
+            'house_calls'          => 'House calls',
+            'new_patients_welcome' => 'Accepting new patients',
+            'home_visits'          => 'Home visits',
         ],
     ];
 

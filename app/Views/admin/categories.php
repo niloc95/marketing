@@ -7,12 +7,13 @@
 
 <?= $this->section('content') ?>
 <?php
-$groups = [];
+// $categories arrives in display order (by group position, then within the
+// group), so first-seen order is the order the public pickers show.
+$byGroup = [];
 foreach ($categories as $c) {
-    $groups[$c['group_name'] ?: 'Ungrouped'][] = $c;
+    $byGroup[$c['group_name'] ?: 'Ungrouped'][] = $c;
 }
-$groupNames = array_keys($groups);
-sort($groupNames);
+$groupNames = array_keys($byGroup);
 ?>
 <?= view('admin/_bar') ?>
 
@@ -20,6 +21,27 @@ sort($groupNames);
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Categories <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= count($categories) ?>)</span></h1>
         <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">A category in use cannot be deleted — deactivate it instead, which hides it from the signup form without touching existing profiles.</p>
+
+        <div class="panel mb-8">
+            <h3>Main category order</h3>
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Lower numbers come first in every category picker, the search filters and the browse page. The positions are spaced by 10 so you can put a group between two others. A group can't be renamed here, because its name is what links it to its features, wording and search type. To move categories to another group, change the group on each category.</p>
+            <div class="grid gap-2">
+                <?php foreach ($groups as $gr): ?>
+                    <form method="post" action="<?= base_url('admin/categories/groups/' . (int) $gr['id']) ?>" class="card flex flex-wrap items-end gap-3 p-3">
+                        <?= csrf_field() ?>
+                        <div class="field mb-0">
+                            <label class="text-xs">Position</label>
+                            <input type="text" name="sort_order" value="<?= (int) $gr['sort_order'] ?>" class="w-20" inputmode="numeric">
+                        </div>
+                        <div class="min-w-[12rem] flex-1 text-sm font-medium text-slate-900 dark:text-white">
+                            <?= esc($gr['name']) ?>
+                            <span class="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400"><?= count($byGroup[$gr['name']] ?? []) ?> categories · <code>?group=<?= esc($gr['slug']) ?></code></span>
+                        </div>
+                        <button class="btn btn-primary btn-xs">Save</button>
+                    </form>
+                <?php endforeach; ?>
+            </div>
+        </div>
 
         <div class="panel mb-8">
             <h3>Add a category</h3>
@@ -46,7 +68,7 @@ sort($groupNames);
         <?php foreach ($groupNames as $g): ?>
             <h2 class="mb-3 mt-8 text-base font-semibold text-slate-900 dark:text-white"><?= esc($g) ?></h2>
             <div class="grid gap-2">
-                <?php foreach ($groups[$g] as $c): ?>
+                <?php foreach ($byGroup[$g] as $c): ?>
                     <?php $used = $usage[(int) $c['id']] ?? 0; ?>
                     <div class="card flex flex-wrap items-end gap-3 p-3">
                         <?php // One <form> per row. Forms cannot legally wrap <td>s, so this

@@ -22,7 +22,6 @@ $grouped = [];
 foreach ($categories as $c) {
     $grouped[$c['group_name'] ?: 'Ungrouped'][] = $c;
 }
-ksort($grouped);
 
 $full = count($images) >= HeroImageService::MAX_SLIDES;
 

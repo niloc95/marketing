@@ -75,12 +75,12 @@ $error = static fn (string $f) => $err($f) !== '' ? '<div class="err">' . esc($e
 </div>
 <div class="field">
     <label for="f-category">Category <span class="text-slate-400">(optional)</span></label>
-    <select id="f-category" name="category_id">
+    <select id="f-category" name="category_id" data-category-picker>
         <option value="">Choose a category</option>
         <?php $group = null; ?>
         <?php foreach ($categories as $cat): ?>
             <?php if ($cat['group_name'] !== $group): ?>
-                <?= $group !== null ? '</optgroup>' : '' ?><optgroup label="<?= esc($cat['group_name'], 'attr') ?>">
+                <?= $group !== null ? '</optgroup>' : '' ?><optgroup label="<?= esc($cat['group_name'], 'attr') ?>" data-slug="<?= esc((string) ($cat['group_slug'] ?? ''), 'attr') ?>">
                 <?php $group = $cat['group_name']; ?>
             <?php endif; ?>
             <option value="<?= (int) $cat['id'] ?>" <?= (string) $v('category_id') === (string) $cat['id'] ? 'selected' : '' ?>><?= esc($cat['name']) ?></option>

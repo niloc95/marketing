@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
 use App\Libraries\RichText;
+use App\Models\DirectoryCategoryGroupModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
@@ -24,6 +25,7 @@ class DirectoryAdminService
 {
     private DirectoryListingModel $listings;
     private DirectoryCategoryModel $categories;
+    private DirectoryCategoryGroupModel $groups;
     private DirectoryTagModel $tags;
     private DirectoryListingPhotoModel $photos;
     private DirectoryVenueModel $venues;
@@ -33,6 +35,7 @@ class DirectoryAdminService
         helper(['slug', 'directory_hours']);
         $this->listings   = new DirectoryListingModel();
         $this->categories = new DirectoryCategoryModel();
+        $this->groups     = new DirectoryCategoryGroupModel();
         $this->tags       = new DirectoryTagModel();
         $this->photos     = new DirectoryListingPhotoModel();
         $this->venues     = new DirectoryVenueModel();
@@ -617,11 +620,7 @@ class DirectoryAdminService
     /** @return array<int,array<string,mixed>> */
     public function allCategories(): array
     {
-        return $this->categories
-            ->orderBy('group_name', 'ASC')
-            ->orderBy('sort_order', 'ASC')
-            ->orderBy('name', 'ASC')
-            ->findAll();
+        return $this->categories->orderedByGroup(false);
     }
 
     /**
@@ -662,6 +661,11 @@ class DirectoryAdminService
             'is_active'  => empty($input['is_active']) ? 0 : 1,
         ];
 
+        // A group typed here for the first time gets its row now, placed by
+        // DirectoryCategoryGroupModel::defaultSortFor() — last but one, until
+        // someone moves it on the groups panel.
+        $this->groups->ensure($data['group_name']);
+
         if ($id === null) {
             $data['slug'] = ensure_unique_slug($this->categories, 'slug', $name);
             return $this->categories->insert($data)
@@ -674,6 +678,35 @@ class DirectoryAdminService
         return $this->categories->update($id, $data)
             ? ['ok' => true, 'message' => 'Category updated.']
             : ['ok' => false, 'message' => 'Could not update that category.'];
+    }
+
+    /** @return array<int,array<string,mixed>> every main-category group, in display order */
+    public function categoryGroups(): array
+    {
+        return $this->groups->ordered();
+    }
+
+    /**
+     * Move a group. Only the position is editable: the name is the key every
+     * group-level config is written against, so renaming it here would quietly
+     * strip a group of its features, wording and schema type.
+     *
+     * @param array<string,mixed> $input
+     * @return array{ok:bool,message:string}
+     */
+    public function saveCategoryGroup(int $id, array $input): array
+    {
+        $raw = trim((string) ($input['sort_order'] ?? ''));
+        if ($raw === '' || ! preg_match('/^-?\d{1,6}$/', $raw)) {
+            return ['ok' => false, 'message' => 'The position must be a whole number.'];
+        }
+        if ($this->groups->find($id) === null) {
+            return ['ok' => false, 'message' => 'That group no longer exists.'];
+        }
+
+        return $this->groups->update($id, ['sort_order' => (int) $raw])
+            ? ['ok' => true, 'message' => 'Group order updated.']
+            : ['ok' => false, 'message' => 'Could not update that group.'];
     }
 
     /**

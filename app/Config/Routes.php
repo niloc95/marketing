@@ -155,6 +155,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('categories', 'Admin::storeCategory');
     $routes->post('categories/(:num)', 'Admin::updateCategory/$1');
     $routes->post('categories/(:num)/delete', 'Admin::deleteCategory/$1');
+    $routes->post('categories/groups/(:num)', 'Admin::updateCategoryGroup/$1');
 
     // Venues — the complexes, malls and buildings listings are grouped into.
     // Same shape as the category CRUD above.

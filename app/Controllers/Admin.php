@@ -586,7 +586,14 @@ class Admin extends BaseController
         return view('admin/categories', [
             'categories' => $svc->allCategories(),
             'usage'      => $svc->categoryUsage(),
+            'groups'     => $svc->categoryGroups(),
         ]);
+    }
+
+    public function updateCategoryGroup(int $id)
+    {
+        $result = (new DirectoryAdminService())->saveCategoryGroup($id, $this->request->getPost());
+        return $this->backTo('admin/categories', $result);
     }
 
     public function storeCategory()

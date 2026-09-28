@@ -2087,6 +2087,85 @@
     });
   });
 
+  // ------------------------------------------------- two-step category picker
+  // A select marked data-category-picker arrives from the server as one grouped
+  // list: every category, in <optgroup>s, in the admin's group order. That list
+  // is the whole picker without this script. With it, a "Main category" select
+  // goes in front, and the category select only holds the chosen group's
+  // optgroup.
+  //
+  // The optgroups are MOVED in and out, never rebuilt. The features, menu and
+  // facets blocks below read data-group, data-menu and data-facet-set off the
+  // selected <option>, so those must stay the server's own nodes. For the same
+  // reason this block runs before them: at load they must see the selection
+  // this block restores.
+  //
+  // data-group-param (the search bars) names the new select, so a main
+  // category alone submits as ?group= and searches the whole group. Without
+  // it (the listing and job forms) the new select has no name and posts
+  // nothing: category_id is still the only value the server reads.
+
+  document.querySelectorAll('select[data-category-picker]').forEach(function (sub) {
+    var groups = Array.prototype.slice.call(sub.querySelectorAll('optgroup'));
+    if (groups.length < 2) return;
+
+    var param       = sub.getAttribute('data-group-param');
+    var isFilter    = !!param;
+    var placeholder = sub.querySelector(':scope > option[value=""]');
+    var allLabel    = placeholder ? placeholder.textContent : '';
+
+    var main = document.createElement('select');
+    main.className = sub.className;
+    main.setAttribute('data-category-group', '');
+    main.setAttribute('aria-label', 'Main category');
+    if (sub.id) main.id = sub.id + '-group';
+    if (param) main.name = param;
+    // A form stacks the two; a search bar's grid gap already spaces them.
+    if (!isFilter) main.style.marginBottom = '0.5rem';
+    main.appendChild(new Option(isFilter ? 'All main categories' : 'Choose a main category…', ''));
+    groups.forEach(function (g, i) {
+      main.appendChild(new Option(g.label, g.getAttribute('data-slug') || 'group-' + i));
+    });
+
+    // Where to start: the group holding the server-selected category (an edit,
+    // or a form re-shown after a validation error), else the ?group= the page
+    // was searched with.
+    var current = sub.options[sub.selectedIndex];
+    var start   = -1;
+    if (current && current.value !== '' && current.parentNode.tagName === 'OPTGROUP') {
+      start = groups.indexOf(current.parentNode);
+    } else {
+      var want = sub.getAttribute('data-selected-group') || '';
+      groups.forEach(function (g, i) {
+        if (want !== '' && g.getAttribute('data-slug') === want) start = i;
+      });
+    }
+
+    function show(i) {
+      groups.forEach(function (g) {
+        if (g.parentNode === sub) sub.removeChild(g);
+      });
+      if (i >= 0) sub.appendChild(groups[i]);
+      // A form cannot pick a subcategory before a main one. Disabled posts no
+      // category_id, which the server answers with "Please choose a category".
+      if (!isFilter) sub.disabled = i < 0;
+      if (placeholder) {
+        placeholder.textContent = isFilter && i >= 0 ? 'All of ' + groups[i].label : allLabel;
+      }
+    }
+
+    sub.parentNode.insertBefore(main, sub);
+    main.selectedIndex = start + 1;
+    show(start);
+    if (current && current.value !== '' && start >= 0) sub.value = current.value;
+
+    main.addEventListener('change', function () {
+      show(main.selectedIndex - 1);
+      sub.value = '';
+      sub.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+
   // ------------------------------------------------------- features by category
   // "Features & amenities" offers one fieldset per category group; only the
   // chosen category's group applies. Hidden groups are also disabled so their
