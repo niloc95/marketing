@@ -186,6 +186,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // than in a committed array.
     $routes->get('hero', 'Admin::heroImages');
     $routes->post('hero', 'Admin::storeHeroImage');
+    $routes->post('hero/background', 'Admin::saveHeroBackground');
     $routes->post('hero/(:num)', 'Admin::updateHeroImage/$1');
     $routes->post('hero/(:num)/delete', 'Admin::deleteHeroImage/$1');
 

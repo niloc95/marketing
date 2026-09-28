@@ -26,10 +26,19 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
 // renders its own ocean gradient and the page looks exactly as it did before
 // this feature existed — which is also what a database or cache failure gets,
 // by way of HeroImageService::slides() returning [].
+//
+// A background video (uploaded or YouTube, see HeroImageService::saveBackground)
+// replaces the photos outright — video only, never a photo first or after. The
+// band is a plain dark ground until the video is playing.
+$heroBg = $heroBackground ?? null;
+if ($heroBg !== null) {
+    $slides = [];
+}
 $hasSlides = $slides !== [];
+$hasMedia  = $hasSlides || $heroBg !== null;
 ?>
-<section class="hero-home"<?= $hasSlides ? ' data-hero' : '' ?>>
-    <?php if ($hasSlides): ?>
+<section class="hero-home<?= $heroBg !== null ? ' hero-home-video' : '' ?>"<?= $hasSlides && $heroBg === null ? ' data-hero' : '' ?>>
+    <?php if ($hasMedia): ?>
         <?php // aria-hidden and alt="": these carry no information a screen reader
               // needs. What they represent is said out loud by the caption link
               // below, which is a real, focusable control. ?>
@@ -72,6 +81,21 @@ $hasSlides = $slides !== [];
                      alt="" decoding="async"
                      <?= $i === 0 ? 'fetchpriority="high"' : '' ?>>
             <?php endforeach; ?>
+            <?php // No controls attribute, muted, looped, and started by directory.js
+                  // rather than autoplay — so reduced-motion visitors never download
+                  // it, and it fades in only once it is really playing. ?>
+            <?php if ($heroBg !== null && $heroBg['type'] === 'video'): ?>
+                <video class="hero-video" data-hero-video muted loop playsinline preload="none"
+                       disablepictureinpicture disableremoteplayback tabindex="-1">
+                    <source src="<?= esc(base_url($heroBg['src']), 'attr') ?>"
+                            type="<?= str_ends_with($heroBg['src'], '.webm') ? 'video/webm' : 'video/mp4' ?>">
+                </video>
+            <?php elseif ($heroBg !== null && $heroBg['type'] === 'youtube'): ?>
+                <?php // Filled by directory.js after load: the player is a third-party
+                      // page, so it must not hold up the first paint. ?>
+                <div class="hero-youtube" data-hero-youtube="<?= esc($heroBg['id'], 'attr') ?>"
+                     data-hero-youtube-start="<?= (int) $heroBg['start'] ?>"></div>
+            <?php endif; ?>
         </div>
         <?php // A wash across the left of the frame only, not a scrim over the
               // whole photograph. Every seeded shot puts its subject right of
@@ -119,7 +143,7 @@ $hasSlides = $slides !== [];
           // index, so a caption can never end up describing the wrong photo.
           // Rendered even when a slide has nothing to say, because dropping it
           // would shift every later index by one. ?>
-    <?php if ($hasSlides): ?>
+    <?php if ($hasSlides && $heroBg === null): ?>
         <div class="hero-captions" data-hero-captions>
             <?php foreach ($slides as $i => $s): ?>
                 <?php

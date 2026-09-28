@@ -27,7 +27,7 @@ class Legal extends BaseController
     public const LAST_UPDATED = [
         'privacy' => '2026-09-27',
         'terms'   => '2026-09-27',
-        'cookies' => '2026-08-04',
+        'cookies' => '2026-09-28',
     ];
 
     public function privacy()
@@ -42,6 +42,11 @@ class Legal extends BaseController
 
     public function cookies()
     {
-        return view('legal/cookies', ['lastUpdated' => self::LAST_UPDATED['cookies']]);
+        return view('legal/cookies', [
+            'lastUpdated' => self::LAST_UPDATED['cookies'],
+            // The list of third parties below must stay true: a YouTube hero
+            // background puts Google's player on the home page.
+            'youtubeHero' => ((new \App\Services\DirectorySettings())->heroBackground()['type'] ?? '') === 'youtube',
+        ]);
     }
 }

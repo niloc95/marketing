@@ -595,6 +595,46 @@
   }
   .hero-slide.is-leaving { @apply z-[1] opacity-100; }
 
+  /* Background video, uploaded or YouTube (see home.php). It replaces the
+     photos entirely and fades in only once it is really playing — directory.js
+     adds .is-playing on the video's 'playing' event, or on YouTube's own
+     "playing" state message — so a slow or failed video leaves the plain dark
+     band rather than a YouTube error card or a spinner.
+     .hero-veil still lies over it: it is a later sibling of .hero-media. */
+  .hero-video,
+  .hero-youtube {
+    @apply absolute inset-0 z-[3] opacity-0 transition-opacity duration-1000;
+  }
+  /* With a video set there are no photos at all, so the ground it fades in
+     from is dark and neutral rather than the brand gradient — the gradient
+     flashing blue before every video starts reads as a glitch. */
+  .hero-home-video,
+  .dark .hero-home-video { @apply bg-none bg-[#0b0f14]; }
+  .hero-video { @apply h-full w-full object-cover; }
+  .hero-video.is-playing,
+  .hero-youtube.is-playing { @apply opacity-100; }
+  /* Safari draws a big play button over a video it declines to autoplay (Low
+     Power Mode). The poster behind is the right answer there, not a control. */
+  .hero-video::-webkit-media-controls,
+  .hero-video::-webkit-media-controls-start-playback-button { display: none !important; }
+
+  /* A YouTube player is a fixed 16:9 page, so "cover" is done by hand: sized
+     from the band's own box (container units) to whichever of the two
+     dimensions has to overflow, then scaled a touch further so the player's
+     edge chrome — the title strip, the logo — sits outside the crop.
+     pointer-events off so no hover ever summons the player's controls. */
+  .hero-youtube { @apply pointer-events-none overflow-hidden; container-type: size; }
+  .hero-youtube iframe {
+    @apply pointer-events-none absolute left-1/2 top-1/2 border-0;
+    width: max(100cqw, 177.78cqh);
+    height: max(100cqh, 56.25cqw);
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-video,
+    .hero-youtube { display: none; }
+  }
+
   /* The slow push in is what separates "a photo is behind this" from "this page
      is alive". It runs on the outgoing slide too: bound to .is-active alone it
      would be cancelled the moment that class came off, snapping the photo back

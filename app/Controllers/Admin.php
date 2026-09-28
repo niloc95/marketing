@@ -659,6 +659,7 @@ class Admin extends BaseController
     {
         return view('admin/hero', [
             'images'     => (new HeroImageService())->all(),
+            'background' => (new DirectorySettings())->heroSettings(),
             'categories' => (new DirectoryAdminService())->allCategories(),
             'errors'     => session()->getFlashdata('errors') ?? [],
             'old'        => session()->getFlashdata('old') ?? [],
@@ -673,6 +674,22 @@ class Admin extends BaseController
     public function updateHeroImage(int $id)
     {
         return $this->saveHeroImage($id);
+    }
+
+    /** Photos, an uploaded video, or a YouTube video behind the home hero. */
+    public function saveHeroBackground()
+    {
+        $post   = $this->request->getPost();
+        $result = (new HeroImageService())->saveBackground($post, $this->request->getFile('video'), $this->adminActor());
+
+        if (! $result['ok']) {
+            return redirect()->to(base_url('admin/hero'))
+                ->with('errors', $result['errors'])
+                ->with('old', $post)
+                ->with('error', $result['message']);
+        }
+
+        return redirect()->to(base_url('admin/hero'))->with('success', $result['message']);
     }
 
     public function deleteHeroImage(int $id)

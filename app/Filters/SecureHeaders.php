@@ -46,10 +46,14 @@ class SecureHeaders extends FrameworkSecureHeaders
         'Referrer-Policy'                   => 'no-referrer',
         'Cross-Origin-Opener-Policy'        => 'same-origin',
 
-        // Deny every powerful feature. The directory asks for none of them, and
-        // an empty allowlist means a future XSS can't reach for them either.
-        'Permissions-Policy' => 'accelerometer=(), autoplay=(), camera=(), display-capture=(), '
-            . 'encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), '
+        // Deny every powerful feature but two. autoplay and encrypted-media are
+        // allowed for this origin and the YouTube privacy-enhanced player only:
+        // the home hero's background video plays muted without a click, which
+        // autoplay=() forbids outright, and the YouTube player asks for both.
+        // An empty allowlist everywhere else means a future XSS can't reach for
+        // them either.
+        'Permissions-Policy' => 'accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), camera=(), display-capture=(), '
+            . 'encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), '
             . 'microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), '
             . 'screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()',
     ];

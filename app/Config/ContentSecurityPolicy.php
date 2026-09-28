@@ -190,7 +190,12 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string|null
      */
-    public $frameSrc = 'none';
+    public $frameSrc = [
+        // The home hero's optional YouTube background (HeroImageService). The
+        // privacy-enhanced host only: it is the one directory.js embeds, and
+        // naming www.youtube.com too would admit ordinary tracking embeds.
+        'https://www.youtube-nocookie.com',
+    ];
 
     /**
      * Restricts the origins allowed to deliver video and audio.

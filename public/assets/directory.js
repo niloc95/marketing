@@ -2557,6 +2557,98 @@
     form.addEventListener('submit', syncTextarea);
   })();
 
+  // ---------------------------------------------------- home hero background video
+  // An uploaded video or a YouTube video in place of the photo rotation (see
+  // home.php). Neither has controls. Both sit over the poster photo at opacity
+  // 0 and gain .is-playing only once they are actually playing, so anything
+  // that stops them — Low Power Mode, a blocked embed, a deleted YouTube video —
+  // leaves the photograph showing instead of a black box or an error card.
+  //
+  // Reduced motion: nothing starts, nothing downloads, the poster stays.
+  (function () {
+    var video = document.querySelector('[data-hero-video]');
+    var yt    = document.querySelector('[data-hero-youtube]');
+    if (!video && !yt) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    if (video) {
+      video.addEventListener('playing', function () {
+        video.classList.add('is-playing');
+      }, { once: true });
+      video.preload = 'auto';
+      var started = video.play();
+      // A refused autoplay is not an error worth reporting: the poster stays.
+      if (started && started.catch) started.catch(function () {});
+    }
+
+    if (yt) {
+      var host = 'https://www.youtube-nocookie.com';
+      var id   = yt.getAttribute('data-hero-youtube') || '';
+      var from = parseInt(yt.getAttribute('data-hero-youtube-start') || '0', 10) || 0;
+
+      var start = function () {
+        var frame = document.createElement('iframe');
+        frame.src = host + '/embed/' + encodeURIComponent(id) + '?' + [
+          'autoplay=1', 'mute=1', 'start=' + from,
+          'controls=0', 'disablekb=1', 'fs=0', 'iv_load_policy=3', 'rel=0',
+          'playsinline=1', 'modestbranding=1',
+          // Lets the player post its state back (below) without loading
+          // YouTube's own script onto this page.
+          'enablejsapi=1', 'origin=' + encodeURIComponent(window.location.origin)
+        ].join('&');
+        frame.title = '';
+        frame.tabIndex = -1;
+        frame.setAttribute('aria-hidden', 'true');
+        frame.allow = 'autoplay; encrypted-media';
+        // The site sends no referrer (Filters\SecureHeaders), and YouTube now
+        // refuses to play an embed that arrives without one. This frame alone
+        // sends the bare origin.
+        frame.referrerPolicy = 'strict-origin-when-cross-origin';
+
+        // playerState 1 is "playing". Even with controls=0 the player flashes
+        // its own pause/skip buttons for the first second or three of playback
+        // (measured), so it is revealed only once that has faded. Once shown it
+        // stays shown — a brief buffer is better than the band going dark —
+        // except across the loop's restart, where those buttons flash again.
+        var reveal = null;
+        window.addEventListener('message', function (e) {
+          if (e.origin !== host || e.source !== frame.contentWindow) return;
+          var data;
+          try { data = JSON.parse(e.data); } catch (err) { return; }
+          var state = data && data.info ? data.info.playerState : undefined;
+          if (state === undefined) return;
+          if (state === 1) {
+            if (!yt.classList.contains('is-playing')) {
+              clearTimeout(reveal);
+              reveal = setTimeout(function () { yt.classList.add('is-playing'); }, 5000);
+            }
+          } else if (state === 0) {
+            clearTimeout(reveal);
+            yt.classList.remove('is-playing');
+          }
+          // The loop is done here rather than with YouTube's loop=1, which
+          // restarts from 0:00 — back through the intro the start time skips.
+          if (state === 0) {
+            var send = function (func, args) {
+              frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), host);
+            };
+            send('seekTo', [from, true]);
+            send('playVideo');
+          }
+        });
+        frame.addEventListener('load', function () {
+          // "listening" asks the player to start posting state updates.
+          frame.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'hero' }), host);
+        }, { once: true });
+
+        yt.appendChild(frame);
+      };
+
+      if (document.readyState === 'complete') start();
+      else window.addEventListener('load', start, { once: true });
+    }
+  })();
+
   // ------------------------------------------------------ home hero rotation
   // Cross-fades the photographs behind the home page search box, and moves the
   // caption with them. Home page only — [data-hero] is on nothing else.

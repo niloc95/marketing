@@ -66,6 +66,9 @@ $analyticsId = config('Directory')->analyticsId();
             <ul>
                 <li><strong>CARTO</strong> serves the map tiles on profile and search pages — <a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>.</li>
                 <li><strong>OpenStreetMap</strong> handles address lookup when you type an address into the business form — <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>.</li>
+                <?php if (! empty($youtubeHero)): ?>
+                    <li><strong>YouTube</strong> (Google) plays the background video on the home page, through its privacy-enhanced player. It is not loaded at all if your device is set to reduce motion — <a href="https://policies.google.com/privacy" rel="noopener">privacy policy</a>.</li>
+                <?php endif; ?>
             </ul>
             <p>Fonts, styles and scripts are served from our own domain, so nothing else is fetched from a third party as you browse.</p>
 

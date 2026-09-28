@@ -266,6 +266,49 @@ class DirectorySettings
         return $price;
     }
 
+    /**
+     * What plays behind the home page hero, or null for the photo rotation.
+     *
+     * A mode whose source is missing (a video file deleted by hand, an id that
+     * never saved) reads as null too, so the hero falls back to its photos
+     * rather than rendering an empty player.
+     *
+     * @return array{type:'video',src:string}|array{type:'youtube',id:string,start:int}|null
+     */
+    public function heroBackground(): ?array
+    {
+        $mode = $this->stored(DirectorySettingModel::HERO_MEDIA);
+
+        if ($mode === 'video') {
+            $path = (string) $this->stored(DirectorySettingModel::HERO_VIDEO_PATH);
+
+            return $path !== '' && is_file(rtrim(FCPATH, '/') . '/' . $path)
+                ? ['type' => 'video', 'src' => $path]
+                : null;
+        }
+
+        if ($mode === 'youtube') {
+            $id = (string) $this->stored(DirectorySettingModel::HERO_YOUTUBE_ID);
+
+            return preg_match('/^[A-Za-z0-9_-]{11}$/', $id) === 1
+                ? ['type' => 'youtube', 'id' => $id, 'start' => max(0, (int) $this->stored(DirectorySettingModel::HERO_YOUTUBE_START))]
+                : null;
+        }
+
+        return null;
+    }
+
+    /** The raw hero settings, for the admin form: mode, video path, YouTube id. */
+    public function heroSettings(): array
+    {
+        return [
+            'mode'    => $this->stored(DirectorySettingModel::HERO_MEDIA) ?? 'photos',
+            'video'   => $this->stored(DirectorySettingModel::HERO_VIDEO_PATH) ?? '',
+            'youtube' => $this->stored(DirectorySettingModel::HERO_YOUTUBE_ID) ?? '',
+            'start'   => max(0, (int) $this->stored(DirectorySettingModel::HERO_YOUTUBE_START)),
+        ];
+    }
+
     /** Drop the cached map. Called on every write, and by tests. */
     public function forget(): void
     {

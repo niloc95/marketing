@@ -53,6 +53,61 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
             With no active photos the hero falls back to the plain blue gradient, which is a safe place to be.
         </p>
 
+        <?php
+        // The background panel redraws from the flash on a rejected save, like
+        // the add form below; otherwise from what is stored.
+        $bgMode = array_key_exists('hero_media', $old) ? (string) $old['hero_media'] : $background['mode'];
+        ?>
+        <div class="panel mb-8">
+            <h3>Hero background</h3>
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                What plays behind the search box. A video plays muted and on a loop, with no controls and no YouTube buttons,
+                and replaces the photos completely &mdash; they are kept here and come back if you switch to the photo rotation.
+                Visitors whose phone or computer is set to reduce motion see a plain dark background instead of the video.
+            </p>
+            <form method="post" action="<?= base_url('admin/hero/background') ?>" enctype="multipart/form-data">
+                <?= csrf_field() ?>
+                <div class="field">
+                    <label>Show</label>
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <?php foreach (['photos' => 'Photo rotation', 'video' => 'Uploaded video', 'youtube' => 'YouTube video'] as $key => $label): ?>
+                            <label class="inline-flex items-center gap-2 font-normal">
+                                <input type="radio" name="hero_media" value="<?= $key ?>" <?= $bgMode === $key ? 'checked' : '' ?>>
+                                <?= esc($label) ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="field">
+                        <label for="hero-video">Video file</label>
+                        <input type="file" id="hero-video" name="video" accept="video/mp4,video/webm">
+                        <?php if ($err('video')): ?>
+                            <div class="err"><?= esc($err('video')) ?></div>
+                        <?php endif; ?>
+                        <div class="hint">
+                            MP4 or WebM, up to 12&nbsp;MB. A 10&ndash;20 second clip at 1080p with the sound removed is ideal.
+                            <?php if ($background['video'] !== ''): ?>
+                                <br>Current: <a class="underline" href="<?= base_url($background['video']) ?>" target="_blank" rel="noopener"><?= esc(basename($background['video'])) ?></a>. Uploading a new one replaces it.
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="hero-youtube">YouTube link</label>
+                        <input type="text" id="hero-youtube" name="youtube_url" maxlength="255"
+                               value="<?= esc(array_key_exists('youtube_url', $old) ? (string) $old['youtube_url'] : ($background['youtube'] !== '' ? 'https://youtu.be/' . $background['youtube'] . ($background['start'] > 0 ? '?t=' . $background['start'] : '') : ''), 'attr') ?>"
+                               placeholder="https://www.youtube.com/watch?v=...">
+                        <?php if ($err('youtube_url')): ?>
+                            <div class="err"><?= esc($err('youtube_url')) ?></div>
+                        <?php endif; ?>
+                        <div class="hint">A share link (youtu.be/…), watch or Shorts link, or YouTube's embed code all work. The video must allow embedding.
+                            To skip an intro, add a start time: <code>?t=15</code> starts 15 seconds in (YouTube&rsquo;s <em>Share &rarr; Start at</em> does this for you).</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-xs">Save background</button>
+            </form>
+        </div>
+
         <div class="panel mb-8">
             <h3>Add a hero photo</h3>
             <form method="post" action="<?= base_url('admin/hero') ?>" enctype="multipart/form-data">

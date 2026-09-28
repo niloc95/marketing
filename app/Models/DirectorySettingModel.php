@@ -30,11 +30,22 @@ class DirectorySettingModel extends Model
     public const INTERNATIONAL_PRICE   = 'international_listing_price';
     public const INTERNATIONAL_ENABLED = 'international_listing_enabled';
 
+    /** Home hero background: 'photos' (the rotation), 'video' or 'youtube'. */
+    public const HERO_MEDIA      = 'hero_media';
+    public const HERO_VIDEO_PATH = 'hero_video_path';
+    public const HERO_YOUTUBE_ID = 'hero_youtube_id';
+    /** Seconds into the YouTube video to start (and loop back to). */
+    public const HERO_YOUTUBE_START = 'hero_youtube_start';
+
     public const KNOWN = [
         self::BADGE_PRICE,
         self::BADGE_ENABLED,
         self::INTERNATIONAL_PRICE,
         self::INTERNATIONAL_ENABLED,
+        self::HERO_MEDIA,
+        self::HERO_VIDEO_PATH,
+        self::HERO_YOUTUBE_ID,
+        self::HERO_YOUTUBE_START,
     ];
 
     /**
