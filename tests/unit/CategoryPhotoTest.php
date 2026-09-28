@@ -108,6 +108,7 @@ final class CategoryPhotoTest extends CIUnitTestCase
             $this->assertNotNull($photo);
             $this->assertFileExists(FCPATH . $photo['src']);
             $this->assertFileExists(FCPATH . $photo['src_sm']);
+            $this->assertFileExists(FCPATH . $photo['src_lg']);
             $this->assertMatchesRegularExpression('#^https://www\.pexels\.com/photo/\d+/$#', $photo['credit_url']);
         }
 

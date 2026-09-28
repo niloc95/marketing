@@ -96,7 +96,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
               // photograph for the same category. ?>
         <img class="hero-vertical-img"
              src="<?= esc(base_url($verticalPhoto['src']), 'attr') ?>"
-             srcset="<?= esc(base_url($verticalPhoto['src_sm']), 'attr') ?> 400w, <?= esc(base_url($verticalPhoto['src']), 'attr') ?> 800w"
+             srcset="<?= esc(base_url($verticalPhoto['src_sm']), 'attr') ?> 400w, <?= esc(base_url($verticalPhoto['src']), 'attr') ?> 800w, <?= esc(base_url($verticalPhoto['src_lg']), 'attr') ?> 1600w"
              sizes="100vw" alt="" decoding="async" fetchpriority="high">
     <?php endif; ?>
     <div class="container">

@@ -267,14 +267,14 @@ if (! function_exists('category_photo')) {
      * taken does a photo repeat. Use category_photos() for a whole grid rather
      * than threading $taken by hand.
      *
-     * The files are committed under public/assets/categories/ as <name>-800.webp
-     * and <name>-400.webp: Pexels photographs, re-encoded, exactly like the hero
+     * The files are committed under public/assets/categories/ as <name>-1600.webp,
+     * <name>-800.webp and <name>-400.webp, all one 3:2 crop: Pexels photographs, re-encoded, exactly like the hero
      * photos in DirectoryHeroImagesSeeder. The licence needs no attribution; the
      * credit is kept here so a photo can always be traced back. A name with no
      * file renders a broken image over the tile — CategoryPhotoTest checks every
      * entry against the disk, and that every seeded group has one.
      *
-     * @return array{src: string, src_sm: string, credit: string, credit_url: string}|null
+     * @return array{src: string, src_sm: string, src_lg: string, credit: string, credit_url: string}|null
      */
     function category_photo(array $category, array $taken = []): ?array
     {
@@ -334,15 +334,15 @@ if (! function_exists('category_photo')) {
             'Everyday Services'        => [['group-everyday-services', 'Tima Miroshnichenko', 8774376]],
             'Retail & Other'           => [['group-retail-other', 'Sam Lion', 5709656]],
             'Home Industry & Handmade' => [['group-home-industry-handmade', 'Gustavo Fring', 7447297]],
-            // Borrows Beauty & Wellness's hands-on treatment photo, as Restaurants
-            // & Food borrows the restaurant's. Swap in a dedicated
-            // group-alternative-traditional-medicine photo when there is one.
-            'Alternative & Traditional Medicine' => [['group-beauty-wellness-2', 'Ron Lach', 9146364]],
+            'Alternative & Traditional Medicine' => [['group-alternative-traditional-medicine', 'AS Photography', 105028]],
         ];
 
         $photo = static fn (string $name, string $credit, int $id): array => [
             'src'        => 'assets/categories/' . $name . '-800.webp',
             'src_sm'     => 'assets/categories/' . $name . '-400.webp',
+            // For the full-bleed heroes: 800 stretched across a desktop band
+            // is visibly soft once the photo is shown at full colour.
+            'src_lg'     => 'assets/categories/' . $name . '-1600.webp',
             'credit'     => $credit,
             'credit_url' => 'https://www.pexels.com/photo/' . $id . '/',
         ];

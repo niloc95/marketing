@@ -617,18 +617,18 @@
      A horizontal fade, not a full-cover scrim: it is opaque where the headline
      starts and gone by the middle of the frame, so the subject of every photo —
      which sits right of centre in all six seeded shots — is seen at full
-     colour and contrast. Near-black rather than the brand ocean, because a
-     colour that tints the photo is the thing the full scrim was doing wrong.
+     colour and contrast. Neutral black rather than the brand ocean, because a
+     colour that tints the photo is exactly what made the heroes look cheap.
 
      The reach is wider on phones. There the copy runs the whole width of the
      screen instead of sitting in a left column, so a fade that stopped at 60%
      would leave the end of every line unprotected. */
   .hero-veil {
-    @apply absolute inset-0 -z-10 bg-gradient-to-r from-[#04202f]/85
-           via-[#04202f]/60 via-45% to-transparent to-95%
+    @apply absolute inset-0 -z-10 bg-gradient-to-r from-black/75
+           via-black/50 via-45% to-transparent to-95%
            sm:via-[32%] sm:to-[70%];
   }
-  .dark .hero-veil { @apply from-[#04202f]/90 via-[#04202f]/65; }
+  .dark .hero-veil { @apply from-black/85 via-black/60; }
 
   /* ------------------------------------------------------- hero captions */
   /* A one-cell grid, not a flex row: every caption is placed in that same cell
@@ -1066,43 +1066,44 @@
     );
   }
 
-  /* The group photograph behind the band. -z-10 puts it above the gradient but
-     below the copy, which stays in flow — so the photo is tinted by the hue
-     rather than sitting on top of it.
+  /* The group photograph behind the band, at full colour.
 
-     multiply is the whole reason this is safe rather than merely tuned. White
-     text sits on this band, and a plain overlay at any opacity lets a blown-out
-     highlight in the photograph lift the ground under a line — a bright, warm
-     shot behind the yellow gradient was visibly doing it. multiply can only ever
-     darken: the result is never lighter than the gradient alone, so the contrast
-     floor for every one of the sixteen hues is the gradient's own, which is what
-     the -700/-800 starts were chosen for. No photograph can make a line
-     unreadable, whatever ends up in it.
+     It used to be multiplied into the group's hue: safe for contrast, but it
+     turned every photo into a red or pink wash that read as cheap. Yelp's hero
+     is the model now: a real photograph shown as it was taken, with legibility
+     coming from a neutral dark fade behind the text only (::before below). The
+     tint gradient on .hero-vertical stays as the fallback a band with no photo
+     shows.
 
-     It also means the opacity can be generous — the photo reads as a real
-     photograph rather than a wash, and still cannot cost contrast.
-
-     That is also why there is no .hero-veil here: the veil is a left-to-right
-     fade sized for the home page's tall photo hero, and it leaves the right-hand
-     end of a line in this short band unprotected.
-
-     The isolate on .hero-vertical is what keeps the blend inside the hero; without
-     it the photo would multiply with whatever the page painted behind it.
-
-     No width/height and no aspect box — a full-bleed cover crop in a band whose
-     height is already fixed, so there is no layout to shift. */
+     -z-20 under the fade's -z-10, both under the copy, which stays in flow. The
+     isolate on .hero-vertical keeps both inside the hero. No width/height and
+     no aspect box: a cover crop in a band whose height is already fixed, so
+     there is no layout to shift. */
   .hero-vertical-img {
-    @apply absolute inset-0 -z-10 h-full w-full object-cover opacity-60;
-    mix-blend-mode: multiply;
+    @apply absolute inset-0 -z-20 h-full w-full object-cover;
   }
-  /* Dark mode cannot use multiply: the gradient starts at the near-black page
-     colour, and multiplying against that erases the photograph completely. A
-     plain overlay is safe here for the opposite reason to light mode — the
-     ground is so dark that even a pure-white highlight at this opacity lands
-     around #303539, which white text still clears by a wide margin. */
-  .dark .hero-vertical-img {
-    @apply opacity-[0.14];
-    mix-blend-mode: normal;
+
+  /* The text-side fade, in black rather than a brand or group colour, so it
+     darkens the photo without tinting it. Heavier and wider than .hero-veil on
+     the home page: this band is shorter and its headline longer ("Dentists in
+     Gauteng"), so the ground under the end of the line needs more. On a phone
+     the copy runs the full width, so the fade is a near-even scrim there. */
+  .hero-vertical:has(> .hero-vertical-img)::before {
+    content: '';
+    @apply absolute inset-0 -z-10;
+    background: linear-gradient(to right, rgb(0 0 0 / 0.72), rgb(0 0 0 / 0.55) 60%, rgb(0 0 0 / 0.4));
+  }
+  @media (min-width: 640px) {
+    .hero-vertical:has(> .hero-vertical-img)::before {
+      background: linear-gradient(to right, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.5) 45%, rgb(0 0 0 / 0.1) 90%);
+    }
+  }
+  /* Belt and braces for the brightest frames: a soft shadow under the white
+     copy costs nothing where the fade is already enough. */
+  .hero-vertical:has(> .hero-vertical-img) h1,
+  .hero-vertical:has(> .hero-vertical-img) p,
+  .hero-vertical:has(> .hero-vertical-img) nav {
+    text-shadow: 0 1px 12px rgb(0 0 0 / 0.45);
   }
 
   /* Panel headings take the group's hue inside a tinted scope. The selector is
