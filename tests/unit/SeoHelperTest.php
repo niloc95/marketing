@@ -233,10 +233,10 @@ final class SeoHelperTest extends CIUnitTestCase
         );
     }
 
-    public function testCategorylessListingKeepsABareNameLead(): void
+    public function testCategorylessListingStillSaysWhere(): void
     {
         $this->assertStringStartsWith(
-            'Regal Jewellers. Open Mon–Fri',
+            'Regal Jewellers at Oriental Plaza, Fordsburg, Johannesburg. Open Mon–Fri',
             listing_meta_description($this->regal(['category' => null]))
         );
     }

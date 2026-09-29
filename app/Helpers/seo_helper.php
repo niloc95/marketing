@@ -215,9 +215,9 @@ if (! function_exists('listing_meta_description')) {
         } else {
             $where = $place !== '' ? ' in ' . $place : '';
         }
-        // A category-less listing's lead is the bare name, as before: "— in
-        // Fordsburg" with nothing in front of it reads as a fragment.
-        $lead = $prof !== '' ? $name . ' — ' . $prof . $where . '.' : $name . '.';
+        // A category-less listing still says where: "Selfast at Oriental Plaza,
+        // Fordsburg" is the half of the search that is not the name.
+        $lead = $prof !== '' ? $name . ' — ' . $prof . $where . '.' : $name . $where . '.';
 
         $hours   = seo_hours_summary(is_array($l['trading_hours'] ?? null) ? $l['trading_hours'] : null);
         $hasHours = $hours !== '' || ! empty(array_filter(
