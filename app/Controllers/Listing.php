@@ -24,12 +24,13 @@ class Listing extends BaseController
     public const SOURCE_SITE   = 'site';
 
     /**
-     * /add-listing, typed or bookmarked: both options, Verified first.
+     * /add-listing, where every button on the site points (signup_cta()).
      *
-     * Only a visitor with no campaign source in their session sees the Free
-     * card at all. Anyone who arrived through a link of ours, whether an invite,
-     * a ?via= tag or one of the site's own buttons, gets the verified-only form.
-     * See SignupChannel and signup_cta_url().
+     * A visitor who came straight to the site (typed the address, Google, a
+     * bookmark) gets both options, Verified first and preselected. The Free
+     * Listing must stay available to them. A visitor who arrived through one of
+     * our links (an invite or a ?via= tag, see SignupChannel) gets the
+     * verified-only form instead.
      */
     public function create()
     {
@@ -164,9 +165,9 @@ class Listing extends BaseController
         $logo = $this->resolveLogo();
 
         // Where this signup came from. Always overwritten here, so the form
-        // cannot claim a channel. form_mode is presentation only: it tells a
-        // visitor who used one of the site's buttons ('site') from one who
-        // typed /add-listing ('direct').
+        // cannot claim a channel. With no campaign source, form_mode tells a
+        // visit to /add-listing/verified with no tag ('site') from the both-
+        // options page ('direct'), which is where the site's own buttons go.
         $post['signup_source'] = self::campaignSource()
             ?? ($this->request->getPost('form_mode') === 'verified-only' ? self::SOURCE_SITE : self::SOURCE_DIRECT);
         $post['logo_path'] = $logo['path'];

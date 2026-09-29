@@ -8,7 +8,7 @@
         <p style="margin:22px 0">
             <a href="<?= esc($link) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Verify &amp; publish my profile</a>
         </p>
-        <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($link) ?>" style="color:#003049"><?= esc($link) ?></a></p>
+        <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($link) ?>" style="color:#003049;word-break:break-all"><?= esc($link) ?></a></p>
         <p style="font-size:13px;color:#64748b">If you didn't request this, you can ignore this email.</p>
         <?php // A proper section now, not a footnote: Verified is the offer we lead
               // with. Still no second button, though. The one job of this email is
@@ -21,8 +21,9 @@
                 <p style="font-size:15px;font-weight:700;color:#065f46;margin:0 0 8px">Next: get the Verified Business badge</p>
                 <ul style="font-size:14px;line-height:1.6;color:#0f172a;margin:0 0 10px;padding-left:18px">
                     <li>A green <strong>Verified Business</strong> badge on your profile and beside your name in search results</li>
-                    <li>Your team by name, with photos and qualifications</li>
-                    <li>Your other branches, each with its own address and phone number</li>
+                    <li>All your branches, each with its own address, phone, map pin and hours, and described to Google as a location in its own right</li>
+                    <li>Your team by name, with photos and qualifications, so searches for your people find you</li>
+                    <li>First to hear about new work: verified businesses are the first we alert when a customer in your province asks for your kind of service</li>
                 </ul>
                 <p style="font-size:13px;line-height:1.6;color:#334155;margin:0">
                     R<?= esc($badgePrice ?? '') ?> a month, and nothing to pay until we've checked your company

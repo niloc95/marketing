@@ -15,8 +15,8 @@ use CodeIgniter\HTTP\ResponseInterface;
  * still credits the link that brought them. Two things read it:
  *
  *   - Listing::create(), which shows the verified-only signup form to anyone
- *     with a source. Only a visitor who came straight to /add-listing sees the
- *     Free card.
+ *     with a source. A visitor who came straight to the site sees both options
+ *     on /add-listing, Free included, even after clicking our own buttons.
  *   - Listing::store(), which records it as the new listing's signup_source.
  *
  * GET only, and it never redirects or changes the page. The canonical URL

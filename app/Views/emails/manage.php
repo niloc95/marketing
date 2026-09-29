@@ -8,7 +8,7 @@
         <p style="margin:22px 0">
             <a href="<?= esc($link) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Edit my profile</a>
         </p>
-        <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($link) ?>" style="color:#003049"><?= esc($link) ?></a></p>
+        <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($link) ?>" style="color:#003049;word-break:break-all"><?= esc($link) ?></a></p>
         <p style="font-size:13px;color:#64748b">The link works once and expires in <?= (int) $ttl ?> minutes. If you didn't request it, you can safely ignore this email &mdash; nothing has changed.</p>
         <?php // Same placement rule as emails/verify.php: below the primary action,
               // in muted type, and silent when the feature is switched off. ?>

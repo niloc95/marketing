@@ -8,6 +8,13 @@
  * @var string|null                  $eyebrow   the small line above the heading; defaults to "<site> Jobs"
  * @var string                       $heading
  * @var list<string>                 $paragraphs plain text; escaped here
+ * @var list<string>|null            $bullets    optional list after the paragraphs; each item may
+ *                                              start with a bold lead-in ending in ': ' (plain text, escaped)
+ * @var string|null                  $bulletsHeading bold line above $bullets
+ * @var list<string>|null            $extras     optional second list, same lead-in rule as $bullets
+ * @var string|null                  $extrasHeading  bold line above $extras
+ * @var string|null                  $highlight  optional bold paragraph after the lists
+ * @var list<string>|null            $closing    optional paragraphs after the lists
  * @var array{0:string,1:string}|null $button    [label, url]
  * @var string|null                  $footnote
  * @var array{0:string,1:string}|null $footnoteLink [label, url] after the footnote
@@ -22,11 +29,36 @@
         <?php foreach ($paragraphs as $p): ?>
             <p style="font-size:15px;line-height:1.6"><?= esc($p) ?></p>
         <?php endforeach; ?>
+        <?php // Two optional lists, each with an optional bold heading. Every item
+              // may start with a lead-in ending in ': ', which renders bold, so a
+              // reader skimming the email catches the keyword first. All text is
+              // plain and escaped here. ?>
+        <?php foreach ([[$bulletsHeading ?? null, $bullets ?? null], [$extrasHeading ?? null, $extras ?? null]] as [$listHeading, $items]): ?>
+            <?php if (! empty($listHeading)): ?>
+                <p style="font-size:15px;line-height:1.6;font-weight:700;margin:18px 0 6px"><?= esc($listHeading) ?></p>
+            <?php endif; ?>
+            <?php if (! empty($items)): ?>
+                <?php // No list bullets: every item carries its own marker (an emoji or a
+                      // tick), and a dot beside it reads as a double bullet. ?>
+                <ul style="font-size:15px;line-height:1.6;list-style:none;padding-left:0;margin:0 0 14px">
+                    <?php foreach ($items as $b): ?>
+                        <?php $parts = explode(': ', $b, 2); ?>
+                        <li style="margin-bottom:8px"><?php if (count($parts) === 2): ?><strong><?= esc($parts[0]) ?>:</strong> <?= esc($parts[1]) ?><?php else: ?><?= esc($b) ?><?php endif; ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        <?php endforeach; ?>
+        <?php if (! empty($highlight)): ?>
+            <p style="font-size:15px;line-height:1.6;font-weight:700"><?= esc($highlight) ?></p>
+        <?php endif; ?>
+        <?php foreach ($closing ?? [] as $p): ?>
+            <p style="font-size:15px;line-height:1.6"><?= esc($p) ?></p>
+        <?php endforeach; ?>
         <?php if (! empty($button)): ?>
             <p style="margin:22px 0">
                 <a href="<?= esc($button[1]) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block"><?= esc($button[0]) ?></a>
             </p>
-            <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($button[1]) ?>" style="color:#003049"><?= esc($button[1]) ?></a></p>
+            <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($button[1]) ?>" style="color:#003049;word-break:break-all"><?= esc($button[1]) ?></a></p>
         <?php endif; ?>
         <?php if (! empty($footnote) || ! empty($footnoteLink)): ?>
             <p style="font-size:13px;color:#64748b">

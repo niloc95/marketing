@@ -1279,6 +1279,12 @@ class JobBoardService
             'button'       => null,
             'footnote'     => null,
             'footnoteLink' => null,
+            'bullets'        => null,
+            'bulletsHeading' => null,
+            'extras'         => null,
+            'extrasHeading'  => null,
+            'highlight'      => null,
+            'closing'        => null,
         ], ['saveData' => false]);
         return (new Mailer())->send($to, $subject, $body);
     }

@@ -158,9 +158,11 @@
                       // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
                       // gets its own spacing without a literal one.
                       //
-                      // While the badge is on sale this is "Get verified" at every width and
-                      // goes to the verified-only form. See signup_cta(). It fits the phone's
-                      // ~110px as well as "Get listed" did. ?>
+                      // While the badge is on sale this is "Get verified" at every width. It
+                      // goes to /add-listing, which shows a visitor who came straight here
+                      // both options (Verified first, Free still there) and a campaign
+                      // visitor the verified-only form. See signup_cta(). It fits the
+                      // phone's ~110px as well as "Get listed" did. ?>
                 <?php if (signup_cta()['verified']): ?>
                     <a href="<?= esc(signup_cta()['url']) ?>" class="btn btn-accent nav-cta">Get verified</a>
                 <?php else: ?>

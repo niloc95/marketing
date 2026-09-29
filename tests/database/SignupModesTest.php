@@ -107,12 +107,22 @@ final class SignupModesTest extends CIUnitTestCase
         $this->assertStringContainsString('List your business', $home);
     }
 
-    public function testTheSiteButtonsGoToTheVerifiedOnlyForm(): void
+    public function testTheSiteButtonsKeepTheFreeListingForADirectVisitor(): void
     {
         $home = $this->page('/');
 
-        $this->assertStringContainsString('href="' . base_url('add-listing/verified') . '" class="btn btn-accent nav-cta">Get verified', $home);
+        // "Get verified" wording, but pointing at /add-listing, which decides the
+        // mode: a visitor who came straight to the site still gets the Free card.
+        $this->assertStringContainsString('href="' . base_url('add-listing') . '" class="btn btn-accent nav-cta">Get verified', $home);
         $this->assertStringNotContainsString('List your business <strong>free</strong>', $home);
+
+        $direct = $this->page('add-listing');
+        $this->assertStringContainsString('data-plan-card="free"', $direct, 'the Free Listing stays available to a direct visitor');
+        $this->assertLessThan(strpos($direct, 'data-plan-card="free"'), strpos($direct, 'data-plan-card="verified"'));
+
+        // The same button, for someone who came in on a campaign link.
+        $this->withSession([SignupChannel::SESSION_KEY => 'flyer']);
+        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-listing'));
     }
 
     // ------------------------------------------------------ saving and source

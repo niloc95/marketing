@@ -929,11 +929,13 @@ if (! function_exists('signup_cta')) {
      * Where the site's own "list your business" buttons point, and what they say.
      *
      * Verified Business is the offer we lead with, so while the badge is on sale
-     * every button of ours goes to the verified-only signup form
-     * (/add-listing/verified) and says so. Only someone who types /add-listing
-     * sees the Free card (Listing::create()). With the badge off, every button
-     * falls back to the free form and its "free" wording: never advertise a
-     * badge that cannot be sold.
+     * every button says "Get verified". They all point at /add-listing, which
+     * decides the mode itself (Listing::create()): a visitor who came straight
+     * to the site gets both cards, Verified first and preselected, with the Free
+     * Listing one click away. A visitor who came through one of our links (an
+     * invite, a ?via= tag, the marketing site) gets the verified-only form. With
+     * the badge off, every button falls back to the free wording: never
+     * advertise a badge that cannot be sold.
      *
      * Text that talks about listing *for free* (the FAQ, the Terms, the privacy
      * policy, the "is it free?" answer on /verified) links to /add-listing
@@ -958,7 +960,7 @@ if (! function_exists('signup_cta')) {
         }
 
         return $verified
-            ? ['url' => base_url('add-listing/verified'), 'label' => 'Get your business verified', 'verified' => true]
+            ? ['url' => base_url('add-listing'), 'label' => 'Get your business verified', 'verified' => true]
             : ['url' => base_url('add-listing'), 'label' => 'List your business — free', 'verified' => false];
     }
 }

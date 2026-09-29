@@ -371,14 +371,19 @@ $verifiedOnly)` serves every mode:
 | Visit | Mode |
 |---|---|
 | `/add-listing/verified`, or any `/add-listing*` with a campaign source in the session | **verified-only**: the Verified card alone, documents open, no Free card, no "Remove" link, no `data-plan-cards` (so the picker JS is off) |
-| `/add-listing` typed directly (no source) | both cards, **Verified first and preselected** |
+| `/add-listing` with no source (typed, or any of the site's own buttons) | both cards, **Verified first and preselected** |
 | `/add-listing?plan=free` (direct only) | both cards, Free picked |
 
-- **Every link we control goes to the verified-only form**: the header "Get verified", the
-  footer, home/landing/province/venue/categories/404/contact/jobs buttons, referral invites
-  (`add-listing/verified?invite=`) and the marketing-site footer
-  (`?via=marketing-site`). They all use `signup_cta()` in `directory_ui_helper.php`,
-  which also falls back to `/add-listing` and the "free" wording when the badge is off.
+- **The Free Listing must stay available to anyone who came straight to the site.** The
+  site's own buttons (header "Get verified", footer, home/landing/province/venue/categories/
+  404/contact/jobs) all say "Get verified" but point at **`/add-listing`**, which decides the
+  mode itself. A direct visitor gets both cards, Verified first. A visitor with a campaign
+  source gets verified-only. They all use `signup_cta()` in `directory_ui_helper.php`,
+  which also falls back to the "free" wording when the badge is off. Do not point them at
+  `/add-listing/verified`: that would hide Free from direct visitors, which the owner
+  explicitly does not want.
+- **Only our outbound links go straight to verified-only**: referral invites
+  (`add-listing/verified?invite=`) and the marketing-site footer (`?via=marketing-site`).
 - **Text that talks about listing *for free* keeps `/add-listing`**: the FAQ answers,
   Terms, privacy policy and the "is it free?" line on `/verified`. Pointing those at a page
   with no Free card would contradict the sentence around the link.

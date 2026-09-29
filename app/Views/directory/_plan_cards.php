@@ -77,8 +77,10 @@ $rows = [
     ['label' => 'Edit it yourself any time, free', 'free' => true, 'paid' => true],
     ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every search result you appear in', 'free' => false, 'paid' => true],
     ['label' => '<strong>Your team, by name</strong> &mdash; up to ' . (int) $team . ' people, each with a photo, their position and their qualifications', 'free' => false, 'paid' => true],
-    ['label' => '<strong>Your other branches</strong> &mdash; up to ' . (int) $locations . ' more locations, each with its own address and phone number', 'free' => false, 'paid' => true],
+    ['label' => '<strong>All your branches</strong> &mdash; up to ' . (int) $locations . ' more locations, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
     ['label' => '<strong>More searches find you</strong> &mdash; a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
+    // JobBoardService::alertMatchingBusinesses() orders badge holders first.
+    ['label' => '<strong>First to hear about new work</strong> &mdash; when someone in your province asks for your kind of service, verified businesses are the first we alert', 'free' => false, 'paid' => true],
     [
         // See rule 2 in the docblock. ✗ on both cards, on purpose.
         'label' => 'A higher position in the search results',

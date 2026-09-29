@@ -55,9 +55,10 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         customer who was referred to a person, not a business, lands in the right place.
     </li>
     <li>
-        <strong>Your other branches.</strong> Add up to <?= (int) $locations ?> more locations,
-        each with its own address and phone number, instead of one address for a business
-        that has several.
+        <strong>All your branches.</strong> Add up to <?= (int) $locations ?> more locations,
+        each with its own address, phone number, map pin and opening hours, and each
+        described to Google as a business location in its own right, instead of one
+        address for a business that has several.
     </li>
     <li>
         <?php // Deliberately "more searches match you", never "you rank higher".
@@ -65,6 +66,13 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         <strong>More searches find you.</strong> Once your team is listed, a search for one
         of your people by name &mdash; or for something only one of them does &mdash; brings
         up your business too.
+    </li>
+    <li>
+        <?php // True because JobBoardService::alertMatchingBusinesses() orders badge
+              // holders first. Alerts, not search position: ordering is unchanged. ?>
+        <strong>First to hear about new work.</strong> When someone in your province asks
+        for your kind of service on our Jobs board, verified businesses are the first we
+        alert.
     </li>
 </ul>
 <p class="hint verify-benefits-terms">

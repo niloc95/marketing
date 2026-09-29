@@ -443,7 +443,7 @@ class ReferralService
         // customer's first name, never an address. "Other" stays anonymous.
         $by = '';
         if ($r['relationship'] === 'customer' && ! empty($r['referrer_name'])) {
-            $by = ' One of your customers, ' . strtok((string) $r['referrer_name'], ' ') . ', suggested you.';
+            $by = ' One of your customers, ' . strtok((string) $r['referrer_name'], ' ') . ', suggested your business to us.';
         } elseif ($r['relationship'] === 'owner_or_staff') {
             $by = ' Someone at your business asked us to get in touch.';
         }
@@ -459,13 +459,36 @@ class ReferralService
         if ($verification->isEnabled()) {
             $amount = $verification->monthlyAmount();
 
+            // Every line here is something the code does, and says the same as
+            // _plan_cards.php and _verification_pitch.php. "More ways to be
+            // found", never "rank higher": the badge does not change ordering
+            // anywhere. Each item leads with a bold keyword so a skim catches it.
+            //
+            // Jobs is in its own "Included with every listing" list, not the
+            // badge list: every listed business can post vacancies, so offering
+            // it as a badge perk would be false.
             return $this->notice($to, 'Get ' . $this->headerSafe((string) $r['business_name']) . ' verified on ' . $site, [
                 'heading'    => 'You were recommended on ' . $site,
                 'paragraphs' => [
                     'Hello ' . $r['business_name'] . ',',
                     $site . ' is a directory of South African businesses.' . $by,
-                    'Stand out as a Verified Business: a green badge on your profile and beside your name in every search result, your team by name, and your other branches. R' . $amount . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
-                    'We have filled in what we were told, so you only need to check your details and attach the two documents. Your listing itself is free either way.',
+                    'Get verified and give customers more ways to find you.',
+                ],
+                'bulletsHeading' => 'With a Verified Business profile you get:',
+                'bullets'        => [
+                    '✓ Verified badge: a green badge on your profile and beside your name in every search result, so customers can see we have confirmed your business.',
+                    '📍 Locations: add up to ' . PracticeLocationService::MAX_LOCATIONS . ' more branches, practices or consulting rooms, each with its own address, phone number, map pin and opening hours, and each presented to Google as a business location in its own right.',
+                    '👥 Staff: list up to ' . TeamMemberService::MAX_MEMBERS . ' people by name, with photos, qualifications and what each of them does. When someone searches our directory for one of your people, or for a service only they offer, they find your business.',
+                    '📢 New work first: when someone in your province asks for your kind of service, verified businesses are the first we alert.',
+                ],
+                'extrasHeading' => 'Included with every listing:',
+                'extras'        => [
+                    '💼 Jobs: post your vacancies on our Jobs board, set up so eligible vacancies can appear in Google\'s job search.',
+                ],
+                'highlight' => 'R' . $amount . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
+                'closing'   => [
+                    'We have already filled in what we were told about your business. Just check your details and upload the two documents.',
+                    'Your listing stays free either way.',
                 ],
                 'button'       => ['Get your business verified', base_url('add-listing/verified?invite=' . $token)],
                 'footnote'     => 'We will not email you about this again. Not interested?',
@@ -523,6 +546,12 @@ class ReferralService
             'button'       => null,
             'footnote'     => null,
             'footnoteLink' => null,
+            'bullets'        => null,
+            'bulletsHeading' => null,
+            'extras'         => null,
+            'extrasHeading'  => null,
+            'highlight'      => null,
+            'closing'        => null,
         ], ['saveData' => false]);
 
         return (new Mailer())->send($to, $subject, $body);
