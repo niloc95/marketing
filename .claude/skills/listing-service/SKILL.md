@@ -41,6 +41,15 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET /faq` | `Contact::faq` — copy lives in the view as one `$groups` array that renders the page **and** builds the `FAQPage` JSON-LD, so the two cannot drift. Edit answers there, not in two places. |
 | `GET/POST /admin`, `/admin/login` | `Admin::*` — admin backend |
 
+**404s go through `Errors::notFound`**, the `Config\Routing::$override404`. That covers
+unknown routes and any `PageNotFoundException` a controller throws. It renders the branded
+`errors/not_found` view with a real 404 status, `noindex`, the security headers, and a
+fixed canonical, so the requested URL is never reflected. In feature tests a 404 is
+therefore a **response**: use `->assertStatus(404)`, not `expectException`.
+`errors/html/error_404.php` is only the fallback if that page itself fails. Production
+also has `zend.exception_ignore_args = On`, which is why `Config\Exceptions` switches trace
+masking off there (see its constructor).
+
 **Route-ordering gotcha** (called out in comments in `Routes.php`): literal segments
 (`manage/edit`, `directory/categories`, `directory/verify/...`) must be declared *before*
 the `{segment}`/`{token}` catch-alls, or the catch-all swallows them first.

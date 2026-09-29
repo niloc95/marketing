@@ -509,17 +509,10 @@ final class JobBoardFlowTest extends CIUnitTestCase
         return [csrf_token() => csrf_hash()];
     }
 
-    /** Feature tests see a 404 as the exception, not as a response. */
+    /** A 404 is a response, rendered by Controllers\Errors (the 404 override). */
     private function assertNotFound(string $uri): void
     {
-        try {
-            $this->get($uri);
-        } catch (CodeIgniter\Exceptions\PageNotFoundException) {
-            $this->addToAssertionCount(1);
-
-            return;
-        }
-        $this->fail($uri . ' should not be public');
+        $this->assertSame(404, $this->get($uri)->response()->getStatusCode(), $uri . ' should not be public');
     }
 
     /** @param array<string,mixed> $overrides */

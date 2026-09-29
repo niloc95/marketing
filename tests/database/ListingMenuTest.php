@@ -200,14 +200,12 @@ final class ListingMenuTest extends CIUnitTestCase
         $this->menus->replace($this->listingId, [$this->upload('menu.pdf', $this->pdfBytes(), 'application/pdf')]);
         (new DirectoryListingModel())->update($this->listingId, ['category_id' => $this->plumberId]);
 
-        $this->expectException(CodeIgniter\Exceptions\PageNotFoundException::class);
-        $this->get('directory/mama-rosa/menu');
+        $this->get('directory/mama-rosa/menu')->assertStatus(404);
     }
 
     public function testNoMenuIsA404NotAnEmptyPdf(): void
     {
-        $this->expectException(CodeIgniter\Exceptions\PageNotFoundException::class);
-        $this->get('directory/mama-rosa/menu');
+        $this->get('directory/mama-rosa/menu')->assertStatus(404);
     }
 
     // ------------------------------------------------ profile and ranking

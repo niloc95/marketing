@@ -1,7 +1,6 @@
 <?php
 
 use App\Filters\AdminFilter;
-use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
@@ -40,9 +39,9 @@ final class AdminSessionTest extends CIUnitTestCase
 
     public function testSignOutIsNotReachableByGet(): void
     {
-        $this->expectException(PageNotFoundException::class);
-
-        $this->withSession(['dir_admin' => true])->get('admin/logout');
+        // A 404 is a response now (Controllers\Errors, the 404 override), not
+        // an exception the test catches.
+        $this->withSession(['dir_admin' => true])->get('admin/logout')->assertStatus(404);
     }
 
     public function testSignOutByPostEndsTheSession(): void

@@ -130,15 +130,10 @@ final class VenueTest extends CIUnitTestCase
     {
         $this->venue(['is_active' => 0]);
 
-        // The controller throws rather than returning a response, and
-        // FeatureTestTrait lets that surface — so assert the throw itself.
+        // The controller throws; the 404 override (Controllers\Errors) turns
+        // that into the branded page with a 404 status.
         foreach (['no-such-place', 'oriental-plaza'] as $slug) {
-            try {
-                $this->get('directory/at/' . $slug);
-                $this->fail('expected 404 for ' . $slug);
-            } catch (\CodeIgniter\Exceptions\PageNotFoundException) {
-                $this->addToAssertionCount(1);
-            }
+            $this->get('directory/at/' . $slug)->assertStatus(404);
         }
     }
 

@@ -84,7 +84,9 @@ class Routing extends BaseRouting
      * Example:
      *  public $override404 = 'App\Errors::show404';
      */
-    public ?string $override404 = null;
+    // The branded "page not found" page. See App\Controllers\Errors for why this
+    // is an override rather than a restyled errors/html/error_404.php.
+    public ?string $override404 = 'App\Controllers\Errors::notFound';
 
     /**
      * If TRUE, the system will attempt to match the URI against
