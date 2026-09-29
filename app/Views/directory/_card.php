@@ -34,7 +34,7 @@ if (isset($l['distance_m'])) {
               // a contained fit that shows a wide lockup whole. Without an image the
               // box stays square for the initials. ?>
         <div class="avatar<?= $logoUrl !== '' ? ' avatar-logo' : '' ?>">
-            <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl, 'attr') ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
+            <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl) ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
         </div>
         <div class="min-w-0">
             <?php if (! empty($l['category_name'])): ?>
@@ -47,7 +47,7 @@ if (isset($l['distance_m'])) {
                 <span class="badge badge-category mb-1 gap-1 <?= category_group_tint($l['category_group'] ?? null) ?>"><?= lucide(category_group_icon($l['category_group'] ?? null), 'h-3 w-3 shrink-0') ?><?= esc($l['category_name']) ?></span>
             <?php endif; ?>
             <h3 class="truncate text-base font-semibold">
-                <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc(base_url('directory/' . ($l['slug'] ?? '')), 'attr') ?>"><?= esc($name) ?></a>
+                <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc(base_url('directory/' . ($l['slug'] ?? ''))) ?>"><?= esc($name) ?></a>
             </h3>
             <?php // "Ages 18 months – 6 years · Montessori" — the line a parent
                   // actually scans a list of preschools for, and the reason the
@@ -72,7 +72,7 @@ if (isset($l['distance_m'])) {
               // join the venue (browse/featured/recent/related), so nothing else
               // needs to know venues exist to render a card. ?>
         <?php if (! $hideVenue && ! empty($l['venue_name'])): ?>
-            <a class="badge badge-venue gap-1" href="<?= esc(base_url('directory/at/' . $l['venue_slug']), 'attr') ?>"><?= lucide('building-2', 'h-3.5 w-3.5 shrink-0') ?><?= esc($l['venue_name']) ?></a>
+            <a class="badge badge-venue gap-1" href="<?= esc(base_url('directory/at/' . $l['venue_slug'])) ?>"><?= lucide('building-2', 'h-3.5 w-3.5 shrink-0') ?><?= esc($l['venue_name']) ?></a>
         <?php endif; ?>
     </div>
 </div>

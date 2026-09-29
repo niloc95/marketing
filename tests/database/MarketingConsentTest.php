@@ -472,7 +472,7 @@ final class MarketingConsentTest extends CIUnitTestCase
 
         $body = (string) $this->get('faq')->response()->getBody();
         $this->assertStringContainsString('name="mauticform[formName]" value="' . $config->newsletterFormName() . '"', $body);
-        $this->assertStringContainsString('action="' . esc($config->newsletterFormUrl(), 'attr') . '"', $body);
+        $this->assertStringContainsString('action="' . esc($config->newsletterFormUrl()) . '"', $body);
     }
 
     // -------------------------------------------------------------- helpers

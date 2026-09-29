@@ -95,8 +95,8 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
         <?php // Decorative, and eager — see landing.php, which draws the same
               // photograph for the same category. ?>
         <img class="hero-vertical-img"
-             src="<?= esc(base_url($verticalPhoto['src']), 'attr') ?>"
-             srcset="<?= esc(base_url($verticalPhoto['src_sm']), 'attr') ?> 400w, <?= esc(base_url($verticalPhoto['src']), 'attr') ?> 800w, <?= esc(base_url($verticalPhoto['src_lg']), 'attr') ?> 1600w"
+             src="<?= esc(base_url($verticalPhoto['src'])) ?>"
+             srcset="<?= esc(base_url($verticalPhoto['src_sm'])) ?> 400w, <?= esc(base_url($verticalPhoto['src']), 'attr') ?> 800w, <?= esc(base_url($verticalPhoto['src_lg']), 'attr') ?> 1600w"
              sizes="100vw" alt="" decoding="async" fetchpriority="high">
     <?php endif; ?>
     <div class="container">
@@ -164,10 +164,10 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                 <?php foreach ($radii as $km): ?>
                     <?php $q = array_filter($urlFilters + ['radius' => (string) $km], static fn ($v) => $v !== ''); unset($q['bounds']); ?>
                     <a class="near-chip<?= (int) ($filters['radius'] ?? 0) === $km ? ' is-active' : '' ?>"
-                       href="<?= esc(base_url('directory') . '?' . http_build_query($q), 'attr') ?>"><?= $km ?> km</a>
+                       href="<?= esc(base_url('directory') . '?' . http_build_query($q)) ?>"><?= $km ?> km</a>
                 <?php endforeach; ?>
                 <?php $clear = array_filter($urlFilters, static fn ($v) => $v !== ''); unset($clear['lat'], $clear['lng'], $clear['radius'], $clear['bounds']); ?>
-                <a class="near-chip" href="<?= esc(base_url('directory') . ($clear ? '?' . http_build_query($clear) : ''), 'attr') ?>">Clear</a>
+                <a class="near-chip" href="<?= esc(base_url('directory') . ($clear ? '?' . http_build_query($clear) : '')) ?>">Clear</a>
             <?php endif; ?>
             <span class="near-bar-note" role="status" data-near-me-note></span>
         </div>
@@ -267,7 +267,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                          data-results-map
                          data-endpoint="<?= base_url('directory/map') ?>"
                          data-centre="<?= esc($mapCentre, 'attr') ?>"
-                         data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+                         data-tile-url="<?= esc(config('Directory')->mapTileUrl()) ?>"
                          data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
                          data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
                          data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
@@ -296,7 +296,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                         ], static fn ($v) => $v !== ''); ?>
                         <p class="mt-4 text-sm">
                             Know a business that should be here?
-                            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('recommend') . ($recommend === [] ? '' : '?' . http_build_query($recommend)), 'attr') ?>">Recommend it</a>
+                            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('recommend') . ($recommend === [] ? '' : '?' . http_build_query($recommend))) ?>">Recommend it</a>
                         </p>
                     </div>
                 <?php else: ?>
@@ -317,7 +317,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                                 <?php if ($i === $result['page']): ?>
                                     <span class="current"><?= $i ?></span>
                                 <?php else: ?>
-                                    <a href="<?= esc($href, 'attr') ?>"><?= $i ?></a>
+                                    <a href="<?= esc($href) ?>"><?= $i ?></a>
                                 <?php endif; ?>
                             <?php endfor; ?>
                         </nav>

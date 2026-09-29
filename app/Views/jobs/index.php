@@ -61,7 +61,7 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
                 <?php if ($value === $filters['kind']): ?>
                     <span class="near-chip is-active" aria-current="true"><?= esc($label) ?></span>
                 <?php else: ?>
-                    <a class="near-chip" href="<?= esc($kindHref($value), 'attr') ?>"><?= esc($label) ?></a>
+                    <a class="near-chip" href="<?= esc($kindHref($value)) ?>"><?= esc($label) ?></a>
                 <?php endif; ?>
             <?php endforeach; ?>
         </div>

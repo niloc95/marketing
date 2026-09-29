@@ -298,3 +298,60 @@ app's password prompt.
 
 **Rollback:** delete the Access application, and set 80/443 back to *Any IPv4 /
 Any IPv6*. Both take effect within a minute.
+
+## Block scanner probes at Cloudflare
+
+About a fifth of all requests are bots probing for files this stack does not have:
+`.env`, `.git`, WordPress, phpMyAdmin, PHPUnit's `eval-stdin.php`, SQL dumps. They
+all fail already, as 404s or 400s. Blocking them at the edge keeps them off the
+server and out of the logs. Measured against 14 days of access logs up to
+29 Sep 2026, this rule matched 12,712 of 62,277 requests and **no** real page. The
+few 301s it matched were probes being redirected to HTTPS.
+
+Like Access, this is dashboard configuration only. Nothing in the repo applies it.
+
+**1. The rule.** Cloudflare → `webscheduler.co.za` zone → *Security → WAF →
+Custom rules → Create rule*.
+- Name: `Block scanner probes`
+- *Edit expression*, and paste:
+
+```
+(http.request.uri.path contains "/.env")
+or (http.request.uri.path contains "/.git/") or ends_with(http.request.uri.path, "/.git")
+or (http.request.uri.path contains "/.aws") or (http.request.uri.path contains "/.ssh")
+or (http.request.uri.path contains "/.svn") or (http.request.uri.path contains "/.htpasswd")
+or (http.request.uri.path contains "/.DS_Store")
+or starts_with(http.request.uri.path, "/vendor/")
+or (http.request.uri.path contains "/wp-admin") or (http.request.uri.path contains "/wp-includes")
+or (http.request.uri.path contains "/wp-content") or (http.request.uri.path contains "/wp-login")
+or (http.request.uri.path contains "/wp-config") or (http.request.uri.path contains "/wp-json")
+or (http.request.uri.path contains "xmlrpc.php") or (http.request.uri.path contains "wlwmanifest.xml")
+or (http.request.uri.query contains "rest_route=")
+or (http.request.uri.path contains "/cgi-bin") or (lower(http.request.uri.path) contains "phpmyadmin")
+or (http.request.uri.path contains "eval-stdin.php")
+or ends_with(http.request.uri.path, ".sql") or ends_with(http.request.uri.path, ".bak")
+```
+- Action: **Block**. Place it first in the list.
+
+It covers both hostnames. Neither site is WordPress.
+
+**What it must never match:** the listing app's own map and editor files live under
+`/assets/vendor/`, which is why only a path *starting* with `/vendor/` is blocked.
+The marketing site's `contact.php` is why `.php` as a whole is not blocked. If a
+future asset lands at a path this rule names, it will 403 at the edge with nothing
+in the origin logs. Check *Security → Events* first.
+
+**2. Verify.**
+```bash
+# Expect 403 from Cloudflare for probes...
+curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/.env
+curl -s -o /dev/null -w '%{http_code}\n' https://webscheduler.co.za/wp-login.php
+
+# ...and 200 for the files that sit near the rule's edges
+curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/assets/vendor/leaflet/leaflet.js
+curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/health
+curl -s -o /dev/null -w '%{http_code}\n' https://webscheduler.co.za/
+```
+*Security → Events* then shows the blocks as they happen.
+
+**Rollback:** toggle the rule off. It takes effect within seconds.

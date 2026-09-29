@@ -292,7 +292,7 @@
                       //
                       // mauticform[...] names are Mautic's field mapping - do not rename. ?>
                 <?php $dir = config('Directory'); ?>
-                <form action="<?= esc($dir->newsletterFormUrl(), 'attr') ?>" method="post" class="mt-4">
+                <form action="<?= esc($dir->newsletterFormUrl()) ?>" method="post" class="mt-4">
                     <input type="hidden" name="mauticform[formId]" value="<?= (int) $dir->newsletterFormId() ?>">
                     <input type="hidden" name="mauticform[formName]" value="<?= esc($dir->newsletterFormName(), 'attr') ?>">
                     <input type="hidden" name="mauticform[return]" value="<?= base_url('/') ?>?subscribed=pending">
@@ -391,7 +391,7 @@
           // scripts/sync-shared-assets.js). Loaded only alongside analytics — with no
           // measurement ID there is nothing for the visitor to consent to. ?>
     <?php if ($analyticsId !== ''): ?>
-        <script defer src="<?= base_url('assets/consent.js') ?>?v=<?= @filemtime(FCPATH . 'assets/consent.js') ?: time() ?>" data-privacy-url="<?= esc(base_url('privacy'), 'attr') ?>"></script>
+        <script defer src="<?= base_url('assets/consent.js') ?>?v=<?= @filemtime(FCPATH . 'assets/consent.js') ?: time() ?>" data-privacy-url="<?= esc(base_url('privacy')) ?>"></script>
     <?php endif; ?>
     <?php // Hot reload, development only — the page half of npm run list:watch.
           // The watcher (scripts/dev-reload.js) stamps a file when a view, helper

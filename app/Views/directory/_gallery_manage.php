@@ -43,12 +43,12 @@ $used = count($photos);
                           // braces rather than a fix — but it is what every other
                           // attribute here does, and the entities it produces decode
                           // back to the same URL before the browser parses it. ?>
-                    <img src="<?= esc(base_url($p['path']), 'attr') ?>"
+                    <img src="<?= esc(base_url($p['path'])) ?>"
                          alt="<?= esc($p['original_name'] ?? 'Profile photo') ?>"
                          loading="lazy">
                     <button type="submit"
                             class="photo-manage-remove"
-                            formaction="<?= esc(rtrim($deleteBase, '/') . '/' . (int) $p['id'], 'attr') ?>"
+                            formaction="<?= esc(rtrim($deleteBase, '/') . '/' . (int) $p['id']) ?>"
                             formmethod="post"
                             formnovalidate
                             data-photo-delete

@@ -61,7 +61,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
 
             <p class="mt-1 text-slate-600 dark:text-slate-300">
                 <?php if (! empty($post['listing_slug'])): ?>
-                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $post['listing_slug']), 'attr') ?>"><?= esc($employer) ?></a>
+                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $post['listing_slug'])) ?>"><?= esc($employer) ?></a>
                 <?php elseif ($isJob || ! empty($post['company_name'])): ?>
                     <?= esc($employer) ?>
                 <?php endif; ?>
@@ -96,7 +96,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Apply</h2>
                 <?php if ($applyUrl !== ''): ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">This employer takes applications on their own site.</p>
-                    <a class="btn btn-accent" href="<?= esc($applyUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Apply on the employer's site</a>
+                    <a class="btn btn-accent" href="<?= esc($applyUrl) ?>" target="_blank" rel="noopener nofollow"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Apply on the employer's site</a>
                 <?php elseif (! empty($post['apply_email'])): ?>
                     <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
                         Your message goes straight to the employer by email, and they reply to you directly.

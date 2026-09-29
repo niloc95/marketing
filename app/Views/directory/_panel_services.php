@@ -36,7 +36,7 @@ $size  = $bytes <= 0 ? '' : ($bytes >= 1_048_576
     <?php if ($pdf !== null): ?>
         <?php // A new tab: the PDF opens in the browser's own viewer, and closing
               // it must not lose the profile they were reading. ?>
-        <a class="btn-ghost menu-file" href="<?= esc(base_url('directory/' . $l['slug'] . '/menu'), 'attr') ?>" target="_blank" rel="noopener">
+        <a class="btn-ghost menu-file" href="<?= esc(base_url('directory/' . $l['slug'] . '/menu')) ?>" target="_blank" rel="noopener">
             View the full menu (PDF<?= $size !== '' ? ', ' . $size : '' ?>)
             <?= lucide('external-link', 'h-4 w-4 shrink-0') ?>
         </a>
@@ -45,8 +45,8 @@ $size  = $bytes <= 0 ? '' : ($bytes >= 1_048_576
             <?php foreach ($pages as $i => $page): ?>
                 <?php // Plain links to the full-size page: a menu is read, not
                       // flicked through, so it opens at full resolution. ?>
-                <a class="menu-page" href="<?= esc(base_url($page['path']), 'attr') ?>" target="_blank" rel="noopener">
-                    <img src="<?= esc(base_url($page['path']), 'attr') ?>" loading="lazy"
+                <a class="menu-page" href="<?= esc(base_url($page['path'])) ?>" target="_blank" rel="noopener">
+                    <img src="<?= esc(base_url($page['path'])) ?>" loading="lazy"
                          alt="Menu page <?= $i + 1 ?> of <?= count($pages) ?>"
                          <?= ! empty($page['width']) ? 'width="' . (int) $page['width'] . '" height="' . (int) $page['height'] . '"' : '' ?>>
                 </a>

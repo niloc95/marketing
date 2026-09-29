@@ -26,7 +26,7 @@ $isJob = $post['kind'] === App\Models\JobPostModel::KIND_JOB;
                 Posting as <strong><?= esc($listing['display_name']) ?></strong>. Changes to a live post show straight away.
             </p>
 
-            <form method="post" action="<?= esc($action, 'attr') ?>">
+            <form method="post" action="<?= esc($action) ?>">
                 <?= csrf_field() ?>
                 <?= $this->include('jobs/_fields') ?>
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>

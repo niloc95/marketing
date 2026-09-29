@@ -43,7 +43,7 @@ $wazeUrl = map_waze_url($row);
          data-lng="<?= esc((string) $map['lng'], 'attr') ?>"
          data-zoom="<?= esc((string) $map['zoom'], 'attr') ?>"
          data-label="<?= esc($name . ' — ' . $map['label'], 'attr') ?>"
-         data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+         data-tile-url="<?= esc(config('Directory')->mapTileUrl()) ?>"
          data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
          data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
          data-leaflet-css="<?= base_url('assets/vendor/leaflet/leaflet.css') ?>"
@@ -55,9 +55,9 @@ $wazeUrl = map_waze_url($row);
         <p class="map-approx">Approximate location &mdash; use the address above for exact directions.</p>
     <?php endif; ?>
     <?php if ($dirUrl !== ''): ?>
-        <a class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($dirUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+        <a class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($dirUrl) ?>" target="_blank" rel="noopener nofollow">Get directions<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
     <?php endif; ?>
     <?php if ($wazeUrl !== ''): ?>
-        <a class="mt-2 ml-3 inline-flex items-center gap-1 text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($wazeUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Navigate with Waze<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+        <a class="mt-2 ml-3 inline-flex items-center gap-1 text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($wazeUrl) ?>" target="_blank" rel="noopener nofollow">Navigate with Waze<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
     <?php endif; ?>
 </div>

@@ -58,7 +58,7 @@ $prettyDate = static function (?string $date): string {
 
         <div class="tabs">
             <?php foreach ($tabs as $key => $label): ?>
-                <a class="<?= $state === $key ? 'active' : '' ?>" href="<?= esc($link($key), 'attr') ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
+                <a class="<?= $state === $key ? 'active' : '' ?>" href="<?= esc($link($key)) ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
             <?php endforeach; ?>
         </div>
 
@@ -219,7 +219,7 @@ $prettyDate = static function (?string $date): string {
                                         </form>
                                     <?php endif; ?>
                                     <?php if (! empty($r['listing_slug'])): ?>
-                                        <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $r['listing_slug']), 'attr') ?>" target="_blank" rel="noopener">View</a>
+                                        <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $r['listing_slug'])) ?>" target="_blank" rel="noopener">View</a>
                                     <?php endif; ?>
                                     <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/edit/' . $r['listing_id']) ?>">Edit listing</a>
                                 </div>

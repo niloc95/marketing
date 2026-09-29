@@ -33,7 +33,7 @@ $options = ['' => 'Best match', 'new' => 'Newest'];
         <?php if ($value === $sort): ?>
             <span class="near-chip is-active" aria-current="true"><?= esc($label) ?></span>
         <?php else: ?>
-            <a class="near-chip" href="<?= esc($href($value), 'attr') ?>" rel="nofollow"><?= esc($label) ?></a>
+            <a class="near-chip" href="<?= esc($href($value)) ?>" rel="nofollow"><?= esc($label) ?></a>
         <?php endif; ?>
     <?php endforeach; ?>
 </div>

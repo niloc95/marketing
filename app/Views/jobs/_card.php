@@ -21,7 +21,7 @@ $posted  = ! empty($p['published_at']) ? date('j M', strtotime((string) $p['publ
         <?php endif; ?>
     </div>
     <h3 class="text-base font-semibold">
-        <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc($svc->url($p), 'attr') ?>"><?= esc($p['title']) ?></a>
+        <a class="text-slate-900 dark:text-white hover:text-primary-500 dark:hover:text-primary-300" href="<?= esc($svc->url($p)) ?>"><?= esc($p['title']) ?></a>
     </h3>
     <p class="text-sm text-slate-600 dark:text-slate-300">
         <?php if ($isJob || ! empty($p['listing_name'])): ?>

@@ -59,7 +59,7 @@ $row = function ($i, array $m = []) use ($err): string {
 
         <div class="repeat-row-head">
             <?php if (! empty($m['photo_path'])): ?>
-                <img src="<?= esc(base_url($m['photo_path']), 'attr') ?>" alt=""
+                <img src="<?= esc(base_url($m['photo_path'])) ?>" alt=""
                      width="48" height="48" class="team-avatar team-avatar-sm" loading="lazy">
             <?php endif; ?>
             <label class="repeat-remove">

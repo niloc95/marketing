@@ -2,6 +2,7 @@
 
 use CodeIgniter\Debug\ExceptionHandler;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use CodeIgniter\HTTP\Exceptions\BadRequestException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Config\Exceptions;
 
@@ -43,6 +44,21 @@ final class ExceptionsConfigTest extends CIUnitTestCase
         ini_set('zend.exception_ignore_args', '0');
 
         $this->assertContains('manage_token', (new Exceptions())->sensitiveDataInTrace);
+    }
+
+    public function testABadRequestIsOneWarningNotACriticalTrace(): void
+    {
+        $config = new Exceptions();
+        $this->assertContains(400, $config->ignoreCodes, 'no CRITICAL entry with a stack trace');
+
+        $config->handler(400, new BadRequestException('The URI you submitted has disallowed characters: "https&"'));
+
+        // Not an exact match: the path is whatever request an earlier test left
+        // in the shared service, so only the part this code writes is pinned.
+        $this->assertTrue(
+            CodeIgniter\Test\TestLogger::didLog('warning', ': The URI you submitted has disallowed characters: "https&"', false),
+            'a 400 is logged as one warning line'
+        );
     }
 
     public function testTheHandlerCollectsATraceWithoutArguments(): void

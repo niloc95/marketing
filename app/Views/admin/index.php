@@ -71,14 +71,14 @@ $isTrash = $status === 'trashed';
             </div>
             <button class="btn btn-primary btn-xs">Filter</button>
             <?php if ($filters['q'] || $filters['category'] || $filters['province']): ?>
-                <a class="btn btn-ghost btn-xs" href="<?= esc($link(['q' => '', 'category' => '', 'province' => '']), 'attr') ?>">Clear</a>
+                <a class="btn btn-ghost btn-xs" href="<?= esc($link(['q' => '', 'category' => '', 'province' => ''])) ?>">Clear</a>
             <?php endif; ?>
         </form>
 
         <div class="tabs">
             <?php foreach ($tabs as $key => $label): ?>
                 <?php $c = $key === '' ? ($counts['all'] ?? 0) : ($counts[$key] ?? 0); ?>
-                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link(['status' => $key, 'page' => '']), 'attr') ?>"><?= esc($label) ?> (<?= (int) $c ?>)</a>
+                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link(['status' => $key, 'page' => ''])) ?>"><?= esc($label) ?> (<?= (int) $c ?>)</a>
             <?php endforeach; ?>
         </div>
 
@@ -157,7 +157,7 @@ $isTrash = $status === 'trashed';
                                         <input type="hidden" name="on" value="<?= empty($l['is_featured']) ? '1' : '0' ?>">
                                         <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
                                     </form>
-                                    <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $l['slug']), 'attr') ?>" target="_blank">View</a>
+                                    <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $l['slug'])) ?>" target="_blank">View</a>
                                     <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" data-confirm="Move this profile to trash?"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
                                 <?php endif; ?>
                             </div>
@@ -171,7 +171,7 @@ $isTrash = $status === 'trashed';
         <?php if ($result['totalPages'] > 1): ?>
             <nav class="pager">
                 <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                    <?php if ($i === $result['page']): ?><span class="current"><?= $i ?></span><?php else: ?><a href="<?= esc($link(['page' => $i]), 'attr') ?>"><?= $i ?></a><?php endif; ?>
+                    <?php if ($i === $result['page']): ?><span class="current"><?= $i ?></span><?php else: ?><a href="<?= esc($link(['page' => $i])) ?>"><?= $i ?></a><?php endif; ?>
                 <?php endfor; ?>
             </nav>
         <?php endif; ?>

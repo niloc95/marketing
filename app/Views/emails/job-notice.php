@@ -24,15 +24,15 @@
         <?php endforeach; ?>
         <?php if (! empty($button)): ?>
             <p style="margin:22px 0">
-                <a href="<?= esc($button[1], 'attr') ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block"><?= esc($button[0]) ?></a>
+                <a href="<?= esc($button[1]) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block"><?= esc($button[0]) ?></a>
             </p>
-            <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($button[1], 'attr') ?>" style="color:#003049"><?= esc($button[1]) ?></a></p>
+            <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($button[1]) ?>" style="color:#003049"><?= esc($button[1]) ?></a></p>
         <?php endif; ?>
         <?php if (! empty($footnote) || ! empty($footnoteLink)): ?>
             <p style="font-size:13px;color:#64748b">
                 <?= esc($footnote ?? '') ?>
                 <?php if (! empty($footnoteLink)): ?>
-                    <a href="<?= esc($footnoteLink[1], 'attr') ?>" style="color:#64748b"><?= esc($footnoteLink[0]) ?></a>
+                    <a href="<?= esc($footnoteLink[1]) ?>" style="color:#64748b"><?= esc($footnoteLink[0]) ?></a>
                 <?php endif; ?>
             </p>
         <?php endif; ?>

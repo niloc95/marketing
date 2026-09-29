@@ -79,8 +79,8 @@ $schema = schema_page(
               // lazy attribute — it is the only image above the fold, and lazy on
               // an in-viewport hero image costs a round trip for nothing. ?>
         <img class="hero-vertical-img"
-             src="<?= esc(base_url($photo['src']), 'attr') ?>"
-             srcset="<?= esc(base_url($photo['src_sm']), 'attr') ?> 400w, <?= esc(base_url($photo['src']), 'attr') ?> 800w, <?= esc(base_url($photo['src_lg']), 'attr') ?> 1600w"
+             src="<?= esc(base_url($photo['src'])) ?>"
+             srcset="<?= esc(base_url($photo['src_sm'])) ?> 400w, <?= esc(base_url($photo['src']), 'attr') ?> 800w, <?= esc(base_url($photo['src_lg']), 'attr') ?> 1600w"
              sizes="100vw" alt="" decoding="async" fetchpriority="high">
     <?php endif; ?>
     <div class="container">
@@ -177,7 +177,7 @@ $schema = schema_page(
                                 <?php // http_build_query nests ?f[curriculum][]=ieb correctly;
                                       // without it page 2 of a narrowed list is the whole
                                       // category again. ?>
-                                <a href="<?= esc($canonical . '?' . http_build_query(array_filter(['f' => $facets, 'sort' => $sort, 'page' => $i], static fn ($v): bool => $v !== [] && $v !== '')), 'attr') ?>"><?= $i ?></a>
+                                <a href="<?= esc($canonical . '?' . http_build_query(array_filter(['f' => $facets, 'sort' => $sort, 'page' => $i], static fn ($v): bool => $v !== [] && $v !== ''))) ?>"><?= $i ?></a>
                             <?php endif; ?>
                         <?php endfor; ?>
                     </nav>

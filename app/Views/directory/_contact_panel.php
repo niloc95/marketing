@@ -83,23 +83,23 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
 
     <?php if ($bookingUrl !== ''): ?>
         <?php // id="book" keeps any old "#book" link landing on the right spot. ?>
-        <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
+        <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl) ?>" target="_blank" rel="noopener nofollow"><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
     <?php endif; ?>
 
     <?php if ($whatsappUrl !== ''): ?>
-        <a class="btn btn-whatsapp btn-block contact-book" href="<?= esc($whatsappUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= brand_icon('whatsapp', 'h-5 w-5 shrink-0') ?>Chat on WhatsApp</a>
+        <a class="btn btn-whatsapp btn-block contact-book" href="<?= esc($whatsappUrl) ?>" target="_blank" rel="noopener nofollow"><?= brand_icon('whatsapp', 'h-5 w-5 shrink-0') ?>Chat on WhatsApp</a>
     <?php endif; ?>
 
     <?php if ($websiteUrl !== ''): ?>
         <div class="contact-row">
-            <a href="<?= esc($websiteUrl, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc($websiteLabel) ?></a>
+            <a href="<?= esc($websiteUrl) ?>" target="_blank" rel="noopener nofollow"><?= esc($websiteLabel) ?></a>
             <?= lucide('external-link') ?>
         </div>
     <?php endif; ?>
 
     <?php foreach ($phones as $phone): ?>
         <div class="contact-row">
-            <a href="<?= esc($telHref($phone), 'attr') ?>"><?= esc($phone) ?></a>
+            <a href="<?= esc($telHref($phone)) ?>"><?= esc($phone) ?></a>
             <?= lucide('phone') ?>
         </div>
     <?php endforeach; ?>
@@ -118,8 +118,8 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
     <?php if ($addr !== ''): ?>
         <div class="contact-row">
             <span class="min-w-0">
-                <?php if ($dirUrl !== ''): ?><a href="<?= esc($dirUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Get directions</a><?php endif; ?>
-                <?php if ($wazeUrl !== ''): ?><span aria-hidden="true">&middot;</span> <a href="<?= esc($wazeUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Waze</a><?php endif; ?>
+                <?php if ($dirUrl !== ''): ?><a href="<?= esc($dirUrl) ?>" target="_blank" rel="noopener nofollow">Get directions</a><?php endif; ?>
+                <?php if ($wazeUrl !== ''): ?><span aria-hidden="true">&middot;</span> <a href="<?= esc($wazeUrl) ?>" target="_blank" rel="noopener nofollow">Waze</a><?php endif; ?>
                 <span class="contact-sub"><?= esc($addr) ?></span>
             </span>
             <?= lucide('map-pin') ?>
@@ -130,7 +130,7 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
         <div class="contact-row">
             <span class="contact-socials">
                 <?php foreach ($socials as $icon => [$network, $url]): ?>
-                    <a href="<?= esc($url, 'attr') ?>" target="_blank" rel="noopener nofollow" aria-label="<?= esc(($row['display_name'] ?? '') !== '' ? $row['display_name'] . ' on ' . $network : $network, 'attr') ?>" title="<?= esc($network, 'attr') ?>"><?= brand_icon($icon, 'h-5 w-5') ?></a>
+                    <a href="<?= esc($url) ?>" target="_blank" rel="noopener nofollow" aria-label="<?= esc(($row['display_name'] ?? '') !== '' ? $row['display_name'] . ' on ' . $network : $network, 'attr') ?>" title="<?= esc($network, 'attr') ?>"><?= brand_icon($icon, 'h-5 w-5') ?></a>
                 <?php endforeach; ?>
             </span>
             <?= lucide('link') ?>
@@ -138,6 +138,6 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
     <?php endif; ?>
 
     <?php if ($suggestUrl !== ''): ?>
-        <a class="contact-suggest" href="<?= esc($suggestUrl, 'attr') ?>" rel="nofollow"><?= lucide('square-pen') ?>Suggest an edit</a>
+        <a class="contact-suggest" href="<?= esc($suggestUrl) ?>" rel="nofollow"><?= lucide('square-pen') ?>Suggest an edit</a>
     <?php endif; ?>
 </div>

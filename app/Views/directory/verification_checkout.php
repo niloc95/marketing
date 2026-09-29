@@ -65,7 +65,7 @@
                 // No auto-submit script: the button is the control. That also means
                 // this page needs no inline JavaScript and so no CSP nonce.
             ?>
-            <form method="post" action="<?= esc($processUrl, 'attr') ?>">
+            <form method="post" action="<?= esc($processUrl) ?>">
                 <?php foreach ($fields as $name => $value): ?>
                     <input type="hidden" name="<?= esc($name, 'attr') ?>" value="<?= esc($value, 'attr') ?>">
                 <?php endforeach; ?>

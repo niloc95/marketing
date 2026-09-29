@@ -91,7 +91,7 @@ if ($aboutText !== '') {
             <?php foreach ($crumbs as $i => $crumb): ?>
                 <?php if ($i > 0): ?><span class="mx-1">/</span><?php endif; ?>
                 <?php if ($i < count($crumbs) - 1): ?>
-                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['url'], 'attr') ?>"><?= esc($crumb['name']) ?></a>
+                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['url']) ?>"><?= esc($crumb['name']) ?></a>
                 <?php else: ?>
                     <span class="text-slate-700 dark:text-slate-300"><?= esc($crumb['name']) ?></span>
                 <?php endif; ?>
@@ -103,7 +103,7 @@ if ($aboutText !== '') {
                   // a contained fit that shows a wide lockup whole. Without an image the
                   // box stays square for the initials. ?>
             <div class="avatar<?= $logoUrl !== '' ? ' avatar-logo' : '' ?>">
-                <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl, 'attr') ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
+                <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl) ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
             </div>
             <div class="min-w-0 flex-1">
                 <?php // The seal here, not the pill: this is the page a customer is on when
@@ -130,7 +130,7 @@ if ($aboutText !== '') {
                       // stops those pages being orphans and gives them internal authority. ?>
                 <?php if ($prof): ?>
                     <?php if ($catSlug !== ''): ?>
-                        <a class="text-sm font-bold text-brand-orange hover:underline" href="<?= esc(base_url('directory/' . $catSlug), 'attr') ?>"><?= esc($prof) ?></a>
+                        <a class="text-sm font-bold text-brand-orange hover:underline" href="<?= esc(base_url('directory/' . $catSlug)) ?>"><?= esc($prof) ?></a>
                     <?php else: ?>
                         <span class="text-sm font-bold text-brand-orange"><?= esc($prof) ?></span>
                     <?php endif; ?>
@@ -145,7 +145,7 @@ if ($aboutText !== '') {
                         <?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0') ?>
                         <span>
                         <?php if ($catSlug !== '' && $province !== ''): ?>
-                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province)), 'attr') ?>"><?= esc($province) ?></a>
+                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province))) ?>"><?= esc($province) ?></a>
                         <?php else: ?>
                             <?= esc($place) ?>
                         <?php endif; ?>
@@ -162,17 +162,17 @@ if ($aboutText !== '') {
                 'x'        => 'https://twitter.com/intent/tweet?text=' . rawurlencode($shareText) . '&url=' . rawurlencode($canonical),
             ];
             ?>
-            <div class="share-row" data-share data-share-title="<?= esc($shareText, 'attr') ?>" data-share-url="<?= esc($canonical, 'attr') ?>">
+            <div class="share-row" data-share data-share-title="<?= esc($shareText, 'attr') ?>" data-share-url="<?= esc($canonical) ?>">
                 <button type="button" class="share-icon" data-share-native hidden aria-label="Share" title="Share">
                     <?= lucide('share') ?>
                 </button>
-                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['whatsapp'], 'attr') ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
+                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['whatsapp']) ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
                     <?= brand_icon('whatsapp') ?>
                 </a>
-                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['facebook'], 'attr') ?>" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Share on Facebook">
+                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['facebook']) ?>" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Share on Facebook">
                     <?= brand_icon('facebook') ?>
                 </a>
-                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['x'], 'attr') ?>" target="_blank" rel="noopener" aria-label="Share on X" title="Share on X">
+                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['x']) ?>" target="_blank" rel="noopener" aria-label="Share on X" title="Share on X">
                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7.2 8.2L23 22h-6.6l-5.2-6.8L5.2 22H2l7.7-8.8L1.5 2h6.8l4.7 6.2L18.9 2Zm-1.2 18h1.8L7.4 4H5.5l12.2 16Z"/></svg>
                 </a>
                 <button type="button" class="share-icon" data-share-copy aria-label="Copy link" title="Copy link">
@@ -189,7 +189,7 @@ if ($aboutText !== '') {
             <div class="gallery" data-gallery>
                 <?php foreach ($l['photos'] as $i => $p): ?>
                     <button type="button" class="gallery-item" data-gallery-open data-index="<?= $i ?>">
-                        <img src="<?= esc(base_url($p['path']), 'attr') ?>"
+                        <img src="<?= esc(base_url($p['path'])) ?>"
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
                              alt="<?= esc($name) ?> — photo <?= $i + 1 ?>"
@@ -270,7 +270,7 @@ if ($aboutText !== '') {
                         <ul class="mt-2 space-y-2 text-sm">
                             <?php foreach ($openJobs as $job): ?>
                                 <li>
-                                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($jobSvc->url($job), 'attr') ?>"><?= esc($job['title']) ?></a>
+                                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($jobSvc->url($job)) ?>"><?= esc($job['title']) ?></a>
                                     <?php $jobType = $jobSvc->employmentLabel($job); ?>
                                     <?php if ($jobType !== ''): ?><span class="text-slate-500 dark:text-slate-400">&middot; <?= esc($jobType) ?></span><?php endif; ?>
                                 </li>
@@ -292,7 +292,7 @@ if ($aboutText !== '') {
                     </h2>
                     <?php if ($catSlug !== ''): ?>
                         <a class="text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline"
-                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : '')), 'attr') ?>">See all <?= lucide('arrow-right', 'inline-block h-4 w-4') ?></a>
+                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : ''))) ?>">See all <?= lucide('arrow-right', 'inline-block h-4 w-4') ?></a>
                     <?php endif; ?>
                 </div>
                 <div class="card-grid">

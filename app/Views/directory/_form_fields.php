@@ -254,7 +254,7 @@ helper('directory_hours');
     <div class="field map-picker"
          id="field-map"
          data-map-picker
-         data-tile-url="<?= esc(config('Directory')->mapTileUrl(), 'attr') ?>"
+         data-tile-url="<?= esc(config('Directory')->mapTileUrl()) ?>"
          data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
          data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
          data-locate-url="<?= base_url('address-locate') ?>"
@@ -429,7 +429,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
     <?php if ($existingLogo !== ''): ?>
         <div class="upload-current" data-image-current>
             <?php // Same absolute-vs-relative rule the card and profile pages use. ?>
-            <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo), 'attr') ?>" alt="Current logo">
+            <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo)) ?>" alt="Current logo">
             <span class="hint">Current logo — choosing a file replaces it.</span>
         </div>
     <?php endif; ?>

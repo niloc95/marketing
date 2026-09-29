@@ -92,7 +92,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
                     <video class="hero-video" data-hero-video muted playsinline preload="none"
                            <?= count($heroBg['videos']) === 1 ? 'loop' : '' ?>
                            disablepictureinpicture disableremoteplayback tabindex="-1"
-                           data-src="<?= esc(base_url($clip['src']), 'attr') ?>" data-type="<?= esc($clip['type'], 'attr') ?>"></video>
+                           data-src="<?= esc(base_url($clip['src'])) ?>" data-type="<?= esc($clip['type'], 'attr') ?>"></video>
                 <?php endforeach; ?>
             <?php elseif ($heroBg !== null && $heroBg['type'] === 'youtube'): ?>
                 <?php // Filled by directory.js after load: the player is a third-party
@@ -163,7 +163,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
                               // SET NULL leaves the caption behind as plain text
                               // rather than a link into a 404. ?>
                         <?php if ($slug !== ''): ?>
-                            <a class="hero-caption-link" href="<?= esc(base_url('directory/' . $slug), 'attr') ?>">
+                            <a class="hero-caption-link" href="<?= esc(base_url('directory/' . $slug)) ?>">
                                 <?= lucide('search', 'h-3.5 w-3.5') ?>
                                 <?= esc($caption) ?>
                             </a>
@@ -173,7 +173,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
                     <?php endif; ?>
                     <?php if ($credit !== ''): ?>
                         <?php if ($creditUrl !== ''): ?>
-                            <a class="hero-credit" href="<?= esc($creditUrl, 'attr') ?>" target="_blank" rel="noopener nofollow">Photo: <?= esc($credit) ?></a>
+                            <a class="hero-credit" href="<?= esc($creditUrl) ?>" target="_blank" rel="noopener nofollow">Photo: <?= esc($credit) ?></a>
                         <?php else: ?>
                             <span class="hero-credit">Photo: <?= esc($credit) ?></span>
                         <?php endif; ?>

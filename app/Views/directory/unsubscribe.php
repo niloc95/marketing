@@ -42,7 +42,7 @@ $siteName = config('Directory')->siteName();
                     <strong><?= esc($listing['display_name']) ?></strong>. Your listing stays exactly as it is,
                     and emails it needs — edit links and any badge billing — still arrive.
                 </p>
-                <form method="post" action="<?= esc(base_url('unsubscribe/' . $token), 'attr') ?>">
+                <form method="post" action="<?= esc(base_url('unsubscribe/' . $token)) ?>">
                     <button type="submit" class="btn btn-accent btn-block">Unsubscribe</button>
                 </form>
             <?php endif; ?>

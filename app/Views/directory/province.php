@@ -82,7 +82,7 @@ $schema = schema_page(
                     <?php if ($i === $result['page']): ?>
                         <span class="current"><?= $i ?></span>
                     <?php else: ?>
-                        <a href="<?= esc($canonical . '?page=' . $i, 'attr') ?>"><?= $i ?></a>
+                        <a href="<?= esc($canonical . '?page=' . $i) ?>"><?= $i ?></a>
                     <?php endif; ?>
                 <?php endfor; ?>
             </nav>

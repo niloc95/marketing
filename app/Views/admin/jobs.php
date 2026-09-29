@@ -43,7 +43,7 @@ $prettyDate = static function (?string $date): string {
 
         <div class="tabs">
             <?php foreach ($tabs as $key => $label): ?>
-                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link($key), 'attr') ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
+                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link($key)) ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
             <?php endforeach; ?>
         </div>
 
@@ -94,7 +94,7 @@ $prettyDate = static function (?string $date): string {
                             <td>
                                 <?php if (! empty($r['listing_id'])): ?>
                                     <span class="pill pill-verified">Listed</span>
-                                    <a href="<?= esc(base_url('directory/' . ($r['listing_slug'] ?? '')), 'attr') ?>" target="_blank" rel="noopener"><?= esc($r['listing_name'] ?? '') ?></a>
+                                    <a href="<?= esc(base_url('directory/' . ($r['listing_slug'] ?? ''))) ?>" target="_blank" rel="noopener"><?= esc($r['listing_name'] ?? '') ?></a>
                                 <?php else: ?>
                                     <span class="pill pill-pending">Not listed</span>
                                     <?= esc($r['company_name'] ?: '') ?>
@@ -126,7 +126,7 @@ $prettyDate = static function (?string $date): string {
                                         </form>
                                     <?php endif; ?>
                                     <?php if ($r['status'] !== JobPostModel::STATUS_UNVERIFIED): ?>
-                                        <a class="btn btn-ghost btn-xs" href="<?= esc($svc->url($r), 'attr') ?>" target="_blank" rel="noopener">View</a>
+                                        <a class="btn btn-ghost btn-xs" href="<?= esc($svc->url($r)) ?>" target="_blank" rel="noopener">View</a>
                                     <?php endif; ?>
                                 </div>
                             </td>

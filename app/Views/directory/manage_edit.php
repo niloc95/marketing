@@ -60,7 +60,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                         Status:
                         <span class="pill pill-<?= esc($listing['status'], 'attr') ?>"><?= esc($listing['status']) ?></span>
                         <?php if ($listing['status'] === 'published'): ?>
-                            &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug']), 'attr') ?>" target="_blank">View public page</a>
+                            &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug'])) ?>" target="_blank">View public page</a>
                         <?php endif; ?>
                     </p>
                 </div>

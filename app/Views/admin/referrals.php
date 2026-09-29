@@ -43,7 +43,7 @@ $prettyDate = static function (?string $date): string {
 
         <div class="tabs">
             <?php foreach ($tabs as $key => $label): ?>
-                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link($key), 'attr') ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
+                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link($key)) ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
             <?php endforeach; ?>
         </div>
 
@@ -77,14 +77,14 @@ $prettyDate = static function (?string $date): string {
                                 <?php if ($duplicate !== null): ?>
                                     <div class="text-xs text-brand-crimson">
                                         Possibly already listed:
-                                        <a href="<?= esc(base_url('admin/edit/' . $duplicate['id']), 'attr') ?>"><?= esc($duplicate['display_name']) ?></a>
+                                        <a href="<?= esc(base_url('admin/edit/' . $duplicate['id'])) ?>"><?= esc($duplicate['display_name']) ?></a>
                                         (<?= esc($duplicate['status']) ?>)
                                     </div>
                                 <?php endif; ?>
                                 <?php if (! empty($r['listing_id'])): ?>
                                     <div class="text-xs">
                                         <span class="pill pill-verified">Listed</span>
-                                        <a href="<?= esc(base_url('directory/' . ($r['listing_slug'] ?? '')), 'attr') ?>" target="_blank" rel="noopener"><?= esc($r['listing_name'] ?? '') ?></a>
+                                        <a href="<?= esc(base_url('directory/' . ($r['listing_slug'] ?? ''))) ?>" target="_blank" rel="noopener"><?= esc($r['listing_name'] ?? '') ?></a>
                                     </div>
                                 <?php endif; ?>
                                 <?php if (! empty($r['note'])): ?>
@@ -101,7 +101,7 @@ $prettyDate = static function (?string $date): string {
                                 <div><?= esc($r['business_email'] ?? '') ?></div>
                                 <div><?= esc($r['business_phone'] ?? '') ?></div>
                                 <?php if ($website !== ''): ?>
-                                    <div><a href="<?= esc($website, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc(parse_url($website, PHP_URL_HOST) ?: $website) ?></a></div>
+                                    <div><a href="<?= esc($website) ?>" target="_blank" rel="noopener nofollow"><?= esc(parse_url($website, PHP_URL_HOST) ?: $website) ?></a></div>
                                 <?php endif; ?>
                             </td>
                             <td class="text-xs">

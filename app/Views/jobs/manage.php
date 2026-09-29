@@ -46,7 +46,7 @@ $editable = in_array($status, [JobPostModel::STATUS_PENDING, JobPostModel::STATU
 
             <div class="flex flex-wrap gap-2">
                 <?php if ($status === JobPostModel::STATUS_PUBLISHED): ?>
-                    <a class="btn btn-ghost" href="<?= esc($svc->url($post), 'attr') ?>">View post</a>
+                    <a class="btn btn-ghost" href="<?= esc($svc->url($post)) ?>">View post</a>
                 <?php endif; ?>
                 <?php if ($canRenew): ?>
                     <form method="post" action="<?= base_url('jobs/manage/renew') ?>">

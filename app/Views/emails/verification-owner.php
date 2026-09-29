@@ -34,7 +34,7 @@ $paidUntil = $paid_until ?? '';
                 everywhere your business shows up in search results.
             </p>
             <p style="margin:22px 0">
-                <a href="<?= esc($manageLink, 'attr') ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Activate my badge</a>
+                <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Activate my badge</a>
             </p>
             <p style="font-size:13px;color:#64748b">
                 That button takes you straight to the payment page — no password, nothing else to fill in.
@@ -53,7 +53,7 @@ $paidUntil = $paid_until ?? '';
                 and your listing itself is unaffected.
             </p>
             <p style="margin:22px 0">
-                <a href="<?= esc($manageLink, 'attr') ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Send new documents</a>
+                <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Send new documents</a>
             </p>
 
         <?php elseif ($event === 'activated'): ?>
@@ -65,7 +65,7 @@ $paidUntil = $paid_until ?? '';
                 badge stays up until the month you've paid for runs out.
             </p>
             <p style="margin:22px 0">
-                <a href="<?= esc($manageLink, 'attr') ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">View my profile</a>
+                <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">View my profile</a>
             </p>
 
         <?php else: /* renewing */ ?>

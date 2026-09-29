@@ -29,7 +29,7 @@ $teamHeading = $teamHeading ?? 'Our team';
         <?php foreach ($members as $m): ?>
             <div class="team-member">
                 <?php if (! empty($m['photo_path'])): ?>
-                    <img src="<?= esc(base_url($m['photo_path']), 'attr') ?>"
+                    <img src="<?= esc(base_url($m['photo_path'])) ?>"
                          alt="<?= esc($m['name'], 'attr') ?>" width="72" height="72"
                          class="team-avatar" loading="lazy">
                 <?php else: ?>

@@ -39,7 +39,7 @@ $pages = array_values(array_filter($menuFiles, static fn (array $m): bool => $m[
                 <span class="hint">Current menu: <?= esc((string) ($pdf['original_name'] ?: 'menu.pdf')) ?> (PDF)</span>
             <?php else: ?>
                 <?php foreach ($pages as $page): ?>
-                    <img src="<?= esc(base_url($page['path']), 'attr') ?>" alt="Current menu page">
+                    <img src="<?= esc(base_url($page['path'])) ?>" alt="Current menu page">
                 <?php endforeach; ?>
                 <span class="hint">Current menu: <?= count($pages) ?> page<?= count($pages) === 1 ? '' : 's' ?>.</span>
             <?php endif; ?>

@@ -42,7 +42,7 @@ $siteName = config('Directory')->siteName();
                     We emailed you because someone recommended <strong><?= esc($referral['business_name']) ?></strong>.
                     We will not send another invite either way. This makes sure nobody else's recommendation leads to one.
                 </p>
-                <form method="post" action="<?= esc(base_url('recommend/stop/' . $token), 'attr') ?>">
+                <form method="post" action="<?= esc(base_url('recommend/stop/' . $token)) ?>">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-accent btn-block">Don't contact me again</button>
                 </form>

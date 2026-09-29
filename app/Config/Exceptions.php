@@ -33,7 +33,11 @@ class Exceptions extends BaseConfig
      *
      * @var list<int>
      */
-    public array $ignoreCodes = [404];
+    // 400 as well: a Bad Request is the client's fault, mostly bots sending
+    // malformed URLs (see handler() below). It was logged at CRITICAL with a
+    // full stack trace, which buried real failures. handler() writes one
+    // WARNING line for it instead, so it is still visible.
+    public array $ignoreCodes = [404, 400];
 
     /**
      * --------------------------------------------------------------------------
@@ -135,6 +139,16 @@ class Exceptions extends BaseConfig
      */
     public function handler(int $statusCode, Throwable $exception): ExceptionHandlerInterface
     {
+        // One line, no trace: see $ignoreCodes. The path is attacker-chosen,
+        // so control characters are stripped before it reaches the log.
+        if ($statusCode === 400) {
+            $path = (string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', service('request')->getPath());
+            log_message('warning', 'Bad request (400) for /{path}: {message}', [
+                'path'    => mb_substr($path, 0, 200),
+                'message' => mb_substr((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $exception->getMessage()), 0, 200),
+            ]);
+        }
+
         return new ExceptionHandler($this);
     }
 }

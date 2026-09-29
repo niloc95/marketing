@@ -27,7 +27,7 @@
                     <td style="color:#64748b;padding-right:14px;vertical-align:top"><?= esc($label) ?></td>
                     <td>
                         <?php if (preg_match('#^https?://#i', $value) === 1): ?>
-                            <a href="<?= esc($value, 'attr') ?>" style="color:#003049"><?= esc($value) ?></a>
+                            <a href="<?= esc($value) ?>" style="color:#003049"><?= esc($value) ?></a>
                         <?php else: ?>
                             <?= esc($value) ?>
                         <?php endif; ?>

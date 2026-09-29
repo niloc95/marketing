@@ -35,7 +35,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
             </div>
 
             <?php // Unsaved-draft backup — see manage_edit.php. ?>
-            <form method="post" action="<?= esc($action, 'attr') ?>" enctype="multipart/form-data"
+            <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data"
                   data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] ?>"
                   data-draft-version="<?= esc((string) ($base['updated_at'] ?? ''), 'attr') ?>">
                 <?= csrf_field() ?>

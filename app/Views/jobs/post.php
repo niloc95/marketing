@@ -36,7 +36,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
                     <?php if ($value === $kind): ?>
                         <span class="near-chip is-active" aria-current="true"><?= esc($label) ?></span>
                     <?php else: ?>
-                        <a class="near-chip" href="<?= esc($base . '?kind=' . $value, 'attr') ?>" rel="nofollow"><?= esc($label) ?></a>
+                        <a class="near-chip" href="<?= esc($base . '?kind=' . $value) ?>" rel="nofollow"><?= esc($label) ?></a>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
@@ -56,7 +56,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
                 </p>
             <?php endif; ?>
 
-            <form method="post" action="<?= esc($action, 'attr') ?>">
+            <form method="post" action="<?= esc($action) ?>">
                 <?= csrf_field() ?>
                 <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
                 <?= $this->include('jobs/_fields') ?>

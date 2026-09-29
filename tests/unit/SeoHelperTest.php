@@ -86,7 +86,7 @@ final class SeoHelperTest extends CIUnitTestCase
 
     public function testMissingImageFallsBackToDefaultOgImage(): void
     {
-        $expected = esc(base_url(config('Directory')->ogImage()), 'attr');
+        $expected = esc(base_url(config('Directory')->ogImage()));
         $this->assertStringContainsString(
             '<meta property="og:image" content="' . $expected . '">',
             seo_meta([])
@@ -95,7 +95,7 @@ final class SeoHelperTest extends CIUnitTestCase
 
     public function testEmptyStringImageFallsBackToDefaultOgImage(): void
     {
-        $expected = esc(base_url(config('Directory')->ogImage()), 'attr');
+        $expected = esc(base_url(config('Directory')->ogImage()));
         $this->assertStringContainsString(
             '<meta property="og:image" content="' . $expected . '">',
             seo_meta(['image' => ''])
@@ -104,7 +104,7 @@ final class SeoHelperTest extends CIUnitTestCase
 
     public function testExplicitImageIsUsedAsIs(): void
     {
-        $expected = esc('https://example.test/logo.jpg', 'attr');
+        $expected = esc('https://example.test/logo.jpg');
         $this->assertStringContainsString(
             '<meta property="og:image" content="' . $expected . '">',
             seo_meta(['image' => 'https://example.test/logo.jpg'])

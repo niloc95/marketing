@@ -123,7 +123,7 @@
                     </form>
 
                     <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                        <a href="<?= esc(base_url('directory/at/' . $ven['slug']), 'attr') ?>" target="_blank"><code><?= esc($ven['slug']) ?></code></a>
+                        <a href="<?= esc(base_url('directory/at/' . $ven['slug'])) ?>" target="_blank"><code><?= esc($ven['slug']) ?></code></a>
                         <span><?= $used > 0 ? $used . ' business' . ($used === 1 ? '' : 'es') : 'empty' ?></span>
                         <form method="post" action="<?= base_url('admin/venues/' . $ven['id'] . '/delete') ?>"
                               data-confirm="Delete <?= esc($ven['name'], 'attr') ?>?<?= $used > 0 ? ' ' . $used . ' profile(s) stay listed but lose the grouping.' : '' ?>">

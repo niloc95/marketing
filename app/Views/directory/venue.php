@@ -73,7 +73,7 @@ $schema = schema_page(
             <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
             <span class="mx-1">/</span>
             <?php if ($activeCategory !== ''): ?>
-                <a class="hover:text-white" href="<?= esc($canonical, 'attr') ?>"><?= esc($name) ?></a>
+                <a class="hover:text-white" href="<?= esc($canonical) ?>"><?= esc($name) ?></a>
                 <span class="mx-1">/</span><span class="text-white"><?= esc($activeCategory) ?></span>
             <?php else: ?>
                 <span class="text-white"><?= esc($name) ?></span>
@@ -86,7 +86,7 @@ $schema = schema_page(
         <?php // Posts back to this page, not to /directory: the box says "search
               // within {venue}" and it has to mean it. venue() passes q straight
               // to browse(), so the venue filter is never lost. ?>
-        <form class="searchbar" method="get" action="<?= esc($canonical, 'attr') ?>">
+        <form class="searchbar" method="get" action="<?= esc($canonical) ?>">
             <?= view('directory/_search_input', [
                 'listId'      => 'search-suggest-hero',
                 'value'       => $q,
@@ -149,7 +149,7 @@ $schema = schema_page(
                     <?php if ($i === $result['page']): ?>
                         <span class="current"><?= $i ?></span>
                     <?php else: ?>
-                        <a href="<?= esc($base . 'page=' . $i, 'attr') ?>"><?= $i ?></a>
+                        <a href="<?= esc($base . 'page=' . $i) ?>"><?= $i ?></a>
                     <?php endif; ?>
                 <?php endfor; ?>
             </nav>

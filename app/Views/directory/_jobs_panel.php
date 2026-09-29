@@ -60,7 +60,7 @@ $published = ($listing['status'] ?? '') === 'published';
                     <tr>
                         <td>
                             <?php if ($p['status'] === JobPostModel::STATUS_PUBLISHED): ?>
-                                <a class="font-medium hover:underline" href="<?= esc($svc->url($p), 'attr') ?>"><?= esc($p['title']) ?></a>
+                                <a class="font-medium hover:underline" href="<?= esc($svc->url($p)) ?>"><?= esc($p['title']) ?></a>
                             <?php else: ?>
                                 <?= esc($p['title']) ?>
                             <?php endif; ?>

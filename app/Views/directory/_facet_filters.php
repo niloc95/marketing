@@ -68,7 +68,7 @@ $offeredHint = implode(', ', array_slice(array_column($offered, 'label'), 0, 3))
             : $applied . ' filter' . ($applied === 1 ? '' : 's') . ' applied' ?></span>
     </summary>
 
-    <form method="get" action="<?= esc($action, 'attr') ?>">
+    <form method="get" action="<?= esc($action) ?>">
         <?php // Everything the sidebar is not itself responsible for. Without these
               // a narrowed search silently loses its province or its near-me
               // position the first time someone ticks a box. ?>
@@ -116,7 +116,7 @@ $offeredHint = implode(', ', array_slice(array_column($offered, 'label'), 0, 3))
         <div class="results-filter-actions">
             <button type="submit" class="btn btn-primary btn-xs">Apply</button>
             <?php if ($facets !== []): ?>
-                <a class="btn btn-ghost btn-xs" href="<?= esc($action . ($carry ? '?' . http_build_query(array_filter($carry, static fn ($v): bool => $v !== '' && $v !== null)) : ''), 'attr') ?>">Clear</a>
+                <a class="btn btn-ghost btn-xs" href="<?= esc($action . ($carry ? '?' . http_build_query(array_filter($carry, static fn ($v): bool => $v !== '' && $v !== null)) : '')) ?>">Clear</a>
             <?php endif; ?>
         </div>
     </form>

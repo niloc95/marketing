@@ -18,4 +18,4 @@ $count = $count ?? null;
 $icon  = $icon ?? null;
 $tint  = $tint ?? null;
 ?>
-<a class="chip<?= $icon !== null ? ' inline-flex items-center gap-1' : '' ?><?= $tint !== null ? ' ' . $tint : '' ?>" href="<?= esc($href, 'attr') ?>"><?= esc($label) ?><?php if ($icon !== null): ?><?= lucide($icon, 'h-3.5 w-3.5 shrink-0') ?><?php endif; ?><?php if ($count !== null): ?> <span class="chip-count">(<?= (int) $count ?>)</span><?php endif; ?></a>
+<a class="chip<?= $icon !== null ? ' inline-flex items-center gap-1' : '' ?><?= $tint !== null ? ' ' . $tint : '' ?>" href="<?= esc($href) ?>"><?= esc($label) ?><?php if ($icon !== null): ?><?= lucide($icon, 'h-3.5 w-3.5 shrink-0') ?><?php endif; ?><?php if ($count !== null): ?> <span class="chip-count">(<?= (int) $count ?>)</span><?php endif; ?></a>

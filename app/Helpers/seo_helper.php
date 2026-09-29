@@ -36,18 +36,24 @@ if (! function_exists('seo_meta')) {
         }
 
         $e = static fn ($v) => esc((string) $v, 'attr');
+        // URLs get HTML-context escaping instead: just as safe inside a quoted
+        // attribute, but ':' and '/' stay literal. 'attr' writes
+        // https&#x3A;&#x2F;&#x2F;…, which browsers and Google decode but some
+        // crawlers (SE Ranking's, for one) do not. Those read "https&" as a
+        // relative link and request /directory/…/https&, a 400.
+        $u = static fn ($v) => esc((string) $v);
         $out  = '<title>' . esc($title) . "</title>\n";
         $out .= '<meta name="description" content="' . $e($desc) . "\">\n";
-        $out .= '<link rel="canonical" href="' . $e($url) . "\">\n";
+        $out .= '<link rel="canonical" href="' . $u($url) . "\">\n";
         $out .= '<meta name="robots" content="' . $robots . "\">\n";
         $out .= '<meta property="og:type" content="' . $e($type) . "\">\n";
         $out .= '<meta property="og:title" content="' . $e($title) . "\">\n";
         $out .= '<meta property="og:description" content="' . $e($desc) . "\">\n";
-        $out .= '<meta property="og:url" content="' . $e($url) . "\">\n";
+        $out .= '<meta property="og:url" content="' . $u($url) . "\">\n";
         if ($image !== '') {
-            $out .= '<meta property="og:image" content="' . $e($image) . "\">\n";
+            $out .= '<meta property="og:image" content="' . $u($image) . "\">\n";
             $out .= '<meta name="twitter:card" content="summary_large_image">' . "\n";
-            $out .= '<meta name="twitter:image" content="' . $e($image) . "\">\n";
+            $out .= '<meta name="twitter:image" content="' . $u($image) . "\">\n";
         } else {
             $out .= '<meta name="twitter:card" content="summary">' . "\n";
         }

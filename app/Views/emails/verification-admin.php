@@ -22,7 +22,7 @@
             // They are ID copies: they belong behind the admin session, reachable
             // only from the review queue, not sitting in a mailbox.
         ?>
-        <p style="margin:18px 0"><a href="<?= esc($url, 'attr') ?>" style="color:#003049;font-weight:700">Open the review queue &rarr;</a></p>
+        <p style="margin:18px 0"><a href="<?= esc($url) ?>" style="color:#003049;font-weight:700">Open the review queue &rarr;</a></p>
     </div>
 </body>
 </html>

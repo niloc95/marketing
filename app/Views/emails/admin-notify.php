@@ -18,7 +18,7 @@
             <li>City: <?= esc(trim(($listing['city'] ?? '') . ' ' . ($listing['province'] ?? ''))) ?></li>
             <li>Source: <?= esc($listing['source'] ?? '') ?><?= ! empty($listing['source_url']) ? ' (' . esc($listing['source_url']) . ')' : '' ?></li>
         </ul>
-        <p style="margin:18px 0"><a href="<?= esc($url, 'attr') ?>" style="color:#003049;font-weight:700">View profile &rarr;</a></p>
+        <p style="margin:18px 0"><a href="<?= esc($url) ?>" style="color:#003049;font-weight:700">View profile &rarr;</a></p>
     </div>
 </body>
 </html>
