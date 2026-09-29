@@ -255,6 +255,17 @@ class Jobs extends BaseController
             return redirect()->to(base_url('manage'))->with('info', 'Sign in to your profile to post a job or request a service.');
         }
 
+        // Vacancies are a Verified Business feature (JobBoardService::
+        // canUseJobsFeatures()); requesting a service is open to every listing.
+        // Checked here so a free listing is told before filling in the form,
+        // not after. submitForListing() enforces it again on save.
+        if ($this->request->getGet('kind') === JobPostModel::KIND_JOB
+            && ! (new JobBoardService())->canUseJobsFeatures($listing)) {
+            return redirect()->to(base_url('manage/edit') . '#get-verified')
+                ->with('info', 'Posting job vacancies is part of the Verified Business badge. '
+                    . 'Apply below. There is nothing to pay until we have checked your documents.');
+        }
+
         session()->set('job_form_rendered_at', time());
 
         return view('jobs/post', $this->formData('listed', base_url('manage/jobs'), null, $listing));
@@ -329,6 +340,16 @@ class Jobs extends BaseController
 
     public function ownerRenew(int $id)
     {
+        // A vacancy stays up to its closing date if the badge lapses, but
+        // renewing one is posting it again, so it needs the badge.
+        $listing = $this->ownerListing();
+        $post    = (new JobPostModel())->find($id);
+        if ($listing !== null && is_array($post) && $post['kind'] === JobPostModel::KIND_JOB
+            && ! (new JobBoardService())->canUseJobsFeatures($listing)) {
+            return redirect()->to(base_url('manage/edit') . '#get-verified')
+                ->with('info', 'Renewing a job vacancy is part of the Verified Business badge.');
+        }
+
         return $this->ownerAction(
             $id,
             static fn (JobBoardService $svc) => $svc->renew($id),
@@ -458,7 +479,7 @@ class Jobs extends BaseController
         $listing = $this->ownerListing();
         if ($listing === null) {
             return redirect()->to(base_url('manage'))
-                ->with('info', 'Only businesses listed on the directory can reply to requests. Sign in to your profile, or list your business free.');
+                ->with('info', 'Only Verified Businesses on the directory can reply to requests. Sign in to your profile to get verified.');
         }
 
         $throttler = service('throttler');
@@ -472,6 +493,7 @@ class Jobs extends BaseController
             'closed'      => ['error', 'This request is no longer open.'],
             'not_service' => ['error', 'Only service requests take replies.'],
             'unpublished' => ['error', 'Your profile must be published before you can reply.'],
+            'not_verified' => ['info', 'Replying to requests is part of the Verified Business badge. Get verified from your dashboard, then reply.'],
             'own'         => ['error', 'This is your own request.'],
             'duplicate'   => ['info', 'You have already replied to this request.'],
             'full'        => ['info', 'This request already has the maximum number of replies.'],

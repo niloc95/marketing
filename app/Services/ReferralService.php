@@ -464,9 +464,8 @@ class ReferralService
             // found", never "rank higher": the badge does not change ordering
             // anywhere. Each item leads with a bold keyword so a skim catches it.
             //
-            // Jobs is in its own "Included with every listing" list, not the
-            // badge list: every listed business can post vacancies, so offering
-            // it as a badge perk would be false.
+            // Jobs is a badge feature: JobBoardService::canUseJobsFeatures()
+            // gates posting vacancies and replying to requests.
             return $this->notice($to, 'Get ' . $this->headerSafe((string) $r['business_name']) . ' verified on ' . $site, [
                 'heading'    => 'You were recommended on ' . $site,
                 'paragraphs' => [
@@ -479,11 +478,8 @@ class ReferralService
                     '✓ Verified badge: a green badge on your profile and beside your name in every search result, so customers can see we have confirmed your business.',
                     '📍 Locations: add up to ' . PracticeLocationService::MAX_LOCATIONS . ' more branches, practices or consulting rooms, each with its own address, phone number, map pin and opening hours, and each presented to Google as a business location in its own right.',
                     '👥 Staff: list up to ' . TeamMemberService::MAX_MEMBERS . ' people by name, with photos, qualifications and what each of them does. When someone searches our directory for one of your people, or for a service only they offer, they find your business.',
+                    '💼 Jobs: post your vacancies on our Jobs board, set up so eligible vacancies can appear in Google\'s job search, and reply to customers who need your kind of service.',
                     '📢 New work first: when someone in your province asks for your kind of service, verified businesses are the first we alert.',
-                ],
-                'extrasHeading' => 'Included with every listing:',
-                'extras'        => [
-                    '💼 Jobs: post your vacancies on our Jobs board, set up so eligible vacancies can appear in Google\'s job search.',
                 ],
                 'highlight' => 'R' . $amount . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
                 'closing'   => [

@@ -252,6 +252,83 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString(esc(signup_cta()['label']), $html, 'a visitor without a listing is invited to list');
     }
 
+    // ------------------------------------------- Verified Business features
+
+    public function testAFreeListingCannotPostAVacancyButCanRequestAService(): void
+    {
+        $free = $this->listing(['verified_until' => null]);
+
+        $job = $this->svc->submitForListing($free, $this->jobInput());
+        $this->assertFalse($job['ok']);
+        $this->assertStringContainsString('Verified Business', $job['errors']['listing'] ?? '');
+
+        $request = $this->svc->submitForListing($free, $this->serviceInput());
+        $this->assertTrue($request['ok'], 'requesting a service stays open to every listing');
+    }
+
+    public function testAFreeListingCannotReplyToARequest(): void
+    {
+        $id = $this->livePost(['kind' => 'service', 'employment_type' => null, 'listing_id' => null]);
+
+        $this->assertSame('not_verified', $this->svc->respond($id, $this->listing(['verified_until' => null]), 'Available tomorrow morning.'));
+        $this->assertSame('ok', $this->svc->respond($id, $this->listing(), 'Available tomorrow morning.'));
+    }
+
+    public function testThePublicFormIsNotAWayRoundTheBadge(): void
+    {
+        $free = $this->listing(['verified_until' => null]);
+
+        $blocked = $this->svc->submitUnlisted($this->jobInput(['poster_email' => $free['email']]));
+        $this->assertArrayHasKey('poster_email', $blocked['errors'], 'a free listing cannot post a vacancy through the public form');
+
+        $this->assertTrue($this->svc->submitUnlisted($this->jobInput(['poster_email' => 'hiring@not-listed.test']))['ok'], 'an employer not on the directory still can');
+        $request = $this->svc->submitUnlisted(array_merge($this->serviceInput(), ['poster_email' => $free['email']]));
+        $this->assertTrue($request['ok'], 'anyone may request a service: ' . json_encode($request['errors']));
+    }
+
+    public function testAFreeListingsAlertIsATeaserToGetVerified(): void
+    {
+        $sent = [];
+        CodeIgniter\Events\Events::on('email', static function (array $a) use (&$sent): void { $sent[] = $a; });
+
+        try {
+            $free     = $this->listing(['verified_until' => null]);
+            $verified = $this->listing();
+            $this->svc->submitForListing($this->listing(['province' => 'Gauteng']), $this->serviceInput());
+
+            $bodyFor = static function (string $email) use (&$sent): string {
+                foreach ($sent as $m) {
+                    if (in_array($email, (array) $m['recipients'], true)) {
+                        return html_entity_decode((string) $m['body']);
+                    }
+                }
+
+                return '';
+            };
+
+            $this->assertStringContainsString('Get verified to reply', $bodyFor($free['email']));
+            $this->assertStringNotContainsString('See the request and reply', $bodyFor($free['email']));
+            $this->assertStringContainsString('See the request and reply', $bodyFor($verified['email']));
+            $this->assertStringNotContainsString('Get verified to reply', $bodyFor($verified['email']));
+        } finally {
+            CodeIgniter\Events\Events::removeAllListeners('email');
+        }
+    }
+
+    public function testWithTheBadgeOffEveryListingCanPostAndReply(): void
+    {
+        $settings = new App\Services\DirectorySettings();
+        $settings->save(['badge_price' => '29.99', 'badge_enabled' => ''], 'test');
+
+        try {
+            $free = $this->listing(['verified_until' => null]);
+            $this->assertTrue($this->svc->canUseJobsFeatures($free));
+            $this->assertTrue($this->svc->submitForListing($free, $this->jobInput())['ok']);
+        } finally {
+            $settings->forget();
+        }
+    }
+
     // ---------------------------------------------------------- lead alerts
 
     public function testAServiceRequestAlertsTheBestMatchingBusinessesUpToTheCap(): void
@@ -260,15 +337,15 @@ final class JobBoardFlowTest extends CIUnitTestCase
         // weakest profile of all: the badge must still put it in the ten.
         $byQuality = [];
         for ($q = 1; $q <= 12; $q++) {
-            $byQuality[$q] = (int) $this->listing(['quality_score' => $q])['id'];
+            $byQuality[$q] = (int) $this->listing(['quality_score' => $q, 'verified_until' => null])['id'];
         }
         $badge = (int) $this->listing(['quality_score' => 0, 'verified_until' => date('Y-m-d', strtotime('+20 days'))])['id'];
 
         $excluded = [
-            'opted out'      => (int) $this->listing(['quality_score' => 99, 'job_alerts' => 0])['id'],
-            'unconfirmed'    => (int) $this->listing(['quality_score' => 99, 'is_verified' => 0])['id'],
-            'other province' => (int) $this->listing(['quality_score' => 99, 'province' => 'Gauteng'])['id'],
-            'unpublished'    => (int) $this->listing(['quality_score' => 99, 'status' => 'pending'])['id'],
+            'opted out'      => (int) $this->listing(['quality_score' => 99, 'verified_until' => null, 'job_alerts' => 0])['id'],
+            'unconfirmed'    => (int) $this->listing(['quality_score' => 99, 'verified_until' => null, 'is_verified' => 0])['id'],
+            'other province' => (int) $this->listing(['quality_score' => 99, 'verified_until' => null, 'province' => 'Gauteng'])['id'],
+            'unpublished'    => (int) $this->listing(['quality_score' => 99, 'verified_until' => null, 'status' => 'pending'])['id'],
         ];
         $requester = $this->listing(['quality_score' => 100]);
 
@@ -568,6 +645,10 @@ final class JobBoardFlowTest extends CIUnitTestCase
             'category_id'  => $this->categoryId,
             'city'         => 'Durban',
             'province'     => 'KwaZulu-Natal',
+            // A Verified Business by default: posting vacancies and replying are
+            // badge features (JobBoardService::canUseJobsFeatures()). Pass
+            // 'verified_until' => null for a free listing.
+            'verified_until' => date('Y-m-d', strtotime('+30 days')),
         ], true);
 
         return $listings->find($id);

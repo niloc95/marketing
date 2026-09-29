@@ -45,6 +45,15 @@ final class SignupModesTest extends CIUnitTestCase
         $this->badge(true);
     }
 
+    protected function tearDown(): void
+    {
+        // Settings are cached for a day, and the table is refreshed between
+        // tests but the cache is not: without this, a "badge off" test here
+        // would leave the badge off for every test class after it.
+        (new DirectorySettings())->forget();
+        parent::tearDown();
+    }
+
     // ----------------------------------------------------------------- modes
 
     public function testTheVerifiedOnlyFormHasNoFreeOption(): void

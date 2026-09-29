@@ -151,6 +151,15 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                     <p class="text-sm text-slate-500 dark:text-slate-400">You have replied. The customer will contact you directly if they are interested.</p>
                 <?php elseif ($full): ?>
                     <p class="text-sm text-slate-500 dark:text-slate-400">This request already has <?= (int) $maxResponses ?> replies, the most it takes.</p>
+                <?php elseif ($responder !== null && ($responder['status'] ?? '') === 'published' && ! $svc->canUseJobsFeatures($responder)): ?>
+                    <?php // Signed in, listed, but free: replying is a Verified Business
+                          // feature (JobBoardService::canUseJobsFeatures()). ?>
+                    <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                        Replying to requests is part of the <strong>Verified Business</strong> badge.
+                        Get verified from your dashboard and you can reply to work like this, and be among
+                        the first we alert when new requests come in.
+                    </p>
+                    <a class="btn btn-accent" href="<?= base_url('manage/edit') ?>#get-verified">Get verified to reply</a>
                 <?php elseif ($responder !== null && ($responder['status'] ?? '') === 'published'): ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
                         Replying as <strong><?= esc($responder['display_name']) ?></strong>. Your message, profile link, phone and email go to the customer,
@@ -166,7 +175,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                     </form>
                 <?php else: ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                        Businesses listed on <?= esc($siteName) ?> can reply to this request. Listing your business is free.
+                        <?= signup_cta()['verified'] ? 'Verified Businesses' : 'Businesses listed' ?> on <?= esc($siteName) ?> can reply to this request.
                     </p>
                     <div class="flex flex-wrap gap-2">
                         <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>

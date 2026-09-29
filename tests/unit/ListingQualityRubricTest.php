@@ -320,7 +320,7 @@ final class ListingQualityRubricTest extends CIUnitTestCase
     /**
      * The tripwire. Nothing money buys may ever become a rubric line, because
      * the moment one does, "fill in your profile to rank" turns into "pay to
-     * rank" and _plan_cards.php starts lying.
+     * rank" and the FAQ starts lying.
      *
      * Cheap and explicit on purpose — the structural guarantee is that the
      * service never opens those tables, and this is the reminder for whoever

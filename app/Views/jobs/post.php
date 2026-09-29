@@ -18,7 +18,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => ($isJob ? 'Post a job' : 'Request a service') . ' — ' . $siteName,
-    'description' => 'Post a job or ask for a service on ' . $siteName . '. Free.',
+    'description' => 'Post a job or ask for a service on ' . $siteName . '.',
     'canonical'   => base_url('jobs/post'),
     'robots'      => $mode === 'unlisted' && $isJob,
 ]) ?>
@@ -28,8 +28,17 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
 <section class="section">
     <div class="container">
         <div class="form-card max-w-2xl">
-            <span class="eyebrow">Jobs board &middot; free</span>
+            <?php // A service request is free for anyone. Vacancies from a listed
+                  // business are a Verified Business feature, so "free" goes on the
+                  // request form only. ?>
+            <span class="eyebrow">Jobs board<?= $isJob ? '' : ' &middot; free' ?></span>
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white"><?= $isJob ? 'Post a job' : 'Request a service' ?></h1>
+            <?php if ($isJob && $mode === 'unlisted' && signup_cta()['verified']): ?>
+                <p class="hint mb-2">
+                    Listed on <?= esc($siteName) ?>? Posting vacancies is part of the Verified Business badge.
+                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Sign in to your dashboard</a> to post from your profile.
+                </p>
+            <?php endif; ?>
 
             <div class="sort-toggle my-4" role="group" aria-label="What are you posting?">
                 <?php foreach (['job' => 'I am hiring', 'service' => 'I need a service'] as $value => $label): ?>

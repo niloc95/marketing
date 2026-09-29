@@ -239,6 +239,16 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
 `directory_job_posts`. Rules live in `JobBoardService`; `Jobs` is the controller for all of
 `/jobs/*` and the owner routes under `/manage/jobs/*`. Limits are in `Config\JobBoard`.
 
+- **Vacancies and replies are Verified Business features** (since 29 Sep 2026).
+  `JobBoardService::canUseJobsFeatures($listing)` is the one rule: published, and either the
+  badge is live (`listing_is_verified_business()`) or the badge is switched off (then Jobs
+  reopens to every listing). It is checked in `submitForListing()` (kind=job),
+  `respond()` (`not_verified`), `submitUnlisted()` (a vacancy whose poster email belongs to a
+  listing without the badge is refused, so the public form is no way round it),
+  `Jobs::ownerCreate()` / `ownerRenew()` (redirect to `manage/edit#get-verified`), the
+  dashboard panel and the request page. **Requesting a service stays open to everyone.** A
+  lapsed badge keeps its live posts to their closing date, but cannot post or renew
+  vacancies. Terms §4 and §6 say all of this. Change them together.
 - **Two posting paths, deliberately unequal.** A listed business posts from its manage
   session and goes live at once. Anyone else posts at `/jobs/post`, clicks an email link,
   then waits in `/admin/jobs` for approval and is emailed a reusable manage link
@@ -268,7 +278,9 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
   `maxResponses` (5).
 - **Lead alerts:** when a service request goes live, `alertMatchingBusinesses()` emails up to
   10 listings in the same category and province (published, email confirmed,
-  `job_alerts = 1`). Badge holders come first, then `quality_score`. No listing gets more than
+  `job_alerts = 1`). Badge holders come first, then `quality_score`. A listing that cannot
+  reply gets the same alert as a teaser: the button is "Get verified to reply" (to
+  `/verified`), with the request link as text. No listing gets more than
   3 in 24h. `directory_job_alerts` has a unique (post, listing) key, so re-runs and renewals
   never double-send, and the cap of 10 is per request, not per run. Alerts are on by
   default. The email's stop link (`/jobs/alerts/off/{token}`, GET asks, POST acts) and the
@@ -332,11 +344,18 @@ What the badge actually gates:
 | Team members (`TeamMemberService::MAX_MEMBERS`, 12) | — | yes |
 | Extra branches (`PracticeLocationService::MAX_LOCATIONS`, 6) | — | yes |
 | Matching a search for a team member's name/specialisation | — | yes |
+| Posting job vacancies (and renewing them) on the Jobs board | — | yes |
+| Replying to service requests | — | yes |
+| Lead alerts for service requests | teaser ("Get verified to reply") | yes, alerted first |
+| Requesting a service (Jobs board) | yes | yes |
 | **A higher position in results** | **no** | **no** |
 
 That last row is load-bearing. Only `is_featured` affects ordering, and only in
 `DirectoryService::featured()`. Nothing in any view may hint that paying moves a business
-up — it would be false today and a promise we'd then have to keep.
+up — it would be false today and a promise we'd then have to keep. (The plan cards used to
+carry a ✗/✗ "A higher position in the search results" row saying so; the owner removed it
+on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" row, ✓ on
+**both** cards, because every listing gets the Jobs board.)
 
 - **`VerificationService`** — `isEnabled()` (just `DirectorySettings::badgeEnabled()`; when
   false the offer must not render at all), `canTakePayment()` (adds "PayFast is

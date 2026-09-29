@@ -124,6 +124,28 @@ class JobBoardService
     }
 
     /** Published and not past its closing date. */
+    /**
+     * Whether a listing may post job vacancies and reply to service requests.
+     *
+     * Both are part of the Verified Business badge: the plan cards, the /verified
+     * pitch, the invite and the Terms (section 6) all say so, and this is what
+     * makes that true. Requesting a service stays open to every listing, as it
+     * is to anyone on the public form.
+     *
+     * With the badge switched off there is nothing to buy, so the Jobs board
+     * reopens to every published listing, the same fallback signup_cta() uses.
+     *
+     * @param array<string,mixed> $listing a stored row
+     */
+    public function canUseJobsFeatures(array $listing): bool
+    {
+        if (($listing['status'] ?? '') !== 'published') {
+            return false;
+        }
+
+        return ! (new DirectorySettings())->badgeEnabled() || listing_is_verified_business($listing);
+    }
+
     public function isLive(array $post): bool
     {
         return ($post['status'] ?? '') === JobPostModel::STATUS_PUBLISHED
@@ -356,6 +378,20 @@ class JobBoardService
     public function submitUnlisted(array $in): array
     {
         ['data' => $d, 'errors' => $errors] = $this->validate($in, true);
+
+        // Vacancies are a Verified Business feature. The public form stays open
+        // to employers who are not on the directory, but it must not be a way
+        // round the badge for a listed business. Service requests stay open to
+        // anyone, which is where customers' leads come from.
+        if (($d['kind'] ?? null) === JobPostModel::KIND_JOB && ($d['poster_email'] ?? '') !== '') {
+            $owner = (new DirectoryListingModel())->findActiveByEmail((string) $d['poster_email']);
+            if ($owner !== null && ! $this->canUseJobsFeatures($owner)) {
+                $errors['poster_email'] = 'This email belongs to a business listed on '
+                    . $this->site->siteName() . '. Posting job vacancies is part of the Verified Business badge: '
+                    . 'get verified, then post from your dashboard.';
+            }
+        }
+
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'data' => $d];
         }
@@ -404,6 +440,9 @@ class JobBoardService
 
         if (($listing['status'] ?? '') !== 'published') {
             $errors['listing'] = 'Your profile must be published before you can post.';
+        } elseif (($d['kind'] ?? null) === JobPostModel::KIND_JOB && ! $this->canUseJobsFeatures($listing)) {
+            $errors['listing'] = 'Posting job vacancies is part of the Verified Business badge. '
+                . 'You can still request a service.';
         }
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'data' => $d];
@@ -737,6 +776,9 @@ class JobBoardService
         if (($listing['status'] ?? '') !== 'published') {
             return 'unpublished';
         }
+        if (! $this->canUseJobsFeatures($listing)) {
+            return 'not_verified';
+        }
         if ((int) ($post['listing_id'] ?? 0) === (int) $listing['id']) {
             return 'own';
         }
@@ -1060,17 +1102,30 @@ class JobBoardService
         if ($budget !== '') {
             $paragraphs[] = 'Budget: ' . $budget;
         }
+        // Replying is a Verified Business feature (canUseJobsFeatures()). A free
+        // listing still hears about the work, as a teaser: the request itself,
+        // a plain statement of what replying needs, and a button to get
+        // verified. Verified businesses were alerted first, in the query above.
+        $canReply = $this->canUseJobsFeatures($listing);
         $paragraphs[] = sprintf(
-            'Up to %d businesses can reply, and the customer contacts the ones they like. Replying is free.',
+            'Up to %d businesses can reply, and the customer contacts the ones they like.',
             $this->cfg->maxResponses
         );
+        if (! $canReply) {
+            $paragraphs[] = 'Replying to requests is part of the Verified Business badge: R'
+                . (new DirectorySettings())->badgePrice() . ' a month, and nothing to pay until we have '
+                . 'checked your company registration and the owner\'s ID.';
+            $paragraphs[] = 'See the request: ' . $this->url($post);
+        }
 
         $this->notice((string) $listing['email'], 'New request: ' . $this->headerSafe($post['title'] . ' in ' . ($post['city'] ?: $post['province'])), [
             // Category names are nouns for the business ("Plumber", "Skin &
             // Aesthetics Clinic"), so they read as a label, not as the object.
             'heading'      => 'New request near you' . ($post['category_name'] ? ': ' . $post['category_name'] : ''),
             'paragraphs'   => $paragraphs,
-            'button'       => ['See the request and reply', $this->url($post)],
+            'button'       => $canReply
+                ? ['See the request and reply', $this->url($post)]
+                : ['Get verified to reply', base_url('verified')],
             'footnote'     => 'You get these because ' . $listing['display_name'] . ' is listed under '
                 . ($post['category_name'] ?: 'this category') . ' in ' . $post['province'] . '.',
             'footnoteLink' => ['Stop these emails', $this->alertsOffUrl((int) $listing['id'])],

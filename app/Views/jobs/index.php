@@ -45,7 +45,7 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
         <h1 class="text-2xl sm:text-3xl">Jobs &amp; services needed</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
             Vacancies from local businesses, and people looking for someone to do a job.
-            Posting is free.
+            Requesting a service is free.
         </p>
         <div class="mt-4 flex flex-wrap gap-2">
             <a class="btn btn-accent" href="<?= base_url('jobs/post?kind=job') ?>"><?= lucide('briefcase', 'h-4 w-4 shrink-0') ?>Post a job</a>

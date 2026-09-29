@@ -68,6 +68,12 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         up your business too.
     </li>
     <li>
+        <?php // JobBoardService::canUseJobsFeatures() gates both halves of this. ?>
+        <strong>Post jobs.</strong> Advertise your vacancies on our Jobs board, set up so
+        eligible vacancies can appear in Google's job search, and reply to customers who post
+        a request for your kind of service.
+    </li>
+    <li>
         <?php // True because JobBoardService::alertMatchingBusinesses() orders badge
               // holders first. Alerts, not search position: ordering is unchanged. ?>
         <strong>First to hear about new work.</strong> When someone in your province asks

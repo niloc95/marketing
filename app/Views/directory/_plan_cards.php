@@ -24,22 +24,19 @@ use App\Services\TeamMemberService;
  *    _verification_pitch.php saying the same things; they are the two places the
  *    offer is described to someone who has not bought it yet.
  *
- * 2. The badge does NOT affect search ranking. Hence the last row, which is a ✗
- *    on BOTH cards. It is there deliberately: it is the question everyone asks
- *    about a paid tier on a directory, and answering it before it is asked is
- *    worth more than the row costs. Do not "fix" it into a ✓.
+ * 2. The badge does NOT affect search ranking, and nothing here may suggest it
+ *    does. There used to be a "A higher position in the search results" row, ✗
+ *    on both cards, answering that question up front. The owner removed it
+ *    (29 Sep 2026). The rule it illustrated still binds every row: the FAQ
+ *    explains how results are ordered, and no line may hint that paying moves
+ *    a business up.
  *
  *    What DOES decide the order, all of it in DirectoryService::browse():
  *    is_featured first, then quality_score, then published_at. The middle one
- *    is profile completeness — ListingQualityService — and it is free to every
- *    listing precisely so that this row can stay a ✗. That service cannot read
- *    anything the badge gates (no team, no branches, no verified_until), which
- *    is what stops "pay for the badge" becoming "pay to rank" by the back door.
- *
- *    is_featured is now the only key above completeness, and it is editorial:
- *    admin-set, rare, and NOT for sale. Selling featured placement would break
- *    this row in a way the quality score cannot repair — so if that idea ever
- *    comes up, it collides with a promise made here first.
+ *    is profile completeness (ListingQualityService), and it is free to every
+ *    listing, so paying cannot buy position. That service cannot read anything
+ *    the badge gates (no team, no branches, no verified_until). is_featured is
+ *    editorial: admin-set, rare, and NOT for sale.
  *
  * 3. Caps come from the service constants, never typed as numbers. Copy that
  *    says "up to 12" is a promise the sales page has no way of noticing has
@@ -79,15 +76,12 @@ $rows = [
     ['label' => '<strong>Your team, by name</strong> &mdash; up to ' . (int) $team . ' people, each with a photo, their position and their qualifications', 'free' => false, 'paid' => true],
     ['label' => '<strong>All your branches</strong> &mdash; up to ' . (int) $locations . ' more locations, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
     ['label' => '<strong>More searches find you</strong> &mdash; a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
+    // A Verified Business feature: JobBoardService::canUseJobsFeatures() gates
+    // posting vacancies and replying to requests. Requesting a service stays open
+    // to everyone, which is why this row says vacancies, not "the Jobs board".
+    ['label' => '<strong>Post jobs</strong> &mdash; advertise your vacancies on our Jobs board, set up so eligible vacancies can appear in Google&rsquo;s job search, and reply to customers who post a request for your kind of service', 'free' => false, 'paid' => true],
     // JobBoardService::alertMatchingBusinesses() orders badge holders first.
     ['label' => '<strong>First to hear about new work</strong> &mdash; when someone in your province asks for your kind of service, verified businesses are the first we alert', 'free' => false, 'paid' => true],
-    [
-        // See rule 2 in the docblock. ✗ on both cards, on purpose.
-        'label' => 'A higher position in the search results',
-        'free'  => false,
-        'paid'  => false,
-        'note'  => 'Not for sale to anyone. Filling in your profile moves you up; paying does not.',
-    ],
 ];
 
 /** One row, rendered for whichever column is asking. */

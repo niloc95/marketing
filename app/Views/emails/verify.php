@@ -23,6 +23,7 @@
                     <li>A green <strong>Verified Business</strong> badge on your profile and beside your name in search results</li>
                     <li>All your branches, each with its own address, phone, map pin and hours, and described to Google as a location in its own right</li>
                     <li>Your team by name, with photos and qualifications, so searches for your people find you</li>
+                    <li>Post jobs on our Jobs board, and reply to customers who need your kind of service</li>
                     <li>First to hear about new work: verified businesses are the first we alert when a customer in your province asks for your kind of service</li>
                 </ul>
                 <p style="font-size:13px;line-height:1.6;color:#334155;margin:0">

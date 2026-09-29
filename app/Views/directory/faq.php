@@ -34,7 +34,7 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Is ' . esc($siteName) . ' free to use?',
-                'a' => 'Yes. Searching is free, and so is listing a business with a South African address — no card, no trial that runs out. Two things are paid, and neither affects a South African listing: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Listing</strong> subscription for a business based outside South Africa. Nothing about a South African listing depends on buying anything.',
+                'a' => 'Yes. Searching is free, and so is listing a business with a South African address — no card, no trial that runs out. Two things are paid, and neither affects a South African listing: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Listing</strong> subscription for a business based outside South Africa. Nothing about a South African listing depends on buying anything. The badge does add features on top: listing your team and branches, and posting job vacancies and replying to requests on the Jobs board.',
             ],
             [
                 'q' => 'Do I need an account to search?',

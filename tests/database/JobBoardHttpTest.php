@@ -79,6 +79,34 @@ final class JobBoardHttpTest extends CIUnitTestCase
         parent::tearDown();
     }
 
+    // ------------------------------------------- Verified Business features
+
+    public function testAFreeListingIsSentToGetVerifiedInsteadOfTheVacancyForm(): void
+    {
+        $free = $this->listing(['verified_until' => null]);
+
+        $this->withSession([Manage::SESSION_KEY => (int) $free['id']])
+            ->get('manage/jobs/new?kind=job')
+            ->assertRedirectTo(base_url('manage/edit') . '#get-verified');
+
+        $this->withSession([Manage::SESSION_KEY => (int) $free['id']])
+            ->get('manage/jobs/new?kind=service')
+            ->assertOK();
+    }
+
+    public function testALapsedBadgeCannotRenewAVacancy(): void
+    {
+        $lapsed = $this->listing(['verified_until' => date('Y-m-d', strtotime('-1 day'))]);
+        $closes = date('Y-m-d', strtotime('+3 days'));
+        $id     = $this->livePost(['listing_id' => (int) $lapsed['id'], 'valid_through' => $closes]);
+
+        $this->withSession([Manage::SESSION_KEY => (int) $lapsed['id']])
+            ->post('manage/jobs/' . $id . '/renew', $this->csrf())
+            ->assertRedirectTo(base_url('manage/edit') . '#get-verified');
+
+        $this->assertSame($closes, $this->posts->find($id)['valid_through'], 'the vacancy was not renewed');
+    }
+
     // ------------------------------------------------------------ applying
 
     public function testAnApplicationIsRelayedToTheEmployerWithReplyToTheApplicant(): void
@@ -350,6 +378,10 @@ final class JobBoardHttpTest extends CIUnitTestCase
             'category_id'  => $this->categoryId,
             'city'         => 'Durban',
             'province'     => 'KwaZulu-Natal',
+            // A Verified Business by default: posting vacancies and replying are
+            // badge features (JobBoardService::canUseJobsFeatures()). Pass
+            // 'verified_until' => null for a free listing.
+            'verified_until' => date('Y-m-d', strtotime('+30 days')),
         ], true);
 
         return $listings->find($id);

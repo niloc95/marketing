@@ -20,18 +20,35 @@ $labels = [
     JobPostModel::STATUS_EXPIRED   => ['Expired', 'pill-unpublished'],
 ];
 $published = ($listing['status'] ?? '') === 'published';
+// Vacancies and replies are Verified Business features; requesting a service
+// is open to every listing. See JobBoardService::canUseJobsFeatures().
+$canPostJobs = $svc->canUseJobsFeatures($listing);
 ?>
 <div class="panel mt-6" id="jobs">
     <h2 class="text-lg font-bold text-slate-900 dark:text-white">Jobs &amp; services</h2>
     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Hiring, or need another business's help? Post it free on the
-        <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs') ?>">Jobs board</a>.
-        Your posts link to this profile. You can also reply to people asking for a service like yours.
+        <?php if ($canPostJobs): ?>
+            Hiring, or need another business's help? Post it on the
+            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs') ?>">Jobs board</a>.
+            Your posts link to this profile. You can also reply to people asking for a service like yours.
+        <?php else: ?>
+            Need another business's help? Request a service on the
+            <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs') ?>">Jobs board</a>.
+        <?php endif; ?>
     </p>
 
     <?php if ($published): ?>
+        <?php if (! $canPostJobs): ?>
+            <p class="mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-200">
+                <strong>Post job vacancies and reply to customers' requests</strong> with the Verified Business
+                badge. Your vacancies are set up so eligible ones can appear in Google's job search.
+                <a class="font-semibold underline" href="#get-verified">Get verified</a>
+            </p>
+        <?php endif; ?>
         <div class="mt-3 flex flex-wrap gap-2">
-            <a class="btn btn-accent btn-xs" href="<?= base_url('manage/jobs/new?kind=job') ?>"><?= lucide('briefcase', 'h-3.5 w-3.5 shrink-0') ?>Post a job</a>
+            <?php if ($canPostJobs): ?>
+                <a class="btn btn-accent btn-xs" href="<?= base_url('manage/jobs/new?kind=job') ?>"><?= lucide('briefcase', 'h-3.5 w-3.5 shrink-0') ?>Post a job</a>
+            <?php endif; ?>
             <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/jobs/new?kind=service') ?>"><?= lucide('wrench', 'h-3.5 w-3.5 shrink-0') ?>Request a service</a>
             <a class="btn btn-ghost btn-xs" href="<?= base_url('jobs?kind=service') ?>">See requests you could answer</a>
         </div>

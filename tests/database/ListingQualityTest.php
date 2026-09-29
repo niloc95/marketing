@@ -77,9 +77,9 @@ final class ListingQualityTest extends CIUnitTestCase
      * test's tripwire — that one checks the rubric's wording, this one checks
      * the database behaviour end to end.
      *
-     * The directory tells the public in three places (_plan_cards.php,
-     * _verification_pitch.php, faq.php) that paying never moves a business up
-     * the search results. Since listings are now ordered by profile
+     * The directory tells the public (faq.php, _verification_pitch.php) that
+     * paying never moves a business up the search results, and no line of
+     * _plan_cards.php may suggest otherwise. Since listings are now ordered by profile
      * completeness, that promise holds only for as long as nothing money buys
      * can raise the completeness score. So: max out every paid feature there
      * is, and the number must not budge by one point.
@@ -127,7 +127,7 @@ final class ListingQualityTest extends CIUnitTestCase
             $before,
             $after,
             'Something behind the paid badge is scoring. That turns "fill in your profile to rank" '
-            . 'into "pay to rank" and makes _plan_cards.php and the FAQ untrue.'
+            . 'into "pay to rank" and makes the FAQ untrue.'
         );
     }
 
