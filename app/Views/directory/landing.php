@@ -158,7 +158,7 @@ $schema = schema_page(
                               // where "No general practitioners here yet" reads as a
                               // search that failed. ?>
                         <p class="mb-4">No <?= esc($v['nounPlural']) ?> here yet<?= esc($where) ?>. Be the first!</p>
-                        <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
+                        <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
                     </div>
                 <?php else: ?>
                     <div class="card-grid">
@@ -222,7 +222,7 @@ $schema = schema_page(
         <?php endif; ?>
 
         <div class="mt-8 text-center">
-            <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
+            <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
         </div>
     </div>
 </section>

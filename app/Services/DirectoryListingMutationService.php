@@ -121,6 +121,13 @@ class DirectoryListingMutationService
         $data  = $this->buildListingData($input) + $this->verifyTokenColumns($token);
         $slug  = (string) $data['slug'];
 
+        // Which channel brought this signup: an invite, a ?via= tag, the site's
+        // own buttons, or a direct visit. New rows only, so a duplicate-email
+        // signup never rewrites an existing listing's. Listing::store() sets it
+        // from the session, never from the form. Admin-visible, never editable.
+        $source = (string) ($input['signup_source'] ?? '');
+        $data['signup_source'] = preg_match('/^[a-z0-9-]{1,40}$/', $source) ? $source : null;
+
         // Outside the transaction on purpose: this is a network call that can
         // take the better part of a minute (Nominatim, retries, rate-limit
         // spacing). Holding a write transaction open across it would trade a

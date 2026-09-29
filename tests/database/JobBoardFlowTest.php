@@ -247,7 +247,9 @@ final class JobBoardFlowTest extends CIUnitTestCase
 
         $this->assertStringContainsString('noindex', $html);
         $this->assertStringNotContainsString('JobPosting', $html);
-        $this->assertStringContainsString('List your business free', $html, 'a visitor without a listing is invited to list');
+        // Whatever the site's signup button currently says (signup_cta()): Get
+        // verified while the badge is on sale, the free wording otherwise.
+        $this->assertStringContainsString(esc(signup_cta()['label']), $html, 'a visitor without a listing is invited to list');
     }
 
     // ---------------------------------------------------------- lead alerts

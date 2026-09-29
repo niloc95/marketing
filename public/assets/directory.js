@@ -135,9 +135,11 @@
   })();
 
   // ------------------------------------------------------------- plan picker
-  // The Free / Verified Business comparison cards on the signup form. Their
-  // buttons are real links to /add-listing and /add-listing/verified, which is
-  // what makes them work with JS off and makes the verified path shareable.
+  // The Verified Business / Free comparison cards on the signup form, shown only
+  // to a visitor who came straight to /add-listing. Their buttons are real links,
+  // /add-listing (Verified, the default) and /add-listing?plan=free, which is what
+  // makes them work with JS off. The verified-only page, where every link of ours
+  // points, has one card and no [data-plan-cards], so this module stays off there.
   //
   // Followed as links, though, choosing a plan costs a full page load to swap
   // between two renderings of the same form: the scroll resets to the top of a
@@ -226,10 +228,11 @@
     });
 
     // Back and forward have to land on the plan the URL names, not on whatever
-    // was last clicked. Read the path rather than the state object, so an entry
-    // pushed before this code ran still resolves.
+    // was last clicked. Read the URL rather than the state object, so an entry
+    // pushed before this code ran still resolves. Verified unless ?plan=free,
+    // matching Listing::create().
     window.addEventListener('popstate', function () {
-      applyPlan(/\/add-listing\/verified\/?$/.test(location.pathname) ? 'verified' : 'free');
+      applyPlan(new URLSearchParams(location.search).get('plan') === 'free' ? 'free' : 'verified');
     });
 
     // The other way round. Opening the panel from inside the form is the same

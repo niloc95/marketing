@@ -28,7 +28,7 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET /directory/{slug}` | `Directory::segment` → category landing page **or** falls through to `show($slug)`, the listing detail page — category wins so a listing can never claim a category's slug |
 | `GET /directory/verify/{token}` | `Directory::verify` — publishes a pending listing |
 | `GET/POST /add-listing` | `Listing::create` / `Listing::store` — public signup |
-| `GET /add-listing/verified` | `Listing::createVerified` — the **same** form and the same POST target, rendered with the documents panel already open. Not a second signup path; see "Signup form" below |
+| `GET /add-listing/verified` | `Listing::createVerified` — the **same** form and POST target in **verified-only** mode, where every link we control points. Not a second signup path; see "Signup form" below |
 | `GET /verified` | `Contact::verified` — public explainer for what the badge claims. Every badge on a profile links here |
 | `POST /manage/verification`, `GET /manage/verification/checkout`, `POST .../cancel`, `GET .../done` | `Manage::*` — apply, pay, cancel, PayFast return |
 | `POST /payfast/notify` | `PayFastNotify::index` — PayFast ITN |
@@ -362,31 +362,62 @@ the committed default in `app/Config/Directory.php`. **A DB row silently wins**,
 `.env` does nothing once `/admin/settings` has ever been saved. `/admin/settings` renders
 `priceSource()` specifically to answer "I changed it and nothing happened".
 
-### Signup form: one form, two states
+### Signup form: one form, three modes: Verified leads
 
-`/add-listing` and `/add-listing/verified` are the **same view, the same fields and the
-same POST target**. `Listing::renderForm($plan)` serves both; the only difference it passes
-down is whether the documents `<details>` arrives `open`.
+Verified Business is the offer we lead with. `/add-listing` and `/add-listing/verified` are
+the **same view, the same fields and the same POST target**. `Listing::renderForm($plan,
+$verifiedOnly)` serves every mode:
 
-Three rules hold that together, and each exists because the obvious alternative fails:
+| Visit | Mode |
+|---|---|
+| `/add-listing/verified`, or any `/add-listing*` with a campaign source in the session | **verified-only**: the Verified card alone, documents open, no Free card, no "Remove" link, no `data-plan-cards` (so the picker JS is off) |
+| `/add-listing` typed directly (no source) | both cards, **Verified first and preselected** |
+| `/add-listing?plan=free` (direct only) | both cards, Free picked |
+
+- **Every link we control goes to the verified-only form**: the header "Get verified", the
+  footer, home/landing/province/venue/categories/404/contact/jobs buttons, referral invites
+  (`add-listing/verified?invite=`) and the marketing-site footer
+  (`?via=marketing-site`). They all use `signup_cta()` in `directory_ui_helper.php`,
+  which also falls back to `/add-listing` and the "free" wording when the badge is off.
+- **Text that talks about listing *for free* keeps `/add-listing`**: the FAQ answers,
+  Terms, privacy policy and the "is it free?" line on `/verified`. Pointing those at a page
+  with no Free card would contradict the sentence around the link.
+- **The verified-only page must keep the card's small print** ("A South African listing is
+  free either way, and stays free"). The Terms and FAQ promise it, and `store()` still saves
+  the listing when no documents are attached. That line is what keeps the mode honest
+  (Consumer Protection Act, misleading representations). Do not remove it.
+- **Campaign source:** `App\Filters\SignupChannel` (global, GET) stores `?via=<a-z0-9->`
+  or `invite` in the session (`signup_via`). The first one wins for the visit. `store()`
+  writes it, or `site` / `direct` from the posted `form_mode`, to
+  `xs_directory_listings.signup_source`. It is always overwritten server-side and never
+  taken from the form. It is admin-visible (edit page) and never owner-editable.
+- **After publishing**, `Directory::verify()` lands a listing with no application on
+  `manage/edit#get-verified` (the id on `_verification_panel.php`). The confirm email's
+  badge section says so; it has deliberately no second button.
+- An unverified profile shows "Is this your business? Get the Verified Business badge",
+  linking to `/verified`, while the badge is on sale. It is worded as an offer to the owner,
+  never as a warning that the business is unchecked.
+- Tests: `tests/database/SignupModesTest.php`.
+
+Three rules from the original two-state design still hold:
 
 1. **Never render both variants.** `_verification_fields.php` would appear twice, giving the
    form two inputs named `verify_doc_registration` and two elements sharing an id.
-2. **The card buttons are real links** carrying `data-plan-pick`. That is what makes the
-   page work with JS off and the verified URL shareable. The plan-picker module in
-   `public/assets/directory.js` intercepts them and swaps in place — following them as
-   links reloads the page and resets the scroll, which reads as the page jumping.
+2. **The card buttons are real links** carrying `data-plan-pick`: `/add-listing`
+   (Verified) and `/add-listing?plan=free`. The picker in `public/assets/directory.js`
+   intercepts them, swaps in place, and on `popstate` reads the `plan` query parameter
+   (default Verified).
 3. **`applyPlan()` writes the hidden `plan` input before setting `details.open`.** The
    `toggle` listener compares against that input to tell a person opening the panel from
    `applyPlan` opening it. Swap the order and the two handlers drive each other in circles.
 
 Markup contract: `data-plan-cards`, `data-plan-card="free|verified"`, `data-plan-pick`,
 `data-plan-input`, `data-plan-cleared`, `data-verify-offer`. The "Remove" control is just
-another `data-plan-pick="free"` link, so it cannot drift from the Free card and still works
-without JS.
+another `data-plan-pick="free"` link, so it cannot drift from the Free card.
 
 After a failed submission `redirect()->back()` uses the **Referer**, which a `pushState`
-plan switch does not change — so `renderForm()` lets a posted `plan` outrank the route.
+plan switch does not change. So `renderForm()` lets a posted `plan` outrank the route
+(except in verified-only mode, which has nothing to pick).
 
 ## Local environment
 

@@ -33,6 +33,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New profile' : 'Edit profile' ?></h1>
                 <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>"><?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?>Back to profiles</a>
             </div>
+            <?php // Read-only: which channel brought this signup (Listing::store()).
+                  // Blank for listings from before it was recorded. ?>
+            <?php if (! $isNew && ! empty($listing['signup_source'])): ?>
+                <p class="-mt-4 mb-6 text-xs text-slate-500 dark:text-slate-400">Signed up via: <strong><?= esc($listing['signup_source']) ?></strong></p>
+            <?php endif; ?>
 
             <?php // Unsaved-draft backup — see manage_edit.php. ?>
             <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data"

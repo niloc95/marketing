@@ -448,7 +448,32 @@ class ReferralService
             $by = ' Someone at your business asked us to get in touch.';
         }
 
-        return $this->notice((string) $r['business_email'], 'List ' . $this->headerSafe((string) $r['business_name']) . ' on ' . $site . ' for free', [
+        $to           = (string) $r['business_email'];
+        $stop         = ["Don't contact me again", base_url('recommend/stop/' . $token)];
+        $verification = new VerificationService();
+
+        // With the badge on sale, the invite leads with it and lands on the
+        // verified-only form. The free-listing line stays: the Terms promise a
+        // South African listing is free, and an invite that implied otherwise
+        // would be misleading. With the badge off, it is the plain free invite.
+        if ($verification->isEnabled()) {
+            $amount = $verification->monthlyAmount();
+
+            return $this->notice($to, 'Get ' . $this->headerSafe((string) $r['business_name']) . ' verified on ' . $site, [
+                'heading'    => 'You were recommended on ' . $site,
+                'paragraphs' => [
+                    'Hello ' . $r['business_name'] . ',',
+                    $site . ' is a directory of South African businesses.' . $by,
+                    'Stand out as a Verified Business: a green badge on your profile and beside your name in every search result, your team by name, and your other branches. R' . $amount . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
+                    'We have filled in what we were told, so you only need to check your details and attach the two documents. Your listing itself is free either way.',
+                ],
+                'button'       => ['Get your business verified', base_url('add-listing/verified?invite=' . $token)],
+                'footnote'     => 'We will not email you about this again. Not interested?',
+                'footnoteLink' => $stop,
+            ]);
+        }
+
+        return $this->notice($to, 'List ' . $this->headerSafe((string) $r['business_name']) . ' on ' . $site . ' for free', [
             'heading'    => 'You were recommended on ' . $site,
             'paragraphs' => [
                 'Hello ' . $r['business_name'] . ',',
@@ -457,7 +482,7 @@ class ReferralService
             ],
             'button'       => ['Create your free listing', base_url('add-listing?invite=' . $token)],
             'footnote'     => 'We will not email you about this again. Not interested?',
-            'footnoteLink' => ["Don't contact me again", base_url('recommend/stop/' . $token)],
+            'footnoteLink' => $stop,
         ]);
     }
 

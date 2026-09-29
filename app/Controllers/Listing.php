@@ -19,31 +19,62 @@ class Listing extends BaseController
     /** Nobody fills in a whole business listing this fast. */
     private const MIN_FORM_SECONDS = 3;
 
+    /** Where a signup came from when nothing else says so. See signupSource(). */
+    public const SOURCE_DIRECT = 'direct';
+    public const SOURCE_SITE   = 'site';
+
+    /**
+     * /add-listing, typed or bookmarked: both options, Verified first.
+     *
+     * Only a visitor with no campaign source in their session sees the Free
+     * card at all. Anyone who arrived through a link of ours, whether an invite,
+     * a ?via= tag or one of the site's own buttons, gets the verified-only form.
+     * See SignupChannel and signup_cta_url().
+     */
     public function create()
     {
-        return $this->renderForm('free');
+        if (self::campaignSource() !== null) {
+            return $this->renderForm('verified', true);
+        }
+
+        $plan = $this->request->getGet('plan') === 'free' ? 'free' : 'verified';
+
+        return $this->renderForm($plan, false);
     }
 
     /**
-     * The same form, reached from the Verified Business card.
+     * The verified-only form, where every link we control points.
      *
      * Nothing here is a second signup path: it renders the identical fields and
-     * posts to the identical endpoint. The one difference is that the documents
-     * <details> arrives already open — someone who clicked "Get verified" has
-     * said that is what they came for, so folding it away again would hide the
-     * thing they came in for.
+     * posts to the identical endpoint. It shows only the Verified card, with the
+     * documents panel open. The listing is still saved if nothing is attached
+     * (see store()), and the card's small print says so: the Terms and FAQ
+     * promise a South African listing is free, so no page may imply otherwise.
      */
     public function createVerified()
     {
-        return $this->renderForm('verified');
+        return $this->renderForm('verified', true);
     }
 
     /**
-     * @param string $plan 'free' or 'verified' — which of the two comparison
-     *                     cards the visitor arrived from. Presentation only;
-     *                     store() saves the same listing either way.
+     * The ?via= value or 'invite' SignupChannel stored for this visit, or null
+     * for a visitor who came straight to the site.
      */
-    private function renderForm(string $plan)
+    public static function campaignSource(): ?string
+    {
+        $via = session(\App\Filters\SignupChannel::SESSION_KEY);
+
+        return is_string($via) && $via !== '' ? $via : null;
+    }
+
+    /**
+     * @param string $plan         'free' or 'verified': which card starts picked.
+     *                             Presentation only; store() saves the same
+     *                             listing either way.
+     * @param bool   $verifiedOnly render the Verified card alone, with no way
+     *                             to pick Free on the page.
+     */
+    private function renderForm(string $plan, bool $verifiedOnly)
     {
         $svc = new DirectoryService();
 
@@ -69,7 +100,9 @@ class Listing extends BaseController
         // Referer — so redirect()->back() after a failed submission can land on
         // the other plan's URL and quietly undo the choice. The posted value is
         // what the person actually picked, so it outranks the route.
-        if (isset($old['plan']) && in_array($old['plan'], ['free', 'verified'], true)) {
+        //
+        // Not in verified-only mode, which has no Free card to have picked.
+        if (! $verifiedOnly && isset($old['plan']) && in_array($old['plan'], ['free', 'verified'], true)) {
             $plan = $old['plan'];
         }
 
@@ -87,6 +120,9 @@ class Listing extends BaseController
             // off falls back to the free form rather than rendering an upload for
             // a badge nobody can buy.
             'plan' => $offered ? $plan : 'free',
+            // Same fallback as the plan: with the badge off there is nothing to
+            // show alone, so every mode is the plain free form.
+            'verifiedOnly' => $offered && $verifiedOnly,
             'invite' => ctype_xdigit($invite) && strlen($invite) === 64 ? $invite : '',
         ]);
     }
@@ -126,6 +162,13 @@ class Listing extends BaseController
 
         $post = $this->request->getPost();
         $logo = $this->resolveLogo();
+
+        // Where this signup came from. Always overwritten here, so the form
+        // cannot claim a channel. form_mode is presentation only: it tells a
+        // visitor who used one of the site's buttons ('site') from one who
+        // typed /add-listing ('direct').
+        $post['signup_source'] = self::campaignSource()
+            ?? ($this->request->getPost('form_mode') === 'verified-only' ? self::SOURCE_SITE : self::SOURCE_DIRECT);
         $post['logo_path'] = $logo['path'];
 
         $mut    = new DirectoryListingMutationService();

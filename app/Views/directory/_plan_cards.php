@@ -51,10 +51,19 @@ use App\Services\TeamMemberService;
  * @var string      $amount   monthly price, already formatted to two decimals
  * @var bool        $offered  VerificationService::isEnabled()
  * @var string      $selected 'free' or 'verified' — which card wears the ring
+ * @var bool        $verifiedOnly render the Verified card alone (see below)
+ *
+ * 5. Verified comes first. It is the offer we lead with everywhere. In
+ *    verified-only mode (every link we control, see Listing::create()) the Free
+ *    card is not rendered at all. The Verified card's small print still says a
+ *    South African listing is free: the Terms and FAQ promise that, so it must
+ *    stay on this page even when the Free card does not.
  */
 if (empty($offered)) {
     return;
 }
+
+$verifiedOnly = ! empty($verifiedOnly);
 
 $team      = TeamMemberService::MAX_MEMBERS;
 $locations = PracticeLocationService::MAX_LOCATIONS;
@@ -90,8 +99,45 @@ $row = static function (array $r, string $col): string {
         . '<span>' . $r['label'] . $note . '</span></li>';
 };
 ?>
-<div class="plan-grid" data-plan-cards>
+<?php // No data-plan-cards in verified-only mode: with one card there is nothing
+      // to pick, and without the hook the plan picker in directory.js stays off. ?>
+<div class="plan-grid<?= $verifiedOnly ? ' plan-grid-single' : '' ?>"<?= $verifiedOnly ? '' : ' data-plan-cards' ?>>
 
+    <div class="plan-card plan-card-featured<?= $selected === 'verified' ? ' plan-card-picked' : '' ?>" data-plan-card="verified">
+        <?php // The card names itself with the actual badge, rather than repeating
+              // the words beside a sample of it — this IS the thing being sold, so
+              // showing it is worth more than describing it twice. The seal shows
+              // what arrives; the pill under it stays because it is what the buyer
+              // will actually see on their own listing. ?>
+        <?= verified_seal('verified-seal mx-auto mb-2 w-14') ?>
+        <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
+        <p class="plan-price">R<?= esc($amount) ?><span class="plan-price-unit">per month</span></p>
+        <p class="plan-blurb">
+            Everything in the free listing, plus a checked badge, your team and your
+            other branches.
+        </p>
+        <ul class="plan-rows">
+            <?php foreach ($rows as $r): ?>
+                <?= $row($r, 'paid') ?>
+            <?php endforeach; ?>
+        </ul>
+        <?php // Same terms as _verification_pitch.php, and they must stay the same. ?>
+        <p class="hint plan-terms">
+            <strong>Nothing to pay now.</strong> We review your documents first and only ask
+            for payment if they check out. Cancel any time. A South African listing is free
+            either way, and stays free.
+        </p>
+        <?php // Alone on the page there is nothing to switch between, so the
+              // button just takes them down to the form. ?>
+        <?php if ($verifiedOnly): ?>
+            <a class="btn btn-accent btn-block plan-cta" href="#listing-form">Get verified</a>
+        <?php else: ?>
+            <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
+               href="<?= base_url('add-listing') ?>">Get verified</a>
+        <?php endif; ?>
+    </div>
+
+    <?php if (! $verifiedOnly): ?>
     <div class="plan-card<?= $selected === 'free' ? ' plan-card-picked' : '' ?>" data-plan-card="free">
         <p class="plan-name">Free Listing</p>
         <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
@@ -120,35 +166,8 @@ $row = static function (array $r, string $col): string {
               // shareable. data-plan-pick is what the picker module intercepts to
               // do the swap in place instead — see "plan picker" in directory.js. ?>
         <a class="btn btn-ghost btn-block plan-cta" data-plan-pick="free"
-           href="<?= base_url('add-listing') ?>">Start free</a>
+           href="<?= base_url('add-listing?plan=free') ?>">Start free</a>
     </div>
-
-    <div class="plan-card plan-card-featured<?= $selected === 'verified' ? ' plan-card-picked' : '' ?>" data-plan-card="verified">
-        <?php // The card names itself with the actual badge, rather than repeating
-              // the words beside a sample of it — this IS the thing being sold, so
-              // showing it is worth more than describing it twice. The seal shows
-              // what arrives; the pill under it stays because it is what the buyer
-              // will actually see on their own listing. ?>
-        <?= verified_seal('verified-seal mx-auto mb-2 w-14') ?>
-        <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
-        <p class="plan-price">R<?= esc($amount) ?><span class="plan-price-unit">per month</span></p>
-        <p class="plan-blurb">
-            Everything in the free listing, plus a checked badge, your team and your
-            other branches.
-        </p>
-        <ul class="plan-rows">
-            <?php foreach ($rows as $r): ?>
-                <?= $row($r, 'paid') ?>
-            <?php endforeach; ?>
-        </ul>
-        <?php // Same terms as _verification_pitch.php, and they must stay the same. ?>
-        <p class="hint plan-terms">
-            <strong>Nothing to pay now.</strong> We review your documents first and only ask
-            for payment if they check out. Cancel any time. A South African listing is free
-            either way, and stays free.
-        </p>
-        <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
-           href="<?= base_url('add-listing/verified') ?>">Get verified</a>
-    </div>
+    <?php endif; ?>
 
 </div>

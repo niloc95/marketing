@@ -569,6 +569,17 @@ class Directory extends BaseController
                         . 'subscription before the profile goes live — this is the last step.');
             }
 
+            // The moment they are most likely to say yes: signed in, listing just
+            // live. With the badge on sale and no application yet (none attached
+            // at signup), go straight to the badge panel on the dashboard instead
+            // of the profile. Someone who already applied goes to their profile.
+            if ($verification->isEnabled() && $verification->forListing((int) $listing['id']) === null) {
+                return redirect()->to(base_url('manage/edit') . '#get-verified')
+                    ->with('success', 'Your listing is live. Next: get the Verified Business badge. '
+                        . 'Send your company registration and the owner\'s ID below. There is nothing '
+                        . 'to pay until we have checked them, and your listing stays free either way.');
+            }
+
             return redirect()->to(base_url('directory/' . $listing['slug']))
                 ->with('success', 'Your profile is verified and now live. You are signed in — '
                     . 'use Manage your profile to edit it or apply for the Verified Business badge.');

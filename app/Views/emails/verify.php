@@ -10,20 +10,27 @@
         </p>
         <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($link) ?>" style="color:#003049"><?= esc($link) ?></a></p>
         <p style="font-size:13px;color:#64748b">If you didn't request this, you can ignore this email.</p>
-        <?php // Deliberately after the ignore-notice and in muted type: the one job
-              // of this email is getting the link clicked, and a second call to
-              // action competing with it would cost more signups than it wins
-              // badges. $offerBadge is defaulted so any caller that has not been
-              // updated simply says nothing. ?>
+        <?php // A proper section now, not a footnote: Verified is the offer we lead
+              // with. Still no second button, though. The one job of this email is
+              // getting the link above clicked, and that same click now carries on
+              // to the badge application (Directory::verify() lands a listing that
+              // has not applied on manage/edit#get-verified). $offerBadge is
+              // defaulted so any caller that has not been updated says nothing. ?>
         <?php if ($offerBadge ?? false): ?>
-            <hr style="border:0;border-top:1px solid #e2e8f0;margin:22px 0">
-            <p style="font-size:13px;color:#64748b">
-                <strong style="color:#0f172a">Once you're published:</strong> you can apply for a
-                <strong style="color:#0f172a">Verified Business</strong> badge &mdash; we check your company
-                registration document and the owner's ID, and your profile carries the badge in search results
-                for R<?= esc($badgePrice ?? '') ?> a month. Your listing stays free either way.
-                <a href="<?= esc(base_url('verified')) ?>" style="color:#003049">What we check &rarr;</a>
-            </p>
+            <div style="margin-top:22px;border:1px solid #6ee7b7;border-radius:12px;padding:16px 18px;background:#ecfdf5">
+                <p style="font-size:15px;font-weight:700;color:#065f46;margin:0 0 8px">Next: get the Verified Business badge</p>
+                <ul style="font-size:14px;line-height:1.6;color:#0f172a;margin:0 0 10px;padding-left:18px">
+                    <li>A green <strong>Verified Business</strong> badge on your profile and beside your name in search results</li>
+                    <li>Your team by name, with photos and qualifications</li>
+                    <li>Your other branches, each with its own address and phone number</li>
+                </ul>
+                <p style="font-size:13px;line-height:1.6;color:#334155;margin:0">
+                    R<?= esc($badgePrice ?? '') ?> a month, and nothing to pay until we've checked your company
+                    registration and the owner's ID. If you haven't sent them yet, confirming above takes you
+                    straight there. Your listing stays free either way.
+                    <a href="<?= esc(base_url('verified')) ?>" style="color:#065f46">What we check &rarr;</a>
+                </p>
+            </div>
         <?php endif; ?>
     </div>
 </body>

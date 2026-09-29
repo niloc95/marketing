@@ -38,6 +38,7 @@ class Filters extends BaseFilters
         'admin'         => \App\Filters\AdminFilter::class,
         'bottrap'       => \App\Filters\BotTrap::class,
         'headrequest'   => \App\Filters\HeadRequest::class,
+        'signupchannel' => \App\Filters\SignupChannel::class,
     ];
 
     /**
@@ -116,6 +117,8 @@ class Filters extends BaseFilters
             // The 64-hex token in the path stands in, and the only thing the
             // endpoint can do is opt a listing out of marketing email.
             'csrf' => ['except' => ['csp-report', 'payfast/notify', 'unsubscribe/*']],
+            // Remembers a ?via= / ?invite= arrival for the visit. See the class.
+            'signupchannel',
             // 'invalidchars',
         ],
         'after' => [

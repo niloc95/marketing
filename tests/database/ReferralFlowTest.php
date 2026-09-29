@@ -145,7 +145,7 @@ final class ReferralFlowTest extends CIUnitTestCase
         $body = html_entity_decode((string) $mail['body']);
         $this->assertStringNotContainsString('lindiwe@example.test', $body, 'the referrer\'s address is never shown');
         $this->assertStringContainsString('Lindiwe', $body, 'a customer\'s first name is');
-        $this->assertSame(1, preg_match('#add-listing\?invite=([a-f0-9]{64})#', $body, $m));
+        $this->assertSame(1, preg_match('#add-listing(?:/verified)?\?invite=([a-f0-9]{64})#', $body, $m));
 
         $row = $this->referrals->find($id);
         $this->assertSame(DirectoryReferralModel::STATUS_INVITED, $row['status']);
@@ -315,7 +315,7 @@ final class ReferralFlowTest extends CIUnitTestCase
     private function inviteAndGetToken(int $id): string
     {
         $this->assertTrue($this->svc->invite($id)['ok']);
-        preg_match('#add-listing\?invite=([a-f0-9]{64})#', html_entity_decode((string) end($this->sent)['body']), $m);
+        preg_match('#add-listing(?:/verified)?\?invite=([a-f0-9]{64})#', html_entity_decode((string) end($this->sent)['body']), $m);
         $this->sent = [];
 
         return $m[1];

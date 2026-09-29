@@ -3,16 +3,25 @@
 <?php
 $siteName = config('Directory')->siteName();
 
-// Which of the two comparison cards brought them here. Presentation only —
-// both paths post to the same endpoint and save the same listing.
-$plan       = ($plan ?? 'free') === 'verified' ? 'verified' : 'free';
-$isVerified = $plan === 'verified';
+// Which card starts picked. Presentation only: every mode posts to the same
+// endpoint and saves the same listing. See Listing::create() for the modes.
+$plan         = ($plan ?? 'free') === 'verified' ? 'verified' : 'free';
+$isVerified   = $plan === 'verified';
+$verifiedOnly = ! empty($verifiedOnly);
 
 // Written once, rendered in whichever of the two headings this page ends up with:
 // above the comparison cards normally, or on the form card itself when the badge
 // is switched off and there are no cards.
-$eyebrow  = 'List your business &mdash; free';
-$headline = 'Get found by new customers';
+if ($verifiedOnly) {
+    $eyebrow  = 'Verified Business';
+    $headline = 'Get your business verified';
+} elseif ($verificationOffered) {
+    $eyebrow  = 'List your business';
+    $headline = 'Get found by new customers';
+} else {
+    $eyebrow  = 'List your business &mdash; free';
+    $headline = 'Get found by new customers';
+}
 
 // Both pages canonicalise to /add-listing. They are one form showing the same
 // fields, so the verified variant is not a separate thing to index — and the
@@ -45,9 +54,10 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <span class="eyebrow"><?= $eyebrow ?></span>
                 <h1 class="plan-choose-title"><?= $headline ?></h1>
                 <?= view('directory/_plan_cards', [
-                    'amount'   => $verificationAmount,
-                    'offered'  => $verificationOffered,
-                    'selected' => $plan,
+                    'amount'       => $verificationAmount,
+                    'offered'      => $verificationOffered,
+                    'selected'     => $plan,
+                    'verifiedOnly' => $verifiedOnly,
                 ]) ?>
             </div>
         <?php endif; ?>
@@ -76,6 +86,9 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <!-- honeypot -->
                 <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
                 <?php // From a "Recommend a business" invite; closes that referral. See Listing::renderForm(). ?>
+                <?php // Tells store() a site-button arrival ('site') from a typed /add-listing
+                      // ('direct') for signup_source. Attribution only; changes nothing saved. ?>
+                <input type="hidden" name="form_mode" value="<?= $verifiedOnly ? 'verified-only' : 'both' ?>">
                 <?php if (($invite ?? '') !== ''): ?>
                     <input type="hidden" name="invite" value="<?= esc($invite, 'attr') ?>">
                 <?php endif; ?>
@@ -117,9 +130,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                           // carry two inputs named verify_doc_registration and two elements
                           // with the same id.
                           //
-                          // Collapsed is still the free default. The listing is free and the
-                          // form should say that first; an upsell sitting open above the
-                          // submit button on the free path would say otherwise.
+                          // Open by default now: Verified is the option we lead with, so it
+                          // arrives picked on every mode but ?plan=free. Picking Free closes it.
                           //
                           // Open never means required. See Listing::store(): submitting with
                           // nothing attached saves the listing and says so. A missing or
@@ -169,8 +181,13 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                       // it does the identical thing as picking the Free card, so it
                                       // cannot drift from it; and with JS off it still works, where a
                                       // button would have been a dead control. ?>
-                                <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
-                                   href="<?= base_url('add-listing') ?>">Remove &mdash; keep my listing free</a>
+                                <?php // Not in verified-only mode, which offers no Free option on the
+                                      // page. The small print above still says the listing publishes
+                                      // without documents, which is what keeps that mode honest. ?>
+                                <?php if (! $verifiedOnly): ?>
+                                    <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
+                                       href="<?= base_url('add-listing?plan=free') ?>">Remove &mdash; keep my listing free</a>
+                                <?php endif; ?>
                             </div>
                         </details>
                         <?php // Outside the <details>, because it has to be readable once the

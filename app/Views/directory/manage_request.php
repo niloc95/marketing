@@ -31,7 +31,7 @@
             </form>
 
             <p class="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-                Not added yet? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-listing') ?>">List your business — free</a>.
+                Not added yet? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>.
             </p>
         </div>
     </div>

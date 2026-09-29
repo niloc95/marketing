@@ -36,7 +36,9 @@ $prettyDate = static function (?string $date): string {
     return $ts === false ? '' : date('j F Y', $ts);
 };
 ?>
-<div class="panel verify-panel">
+<?php // #get-verified is where Directory::verify() lands a newly published listing
+      // that has not applied yet. Keep the id if this markup moves. ?>
+<div class="panel verify-panel" id="get-verified">
     <?php // The seal appears only once the badge is live. Showing a finished
           // VERIFIED mark to an owner whose documents are still in review would
           // be a claim this panel cannot make — those states keep the pill. ?>

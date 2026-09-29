@@ -156,12 +156,20 @@
                       // eyebrow and intro the moment you land.
                       //
                       // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
-                      // gets its own spacing without a literal one. ?>
-                <a href="<?= base_url('add-listing') ?>" class="btn btn-accent nav-cta">
-                    <span class="sm:hidden">Get listed</span>
-                    <span class="hidden sm:inline">List your business</span>
-                    <strong class="hidden sm:inline">free</strong>
-                </a>
+                      // gets its own spacing without a literal one.
+                      //
+                      // While the badge is on sale this is "Get verified" at every width and
+                      // goes to the verified-only form. See signup_cta(). It fits the phone's
+                      // ~110px as well as "Get listed" did. ?>
+                <?php if (signup_cta()['verified']): ?>
+                    <a href="<?= esc(signup_cta()['url']) ?>" class="btn btn-accent nav-cta">Get verified</a>
+                <?php else: ?>
+                    <a href="<?= base_url('add-listing') ?>" class="btn btn-accent nav-cta">
+                        <span class="sm:hidden">Get listed</span>
+                        <span class="hidden sm:inline">List your business</span>
+                        <strong class="hidden sm:inline">free</strong>
+                    </a>
+                <?php endif; ?>
                 <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
                       // aria-expanded — one source of truth for open/closed. ?>
                 <button type="button" class="menu-toggle md:hidden" data-menu-toggle aria-controls="site-menu" aria-expanded="false" aria-label="Menu">
@@ -332,7 +340,7 @@
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
-                    <li><a href="<?= base_url('add-listing') ?>">List your business</a></li>
+                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get verified' : 'List your business' ?></a></li>
                     <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
@@ -360,9 +368,20 @@
                 </ul>
             </div>
             <div class="site-footer-col">
-                <h3>Get started</h3>
-                <p class="site-footer-tagline">Adding your business takes a couple of minutes and costs nothing.</p>
-                <a class="btn btn-accent mt-4" href="<?= base_url('add-listing') ?>">List your business <strong>free</strong></a>
+                <?php if (signup_cta()['verified']): ?>
+                    <h3>Get verified</h3>
+                    <?php // Same terms as _verification_pitch.php and _plan_cards.php. ?>
+                    <p class="site-footer-tagline">
+                        Show customers you're a real, checked business: the Verified Business badge,
+                        your team and your branches, for R<?= esc((new App\Services\VerificationService())->monthlyAmount()) ?> a month.
+                        Nothing to pay until we've checked your documents.
+                    </p>
+                    <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your business verified</a>
+                <?php else: ?>
+                    <h3>Get started</h3>
+                    <p class="site-footer-tagline">Adding your business takes a couple of minutes and costs nothing.</p>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-listing') ?>">List your business <strong>free</strong></a>
+                <?php endif; ?>
             </div>
         </div>
         <div class="site-footer-bar">

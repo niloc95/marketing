@@ -77,9 +77,9 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
                 <li><a class="<?= $link ?>" href="<?= base_url('directory') ?>">Browse every business</a></li>
                 <li><a class="<?= $link ?>" href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                 <?php if ($wasListing): ?>
-                    <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('manage') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= base_url('add-listing') ?>">list it again, free</a>.</li>
+                    <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('manage') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>">list it again</a>.</li>
                 <?php else: ?>
-                    <li><a class="<?= $link ?>" href="<?= base_url('add-listing') ?>">List your business, free</a></li>
+                    <li><a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a></li>
                 <?php endif; ?>
                 <li><a class="<?= $link ?>" href="<?= base_url('recommend') ?>">Recommend a business we're missing</a></li>
                 <li>Followed a broken link on our site? <a class="<?= $link ?>" href="<?= base_url('contact') ?>">Tell us</a> and we'll fix it.</li>

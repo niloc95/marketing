@@ -242,6 +242,15 @@ if ($aboutText !== '') {
                     'showWeb' => true,
                 ]) ?>
 
+                <?php // For the owner, not the visitor: a quiet line under the contact
+                      // panel, on profiles without the badge while it is on sale. It
+                      // links to /verified, which explains the badge and how to apply.
+                      // Worded as an offer to the owner, so it never reads as a warning
+                      // that this business is unchecked. ?>
+                <?php if (signup_cta()['verified'] && ! listing_is_verified_business($l)): ?>
+                    <a class="contact-suggest" href="<?= base_url('verified') ?>" rel="nofollow"><?= lucide('badge-check') ?>Is this your business? Get the Verified Business badge</a>
+                <?php endif; ?>
+
                 <?= view('directory/_map_panel', [
                     'row'     => $l,
                     'name'    => $name,

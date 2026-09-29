@@ -200,7 +200,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
         <div class="container">
             <div class="empty">
                 <p class="mb-4">Nothing here yet. Be the first!</p>
-                <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business — free</a>
+                <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
             </div>
         </div>
     </section>
@@ -294,7 +294,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
         <div class="container text-center">
             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Run a business in South Africa?</h2>
             <p class="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">Add it to <?= esc($siteName) ?> in a couple of minutes. No fee, no card, no contract.</p>
-            <a class="btn btn-accent mt-5" href="<?= base_url('add-listing') ?>">List your business — free</a>
+            <a class="btn btn-accent mt-5" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
         </div>
     </section>
 <?php endif; ?>

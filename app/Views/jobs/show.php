@@ -169,7 +169,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                         Businesses listed on <?= esc($siteName) ?> can reply to this request. Listing your business is free.
                     </p>
                     <div class="flex flex-wrap gap-2">
-                        <a class="btn btn-accent" href="<?= base_url('add-listing') ?>">List your business free</a>
+                        <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
                         <a class="btn btn-ghost" href="<?= base_url('manage') ?>">I'm listed: sign in</a>
                     </div>
                 <?php endif; ?>

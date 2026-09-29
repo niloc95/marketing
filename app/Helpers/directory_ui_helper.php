@@ -923,3 +923,42 @@ if (! function_exists('listing_has_facet_rail')) {
         ) !== [];
     }
 }
+
+if (! function_exists('signup_cta')) {
+    /**
+     * Where the site's own "list your business" buttons point, and what they say.
+     *
+     * Verified Business is the offer we lead with, so while the badge is on sale
+     * every button of ours goes to the verified-only signup form
+     * (/add-listing/verified) and says so. Only someone who types /add-listing
+     * sees the Free card (Listing::create()). With the badge off, every button
+     * falls back to the free form and its "free" wording: never advertise a
+     * badge that cannot be sold.
+     *
+     * Text that talks about listing *for free* (the FAQ, the Terms, the privacy
+     * policy, the "is it free?" answer on /verified) links to /add-listing
+     * directly instead, because pointing it at a page with no Free card would
+     * contradict the sentence it sits in.
+     *
+     * @return array{url:string,label:string,verified:bool}
+     */
+    function signup_cta(): array
+    {
+        // No static memo: the settings read below is already cached, and a
+        // memo would outlive a settings change within one test process.
+        // DirectorySettings rather than VerificationService, which builds a
+        // PayFast client this never needs. Same answer as isEnabled().
+        try {
+            $verified = (new \App\Services\DirectorySettings())->badgeEnabled();
+        } catch (\Throwable $e) {
+            // Called from the layout on every page, including error pages: a
+            // settings read that fails must cost the upsell, not the page.
+            log_message('warning', 'Could not read badge settings for signup_cta: ' . $e->getMessage());
+            $verified = false;
+        }
+
+        return $verified
+            ? ['url' => base_url('add-listing/verified'), 'label' => 'Get your business verified', 'verified' => true]
+            : ['url' => base_url('add-listing'), 'label' => 'List your business — free', 'verified' => false];
+    }
+}
