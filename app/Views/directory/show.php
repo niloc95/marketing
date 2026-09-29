@@ -54,17 +54,9 @@ $schema = schema_page(
     'ProfilePage',
     $name
 );
-$metaDesc = $prof ? ($name . ' — ' . $prof . ($place ? ' in ' . $place : '') . '.') : $name;
-// Then the owner's own words, which is what makes one profile's snippet differ
-// from the next. The name/category/place lead stays first because that is what
-// people search for; the excerpt gets whatever of ~160 characters is left, but
-// never less than 70, so a long business name still leaves a real sentence.
-$aboutText = schema_plain_description($l);
-if ($aboutText !== '') {
-    // A category-less listing's lead is the bare name, with no full stop to
-    // end on, so it gets a dash instead.
-    $metaDesc .= (str_ends_with($metaDesc, '.') ? ' ' : ' — ') . seo_excerpt($aboutText, max(70, 160 - mb_strlen($metaDesc) - 1));
-}
+// Name, category, venue/place, then trading hours and which contact details the
+// page has: what people add to a business name when they search for it.
+$metaDesc = listing_meta_description($l);
 ?>
 
 <?= $this->section('head') ?>

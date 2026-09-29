@@ -115,3 +115,154 @@ if (! function_exists('seo_excerpt')) {
         return (preg_replace('/[\s,;:\-–—]+$/u', '', $cut) ?? $cut) . '…';
     }
 }
+
+if (! function_exists('seo_hours_summary')) {
+    /**
+     * Trading hours as one short phrase for a meta description, e.g.
+     * "Mon–Fri 09:00–16:30, Sat 08:00–13:00", or "daily 09:00–17:00".
+     *
+     * Consecutive days with the same span collapse into a range; closed and
+     * blank days are left out, since a snippet has no room to say "closed".
+     * Returns '' when there is nothing to say, or when it would take more than
+     * three groups — at that point the phrase is longer than it is useful, and
+     * the caller points at the hours on the page instead.
+     *
+     * Deliberately never "open now": Google holds a snippet for days.
+     *
+     * @param array<string,array{closed:bool,open:string,close:string,note:string}>|null $hours
+     *   as returned by hours_decode()
+     */
+    function seo_hours_summary(?array $hours): string
+    {
+        if ($hours === null) {
+            return '';
+        }
+
+        helper('directory_hours');
+
+        $groups = [];
+        $prev   = null;
+        foreach (hours_days() as $key => $label) {
+            $row   = $hours[$key] ?? null;
+            $open  = is_array($row) && empty($row['closed']) ? trim((string) ($row['open'] ?? '')) : '';
+            $close = is_array($row) && empty($row['closed']) ? trim((string) ($row['close'] ?? '')) : '';
+            $span  = $open !== '' && $close !== '' ? $open . '–' . $close : null;
+
+            if ($span !== null && $span === $prev) {
+                $groups[count($groups) - 1]['last'] = substr($label, 0, 3);
+            } elseif ($span !== null) {
+                $groups[] = ['first' => substr($label, 0, 3), 'last' => null, 'span' => $span, 'start' => $key];
+            }
+            $prev = $span;
+        }
+
+        if ($groups === [] || count($groups) > 3) {
+            return '';
+        }
+        if (count($groups) === 1 && $groups[0]['start'] === 'mon' && $groups[0]['last'] === 'Sun') {
+            return 'daily ' . $groups[0]['span'];
+        }
+
+        return implode(', ', array_map(
+            static fn (array $g) => $g['first'] . ($g['last'] !== null ? '–' . $g['last'] : '') . ' ' . $g['span'],
+            $groups
+        ));
+    }
+}
+
+if (! function_exists('listing_meta_description')) {
+    /**
+     * The meta description for a listing's profile page, at most ~160 chars.
+     *
+     * Search Console shows people finding listings by searching the business
+     * name plus "trading hours", "address" or "contact number", so the snippet
+     * leads with what they asked: name, category and where (the venue first,
+     * when there is one — "… oriental plaza" is a common search), then the
+     * hours themselves, then which contact details the page has. The owner's
+     * own words fill whatever room is left.
+     *
+     * Everything comes from the listing row, so a listing that lacks a field
+     * simply drops that part.
+     *
+     * @param array<string,mixed> $l a getProfile() row (trading_hours decoded)
+     */
+    function listing_meta_description(array $l): string
+    {
+        helper('schema');
+
+        $max   = 160;
+        $name  = trim((string) ($l['display_name'] ?? ''));
+        $prof  = trim((string) ($l['category']['name'] ?? ($l['category_name'] ?? '')));
+        $venue = trim((string) ($l['venue']['name'] ?? ''));
+        // Suburb is often entered as the city again; "Johannesburg,
+        // Johannesburg" wastes snippet room and reads like a bug.
+        $join = static function (array $parts): string {
+            $out = [];
+            foreach ($parts as $p) {
+                $p = trim((string) $p);
+                if ($p !== '' && ! in_array(mb_strtolower($p), array_map('mb_strtolower', $out), true)) {
+                    $out[] = $p;
+                }
+            }
+
+            return implode(', ', $out);
+        };
+        $area  = $join([$l['suburb'] ?? '', $l['city'] ?? '']);
+        $place = $join([$l['suburb'] ?? '', $l['city'] ?? '', ($l['province'] ?? '') ?: ($l['region'] ?? '')]);
+
+        if ($venue !== '') {
+            $where = ' at ' . $venue . ($area !== '' ? ', ' . $area : '');
+        } else {
+            $where = $place !== '' ? ' in ' . $place : '';
+        }
+        // A category-less listing's lead is the bare name, as before: "— in
+        // Fordsburg" with nothing in front of it reads as a fragment.
+        $lead = $prof !== '' ? $name . ' — ' . $prof . $where . '.' : $name . '.';
+
+        $hours   = seo_hours_summary(is_array($l['trading_hours'] ?? null) ? $l['trading_hours'] : null);
+        $hasHours = $hours !== '' || ! empty(array_filter(
+            (array) ($l['trading_hours'] ?? []),
+            static fn ($d) => is_array($d) && (($d['open'] ?? '') !== '' || ! empty($d['closed']))
+        ));
+        $hasPhone   = trim((string) ($l['phone'] ?? '')) !== '';
+        $hasAddress = trim((string) ($l['address_line'] ?? '')) !== '' || $venue !== '';
+
+        $contact = static function (bool $withHours) use ($hasPhone, $hasAddress): string {
+            $parts = array_values(array_filter([
+                $withHours ? 'trading hours' : '',
+                $hasPhone ? 'phone number' : '',
+                $hasAddress ? 'address' : '',
+                $hasAddress ? 'directions' : '',
+            ]));
+            if ($parts === []) {
+                return '';
+            }
+            $last = array_pop($parts);
+            $text = $parts === [] ? $last : implode(', ', $parts) . ' and ' . $last;
+
+            return ucfirst($text) . '.';
+        };
+
+        $desc = $lead;
+        $withHours = $hours !== '' ? $lead . ' Open ' . $hours . '.' : '';
+        if ($withHours !== '' && mb_strlen($withHours) <= $max) {
+            $desc = $withHours;
+            $tail = $contact(false);
+        } else {
+            $tail = $contact($hasHours);
+        }
+        if ($tail !== '' && mb_strlen($desc . ' ' . $tail) <= $max) {
+            $desc .= ' ' . $tail;
+        }
+
+        // The owner's words only when a real sentence fits — a 20-character
+        // stub ending in "…" reads worse than nothing.
+        $about = schema_plain_description($l);
+        $room  = $max - mb_strlen($desc) - 1;
+        if ($about !== '' && $room >= 40) {
+            $desc .= ' ' . seo_excerpt($about, $room);
+        }
+
+        return $desc;
+    }
+}
