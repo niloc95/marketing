@@ -964,3 +964,28 @@ if (! function_exists('signup_cta')) {
             : ['url' => base_url('add-listing'), 'label' => 'List your business — free', 'verified' => false];
     }
 }
+
+if (! function_exists('local_datetime')) {
+    /**
+     * A stored timestamp as South African wall-clock time: "30 Sep 2026, 14:05".
+     *
+     * The app runs in UTC (Config\App::$appTimezone), so every created_at in the
+     * database is UTC and a bare date() prints it two hours behind what an admin
+     * in South Africa expects. Convert on display only; storage stays UTC.
+     * Empty or unparseable input gives '—', like the admin tables' other blanks.
+     */
+    function local_datetime(?string $utc): string
+    {
+        if ($utc === null || trim($utc) === '') {
+            return '—';
+        }
+
+        try {
+            return (new DateTimeImmutable($utc, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Africa/Johannesburg'))
+                ->format('j M Y, H:i');
+        } catch (Exception) {
+            return '—';
+        }
+    }
+}

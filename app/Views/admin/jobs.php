@@ -103,7 +103,7 @@ $prettyDate = static function (?string $date): string {
                                 <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($r['poster_email'] ?? '') ?></div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($r['poster_phone'] ?? '') ?></div>
                             </td>
-                            <td><?= esc($prettyDate($r['created_at'] ?? null)) ?></td>
+                            <td class="whitespace-nowrap"><?= esc(local_datetime($r['created_at'] ?? null)) ?></td>
                             <td><?= esc($prettyDate($r['valid_through'] ?? null)) ?></td>
                             <td>
                                 <div class="actions">

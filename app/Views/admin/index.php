@@ -93,7 +93,7 @@ $isTrash = $status === 'trashed';
                           // owner clicked their confirmation link, verified_until means
                           // they pay for the Verified Business badge. One header covering
                           // both is how someone ends up refunding the wrong person. ?>
-                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Email</th><th>Badge</th><th>Analytics</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Created</th><th>Email</th><th>Badge</th><th>Analytics</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
@@ -118,6 +118,7 @@ $isTrash = $status === 'trashed';
                             <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate — worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
                         </td>
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
+                        <td class="whitespace-nowrap text-xs"><?= esc(local_datetime($l['created_at'] ?? null)) ?></td>
                         <td><?= ! empty($l['is_verified']) ? lucide('check', 'h-4 w-4 text-emerald-600 dark:text-emerald-400') : '—' ?></td>
                         <td>
                             <?php if (listing_is_verified_business($l)): ?>
