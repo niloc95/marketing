@@ -8,6 +8,7 @@ use App\Models\DirectoryListingTeamModel;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * A hand-typed team[i][photo_path] must never reach unlink() or the database.
@@ -25,6 +26,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ForgedTeamPhotoPathTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -86,13 +88,13 @@ final class ForgedTeamPhotoPathTest extends CIUnitTestCase
         $id    = $this->listing(['verified_until' => date('Y-m-d', strtotime('+1 year'))]);
         $probe = $this->probe('assets/listings/');
 
-        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/edit', [
+        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/edit', $this->withRequiredSections([
             'display_name'   => 'Hands & Co Attorneys',
             'contact_person' => 'Jane Hands',
             'title'          => 'Ms',
             'category_id'    => $this->categoryId,
             'team'           => [['name' => 'Jane Hands', 'photo_path' => $probe['rel']]],
-        ]);
+        ]));
 
         $members = (new DirectoryListingTeamModel())->where('listing_id', $id)->findAll();
         $this->assertCount(1, $members, 'Guard: the save should have gone through.');
@@ -141,6 +143,9 @@ final class ForgedTeamPhotoPathTest extends CIUnitTestCase
             'status'       => 'published',
             'is_verified'  => 1,
             'published_at' => date('Y-m-d H:i:s'),
+            // A stored logo: an owner save now needs a picture, and this one
+            // already has it — see HandlesListingUploads::hasPhoto().
+            'logo_path'    => 'assets/listings/existing-logo.webp',
         ], $overrides), true);
     }
 }

@@ -77,6 +77,12 @@ $addressRequired = $addressRequired ?? false;
 // ask for.
 $privateDetailsRequired = $privateDetailsRequired ?? false;
 
+// Hours, a picture and one service are compulsory on exactly the same pages
+// as the private details — signup and the owner edit — and for the same
+// reason admin is exempt. DirectoryListingMutationService::validate() is the
+// enforcement; this only draws the chips and opens the sections.
+$sectionsRequired = $privateDetailsRequired;
+
 // The country select belongs to the listing's own address only — a branch is
 // another location of the same business and inherits it. See _address_inputs.
 $countries   = $countries   ?? [];
@@ -176,12 +182,12 @@ helper('directory_hours');
 
 <div class="field">
     <label for="field-website">Website</label>
-    <input type="text" id="field-website" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="https://…">
+    <input type="text" id="field-website" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="www.yourbusiness.co.za" inputmode="url" autocomplete="url">
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
 <div class="field" data-rich-text data-rich-text-max="<?= \App\Libraries\RichText::MAX_PLAIN_LENGTH ?>">
-    <label for="description">Business description</label>
+    <label for="description">Business description<?= $privateDetailsRequired ? ' *' : '' ?></label>
     <?php /*
         The textarea is the real form field and stays that way. directory.js
         hides it, mounts Quill into the div below, and copies the editor's HTML
@@ -316,28 +322,70 @@ helper('directory_hours');
       // fieldset says so up front rather than leaving owners to guess. ?>
 <fieldset class="form-private">
     <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
+    <?php
+    // Two fixed lists (DirectoryListingModel::TITLES / POSITIONS). A title
+    // stored before the dropdown existed is offered as one more option, so the
+    // owner sees what is on file and saving without touching it keeps it —
+    // validate() accepts an unchanged legacy value.
+    $titleOptions    = \App\Models\DirectoryListingModel::TITLES;
+    $positionOptions = \App\Models\DirectoryListingModel::POSITIONS;
+    $curTitle        = $v('title');
+    $curPosition     = $v('position');
+    if ($curTitle !== '' && ! in_array($curTitle, $titleOptions, true)) {
+        array_unshift($titleOptions, $curTitle);
+    }
+    if ($curPosition !== '' && ! in_array($curPosition, $positionOptions, true)) {
+        array_unshift($positionOptions, $curPosition);
+    }
+    $req = $privateDetailsRequired ? ' *' : '';
+    ?>
     <div class="form-row">
         <div class="field">
-            <label>Title<?= $privateDetailsRequired ? ' *' : '' ?></label>
-            <input type="text" name="title" value="<?= esc($v('title'), 'attr') ?>" maxlength="60" placeholder="Dr, Mrs, Prof…" <?= $privateDetailsRequired ? 'required' : '' ?>>
+            <label for="field-title">Title<?= $req ?></label>
+            <select id="field-title" name="title" <?= $privateDetailsRequired ? 'required' : '' ?>>
+                <option value="">Choose…</option>
+                <?php foreach ($titleOptions as $opt): ?>
+                    <option value="<?= esc($opt, 'attr') ?>" <?= $curTitle === $opt ? 'selected' : '' ?>><?= esc($opt) ?></option>
+                <?php endforeach; ?>
+            </select>
             <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
         </div>
         <div class="field">
-            <label>Contact person<?= $privateDetailsRequired ? ' *' : '' ?></label>
-            <input type="text" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" <?= $privateDetailsRequired ? 'required' : '' ?>>
-            <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
+            <label for="field-position">Position<?= $req ?></label>
+            <select id="field-position" name="position" <?= $privateDetailsRequired ? 'required' : '' ?>>
+                <option value="">Choose…</option>
+                <?php foreach ($positionOptions as $opt): ?>
+                    <option value="<?= esc($opt, 'attr') ?>" <?= $curPosition === $opt ? 'selected' : '' ?>><?= esc($opt) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php if ($err('position')): ?><div class="err"><?= esc($err('position')) ?></div><?php endif; ?>
         </div>
+    </div>
+    <?php // Last in the fieldset on purpose: filling it in is what opens every
+          // "stand out" section below — see data-standout in directory.js. ?>
+    <div class="field">
+        <label for="field-contact-person">Contact person<?= $req ?></label>
+        <input type="text" id="field-contact-person" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" autocomplete="name" <?= $privateDetailsRequired ? 'required' : '' ?> data-standout-trigger>
+        <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
     </div>
     <div class="hint">For our records, and so we know who to address when we contact you about this listing.</div>
 </fieldset>
 
-<div class="form-section-head">
+<?php // data-standout: directory.js opens every section in here once the
+      // contact person is filled in, so nobody finishes the form without
+      // seeing what is below. It closes after the consent boxes. ?>
+<div data-standout>
+<div class="form-section-head" id="standout-head">
     <h3>Make your profile stand out</h3>
-    <p class="hint">All optional, and you can come back to any of it later. Each section you fill in adds a panel to your public profile.</p>
+    <?php if ($sectionsRequired): ?>
+        <p class="hint"><strong>Opening hours, a logo or photo, and at least one service are required.</strong> The rest is optional and you can come back to it later. Each section you fill in adds a panel to your public profile.</p>
+    <?php else: ?>
+        <p class="hint">All optional, and you can come back to any of it later. Each section you fill in adds a panel to your public profile.</p>
+    <?php endif; ?>
 </div>
 
 <div id="field-services">
-<?= view('directory/_service_fields', ['rows' => $vServices, 'err' => $err]) ?>
+<?= view('directory/_service_fields', ['rows' => $vServices, 'err' => $err, 'required' => $sectionsRequired]) ?>
 </div>
 
 <div id="field-features">
@@ -361,13 +409,25 @@ helper('directory_hours');
 </div>
 
 <?php // Shared with every branch row — see _hours_inputs.php. Open once any
-      // day has something in it. ?>
-<details class="disclosure" id="field-hours" <?= array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) ? 'open' : '' ?>>
+      // day has something in it, when it is required and still empty, or when
+      // it carries an error. ?>
+<?php
+$vByAppointment = $v('by_appointment') === '1';
+$hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) !== [];
+?>
+<details class="disclosure" id="field-hours" <?= $hoursStarted || $err('hours') !== '' || ($sectionsRequired && $lockEmail) ? 'open' : '' ?>>
     <summary class="disclosure-summary">
-        <span>Opening hours</span>
-        <span class="hint">So customers know when to call</span>
+        <span>Opening hours<?php if ($sectionsRequired): ?> <span class="required-chip">Required</span><?php endif; ?></span>
+        <span class="hint"><?= $vByAppointment ? 'By appointment only' : 'So customers know when to call' ?></span>
     </summary>
     <div class="disclosure-body">
+    <?php if ($err('hours')): ?><div class="err"><?= esc($err('hours')) ?></div><?php endif; ?>
+    <?php // The honest answer for a mobile trade or a practice that only sees
+          // booked clients. It satisfies the compulsory-hours rule on its own;
+          // any times filled in as well are still shown. ?>
+    <div class="field">
+        <label><input type="checkbox" name="by_appointment" value="1" <?= $vByAppointment ? 'checked' : '' ?>> By appointment only &mdash; I don&rsquo;t keep regular opening hours</label>
+    </div>
 <?= view('directory/_hours_inputs', [
     'n'     => static fn (string $f): string => $f,
     'hours' => $vHours,
@@ -415,12 +475,15 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 
 <?php // Open by default: photos do more for a profile than anything else on
       // this form, so this is the one optional section that is not folded away. ?>
-<details class="disclosure" open>
+<details class="disclosure" id="field-photos" open>
     <summary class="disclosure-summary">
-        <span>Logo &amp; photos</span>
+        <span>Logo &amp; photos<?php if ($sectionsRequired): ?> <span class="required-chip">Required</span><?php endif; ?></span>
         <span class="hint">Profiles with photos get far more attention</span>
     </summary>
     <div class="disclosure-body">
+<?php // A failed save cannot keep the files that were chosen — browsers never
+      // re-fill a file input — so this says plainly to pick them again. ?>
+<?php if ($err('photo')): ?><div class="err"><?= esc($err('photo')) ?></div><?php endif; ?>
 <?php // accept="image/*" on both is deliberate: it is what makes iOS offer the
       // photo library and transcode HEIC to JPEG on the way out. Narrowing it to
       // a MIME list blocks iPhone photos outright. The server re-checks anyway. ?>
@@ -520,3 +583,4 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
         <div class="hint">Untick if you'd rather not. You can change this any time in Manage your profile, and every report has an unsubscribe link.</div>
     </div>
 <?php endif; ?>
+</div><?php // data-standout ?>

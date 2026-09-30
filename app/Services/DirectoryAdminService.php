@@ -168,6 +168,7 @@ class DirectoryAdminService
         $text = [
             'contact_person' => null,
             'title'          => null,
+            'position'       => null,
             'credentials'    => null,
             'description'    => 'richtext',
             'phone'          => null,
@@ -323,7 +324,9 @@ class DirectoryAdminService
             }
         }
         if (array_key_exists('hours', $input) || $id === null) {
-            $data['trading_hours'] = hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []);
+            $data['trading_hours']  = hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []);
+            // The checkbox beside the grid, so it is only meaningful when the grid was posted.
+            $data['by_appointment'] = empty($input['by_appointment']) ? 0 : 1;
         }
 
         // Checkboxes and the status select are different: an unticked checkbox

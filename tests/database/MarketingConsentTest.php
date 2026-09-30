@@ -11,6 +11,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
+use Tests\Support\ValidListingInput;
 
 /**
  * The consent record: terms acceptance, and whether the owner wants the monthly
@@ -37,6 +38,7 @@ use Config\Services;
  */
 final class MarketingConsentTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -536,7 +538,7 @@ final class MarketingConsentTest extends CIUnitTestCase
      */
     private function edit(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name' => 'Consent Plumber',
             'category_id'  => $this->categoryId,
             // The private "Your details" pair — compulsory on both write
@@ -545,7 +547,7 @@ final class MarketingConsentTest extends CIUnitTestCase
             'contact_person' => 'Test Owner',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 
     /**
@@ -555,7 +557,7 @@ final class MarketingConsentTest extends CIUnitTestCase
      */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             // A full address is compulsory for a new signup, and matches the
             // Cape Town coordinates above — see
             // DirectoryListingMutationService::REQUIRED_ADDRESS_FIELDS.
@@ -578,7 +580,7 @@ final class MarketingConsentTest extends CIUnitTestCase
             'marketing_opt_in'  => '1',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 }
 

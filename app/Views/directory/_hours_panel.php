@@ -10,8 +10,14 @@
  * @var array|null $hours   decoded hours, keyed mon..sun
  * @var string     $heading panel heading
  * @var string     $class   extra classes for the panel wrapper
+ * @var bool       $byAppointment the listing trades by appointment only; the
+ *                         panel says so, and shows the grid only if some
+ *                         times were given as well
  */
-if (empty($hours)) {
+$byAppointment = ! empty($byAppointment);
+$anyTimes      = is_array($hours) && array_filter($hours, static fn ($d): bool => is_array($d) && (($d['open'] ?? '') !== '' || ! empty($d['closed']))) !== [];
+
+if (empty($hours) && ! $byAppointment) {
     return;
 }
 
@@ -23,6 +29,10 @@ $todayKey = hours_today_key();
 ?>
 <div class="panel <?= esc($class, 'attr') ?>">
     <h3><?= esc($heading) ?></h3>
+    <?php if ($byAppointment): ?>
+        <p class="hours-appointment">By appointment only</p>
+        <?php if (! $anyTimes): ?></div><?php return; endif; ?>
+    <?php endif; ?>
     <?php foreach (hours_days() as $key => $label): $row = $hours[$key] ?? null; ?>
         <div class="kv hours-day-row<?= $key === $todayKey ? ' hours-today' : '' ?>">
             <span class="k"><?= esc($label) ?><?php if ($key === $todayKey): ?> <span class="hours-today-badge">Today</span><?php endif; ?></span>

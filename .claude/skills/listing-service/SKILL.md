@@ -60,10 +60,10 @@ the `{segment}`/`{token}` catch-alls, or the catch-all swallows them first.
 over `display_name`/`description`/`credentials`.
 
 - `OWNER_EDITABLE` allowlist (what `/manage/edit` may write): business fields only —
-  `type, display_name, contact_person, title, category_id, credentials, description,
+  `type, display_name, contact_person, title, position, category_id, credentials, description,
   phone, phone_alt, whatsapp, website, social_facebook, social_instagram,
   social_linkedin, social_tiktok, address_line, address_line_2, suburb, city, province,
-  region, postal_code, logo_path, trading_hours, accepts_card_payments, offers_delivery,
+  region, postal_code, logo_path, trading_hours, by_appointment, accepts_card_payments, offers_delivery,
   offers_online_booking, booking_url`. Deliberately **excludes** `email`, `slug`,
   `status`, `is_featured`, `is_verified`, `country` (it decides whether a listing is
   free) and `venue_id` — a crafted owner POST can't publish/feature a listing, hijack the
@@ -93,6 +93,33 @@ over `display_name`/`description`/`credentials`.
   clear), `directory_settings` (admin-editable badge price/enabled), and the verification
   set — `directory_verifications`, `_verification_documents`, `_verification_events`,
   `_verification_submissions`, `_verification_itn_rejections`.
+
+## Signup quality rules (since 30 Sep 2026)
+
+Added after a spam profile ("Polokwane ➸ [+②⑦⑦…] A TRADITIONAL HEALER…") went live.
+Enforced in `DirectoryListingMutationService::validate()` on **signup and owner edit**;
+admin intake (`DirectoryAdminService::upsert()`) is exempt.
+
+- **Name / description** rules live in `App\Libraries\ListingText`. Spam shapes (phone
+  numbers, emoji, ②-style digits, `[]`, >3 commas, URLs) are **rejected**; ALL-CAPS is
+  **fixed quietly** (`tidyName()`, `tidyDescriptionHtml()` via `RichText::mapText()`).
+  Description is compulsory, 50+ plain chars. A stored value that is unchanged is never
+  re-judged (the `$stored` argument to `validate()`), so legacy rows can still save.
+- **Website**: `normaliseUrl()` upgrades `http://` → `https://`, refuses IPs/localhost/
+  userinfo/no-TLD, and a new or changed link must resolve in DNS through
+  `Services::domainChecker()` (a lookup, never a request to the site). Under
+  `ENVIRONMENT === 'testing'` the checker says yes to everything; inject a fake to test a no.
+- **Title / Position** are dropdowns from `DirectoryListingModel::TITLES` / `POSITIONS`;
+  a legacy free-text title stays valid while unchanged.
+- **Compulsory sections**: complete hours *or* `by_appointment`, one named service, and a
+  picture. The picture flag is `$post['_has_photo']`, always written by the controller
+  (`HandlesListingUploads::hasPhoto()`) and only enforced when that key is present, so
+  direct service calls in tests skip it. Tests build valid input with
+  `Tests\Support\ValidListingInput::withRequiredSections()`.
+- **Form flow**: filling `[data-standout-trigger]` (contact person) opens every
+  `details.disclosure` in `[data-standout]` except `[data-standout-skip]` (branches).
+- `php spark directory:audit-text [--all]` reports stored listings that break the rules
+  (report only).
 
 ## Services split
 

@@ -14,7 +14,7 @@ class DirectoryListingModel extends Model
     protected $deletedField   = 'deleted_at';
 
     protected $allowedFields = [
-        'type', 'display_name', 'contact_person', 'title', 'category_id',
+        'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
         'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'whatsapp', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code', 'country',
@@ -22,7 +22,7 @@ class DirectoryListingModel extends Model
         'logo_path', 'slug', 'status', 'is_verified',
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'verified_until', 'hosting_paid_until', 'source', 'source_url', 'claim_token',
-        'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
         'venue_id',
         'quality_score', 'quality_scored_at',
         'terms_accepted_at', 'terms_version',
@@ -97,12 +97,26 @@ class DirectoryListingModel extends Model
      * only writer, and the owner raises it by filling in the fields above.
      */
     public const OWNER_EDITABLE = [
-        'type', 'display_name', 'contact_person', 'title', 'category_id',
+        'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
         'credentials', 'description', 'phone', 'phone_alt', 'whatsapp', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',
-        'trading_hours', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+    ];
+
+    /**
+     * The honorifics the "Title" dropdown offers. The single source for the
+     * form and DirectoryListingMutationService::validate(). A stored title from
+     * before the dropdown that is not in this list stays valid while unchanged
+     * — see validate().
+     */
+    public const TITLES = ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Adv'];
+
+    /** The contact person's role, for the "Position" dropdown. Same terms as TITLES. */
+    public const POSITIONS = [
+        'Owner', 'Founder', 'Co-founder', 'CEO', 'Managing Director', 'Director',
+        'Partner', 'Manager', 'Practitioner', 'Other',
     ];
 
     protected $validationRules = [

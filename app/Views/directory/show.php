@@ -252,6 +252,7 @@ $metaDesc = listing_meta_description($l);
 
                 <?= view('directory/_hours_panel', [
                     'hours'   => $l['trading_hours'] ?? null,
+                    'byAppointment' => ! empty($l['by_appointment']),
                     'heading' => $v['headings']['hours'],
                     'class'   => 'mt-5',
                 ]) ?>

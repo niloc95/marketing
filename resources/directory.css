@@ -1999,6 +1999,18 @@
   .dark .disclosure-summary { @apply text-slate-200 hover:bg-slate-800; }
   .dark .disclosure-body    { @apply border-slate-800; }
 
+  /* The three "stand out" sections a profile cannot be saved without (hours,
+     a picture, one service). A label, not a colour alone, so it reads the
+     same to a screen reader and in forced-colours mode. */
+  .hours-appointment { @apply m-0 mb-2 text-sm font-semibold text-slate-700; }
+  .dark .hours-appointment { @apply text-slate-200; }
+
+  .required-chip {
+    @apply ml-2 inline-block rounded-full bg-primary-100 px-2 py-0.5 align-middle text-[0.7rem]
+           font-semibold uppercase tracking-wide text-primary-700;
+  }
+  .dark .required-chip { @apply bg-primary-900/60 text-primary-200; }
+
   /* rounded-xl, matching .hours-row: both are a repeated sub-row inside one
      form field, and on /manage they are a few hundred pixels apart. It was lg. */
   .repeat-row {

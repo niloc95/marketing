@@ -5,6 +5,7 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * What the public signup form does when the address is already in the table.
@@ -26,6 +27,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class SignupDuplicateTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
 
     protected $namespace   = 'App';
@@ -62,7 +64,7 @@ final class SignupDuplicateTest extends CIUnitTestCase
      */
     private function input(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name' => 'Duplicate Guard Co',
             'email'        => 'dupe-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'  => $this->categoryId,
@@ -83,7 +85,7 @@ final class SignupDuplicateTest extends CIUnitTestCase
             'province'     => 'Western Cape',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 
     /** @return array<string,mixed> */

@@ -7,6 +7,7 @@ use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * The online booking link, on all three write paths, and the Suggest an edit
@@ -25,6 +26,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class BookingUrlTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -187,7 +189,7 @@ final class BookingUrlTest extends CIUnitTestCase
      */
     private function post(array $fields = []): array
     {
-        return $fields + [
+        return $this->withRequiredSections($fields + [
             'display_name' => 'Test Salon',
             'email'        => 'salon@example.test',
             'category_id'  => $this->categoryId,
@@ -197,7 +199,7 @@ final class BookingUrlTest extends CIUnitTestCase
             'contact_person' => 'Test Owner',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
-        ];
+        ]);
     }
 
     /**
@@ -207,7 +209,7 @@ final class BookingUrlTest extends CIUnitTestCase
      */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             // A full address is compulsory for a new signup, and matches the
             // Cape Town coordinates above — see
             // DirectoryListingMutationService::REQUIRED_ADDRESS_FIELDS.
@@ -228,6 +230,6 @@ final class BookingUrlTest extends CIUnitTestCase
             'marketing_opt_in' => '0',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 }

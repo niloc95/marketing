@@ -6,6 +6,7 @@ use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * A new listing must say where it is; an existing one is not held to it.
@@ -29,6 +30,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class RequiredAddressTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -250,7 +252,7 @@ final class RequiredAddressTest extends CIUnitTestCase
      */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name'   => 'Flow Plumbing',
             'email'          => 'addr-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'    => $this->categoryId,
@@ -269,6 +271,6 @@ final class RequiredAddressTest extends CIUnitTestCase
             'province'       => 'Western Cape',
             'latitude'       => '-33.9249',
             'longitude'      => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 }

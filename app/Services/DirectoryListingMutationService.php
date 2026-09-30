@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\Geocoding\NominatimGeocoder;
+use App\Libraries\ListingText;
 use App\Libraries\ListingGeocoder;
 use App\Libraries\Mailer;
 use App\Libraries\RichText;
@@ -294,13 +295,15 @@ class DirectoryListingMutationService
      */
     private function buildListingData(array $input, ?int $existingId = null): array
     {
-        $description = $this->richText($input['description'] ?? '');
+        $description = $this->ownerDescription($input['description'] ?? '');
+        $name        = ListingText::tidyName((string) $input['display_name']);
 
         return [
             'type'           => in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true) ? $input['type'] : 'person',
-            'display_name'   => trim((string) $input['display_name']),
+            'display_name'   => $name,
             'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'title'          => $this->clean($input['title'] ?? ''),
+            'position'       => $this->clean($input['position'] ?? '') ?: null,
             'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
             'credentials' => $this->clean($input['credentials'] ?? ''),
             'description'      => $description,
@@ -324,13 +327,14 @@ class DirectoryListingMutationService
             'country'        => $this->normaliseCountry($input['country'] ?? ''),
             'logo_path'      => $this->clean($input['logo_path'] ?? ''),
             'trading_hours'          => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []),
+            'by_appointment'         => empty($input['by_appointment']) ? 0 : 1,
             'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
             'offers_delivery'        => empty($input['offers_delivery']) ? 0 : 1,
             // A booking link implies the flag, so the profile can never show a
             // Book online button beside a listing that says it books offline.
             'offers_online_booking'  => empty($input['offers_online_booking']) && (string) $this->normaliseUrl($input['booking_url'] ?? '') === '' ? 0 : 1,
             'booking_url'            => (string) $this->normaliseUrl($input['booking_url'] ?? ''),
-            'slug'           => ensure_unique_slug($this->listings, 'slug', (string) $input['display_name'], $existingId, listing_reserved_slugs()),
+            'slug'           => ensure_unique_slug($this->listings, 'slug', $name, $existingId, listing_reserved_slugs()),
             'status'         => 'pending',
             'is_verified'    => 0,
             // Public signup is the only intake route. The source/source_url
@@ -598,7 +602,8 @@ class DirectoryListingMutationService
         $errors = $this->validate(
             ['country' => $listing['country'] ?? ''] + $input + ['email' => $listing['email'], 'consent' => 1],
             (string) ($listing['description_text'] ?? ''),
-            false
+            false,
+            $listing
         );
         unset($errors['consent']);
         if ($errors !== []) {
@@ -610,13 +615,19 @@ class DirectoryListingMutationService
             if (array_key_exists($field, $input)) {
                 if (in_array($field, ['city', 'suburb'], true)) {
                     $data[$field] = normalise_place($this->clean($input[$field]));
+                } elseif ($field === 'display_name') {
+                    $data[$field] = ListingText::tidyName($this->clean($input[$field]));
+                } elseif ($field === 'by_appointment') {
+                    continue; // a checkbox — handled with the others below
+                } elseif ($field === 'position') {
+                    $data[$field] = $this->clean($input[$field]) ?: null;
                 } elseif ($field === 'description') {
                     // Rich text: sanitise, then derive the plain-text twin the
                     // FULLTEXT index and the JSON-LD read. description_text is
                     // deliberately not in OWNER_EDITABLE, so this is the only
                     // way it can be written on this path — a crafted POST
                     // naming it directly is ignored by the loop above.
-                    $data[$field]             = $this->richText($input[$field]);
+                    $data[$field]             = $this->ownerDescription($input[$field]);
                     $data['description_text'] = RichText::toPlainText($data[$field]);
                 } elseif (in_array($field, ['website', 'booking_url'], true)) {
                     // validate() has already rejected anything normaliseUrl
@@ -679,6 +690,10 @@ class DirectoryListingMutationService
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;
             $data['offers_delivery']       = empty($input['offers_delivery']) ? 0 : 1;
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
+        }
+        // Posted beside the hours grid, so it is only meaningful when the grid was.
+        if (array_key_exists('hours', $input)) {
+            $data['by_appointment'] = empty($input['by_appointment']) ? 0 : 1;
         }
 
         // A booking link implies the flag — see buildListingData(). Read from
@@ -802,6 +817,7 @@ class DirectoryListingMutationService
         'display_name'   => [200, 'business name'],
         'contact_person' => [150, 'contact person'],
         'title'          => [60, 'title'],
+        'position'       => [40, 'position'],
         'credentials'    => [500, 'credentials'],
         'phone'          => [40, 'phone number'],
         'email'          => [190, 'email'],
@@ -855,16 +871,37 @@ class DirectoryListingMutationService
      *                    description on an edit; null for a new signup
      * @param bool $isNew public signup, which must carry a full address. False
      *                    on an owner edit — see the call in updateOwn().
+     * @param array<string,mixed> $stored the listing as stored, on an owner edit.
+     *                    A value that has not changed is never re-judged by a
+     *                    rule newer than it (name length, a legacy title, the
+     *                    website's DNS lookup), so an owner is not locked out of
+     *                    fixing their phone number by something they did not touch.
      * @return array<string,string>
      */
     private function validate(
         array $input,
         ?string $storedDescriptionText = null,
-        bool $isNew = false
+        bool $isNew = false,
+        array $stored = []
     ): array {
-        $errors = [];
-        if (trim((string) ($input['display_name'] ?? '')) === '') {
+        $errors  = [];
+        $changed = fn (string $field, string $value): bool => $stored === [] || $value !== trim((string) ($stored[$field] ?? ''));
+
+        $name = $this->clean($input['display_name'] ?? '');
+        if ($name === '') {
             $errors['display_name'] = 'A business or trading name is required.';
+        } elseif ($changed('display_name', $name)) {
+            // House rules for the name — see ListingText. Judged only when the
+            // name is new or changed, so a listing named before the rules can
+            // still save; the admin text audit is how those get cleaned up.
+            if (($problem = ListingText::nameProblem($name)) !== null) {
+                $errors['display_name'] = $problem;
+            } elseif (mb_strlen(ListingText::tidyName($name)) > ListingText::NAME_MAX) {
+                $errors['display_name'] = sprintf(
+                    'Please keep your business name under %d characters — put the rest in your description.',
+                    ListingText::NAME_MAX + 1
+                );
+            }
         }
         $email = trim((string) ($input['email'] ?? ''));
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -890,8 +927,25 @@ class DirectoryListingMutationService
         if ($this->clean($input['contact_person'] ?? '') === '') {
             $errors['contact_person'] = 'Please tell us who we should speak to about this listing.';
         }
-        if ($this->clean($input['title'] ?? '') === '') {
-            $errors['title'] = 'Please give a title — Mr, Mrs, Dr and so on.';
+        // Both from a fixed list now. A title stored before the dropdown
+        // (free text, "Sister", "Pastor") stays acceptable while unchanged:
+        // the form renders it as an extra option, so saving without touching
+        // it posts it straight back.
+        $title = $this->clean($input['title'] ?? '');
+        if ($title === '') {
+            $errors['title'] = 'Please choose a title — Mr, Mrs, Dr and so on.';
+        } elseif (! in_array($title, DirectoryListingModel::TITLES, true) && $changed('title', $title)) {
+            $errors['title'] = 'Please choose a title from the list.';
+        }
+        // Position is new, so an edit only answers for it when it carries the
+        // field — the owner form always does; a partial POST leaves it alone.
+        $position = $this->clean($input['position'] ?? '');
+        if (! $isNew && ! array_key_exists('position', $input)) {
+            // nothing to judge
+        } elseif ($position === '') {
+            $errors['position'] = 'Please choose your position — Owner, Director, Manager and so on.';
+        } elseif (! in_array($position, DirectoryListingModel::POSITIONS, true) && $changed('position', $position)) {
+            $errors['position'] = 'Please choose a position from the list.';
         }
         if ((int) ($input['category_id'] ?? 0) <= 0) {
             $errors['category_id'] = 'Please choose a category.';
@@ -919,13 +973,28 @@ class DirectoryListingMutationService
         // a profile written under the old one must not block its owner from
         // fixing a phone number — they are asked to shorten it the first time
         // they actually edit it. See RichText::exceedsCap().
-        $description = RichText::toPlainText($this->richText($input['description'] ?? ''));
+        $description = RichText::toPlainText($this->ownerDescription($input['description'] ?? ''));
         if (array_key_exists('description', $input)
             && RichText::exceedsCap($description, $storedDescriptionText)) {
             $errors['description'] = sprintf(
                 'Please keep the description under %d characters.',
                 RichText::MAX_PLAIN_LENGTH
             );
+        }
+        // Compulsory, on signup and on every owner edit that carries the field.
+        // The floor applies to new or changed text only, like the cap above:
+        // a short description written before the rule is not re-judged.
+        if (! isset($errors['description']) && ($isNew || array_key_exists('description', $input))) {
+            $squash = static fn (string $t): string => trim((string) preg_replace('/\s+/u', ' ', $t));
+            if ($description === '') {
+                $errors['description'] = 'Please describe your business — what you do, who it’s for, and why people choose you.';
+            } elseif (mb_strlen($description) < ListingText::DESCRIPTION_MIN
+                && ($storedDescriptionText === null || $squash($description) !== $squash($storedDescriptionText))) {
+                $errors['description'] = sprintf(
+                    'Tell customers what you do in a sentence or two (at least %d characters).',
+                    ListingText::DESCRIPTION_MIN
+                );
+            }
         }
         // Measured on the normalised value, not the raw input: normaliseUrl()
         // promotes a bare "example.co.za" to "https://example.co.za", so a
@@ -937,13 +1006,19 @@ class DirectoryListingMutationService
         foreach (['website' => 'website address', 'booking_url' => 'booking page address'] as $field => $label) {
             $url = $this->normaliseUrl($input[$field] ?? '');
             if ($url === null) {
-                $errors[$field] = sprintf('Please enter a valid %s starting with http:// or https://.', $label);
+                $errors[$field] = sprintf('Please enter a valid %s, like www.example.co.za.', $label);
             } elseif (mb_strlen($url) > self::MAX_LENGTHS[$field][0]) {
                 $errors[$field] = sprintf(
                     'Please keep the %s under %d characters.',
                     $label,
                     self::MAX_LENGTHS[$field][0] + 1
                 );
+            } elseif ($url !== '' && $changed($field, $url)
+                && ! service('domainChecker')->exists((string) parse_url($url, PHP_URL_HOST))) {
+                // A DNS lookup, never a request to the site — see DomainChecker.
+                // Only for a new or changed link, so a save never re-queries one
+                // that is already stored.
+                $errors[$field] = sprintf('We couldn’t find that %s. Please check the spelling.', $label);
             }
         }
 
@@ -1073,6 +1148,29 @@ class DirectoryListingMutationService
         $errors += (new ServiceMenuService())->validate($input);
         $errors += (new ListingFacetService())->validate($input, $this->submittedCategoryId($input));
 
+        // The three "stand out" sections most owners skipped, now compulsory.
+        // Signup always; an owner edit whenever it carries the section (the
+        // edit form always does — a partial POST that leaves one out leaves it
+        // alone, as everywhere else in updateOwn()). Admin intake never comes
+        // through here.
+        if (($isNew || array_key_exists('hours', $input))
+            && empty($input['by_appointment'])
+            && ! $this->hoursComplete($input['hours'] ?? null)) {
+            $errors['hours'] = 'Please add your opening hours — times for each day, or tick Closed. '
+                . 'If you only see people by booking, tick “By appointment only”.';
+        }
+        if (($isNew || array_key_exists(ServiceMenuService::SERVICES_MARKER, $input))
+            && ! isset($errors['services'])
+            && ! $this->hasNamedService($input['services'] ?? null)) {
+            $errors['services'] = 'Please list at least one service you offer. A price is optional.';
+        }
+        // Set by the controller from the actual upload (and, on an edit, what is
+        // already stored) — never taken from the form. Absent means the caller
+        // did not check, which is every direct service call.
+        if (array_key_exists('_has_photo', $input) && ! $input['_has_photo']) {
+            $errors['photo'] = 'Please add your logo or at least one photo. Profiles with a picture get far more attention.';
+        }
+
         return $errors;
     }
 
@@ -1195,8 +1293,64 @@ class DirectoryListingMutationService
         if (! preg_match('#^https?://#i', $url)) {
             return null;
         }
+        // Every link we publish is https. Nearly every site answers on it now,
+        // and a browser warns on the plain one.
+        $url = (string) preg_replace('#^https?://#i', 'https://', $url);
 
-        return filter_var($url, FILTER_VALIDATE_URL) === false ? null : $url;
+        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        // A real public hostname: no user@, no bare IP, no "localhost", and a
+        // dot followed by a plausible TLD. filter_var() alone passes all of
+        // "https://localhost", "https://1.2.3.4" and "https://mysite".
+        $parts = parse_url($url);
+        $host  = strtolower((string) ($parts['host'] ?? ''));
+        if (isset($parts['user']) || isset($parts['pass'])
+            || filter_var($host, FILTER_VALIDATE_IP) !== false
+            || preg_match('/^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$/', $host) !== 1) {
+            return null;
+        }
+
+        // Lower-case the host only; paths can be case-sensitive.
+        return (string) preg_replace('#^https://[^/?\#]+#', 'https://' . $host . (isset($parts['port']) ? ':' . $parts['port'] : ''), $url);
+    }
+
+    /**
+     * Is every day of the grid answered — ticked Closed, or both times given?
+     * hours_encode() blanks a malformed time, so this judges the stored shape.
+     */
+    private function hoursComplete(mixed $raw): bool
+    {
+        $hours = json_decode((string) hours_encode(is_array($raw) ? $raw : []), true);
+        if (! is_array($hours)) {
+            return false;
+        }
+        $open = 0;
+        foreach ($hours as $day) {
+            if (! empty($day['closed'])) {
+                continue;
+            }
+            if (($day['open'] ?? '') === '' || ($day['close'] ?? '') === '') {
+                return false;
+            }
+            $open++;
+        }
+
+        // Seven days ticked Closed is not opening hours either.
+        return $open > 0;
+    }
+
+    /** At least one service row with a name that is not ticked for removal. */
+    private function hasNamedService(mixed $raw): bool
+    {
+        foreach (is_array($raw) ? $raw : [] as $row) {
+            if (is_array($row) && empty($row['_remove']) && trim((string) ($row['name'] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1231,6 +1385,12 @@ class DirectoryListingMutationService
     private function richText($v): string
     {
         return RichText::sanitise($this->clean($v));
+    }
+
+    /** An owner's description: sanitised, then tidied — see ListingText. */
+    private function ownerDescription($v): string
+    {
+        return ListingText::tidyDescriptionHtml($this->richText($v));
     }
 
     /** Collapse newlines so a failure message can't forge extra log lines. */

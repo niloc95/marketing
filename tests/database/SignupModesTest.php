@@ -9,6 +9,7 @@ use App\Services\DirectorySettings;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * Verified Business first: the three signup modes and the places that push the badge.
@@ -31,6 +32,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class SignupModesTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -142,8 +144,20 @@ final class SignupModesTest extends CIUnitTestCase
             'name' => 'Plumber', 'slug' => 'plumber', 'group_name' => 'Home Services', 'is_active' => 1,
         ], true);
 
+        // A photo is compulsory now. The controller only asks whether one
+        // arrived intact (HandlesListingUploads::hasPhoto()), so a gallery
+        // entry with no upload error is enough; processing it afterwards
+        // fails harmlessly, because it was never really uploaded.
+        service('superglobals')->setFilesArray(['gallery' => [
+            'name'     => ['shop.jpg'],
+            'type'     => ['image/jpeg'],
+            'tmp_name' => [tempnam(sys_get_temp_dir(), 'img')],
+            'error'    => [UPLOAD_ERR_OK],
+            'size'     => [1],
+        ]]);
+
         $result = $this->withSession([SignupChannel::SESSION_KEY => 'whatsapp', 'listing_form_rendered_at' => time() - 60])
-            ->post('add-listing', [
+            ->post('add-listing', $this->withRequiredSections([
                 // A complete South African signup, as in BookingUrlTest::signup():
                 // address, the private "Your details" pair, the consent answers,
                 // and coordinates so nothing is geocoded over the network.
@@ -166,7 +180,8 @@ final class SignupModesTest extends CIUnitTestCase
                 'form_mode'      => 'verified-only',
                 'signup_source'  => 'forged-by-the-form',
                 csrf_token()     => csrf_hash(),
-            ]);
+            ]));
+        service('superglobals')->setFilesArray([]);
 
         $result->assertRedirect();
         $row = (new DirectoryListingModel())->where('email', 'owner@dripdoctors.test')->first();

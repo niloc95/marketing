@@ -9,6 +9,7 @@ use App\Services\ServiceMenuService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * "Services & prices" and "Features & amenities": the structured half of a
@@ -28,6 +29,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ServiceMenuTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -161,12 +163,19 @@ final class ServiceMenuTest extends CIUnitTestCase
         $id = $this->publishedListing();
         $this->owner($id, ['services' => [['name' => 'Gone soon']], 'attributes' => ['parking']]);
 
-        $result = $this->owner($id, []);
+        // Features can be cleared outright…
+        $result = $this->owner($id, ['services' => [['name' => 'Still here']]]);
 
         $this->assertTrue($result['ok'], $result['message']);
         $menu = new ServiceMenuService();
-        $this->assertSame([], $menu->servicesFor($id));
         $this->assertSame([], $menu->attributeKeysFor($id));
+
+        // …services cannot: at least one is compulsory, and a refused save
+        // leaves the stored list exactly as it was.
+        $emptied = $this->owner($id, ['services' => []]);
+
+        $this->assertArrayHasKey('services', $emptied['errors']);
+        $this->assertSame(['Still here'], array_column($menu->servicesFor($id), 'name'));
     }
 
     public function testSwitchingCategoryDropsTheOldGroupsFeatures(): void
@@ -276,7 +285,7 @@ final class ServiceMenuTest extends CIUnitTestCase
     /** @param array<string,mixed> $overrides */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name'       => 'Flow Yoga',
             'email'              => 'menu-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'        => $this->fitnessId,
@@ -299,7 +308,7 @@ final class ServiceMenuTest extends CIUnitTestCase
             'province'     => 'Western Cape',
             'services_present'   => '1',
             'attributes_present' => '1',
-        ], $overrides);
+        ], $overrides));
     }
 
     /** @param array<string,mixed> $overrides */
@@ -326,7 +335,7 @@ final class ServiceMenuTest extends CIUnitTestCase
      */
     private function owner(int $id, array $fields, ?int $categoryId = null): array
     {
-        return (new DirectoryListingMutationService())->updateOwn($id, $fields + [
+        return (new DirectoryListingMutationService())->updateOwn($id, $this->withRequiredSections($fields + [
             'display_name'       => 'Flow Yoga',
             'category_id'        => $categoryId ?? $this->fitnessId,
             // Required on an owner save too — see validate().
@@ -334,6 +343,6 @@ final class ServiceMenuTest extends CIUnitTestCase
             'contact_person'     => 'Test Owner',
             'services_present'   => '1',
             'attributes_present' => '1',
-        ]);
+        ]));
     }
 }

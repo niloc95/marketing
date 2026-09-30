@@ -224,6 +224,7 @@ class Manage extends BaseController
         $post = $this->request->getPost();
         $logo = $this->resolveLogo();
         $post['logo_path'] = $logo['path'];
+        $post['_has_photo'] = $this->hasPhoto($logo['path'], $listing);
 
         // Headshots are processed before the save, like the logo, because their
         // paths are part of the data being saved. Anything written here that the

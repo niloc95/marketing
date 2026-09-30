@@ -171,6 +171,7 @@ class Listing extends BaseController
         $post['signup_source'] = self::campaignSource()
             ?? ($this->request->getPost('form_mode') === 'verified-only' ? self::SOURCE_SITE : self::SOURCE_DIRECT);
         $post['logo_path'] = $logo['path'];
+        $post['_has_photo'] = $this->hasPhoto($logo['path']);
 
         $mut    = new DirectoryListingMutationService();
         $result = $mut->submitPublic($post);

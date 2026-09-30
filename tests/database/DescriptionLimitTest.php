@@ -7,6 +7,7 @@ use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * The editorial cap on the business description.
@@ -30,6 +31,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class DescriptionLimitTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
 
     protected $namespace   = 'App';
@@ -220,13 +222,13 @@ final class DescriptionLimitTest extends CIUnitTestCase
      */
     private function post(array $fields): array
     {
-        return $fields + [
+        return $this->withRequiredSections($fields + [
             'display_name' => 'Test Listing',
             'category_id'  => $this->categoryId,
             // The private "Your details" pair — compulsory on both write
             // paths since they became required; see validate().
             'title'          => 'Mr',
             'contact_person' => 'Test Owner',
-        ];
+        ]);
     }
 }

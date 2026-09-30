@@ -106,6 +106,35 @@ trait HandlesListingUploads
     }
 
     /**
+     * Does this save leave the listing with a picture? For the compulsory
+     * "logo or one photo" rule — see DirectoryListingMutationService::validate().
+     *
+     * Always written onto the post by the controller, overwriting anything the
+     * form sent, so the claim cannot come from the browser. A gallery file
+     * counts once it arrived intact; that it is a real image is checked when it
+     * is processed, after the save.
+     *
+     * @param string $logoPath the logo resolveLogo() produced on this request
+     * @param array<string,mixed>|null $listing the stored row, on an edit
+     */
+    protected function hasPhoto(string $logoPath, ?array $listing = null): bool
+    {
+        if ($logoPath !== '' || trim((string) ($listing['logo_path'] ?? '')) !== '') {
+            return true;
+        }
+        if ($listing !== null && (new DirectoryListingPhotoModel())->countForListing((int) $listing['id']) > 0) {
+            return true;
+        }
+        foreach ($this->request->getFileMultiple('gallery') ?? [] as $file) {
+            if ($file && $file->getError() === UPLOAD_ERR_OK) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param int|null $listingId null on public signup, where no photos exist yet
      *
      * @return array{photos:array<int,array{path:string,width:?int,height:?int,original_name:?string}>,errors:array<int,string>}

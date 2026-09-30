@@ -498,7 +498,9 @@ class ListingQualityService
                 'hours',
                 'Opening hours',
                 self::PTS_HOURS,
-                $this->hoursUsable($listing['trading_hours'] ?? null),
+                // "By appointment only" is a complete answer to the question,
+                // and the signup form accepts it in place of times.
+                ! empty($listing['by_appointment']) || $this->hoursUsable($listing['trading_hours'] ?? null),
                 '"Are they open?" is the second thing anyone wants to know.',
                 'field-hours'
             ),

@@ -2305,6 +2305,57 @@
     apply();
   })();
 
+  // ------------------------------------------------------- stand-out sections
+  // Most owners never opened the collapsed "Make your profile stand out"
+  // sections, so their profiles went live with no hours, photos or services.
+  // Once the contact person is filled in — the last question of the basics —
+  // every section below opens and the page scrolls to them, once.
+  //
+  // A contact person already there on load (the owner edit, or a signup sent
+  // back with errors) opens them straight away, without the scroll.
+  // Branches (data-standout-skip) are a Verified extra and stay as they were.
+  (function () {
+    var wrap    = document.querySelector('[data-standout]');
+    var trigger = document.querySelector('[data-standout-trigger]');
+    if (!wrap || !trigger) return;
+
+    var done = false;
+    function openAll(scroll) {
+      if (done) return;
+      done = true;
+      wrap.querySelectorAll('details.disclosure:not([data-standout-skip])').forEach(function (d) {
+        d.open = true;
+      });
+      var head = document.getElementById('standout-head');
+      if (scroll && head) {
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        head.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      }
+    }
+
+    if (trigger.value.trim() !== '') {
+      openAll(false);
+      return;
+    }
+    trigger.addEventListener('change', function () {
+      if (trigger.value.trim() !== '') openAll(true);
+    });
+  })();
+
+  // ---------------------------------------------------------- website fields
+  // Shows the link in the form it will be saved in: https:// added to a bare
+  // "example.co.za", and http:// upgraded. The server does the same
+  // (DirectoryListingMutationService::normaliseUrl()), so this is display only.
+  document.querySelectorAll('input[name="website"], input[name="booking_url"]').forEach(function (input) {
+    input.addEventListener('blur', function () {
+      var v = input.value.trim();
+      if (v === '') return;
+      if (/^http:\/\//i.test(v)) v = 'https://' + v.slice(7);
+      else if (!/^[a-z][a-z0-9+.\-]*:/i.test(v)) v = 'https://' + v;
+      input.value = v;
+    });
+  });
+
   // ------------------------------------------------------------ trading hours
   // "Copy Monday to every day" on the three listing forms. Seven rows of the
   // same opening time is the tedious part of this form, and most businesses

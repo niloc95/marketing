@@ -6,6 +6,7 @@ use App\Libraries\Geocoding\FallbackGeocoder;
 use App\Libraries\Geocoding\GeocoderInterface;
 use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
+use App\Libraries\DomainChecker;
 use App\Libraries\MauticClient;
 use CodeIgniter\Config\BaseService;
 
@@ -63,5 +64,28 @@ class Services extends BaseService
         }
 
         return new MauticClient();
+    }
+
+    /**
+     * The DNS check behind "we couldn't find that website". Answers yes to
+     * everything under the testing environment, so the suite never makes a
+     * network call; a test that wants a "no" injects its own.
+     */
+    public static function domainChecker(bool $getShared = true): DomainChecker
+    {
+        if ($getShared) {
+            return static::getSharedInstance('domainChecker');
+        }
+
+        if (ENVIRONMENT === 'testing') {
+            return new class () extends DomainChecker {
+                public function exists(string $host): bool
+                {
+                    return true;
+                }
+            };
+        }
+
+        return new DomainChecker();
     }
 }

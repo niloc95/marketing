@@ -148,7 +148,7 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
     return (string) ob_get_clean();
 };
 ?>
-<details class="disclosure" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat>
+<details class="disclosure" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat data-standout-skip>
     <summary class="disclosure-summary">
         <span>Add another location</span>
         <span class="hint"><?= $used > 0 ? $used . ' of ' . $max : 'Branches, second rooms, satellite offices' ?></span>

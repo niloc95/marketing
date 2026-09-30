@@ -15,6 +15,7 @@ use App\Services\TeamMemberService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * Profile completeness as a ranking signal: that it is written on every path
@@ -40,6 +41,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ListingQualityTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -431,7 +433,7 @@ final class ListingQualityTest extends CIUnitTestCase
     /** @param array<string,mixed> $overrides */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name'     => 'Flow Yoga',
             'email'            => 'quality-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'      => $this->categoryId,
@@ -447,7 +449,7 @@ final class ListingQualityTest extends CIUnitTestCase
             'city'             => 'Cape Town',
             'postal_code'      => '8001',
             'province'         => 'Western Cape',
-        ], $overrides);
+        ], $overrides));
     }
 
     /**

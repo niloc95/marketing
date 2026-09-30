@@ -16,6 +16,7 @@ use App\Services\ServiceMenuService;
  *
  * @var array    $rows stored service rows, or flashed input after a failed save
  * @var callable $err  fn(string $field): string — keys are 'services.0.name' etc
+ * @var bool     $required  show the "Required" chip (signup and owner edit, not admin)
  */
 $max = ServiceMenuService::MAX_SERVICES;
 
@@ -68,7 +69,7 @@ $row = function ($i, array $m = []) use ($err): string {
 ?>
 <details class="disclosure" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat>
     <summary class="disclosure-summary">
-        <span>Services &amp; prices</span>
+        <span>Services &amp; prices<?php if ($required ?? false): ?> <span class="required-chip">Required</span><?php endif; ?></span>
         <span class="hint"><?= $used > 0 ? $used . ' listed' : 'What you offer, e.g. classes, treatments, call-outs' ?></span>
     </summary>
 

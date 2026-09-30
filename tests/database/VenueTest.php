@@ -9,6 +9,7 @@ use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * Venues — the complex, mall or building a set of listings shares.
@@ -31,6 +32,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class VenueTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -151,7 +153,7 @@ final class VenueTest extends CIUnitTestCase
         $id    = $this->listing(['display_name' => 'Owned Shop', 'slug' => 'owned-shop', 'venue_id' => $venue]);
         $other = (int) $this->venues->insert(['name' => 'Somewhere Else', 'slug' => 'somewhere-else', 'is_active' => 1], true);
 
-        $result = (new DirectoryListingMutationService())->updateOwn($id, [
+        $result = (new DirectoryListingMutationService())->updateOwn($id, $this->withRequiredSections([
             'display_name' => 'Owned Shop',
             'category_id'  => $this->categoryId,
             // Required on an owner save too — see validate().
@@ -162,7 +164,7 @@ final class VenueTest extends CIUnitTestCase
             // Both a move and a clear, in one crafted POST.
             'venue_id'     => $other,
             'venue'        => '',
-        ]);
+        ]));
 
         $this->assertTrue($result['ok'], $result['message']);
         $this->assertSame($venue, (int) $this->listings->find($id)['venue_id']);

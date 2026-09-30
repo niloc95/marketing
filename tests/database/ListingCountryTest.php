@@ -8,6 +8,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Countries;
+use Tests\Support\ValidListingInput;
 
 /**
  * Which country a listing is in, and who is allowed to say so.
@@ -37,6 +38,7 @@ use Config\Countries;
  */
 final class ListingCountryTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -350,7 +352,7 @@ final class ListingCountryTest extends CIUnitTestCase
      */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name' => 'Cape Bakery',
             'email'        => 'country-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'  => $this->categoryId,
@@ -369,7 +371,7 @@ final class ListingCountryTest extends CIUnitTestCase
             'province'     => 'Western Cape',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 
     /**

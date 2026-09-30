@@ -9,6 +9,7 @@ use App\Services\VerificationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Countries;
+use Tests\Support\ValidListingInput;
 
 /**
  * The International Listing plan: a listing outside South Africa publishes
@@ -35,6 +36,7 @@ use Config\Countries;
  */
 final class InternationalListingTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
 
     protected $namespace   = 'App';
@@ -324,7 +326,7 @@ final class InternationalListingTest extends CIUnitTestCase
             'longitude'    => $local ? '18.4241' : '11.5820',
         ];
 
-        $result = $this->mutations->submitPublic($input);
+        $result = $this->mutations->submitPublic($this->withRequiredSections($input));
         $this->assertTrue($result['ok'], $result['message']);
 
         // submitPublic() stores only the hash; the raw token lives in the

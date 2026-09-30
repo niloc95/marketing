@@ -207,6 +207,54 @@ final class RichText
     }
 
     /**
+     * Rewrite every text node of already-sanitised HTML through $fn, in
+     * document order, leaving the markup alone. ListingText uses it to fix
+     * shouting capitals and strip decorative symbols without touching a list
+     * or a heading.
+     *
+     * The result goes back through sanitise(), so nothing $fn returns can
+     * widen the allowlist: text it produces is escaped on the way out like any
+     * other text.
+     *
+     * $fn also receives the DOMText node, so a caller can tell where one
+     * paragraph or list item ends and the next begins.
+     *
+     * @param callable(string, DOMText):string $fn
+     */
+    public static function mapText(string $html, callable $fn): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+        if (preg_match(self::BLOCK_TAG_PATTERN, $html) !== 1) {
+            $html = self::fromPlainText($html);
+        }
+
+        $body = self::parse($html);
+        if ($body === null) {
+            return self::sanitise($html);
+        }
+
+        $walk = static function (DOMNode $node) use (&$walk, $fn): void {
+            foreach (iterator_to_array($node->childNodes) as $child) {
+                if ($child instanceof DOMText) {
+                    $child->nodeValue = $fn($child->nodeValue ?? '', $child);
+                } else {
+                    $walk($child);
+                }
+            }
+        };
+        $walk($body);
+
+        $out = '';
+        foreach ($body->childNodes as $node) {
+            $out .= $body->ownerDocument->saveHTML($node);
+        }
+
+        return self::sanitise($out);
+    }
+
+    /**
      * The visible text of some HTML, for the FULLTEXT shadow column, the JSON-LD
      * description, and the length check.
      *

@@ -7,6 +7,7 @@ use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\ValidListingInput;
 
 /**
  * The private "Your details" pair — title and contact person — is compulsory
@@ -35,6 +36,7 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class PrivateDetailsRequiredTest extends CIUnitTestCase
 {
+    use ValidListingInput;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -178,8 +180,8 @@ final class PrivateDetailsRequiredTest extends CIUnitTestCase
             $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit'),
         ] as $result) {
             $result->assertOK();
-            $this->assertStringContainsString('<label>Title *</label>', $result->getBody());
-            $this->assertStringContainsString('<label>Contact person *</label>', $result->getBody());
+            $this->assertStringContainsString('<label for="field-title">Title *</label>', $result->getBody());
+            $this->assertStringContainsString('<label for="field-contact-person">Contact person *</label>', $result->getBody());
         }
 
         // Admin passes privateDetailsRequired false explicitly. If it ever
@@ -187,9 +189,9 @@ final class PrivateDetailsRequiredTest extends CIUnitTestCase
         // shared view data and starts demanding a contact name on an import.
         $admin = $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id);
         $admin->assertOK();
-        $this->assertStringContainsString('<label>Title</label>', $admin->getBody());
-        $this->assertStringNotContainsString('<label>Title *</label>', $admin->getBody());
-        $this->assertStringNotContainsString('<label>Contact person *</label>', $admin->getBody());
+        $this->assertStringContainsString('<label for="field-title">Title</label>', $admin->getBody());
+        $this->assertStringNotContainsString('<label for="field-title">Title *</label>', $admin->getBody());
+        $this->assertStringNotContainsString('<label for="field-contact-person">Contact person *</label>', $admin->getBody());
     }
 
     // -------------------------------------------------------------- fixtures
@@ -203,7 +205,7 @@ final class PrivateDetailsRequiredTest extends CIUnitTestCase
      */
     private function signup(array $overrides = []): array
     {
-        return array_merge([
+        return $this->withRequiredSections(array_merge([
             'display_name'   => 'Flow Plumbing',
             'email'          => 'private-' . bin2hex(random_bytes(4)) . '@example.test',
             'category_id'    => $this->categoryId,
@@ -217,6 +219,6 @@ final class PrivateDetailsRequiredTest extends CIUnitTestCase
             'province'       => 'Western Cape',
             'latitude'       => '-33.9249',
             'longitude'      => '18.4241',
-        ], $overrides);
+        ], $overrides));
     }
 }

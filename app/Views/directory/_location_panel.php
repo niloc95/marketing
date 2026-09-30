@@ -70,6 +70,9 @@ $hoursHeading   = $hoursHeading ?? 'Trading hours';
 
             <?= view('directory/_hours_panel', [
                 'hours'   => $loc['trading_hours'] ?? null,
+                // Explicit: CI4 view data outlives a render, so without this a
+                // branch inherits the listing's own by-appointment flag.
+                'byAppointment' => false,
                 'heading' => $hoursHeading,
                 'class'   => 'mt-3',
             ]) ?>
