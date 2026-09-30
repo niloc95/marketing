@@ -1,4 +1,8 @@
-<?php $analyticsId = config('Directory')->analyticsId(); ?>
+<?php $analyticsId = config('Directory')->analyticsId();
+      // Brand images are cached for 4h at Cloudflare and in browsers and, unlike
+      // the stylesheet, used to carry no buster, so a new logo stayed invisible
+      // until someone purged. Same ?v=<filemtime> trick as directory.css below.
+      $brandUrl = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,11 +13,11 @@
           // favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
           // skip the .ico entirely. The apple-touch icon is on white because iOS
           // paints transparency black, which would swallow a navy mark. ?>
-    <link rel="icon" href="<?= base_url('favicon.ico') ?>" sizes="any">
-    <link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('assets/brand/favicon-16.png') ?>">
-    <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/brand/favicon-32.png') ?>">
-    <link rel="icon" type="image/png" sizes="48x48" href="<?= base_url('assets/brand/favicon-48.png') ?>">
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('assets/brand/apple-touch-180.png') ?>">
+    <link rel="icon" href="<?= $brandUrl('favicon.ico') ?>" sizes="any">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= $brandUrl('assets/brand/favicon-16.png') ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= $brandUrl('assets/brand/favicon-32.png') ?>">
+    <link rel="icon" type="image/png" sizes="48x48" href="<?= $brandUrl('assets/brand/favicon-48.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= $brandUrl('assets/brand/apple-touch-180.png') ?>">
     <link rel="stylesheet" href="<?= base_url('assets/directory.css') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.css') ?: time() ?>">
     <meta name="theme-color" content="#003049" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)">
@@ -75,7 +79,7 @@
     <header class="site-header">
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>" aria-label="WebScheduler Local">
-                <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" />
+                <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" />
                 <?php // The full lockup fits from 360px up, which is every current phone.
                       // Narrower than that (SE 1st gen, a folded cover screen) the mark
                       // stands alone rather than truncating — "WebSchedul…" reads as a
@@ -280,7 +284,7 @@
         <div class="container site-footer-grid">
             <div>
                 <a class="brand" href="<?= base_url('/') ?>">
-                    <img class="brand-mark" src="<?= base_url('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" />
+                    <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-256.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
                 <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>
