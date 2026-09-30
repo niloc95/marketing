@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find someone local']) ?>
-    <?php // Official WebScheduler Local mark. favicon.ico carries 16-256 for older
-          // browsers; the PNGs let modern ones skip the .ico entirely. The artwork is
-          // a circular badge, so it reads as a shape and colour at these sizes rather
-          // than as a wordmark - that is expected, not a rendering fault. ?>
+    <?php // Official WebScheduler Local mark: the navy map-pin-and-road glyph.
+          // favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
+          // skip the .ico entirely. The apple-touch icon is on white because iOS
+          // paints transparency black, which would swallow a navy mark. ?>
     <link rel="icon" href="<?= base_url('favicon.ico') ?>" sizes="any">
     <link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('assets/brand/favicon-16.png') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/brand/favicon-32.png') ?>">

@@ -150,6 +150,10 @@
      two CSP violations into writable/logs/ that had to be read past to find real
      ones. img: because the rule above is shared with the text fallback. */
   img.brand-mark { @apply block bg-transparent object-contain; }
+  /* The mark is navy artwork on transparency, so on the dark theme it would
+     vanish into the header. A white tile gives it the light ground it was
+     drawn for; p-0.5 keeps the road clear of the rounded corners. */
+  .dark img.brand-mark { @apply rounded-lg bg-white p-0.5; }
   /* Header only — the footer lockup has a whole column to itself. */
   .site-header .brand-mark { @apply h-7 w-7 sm:h-8 sm:w-8; }
   .nav        { @apply flex shrink-0 items-center gap-2 sm:gap-4; }
@@ -323,6 +327,12 @@
   body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
     .site-header:not(.is-solid) .brand-mark {
     @apply bg-white/15 ring-1 ring-inset ring-white/25 backdrop-blur-sm;
+  }
+  /* ...but the navy <img> mark needs a solid ground over the dark hero, the
+     same white tile it gets on the dark theme. */
+  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+    .site-header:not(.is-solid) img.brand-mark {
+    @apply rounded-lg bg-white p-0.5 ring-0;
   }
 
   /* Only the home page, and only because its backdrop is a photograph: the
