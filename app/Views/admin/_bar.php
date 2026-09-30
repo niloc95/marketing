@@ -32,6 +32,7 @@ $referralsPending = (new App\Models\DirectoryReferralModel())
             <a href="<?= base_url('admin/venues') ?>">Venues</a> &middot;
             <a href="<?= base_url('admin/hero') ?>">Hero photos</a> &middot;
             <a href="<?= base_url('admin/settings') ?>">Settings</a> &middot;
+            <a href="<?= base_url('admin/funnel') ?>">Funnel</a> &middot;
             <a href="<?= base_url('admin/status') ?>">Status</a> &middot;
             <form method="post" action="<?= base_url('admin/logout') ?>" class="inline">
                 <?= csrf_field() ?>

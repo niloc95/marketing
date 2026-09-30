@@ -216,6 +216,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
 
     // Diagnostics — health checks, mail state, storage, config, recent log.
     $routes->get('status', 'Admin::status');
+
+    // Badge conversion funnel. Read-only.
+    $routes->get('funnel', 'Admin::funnel');
     $routes->post('status/clear-mail', 'Admin::clearMailStatus');
 });
 

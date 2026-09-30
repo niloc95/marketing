@@ -139,6 +139,15 @@ class Directory extends BaseConfig
      */
     public int $recentMinQuality = 40;
 
+    /**
+     * The goal /admin/funnel measures pace against: this many active Verified
+     * Business badges by this date. Display only — nothing else reads them.
+     * Overridable as directory.funnelTarget / directory.funnelTargetDate.
+     */
+    public int $funnelTarget = 2500;
+
+    public string $funnelTargetDate = '2026-12-31';
+
     /** How long a verification token stays valid (seconds). */
     public int $verifyTtl = 172800; // 48h
 

@@ -20,6 +20,7 @@ use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
 use App\Services\DirectoryService;
+use App\Services\FunnelService;
 use App\Services\HeroImageService;
 use App\Services\JobBoardService;
 use App\Services\ListingFacetService;
@@ -867,6 +868,26 @@ class Admin extends BaseController
                 'logFile'      => $file,
                 'logLevel'     => $level,
                 'logEntries'   => $file !== '' ? $logs->entries($file, $level) : [],
+            ]));
+    }
+
+    /**
+     * Verified Business conversion funnel: signups through to renewals, by
+     * week, channel and category, and the pace needed to hit the target.
+     */
+    public function funnel()
+    {
+        $funnel = new FunnelService();
+        $config = config('Directory');
+
+        return $this->response
+            ->setHeader('Cache-Control', 'no-store')
+            ->setBody(view('admin/funnel', [
+                'funnel'     => $funnel->stages(),
+                'weekly'     => $funnel->weekly(13),
+                'bySource'   => $funnel->bySource(),
+                'byCategory' => $funnel->byCategory(),
+                'pace'       => $funnel->pace((int) $config->funnelTarget, (string) $config->funnelTargetDate),
             ]));
     }
 
