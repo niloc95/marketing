@@ -9,10 +9,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find someone local']) ?>
-    <?php // Official WebScheduler Local mark: the navy map-pin-and-road glyph.
+    <?php // Favicons use the orange map-pin-and-road glyph, which stays legible on
+          // light and dark tab bars; the header/footer logo below keeps the navy mark.
           // favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
           // skip the .ico entirely. The apple-touch icon is on white because iOS
-          // paints transparency black, which would swallow a navy mark. ?>
+          // paints transparency black. ?>
     <link rel="icon" href="<?= $brandUrl('favicon.ico') ?>" sizes="any">
     <link rel="icon" type="image/png" sizes="16x16" href="<?= $brandUrl('assets/brand/favicon-16.png') ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= $brandUrl('assets/brand/favicon-32.png') ?>">
