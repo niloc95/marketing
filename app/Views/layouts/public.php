@@ -289,6 +289,7 @@
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
                 <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>
+                <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
                 <?php // Newsletter -> Mautic (updates.webscheduler.co.za), the LOCAL
                       // form. The marketing site posts to its own form (id 1); the
                       // two brands used to share it, and its redirect setting sent
@@ -355,7 +356,7 @@
             <div class="site-footer-col">
                 <h3>Company</h3>
                 <ul>
-                    <li><a href="https://webscheduler.co.za/about.html">About</a></li>
+                    <li><a href="<?= base_url('company') ?>">Company</a></li>
                     <?php // Our own pages, not the marketing site's — that one is a
                           // "Book a demo" form for the scheduling product, which is
                           // not what someone here is asking for. ?>
@@ -371,7 +372,6 @@
                     <li><a href="<?= base_url('assets/playbook/webscheduler-local-visibility-playbook.pdf') ?>"
                            target="_blank" rel="noopener">Local visibility playbook (PDF)</a></li>
                     <li><a href="<?= base_url('contact') ?>">Contact</a></li>
-                    <li><a href="https://webscheduler.co.za/">WebScheduler</a></li>
                 </ul>
             </div>
             <div class="site-footer-col">

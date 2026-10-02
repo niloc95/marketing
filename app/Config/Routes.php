@@ -30,6 +30,7 @@ $routes->addRedirect('list-your-practice', 'add-listing', 301);
 $routes->get('contact', 'Contact::index');
 $routes->post('contact', 'Contact::submit');
 $routes->get('faq', 'Contact::faq');
+$routes->get('company', 'Contact::company');
 // What the Verified Business badge means. Public and indexable — the badge on
 // every verified profile links here, so visitors can check the claim.
 $routes->get('verified', 'Contact::verified');

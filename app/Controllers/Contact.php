@@ -40,6 +40,17 @@ class Contact extends BaseController
     }
 
     /**
+     * Who we are. The directory's own page: the footer used to send "About" to
+     * the marketing site's about.html, which describes the scheduling product.
+     */
+    public function company()
+    {
+        return view('directory/company', [
+            'offered' => (new VerificationService())->isEnabled(),
+        ]);
+    }
+
+    /**
      * What the Verified Business badge means.
      *
      * A page of its own rather than another FAQ entry because it is doing two

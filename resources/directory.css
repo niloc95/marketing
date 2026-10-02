@@ -413,6 +413,11 @@
   .site-footer-tagline { @apply mt-4 max-w-xs text-sm text-slate-500; }
   .dark .site-footer-tagline { @apply text-slate-400; }
 
+  /* Our own social profiles (directory/_our_socials) — footer and /company. */
+  .our-socials   { @apply flex flex-wrap items-center gap-4; }
+  .our-socials a { @apply text-slate-500 hover:text-primary-500; }
+  .dark .our-socials a { @apply text-slate-400 hover:text-primary-300; }
+
   .site-footer-col h3 { @apply text-sm font-semibold text-slate-900; }
   .site-footer-col ul { @apply mt-4 space-y-3; }
   .dark .site-footer-col h3 { @apply text-white; }
@@ -511,6 +516,43 @@
   .hero .eyebrow { @apply mb-4 sm:mb-5; }
   .hero h1 { @apply text-3xl font-extrabold leading-tight sm:text-5xl; }
   .hero p  { @apply mt-3 max-w-2xl text-base text-white/80 sm:text-lg; }
+
+  /* /company's variant: a collage of people at work behind the band. isolate +
+     -z-10 on the layers, the same stacking .hero-home uses, so the copy needs
+     no z-index of its own. The gradient underneath stays the fallback if the
+     photos never load. 3 columns on a phone, 6 from sm: 18 tiles fill both. */
+  .hero-collage { @apply isolate overflow-hidden; }
+  .hero-collage-grid {
+    @apply absolute inset-0 -z-10 grid grid-cols-3 auto-rows-fr gap-0.5 sm:grid-cols-6;
+  }
+  .hero-collage-grid img { @apply h-full w-full object-cover; }
+  /* Even all over on a phone, where the copy spans the full width; lighter
+     to the right from sm, where the copy only covers the left. */
+  .hero-collage-veil {
+    @apply absolute inset-0 -z-10 bg-gradient-to-r from-black/80 via-black/65 to-black/55
+           sm:from-black/80 sm:via-black/60 sm:to-black/30;
+  }
+  .dark .hero-collage-veil { @apply from-black/85 via-black/70 to-black/60 sm:to-black/40; }
+
+  /* /company. Text-first: one large statement, then short headed points and
+     a numbered list, on the site's usual .section bands rather than panels. */
+  .company-statement { @apply max-w-4xl text-2xl font-extrabold leading-snug text-slate-900 sm:text-4xl; }
+  .company-points    { @apply mt-10 grid gap-8 sm:mt-14 md:grid-cols-3 md:gap-10; }
+  .company-points h2 { @apply text-lg font-bold text-slate-900; }
+  .company-points p  { @apply mt-2 leading-relaxed text-slate-600; }
+  .company-steps     { @apply divide-y divide-slate-200 border-y border-slate-200; }
+  .company-steps li  { @apply grid grid-cols-[3rem_1fr] gap-4 py-6 sm:grid-cols-[5rem_1fr]; }
+  .company-step-num  { @apply font-mono text-sm font-semibold text-brand-orange sm:text-base; }
+  .company-steps h3  { @apply text-lg font-bold text-slate-900; }
+  .company-steps p   { @apply mt-1 leading-relaxed text-slate-600; }
+  .company-steps a   { @apply font-medium text-primary-600 underline underline-offset-2 hover:text-primary-500; }
+  .dark .company-statement,
+  .dark .company-points h2,
+  .dark .company-steps h3 { @apply text-white; }
+  .dark .company-points p,
+  .dark .company-steps p  { @apply text-slate-400; }
+  .dark .company-steps    { @apply divide-slate-800 border-slate-800; }
+  .dark .company-steps a  { @apply text-primary-300 hover:text-primary-200; }
 
   /* ------------------------------------------------- home page photo hero */
   /* Deliberately NOT a modifier on .hero. That class is shared by ten pages —
@@ -1334,6 +1376,11 @@
   .dark .prose-legal p,
   .dark .prose-legal ul { @apply text-slate-400; }
   .dark .prose-legal a:not(.btn) { @apply text-primary-300 hover:text-primary-200; }
+  /* Inside a document, .prose-legal a would underline the icons in
+     link blue; these come after it, so they win at the same specificity. */
+  .prose-legal .our-socials a:not(.btn) { @apply text-slate-500 no-underline hover:text-primary-500; }
+  .dark .prose-legal .our-socials a:not(.btn) { @apply text-slate-400 hover:text-primary-300; }
+
   .dark .prose-legal code { @apply bg-slate-800 text-slate-300; }
 
   /* --------------------------------------------------------------- profile */

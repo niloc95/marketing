@@ -12,6 +12,21 @@ class Directory extends BaseConfig
     /** Public site name. */
     public string $siteName = 'WebScheduler Local';
 
+    /**
+     * WebScheduler Local's own social profiles: brand_icon() name => URL.
+     *
+     * Rendered as icons on /company and in the footer (directory/_our_socials)
+     * and as the Organization's sameAs. Order here is display order. A network
+     * needs a brand_icon() path before it can be added.
+     *
+     * @var array<string, string>
+     */
+    public array $socialLinks = [
+        'facebook'  => 'https://www.facebook.com/WebScheduler/',
+        'instagram' => 'https://www.instagram.com/webschedulerlocal/',
+        'linkedin'  => 'https://www.linkedin.com/company/webscheduler-local/',
+    ];
+
     /** Default Open Graph / Twitter share image, used when a page has none of its own. */
     public string $ogImage = 'assets/brand/social-1080.png';
 

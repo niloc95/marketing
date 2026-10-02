@@ -51,7 +51,7 @@ if (! function_exists('schema_organization')) {
     {
         $siteName = config('Directory')->siteName();
 
-        return [
+        $org = [
             '@type' => 'Organization',
             '@id'   => schema_id('organization'),
             'name'  => $siteName,
@@ -61,6 +61,12 @@ if (! function_exists('schema_organization')) {
                 'url'   => base_url(config('Directory')->ogImage()),
             ],
         ];
+        $sameAs = array_values(config('Directory')->socialLinks);
+        if ($sameAs !== []) {
+            $org['sameAs'] = $sameAs;
+        }
+
+        return $org;
     }
 }
 
