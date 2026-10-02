@@ -91,7 +91,7 @@ point positively: a code that limits advertising rarely limits being findable,
 so search visibility is worth *more* to a regulated practice, not less.
 
 Note that being pull rather than push is not an exemption — these codes govern
-what a practitioner publishes, a directory profile included, not only paid ads.
+what a practitioner publishes, a free business profile included, not only paid ads.
 Keep these current; they are the part most likely to go stale, and they should
 be checked by someone who knows each code.
 

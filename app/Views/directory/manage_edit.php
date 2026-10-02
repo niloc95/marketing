@@ -150,8 +150,8 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 <div class="field">
                     <label>Email preferences</label>
                     <input type="hidden" name="marketing_present" value="1">
-                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your listing — how many views it got and where your leads came from.</label>
-                    <div class="hint">Optional. Emails about your listing itself — edit links and any badge billing — still arrive either way.</div>
+                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile — how many views it got and where your leads came from.</label>
+                    <div class="hint">Optional. Emails about your profile itself — edit links and any badge billing — still arrive either way.</div>
                 </div>
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>

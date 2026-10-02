@@ -182,7 +182,7 @@ final class ReferralFlowTest extends CIUnitTestCase
         // canUseJobsFeatures()), so it sits in the badge list.
         $this->assertStringNotContainsString('Included with every listing', $body);
         $this->assertGreaterThan(strpos($body, 'With a Verified Business profile you get:'), strpos($body, 'Jobs:'));
-        $this->assertStringContainsString('Your listing stays free either way.', $body);
+        $this->assertStringContainsString('Your business profile stays free either way.', $body);
         $this->assertStringContainsString('add-listing/verified?invite=', $body);
         $this->assertDoesNotMatchRegularExpression('/rank|higher position|top of/i', strip_tags($body), 'no ranking promise');
     }

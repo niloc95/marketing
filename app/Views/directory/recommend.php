@@ -4,7 +4,7 @@
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Recommend a business — ' . $siteName,
-    'description' => 'Know a South African business that should be on ' . $siteName . '? Tell us and we will invite them to list for free.',
+    'description' => 'Know a South African business that should be on ' . $siteName . '? Tell us and we will invite them to create a free business profile.',
     'canonical'   => base_url('recommend'),
 ]) ?>
 <?= $this->endSection() ?>
@@ -28,14 +28,14 @@ $err = fn (string $f) => $errors[$f] ?? '';
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Know a business that should be here?</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 Tell us about them. We check every recommendation, and if they're a good fit we send
-                them <strong>one</strong> email inviting them to list for free. We never add a business
+                them <strong>one</strong> email inviting them to create a free business profile. We never add a business
                 without its owner's say-so.
             </p>
 
             <?php // The business's owner should list it themselves; say so up front. ?>
             <div class="mb-6 rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
                 <p class="text-slate-500 dark:text-slate-400">
-                    Is it your own business? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get it verified yourself' : 'List it yourself' ?></a>. It's quicker.
+                    Is it your own business? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get it verified yourself' : 'Create its profile yourself' ?></a>. It's quicker.
                 </p>
             </div>
 
@@ -144,7 +144,7 @@ $err = fn (string $f) => $errors[$f] ?? '';
                 <div class="field">
                     <label class="font-medium">
                         <input type="checkbox" name="notify_referrer" value="1" <?= $v('notify_referrer') ? 'checked' : '' ?>>
-                        Email me once when they're listed
+                        Email me once when their profile is live
                     </label>
                     <div class="hint">We never share your email with the business. See our <a class="hover:underline" href="<?= base_url('privacy') ?>">privacy policy</a>.</div>
                 </div>

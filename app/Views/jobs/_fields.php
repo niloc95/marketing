@@ -177,7 +177,7 @@ $error = static fn (string $f) => $err($f) !== '' ? '<div class="err">' . esc($e
         </div>
     </div>
     <p class="hint mb-4">
-        Businesses listed on the directory can reply, up to <?= (int) config('JobBoard')->maxResponses ?> of them.
+        Businesses on <?= esc(config('Directory')->siteName()) ?> can reply, up to <?= (int) config('JobBoard')->maxResponses ?> of them.
         Replies come to your email; your address is never shown.
     </p>
 <?php endif; ?>

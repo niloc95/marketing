@@ -34,7 +34,7 @@ $siteName = config('Directory')->siteName();
                 <p class="text-sm text-slate-500 dark:text-slate-400">
                     Your address is blocked from any future recommendation invite, whoever sends one.
                     If you change your mind, you can still
-                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>">list your business</a> yourself.
+                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>">create your business profile</a> yourself.
                 </p>
             <?php else: ?>
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Stop invitations from <?= esc($siteName) ?>?</h1>

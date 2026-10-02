@@ -46,19 +46,21 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 <ul class="verify-benefits">
     <li>
         <strong>A checked badge</strong> on your profile and beside your name in every
-        search result you appear in &mdash; so someone deciding between you and a listing
+        search result you appear in &mdash; so someone deciding between you and a business
         with no badge can see we have checked who you are.
     </li>
     <li>
-        <strong>Your team, by name.</strong> List up to <?= (int) $team ?> people with a photo,
-        their position, their qualifications and what each of them handles &mdash; so a
-        customer who was referred to a person, not a business, lands in the right place.
+        <strong>All your locations.</strong> Add up to <?= (int) $locations ?> more branches or
+        practices, each with its own address, phone number, map pin and opening hours, and each
+        described to Google as a business location in its own right &mdash; so customers find
+        the right business in the right place, instead of one address for a business that has
+        several.
     </li>
     <li>
-        <strong>All your branches.</strong> Add up to <?= (int) $locations ?> more locations,
-        each with its own address, phone number, map pin and opening hours, and each
-        described to Google as a business location in its own right, instead of one
-        address for a business that has several.
+        <strong>Your people.</strong> People want to know who they are dealing with. Show up to
+        <?= (int) $team ?> team members with a photo, their role, their qualifications and their
+        areas of expertise &mdash; so a customer who was referred to a person, not a business,
+        lands in the right place.
     </li>
     <li>
         <?php // Deliberately "more searches match you", never "you rank higher".
@@ -84,5 +86,5 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 <p class="hint verify-benefits-terms">
     <strong>R<?= esc($amount) ?> a month, and nothing to pay now.</strong>
     We review your documents first and only ask for payment if they check out.
-    Cancel any time. A South African listing is free either way, and stays free.
+    Cancel any time. A South African business profile is free either way, and stays free.
 </p>

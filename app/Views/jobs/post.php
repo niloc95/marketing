@@ -35,7 +35,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white"><?= $isJob ? 'Post a job' : 'Request a service' ?></h1>
             <?php if ($isJob && $mode === 'unlisted' && signup_cta()['verified']): ?>
                 <p class="hint mb-2">
-                    Listed on <?= esc($siteName) ?>? Posting vacancies is part of the Verified Business badge.
+                    Have a business profile on <?= esc($siteName) ?>? Posting vacancies is part of the Verified Business badge.
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Sign in to your dashboard</a> to post from your profile.
                 </p>
             <?php endif; ?>
@@ -58,8 +58,8 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                     <?= $isJob
                         ? 'We check every post before it goes live, usually within one business day.'
-                        : 'Local businesses listed on ' . esc($siteName) . ' can reply to you. We check every request before it goes live.' ?>
-                    Already listed?
+                        : 'Local businesses on ' . esc($siteName) . ' can reply to you. We check every request before it goes live.' ?>
+                    Already have a business profile?
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Sign in to your profile</a>
                     and your posts normally go live straight away.
                 </p>

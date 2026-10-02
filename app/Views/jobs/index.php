@@ -32,8 +32,8 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Jobs and services needed — ' . $siteName,
-    'description' => 'Local jobs and requests for services across South Africa, posted by businesses listed on ' . $siteName . ' and by people who need work done.',
+    'title'       => 'Jobs, opportunities and services needed — ' . $siteName,
+    'description' => 'Discover local job vacancies and opportunities across South Africa, posted by businesses on ' . $siteName . ', and requests from people who need work done.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
 ]) ?>
@@ -44,7 +44,8 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Jobs &amp; services needed</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
-            Vacancies from local businesses, and people looking for someone to do a job.
+            Discover businesses. Discover professionals. Discover opportunities. Vacancies posted
+            straight from local business profiles, and people looking for someone to do a job.
             Requesting a service is free.
         </p>
         <div class="mt-4 flex flex-wrap gap-2">

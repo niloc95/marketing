@@ -128,7 +128,7 @@ $schema = schema_page(
 
         <?php if ($shown === 0): ?>
             <div class="empty">
-                <p class="mb-4"><?= $q !== '' || $category !== '' ? 'Nothing here matches that.' : 'No businesses listed here yet.' ?></p>
+                <p class="mb-4"><?= $q !== '' || $category !== '' ? 'Nothing here matches that.' : 'No business profiles here yet.' ?></p>
                 <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
             </div>
         <?php else: ?>

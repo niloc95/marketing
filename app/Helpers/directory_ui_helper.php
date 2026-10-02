@@ -567,8 +567,8 @@ if (! function_exists('whatsapp_chat_url')) {
             return '';
         }
         $text = $businessName !== ''
-            ? 'Hi, I found ' . $businessName . ' on the WebScheduler Directory.'
-            : 'Hi, I found you on the WebScheduler Directory.';
+            ? 'Hi, I found ' . $businessName . ' on WebScheduler Local.'
+            : 'Hi, I found you on WebScheduler Local.';
 
         return 'https://wa.me/' . $digits . '?text=' . rawurlencode($text);
     }
@@ -961,7 +961,7 @@ if (! function_exists('signup_cta')) {
 
         return $verified
             ? ['url' => base_url('add-listing'), 'label' => 'Get your business verified', 'verified' => true]
-            : ['url' => base_url('add-listing'), 'label' => 'List your business — free', 'verified' => false];
+            : ['url' => base_url('add-listing'), 'label' => 'Create your FREE business profile', 'verified' => false];
     }
 }
 

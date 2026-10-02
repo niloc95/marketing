@@ -66,7 +66,7 @@ if ($indexable && ! empty($result['items'])) {
 ?>
 <?= seo_meta([
     'title'       => $title . ' — ' . $siteName,
-    'description' => 'Browse and search South African services, professionals and home industry by category, province and city.',
+    'description' => 'Discover and search South African businesses, services and professionals by category, province and city.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
     'schema'      => $schema,

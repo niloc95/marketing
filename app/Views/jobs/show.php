@@ -175,11 +175,11 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                     </form>
                 <?php else: ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                        <?= signup_cta()['verified'] ? 'Verified Businesses' : 'Businesses listed' ?> on <?= esc($siteName) ?> can reply to this request.
+                        <?= signup_cta()['verified'] ? 'Verified Businesses' : 'Businesses with a profile' ?> on <?= esc($siteName) ?> can reply to this request.
                     </p>
                     <div class="flex flex-wrap gap-2">
                         <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
-                        <a class="btn btn-ghost" href="<?= base_url('manage') ?>">I'm listed: sign in</a>
+                        <a class="btn btn-ghost" href="<?= base_url('manage') ?>">I have a profile: sign in</a>
                     </div>
                 <?php endif; ?>
             </div>

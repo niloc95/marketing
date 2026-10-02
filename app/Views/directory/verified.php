@@ -21,7 +21,7 @@ $faqs = [
         'q' => 'What does the Verified Business badge mean?',
         'a' => 'That a person at ' . esc($siteName) . ' has seen two documents from the business: a company '
             . 'registration document, and an identity document for the owner. We checked that the business is '
-            . 'really registered, and that whoever runs the listing is really its owner.',
+            . 'really registered, and that whoever runs the profile is really its owner.',
     ],
     [
         'q' => 'What does it not mean?',
@@ -32,7 +32,7 @@ $faqs = [
     ],
     [
         'q' => 'Are businesses without the badge suspicious?',
-        'a' => 'No. Most simply have not applied. Every listing on ' . esc($siteName) . ' has a confirmed email '
+        'a' => 'No. Most simply have not applied. Every business profile on ' . esc($siteName) . ' has a confirmed email '
             . 'address behind it; the badge is an extra step a business can choose to take.',
     ],
     [
@@ -68,7 +68,7 @@ $faqs = [
         <h1 class="mt-4 text-2xl sm:text-3xl">What the Verified Business badge means</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
             When you see this badge on a profile, someone here has checked that the business is
-            registered and that the person running the listing owns it.
+            registered and that the person running the profile owns it.
         </p>
     </div>
 </section>
@@ -81,7 +81,7 @@ $faqs = [
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white">What we check</h2>
                 <ul class="checkout-terms mt-3">
                     <li>A company registration document &mdash; the business is really registered.</li>
-                    <li>An identity document for the owner &mdash; the person behind the listing is really them.</li>
+                    <li>An identity document for the owner &mdash; the person behind the profile is really them.</li>
                 </ul>
             </div>
             <div class="panel">
@@ -107,10 +107,10 @@ $faqs = [
 
         <?php if ($offered): ?>
             <div class="panel mt-6">
-                <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Getting the badge for your business</h2>
+                <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Get Verified</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
                     Send us your company registration document and the owner's ID, either from the
-                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-listing') ?>">list your business</a>
+                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-listing') ?>">create your business profile</a>
                     form or at any time afterwards from
                     <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>.
                     We review them, usually within two working days.

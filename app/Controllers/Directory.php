@@ -575,9 +575,9 @@ class Directory extends BaseController
             // of the profile. Someone who already applied goes to their profile.
             if ($verification->isEnabled() && $verification->forListing((int) $listing['id']) === null) {
                 return redirect()->to(base_url('manage/edit') . '#get-verified')
-                    ->with('success', 'Your listing is live. Next: get the Verified Business badge. '
+                    ->with('success', 'Your business profile is live. Next: Get Verified. '
                         . 'Send your company registration and the owner\'s ID below. There is nothing '
-                        . 'to pay until we have checked them, and your listing stays free either way.');
+                        . 'to pay until we have checked them, and your business profile stays free either way.');
             }
 
             return redirect()->to(base_url('directory/' . $listing['slug']))

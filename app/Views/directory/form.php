@@ -16,11 +16,11 @@ if ($verifiedOnly) {
     $eyebrow  = 'Verified Business';
     $headline = 'Get your business verified';
 } elseif ($verificationOffered) {
-    $eyebrow  = 'List your business';
-    $headline = 'Get found by new customers';
+    $eyebrow  = 'Your business profile';
+    $headline = 'Be discovered by local customers';
 } else {
-    $eyebrow  = 'List your business &mdash; free';
-    $headline = 'Get found by new customers';
+    $eyebrow  = 'Create your FREE business profile';
+    $headline = 'Be discovered by local customers';
 }
 
 // Both pages canonicalise to /add-listing. They are one form showing the same
@@ -29,8 +29,8 @@ if ($verifiedOnly) {
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'List your business — ' . $siteName,
-    'description' => 'List your business on ' . $siteName . ' so new customers can find you. Free, always.',
+    'title'       => 'Create your free business profile — ' . $siteName,
+    'description' => 'Create a free business profile on ' . $siteName . ' so local customers can discover your business, services and location. No monthly fee, no subscription.',
     'canonical'   => base_url('add-listing'),
 ]) ?>
 <?= $this->endSection() ?>
@@ -75,7 +75,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                     Tell us about your business, then attach your two documents at the bottom.
                     We'll email you a link to verify and publish your profile &mdash; and your
-                    listing goes live either way, whatever the badge review decides.
+                    profile goes live either way, whatever the badge review decides.
                 </p>
             <?php else: ?>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile &mdash; it's free.</p>
@@ -153,7 +153,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                 <span class="hint">
                                     R<?= esc($verificationAmount) ?> a month. We review your documents first and
                                     only ask for payment if they check out &mdash; nothing to pay now. Cancel any
-                                    time, and your listing is free either way.
+                                    time, and your business profile is free either way.
                                 </span>
                                 <?php // A span, not a <button>: the <summary> is already the control,
                                       // and nesting a button inside it swallows the click. ?>
@@ -170,7 +170,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                           // not of the listing, which publishes regardless. ?>
                                     Send your company registration document and the owner's ID. We review
                                     them, usually within two working days, and only ask for payment once
-                                    they pass. Nothing to attach yet? Your listing still publishes without
+                                    they pass. Nothing to attach yet? Your profile still publishes without
                                     them, and you can send both later from
                                     <a href="<?= base_url('manage') ?>">manage your profile</a>.
                                 </p>
@@ -186,14 +186,14 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                       // without documents, which is what keeps that mode honest. ?>
                                 <?php if (! $verifiedOnly): ?>
                                     <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
-                                       href="<?= base_url('add-listing?plan=free') ?>">Remove &mdash; keep my listing free</a>
+                                       href="<?= base_url('add-listing?plan=free') ?>">Remove &mdash; keep my profile free</a>
                                 <?php endif; ?>
                             </div>
                         </details>
                         <?php // Outside the <details>, because it has to be readable once the
                               // panel it is talking about has closed. ?>
                         <p class="hint verify-cleared" data-plan-cleared hidden>
-                            Your documents were removed. Your listing stays free.
+                            Your documents were removed. Your profile stays free.
                         </p>
                     </div>
                 <?php endif; ?>

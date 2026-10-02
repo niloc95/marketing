@@ -550,6 +550,29 @@
   .dark .company-steps    { @apply divide-slate-800 border-slate-800; }
   .dark .company-steps a  { @apply text-primary-300 hover:text-primary-200; }
 
+  /* ------------------------------------------ home: the five profile pillars */
+  /* Business, services, locations, people, opportunities. Five across on a
+     wide screen, two then one below. .pillar-tag marks the Verified Business
+     features in the badge's own emerald (see .badge-verified). */
+  .hero-actions   { @apply mt-6 flex flex-wrap gap-3; }
+  .pillars        { @apply m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-5; }
+  .pillar         { @apply flex flex-col rounded-2xl border border-slate-200 bg-white p-5; }
+  .pillar-icon    { @apply grid h-10 w-10 place-items-center rounded-xl bg-brand-orange/10 text-brand-orange; }
+  .pillar h3      { @apply mt-4 font-bold text-slate-900; }
+  .pillar p       { @apply mt-1.5 flex-1 text-sm leading-relaxed text-slate-600; }
+  .pillar-tag     { @apply mt-4 inline-flex items-center gap-1 self-start rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 no-underline hover:bg-emerald-100; }
+  .pillars-foot   { @apply mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-slate-600; }
+  .pillars-foot strong { @apply text-slate-900; }
+  .pillars-foot a { @apply font-medium text-primary-600 underline underline-offset-2 hover:text-primary-500; }
+  .dark .pillar        { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .pillar-icon   { @apply bg-brand-orange/15; }
+  .dark .pillar h3,
+  .dark .pillars-foot strong { @apply text-white; }
+  .dark .pillar p,
+  .dark .pillars-foot  { @apply text-slate-400; }
+  .dark .pillar-tag    { @apply bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25; }
+  .dark .pillars-foot a { @apply text-primary-300 hover:text-primary-200; }
+
   /* ------------------------------------------------- home page photo hero */
   /* Deliberately NOT a modifier on .hero. That class is shared by ten pages —
      browse, categories, province, landing, verified, faq and the three legal

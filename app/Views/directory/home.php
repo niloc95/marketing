@@ -12,8 +12,8 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $siteName . ' — Find someone local',
-    'description' => 'Search South African services, professionals and home industry — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Find someone local, or list your business free.',
+    'title'       => $siteName . ' — Discover local businesses, services and professionals',
+    'description' => 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.',
     'canonical'   => base_url('/'),
     'schema'      => $schema,
 ]) ?>
@@ -110,8 +110,16 @@ $hasMedia  = $hasSlides || $heroBg !== null;
     <?php endif; ?>
 
     <div class="container hero-inner">
-        <h1>Find someone <span class="text-brand-golden">local</span> you can trust</h1>
-        <p>Doctors, attorneys, vets, dog walkers, home bakers, plumbers and more — across South Africa. Or add your own business, free.</p>
+        <h1><span class="text-brand-golden">More</span> than a business listing.</h1>
+        <p><?= esc($siteName) ?> helps people discover South African businesses, services, locations, professionals and opportunities — while giving businesses a simple place to build their local online presence.</p>
+        <?php // The free profile is the offer this hero leads with, so its button
+              // goes to the Free card (?plan=free) rather than through signup_cta(),
+              // which leads with the badge. A campaign visitor still lands on the
+              // verified-only form; its small print keeps the free promise. ?>
+        <div class="hero-actions">
+            <a class="btn btn-accent" href="<?= base_url('add-listing?plan=free') ?>">Create Your FREE Business Profile</a>
+            <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Explore Local Businesses<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+        </div>
         <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
             <?= view('directory/_search_input', [
                 'listId'      => 'search-suggest-hero',
@@ -190,9 +198,67 @@ $hasMedia  = $hasSlides || $heroBg !== null;
             <span class="stat"><strong><?= number_format($stats['listings']) ?></strong> profiles</span>
             <span class="stat"><strong><?= number_format($stats['categories']) ?></strong> categories</span>
             <span class="stat"><strong><?= number_format($stats['provinces']) ?></strong> provinces</span>
-            <span class="stat"><strong>Always</strong> free</span>
+            <span class="stat"><strong>Free</strong> business profiles</span>
         </div>
     </div>
+<?php endif; ?>
+
+<?php
+// The five things a profile brings together. The last three are Verified
+// Business features (TeamMemberService / PracticeLocationService /
+// JobBoardService::canUseJobsFeatures), so they carry the tag while the badge is
+// on sale: this section must never read as "all of this is free".
+$badgeOn = signup_cta()['verified'];
+$pillars = [
+    ['building-2', 'Your business', 'What you do, your story, your photos and your opening hours, on a profile customers can find.', false],
+    ['wrench', 'Your services', 'The services you offer, with prices if you want them, so people know you do what they need.', false],
+    ['map-pin', 'Your locations', 'Every branch or practice with its own address, map pin, contact details and hours.', true],
+    ['users', 'Your people', 'The team behind the business: names, photos, roles, qualifications and areas of expertise.', true],
+    ['briefcase', 'Your opportunities', 'Job vacancies posted straight from your profile, and requests from people who need work done.', true],
+];
+?>
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <h2>Your business. Your services. Your locations. Your people. Your opportunities.</h2>
+            <p>A <?= esc($siteName) ?> profile is your local presence online, not just an entry in a list.</p>
+        </div>
+        <ul class="pillars">
+            <?php foreach ($pillars as [$icon, $title, $text, $verified]): ?>
+                <li class="pillar">
+                    <span class="pillar-icon"><?= lucide($icon, 'h-5 w-5') ?></span>
+                    <h3><?= esc($title) ?></h3>
+                    <p><?= esc($text) ?></p>
+                    <?php if ($verified && $badgeOn): ?>
+                        <a class="pillar-tag" href="<?= base_url('verified') ?>"><?= lucide('badge-check', 'h-3.5 w-3.5') ?>With Verified</a>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+        <p class="pillars-foot">
+            <strong>Free business profile:</strong> business information, services, contact details, address and map location,
+            photos and opening hours. No monthly fee. No subscription. No obligation.
+            <a href="<?= base_url('add-listing?plan=free') ?>">Create yours</a>
+        </p>
+    </div>
+</section>
+
+<?php if ($badgeOn): ?>
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-head-split">
+                <div>
+                    <h2>People want to know who they are dealing with.</h2>
+                    <p>
+                        Put your people and their expertise in front of potential customers: who they are, what
+                        they're qualified in and what they specialise in. With a Verified Business profile, your
+                        team appears on your page, and a search for one of your people can find your business.
+                    </p>
+                </div>
+                <a class="btn btn-accent shrink-0" href="<?= base_url('verified') ?>">Get Verified<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+            </div>
+        </div>
+    </section>
 <?php endif; ?>
 
 <?php if ($stats['listings'] === 0): ?>
@@ -214,7 +280,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
         <div class="container">
             <div class="section-head">
                 <h2>Featured</h2>
-                <p>Hand-picked from across South Africa — verified, published and open for enquiries.</p>
+                <p>Hand-picked from across South Africa, and open for enquiries.</p>
             </div>
             <div class="card-grid-4">
                 <?php foreach ($featured as $l): ?>
@@ -253,7 +319,7 @@ $hasMedia  = $hasSlides || $heroBg !== null;
                     <h2>Browse by Location</h2>
                     <p>Every province we cover, with the towns and cities where our profiles actually are.</p>
                 </div>
-                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">Browse everything<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+                <a class="btn btn-ghost shrink-0" href="<?= base_url('directory') ?>">Explore local businesses<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
             </div>
             <div class="loc-grid">
                 <?php $i = 0; ?>
@@ -293,8 +359,8 @@ $hasMedia  = $hasSlides || $heroBg !== null;
     <section class="section">
         <div class="container text-center">
             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Run a business in South Africa?</h2>
-            <p class="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">Add it to <?= esc($siteName) ?> in a couple of minutes. No fee, no card, no contract.</p>
-            <a class="btn btn-accent mt-5" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
+            <p class="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">Create your FREE business profile in a couple of minutes. No monthly fee. No subscription. No obligation.</p>
+            <a class="btn btn-accent mt-5" href="<?= base_url('add-listing?plan=free') ?>">Create your FREE business profile</a>
         </div>
     </section>
 <?php endif; ?>

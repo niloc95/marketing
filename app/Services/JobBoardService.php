@@ -386,7 +386,7 @@ class JobBoardService
         if (($d['kind'] ?? null) === JobPostModel::KIND_JOB && ($d['poster_email'] ?? '') !== '') {
             $owner = (new DirectoryListingModel())->findActiveByEmail((string) $d['poster_email']);
             if ($owner !== null && ! $this->canUseJobsFeatures($owner)) {
-                $errors['poster_email'] = 'This email belongs to a business listed on '
+                $errors['poster_email'] = 'This email belongs to a business with a profile on '
                     . $this->site->siteName() . '. Posting job vacancies is part of the Verified Business badge: '
                     . 'get verified, then post from your dashboard.';
             }
@@ -804,7 +804,7 @@ class JobBoardService
         $body    = view('emails/job-relay', [
             'site'     => $this->site->siteName(),
             'heading'  => $listing['display_name'] . ' replied to your request',
-            'intro'    => 'A business listed on ' . $this->site->siteName() . ' has replied to "' . $post['title'] . '". Reply to this email to answer them directly.',
+            'intro'    => 'A business on ' . $this->site->siteName() . ' has replied to "' . $post['title'] . '". Reply to this email to answer them directly.',
             'fields'   => array_filter([
                 'Business' => (string) $listing['display_name'],
                 'Profile'  => $profile,
@@ -1126,7 +1126,7 @@ class JobBoardService
             'button'       => $canReply
                 ? ['See the request and reply', $this->url($post)]
                 : ['Get verified to reply', base_url('verified')],
-            'footnote'     => 'You get these because ' . $listing['display_name'] . ' is listed under '
+            'footnote'     => 'You get these because ' . $listing['display_name'] . ' has a profile under '
                 . ($post['category_name'] ?: 'this category') . ' in ' . $post['province'] . '.',
             'footnoteLink' => ['Stop these emails', $this->alertsOffUrl((int) $listing['id'])],
         ]);

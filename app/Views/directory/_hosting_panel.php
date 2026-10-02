@@ -90,7 +90,7 @@ $prettyDate = static function (?string $date): string {
     <?php else: ?>
         <div class="alert alert-warning">
             <strong>Your profile is not published yet.</strong>
-            Listing a business in South Africa is free. Yours is outside South
+            A business profile in South Africa is free. Yours is outside South
             Africa, which needs an International Listing subscription at
             <strong>R<?= esc($amount) ?> per month</strong>.
             <?php // Everything they have already done still exists. Someone

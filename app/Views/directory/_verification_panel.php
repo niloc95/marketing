@@ -144,7 +144,7 @@ $prettyDate = static function (?string $date): string {
             <?php if (! empty($row['paid_until'])): ?>
                 after <strong><?= esc($prettyDate($row['paid_until'])) ?></strong>
             <?php endif; ?>.
-            Your listing itself is unaffected.
+            Your business profile itself is unaffected.
         </p>
 
         <?php if ($payable && $pending): ?>
@@ -200,7 +200,7 @@ $prettyDate = static function (?string $date): string {
             We could not verify your business from the documents you sent:
         </p>
         <p class="alert alert-warning verify-reason"><?= nl2br(esc($row['rejection_reason'] ?? '')) ?></p>
-        <p class="hint">Nothing was charged, and your listing is unaffected. Send new documents whenever you are ready.</p>
+        <p class="hint">Nothing was charged, and your profile is unaffected. Send new documents whenever you are ready.</p>
         <form method="post" action="<?= base_url('manage/verification') ?>" enctype="multipart/form-data" class="verify-form">
             <?= csrf_field() ?>
             <?= view('directory/_verification_fields', ['amount' => $amount]) ?>

@@ -50,7 +50,7 @@ $paidUntil = $paid_until ?? '';
             </p>
             <p style="font-size:15px;line-height:1.6">
                 You're welcome to send new documents whenever you're ready — nothing has been charged,
-                and your listing itself is unaffected.
+                and your business profile itself is unaffected.
             </p>
             <p style="margin:22px 0">
                 <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Send new documents</a>
@@ -81,7 +81,7 @@ $paidUntil = $paid_until ?? '';
         <?php endif; ?>
 
         <p style="font-size:13px;color:#64748b">
-            You're getting this because your business is listed on <?= esc($site) ?>.
+            You're getting this because your business has a profile on <?= esc($site) ?>.
         </p>
     </div>
 </body>

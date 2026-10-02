@@ -1906,7 +1906,7 @@
     }
 
     html += '<div class="map-popup-actions">';
-    html += '<a class="map-popup-btn" href="' + e(item.url) + '">View listing</a>';
+    html += '<a class="map-popup-btn" href="' + e(item.url) + '">View profile</a>';
     // Straight to the business's booking page. The URL was vetted server-side
     // (safe_external_url) and is escaped here like every other value.
     if (item.bookingUrl) {

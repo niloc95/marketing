@@ -368,7 +368,7 @@ helper('directory_hours');
         <input type="text" id="field-contact-person" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" autocomplete="name" <?= $privateDetailsRequired ? 'required' : '' ?> data-standout-trigger>
         <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
     </div>
-    <div class="hint">For our records, and so we know who to address when we contact you about this listing.</div>
+    <div class="hint">For our records, and so we know who to address when we contact you about this profile.</div>
 </fieldset>
 
 <?php // data-standout: directory.js opens every section in here once the
@@ -579,7 +579,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
           $vMarketing = $v('marketing_present') === '1' ? $v('marketing_opt_in') === '1' : true; ?>
     <div class="field">
         <input type="hidden" name="marketing_present" value="1">
-        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your listing — how many views it got and where your leads came from.</label>
+        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile — how many views it got and where your leads came from.</label>
         <div class="hint">Untick if you'd rather not. You can change this any time in Manage your profile, and every report has an unsubscribe link.</div>
     </div>
 <?php endif; ?>

@@ -1,9 +1,14 @@
 # WebScheduler Local (SaaS)
 
-A free public place to find local services, professionals and home industry across South
-Africa — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more.
-Browse/search by category and location, public profile pages, and an "add your business"
-signup gated by email verification.
+A local business discovery and visibility platform built for South Africa: people discover
+businesses, services, locations, professionals and opportunities; businesses get a free
+business profile (plus locations, team and jobs with the paid Verified Business badge).
+Browse/search by category and location, public profile pages, and a "create your free
+business profile" signup gated by email verification.
+
+**Positioning:** "More than a business listing." User-facing copy never calls the product a
+directory; "listing" is fine descriptively, "business profile" is preferred. Code identifiers
+(`DirectoryService`, `/directory` routes, `xs_directory_*` tables) keep their names.
 
 Separate from the standalone WebScheduler product, which is self-hosted per customer.
 
@@ -11,8 +16,8 @@ Separate from the standalone WebScheduler product, which is self-hosted per cust
 - **Production:** https://listing.webscheduler.co.za (its own subdomain — see *Deploying*)
 - **Local:** http://localhost:8095
 
-This repo also holds the static marketing site (`marketing-site/`), which links to the
-directory. The two share a Tailwind palette via `tailwind.tokens.cjs` but build and deploy
+This repo also holds the static marketing site (`marketing-site/`), which links to
+WebScheduler Local. The two share a Tailwind palette via `tailwind.tokens.cjs` but build and deploy
 independently.
 
 ## Setup

@@ -27,8 +27,8 @@ $contact   = config('Directory')->adminEmail();
         <div class="panel">
             <h2>1. Who we are</h2>
             <p><strong>WebScheduler (Pty) Ltd</strong>, registration number 2026/138798/07, is a South African technology company providing online scheduling, appointment-booking, business listing and related Software as a Service (SaaS) services.</p>
-            <p>This Privacy Policy explains how WebScheduler (Pty) Ltd collects, uses, stores, protects and otherwise processes personal information in connection with <strong><?= esc($siteName) ?></strong>, our public business listing service.</p>
-            <p><?= esc($siteName) ?> provides a platform where businesses, professionals and service providers can create and maintain public listings that help people discover local services and businesses in South Africa.</p>
+            <p>This Privacy Policy explains how WebScheduler (Pty) Ltd collects, uses, stores, protects and otherwise processes personal information in connection with <strong><?= esc($siteName) ?></strong>, our local business discovery and visibility platform.</p>
+            <p><?= esc($siteName) ?> provides a platform where businesses, professionals and service providers can create and maintain public business profiles that help people discover local services and businesses in South Africa.</p>
             <p>We process personal information in accordance with applicable South African data-protection requirements, including the <strong>Protection of Personal Information Act, 2013 (POPIA)</strong>.</p>
 
             <h2>2. Company details</h2>
@@ -60,7 +60,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Information about delivery, card payments and online bookings</li>
             </ul>
             <p>Businesses and service providers are responsible for ensuring that information they submit to the service is accurate and that they have the necessary authority to provide any personal information included in their listing.</p>
-            <p>Because the purpose of <?= esc($siteName) ?> is to provide a public business directory, information included in a published listing may be visible to anyone and may be indexed by search engines.</p>
+            <p>Because the purpose of <?= esc($siteName) ?> is to provide a public business discovery platform, information included in a published listing may be visible to anyone and may be indexed by search engines.</p>
             <p>You should therefore not submit personal information that you do not want to make publicly available.</p>
             <p>The email address used to verify and manage a listing is not displayed publicly as part of the listing.</p>
 
@@ -75,7 +75,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h2>5. Information you provide when creating a business listing</h2>
             <p>Creating a business listing is voluntary.</p>
-            <p>When you submit a business through <a href="<?= base_url('add-listing') ?>">List your business</a>, we may collect:</p>
+            <p>When you submit a business through <a href="<?= base_url('add-listing') ?>">Create your free business profile</a>, we may collect:</p>
 
             <h3>Business information</h3>
             <ul>

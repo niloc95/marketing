@@ -391,6 +391,8 @@ final class PracticeLocationServiceTest extends CIUnitTestCase
             'hours' => ['mon' => ['open' => '09:00', 'close' => '16:00']],
         ]]);
 
+        $this->listings->update($listing, ['verified_until' => date('Y-m-d', strtotime('+1 month'))]);
+
         $slug    = $this->listings->find($listing)['slug'];
         $profile = (new DirectoryService())->getProfile($slug);
 
@@ -399,6 +401,27 @@ final class PracticeLocationServiceTest extends CIUnitTestCase
         $hours = $profile['locations'][0]['trading_hours'];
         $this->assertIsArray($hours);
         $this->assertSame('09:00', $hours['mon']['open']);
+    }
+
+    public function testALapsedBadgeHidesTheBranchesWithoutDeletingThem(): void
+    {
+        // Same rule as the team panel: extra branches are a Verified Business
+        // feature, so the public profile (and the JSON-LD built from it) drops
+        // them once the badge date has passed. The rows stay for a renewal.
+        $listing = $this->listing('Lapsed Branches Co');
+        $this->service->syncFromForm($listing, [['name' => 'Second branch', 'city' => 'Durban']]);
+        $slug = $this->listings->find($listing)['slug'];
+
+        $this->listings->update($listing, ['verified_until' => date('Y-m-d')]);
+        $this->assertCount(1, (new DirectoryService())->getProfile($slug)['locations'], 'a live badge shows them');
+
+        $this->listings->update($listing, ['verified_until' => date('Y-m-d', strtotime('-1 day'))]);
+        $this->assertSame([], (new DirectoryService())->getProfile($slug)['locations'], 'a lapsed badge hides them');
+
+        $this->listings->update($listing, ['verified_until' => null]);
+        $this->assertSame([], (new DirectoryService())->getProfile($slug)['locations'], 'no badge, no branches');
+
+        $this->assertCount(1, $this->service->forListing($listing), 'hidden, not deleted');
     }
 
     /**

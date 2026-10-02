@@ -65,7 +65,7 @@ final class SocialContactHelperTest extends CIUnitTestCase
     public function testTheChatLinkCarriesWhereTheCustomerFoundThem(): void
     {
         $this->assertSame(
-            'https://wa.me/27821234567?text=' . rawurlencode('Hi, I found Hana Nail on the WebScheduler Directory.'),
+            'https://wa.me/27821234567?text=' . rawurlencode('Hi, I found Hana Nail on WebScheduler Local.'),
             whatsapp_chat_url('082 123 4567', 'Hana Nail')
         );
         $this->assertSame('', whatsapp_chat_url('nope', 'Hana Nail'));

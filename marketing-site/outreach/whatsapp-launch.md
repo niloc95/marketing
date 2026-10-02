@@ -1,4 +1,4 @@
-# WhatsApp launch outreach — WebScheduler Business Listings
+# WhatsApp launch outreach — WebScheduler Local
 
 Copy-paste messages for inviting South African businesses onto
 **listing.webscheduler.co.za** during the launch phase.
@@ -28,9 +28,11 @@ the live site.
 ```
 Hi 👋 I'm Nilo from WebScheduler.
 
-We've just launched a South African business directory — customers search for a service in their area, and your business comes up.
+We've just launched WebScheduler Local — a place where South Africans discover local businesses, services and professionals near them.
 
-Your listing is completely free 🎉 Your services, contact details, photos and links, all on one page.
+You can create a FREE business profile 🎉 Your services, where you are, your contact details, photos and opening hours. No monthly fee, no subscription, no obligation.
+
+It's more than a business listing: it's your business's local presence online.
 
 👉 listing.webscheduler.co.za
 
@@ -47,13 +49,13 @@ estate agents, IT support, marketing agencies, consultants.
 ```
 Hi 👋 I'm Nilo from WebScheduler.
 
-We've just launched a South African business directory, and we're building out our [attorneys/accountants/architects] section.
+We've just launched WebScheduler Local, where South Africans discover local businesses and professionals, and we're building out our [attorneys/accountants/architects] section.
 
-Someone looking for a [trade] in [area] searches online first. A free profile means they find you — your practice, your services, your contact details, all in one place.
+Someone looking for a [trade] in [area] searches online first, and people want to know who they're dealing with. A free business profile shows your practice, your services, where you are and how to reach you. Get Verified, and your team, their qualifications and your other offices can go on it too.
 
 👉 listing.webscheduler.co.za
 
-It costs nothing and takes about 5 minutes. Want me to send you the details? 😊
+The profile is free and takes about 5 minutes. Want me to send you the details? 😊
 ```
 
 ---
@@ -69,7 +71,7 @@ Hi 👋 I'm Nilo from WebScheduler.
 
 When someone in [area] needs a [plumber], they search online — and whoever comes up gets the call.
 
-We've just launched a South African business directory, and you can list your business completely free 🎉 Your services, the areas you cover, your number, and photos of your work — all on one page.
+We've just launched WebScheduler Local, and you can create a FREE business profile 🎉 Your services, where you work, your number, your hours and photos of your work — all on one page. No monthly fee, no subscription.
 
 👉 listing.webscheduler.co.za
 
@@ -83,15 +85,15 @@ We're inviting businesses in during our launch phase. Want me to send you more i
 For home bakers, cake artists, preserves and jams, crafts and handmade, sewing and
 crochet, farm stalls and farm produce, home decor.
 
-This is the segment the directory deliberately makes room for — people trading from
-home rather than premises, who are the hardest to find online.
+This is the segment WebScheduler Local deliberately makes room for — people trading
+from home rather than premises, who are the hardest to find online.
 
 ```
 Hi 👋 I'm Nilo from WebScheduler.
 
-We've just launched a South African business directory — and unlike most, we've made room for home businesses like yours 🏡
+We've just launched WebScheduler Local, where South Africans discover local businesses — and we've made room for home businesses like yours 🏡
 
-If you bake, sew, craft or sell from home, you can list completely free 🎉 Your products, your photos, your number, your Facebook or Instagram — one page people can find and share.
+If you bake, sew, craft or sell from home, you can create a FREE business profile 🎉 Your products, your photos, your number, your Facebook or Instagram — one page people can find and share.
 
 👉 listing.webscheduler.co.za
 
@@ -105,18 +107,18 @@ Would you like me to send you a bit more info? 😊
 ```
 Great 😊 Here's how it works:
 
-1️⃣ Go to listing.webscheduler.co.za and tap the orange button at the top
+1️⃣ Go to listing.webscheduler.co.za and tap "Create Your FREE Business Profile"
 2️⃣ Fill in your details — business name, category, services, contact, website or socials, photos, and your spot on the map. About 5 minutes.
 3️⃣ We email you a link to confirm it's really you. Click it and your profile goes live.
 
-That's it. Your listing stays free — no card, no trial period.
+That's it. Your profile stays free — no monthly fee, no subscription, no obligation.
 
-There's one optional extra: a Verified Business badge at R29,99 a month, if you'd like that trust signal on your profile. Entirely up to you — everything above works without it.
+There's one optional extra: Get Verified, at R29,99 a month. We check your company registration and ID, you get the Verified Business badge, and you can add your other branches, your team with their qualifications, and your job vacancies. Entirely up to you — everything above works without it.
 
 Any questions, just ask 👍
 ```
 
-> The badge belongs here rather than in the opener. The listing genuinely is free, so
+> The badge belongs here rather than in the opener. The profile genuinely is free, so
 > the opener is honest without it — but mentioning it the moment someone shows real
 > interest means the checkout page is never a surprise.
 
@@ -127,13 +129,13 @@ Any questions, just ask 👍
 **"Is it really free?"**
 
 ```
-Yes, genuinely 🙂 Creating and keeping your listing costs nothing — no card needed, no trial that expires. The only paid thing on the site is an optional Verified Business badge at R29,99/month, and you never have to take it.
+Yes, genuinely 🙂 Creating and keeping your business profile costs nothing — no monthly fee, no subscription, no card needed. The only paid thing is the optional Verified Business badge at R29,99/month (which adds your branches, your team and job vacancies), and you never have to take it.
 ```
 
 **"Who are you? I've never heard of WebScheduler."**
 
 ```
-Fair enough 😊 WebScheduler is a South African booking and scheduling platform — webscheduler.co.za. The directory is our new side of it: a free place for local businesses to be found. Have a look and decide for yourself, there's no obligation either way.
+Fair enough 😊 WebScheduler is a South African booking and scheduling platform — webscheduler.co.za. WebScheduler Local is our new side of it: a place where local businesses are discovered, with a free business profile for every South African business. Have a look and decide for yourself, there's no obligation either way.
 ```
 
 **"How long does it take?"**
@@ -145,13 +147,13 @@ About 5 minutes 👍 Business name, what you do, your contact details, and a pho
 **"I already have a website / Facebook page."**
 
 ```
-Perfect — put both on your listing 🙂 It's an extra place people find you, and it links straight through to your site and socials. Nothing to move, nothing to change.
+Perfect — put both on your profile 🙂 It's an extra place people find you, and it links straight through to your site and socials. Nothing to move, nothing to change.
 ```
 
 **"How do I take it down later?"**
 
 ```
-Just message me, or use the manage link we email you — your listing comes down, no questions asked 👍
+Just message me, or use the manage link we email you — your profile comes down, no questions asked 👍
 ```
 
 ---

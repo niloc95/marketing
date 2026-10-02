@@ -479,7 +479,7 @@ class Jobs extends BaseController
         $listing = $this->ownerListing();
         if ($listing === null) {
             return redirect()->to(base_url('manage'))
-                ->with('info', 'Only Verified Businesses on the directory can reply to requests. Sign in to your profile to get verified.');
+                ->with('info', 'Only Verified Businesses on ' . config('Directory')->siteName() . ' can reply to requests. Sign in to your profile to get verified.');
         }
 
         $throttler = service('throttler');

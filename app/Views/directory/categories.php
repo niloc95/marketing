@@ -22,7 +22,7 @@ foreach ($groups as $cats) {
 $schema = schema_page(
     [
         schema_breadcrumb([
-            ['name' => 'Directory', 'url' => base_url('directory')],
+            ['name' => 'Browse', 'url' => base_url('directory')],
             ['name' => 'All categories', 'url' => $canonical],
         ], $canonical),
         schema_item_list('All categories', schema_link_elements($links), null, $canonical),
@@ -36,7 +36,7 @@ $schema = schema_page(
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'All categories — ' . $siteName,
-    'description' => 'Browse every category on ' . $siteName . ' — find someone local, or add your own business free.',
+    'description' => 'Every category on ' . $siteName . ' — discover local businesses, services and professionals, or create your free business profile.',
     'canonical'   => $canonical,
     'schema'      => $schema,
 ]) ?>

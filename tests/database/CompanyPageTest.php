@@ -29,7 +29,7 @@ final class CompanyPageTest extends CIUnitTestCase
 
         $result->assertStatus(200);
         $html = html_entity_decode((string) $result->response()->getBody());
-        $this->assertStringContainsString('Discover South African businesses, services and professionals', $html);
+        $this->assertStringContainsString('A local business discovery and visibility platform, built for South Africa', $html);
         $this->assertStringContainsString('<link rel="canonical" href="' . base_url('company') . '"', $html);
         $this->assertStringContainsString('"AboutPage"', $html);
     }

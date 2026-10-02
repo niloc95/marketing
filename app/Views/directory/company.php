@@ -5,16 +5,17 @@ $siteName  = config('Directory')->siteName();
 $canonical = base_url('company');
 
 /**
- * The company page: who we are and what the directory is for. Its own page,
+ * The company page: who we are and what WebScheduler Local is for. Its own page,
  * not the marketing site's about.html, which is about the scheduling
  * product. Nothing here links to that site.
  *
  * Built from the site's existing pieces (.section bands, .section-head-split,
- * the home page's photo .cat-tile) so it reads as part of the directory.
+ * the home page's photo .cat-tile) so it reads as part of the same site.
  *
- * Two claims to keep honest if this copy changes: team members are a
- * Verified Business feature (so "can add", never "free"), and nothing may
- * suggest that paying moves a business up the results.
+ * Two claims to keep honest if this copy changes: team members, extra
+ * locations and job vacancies are Verified Business features (so "can add",
+ * never "free"), and nothing may suggest that paying moves a business up the
+ * results.
  */
 
 // The hero collage: everyday people at work, from the committed category
@@ -31,16 +32,16 @@ $collage = [
 $looking = [
     ['A trusted professional', 'Doctors, attorneys, accountants and more.', 'group-health-medical', 'stethoscope', base_url('directory/categories'), 'Browse categories'],
     ['Services in your area', 'Trades, salons and services near you.', 'electrician', 'map-pin', base_url('directory') . '#map', 'Open the map'],
-    ['A particular business', 'Restaurants, shops and more, by name.', 'restaurant', 'search', base_url('directory'), 'Search the directory'],
+    ['A particular business', 'Restaurants, shops and more, by name.', 'restaurant', 'search', base_url('directory'), 'Search local businesses'],
     ['Your next job', 'Vacancies and service requests.', 'group-professional-services-2', 'briefcase', base_url('jobs'), 'See jobs'],
 ];
 ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Company — ' . $siteName,
-    'description' => $siteName . ' brings South African businesses, professionals, services and job opportunities '
-        . 'together in one place, and gives every business a simple profile to manage.',
+    'title'       => 'About us — ' . $siteName,
+    'description' => $siteName . ' is a local business discovery and visibility platform built for South Africa. '
+        . 'Discover businesses, services, locations, professionals and opportunities, or create a free business profile.',
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'AboutPage', 'About ' . $siteName),
 ]) ?>
@@ -55,16 +56,16 @@ $looking = [
     </div>
     <div class="hero-collage-veil" aria-hidden="true"></div>
     <div class="container">
-        <h1 class="max-w-3xl">Discover South African businesses, services and professionals</h1>
-        <p><?= esc($siteName) ?> makes it easier to find businesses, professionals, services and opportunities across South Africa.</p>
-        <a class="btn btn-accent mt-6" href="<?= base_url('directory') ?>">Browse the directory<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+        <h1 class="max-w-3xl">A local business discovery and visibility platform, built for South Africa</h1>
+        <p><?= esc($siteName) ?> connects people looking for services with the businesses and professionals who provide them.</p>
+        <a class="btn btn-accent mt-6" href="<?= base_url('directory') ?>">Explore local businesses<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
     </div>
 </section>
 
 <section class="section">
     <div class="container">
         <p class="company-statement">
-            Find a business. Discover a service. Connect with a professional. Find your next opportunity.
+            More than a business listing. Discover businesses. Discover professionals. Discover opportunities.
         </p>
         <div class="company-points">
             <div>
@@ -76,18 +77,18 @@ $looking = [
                 </p>
             </div>
             <div>
-                <h2>Built to help you find</h2>
+                <h2>A real local presence</h2>
                 <p>
-                    The platform is built to help people find the services they need. It also gives businesses a
-                    simple way to create and manage their online presence, with their details, services, contact
-                    details, locations, photos, team members and more in one profile that is easy to manage.
+                    A business profile shows what a business does, the services it provides, where it is, when it
+                    is open and how to reach it, with photos. Verified businesses can add their other branches,
+                    the people behind the business and their job vacancies too.
                 </p>
             </div>
             <div>
-                <h2>More than being found</h2>
+                <h2>Know who you're dealing with</h2>
                 <p>
-                    <?= esc($siteName) ?> is about more than being found. It is about connecting people with the
-                    businesses and professionals around them.
+                    People want to know who they are dealing with. <?= esc($siteName) ?> helps businesses put their
+                    people, qualifications and expertise in front of the customers looking for them.
                 </p>
             </div>
         </div>
@@ -129,7 +130,7 @@ $looking = [
         <div class="section-head-split">
             <div>
                 <h2>For businesses</h2>
-                <p>A simple way to create and manage your online presence.</p>
+                <p>A simple place to build your local online presence. No monthly fee. No subscription. No obligation.</p>
             </div>
             <a class="btn btn-accent shrink-0" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
         </div>
@@ -137,8 +138,8 @@ $looking = [
             <li>
                 <span class="company-step-num">01</span>
                 <div>
-                    <h3>Add your business</h3>
-                    <p>Your details, services, contact details, locations and photos. It takes a couple of minutes, and a South African listing is free.</p>
+                    <h3>Create your free business profile</h3>
+                    <p>Your business information, services, contact details, address and map location, photos and opening hours. It takes a couple of minutes, and a South African business profile is free.</p>
                 </div>
             </li>
             <li>
@@ -159,8 +160,8 @@ $looking = [
                 <li>
                     <span class="company-step-num">04</span>
                     <div>
-                        <h3>Get verified, if you want to</h3>
-                        <p>The optional <a href="<?= base_url('verified') ?>">Verified Business</a> badge shows customers we have checked your registration and ID, and lets you add your team and branches.</p>
+                        <h3>Get Verified, if you want to</h3>
+                        <p>A <a href="<?= base_url('verified') ?>">Verified Business</a> profile shows customers we have checked your registration and ID. It also lets you add your other locations, your team with their qualifications and areas of expertise, and your job vacancies.</p>
                     </div>
                 </li>
             <?php endif; ?>
@@ -172,7 +173,7 @@ $looking = [
     <div class="container">
         <div class="section-head">
             <h2><?= esc($siteName) ?></h2>
-            <p>Helping South African businesses and professionals be found more easily.</p>
+            <p>A place where your business can be discovered, understood and connected with customers, professionals and opportunities.</p>
         </div>
         <?php if (config('Directory')->socialLinks !== []): ?>
             <?= view('directory/_our_socials', ['class' => 'justify-center']) ?>

@@ -745,14 +745,20 @@ class DirectoryService
         // so their hours have to arrive in the same shape — decoded, keyed
         // mon..sun. Decoding here rather than in the view keeps _hours_panel.php
         // free of any branch-specific case.
-        $listing['locations'] = array_map(
-            static function (array $loc): array {
-                $loc['trading_hours'] = hours_decode($loc['trading_hours'] ?? null);
+        //
+        // Extra branches are part of the paid badge, gated here for the same
+        // reason as the team below: the panel and the JSON-LD both follow from
+        // this one decision. A lapsed badge hides the rows; it never deletes them.
+        $listing['locations'] = listing_is_verified_business($listing)
+            ? array_map(
+                static function (array $loc): array {
+                    $loc['trading_hours'] = hours_decode($loc['trading_hours'] ?? null);
 
-                return $loc;
-            },
-            $this->locations->forListing((int) $listing['id'])
-        );
+                    return $loc;
+                },
+                $this->locations->forListing((int) $listing['id'])
+            )
+            : [];
         $listing['tags']           = $this->tags->namesForListing((int) $listing['id']);
         // The complex this business sits in, and how many others are in it, so
         // the profile can offer "what else is in this building?".

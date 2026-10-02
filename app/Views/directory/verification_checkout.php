@@ -52,7 +52,7 @@
 
             <ul class="checkout-terms">
                 <li>Cancel any time from your dashboard &mdash; your badge stays up until the month you have paid for ends.</li>
-                <li>Your listing is free and stays free whether or not you buy this.</li>
+                <li>Your business profile is free and stays free whether or not you buy this.</li>
                 <li>PayFast takes the payment. <strong>We never see your card details.</strong></li>
             </ul>
 

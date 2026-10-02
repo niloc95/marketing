@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Find someone local']) ?>
+    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Discover local businesses in South Africa']) ?>
     <?php // Every icon is the orange WebScheduler Local badge, generated from
           // resources/brand/webscheduler-local-badge-1024.png. favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
           // skip the .ico entirely. The apple-touch icon is on white because iOS
@@ -106,7 +106,7 @@
                   // role, so this is currently the only search landmark on the site —
                   // but it is the one that is on every page, and it is the one that
                   // appears and disappears under the reader, so it is worth naming. ?>
-            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Search the directory">
+            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Search local businesses">
                 <?php // No value, deliberately — see the comment above: this bar is the
                       // "fresh search from anywhere" gesture, so it starts empty even on
                       // a results page, where the hero form holds the current query. ?>
@@ -114,7 +114,7 @@
                     'listId'      => 'search-suggest-header',
                     'value'       => '',
                     'placeholder' => 'Name, service or keyword',
-                    'ariaLabel'   => 'Search the directory',
+                    'ariaLabel'   => 'Search local businesses',
                     'type'        => 'search',
                 ]) ?>
                 <button class="btn btn-primary" type="submit">
@@ -155,8 +155,8 @@
                       // old mobile string — "Add" + "free" rendered as "Add free", which
                       // reads as a misspelt "ad-free". The phone has ~110px here once the
                       // brand lockup and menu button are placed, so the full desktop wording
-                      // cannot fit; "Get listed" does, and says the same thing. "free" is
-                      // desktop-only for the same reason — the form states it in its own
+                      // cannot fit; "Free profile" does, and says the same thing. The
+                      // longer wording is desktop-only for the same reason — the form states it in its own
                       // eyebrow and intro the moment you land.
                       //
                       // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
@@ -166,14 +166,14 @@
                       // goes to /add-listing, which shows a visitor who came straight here
                       // both options (Verified first, Free still there) and a campaign
                       // visitor the verified-only form. See signup_cta(). It fits the
-                      // phone's ~110px as well as "Get listed" did. ?>
+                      // phone's ~110px as well as "Free profile" does. ?>
                 <?php if (signup_cta()['verified']): ?>
                     <a href="<?= esc(signup_cta()['url']) ?>" class="btn btn-accent nav-cta">Get verified</a>
                 <?php else: ?>
                     <a href="<?= base_url('add-listing') ?>" class="btn btn-accent nav-cta">
-                        <span class="sm:hidden">Get listed</span>
-                        <span class="hidden sm:inline">List your business</span>
-                        <strong class="hidden sm:inline">free</strong>
+                        <span class="sm:hidden">Free profile</span>
+                        <span class="hidden sm:inline">Create your</span>
+                        <strong class="hidden sm:inline">free profile</strong>
                     </a>
                 <?php endif; ?>
                 <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
@@ -215,7 +215,7 @@
               // as the marketing site's header, deliberately — the two properties share
               // the shape, and directory.js adds the dismiss/aria behaviour on top. ?>
         <div id="site-menu" class="mobile-menu hidden md:hidden" data-mobile-menu>
-            <a href="<?= base_url('directory') ?>">Browse everything</a>
+            <a href="<?= base_url('directory') ?>">Explore local businesses</a>
             <a href="<?= base_url('directory/categories') ?>">All categories</a>
             <a href="<?= base_url('directory') ?>#map">Map</a>
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>
@@ -287,7 +287,7 @@
                     <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-64.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline">Find a local service, professional or home industry maker anywhere in South Africa or add your own, free.</p>
+                <p class="site-footer-tagline">More than a business listing. Discover South African businesses, services, locations, professionals and opportunities, or create your free business profile.</p>
                 <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
                 <?php // Newsletter -> Mautic (updates.webscheduler.co.za), the LOCAL
                       // form. The marketing site posts to its own form (id 1); the
@@ -343,11 +343,11 @@
             <div class="site-footer-col">
                 <h3>Browse</h3>
                 <ul>
-                    <li><a href="<?= base_url('directory') ?>">Browse everything</a></li>
+                    <li><a href="<?= base_url('directory') ?>">Explore local businesses</a></li>
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
-                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get verified' : 'List your business' ?></a></li>
+                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Create your free profile' ?></a></li>
                     <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
@@ -375,18 +375,19 @@
             </div>
             <div class="site-footer-col">
                 <?php if (signup_cta()['verified']): ?>
-                    <h3>Get verified</h3>
+                    <h3>Get Verified</h3>
                     <?php // Same terms as _verification_pitch.php and _plan_cards.php. ?>
                     <p class="site-footer-tagline">
-                        Show customers you're a real, checked business: the Verified Business badge,
-                        your team and your branches, for R<?= esc((new App\Services\VerificationService())->monthlyAmount()) ?> a month.
-                        Nothing to pay until we've checked your documents.
+                        Show customers you're a real, checked business, with your team and your
+                        other branches on your profile. The Verified Business badge is
+                        R<?= esc((new App\Services\VerificationService())->monthlyAmount()) ?> a month, and there is
+                        nothing to pay until we've checked your documents.
                     </p>
                     <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your business verified</a>
                 <?php else: ?>
                     <h3>Get started</h3>
-                    <p class="site-footer-tagline">Adding your business takes a couple of minutes and costs nothing.</p>
-                    <a class="btn btn-accent mt-4" href="<?= base_url('add-listing') ?>">List your business <strong>free</strong></a>
+                    <p class="site-footer-tagline">Create your business profile in a couple of minutes. No monthly fee. No subscription. No obligation.</p>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-listing') ?>">Create your FREE business profile</a>
                 <?php endif; ?>
             </div>
         </div>

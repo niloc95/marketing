@@ -5,7 +5,7 @@ use App\Services\PracticeLocationService;
 use App\Services\TeamMemberService;
 
 /**
- * Free listing vs Verified Business, side by side.
+ * Free Business Profile vs Verified Business, side by side.
  *
  * The signup form used to describe the paid offer only inside a collapsed
  * <details>, so the two options were never actually shown next to each other and
@@ -67,14 +67,16 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 $gallery   = Listing::GALLERY_MAX;
 
 $rows = [
-    ['label' => 'Listed and searchable on the directory', 'free' => true, 'paid' => true],
-    ['label' => 'Your own profile page, with a map pin', 'free' => true, 'paid' => true],
+    ['label' => 'Found in search, on the map and in your category', 'free' => true, 'paid' => true],
+    ['label' => 'Your own business profile page, with your address on the map', 'free' => true, 'paid' => true],
     ['label' => 'Phone, email, address, opening hours and a website link', 'free' => true, 'paid' => true],
+    // ServiceMenuService: services, prices and features are free for every listing.
+    ['label' => 'Your services, with prices if you want to show them', 'free' => true, 'paid' => true],
     ['label' => 'A logo and a photo gallery, up to ' . (int) $gallery . ' photos', 'free' => true, 'paid' => true],
     ['label' => 'Edit it yourself any time, free', 'free' => true, 'paid' => true],
     ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every search result you appear in', 'free' => false, 'paid' => true],
-    ['label' => '<strong>Your team, by name</strong> &mdash; up to ' . (int) $team . ' people, each with a photo, their position and their qualifications', 'free' => false, 'paid' => true],
-    ['label' => '<strong>All your branches</strong> &mdash; up to ' . (int) $locations . ' more locations, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
+    ['label' => '<strong>All your locations</strong> &mdash; up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
+    ['label' => '<strong>Your people</strong> &mdash; up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
     ['label' => '<strong>More searches find you</strong> &mdash; a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
     // A Verified Business feature: JobBoardService::canUseJobsFeatures() gates
     // posting vacancies and replying to requests. Requesting a service stays open
@@ -109,8 +111,8 @@ $row = static function (array $r, string $col): string {
         <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
         <p class="plan-price">R<?= esc($amount) ?><span class="plan-price-unit">per month</span></p>
         <p class="plan-blurb">
-            Everything in the free listing, plus a checked badge, your team and your
-            other branches.
+            Everything in the free profile, plus a checked badge, your other locations,
+            your people and your job vacancies.
         </p>
         <ul class="plan-rows">
             <?php foreach ($rows as $r): ?>
@@ -120,26 +122,26 @@ $row = static function (array $r, string $col): string {
         <?php // Same terms as _verification_pitch.php, and they must stay the same. ?>
         <p class="hint plan-terms">
             <strong>Nothing to pay now.</strong> We review your documents first and only ask
-            for payment if they check out. Cancel any time. A South African listing is free
-            either way, and stays free.
+            for payment if they check out. Cancel any time. A South African business profile
+            is free either way, and stays free.
         </p>
         <?php // Alone on the page there is nothing to switch between, so the
               // button just takes them down to the form. ?>
         <?php if ($verifiedOnly): ?>
-            <a class="btn btn-accent btn-block plan-cta" href="#listing-form">Get verified</a>
+            <a class="btn btn-accent btn-block plan-cta" href="#listing-form">Get Verified</a>
         <?php else: ?>
             <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
-               href="<?= base_url('add-listing') ?>">Get verified</a>
+               href="<?= base_url('add-listing') ?>">Get Verified</a>
         <?php endif; ?>
     </div>
 
     <?php if (! $verifiedOnly): ?>
     <div class="plan-card<?= $selected === 'free' ? ' plan-card-picked' : '' ?>" data-plan-card="free">
-        <p class="plan-name">Free Listing</p>
+        <p class="plan-name">Free Business Profile</p>
         <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
         <p class="plan-blurb">
-            A full profile that customers can find and contact. No card, no trial that
-            runs out, nothing held back later.
+            No monthly fee. No subscription. No obligation. A full profile that customers
+            can find and contact, with nothing held back later.
         </p>
         <?php // "Free, always" is an unqualified promise and it has to stay true,
               // so the one condition on it is stated on the card that makes it
@@ -149,8 +151,8 @@ $row = static function (array $r, string $col): string {
               // axis entirely, which is why this sits on the Free card and not in
               // the ✓/✗ matrix below. ?>
         <p class="hint plan-terms">
-            For a business with a <strong>South African address</strong>. Listing a
-            business based elsewhere needs an
+            For a business with a <strong>South African address</strong>. A business
+            based elsewhere needs an
             <a href="<?= base_url('faq') ?>">International Listing</a> subscription.
         </p>
         <ul class="plan-rows">

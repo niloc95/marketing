@@ -29,7 +29,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
         <?php if ($wasListing): ?>
             <h1 class="text-2xl sm:text-3xl">We couldn't find that business</h1>
             <p class="mt-2 text-sm text-white/80">
-                It may have changed its name, or its owner may have removed it. Search for it below, or browse the directory.
+                It may have changed its name, or its owner may have removed it. Search for it below, or explore local businesses.
             </p>
         <?php else: ?>
             <h1 class="text-2xl sm:text-3xl">We couldn't find that page</h1>
@@ -43,7 +43,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
                 'listId'      => 'search-suggest-404',
                 'value'       => '',
                 'placeholder' => 'Name, service or keyword',
-                'ariaLabel'   => 'Search the directory',
+                'ariaLabel'   => 'Search local businesses',
                 'type'        => 'text',
             ]) ?>
             <button class="btn btn-primary" type="submit">Search</button>
@@ -77,7 +77,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
                 <li><a class="<?= $link ?>" href="<?= base_url('directory') ?>">Browse every business</a></li>
                 <li><a class="<?= $link ?>" href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                 <?php if ($wasListing): ?>
-                    <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('manage') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>">list it again</a>.</li>
+                    <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('manage') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>">add it again</a>.</li>
                 <?php else: ?>
                     <li><a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a></li>
                 <?php endif; ?>

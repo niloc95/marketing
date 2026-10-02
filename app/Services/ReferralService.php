@@ -470,21 +470,21 @@ class ReferralService
                 'heading'    => 'You were recommended on ' . $site,
                 'paragraphs' => [
                     'Hello ' . $r['business_name'] . ',',
-                    $site . ' is a directory of South African businesses.' . $by,
-                    'Get verified and give customers more ways to find you.',
+                    $site . ' is a local business discovery and visibility platform for South Africa.' . $by,
+                    'Get Verified and show customers your locations, your people and your opportunities, as well as your business.',
                 ],
                 'bulletsHeading' => 'With a Verified Business profile you get:',
                 'bullets'        => [
                     '✓ Verified badge: a green badge on your profile and beside your name in every search result, so customers can see we have confirmed your business.',
                     '📍 Locations: add up to ' . PracticeLocationService::MAX_LOCATIONS . ' more branches, practices or consulting rooms, each with its own address, phone number, map pin and opening hours, and each presented to Google as a business location in its own right.',
-                    '👥 Staff: list up to ' . TeamMemberService::MAX_MEMBERS . ' people by name, with photos, qualifications and what each of them does. When someone searches our directory for one of your people, or for a service only they offer, they find your business.',
+                    '👥 Staff: list up to ' . TeamMemberService::MAX_MEMBERS . ' people by name, with photos, qualifications and areas of expertise. When someone searches ' . $site . ' for one of your people, or for a service only they offer, they find your business.',
                     '💼 Jobs: post your vacancies on our Jobs board, set up so eligible vacancies can appear in Google\'s job search, and reply to customers who need your kind of service.',
                     '📢 New work first: when someone in your province asks for your kind of service, verified businesses are the first we alert.',
                 ],
                 'highlight' => 'R' . $amount . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
                 'closing'   => [
                     'We have already filled in what we were told about your business. Just check your details and upload the two documents.',
-                    'Your listing stays free either way.',
+                    'Your business profile stays free either way.',
                 ],
                 'button'       => ['Get your business verified', base_url('add-listing/verified?invite=' . $token)],
                 'footnote'     => 'We will not email you about this again. Not interested?',
@@ -492,14 +492,14 @@ class ReferralService
             ]);
         }
 
-        return $this->notice($to, 'List ' . $this->headerSafe((string) $r['business_name']) . ' on ' . $site . ' for free', [
+        return $this->notice($to, 'Create a free business profile for ' . $this->headerSafe((string) $r['business_name']) . ' on ' . $site, [
             'heading'    => 'You were recommended on ' . $site,
             'paragraphs' => [
                 'Hello ' . $r['business_name'] . ',',
-                $site . ' is a free directory of South African businesses.' . $by,
-                'Listing is free and takes a few minutes. We have filled in what we were told, so you only need to check it and add the rest.',
+                $site . ' is a local business discovery and visibility platform for South Africa.' . $by,
+                'A business profile is free: no monthly fee, no subscription, no obligation. It takes a few minutes, and we have filled in what we were told, so you only need to check it and add the rest.',
             ],
-            'button'       => ['Create your free listing', base_url('add-listing?invite=' . $token)],
+            'button'       => ['Create your free business profile', base_url('add-listing?invite=' . $token)],
             'footnote'     => 'We will not email you about this again. Not interested?',
             'footnoteLink' => $stop,
         ]);

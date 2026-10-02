@@ -18,7 +18,7 @@ use Tests\Support\ValidListingInput;
  *
  * 1. **Links we control open the verified-only form.** That means
  *    /add-listing/verified, or any /add-listing visit with a ?via= / invite
- *    source. It has no Free card and no "keep my listing free" link, and it
+ *    source. It has no Free card and no "keep my profile free" link, and it
  *    still says a South African listing is free (the Terms promise it).
  * 2. **A direct /add-listing shows both options**, with Verified first and
  *    preselected. ?plan=free picks Free.
@@ -64,12 +64,12 @@ final class SignupModesTest extends CIUnitTestCase
         $html = (string) preg_replace('/\s+/', ' ', $this->page('add-listing/verified'));
 
         $this->assertStringNotContainsString('data-plan-card="free"', $html);
-        $this->assertStringNotContainsString('keep my listing free', $html);
+        $this->assertStringNotContainsString('keep my profile free', $html);
         $this->assertStringNotContainsString('data-plan-cards', $html, 'the plan picker stays off');
         $this->assertStringContainsString('data-plan-card="verified"', $html);
         $this->assertStringContainsString('name="plan" value="verified"', $html);
         $this->assertStringContainsString('value="verified-only"', $html);
-        $this->assertStringContainsString('A South African listing is free either way', $html, 'the Terms promise must stay on the page');
+        $this->assertStringContainsString('A South African business profile is free either way', $html, 'the Terms promise must stay on the page');
     }
 
     public function testADirectVisitSeesVerifiedFirstAndPicked(): void
@@ -115,7 +115,7 @@ final class SignupModesTest extends CIUnitTestCase
 
         $home = $this->page('/');
         $this->assertStringNotContainsString('add-listing/verified', $home, 'no button advertises a badge we cannot sell');
-        $this->assertStringContainsString('List your business', $home);
+        $this->assertStringContainsString('Create your FREE business profile', $home);
     }
 
     public function testTheSiteButtonsKeepTheFreeListingForADirectVisitor(): void
@@ -125,7 +125,7 @@ final class SignupModesTest extends CIUnitTestCase
         // "Get verified" wording, but pointing at /add-listing, which decides the
         // mode: a visitor who came straight to the site still gets the Free card.
         $this->assertStringContainsString('href="' . base_url('add-listing') . '" class="btn btn-accent nav-cta">Get verified', $home);
-        $this->assertStringNotContainsString('List your business <strong>free</strong>', $home);
+        $this->assertStringNotContainsString('<h3>Get started</h3>', $home, 'the footer leads with the badge while it is on sale');
 
         $direct = $this->page('add-listing');
         $this->assertStringContainsString('data-plan-card="free"', $direct, 'the Free Listing stays available to a direct visitor');

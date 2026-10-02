@@ -9,7 +9,7 @@ $contact   = config('Directory')->adminEmail();
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Terms of use — ' . $siteName,
-    'description' => 'The terms that apply to using ' . $siteName . ' and to adding a business to it.',
+    'description' => 'The terms that apply to using ' . $siteName . ' and to creating a business profile on it.',
     'canonical'   => $canonical,
 ]) ?>
 <?= $this->endSection() ?>
@@ -29,7 +29,7 @@ $contact   = config('Directory')->adminEmail();
             <p>By using <?= esc($siteName) ?> ("the site"), whether to search for someone local or to add a business, you agree to these terms. If you do not agree, please do not use the site.</p>
 
             <h2>2. What this site is</h2>
-            <p>The site is an index of South African services, professionals and home industry. We publish information that businesses themselves submit. <strong>We are not a party to any dealing between you and a business on the site.</strong> We do not vet qualifications, inspect premises, endorse anyone, or guarantee that a profile is accurate, current or complete. Satisfy yourself about any business before engaging it.</p>
+            <p>The site is a local business discovery and visibility platform for South African businesses, services and professionals. We publish information that businesses themselves submit. <strong>We are not a party to any dealing between you and a business on the site.</strong> We do not vet qualifications, inspect premises, endorse anyone, or guarantee that a profile is accurate, current or complete. Satisfy yourself about any business before engaging it.</p>
 
             <h2>3. Adding a business</h2>
             <p>Adding a business with a South African address is free, and stays free. A business based outside South Africa may also be listed, on the paid International Listing subscription described in section 5. By submitting a profile you confirm that:</p>
@@ -79,7 +79,7 @@ $contact   = config('Directory')->adminEmail();
                   // happens when payment stops: a lapsed badge hides a badge, a
                   // lapsed subscription takes the profile down. Say so plainly. ?>
             <h2>5. International listings</h2>
-            <p>This is a South African directory. A business with a South African address is listed free, and that does not change. A business based outside South Africa may also be listed, on a monthly <strong>International Listing</strong> subscription.</p>
+            <p>The site is built for South African businesses. A business with a South African address has its profile free, and that does not change. A business based outside South Africa may also be listed, on a monthly <strong>International Listing</strong> subscription.</p>
             <p><strong>What it is.</strong> The subscription pays for the listing itself — being published, searchable and given a profile page. It is not a badge and makes no claim about the business; it is not the Verified Business badge described in section 4, and buying one does not give you the other.</p>
             <p><strong>Which one applies to you.</strong> The country recorded on your profile decides it. You choose it when you submit the form, and only we can change it afterwards — if it is wrong, contact us and we will correct it.</p>
             <p><strong>What you pay.</strong> The price is shown before you pay, on the checkout page and on your dashboard, and is billed monthly in South African rand. It <strong>recurs automatically until you cancel</strong>. Payments are processed by PayFast; we never receive or store your card details. Your card must accept payments to a South African merchant.</p>
@@ -92,7 +92,7 @@ $contact   = config('Directory')->adminEmail();
             <?php // Added with the Jobs board. Kept after the two paid sections so
                   // their cross-references ("section 4", "section 5") stay true. ?>
             <h2>6. The Jobs board</h2>
-            <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries two kinds of post: <strong>job vacancies</strong>, and <strong>requests for a service</strong> (someone looking for a business to do a piece of work). Anyone may post a request for a service, free. Job vacancies may be posted by a business holding the Verified Business badge (section 4), from its profile dashboard, and by an employer that is not listed on the directory. A listed business without the badge may request a service but may not post vacancies, including through the public form. While we are not offering the badge, any listed business may post vacancies.</p>
+            <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries two kinds of post: <strong>job vacancies</strong>, and <strong>requests for a service</strong> (someone looking for a business to do a piece of work). Anyone may post a request for a service, free. Job vacancies may be posted by a business holding the Verified Business badge (section 4), from its profile dashboard, and by an employer that does not have a profile on the site. A listed business without the badge may request a service but may not post vacancies, including through the public form. While we are not offering the badge, any listed business may post vacancies.</p>
             <p><strong>By posting you confirm that:</strong></p>
             <ul>
                 <li>the vacancy or request is real, and you are entitled to offer it;</li>

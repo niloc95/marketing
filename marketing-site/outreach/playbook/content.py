@@ -29,7 +29,7 @@ EDITION_FOOTER = "WebScheduler Local · South Africa · September 2026"
 DOC_TITLE = "The Local Visibility Playbook for Small Businesses"
 DOC_AUTHOR = "WebScheduler Local"
 DOC_SUBJECT = "Local search visibility for South African small businesses"
-DOC_KEYWORDS = "local SEO, business directory, South Africa, local search, small business"
+DOC_KEYWORDS = "local SEO, local business discovery, business profile, South Africa, local search, small business"
 
 RUNNING_FOOTER = "WEBSCHEDULER LOCAL · LOCAL VISIBILITY PLAYBOOK"
 
@@ -73,7 +73,7 @@ _PAGES = [
             # is skimmed in twenty seconds by people you did not choose.
             {"kind": "cover_sub",
              "text": "Why local search deserves a place in your budget before paid social — and "
-                     "how to build a listing that keeps answering the question long after a "
+                     "how to build a business profile that keeps answering the question long after a "
                      "campaign would have stopped."},
             {"kind": "gap", "mm": 13},
             {"kind": "small", "text": "<b>Inside:</b>"},
@@ -200,17 +200,17 @@ _PAGES = [
                   "Controlled, not owned. Free to claim, and the single most important local "
                   "surface for most South African businesses. Google sets the rules — but claim it "
                   "first, before anything else on this page."],
-                 ["DIRECTORY LISTINGS, INCLUDING OURS",
-                  "Corroboration. An independent, consistent citation that supports the two above. "
-                  "Useful, and not a substitute for either."],
+                 ["LOCAL PLATFORMS, INCLUDING OURS",
+                  "Corroboration and discovery. An independent, consistent profile that supports the "
+                  "two above. Useful, and not a substitute for either."],
                  ["PAID SOCIAL",
                   "Rented. Distribution for exactly as long as you pay for it."],
              ]},
             {"kind": "eyebrow", "text": "WHERE WEBSCHEDULER LOCAL FITS"},
             {"kind": "statement",
-             "text": "We are the third row, not the first. A listing here corroborates the "
-                     "business you already run and gives South African customers another route to "
-                     "find it. Claim your Google Business Profile first, then make every source "
+             "text": "We are the third row, not the first. A business profile here corroborates "
+                     "the business you already run — your services, locations, people and "
+                     "opportunities — and gives South African customers another route to find it. Claim your Google Business Profile first, then make every source "
                      "agree with it."},
             # The point a regulated practice needs to hear: a code that limits
             # advertising rarely limits being listed accurately.
@@ -235,7 +235,7 @@ _PAGES = [
              "text": "A local business does not need one magic channel. It needs a connected "
                      "system in which the basic facts are clear, consistent and easy to find."},
             {"kind": "numbered", "items": [
-                ("01", "BUILD THE LOCAL LISTING",
+                ("01", "BUILD THE LOCAL PROFILE",
                  "A complete profile: business name, category, description, services, contact "
                  "details, location and hours."),
                 ("02", "MAKE IT SEARCH-READY",
@@ -248,7 +248,7 @@ _PAGES = [
             {"kind": "table", "widths": [0.32, 0.68],
              "header": ["PART", "PURPOSE"],
              "rows": [
-                 ["LOCAL LISTING", "The profile itself, and the facts customers need."],
+                 ["BUSINESS PROFILE", "Your local presence, and the facts customers need."],
                  ["SERVICE VISIBILITY", "Each service named, not buried in one paragraph."],
                  ["LOCATION VISIBILITY", "The areas you actually serve, stated plainly."],
                  ["SEO FOUNDATION",
@@ -264,7 +264,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "STEP 1"},
             {"kind": "h1", "text": "Build a complete local business profile"},
             {"kind": "para",
-             "text": "A listing is not a digital business card. Every field you complete is one "
+             "text": "A business profile is not a digital business card. Every field you complete is one "
                      "more question a customer does not have to ask, and one more fact a search "
                      "engine can corroborate."},
             {"kind": "h2", "text": "THE CORE PROFILE"},
@@ -300,8 +300,8 @@ _PAGES = [
             {"kind": "eyebrow", "text": "STEP 2"},
             {"kind": "h1", "text": "Comprehensive local SEO"},
             {"kind": "para",
-             "text": "SEO is not something added to a listing afterwards. It decides how the "
-                     "listing is structured in the first place."},
+             "text": "SEO is not something added to a profile afterwards. It decides how the "
+                     "profile is structured in the first place."},
             {"kind": "h2", "text": "THE LOCAL SEO FOUNDATION"},
             {"kind": "table", "widths": [0.3, 0.7],
              "header": ["FOUNDATION", "PRACTICAL APPROACH"],
@@ -381,9 +381,9 @@ _PAGES = [
                  "photographs of real work, and reviews they can find."),
                 ("05", "ACT", "“Can I call, message, visit, book or learn more?”"),
             ]},
-            {"kind": "eyebrow", "text": "The listing is the bridge"},
+            {"kind": "eyebrow", "text": "The profile is the bridge"},
             {"kind": "statement",
-             "text": "A listing is not a place to store business information. It is a discovery "
+             "text": "A business profile is not a place to store business information. It is a discovery "
                      "point where the facts a customer needs are presented clearly and connected "
                      "to a structure search engines can follow."},
         ],
@@ -407,7 +407,7 @@ _PAGES = [
              "rows": [
                  ["WEEK 1", "Claim what is already yours",
                   "Claim and complete your Google Business Profile, then claim and complete your "
-                  "WebScheduler Local listing."],
+                  "WebScheduler Local business profile."],
                  ["WEEK 2", "Make every source agree",
                   "One business name, one address, one phone number. Correct the contradictions "
                   "you find before adding anything new."],
@@ -415,7 +415,7 @@ _PAGES = [
                   "Name each important service. Identify the areas that genuinely matter to the "
                   "business."],
                  ["WEEK 4", "Measure and improve",
-                  "Watch discovery, enquiries and listing engagement. Improve the information "
+                  "Watch discovery, enquiries and profile engagement. Improve the information "
                   "customers ask about most."],
              ]},
             {"kind": "eyebrow", "text": "THE END STATE"},
@@ -426,10 +426,10 @@ _PAGES = [
              "text": "“How easy is it for someone looking for my service in my area to "
                      "discover, understand and contact my business?”"},
             {"kind": "h3",
-             "text": "List your business on WebScheduler Local: "
+             "text": "Create your free business profile on WebScheduler Local: "
                      f'<link href="{CTA_URL}{CTA_UTM_PDF}" color="#F77F00">{CTA_BARE}</link>'},
             {"kind": "para",
-             "text": "A free local listing is a starting point, not the whole answer. The "
+             "text": "A free business profile is a starting point, not the whole answer. The "
                      "objective is a useful, searchable and locally relevant business presence."},
             {"kind": "gap", "mm": 6},
             {"kind": "small", "text": EDITION_FOOTER},
@@ -448,11 +448,11 @@ _PAGES = [
             {"kind": "eyebrow", "text": "WEBSCHEDULER LOCAL"},
             {"kind": "h1", "text": "Be found by the<br/>people already<br/>looking for you."},
             {"kind": "para",
-             "text": "A free local listing takes a few minutes. Claim it, complete it, and make "
+             "text": "A free business profile takes a few minutes. Create it, complete it, and make "
                      "sure it agrees with everywhere else your business appears."},
             {"kind": "gap", "mm": 6},
             # URL is filled in by the renderer so each build carries its own UTM.
-            {"kind": "qr", "size_mm": 44, "caption": "Scan to list your business"},
+            {"kind": "qr", "size_mm": 44, "caption": "Scan to create your free profile"},
             {"kind": "gap", "mm": 4},
             {"kind": "h3", "text": CTA_BARE},
             {"kind": "gap", "mm": 10},
@@ -752,7 +752,7 @@ def social_slides(variant: str = "linkedin"):
         "You can boost a post to\nthousands and still miss\nthe one person typing this."
     )
     problem_body = (
-        "Stop paying and the reach stops. A listing people can find keeps working."
+        "Stop paying and the reach stops. A profile people can find keeps working."
         if meta else
         "Paid social interrupts people who are browsing. Local search reaches people "
         "who are already looking."
@@ -782,14 +782,14 @@ def social_slides(variant: str = "linkedin"):
          "old_label": "OLD",
          "old_text": "Pay to place a message into a feed.",
          "new_label": "NEW",
-         "new_text": "Build a listing that is found when people search."},
+         "new_text": "Build a profile that is found when people search."},
 
         # 4 — the system.
         {"kind": "numbered",
          "eyebrow": "THREE LAYERS",
          "title": "One compounding\nsystem.",
          "items": [
-             ("01", "Build the listing", "Name, category, services, location, contact."),
+             ("01", "Build the profile", "Name, category, services, location, contact."),
              ("02", "Make it search-ready", "Clear service and location language."),
              ("03", "Turn discovery into action", "Call, message, visit, book."),
          ]},
@@ -797,7 +797,7 @@ def social_slides(variant: str = "linkedin"):
         # 5 — completeness.
         {"kind": "lines",
          "eyebrow": "STEP 1",
-         "title": "A listing is not a\nbusiness card.",
+         "title": "A profile is not a\nbusiness card.",
          "items": [
              "Business identity",
              "Services people search for",
@@ -819,7 +819,7 @@ def social_slides(variant: str = "linkedin"):
          "eyebrow": "30 DAYS",
          "title": "A practical\nrollout plan.",
          "items": [
-             "Week 1 — Claim and complete the listing",
+             "Week 1 — Create and complete your profile",
              "Week 2 — Strengthen service + location content",
              "Week 3 — Improve SEO foundations",
              "Week 4 — Measure and improve",
@@ -835,8 +835,8 @@ def social_slides(variant: str = "linkedin"):
         # 9 — the CTA. Image carousels have no clickable links, so the URL is
         #     set large and a QR code is drawn beside it.
         {"kind": "cta",
-         "eyebrow": "FREE LOCAL LISTING",
-         "title": "List your business\non WebScheduler Local.",
+         "eyebrow": "FREE BUSINESS PROFILE",
+         "title": "More than a\nbusiness listing.",
          "url_display": CTA_BARE,
          "url_target": cta_url("linkedin" if not meta else "meta", "social-deck"),
          "footnote": "Full playbook in the link — South Africa · 2026"},
