@@ -115,8 +115,8 @@ $metaDesc = listing_meta_description($l);
                       // anchor, rather than twice. ?>
                 <?php if (listing_is_verified_business($l)): ?>
                     <a class="float-right ml-3 block" href="<?= base_url('verified') ?>"
-                       title="We checked this business's registration document and the owner's ID"
-                       aria-label="Verified Business &mdash; we checked this business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
+                       title="<?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"
+                       aria-label="Verified Business &mdash; <?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
                 <?php endif; ?>
                 <?php // Category and province link to their landing pages: this is what
                       // stops those pages being orphans and gives them internal authority. ?>

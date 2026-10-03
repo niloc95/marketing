@@ -66,7 +66,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                     <?= esc($employer) ?>
                 <?php endif; ?>
                 <?php if ($verified): ?>
-                    <a class="badge badge-verified gap-1" href="<?= base_url('verified') ?>"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</a>
+                    <?= verified_badge_pill() ?>
                 <?php endif; ?>
             </p>
 

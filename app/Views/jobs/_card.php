@@ -27,7 +27,7 @@ $posted  = ! empty($p['published_at']) ? date('j M', strtotime((string) $p['publ
         <?php if ($isJob || ! empty($p['listing_name'])): ?>
             <?= esc($svc->hiringName($p)) ?>
             <?php if (listing_is_verified_business(['verified_until' => $p['listing_verified_until'] ?? null])): ?>
-                <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified</span>
+                <?= verified_badge_pill('Verified') ?>
             <?php endif; ?>
         <?php endif; ?>
     </p>
