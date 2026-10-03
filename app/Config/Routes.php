@@ -34,6 +34,9 @@ $routes->get('company', 'Contact::company');
 // What the Verified Business badge means. Public and indexable — the badge on
 // every verified profile links here, so visitors can check the claim.
 $routes->get('verified', 'Contact::verified');
+// WebScheduler Local next to Google, LinkedIn and the SA directories. The
+// table is edited at /admin/comparison, so it changes without a deploy.
+$routes->get('compare', 'Contact::compare');
 
 // "Recommend a business". Top-level for the same reason as contact. The form
 // only queues a referral for /admin/referrals; the business is emailed from
@@ -214,6 +217,11 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Deliberately no secrets here — see the settings migration.
     $routes->get('settings', 'Admin::settings');
     $routes->post('settings', 'Admin::saveSettings');
+
+    // The /compare table. Reset goes back to the defaults in Config\Comparison.
+    $routes->get('comparison', 'Admin::comparison');
+    $routes->post('comparison', 'Admin::saveComparison');
+    $routes->post('comparison/reset', 'Admin::resetComparison');
 
     // Diagnostics — health checks, mail state, storage, config, recent log.
     $routes->get('status', 'Admin::status');

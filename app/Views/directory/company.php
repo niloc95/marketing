@@ -174,6 +174,7 @@ $looking = [
         <div class="section-head">
             <h2><?= esc($siteName) ?></h2>
             <p>A place where your business can be discovered, understood and connected with customers, professionals and opportunities.</p>
+            <p><a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('compare') ?>">See how we compare with Google, LinkedIn and South African directories</a></p>
         </div>
         <?php if (config('Directory')->socialLinks !== []): ?>
             <?= view('directory/_our_socials', ['class' => 'justify-center']) ?>

@@ -172,3 +172,6 @@ $row = static function (array $r, string $col): string {
     <?php endif; ?>
 
 </div>
+<p class="hint mt-3 text-center">
+    <a href="<?= base_url('compare') ?>">See how we compare with Google Business Profile, LinkedIn and South African directories</a>
+</p>

@@ -30,6 +30,7 @@ against production, and diagnosing a deploy that went green without changing any
 | `GET/POST /add-listing` | `Listing::create` / `Listing::store` — public signup |
 | `GET /add-listing/verified` | `Listing::createVerified` — the **same** form and POST target in **verified-only** mode, where every link we control points. Not a second signup path; see "Signup form" below |
 | `GET /verified` | `Contact::verified` — public explainer for what the badge claims. Every badge on a profile links here |
+| `GET /compare` | `Contact::compare` — WebScheduler Local vs Google Business Profile, LinkedIn and SA directories. Table from `ComparisonService`; see "Comparison page" below |
 | `POST /manage/verification`, `GET /manage/verification/checkout`, `POST .../cancel`, `GET .../done` | `Manage::*` — apply, pay, cancel, PayFast return |
 | `POST /payfast/notify` | `PayFastNotify::index` — PayFast ITN |
 | `GET /admin/verifications`, `POST /admin/verifications/{id}/{approve,reject,activate,revoke}` | `Admin::*` — the review queue |
@@ -322,6 +323,28 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
   inherits the previous email's.
 - **Feature-test POSTs meet the real CSRF filter.** Send `[csrf_token() => csrf_hash()]`
   (see `JobBoardFlowTest::csrf()`).
+
+## Comparison page (`/compare`)
+
+The public table of WebScheduler Local next to Google Business Profile, LinkedIn and
+the SA directories (one column, with notes naming which directory does what).
+
+- **Defaults** are in `Config\Comparison` (rows, columns, `checkedOn`, plus the competitor
+  source URLs in its docblock). **Edits** come from `/admin/comparison` and are stored whole,
+  as JSON, in the `comparison_table` settings row. A saved copy wins over the config; "Reset
+  to defaults" writes an empty value, which keeps who and when. So a change to the config
+  shows nowhere that someone has already saved the table.
+- `ComparisonService` validates both paths the same way: statuses from the enums, plain
+  text only (HTML is refused), length caps, at most 30 rows, and a real `Y-m-d` checked-on
+  date. A damaged stored copy falls back to the defaults. Every string is escaped in the view.
+- Our column shows Free / Verified on every row and must match the gating (see the
+  Verified Business table below). `{gallery}`, `{locations}`, `{team}` and `{price}` are
+  filled in at render from the service constants, so an edited copy never freezes a cap.
+  `ComparisonPageTest` pins the default tiers.
+- Keep the honest rows: reviews ("Not offered") and booking (a link, nothing built in), and
+  the `/verified` rule that qualifications are not checked.
+- Chip classes in `compare.php` are written out in full. A concatenated class name is
+  purged from the Tailwind build.
 
 ## Recommend a business (`/recommend`)
 

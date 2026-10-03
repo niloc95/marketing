@@ -361,6 +361,7 @@
                           // not what someone here is asking for. ?>
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
                     <li><a href="<?= base_url('verified') ?>">Verified businesses</a></li>
+                    <li><a href="<?= base_url('compare') ?>">How we compare</a></li>
                     <?php // The free local visibility playbook. Generated from
                           // marketing-site/outreach/playbook/ and published here by
                           // `build_playbook.py --publish`, which always copies the WEB

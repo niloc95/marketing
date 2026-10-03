@@ -300,6 +300,31 @@ class DirectorySettings
         ];
     }
 
+    /** The saved /compare table as JSON, or null to use Config\Comparison. */
+    public function comparisonJson(): ?string
+    {
+        return $this->stored(DirectorySettingModel::COMPARISON);
+    }
+
+    /**
+     * Store the /compare table. An empty string resets it to the defaults
+     * while keeping who reset it, and when. Validation is ComparisonService's.
+     */
+    public function putComparisonJson(string $json, string $by): bool
+    {
+        try {
+            $ok = $this->model->put(DirectorySettingModel::COMPARISON, $json, $by);
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not save the comparison table: ' . $e->getMessage());
+
+            return false;
+        }
+
+        $this->forget();
+
+        return $ok;
+    }
+
     /** Drop the cached map. Called on every write, and by tests. */
     public function forget(): void
     {

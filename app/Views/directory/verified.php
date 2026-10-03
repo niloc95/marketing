@@ -128,6 +128,9 @@ $faqs = [
                 <p class="mt-5">
                     <a class="btn btn-accent" href="<?= base_url('manage') ?>">Apply for the badge</a>
                 </p>
+                <p class="hint mt-3">
+                    <a href="<?= base_url('compare') ?>">See which features are free and which need the badge, next to Google, LinkedIn and South African directories</a>.
+                </p>
             </div>
         <?php endif; ?>
 

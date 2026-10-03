@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Libraries\Mailer;
 use App\Models\DirectoryListingModel;
+use App\Services\ComparisonService;
 use App\Services\VerificationService;
 
 /**
@@ -66,6 +67,21 @@ class Contact extends BaseController
         $svc = new VerificationService();
 
         return view('directory/verified', [
+            'amount'  => $svc->monthlyAmount(),
+            'offered' => $svc->isEnabled(),
+        ]);
+    }
+
+    /**
+     * WebScheduler Local next to Google Business Profile, LinkedIn and the
+     * South African directories. The table itself is ComparisonService's.
+     */
+    public function compare()
+    {
+        $svc = new VerificationService();
+
+        return view('directory/compare', [
+            'table'   => (new ComparisonService())->forPage(),
             'amount'  => $svc->monthlyAmount(),
             'offered' => $svc->isEnabled(),
         ]);

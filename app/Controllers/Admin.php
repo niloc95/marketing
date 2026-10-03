@@ -16,6 +16,7 @@ use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
 use App\Models\JobPostModel;
 use App\Models\JobReportModel;
+use App\Services\ComparisonService;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
@@ -825,6 +826,46 @@ class Admin extends BaseController
         }
 
         return redirect()->to(base_url('admin/settings'))->with('success', $result['message']);
+    }
+
+    // -------------------------------------------------------------- comparison
+
+    /** The /compare table, editable here so a correction needs no deploy. */
+    public function comparison()
+    {
+        $svc = new ComparisonService();
+
+        return view('admin/comparison', [
+            'table'      => $svc->table(),
+            'lastChange' => (new DirectorySettings())->lastChange(DirectorySettingModel::COMPARISON),
+            'errors'     => session()->getFlashdata('errors') ?? [],
+            'old'        => session()->getFlashdata('old') ?? null,
+        ]);
+    }
+
+    public function saveComparison()
+    {
+        $post   = $this->request->getPost();
+        $result = (new ComparisonService())->save($post, $this->adminActor());
+
+        if (! $result['ok']) {
+            return redirect()->to(base_url('admin/comparison'))
+                ->with('errors', $result['errors'])
+                ->with('old', $post)
+                ->with('error', $result['message']);
+        }
+
+        return redirect()->to(base_url('admin/comparison'))->with('success', $result['message']);
+    }
+
+    public function resetComparison()
+    {
+        $ok = (new ComparisonService())->reset($this->adminActor());
+
+        return redirect()->to(base_url('admin/comparison'))->with(
+            $ok ? 'success' : 'error',
+            $ok ? 'The comparison is back to the defaults.' : 'Could not reset the table. Please try again.'
+        );
     }
 
     // ------------------------------------------------------------------ status

@@ -38,6 +38,13 @@ class DirectorySettingModel extends Model
     /** Seconds into the YouTube video to start (and loop back to). */
     public const HERO_YOUTUBE_START = 'hero_youtube_start';
 
+    /**
+     * The /compare table as JSON, written only by App\Services\ComparisonService.
+     * Empty means "use the defaults in Config\Comparison", which is how a reset
+     * keeps its who-and-when in this row.
+     */
+    public const COMPARISON = 'comparison_table';
+
     public const KNOWN = [
         self::BADGE_PRICE,
         self::BADGE_ENABLED,
@@ -47,6 +54,7 @@ class DirectorySettingModel extends Model
         self::HERO_VIDEO_PATH,
         self::HERO_YOUTUBE_ID,
         self::HERO_YOUTUBE_START,
+        self::COMPARISON,
     ];
 
     /**
