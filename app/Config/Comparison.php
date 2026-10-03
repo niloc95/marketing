@@ -217,7 +217,7 @@ class Comparison extends BaseConfig
             'key'   => 'reviews',
             'label' => 'Customer reviews',
             'cells' => [
-                'local'    => ['status' => 'no', 'note' => 'Not yet'],
+                'local'    => ['status' => 'free', 'note' => 'Email-confirmed, read by us before they go up, and you can reply'],
                 'google'   => ['status' => 'yes', 'note' => ''],
                 'linkedin' => ['status' => 'partial', 'note' => 'On members\' Service Pages'],
                 'sa'       => ['status' => 'varies', 'note' => 'Cylex and Snupit have reviews'],

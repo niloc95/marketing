@@ -105,7 +105,20 @@ $contact   = config('Directory')->adminEmail();
             <p><strong>Applying and replying.</strong> Applications and replies are passed on by email; we do not keep a copy of a job application. Only businesses holding the Verified Business badge can reply to a service request (any listed business, while we are not offering the badge), and each request takes a limited number of replies. When a service request is published, we may email it to a small number of listed businesses in the same category and area, Verified Businesses first; a business can switch those emails off at any time.</p>
             <p><strong>We are not a party to any job or work.</strong> We do not employ, recruit for, vet or recommend anyone who posts, applies or replies, and we do not guarantee that a vacancy is filled, a reply received, or work done well. Any agreement is between you and the other party. Agree the price and terms of any work before it starts, and never pay in advance to be considered for a job.</p>
 
-            <h2>7. What you may not do</h2>
+            <h2 id="reviews">7. Customer reviews</h2>
+            <p>Anyone who has been a customer of a business may review its profile: a star rating from one to five and a written review. Every profile can receive reviews, free, and every profile owner can reply.</p>
+            <p><strong>By posting a review you confirm that:</strong></p>
+            <ul>
+                <li>it describes your own, genuine experience as a customer of that business;</li>
+                <li>you do not own, work for, or have a family or business connection to the business or to a competitor of it;</li>
+                <li>nobody paid, rewarded or pressured you to write it, or to give a particular rating;</li>
+                <li>it is honest and does not contain anything defamatory, abusive, discriminatory or unlawful, or anyone's private personal details, links or phone numbers.</li>
+            </ul>
+            <p><strong>Checking and publishing.</strong> You confirm your email address before we look at a review, and a person reads every review before it is published. We publish honest reviews whether they are positive or negative. We may decline, hide or remove a review that we believe breaks these terms, and a review reported by several people is hidden until we have looked at it again. One review per person per business.</p>
+            <p><strong>For businesses.</strong> You may reply publicly to any review of your business; replies are published straight away and must follow the same rules. You may report a review you believe breaks these terms, but a review is not removed just because it is negative. You may not offer customers anything in return for a review or for a particular rating, post reviews of your own business, or ask anyone to post a fake review of a competitor. Reviews cannot be bought, sold or removed for payment, and a business's rating does not affect where it appears in search results.</p>
+            <p><strong>Your review.</strong> Your review appears under your first name and surname initial; your email address is never published. Section 10 applies to reviews as it does to other content: you keep ownership and give us a licence to display the review. Reviews are the opinions of their authors, not of WebScheduler Local, and we do not verify what they say.</p>
+
+            <h2>8. What you may not do</h2>
             <ul>
                 <li>Submit a business you have no connection to, or impersonate anyone.</li>
                 <li>Post false, misleading, unlawful, defamatory, hateful or obscene content.</li>
@@ -115,37 +128,37 @@ $contact   = config('Directory')->adminEmail();
                 <li>Attempt to gain unauthorised access to any part of the service, or interfere with its operation.</li>
             </ul>
 
-            <h2>8. Moderation</h2>
+            <h2>9. Moderation</h2>
             <p>We may edit, decline, unpublish or delete any profile, at our discretion and without notice, if we believe it breaches these terms or damages the usefulness of the site. Where it is practical and appropriate we will tell the profile owner why.</p>
 
-            <h2>9. Your content</h2>
+            <h2>10. Your content</h2>
             <p>You keep ownership of everything you submit. You grant us a non-exclusive, royalty-free licence to host, reproduce, resize and display it for the purpose of operating and promoting the site. That licence ends when the profile is removed, save for backups and any copies already cached by search engines, which are outside our control.</p>
 
-            <h2>10. Managing and removing your profile</h2>
+            <h2>11. Managing and removing your profile</h2>
             <p>Use <a href="<?= base_url('manage') ?>">Manage your profile</a> to edit or delete a profile at any time. Access is by a short-lived, single-use link sent to the verified email address — keep that address current and do not forward those links.</p>
 
-            <h2>11. Availability</h2>
+            <h2>12. Availability</h2>
             <p>The site is provided "as is" and "as available". We do not promise it will be uninterrupted or error-free, and we may change or discontinue any part of it.</p>
 
-            <h2>12. Third-party links and services</h2>
+            <h2>13. Third-party links and services</h2>
             <p>Profiles link to third-party websites and social accounts, and our maps are supplied by OpenStreetMap and CARTO. We do not control any of these and are not responsible for them.</p>
 
-            <h2>13. Limitation of liability</h2>
+            <h2>14. Limitation of liability</h2>
             <p>To the fullest extent the law allows, we are not liable for any indirect, incidental or consequential loss, or any loss of profit, data or goodwill, arising from your use of the site or from any dealing with a business on it. Nothing here excludes liability that cannot lawfully be excluded, including your rights under the Consumer Protection Act, 2008.</p>
 
-            <h2>14. Indemnity</h2>
+            <h2>15. Indemnity</h2>
             <p>You agree to indemnify us against claims arising from content you submit or from your breach of these terms.</p>
 
-            <h2>15. Privacy</h2>
+            <h2>16. Privacy</h2>
             <p>Our <a href="<?= base_url('privacy') ?>">privacy policy</a> and <a href="<?= base_url('cookie-policy') ?>">cookie policy</a> form part of these terms.</p>
 
-            <h2>16. Changes</h2>
+            <h2>17. Changes</h2>
             <p>We may update these terms. The date at the top of this page shows when they last changed, and continuing to use the site afterwards means you accept the revised version.</p>
 
-            <h2>17. Governing law</h2>
+            <h2>18. Governing law</h2>
             <p>These terms are governed by the law of the Republic of South Africa, and the South African courts have jurisdiction.</p>
 
-            <h2>18. Contact</h2>
+            <h2>19. Contact</h2>
             <?php if ($contact !== ''): ?>
                 <p><a href="mailto:<?= esc($contact, 'attr') ?>"><?= esc($contact) ?></a></p>
             <?php else: ?>

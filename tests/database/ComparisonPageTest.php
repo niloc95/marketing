@@ -98,14 +98,13 @@ final class ComparisonPageTest extends CIUnitTestCase
             $tiers[$row['key']] = $row['cells']['local']['status'];
         }
 
-        foreach (['free_profile', 'services', 'contact_map', 'photos', 'hours', 'booking'] as $free) {
+        foreach (['free_profile', 'services', 'contact_map', 'photos', 'hours', 'booking', 'reviews'] as $free) {
             $this->assertSame('free', $tiers[$free], $free);
         }
         foreach (['locations', 'staff_profiles', 'staff_qualifications', 'staff_search', 'vacancies', 'document_verification'] as $paid) {
             $this->assertSame('verified', $tiers[$paid], $paid);
         }
         $this->assertSame('free_verified', $tiers['service_requests']);
-        $this->assertSame('no', $tiers['reviews']);
     }
 
     public function testEveryDefaultCellIsValid(): void

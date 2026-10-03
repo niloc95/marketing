@@ -53,11 +53,16 @@ $groups = [
             ],
             [
                 'q' => 'How is the order of search results decided?',
-                'a' => 'If you have shared your location, by distance — nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website, a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it — the <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. We worked out how the order should work before we worked out what to sell, and we are not going to sell it.',
+                'a' => 'If you have shared your location, by distance — nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website, a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it — the <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. So are reviews and star ratings: they are there for you to read, not to sort by. We worked out how the order should work before we worked out what to sell, and we are not going to sell it.',
             ],
             [
                 'q' => 'Are the businesses here checked?',
                 'a' => 'Some more than others, and it is worth being precise. Before <em>any</em> profile appears we confirm that whoever submitted it can receive email at the address they gave — that is all, and it says nothing about the business itself. A profile carrying a green <strong>Verified Business</strong> badge has been through more: we have seen its company registration document and the owner\'s ID. Even then we do not check qualifications, licences or insurance. Please satisfy yourself as you would with any supplier, and <a href="' . base_url('contact') . '">tell us</a> if a profile looks wrong.',
+            ],
+            [
+                'id' => 'reviews',
+                'q'  => 'How do reviews work?',
+                'a'  => 'Anyone who has used a business can review it on its profile: a star rating from one to five and a few words about how it went. You confirm your email address first, and a person here reads every review before it is published. We publish honest reviews whether they are good or bad, and we do not publish reviews that are fake, from someone who was not a customer, abusive, or that share someone\'s private details. Your email address is never shown; the review appears under your first name and surname initial. The business can reply publicly, and anyone can report a review they think breaks our <a href="' . base_url('terms') . '#reviews">terms</a>. Businesses cannot pay to remove a review, and the star rating does not change where a business appears in search results.',
             ],
             [
                 'id' => 'verified',
@@ -75,7 +80,7 @@ $groups = [
             ],
             [
                 'q' => 'What can a free business profile include?',
-                'a' => 'Your business information and description, your services (with prices if you want to show them), your phone number, website and social links, your address with a map pin, your opening hours, and a logo plus up to ' . (int) $gallery . ' photos. You can edit any of it at any time.',
+                'a' => 'Your business information and description, your services (with prices if you want to show them), your phone number, website and social links, your address with a map pin, your opening hours, and a logo plus up to ' . (int) $gallery . ' photos. Customers can review your business, and you can reply publicly to every review. You can edit any of it at any time.',
             ],
             [
                 'q' => 'Can I add more than one location?',

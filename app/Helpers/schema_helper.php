@@ -605,10 +605,16 @@ if (! function_exists('schema_local_business')) {
     /**
      * The full business node for a profile page, from a complete listing record.
      *
-     * Two omissions here are deliberate and must stay:
+     * Ratings follow the page exactly. aggregateRating and review are emitted
+     * only when $l['reviews'] (from getProfile()) holds published reviews, and
+     * from that same copy the reviews panel renders, so the markup never claims
+     * a rating or a review the visitor cannot see. Customer reviews collected
+     * by this site about a business it does not own are third-party reviews,
+     * which Google's review-snippet policy allows; inventing or importing
+     * ratings would not be, and earns a manual action.
      *
-     * - No aggregateRating. There are no reviews, and inventing rating markup is
-     *   fabricated structured data that earns a manual action.
+     * One omission is deliberate and must stay:
+     *
      * - No email. Phone is fine to publish — it is contact data and nothing more
      *   — but the email address is the sole credential for the passwordless
      *   /manage flow, so a machine-readable copy of it on a page the sitemap
@@ -772,6 +778,31 @@ if (! function_exists('schema_local_business')) {
                 : base_url((string) $first['path']);
         }
 
+        // Published reviews only; see the docblock. The author is the same
+        // "Thandi M." the panel shows, never the full name.
+        $rating     = null;
+        $reviewList = [];
+        $reviews    = $l['reviews'] ?? null;
+        if (is_array($reviews) && (int) ($reviews['count'] ?? 0) > 0 && (float) ($reviews['avg'] ?? 0) >= 1) {
+            $rating = [
+                '@type'       => 'AggregateRating',
+                'ratingValue' => number_format((float) $reviews['avg'], 1, '.', ''),
+                'reviewCount' => (int) $reviews['count'],
+                'bestRating'  => 5,
+                'worstRating' => 1,
+            ];
+            foreach ($reviews['items'] ?? [] as $rev) {
+                $published    = strtotime((string) ($rev['published_at'] ?? ''));
+                $reviewList[] = array_filter([
+                    '@type'         => 'Review',
+                    'author'        => ['@type' => 'Person', 'name' => (string) ($rev['author'] ?? '')],
+                    'datePublished' => $published !== false ? date('Y-m-d', $published) : '',
+                    'reviewBody'    => (string) ($rev['body'] ?? ''),
+                    'reviewRating'  => ['@type' => 'Rating', 'ratingValue' => (int) $rev['rating'], 'bestRating' => 5, 'worstRating' => 1],
+                ], static fn ($v) => $v !== '');
+            }
+        }
+
         return array_filter([
             '@type'                    => $type,
             '@id'                      => $canonical . '#business',
@@ -797,6 +828,8 @@ if (! function_exists('schema_local_business')) {
             'hasMenu'                  => $hasMenu,
             'amenityFeature'           => $amenities !== [] ? $amenities : null,
             'additionalProperty'       => $properties !== [] ? $properties : null,
+            'aggregateRating'          => $rating,
+            'review'                   => $reviewList !== [] ? $reviewList : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }

@@ -172,7 +172,17 @@ $contact   = config('Directory')->adminEmail();
             <h3>Reports</h3>
             <p>If you report a post, we keep the reason you give and a one-way hash of your IP address, so that one visitor's reports count once. The hash cannot be turned back into your IP address.</p>
 
-            <h2>9. Information collected automatically</h2>
+            <h2 id="reviews">9. Customer reviews</h2>
+            <p>If you review a business, we receive your star rating, your review, your name and your email address.</p>
+            <ul>
+                <li>Your rating and review <strong>are published</strong> on the business's profile once we have checked them, under your first name and surname initial (for example &ldquo;Thandi M.&rdquo;), and may be indexed by search engines.</li>
+                <li>Your full name and email address are <strong>never published</strong> and are not given to the business. We use your email address to confirm the review and, if needed, to contact you about it.</li>
+                <li>When a review is published we email the business to let it know; that email contains the review as published, not your contact details.</li>
+                <li>We keep a one-way hash of your email address with the review, so that each person can review a business only once, and a one-way hash of your IP address to help us spot fake reviews.</li>
+            </ul>
+            <p>If you report a review, we keep the reason you give and a one-way hash of your IP address, so that one person's reports count once.</p>
+
+            <h2>10. Information collected automatically</h2>
             <p>When you use <?= esc($siteName) ?>, certain information may be processed automatically.</p>
 
             <h3>IP addresses</h3>
@@ -188,7 +198,7 @@ $contact   = config('Directory')->adminEmail();
             <p>You can refuse this request.</p>
             <p>Where you allow access, the location information is used to help sort search results by distance for that search. We do not intentionally store your location for the purpose of building a personal location profile.</p>
 
-            <h2>10. Why we process personal information</h2>
+            <h2>11. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">
                 <thead><tr><th>Purpose</th><th>Basis for processing</th></tr></thead>
@@ -202,6 +212,7 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Passing a job application to the employer</td><td>Your consent, given on the application form before it is sent</td></tr>
                     <tr><td>Passing a listed business's reply to the person who asked for a service</td><td>Necessary to provide the service both of you requested</td></tr>
                     <tr><td>Emailing listed businesses about matching service requests</td><td>Our legitimate interest, and theirs, in connecting requests with businesses that offer the service. On by default and can be switched off at any time</td></tr>
+                    <tr><td>Confirming, checking and publishing a customer review, and telling the business about it</td><td>Consent provided when you submit the review, and processing necessary to provide the service you requested</td></tr>
                     <tr><td>Security, rate-limiting and fraud prevention</td><td>Necessary for the security, integrity and availability of the service</td></tr>
                     <tr><td>Sending a profile owner the monthly analytics report about their own listing</td><td>Necessary to provide the service you requested, and our legitimate interest in showing you how your listing performs. It is on by default and you can switch it off at any time, at signup, in Manage your profile, or from any report</td></tr>
                     <tr><td>Sending the newsletter to people who signed up for it</td><td>Your consent, confirmed by clicking the link we email you, which you can withdraw at any time</td></tr>
@@ -210,12 +221,15 @@ $contact   = config('Directory')->adminEmail();
             </table>
             <p>We do not sell personal information.</p>
 
-            <h2>11. Who we share information with</h2>
+            <h2>12. Who we share information with</h2>
             <p>We do not sell personal information or share personal information with third parties for their own advertising purposes.</p>
             <p>Information may be disclosed or made available in the following circumstances:</p>
 
             <h3>Public business listings</h3>
             <p>Information that you choose to publish as part of a business profile is publicly accessible and may be indexed by search engines.</p>
+
+            <h3>Customer reviews</h3>
+            <p>A published review, with the reviewer's first name and surname initial, is publicly accessible and may be indexed by search engines. The reviewer's full name and email address are not shared with the business or anyone else.</p>
 
             <h3>Mapping and address services</h3>
             <p>We may use mapping and geocoding services to convert an address into geographic coordinates and display or support location-based search functionality.</p>
@@ -240,13 +254,13 @@ $contact   = config('Directory')->adminEmail();
             <h3>Legal requirements</h3>
             <p>We may disclose information where required or permitted by applicable law, including in response to a valid court order, legal process or lawful request from an authorised authority.</p>
 
-            <h2>12. Cross-border transfers</h2>
+            <h2>13. Cross-border transfers</h2>
             <p>Because our application infrastructure is currently hosted in the AWS Asia Pacific (Mumbai) Region, personal information processed through that infrastructure may be transferred to and processed outside South Africa.</p>
             <p>Some third-party service providers used by <?= esc($siteName) ?> may also process information outside South Africa.</p>
             <p>Where personal information is transferred across borders, we take reasonable steps to ensure that the transfer is undertaken in accordance with applicable requirements of POPIA, including the requirements applicable to cross-border transfers under section 72.</p>
             <p>Depending on the service involved, this may include reliance on contractual protections, data-processing terms, applicable regulatory safeguards and other appropriate measures provided by our service providers.</p>
 
-            <h2>13. How long we keep personal information</h2>
+            <h2>14. How long we keep personal information</h2>
             <p>We retain personal information only for as long as reasonably necessary for the purposes for which it was collected, to provide the relevant service, to comply with legal obligations, resolve disputes, enforce agreements and protect the security of our services.</p>
 
             <h3>Business listings</h3>
@@ -275,6 +289,13 @@ $contact   = config('Directory')->adminEmail();
                 <li>Job applications are not stored.</li>
             </ul>
 
+            <h3>Customer reviews</h3>
+            <ul>
+                <li>A review whose email address is never confirmed is deleted after <strong>7 days</strong>.</li>
+                <li>A published review, with the reviewer's name and email address, is kept while it is published and while the business's profile exists.</li>
+                <li>If we decline or remove a review, the reviewer's name and email address are deleted <strong>30 days</strong> later. We keep the review text and a one-way hash of the email address, so the same person cannot review that business again.</li>
+            </ul>
+
             <h3>Recommendations</h3>
             <p>The contact details in a recommendation, both the business's and yours, are deleted <strong>12 months</strong> after it is submitted, or 30 days after we decide not to invite the business, whichever is sooner. If a business asks not to be invited again, we keep only a one-way hash of its email address so that we can honour the request.</p>
 
@@ -285,7 +306,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Verification documents are deleted in full when the associated business listing is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>
 
-            <h2>14. Your rights under POPIA</h2>
+            <h2>15. Your rights under POPIA</h2>
             <p>Subject to applicable legal requirements and limitations, you may have the right to:</p>
             <ul>
                 <li>Request confirmation of whether we hold personal information about you;</li>
@@ -300,27 +321,27 @@ $contact   = config('Directory')->adminEmail();
             <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your listing needs, such as profile-management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy-related request.</p>
 
-            <h2>15. Complaints</h2>
+            <h2>16. Complaints</h2>
             <p>If you believe that your personal information has been processed unlawfully or that your privacy rights have not been adequately addressed, you may contact us first so that we can investigate and attempt to resolve the matter.</p>
             <p>You may also lodge a complaint with the <strong>Information Regulator of South Africa</strong> through its official channels — <a href="https://inforegulator.org.za/" rel="noopener">inforegulator.org.za</a>.</p>
 
-            <h2>16. Security</h2>
+            <h2>17. Security</h2>
             <p>We use reasonable technical and organisational measures designed to protect personal information against unauthorised access, disclosure, loss, alteration, misuse or destruction.</p>
             <p>The <?= esc($siteName) ?> website is served using HTTPS/TLS.</p>
             <p>Where available, profile-management access may use single-use, time-limited emailed links rather than a traditional stored password.</p>
             <p>However, no internet-based service can be guaranteed to be completely secure. We therefore cannot guarantee absolute security of information transmitted to or stored by the service.</p>
 
-            <h2>17. Children</h2>
+            <h2>18. Children</h2>
             <p><?= esc($siteName) ?> is intended for businesses, professionals and service providers and is not directed at children.</p>
             <p>We do not knowingly seek to collect personal information from children under the age of 18 through the business listing service.</p>
             <p>If you believe that a child has provided personal information to us, please <a href="<?= base_url('contact') ?>">contact us</a> so that we can investigate and take appropriate action.</p>
 
-            <h2>18. Changes to this Privacy Policy</h2>
+            <h2>19. Changes to this Privacy Policy</h2>
             <p>We may update this Privacy Policy from time to time to reflect changes to our services, technology, legal requirements or information-processing practices.</p>
             <p>When we make changes, we will update the <strong>Last updated</strong> date displayed at the beginning of this policy.</p>
             <p>Where we make a material change that affects how we process personal information already provided to us, we may provide additional notice where appropriate, including by email to affected profile owners.</p>
 
-            <h2>19. Contact us</h2>
+            <h2>20. Contact us</h2>
             <p>If you have questions about this Privacy Policy, want to exercise a privacy right, or have a concern about how your personal information is being processed, please contact us:</p>
             <ul>
                 <li><strong>WebScheduler (Pty) Ltd</strong></li>

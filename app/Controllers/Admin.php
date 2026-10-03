@@ -11,6 +11,8 @@ use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryReferralModel;
+use App\Models\DirectoryReviewModel;
+use App\Models\DirectoryReviewReportModel;
 use App\Models\DirectorySettingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
@@ -29,6 +31,7 @@ use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\ReferralService;
+use App\Services\ReviewService;
 use App\Services\SystemStatusService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
@@ -411,6 +414,64 @@ class Admin extends BaseController
             (new JobBoardService())->close($id),
             'Post closed.',
             'That post is already closed.'
+        );
+    }
+
+    // --------------------------------------------------------------- reviews
+
+    /**
+     * The customer reviews queue. Pending first: confirmed reviews and
+     * published ones sent back by reports both wait there.
+     */
+    public function reviews()
+    {
+        $model  = new DirectoryReviewModel();
+        $status = (string) ($this->request->getGet('status') ?? DirectoryReviewModel::STATUS_PENDING);
+        $page   = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $result = $model->queue($status, $page);
+
+        return view('admin/reviews', [
+            'status'  => $status,
+            'rows'    => $result['rows'],
+            'pager'   => $result['pager'],
+            'counts'  => $model->counts(),
+            'reports' => new DirectoryReviewReportModel(),
+        ]);
+    }
+
+    public function approveReview(int $id)
+    {
+        return $this->outcome(
+            (new ReviewService())->approve($id),
+            'Approved. The review is live and counted in the rating.',
+            'Could not approve that review. Only a review awaiting a decision can be approved.'
+        );
+    }
+
+    public function rejectReview(int $id)
+    {
+        return $this->outcome(
+            (new ReviewService())->reject($id, (string) $this->request->getPost('reason')),
+            'Rejected. Nothing was published.',
+            'Could not reject that review.'
+        );
+    }
+
+    public function hideReview(int $id)
+    {
+        return $this->outcome(
+            (new ReviewService())->hide($id, (string) $this->request->getPost('reason')),
+            'Hidden. The review is off the profile and out of the rating.',
+            'Could not hide that review.'
+        );
+    }
+
+    public function removeReviewReply(int $id)
+    {
+        return $this->outcome(
+            (new ReviewService())->removeReply($id),
+            'The owner\'s reply has been removed.',
+            'That review has no reply.'
         );
     }
 

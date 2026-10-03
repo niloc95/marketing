@@ -54,6 +54,10 @@ if (isset($l['distance_m'])) {
                   // facets are worth collecting at all. Only present on queries
                   // that attach them (browse), and empty for every category that
                   // has no card facets, which is most of the site. ?>
+            <?php // Published reviews only, from the stored totals: no query per card.
+                  // Shown, never sorted on — see DirectoryService::browse(). ?>
+            <?php $cardRating = rating_summary($l); ?>
+            <?php if ($cardRating !== ''): ?><div class="mt-1"><?= $cardRating ?></div><?php endif; ?>
             <?php $cardFacets = listing_card_facets($l['facets'] ?? [], $l['category_group'] ?? null, $l['category_slug'] ?? null); ?>
             <?php if ($cardFacets !== []): ?>
                 <p class="card-facets"><?= esc(implode(' · ', $cardFacets)) ?></p>

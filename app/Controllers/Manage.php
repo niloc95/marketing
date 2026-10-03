@@ -7,6 +7,7 @@ use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Libraries\PayFast;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
+use App\Models\DirectoryReviewModel;
 use App\Models\JobPostModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
@@ -210,6 +211,7 @@ class Manage extends BaseController
             'hostingPending'  => $this->paymentPending($hostingRow),
 
             'jobPosts' => (new JobPostModel())->forListing((int) $listing['id']),
+            'reviews'  => (new DirectoryReviewModel())->forOwner((int) $listing['id']),
         ]);
     }
 

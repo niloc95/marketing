@@ -18,8 +18,9 @@ $canonical = base_url('directory/' . ($l['slug'] ?? ''));
 $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));
 
-// The business node, its type mapping and its deliberate omissions (no
-// aggregateRating, no owner email) all live in schema_helper.php now.
+// The business node, its type mapping and its deliberate omission (no owner
+// email) all live in schema_helper.php. aggregateRating and review appear only
+// when published reviews do, built from the same $l['reviews'] the panel shows.
 $business = schema_local_business($l, $canonical);
 
 $catSlug  = $l['category']['slug'] ?? ($l['category_slug'] ?? '');
@@ -128,6 +129,10 @@ $metaDesc = listing_meta_description($l);
                     <?php endif; ?>
                 <?php endif; ?>
                 <h1 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl"><?= esc($name) ?></h1>
+                <?php $headRating = rating_summary($l); ?>
+                <?php if ($headRating !== ''): ?>
+                    <a class="mt-1 inline-block hover:underline" href="#reviews"><?= $headRating ?></a>
+                <?php endif; ?>
                 <?php if ($place): ?>
                     <?php // items-start, and the address wrapped in one <span>: the address
                           // is inline text with a link spliced into it, and as bare flex
@@ -211,7 +216,7 @@ $metaDesc = listing_meta_description($l);
                       // Every _panel_* partial takes the same two variables and
                       // returns early when it has nothing to draw, so there is no
                       // emptiness check here and no panel that has to know where in
-                      // the order it sits. 'order' always carries all eight keys —
+                      // the order it sits. 'order' always carries every key —
                       // see the note on Verticals::$defaults.
                       //
                       // saveData false for the reason _chip.php spells out: CI4's

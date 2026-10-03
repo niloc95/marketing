@@ -157,6 +157,10 @@ class DirectoryService
         // listing — see ListingQualityService, which cannot read anything the
         // paid badge gates, so this does not quietly sell ranking.
         //
+        // Ratings (review_count / rating_avg) are deliberately not a key here
+        // or anywhere else: a business must not be able to climb the results
+        // by collecting stars, any more than by paying for the badge.
+        //
         // is_featured stays above it: editorial, admin-only, rare, and NOT for
         // sale. It is now the only thing that outranks a better profile, so if
         // it is ever sold the promise in _plan_cards.php breaks in a way the
@@ -835,6 +839,11 @@ class DirectoryService
         $listing['team'] = listing_is_verified_business($listing)
             ? $this->team->forListing((int) $listing['id'])
             : [];
+
+        // Free for every listing. Published reviews only, and no query at all
+        // for a listing whose stored review_count is 0. The panel and the
+        // JSON-LD both read this one copy, so the markup matches the page.
+        $listing['reviews'] = (new ReviewService())->forProfile($listing);
 
         return $listing;
     }

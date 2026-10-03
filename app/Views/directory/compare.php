@@ -14,7 +14,7 @@ $canonical = base_url('compare');
  * The table comes from ComparisonService (defaults in Config\Comparison, edits
  * from /admin/comparison) and every string in it is plain text, so everything
  * is escaped here. It is written to survive a skeptical reader: the rows where
- * we are behind (reviews, built-in booking) stay in on purpose, and the
+ * we are behind (built-in booking) stay in on purpose, and the
  * checked-on date sits under the table.
  *
  * The Local column says Free or Verified on every row, so nobody has to guess

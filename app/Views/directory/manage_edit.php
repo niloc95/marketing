@@ -162,6 +162,11 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 'posts'   => $jobPosts ?? [],
                 'svc'     => new App\Services\JobBoardService(),
             ], ['saveData' => false]) ?>
+
+            <?= view('directory/_reviews_panel', [
+                'listing' => $listing,
+                'reviews' => $reviews ?? [],
+            ], ['saveData' => false]) ?>
         </div>
     </div>
 </section>

@@ -124,6 +124,55 @@ if (! function_exists('verified_seal')) {
     }
 }
 
+if (! function_exists('rating_stars')) {
+    /**
+     * Five star glyphs for a rating, rounded to the nearest whole star, with
+     * the exact figure in the aria-label. Used by the profile's reviews panel,
+     * each review, and the search result card.
+     *
+     * Draws nothing for a rating below 1: a listing with no published reviews
+     * has rating_avg NULL, and "0 stars" would read as a terrible score
+     * rather than as no score.
+     */
+    function rating_stars(?float $rating, string $class = ''): string
+    {
+        if ($rating === null || $rating < 1) {
+            return '';
+        }
+        $rating = min(5.0, $rating);
+        $filled = (int) round($rating);
+        $label  = rtrim(rtrim(number_format($rating, 1), '0'), '.') . ' out of 5 stars';
+
+        $html = '<span class="stars' . ($class !== '' ? ' ' . esc($class, 'attr') : '') . '" role="img" aria-label="' . esc($label, 'attr') . '">';
+        for ($i = 1; $i <= 5; $i++) {
+            $html .= '<span class="' . ($i <= $filled ? 'on' : 'off') . '" aria-hidden="true">&#9733;</span>';
+        }
+
+        return $html . '</span>';
+    }
+}
+
+if (! function_exists('rating_summary')) {
+    /**
+     * "★★★★★ 4.6 (12 reviews)" for a listing row, or '' with no published
+     * reviews. Reads the stored totals, so a search card costs no query.
+     *
+     * @param array<string,mixed> $l
+     */
+    function rating_summary(array $l): string
+    {
+        $count = (int) ($l['review_count'] ?? 0);
+        if ($count < 1 || ! isset($l['rating_avg'])) {
+            return '';
+        }
+        $avg = (float) $l['rating_avg'];
+
+        return '<span class="rating-line">' . rating_stars($avg)
+            . '<span class="font-semibold">' . esc(number_format($avg, 1)) . '</span>'
+            . '<span>(' . $count . ' review' . ($count === 1 ? '' : 's') . ')</span></span>';
+    }
+}
+
 if (! function_exists('verified_badge_pill')) {
     // What the badge claims, in the words every badge explains itself with.
     // define() rather than const: const is not allowed inside this guard.

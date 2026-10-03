@@ -82,6 +82,10 @@ $routes->get('manage/jobs/(:num)/edit', 'Jobs::ownerEdit/$1');
 $routes->post('manage/jobs/(:num)/edit', 'Jobs::ownerUpdate/$1');
 $routes->post('manage/jobs/(:num)/close', 'Jobs::ownerClose/$1');
 $routes->post('manage/jobs/(:num)/renew', 'Jobs::ownerRenew/$1');
+// The owner's public reply to a review, and their report of one. Handled by
+// Reviews; under manage/ because the manage session is the credential.
+$routes->post('manage/reviews/(:num)/reply', 'Reviews::ownerReply/$1');
+$routes->post('manage/reviews/(:num)/report', 'Reviews::ownerReport/$1');
 // Verified Business: apply, pay, and where PayFast returns the browser to.
 // Like every literal above, these must stay ahead of the catch-all below —
 // 'manage/verification' would otherwise be read as a magic-link token.
@@ -114,6 +118,14 @@ $routes->post('jobs/(:num)/report', 'Jobs::report/$1');
 // old slug 301s to the current one, so editing a title never breaks a link.
 $routes->get('jobs/([0-9]+)-([a-z0-9-]+)', 'Jobs::show/$1/$2');
 $routes->get('jobs/([0-9]+)', 'Jobs::show/$1');
+
+// Customer reviews. Top-level, so they never meet the directory/{segment}
+// catch-all. The literal 'confirm' route MUST precede reviews/{slug}, and a
+// review's id is numeric, so reviews/{id}/report cannot be read as a slug.
+// Nothing here is public until an admin approves it at /admin/reviews.
+$routes->get('reviews/confirm/(:segment)', 'Reviews::confirm/$1');
+$routes->post('reviews/(:num)/report', 'Reviews::report/$1');
+$routes->post('reviews/(:segment)', 'Reviews::store/$1');
 
 // SEO
 $routes->get('sitemap.xml', 'Directory::sitemap');
@@ -194,6 +206,14 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('jobs/(:num)/approve', 'Admin::approveJob/$1');
     $routes->post('jobs/(:num)/reject', 'Admin::rejectJob/$1');
     $routes->post('jobs/(:num)/close', 'Admin::closeJob/$1');
+
+    // Customer reviews: every confirmed review waits in the pending tab, and
+    // so does any published one sent back by reports.
+    $routes->get('reviews', 'Admin::reviews');
+    $routes->post('reviews/(:num)/approve', 'Admin::approveReview/$1');
+    $routes->post('reviews/(:num)/reject', 'Admin::rejectReview/$1');
+    $routes->post('reviews/(:num)/hide', 'Admin::hideReview/$1');
+    $routes->post('reviews/(:num)/remove-reply', 'Admin::removeReviewReply/$1');
 
     // "Recommend a business" queue. Invite is the only way the app emails a
     // recommended business, which is why it lives behind this filter.

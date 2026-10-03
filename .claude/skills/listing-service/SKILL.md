@@ -341,10 +341,45 @@ the SA directories (one column, with notes naming which directory does what).
   Verified Business table below). `{gallery}`, `{locations}`, `{team}` and `{price}` are
   filled in at render from the service constants, so an edited copy never freezes a cap.
   `ComparisonPageTest` pins the default tiers.
-- Keep the honest rows: reviews ("Not offered") and booking (a link, nothing built in), and
+- Keep the honest rows: booking (a link, nothing built in), and
   the `/verified` rule that qualifications are not checked.
 - Chip classes in `compare.php` are written out in full. A concatenated class name is
   purged from the Tailwind build.
+
+## Customer reviews (`/reviews`, added 3 Oct 2026)
+
+1–5 stars plus text on any business profile. Rules are in `ReviewService`, the only writer
+of `directory_reviews`, `directory_review_reports` and the listing's `review_count` /
+`rating_avg`. Limits are in `Config\Reviews`. The controller is `Reviews` (public
+`/reviews/*` and owner `/manage/reviews/*`), and the admin queue is `/admin/reviews`.
+
+- **Two gates:** the email confirm link (`unverified → pending`) and then admin approval
+  (`→ published`). A review is never public before both.
+- **Free for every profile**, including owner replies. Not a Verified Business feature.
+- **Ratings never affect ordering.** They are not a key in `browse()` and are not in
+  `ListingQualityService`. Same rule as the badge row below.
+- **One review per person per business:** unique (`listing_id`, `email_hash`). A duplicate,
+  or the owner's own email, gets the **same success message** and stores nothing, as with
+  `submitPublic()`. A still-unconfirmed draft can be rewritten.
+- **Privacy:** the page shows "Thandi M." only. `forProfile()` passes an `author` key and
+  strips the name, email, hashes and token before anything reaches the view. The JSON-LD
+  reads the same copy, so `aggregateRating`/`review` always match the page and are absent
+  with zero reviews.
+- **Spam defence:** links and phone numbers are refused (`textProblem()`). The form carries
+  a signed timestamp (`Reviews::formStamp()`), **not** a session stamp, because profiles
+  are the most-crawled pages. Honeypot `company_website_hp`. Throttles: `review-ip-` 3/h,
+  `review-to-` 2/day, `reviewreport-ip-` 10/h.
+- **Reports:** 3 distinct reporters send a published review back to `pending`, which also
+  takes it out of the totals. The owner counts as one reporter. In the queue, a review
+  that was once live gets **Hide**, never **Reject**.
+- **Owner replies** go live at once; `replyFlags` phrases only email the admin, who can
+  remove the reply.
+- **Totals** are written with the query builder in `recalculate()`. The columns are
+  deliberately not in the model's `allowedFields` or `OWNER_EDITABLE`.
+- `php spark reviews:prune` (cron 04:00): deletes unconfirmed reviews after 7 days, wipes
+  name and email from rejected/hidden ones 30 days after the decision (the hash stays),
+  and sends the nightly report digest. Terms §7 and Privacy §9 promise exactly this.
+- Tests: `tests/database/ReviewFlowTest.php`.
 
 ## Recommend a business (`/recommend`)
 
@@ -402,6 +437,7 @@ What the badge actually gates:
 | Replying to service requests | — | yes |
 | Lead alerts for service requests | teaser ("Get verified to reply") | yes, alerted first |
 | Requesting a service (Jobs board) | yes | yes |
+| Customer reviews, and replying to them | yes | yes |
 | **A higher position in results** | **no** | **no** |
 
 That last row is load-bearing. Only `is_featured` affects ordering, and only in

@@ -42,6 +42,11 @@ MAILTO=""
 # promise in the privacy policy, like jobs:expire.
 45 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark referrals:prune --quiet
 
+# Customer reviews: delete unconfirmed ones, wipe reviewer details from
+# rejected/hidden ones after 30 days (POPIA), and email the admin one digest
+# of the day's review reports.
+0 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark reviews:prune --quiet
+
 # --- Nightly database dump ----------------------------------------------------
 # Replaces Hostinger's plan backups. Credentials come from /home/deploy/.my.cnf
 # (chmod 600) so no password appears in the process list or in this file.
