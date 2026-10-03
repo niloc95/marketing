@@ -35,8 +35,8 @@ RUNNING_FOOTER = "WEBSCHEDULER LOCAL · LOCAL VISIBILITY PLAYBOOK"
 
 # The CTA is the entire point of the asset, so it is a real link with a real
 # UTM — not flat text. `utm_medium` is overridden per social variant.
-CTA_BARE = "listing.webscheduler.co.za"
-CTA_URL = "https://listing.webscheduler.co.za/"
+CTA_BARE = "local.webscheduler.co.za"
+CTA_URL = "https://local.webscheduler.co.za/"
 CTA_UTM_PDF = "?utm_source=pdf&utm_medium=playbook&utm_campaign=local-visibility-2026"
 
 

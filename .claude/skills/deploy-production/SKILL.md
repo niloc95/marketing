@@ -8,7 +8,12 @@ description: Release the WebScheduler marketing site and/or the directory app to
 | App | Live at | Docroot |
 |---|---|---|
 | Marketing site | `https://webscheduler.co.za` | `/var/www/marketing` |
-| Directory app | `https://listing.webscheduler.co.za` | `/var/www/listing/public_html` |
+| Directory app | `https://local.webscheduler.co.za` | `/var/www/listing/public_html` |
+
+The app's former hostname, `listing.webscheduler.co.za`, is its own vhost. It 301s
+to `local.` and still **serves** `POST /payfast/notify` for subscriptions created
+before the move. A release never touches it, and nobody should disable it. See
+`deploy/README.md` → *Hostname: local. and the legacy listing. host*.
 
 Both run on **one AWS Lightsail instance** (Ubuntu 24.04, Apache 2.4 + PHP 8.3-FPM +
 MySQL 8.0), behind Cloudflare in Full (strict) mode.
@@ -112,13 +117,13 @@ Nothing checks this for you. A build that exited 0 is necessary, not sufficient:
 curl -sI https://webscheduler.co.za | grep -i cf-cache-status
 
 # 2. Is the app healthy, not merely responding?
-curl -s https://listing.webscheduler.co.za/health            # {"status":"ok"}
+curl -s https://local.webscheduler.co.za/health            # {"status":"ok"}
 
 # 3. Did the developer portal survive the marketing deploy?
 curl -sI https://webscheduler.co.za/developer/               # 200, not 404
 
 # 4. Which CSP mode is live? Tells you whether the app is running current code.
-curl -sD- -o /dev/null https://listing.webscheduler.co.za/ \
+curl -sD- -o /dev/null https://local.webscheduler.co.za/ \
   | grep -oiE '^content-security-policy(-report-only)?:'
 ```
 
@@ -235,9 +240,9 @@ exactly why `deploy/cron/webscheduler` carries a monthly expiry warning.
 - `curl -I` against a proxied host reports the **edge**, not your origin (`cf-ray`
   confirms it). To test the origin from the box:
   ```bash
-  curl -k -H 'Host: listing.webscheduler.co.za' https://127.0.0.1/health
+  curl -k -H 'Host: local.webscheduler.co.za' https://127.0.0.1/health
   ```
-  From your Mac, `curl -k --resolve listing.webscheduler.co.za:443:<static-ip> …` does
+  From your Mac, `curl -k --resolve local.webscheduler.co.za:443:<static-ip> …` does
   the same thing. `-k` is required either way: the origin certificate is trusted by
   Cloudflare and nothing else.
 

@@ -13,12 +13,18 @@ repository — no PPA.
 > with non-standard paths and `AllowOverride None`, which fights the
 > `.htaccess`-dependent layout this app needs. Pick **OS Only**.
 
-Two hostnames, one instance:
+Three hostnames, one instance:
 
 | | Serves | DocumentRoot |
 |---|---|---|
 | `webscheduler.co.za` | static marketing site + `contact.php` | `/var/www/marketing` |
-| `listing.webscheduler.co.za` | the CI4 directory app | `/var/www/listing/public_html` |
+| `local.webscheduler.co.za` | the CI4 directory app (WebScheduler Local) | `/var/www/listing/public_html` |
+| `listing.webscheduler.co.za` | legacy: 301 → `local.`, and serves `POST /payfast/notify` | same |
+
+> This runbook was written for the Hostinger move, when the app was still on
+> `listing.`. The Hostinger paths (`~/domains/listing.webscheduler.co.za/…`) and
+> Part 11 are a historical record. For the later hostname move, see
+> [README.md → Hostname](README.md#hostname-local-and-the-legacy-listing-host).
 
 Hostinger stays live and untouched throughout. It is the source of the data and
 the rollback, right up to Part 11.
@@ -287,7 +293,8 @@ sudo install -m 644 "$S/apache/conf-available/webscheduler-logformat.conf" /etc/
 sudo a2enconf webscheduler-logformat
 
 sudo install -m 644 "$S/apache/webscheduler.co.za.conf"         /etc/apache2/sites-available/
-sudo install -m 644 "$S/apache/listing.webscheduler.co.za.conf" /etc/apache2/sites-available/
+sudo install -m 644 "$S/apache/local.webscheduler.co.za.conf"   /etc/apache2/sites-available/
+sudo install -m 644 "$S/apache/listing.webscheduler.co.za.conf" /etc/apache2/sites-available/   # legacy redirect
 
 sudo install -m 644 -o root -g root "$S/cron/webscheduler" /etc/cron.d/webscheduler
 
@@ -385,10 +392,10 @@ sudo openssl rsa  -noout -modulus -in /etc/ssl/cloudflare/webscheduler.co.za.key
 Then enable both sites:
 
 ```bash
-sudo a2ensite webscheduler.co.za listing.webscheduler.co.za
+sudo a2ensite webscheduler.co.za local.webscheduler.co.za listing.webscheduler.co.za
 sudo apache2ctl configtest         # must print: Syntax OK
 sudo systemctl reload apache2
-sudo apache2ctl -S                 # both vhosts, correct docroots
+sudo apache2ctl -S                 # all three vhosts, correct docroots
 ```
 
 Finally, Cloudflare → SSL/TLS → Overview → **Full (strict)**.
@@ -663,30 +670,30 @@ Use an array, which behaves the same in both shells:
 
 ```bash
 IP=<the-static-ip>
-R=(--resolve "listing.webscheduler.co.za:443:$IP"
+R=(--resolve "local.webscheduler.co.za:443:$IP"
    --resolve "webscheduler.co.za:443:$IP"
    --resolve "www.webscheduler.co.za:443:$IP")
 
 # Rewriting is on — the #1 failure mode
-curl -k "${R[@]}" -sI https://listing.webscheduler.co.za/directory | head -1   # 200, NOT 404
-curl -k "${R[@]}" -sI https://listing.webscheduler.co.za/about/    | head -1   # 301, slash stripped
+curl -k "${R[@]}" -sI https://local.webscheduler.co.za/directory | head -1   # 200, NOT 404
+curl -k "${R[@]}" -sI https://local.webscheduler.co.za/about/    | head -1   # 301, slash stripped
 curl -k "${R[@]}" -sI https://www.webscheduler.co.za/              | head -1   # 301 -> https://
 
 # The app is healthy, not merely responding
-curl -k "${R[@]}" -s "https://listing.webscheduler.co.za/health?token=<healthToken>" | jq .
+curl -k "${R[@]}" -s "https://local.webscheduler.co.za/health?token=<healthToken>" | jq .
 
 # Security headers and CSRF. Use -s, not -sI: a HEAD request emits no Set-Cookie.
-curl -k "${R[@]}" -s -o /dev/null -D- https://listing.webscheduler.co.za/add-listing \
+curl -k "${R[@]}" -s -o /dev/null -D- https://local.webscheduler.co.za/add-listing \
   | grep -i set-cookie          # secure; HttpOnly; SameSite=Lax, plus csrf_cookie_name
 curl -k "${R[@]}" -s -o /dev/null -w '%{http_code}\n' -X POST \
-     -d "display_name=x" https://listing.webscheduler.co.za/add-listing     # 303
+     -d "display_name=x" https://local.webscheduler.co.za/add-listing     # 303
        # 303, not 403: with csrfProtection = 'cookie' CodeIgniter redirects a
        # tokenless POST rather than aborting. The POST is still rejected — that
        # is the property being tested. Anything that reaches the controller (a
        # 200, or a 302 to a success page) is the real failure.
 
 # URLs use the real domain, not CHANGE-ME or localhost
-curl -k "${R[@]}" -s https://listing.webscheduler.co.za/sitemap.xml | head -5
+curl -k "${R[@]}" -s https://local.webscheduler.co.za/sitemap.xml | head -5
 ```
 
 If `/directory` returns 404 but `/index.php/directory` returns 200, `.htaccess`
@@ -696,7 +703,7 @@ is wrong**.
 ### In a browser
 
 Point your Mac at the box with `/etc/hosts` (`$IP webscheduler.co.za
-www.webscheduler.co.za listing.webscheduler.co.za`), flush with
+www.webscheduler.co.za local.webscheduler.co.za`), flush with
 `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`, and expect a
 certificate warning — you are hitting the origin directly, and the origin cert is
 only trusted by Cloudflare. Click through it.
@@ -768,7 +775,7 @@ ls -lh /home/deploy/backups/          # a db-YYYY-MM-DD.sql.gz appears after 02:
 grep CRON /var/log/syslog | tail
 ```
 
-**Uptime monitor** — point it at `https://listing.webscheduler.co.za/health`. It
+**Uptime monitor** — point it at `https://local.webscheduler.co.za/health`. It
 must be a **GET**, not HEAD: the endpoint returns 503 when a check fails, which
 is the entire value of monitoring it rather than the home page.
 
