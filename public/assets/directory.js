@@ -1132,7 +1132,7 @@
     // from every visitor who starts typing.
     var MIN_CHARS = 3;
 
-    var KIND = { category: 'Category', place: 'Place' };
+    var KIND = { category: 'Category', place: 'Place', person: 'Person' };
 
     var hideList = function () {
       list.hidden = true;

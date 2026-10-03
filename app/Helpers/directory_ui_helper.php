@@ -647,6 +647,26 @@ if (! function_exists('listing_is_verified_business')) {
     }
 }
 
+if (! function_exists('team_member_anchor')) {
+    /**
+     * The fragment id of one team member on their business's profile.
+     *
+     * One definition for three consumers that must agree: the card's id in
+     * _team_panel.php, the Person @id in schema_local_business(), and the
+     * typeahead row DirectoryService::suggest() links to. Prefixed so a member
+     * slugged "map" or "book" cannot collide with an id the page already uses.
+     * Empty when the row has no slug, and then nobody links to it.
+     *
+     * @param array<string,mixed> $member
+     */
+    function team_member_anchor(array $member): string
+    {
+        $slug = trim((string) ($member['slug'] ?? ''));
+
+        return $slug === '' ? '' : 'team-' . $slug;
+    }
+}
+
 if (! function_exists('listing_is_international')) {
     /**
      * Is this listing's address outside South Africa?

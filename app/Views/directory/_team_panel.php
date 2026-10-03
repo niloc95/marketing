@@ -27,7 +27,9 @@ $teamHeading = $teamHeading ?? 'Our team';
     <h3><?= esc($teamHeading) ?></h3>
     <div class="team-list">
         <?php foreach ($members as $m): ?>
-            <div class="team-member">
+            <?php // The anchor the typeahead links to and the Person @id in the
+                  // JSON-LD points at; see team_member_anchor(). ?>
+            <div class="team-member"<?php if (($anchor = team_member_anchor($m)) !== ''): ?> id="<?= esc($anchor, 'attr') ?>"<?php endif; ?>>
                 <?php if (! empty($m['photo_path'])): ?>
                     <img src="<?= esc(base_url($m['photo_path'])) ?>"
                          alt="<?= esc($m['name'], 'attr') ?>" width="72" height="72"
