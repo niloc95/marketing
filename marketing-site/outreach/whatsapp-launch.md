@@ -1,7 +1,7 @@
 # WhatsApp launch outreach — WebScheduler Local
 
 Copy-paste messages for inviting South African businesses onto
-**listing.webscheduler.co.za** during the launch phase.
+**local.webscheduler.co.za** during the launch phase.
 
 Internal document. The marketing site build only publishes the pages in its
 allowlist (`scripts/build-marketing-site.js`), so nothing in this folder reaches
@@ -34,7 +34,7 @@ You can create a FREE business profile 🎉 Your services, where you are, your c
 
 It's more than a business listing: it's your business's local presence online.
 
-👉 listing.webscheduler.co.za
+👉 local.webscheduler.co.za
 
 We're inviting businesses in during our launch phase. Want me to send you a bit more info? 😊
 ```
@@ -53,7 +53,7 @@ We've just launched WebScheduler Local, where South Africans discover local busi
 
 Someone looking for a [trade] in [area] searches online first, and people want to know who they're dealing with. A free business profile shows your practice, your services, where you are and how to reach you. Get Verified, and your team, their qualifications and your other offices can go on it too.
 
-👉 listing.webscheduler.co.za
+👉 local.webscheduler.co.za
 
 The profile is free and takes about 5 minutes. Want me to send you the details? 😊
 ```
@@ -73,7 +73,7 @@ When someone in [area] needs a [plumber], they search online — and whoever com
 
 We've just launched WebScheduler Local, and you can create a FREE business profile 🎉 Your services, where you work, your number, your hours and photos of your work — all on one page. No monthly fee, no subscription.
 
-👉 listing.webscheduler.co.za
+👉 local.webscheduler.co.za
 
 We're inviting businesses in during our launch phase. Want me to send you more info? 😊
 ```
@@ -95,7 +95,7 @@ We've just launched WebScheduler Local, where South Africans discover local busi
 
 If you bake, sew, craft or sell from home, you can create a FREE business profile 🎉 Your products, your photos, your number, your Facebook or Instagram — one page people can find and share.
 
-👉 listing.webscheduler.co.za
+👉 local.webscheduler.co.za
 
 Would you like me to send you a bit more info? 😊
 ```
@@ -107,7 +107,7 @@ Would you like me to send you a bit more info? 😊
 ```
 Great 😊 Here's how it works:
 
-1️⃣ Go to listing.webscheduler.co.za and tap "Create Your FREE Business Profile"
+1️⃣ Go to local.webscheduler.co.za and tap "Create Your FREE Business Profile"
 2️⃣ Fill in your details — business name, category, services, contact, website or socials, photos, and your spot on the map. About 5 minutes.
 3️⃣ We email you a link to confirm it's really you. Click it and your profile goes live.
 

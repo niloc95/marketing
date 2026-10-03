@@ -195,7 +195,9 @@ const ALLOWED_HOSTS = new Set([
   'www.webscheduler.co.za',
   // The directory SaaS — a separate CI4 app on its own subdomain, linked from
   // the nav/footer. Built by `npm run list:build`, deployed separately.
-  'listing.webscheduler.co.za',
+  // Formerly listing.webscheduler.co.za, which now only 301s here; left out on
+  // purpose so a stale link to it fails the build.
+  'local.webscheduler.co.za',
   // Mautic, self-hosted on our own Lightsail instance. The newsletter form in
   // the footer posts subscriptions here; Mautic stores the contact and sends
   // the double opt-in confirmation. This is a form `action` to a first-party

@@ -1,8 +1,12 @@
 # Lightsail deployment
 
 Everything needed to stand up the AWS Lightsail instance that serves both
-`webscheduler.co.za` (marketing) and `listing.webscheduler.co.za` (the CI4
-directory app), and to cut over to it from Hostinger.
+`webscheduler.co.za` (marketing) and `local.webscheduler.co.za` (the CI4
+directory app, WebScheduler Local), and to cut over to it from Hostinger.
+
+The app's former hostname, `listing.webscheduler.co.za`, is kept permanently as
+a redirect that still serves PayFast ITNs. Read [Hostname: local. and the legacy
+listing. host](#hostname-local-and-the-legacy-listing-host) before touching it.
 
 **[LAMP-SETUP.md](LAMP-SETUP.md) is the runbook** — bare Ubuntu to live, typed by
 hand in the Lightsail browser terminal. This file is the reference for what the
@@ -15,7 +19,9 @@ deploy/
 ├── apache/
 │   ├── conf-available/webscheduler-logformat.conf
 │   ├── webscheduler.co.za.conf              marketing vhost
-│   └── listing.webscheduler.co.za.conf      listing vhost
+│   ├── local.webscheduler.co.za.conf        WebScheduler Local vhost
+│   ├── listing.webscheduler.co.za.conf      legacy host: 301 → local., serves /payfast/notify
+│   └── listing.webscheduler.co.za.conf.serve  rollback only: the pre-move listing vhost
 ├── php/99-webscheduler.ini                  both SAPIs
 ├── mysql/99-webscheduler.cnf
 ├── cron/webscheduler                        → /etc/cron.d/
@@ -60,7 +66,7 @@ on manual dispatch, and has no credentials to run with.
 │   └── developer/                 ← from ANOTHER repo; never in this deploy
 └── listing/
     ├── directory-app/             ← ABOVE the web root: app/ vendor/ writable/ .env
-    └── public_html/               ← listing.webscheduler.co.za docroot
+    └── public_html/               ← local.webscheduler.co.za docroot (listing. 301s here)
 /home/deploy/src/                  ← the git clone; where both apps are built
 /home/deploy/.my.cnf               ← chmod 600, credentials for the nightly dump
 /home/deploy/backups/              ← nightly mysqldump, 14-day retention
@@ -135,8 +141,8 @@ avoids editing `/etc/hosts`; `-k` is needed because a Cloudflare origin
 certificate is trusted by Cloudflare and nothing else:
 
 ```bash
-curl -k --resolve listing.webscheduler.co.za:443:<static-ip> \
-     -sI https://listing.webscheduler.co.za/directory
+curl -k --resolve local.webscheduler.co.za:443:<static-ip> \
+     -sI https://local.webscheduler.co.za/directory
 ```
 
 ### Verification
@@ -152,8 +158,8 @@ apache2ctl -S                                   # both vhosts, right docroots
 
 **`.htaccess` is actually in force** — the check that catches `AllowOverride None`:
 ```bash
-curl -sI https://listing.webscheduler.co.za/directory      # 200, NOT 404
-curl -sI https://listing.webscheduler.co.za/about/         # 301, slash stripped
+curl -sI https://local.webscheduler.co.za/directory        # 200, NOT 404
+curl -sI https://local.webscheduler.co.za/about/           # 301, slash stripped
 curl -sI https://www.webscheduler.co.za/                   # 301 → https:// (never http://)
 ```
 If `/directory` 404s while `/index.php/directory` returns 200, rewriting is off
@@ -161,14 +167,14 @@ and nothing else is wrong.
 
 **App behaviour:**
 ```bash
-curl -sI https://listing.webscheduler.co.za/add-listing | grep -i set-cookie
+curl -sI https://local.webscheduler.co.za/add-listing | grep -i set-cookie
     # Secure; HttpOnly; SameSite=Lax
 curl -s -o /dev/null -w '%{http_code}\n' -X POST \
-     -d "display_name=x" https://listing.webscheduler.co.za/add-listing
+     -d "display_name=x" https://local.webscheduler.co.za/add-listing
     # 403 — CSRF blocking the write
-curl -s "https://listing.webscheduler.co.za/health?token=$HEALTHTOKEN"
+curl -s "https://local.webscheduler.co.za/health?token=$HEALTHTOKEN"
     # every check green
-curl -s https://listing.webscheduler.co.za/sitemap.xml | head -5
+curl -s https://local.webscheduler.co.za/sitemap.xml | head -5
     # real domain, not CHANGE-ME or localhost
 ```
 
@@ -256,9 +262,11 @@ live. Check it with the curls below.
 
 **1. The Access application.** Zero Trust → *Access → Applications → Add →
 Self-hosted*.
-- Application domain: `listing.webscheduler.co.za`, path `admin`. Add a second
+- Application domain: `local.webscheduler.co.za`, path `admin`. Add a second
   domain row for the same host with path `admin/*`, because the bare path does not
-  cover sub-paths.
+  cover sub-paths. Keep the two matching rows for `listing.webscheduler.co.za`
+  as well. That host only redirects now, but the rows cost nothing and matter
+  again if it is ever rolled back to serving the app.
 - Session duration: 24 hours.
 - Policy: *Allow*, with Include set to *Emails* `za_admin@webscheduler.co.za`.
   Add any other admin address individually. Do not use a domain rule.
@@ -284,14 +292,14 @@ is expected.
 **3. Verify.**
 ```bash
 # Expect a 302 to <team>.cloudflareaccess.com, not the app's own login page
-curl -sI https://listing.webscheduler.co.za/admin/login | grep -i '^location'
+curl -sI https://local.webscheduler.co.za/admin/login | grep -i '^location'
 
 # Expect 200: the public site is not gated
-curl -sI https://listing.webscheduler.co.za/directory | head -1
+curl -sI https://local.webscheduler.co.za/directory | head -1
 
 # Expect a timeout: the origin no longer answers when Cloudflare is skipped
-curl -sk --max-time 10 --resolve listing.webscheduler.co.za:443:<static-ip> \
-     https://listing.webscheduler.co.za/ -o /dev/null -w '%{http_code}\n'
+curl -sk --max-time 10 --resolve local.webscheduler.co.za:443:<static-ip> \
+     https://local.webscheduler.co.za/ -o /dev/null -w '%{http_code}\n'
 ```
 Also sign in once in a private window. You should get the PIN email, then the
 app's password prompt.
@@ -333,7 +341,8 @@ or ends_with(http.request.uri.path, ".sql") or ends_with(http.request.uri.path, 
 ```
 - Action: **Block**. Place it first in the list.
 
-It covers both hostnames. Neither site is WordPress.
+It covers every hostname in the zone, including `local.` and the legacy
+`listing.`. Neither site is WordPress.
 
 **What it must never match:** the listing app's own map and editor files live under
 `/assets/vendor/`, which is why only a path *starting* with `/vendor/` is blocked.
@@ -344,14 +353,138 @@ in the origin logs. Check *Security → Events* first.
 **2. Verify.**
 ```bash
 # Expect 403 from Cloudflare for probes...
-curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/.env
+curl -s -o /dev/null -w '%{http_code}\n' https://local.webscheduler.co.za/.env
 curl -s -o /dev/null -w '%{http_code}\n' https://webscheduler.co.za/wp-login.php
 
 # ...and 200 for the files that sit near the rule's edges
-curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/assets/vendor/leaflet/leaflet.js
-curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/health
+curl -s -o /dev/null -w '%{http_code}\n' https://local.webscheduler.co.za/assets/vendor/leaflet/leaflet.js
+curl -s -o /dev/null -w '%{http_code}\n' https://local.webscheduler.co.za/health
 curl -s -o /dev/null -w '%{http_code}\n' https://webscheduler.co.za/
 ```
 *Security → Events* then shows the blocks as they happen.
 
 **Rollback:** toggle the rule off. It takes effect within seconds.
+
+## Hostname: local. and the legacy listing. host
+
+WebScheduler Local is served from `local.webscheduler.co.za`. Until the move it
+was `listing.webscheduler.co.za`, which Google had indexed and which owners, PDFs
+and WhatsApp posts still link to. Only the hostname changed. Paths, slugs and
+content are identical, so `listing.…/directory/global-tutors` maps to
+`local.…/directory/global-tutors`.
+
+**The app has one source of truth for its host: `app.baseURL` in
+`/var/www/listing/directory-app/.env`.** Canonicals, `og:url`, JSON-LD, the
+sitemap, the `Sitemap:` line in robots.txt and every email link come from it
+through `base_url()`. Leave `app.allowedHostnames` empty, so that every
+generated URL stays on that one host.
+
+**The legacy vhost** (`apache/listing.webscheduler.co.za.conf`) does two things
+and must never be removed, nor its DNS record:
+- Every request gets **one** 301 to the same path and query on `local.`, with a
+  trailing slash stripped in the same hop.
+- `POST /payfast/notify` is **served**, not redirected. PayFast stores
+  `notify_url` per subscription, so every Verified subscription created before
+  the move keeps sending its monthly ITN to the old host. A redirected
+  server-to-server POST is lost.
+
+The exception tests `THE_REQUEST`, not `REQUEST_URI`. `.htaccess` internally
+rewrites the path to `/index.php/payfast/notify`, and a `REQUEST_URI` test then
+stops matching, so the ITN gets a 301 after all. That bug was caught in a local
+Apache test before release. If anyone edits the rule, re-run the check in step 5
+below.
+
+### Cutover (zero downtime)
+
+Run in this order. Steps 1–3 change nothing visitors see.
+
+1. **Back up.**
+   ```bash
+   sudo cp -a /var/www/listing/directory-app/.env \
+              /var/www/listing/directory-app/.env.bak-host-$(date +%Y%m%d)
+   sudo cp -a /etc/apache2/sites-available/listing.webscheduler.co.za.conf{,.bak}
+   ```
+2. **Install the new vhost** next to the old one, after `git pull` in
+   `/home/deploy/src`:
+   ```bash
+   S=/home/deploy/src/deploy
+   sudo install -m 644 "$S/apache/local.webscheduler.co.za.conf" /etc/apache2/sites-available/
+   sudo a2ensite local.webscheduler.co.za
+   sudo apachectl configtest && sudo systemctl reload apache2
+   ```
+3. **Cloudflare.**
+   - Add a DNS record `local`, a copy of the `listing` record (same A/AAAA), **proxied**.
+   - Add the `local.` rows to the Access application (see *Admin behind
+     Cloudflare Access*) **before step 4**. Otherwise `local.…/admin` sits behind
+     the password alone.
+   - Check *Rules* for anything scoped to `listing.` (Page, Cache, Configuration,
+     Transform or Redirect rules) and copy it.
+
+   Then check:
+   ```bash
+   curl -s https://local.webscheduler.co.za/health                 # ok
+   curl -sI https://local.webscheduler.co.za/admin/login | grep -i '^location'   # cloudflareaccess.com
+   ```
+   Canonicals still say `listing.` at this point. That is expected.
+4. **Switch.** Run the two halves seconds apart, in this order, so that neither
+   host ever redirects to the other.
+   ```bash
+   # a) the app now generates local. URLs everywhere
+   sudo sed -i "s|^app.baseURL.*|app.baseURL = 'https://local.webscheduler.co.za/'|" \
+        /var/www/listing/directory-app/.env
+   sudo systemctl reload php8.3-fpm
+   sudo rm -f /var/www/listing/directory-app/writable/cache/directory_sitemap_xml
+
+   # b) the old host now redirects
+   sudo install -m 644 "$S/apache/listing.webscheduler.co.za.conf" /etc/apache2/sites-available/
+   sudo apachectl configtest && sudo systemctl reload apache2
+   ```
+   Delete only that one cache file. `spark cache:clear` would also wipe the rate
+   limits and the geocoding cache.
+5. **Verify.**
+   ```bash
+   # one hop, same path and query
+   curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' 'https://listing.webscheduler.co.za/directory/?q=physio'
+   #   301 https://local.webscheduler.co.za/directory?q=physio
+   curl -sL -o /dev/null -w '%{num_redirects}\n' https://listing.webscheduler.co.za/faq/   # 1
+
+   # PayFast still reaches the app on the old host. Expect the app's rejection
+   # (4xx), never 301, plus a new row in xs_directory_verification_itn_rejections.
+   curl -s -o /dev/null -w '%{http_code}\n' -X POST -d x=1 https://listing.webscheduler.co.za/payfast/notify
+
+   curl -s https://local.webscheduler.co.za/robots.txt | grep Sitemap        # local.
+   curl -s https://local.webscheduler.co.za/sitemap.xml | grep -c listing\.  # 0
+   curl -s https://local.webscheduler.co.za/ | grep -E 'rel="canonical"|og:url'  # local.
+   ```
+   Then, in a browser: an owner manage link, a signup through to the
+   verification email (links say `local.`), the Verified checkout through to
+   PayFast, a job post, the contact form and the newsletter form.
+6. **Everything that points at the old host.**
+   - Release the marketing site (its links already say `local.`) and purge its
+     HTML in Cloudflare.
+   - Update the Mautic form 2 post-submit redirect.
+   - Update `directory.handoffUrl` in the WebScheduler app.
+   - Move the uptime monitor to `local.…/health`, and add a second check that
+     `listing.…/` returns 301.
+   - Update the social bios.
+   - Search Console: add `local.` and submit its sitemap. In the **old** property,
+     run *Settings → Change of address*. Never delete the old property.
+
+Signed-in owners and admins are signed out once, because cookies are
+host-only. Their light or dark theme choice also resets once.
+
+### Rollback
+
+No downtime, and the old host stays up throughout:
+```bash
+sudo install -m 644 "$S/apache/listing.webscheduler.co.za.conf.serve" \
+     /etc/apache2/sites-available/listing.webscheduler.co.za.conf
+sudo cp -a /var/www/listing/directory-app/.env.bak-host-<date> /var/www/listing/directory-app/.env
+sudo systemctl reload php8.3-fpm
+sudo rm -f /var/www/listing/directory-app/writable/cache/directory_sitemap_xml
+sudo apachectl configtest && sudo systemctl reload apache2
+```
+If Google has already crawled `local.`, keep its DNS record and make its vhost
+a 301 back to `listing.` (the mirror image of the legacy rule), so signals
+consolidate again. Also cancel the Change of address in Search Console. Do
+not flip back and forth more than once.

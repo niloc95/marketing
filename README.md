@@ -13,7 +13,7 @@ directory; "listing" is fine descriptively, "business profile" is preferred. Cod
 Separate from the standalone WebScheduler product, which is self-hosted per customer.
 
 - **Stack:** CodeIgniter 4.7 + MySQL, Tailwind for the views.
-- **Production:** https://listing.webscheduler.co.za (its own subdomain — see *Deploying*)
+- **Production:** https://local.webscheduler.co.za (its own subdomain; the former `listing.` host 301s here — see `deploy/README.md`)
 - **Local:** http://localhost:8095
 
 This repo also holds the static marketing site (`marketing-site/`), which links to
@@ -271,6 +271,9 @@ cleartext and takes a deprecated code path.
 - **`/admin` hardening** — a single shared password, no username, no 2FA. It *is* throttled
   (5 attempts / 15 min per IP) and stored as a bcrypt hash, but consider IP-restricting the
   path as well.
+
+
+> Historical: the original Hostinger setup, from when the app lived on `listing.`. Production is now Lightsail on `local.webscheduler.co.za`; see `deploy/README.md`.
 
 
 1. Create it in hPanel — Domains → Subdomains, name listing.

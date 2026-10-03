@@ -201,7 +201,7 @@ jobs:
 
   # ============================================================================
   directory:
-    name: Directory app → listing.webscheduler.co.za
+    name: Directory app → local.webscheduler.co.za
     runs-on: ubuntu-latest
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -327,7 +327,7 @@ jobs:
       # the token, which CI does not have and does not need.
       #
       # Checked against the ORIGIN over the SSH connection, not against the
-      # public URL. Curling https://listing.webscheduler.co.za/ from the runner
+      # public URL. Curling https://local.webscheduler.co.za/ from the runner
       # would test whatever DNS currently resolves to — which, until the cutover
       # completes, is still Hostinger. That would report a green deploy while
       # confirming nothing about the box we just shipped to. -k because the
@@ -339,7 +339,7 @@ jobs:
           for i in 1 2 3 4 5; do
             code=$(ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes \
               "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "curl -sk -o /dev/null -w '%{http_code}' -H 'Host: listing.webscheduler.co.za' https://127.0.0.1/health" || echo 000)
+              "curl -sk -o /dev/null -w '%{http_code}' -H 'Host: local.webscheduler.co.za' https://127.0.0.1/health" || echo 000)
             [ "$code" = "200" ] && { echo "origin health OK"; exit 0; }
             echo "attempt $i: /health returned $code"
             sleep 5

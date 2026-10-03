@@ -129,7 +129,7 @@ exactly this reason.
 ## Build guards (`scripts/build-marketing-site.js`) — easy to trip, know them before editing
 
 - **External-host allowlist**: any `src=`/`href=` pointing at `http(s)://` is checked
-  against `webscheduler.co.za`, `www.webscheduler.co.za`, `listing.webscheduler.co.za`
+  against `webscheduler.co.za`, `www.webscheduler.co.za`, `local.webscheduler.co.za`
   (the directory app subdomain), `updates.webscheduler.co.za` (Mautic — the newsletter
   form's `action`), `www.googletagmanager.com`, `www.google-analytics.com`, plus
   `inforegulator.org.za` and `policies.google.com`, which the legal pages must link to as
