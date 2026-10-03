@@ -393,6 +393,11 @@ on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" ro
   `listing_is_verified_business()` in `app/Helpers/directory_ui_helper.php`. There is no
   boolean to keep in sync, and in particular **`is_verified` is not it** (that one means the
   signup email was confirmed — see Data model).
+- **Every pill renders through `verified_badge_pill()`** (search cards, job cards, job page). It
+  links to `/verified` and explains itself on hover/focus with `VERIFIED_BADGE_EXPLAINER`
+  ("Documents checked by WebScheduler Local"), which the profile seal, plan cards and pitch
+  also quote. Pure CSS (`.verified-tip`); the tooltip is `display:none` while hidden because an
+  invisible box would still give a phone page a sideways scroll.
 - **The price is snapshotted** onto `directory_verifications.amount` at application time, so
   changing the price never reprices existing subscribers.
 - **Benefit copy lives in two partials that must change together**:

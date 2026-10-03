@@ -74,7 +74,10 @@ $rows = [
     ['label' => 'Your services, with prices if you want to show them', 'free' => true, 'paid' => true],
     ['label' => 'A logo and a photo gallery, up to ' . (int) $gallery . ' photos', 'free' => true, 'paid' => true],
     ['label' => 'Edit it yourself any time, free', 'free' => true, 'paid' => true],
-    ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every search result you appear in', 'free' => false, 'paid' => true],
+    // The note is the badge's own explainer (VERIFIED_BADGE_EXPLAINER), so the
+    // card says what visitors will be told on hover. Keep in step with the
+    // first item of _verification_pitch.php.
+    ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every search result you appear in', 'note' => VERIFIED_BADGE_EXPLAINER . ': your business registration document and your ID', 'free' => false, 'paid' => true],
     ['label' => '<strong>All your locations</strong> &mdash; up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
     ['label' => '<strong>Your people</strong> &mdash; up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
     ['label' => '<strong>More searches find you</strong> &mdash; a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],

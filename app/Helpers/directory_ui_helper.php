@@ -124,6 +124,38 @@ if (! function_exists('verified_seal')) {
     }
 }
 
+if (! function_exists('verified_badge_pill')) {
+    // What the badge claims, in the words every badge explains itself with.
+    // define() rather than const: const is not allowed inside this guard.
+    define('VERIFIED_BADGE_EXPLAINER', 'Documents checked by WebScheduler Local');
+
+    /**
+     * The green Verified Business pill, explaining itself.
+     *
+     * A bare "Verified" is the kind of badge that erodes trust rather than
+     * building it, so every pill says what was checked: on hover and keyboard
+     * focus a small tooltip shows VERIFIED_BADGE_EXPLAINER, and the pill is a
+     * link to /verified, which spells the claim out in full. A tap on a phone
+     * goes straight there, which is the explanation a phone gets.
+     *
+     * The accessible name carries the explainer, so the tooltip itself is
+     * aria-hidden and a screen reader hears it once. The pill is only ever a
+     * sibling of a card's own links, never inside one, which is why it may be
+     * a link at all.
+     *
+     * Pure CSS (.verified-tip), so there is no script and nothing the CSP has
+     * to allow.
+     */
+    function verified_badge_pill(string $label = 'Verified Business'): string
+    {
+        return '<a class="badge badge-verified verified-tip gap-1" href="' . esc(base_url('verified'), 'attr') . '"'
+            . ' aria-label="' . esc($label . ': ' . VERIFIED_BADGE_EXPLAINER, 'attr') . '">'
+            . lucide('badge-check', 'h-3.5 w-3.5 shrink-0') . esc($label)
+            . '<span class="verified-tip-text" aria-hidden="true">' . esc(VERIFIED_BADGE_EXPLAINER) . '</span>'
+            . '</a>';
+    }
+}
+
 if (! function_exists('header_quick_categories')) {
     /**
      * The categories on the header's quick-access strip.

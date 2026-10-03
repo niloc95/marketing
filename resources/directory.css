@@ -1312,6 +1312,25 @@
   .dark .badge-verified { @apply bg-emerald-500/15 text-emerald-300; }
   .dark .badge-venue    { @apply bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white; }
 
+  /* The pill explaining itself (verified_badge_pill()). Hover and keyboard
+     focus show what was checked; a tap follows the link to /verified, which is
+     the full answer. display:none rather than opacity while hidden: an
+     invisible box still counts as scrollable overflow, and a pill at the right
+     edge of a phone-width card would give the whole page a sideways scroll.
+     Centred above the pill, or left-aligned to it on a phone, where a pill
+     towards the right of a card would push a centred box past the screen;
+     z-20 to sit over the next card in the grid. */
+  .verified-tip { @apply relative; }
+  .verified-tip-text {
+    @apply pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-max max-w-[14rem]
+           -translate-x-1/2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-center text-xs font-medium
+           leading-snug text-white shadow-brand
+           max-sm:left-0 max-sm:max-w-[9rem] max-sm:translate-x-0;
+  }
+  .verified-tip:hover .verified-tip-text,
+  .verified-tip:focus-visible .verified-tip-text { @apply block; }
+  .dark .verified-tip-text { @apply bg-slate-700; }
+
   /* The seal is the same claim as .badge-verified, at the size where the mark
      itself does the talking. It is fixed-colour and carries its own artwork, so
      unlike the pill it has no dark variant — see public/assets/verified-seal.svg.

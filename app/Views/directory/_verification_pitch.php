@@ -47,7 +47,9 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
     <li>
         <strong>A checked badge</strong> on your profile and beside your name in every
         search result you appear in &mdash; so someone deciding between you and a business
-        with no badge can see we have checked who you are.
+        with no badge can see we have checked who you are. Visitors who hover over or tap
+        the badge are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
+        business registration document and your ID.
     </li>
     <li>
         <strong>All your locations.</strong> Add up to <?= (int) $locations ?> more branches or
