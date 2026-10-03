@@ -30,8 +30,15 @@ use CodeIgniter\Config\BaseConfig;
  *      https://pressoffice.mg.co.za/snupit/content/wbrpO7gYWbpqDLZn
  *    - Cylex, free profile with hours, photos, services and reviews; premium
  *      placement paid: https://cylex-international.com/products
- *    Brabys and Medpages publish little about their tiers, so their cells say
- *    "varies" and name only what is plainly visible on their sites.
+ *    - Medpages: free search and a free basic listing; qualifications, a
+ *      biography, appointment requests and placement above standard listings
+ *      come with the paid Highlighted listing (R2,750/year):
+ *      https://www.medpages.info/sf/index.php?page=free-listing
+ *    - Brabys: a free listing with category, contact details, address and
+ *      opening hours. brabys.com refuses automated fetches, so this was
+ *      checked via https://www.juicydesigns.co.za/blog/free-business-directories-south-africa/
+ *      and https://sherrlinn.co.za/top-10-free-business-directories-in-south-africa/
+ *    Where a cell names no site it says "varies" rather than claim more.
  *
  * 2. The Local column must match what the code gates. Staff, branches and
  *    vacancies are Verified Business (TeamMemberService, PracticeLocationService,
@@ -153,7 +160,7 @@ class Comparison extends BaseConfig
                 'local'    => ['status' => 'verified', 'note' => 'Shown as the business enters them; we check the business, not each qualification'],
                 'google'   => ['status' => 'no', 'note' => 'A practitioner may put a title or degree in their profile name'],
                 'linkedin' => ['status' => 'partial', 'note' => 'Self-reported on each person\'s own profile'],
-                'sa'       => ['status' => 'varies', 'note' => 'Medpages, for healthcare practitioners'],
+                'sa'       => ['status' => 'varies', 'note' => 'Medpages shows them on its paid listing, for healthcare practitioners only'],
             ],
         ],
         [
@@ -203,7 +210,7 @@ class Comparison extends BaseConfig
                 'local'    => ['status' => 'free', 'note' => 'A "Book online" button linking to your own booking page'],
                 'google'   => ['status' => 'yes', 'note' => 'A booking link, or Reserve with Google through booking partners'],
                 'linkedin' => ['status' => 'no', 'note' => ''],
-                'sa'       => ['status' => 'varies', 'note' => ''],
+                'sa'       => ['status' => 'varies', 'note' => 'Medpages takes appointment requests on its paid listing'],
             ],
         ],
         [
