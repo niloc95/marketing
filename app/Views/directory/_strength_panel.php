@@ -66,7 +66,9 @@ $tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg
           // worse than reading it once. ?>
     <div class="strength-bar" role="img"
          aria-label="Profile strength: <?= $score ?> out of <?= (int) $strength['max'] ?>">
-        <span class="strength-bar-fill <?= esc($tone, 'attr') ?>" style="width: <?= $percent ?>%"></span>
+        <?php // A step class, never style="": CSP blocks inline style attributes.
+              // Rounded to 5% to match the classes in directory.css. ?>
+        <span class="strength-bar-fill <?= esc($tone, 'attr') ?> strength-w-<?= (int) (round($percent / 5) * 5) ?>"></span>
     </div>
 
     <?php if ($next === []): ?>

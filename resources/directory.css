@@ -2014,8 +2014,9 @@
   .strength-panel-lead  { @apply mt-3 text-sm text-slate-600; }
   .strength-panel-note  { @apply mt-3 text-xs text-slate-500; }
   .strength-bar         { @apply h-2 w-full overflow-hidden rounded-full bg-slate-200; }
-  /* Width is set inline from the score; the transition is here so a save that
-     moves the number reads as movement rather than a different page. */
+  /* Width comes from a .strength-w-N step class (see the end of this file);
+     the transition is here so a save that moves the number reads as movement
+     rather than a different page. */
   .strength-bar-fill    { @apply block h-full rounded-full transition-[width] duration-500; }
   .strength-list        { @apply mt-3 list-none space-y-2 pl-0; }
   /* Two columns: the step and its points on one line, the hint wrapping
@@ -2750,3 +2751,31 @@
   from { transform: scale(1); }
   to   { transform: scale(1.06); }
 }
+
+/* Profile strength bar widths, in 5% steps (_strength_panel.php).
+   A class rather than style="width: N%": CSP's style-src-attr 'self' blocks
+   inline style attributes, so the bar drew empty and every dashboard load
+   logged a violation. Plain CSS outside @layer on purpose: the view builds
+   the class name from the score, so Tailwind's content scan cannot see it
+   and would purge any of these that lived in a layer. */
+.strength-w-0 { width: 0%; }
+.strength-w-5 { width: 5%; }
+.strength-w-10 { width: 10%; }
+.strength-w-15 { width: 15%; }
+.strength-w-20 { width: 20%; }
+.strength-w-25 { width: 25%; }
+.strength-w-30 { width: 30%; }
+.strength-w-35 { width: 35%; }
+.strength-w-40 { width: 40%; }
+.strength-w-45 { width: 45%; }
+.strength-w-50 { width: 50%; }
+.strength-w-55 { width: 55%; }
+.strength-w-60 { width: 60%; }
+.strength-w-65 { width: 65%; }
+.strength-w-70 { width: 70%; }
+.strength-w-75 { width: 75%; }
+.strength-w-80 { width: 80%; }
+.strength-w-85 { width: 85%; }
+.strength-w-90 { width: 90%; }
+.strength-w-95 { width: 95%; }
+.strength-w-100 { width: 100%; }
