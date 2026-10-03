@@ -4,6 +4,8 @@
  * @var bool  $hideVenue  true on a venue's own page, where the chip is noise
  */
 $hideVenue = $hideVenue ?? false;
+// No venue chip or distance for an address the owner hid.
+$l = listing_public_view($l);
 $name = $l['display_name'] ?? '';
 $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));

@@ -65,7 +65,7 @@ over `display_name`/`description`/`credentials`.
   phone, phone_alt, whatsapp, website, social_facebook, social_instagram,
   social_linkedin, social_tiktok, address_line, address_line_2, suburb, city, province,
   region, postal_code, logo_path, trading_hours, by_appointment, accepts_card_payments, offers_delivery,
-  offers_online_booking, booking_url`. Deliberately **excludes** `email`, `slug`,
+  offers_online_booking, booking_url, customer_location, show_address, service_areas`. Deliberately **excludes** `email`, `slug`,
   `status`, `is_featured`, `is_verified`, `country` (it decides whether a listing is
   free) and `venue_id` — a crafted owner POST can't publish/feature a listing, hijack the
   address, dodge the International Listing paywall, or break the SEO'd URL. Read the
@@ -143,6 +143,34 @@ admin intake (`DirectoryAdminService::upsert()`) is exempt.
   add a second send path — the error handling here exists because an earlier version
   checked for an exception that CI4's `Email::send()` never throws, so outbound mail could
   stop entirely and leave no trace.
+
+## Mobile / service-area businesses (`customer_location`, `show_address`, `service_areas`)
+
+"Address required" and "address publicly visible" are separate. The address stays
+compulsory and stored for everyone. Only what the public sees changes.
+
+- **Rules live in `App\Libraries\ServiceArea`.** Signup, owner edit and admin intake
+  all call it. `columns()` writes nothing unless `service_area_present` is posted, so a
+  partial POST cannot un-hide an address. It forces `show_address = 1` unless
+  `customer_location = 'travel'`, because "visit" and "both" mean customers come to the
+  door. `problem()` refuses links, phone numbers and symbols, and caps areas at 15 × 80
+  chars. Areas are stored one per line.
+- **The render-side rule is `listing_public_view()`** (`directory_ui_helper.php`). For a
+  hidden address it blanks street, line 2, suburb, postal code, coordinates, precision,
+  distance and venue. City and province stay. `show.php`, `_card.php` and both schema
+  builders run rows through it. `_contact_panel.php` and `_map_panel.php` also check
+  `listing_address_public()` themselves, so a caller that forgets still leaks nothing.
+  A new public surface must do the same.
+- **Location queries skip hidden listings** (`DirectoryService::HIDDEN_ADDRESS_SQL`):
+  the map JSON always, and `browse()` whenever a near-me point, map bounds or venue is
+  set. A radius asked often enough gives the address away. Search by `service_areas`
+  works, and a suburb match is ignored for hidden listings.
+- Branches (`directory_practice_locations`) are unaffected; a branch is somewhere
+  customers go.
+- The profile shows a "Mobile service — we travel to you" contact row and a
+  `_service_area_panel.php` ("We travel to customers in …"). JSON-LD `areaServed` lists
+  the areas as `Place` nodes.
+- Tests: `tests/database/ServiceAreaBusinessTest.php`.
 
 ## Venues — one complex, mall or building
 

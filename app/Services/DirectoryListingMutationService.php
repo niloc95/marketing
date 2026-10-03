@@ -7,6 +7,7 @@ use App\Libraries\ListingText;
 use App\Libraries\ListingGeocoder;
 use App\Libraries\Mailer;
 use App\Libraries\RichText;
+use App\Libraries\ServiceArea;
 use App\Libraries\TokenHash;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -334,6 +335,7 @@ class DirectoryListingMutationService
             // Book online button beside a listing that says it books offline.
             'offers_online_booking'  => empty($input['offers_online_booking']) && (string) $this->normaliseUrl($input['booking_url'] ?? '') === '' ? 0 : 1,
             'booking_url'            => (string) $this->normaliseUrl($input['booking_url'] ?? ''),
+        ] + ServiceArea::columns($input) + [
             'slug'           => ensure_unique_slug($this->listings, 'slug', $name, $existingId, listing_reserved_slugs()),
             'status'         => 'pending',
             'is_verified'    => 0,
@@ -617,8 +619,8 @@ class DirectoryListingMutationService
                     $data[$field] = normalise_place($this->clean($input[$field]));
                 } elseif ($field === 'display_name') {
                     $data[$field] = ListingText::tidyName($this->clean($input[$field]));
-                } elseif ($field === 'by_appointment') {
-                    continue; // a checkbox — handled with the others below
+                } elseif (in_array($field, ['by_appointment', 'customer_location', 'show_address', 'service_areas'], true)) {
+                    continue; // checkboxes and the service-area section — handled below
                 } elseif ($field === 'position') {
                     $data[$field] = $this->clean($input[$field]) ?: null;
                 } elseif ($field === 'description') {
@@ -695,6 +697,10 @@ class DirectoryListingMutationService
         if (array_key_exists('hours', $input)) {
             $data['by_appointment'] = empty($input['by_appointment']) ? 0 : 1;
         }
+
+        // Behind its own marker, so a POST without the section leaves a hidden
+        // address hidden. The address columns themselves are untouched here.
+        $data = ServiceArea::columns($input, $listing) + $data;
 
         // A booking link implies the flag — see buildListingData(). Read from
         // the merged row so a partial POST that leaves the link alone still
@@ -1141,6 +1147,9 @@ class DirectoryListingMutationService
             }
         }
 
+        if (($areaError = ServiceArea::problem($input['service_areas'] ?? null)) !== null) {
+            $errors['service_areas'] = $areaError;
+        }
         if (($tagError = $this->validateTags($input['specializations'] ?? null)) !== null) {
             $errors['specializations'] = $tagError;
         }

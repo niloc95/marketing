@@ -25,7 +25,9 @@
  * @var string $heading panel heading
  * @var string $class   extra classes for the panel wrapper
  */
-$map = map_point($row);
+// A hidden address has no coordinates in its public copy already; the guard
+// is here so a caller that forgets listing_public_view() still draws no pin.
+$map = listing_address_public($row) ? map_point($row) : null;
 if ($map === null) {
     return;
 }

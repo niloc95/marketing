@@ -317,6 +317,50 @@ helper('directory_hours');
     </div>
 </div>
 
+<?php // Mobile / service-area businesses. The address above stays required for
+      // everyone: this only decides what the public profile shows. The rules
+      // (only 'travel' may hide it, the caps on areas) are ServiceArea's, and
+      // the server applies them whatever this markup says. directory.js shows
+      // and hides the parts that apply; without JavaScript all of it shows.
+      //
+      // The marker says the section was posted, so an unticked checkbox reads
+      // as "hide" rather than "not sent". On a failed save the flashed input
+      // carries the marker, which is how $showAddress tells "unticked" from
+      // "never posted" (a stored listing has no such key). ?>
+<?php
+$customerLocation = $v('customer_location', 'visit');
+if (! array_key_exists($customerLocation, \App\Models\DirectoryListingModel::CUSTOMER_LOCATIONS)) {
+    $customerLocation = 'visit';
+}
+$showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
+    ? $v('show_address') === '1'
+    : $v('show_address', '1') === '1';
+?>
+<fieldset class="field consent-choice service-area-choice" id="field-customer-location" data-service-area>
+    <input type="hidden" name="<?= \App\Libraries\ServiceArea::MARKER ?>" value="1">
+    <legend>Where do customers meet you?</legend>
+    <?php foreach (\App\Models\DirectoryListingModel::CUSTOMER_LOCATIONS as $key => $label): ?>
+        <label><input type="radio" name="customer_location" value="<?= esc($key, 'attr') ?>" data-customer-location <?= $customerLocation === $key ? 'checked' : '' ?>> <?= esc($label) ?></label>
+    <?php endforeach; ?>
+
+    <div class="field mt-3" data-service-area-show="travel">
+        <label><input type="checkbox" name="show_address" value="1" <?= $showAddress ? 'checked' : '' ?>> Show my business address publicly</label>
+        <div class="hint">
+            Untick this if customers never come to you. Your address stays on record for verification
+            and our maps &mdash; only your public profile hides it, and shows your service areas instead.
+            Only available when you travel to customers.
+        </div>
+    </div>
+
+    <div class="field mt-3" data-service-area-show="travel both">
+        <label for="f-service-areas">Service areas <span class="text-slate-400">(optional)</span></label>
+        <textarea id="f-service-areas" name="service_areas" rows="4" maxlength="1400"
+                  placeholder="Randburg&#10;Sandton&#10;Fourways"><?= esc($v('service_areas')) ?></textarea>
+        <div class="hint">One suburb or town per line, up to <?= \App\Models\DirectoryListingModel::MAX_SERVICE_AREAS ?>. Shown on your profile as the places you travel to.</div>
+        <?php if ($err('service_areas')): ?><div class="err"><?= esc($err('service_areas')) ?></div><?php endif; ?>
+    </div>
+</fieldset>
+
 <?php // Title and contact person name a private individual, so they are kept for
       // administration only — _contact_panel.php does not render either. The
       // fieldset says so up front rather than leaving owners to guess. ?>

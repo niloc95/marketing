@@ -323,6 +323,12 @@ class DirectoryAdminService
                 $data['province'] = '';
             }
         }
+        // Same rules as signup and the owner edit, behind the same marker.
+        if (($areaError = \App\Libraries\ServiceArea::problem($input['service_areas'] ?? null)) !== null) {
+            return ['ok' => false, 'errors' => ['service_areas' => $areaError], 'message' => 'Please correct the highlighted fields.'];
+        }
+        $data = \App\Libraries\ServiceArea::columns($input, $id !== null ? ($this->listings->find($id) ?? []) : []) + $data;
+
         if (array_key_exists('hours', $input) || $id === null) {
             $data['trading_hours']  = hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []);
             // The checkbox beside the grid, so it is only meaningful when the grid was posted.

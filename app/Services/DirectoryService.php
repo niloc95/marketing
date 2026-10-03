@@ -52,6 +52,15 @@ class DirectoryService
     public const RADIUS_OPTIONS = [1, 5, 10, 25, 50];
 
     /**
+     * A mobile business that hides its address (see listing_address_public()).
+     * Such a listing takes no part in any query that is answered from its
+     * coordinates or its building — the map, near me, a map viewport, a venue
+     * — because a radius or a box asked often enough is the address again.
+     * It is still found by name, category, city, province and its service areas.
+     */
+    private const HIDDEN_ADDRESS_SQL = "(xs_directory_listings.customer_location = 'travel' AND xs_directory_listings.show_address = 0)";
+
+    /**
      * Paginated browse/search over published listings.
      *
      * @param array{q?:string,group?:string,category?:string,province?:string,city?:string,venue?:mixed,lat?:mixed,lng?:mixed,radius?:mixed,bounds?:string,facets?:array,sort?:string} $filters
@@ -127,6 +136,9 @@ class DirectoryService
         }
         if (! empty($filters['bounds'])) {
             $this->applyBounds($builder, (string) $filters['bounds']);
+        }
+        if (! empty($filters['venue']) || $near !== null || ! empty($filters['bounds'])) {
+            $builder->where('NOT ' . self::HIDDEN_ADDRESS_SQL, null, false);
         }
         // Last, and like the venue filter it is a plain where() — see the note
         // above applySearch(). Facets only mean anything inside a category, so
@@ -423,6 +435,9 @@ class DirectoryService
         if ($facets !== []) {
             $this->applyFacets($builder, $facets);
         }
+
+        // No pin for an address the owner hid — see HIDDEN_ADDRESS_SQL.
+        $builder->where('NOT ' . self::HIDDEN_ADDRESS_SQL, null, false);
 
         // A listing with no coordinates cannot be a pin. The join to the
         // spatial table is what enforces it, and it is also what makes the
@@ -734,8 +749,18 @@ class DirectoryService
         $builder
             ->orLike('xs_directory_listings.display_name', $q)
             ->orLike('xs_directory_listings.city', $q)
-            ->orLike('xs_directory_listings.suburb', $q)
+            // "Sandton plumber" finds the Randburg plumber who travels there.
+            ->orLike('xs_directory_listings.service_areas', $q)
             ->orLike('p.name', $q);
+
+        // A suburb match only for an address the public may see: otherwise a
+        // search for "Bromhof" would say where a hidden-address owner lives.
+        $builder->orWhere(
+            '(xs_directory_listings.suburb LIKE ' . $db->escape('%' . $db->escapeLikeString($q) . '%')
+            . " ESCAPE '!' AND NOT " . self::HIDDEN_ADDRESS_SQL . ')',
+            null,
+            false
+        );
 
         // Tags live in a pivot, so they cannot be part of the FULLTEXT index.
         $tagSql = 'EXISTS (SELECT 1 FROM xs_directory_listing_tags lt'

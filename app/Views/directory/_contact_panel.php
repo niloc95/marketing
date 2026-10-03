@@ -37,9 +37,15 @@ $showWeb = $showWeb ?? true;
 // map_address_text() is the one definition of the address, so the text shown
 // and the place the link navigates to can never disagree (an earlier inline
 // implode dropped address_line_2 and did exactly that).
-$addr    = map_address_text($row);
-$dirUrl  = map_directions_url($row);
-$wazeUrl = map_waze_url($row);
+//
+// A mobile business that hides its address gets none of the three: the copy it
+// arrives as (listing_public_view()) has no street, but map_address_text()
+// would still fall back to "Randburg, Gauteng" and Get directions would route
+// to the town. The "we travel to you" row stands in for them instead.
+$addressPublic = listing_address_public($row);
+$addr    = $addressPublic ? map_address_text($row) : '';
+$dirUrl  = $addressPublic ? map_directions_url($row) : '';
+$wazeUrl = $addressPublic ? map_waze_url($row) : '';
 
 // social_profile_url() at render as well as on save, for the same reason as
 // safe_external_url() below — and it also refuses a link that is not to the
@@ -123,6 +129,13 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
                 <span class="contact-sub"><?= esc($addr) ?></span>
             </span>
             <?= lucide('map-pin') ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (! $addressPublic): ?>
+        <div class="contact-row">
+            <a href="#service-areas">Mobile service &mdash; we travel to you</a>
+            <?= lucide('car') ?>
         </div>
     <?php endif; ?>
 

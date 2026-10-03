@@ -72,6 +72,26 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('12 Main Road', $html);
     }
 
+    public function testAHiddenAddressShowsTheMobileRowInstead(): void
+    {
+        // Even handed the full row (a caller that forgot listing_public_view()),
+        // the panel must not fall back to the town for directions.
+        $html = $this->render(['customer_location' => 'travel', 'show_address' => 0]);
+
+        $this->assertStringNotContainsString('12 Main Road', $html);
+        $this->assertStringNotContainsString('Get directions', $html);
+        $this->assertStringNotContainsString('waze.com', $html);
+        $this->assertStringContainsString('we travel to you', $html);
+    }
+
+    public function testShowAddressOffIsIgnoredUnlessTheBusinessTravels(): void
+    {
+        $html = $this->render(['customer_location' => 'both', 'show_address' => 0]);
+
+        $this->assertStringContainsString('12 Main Road', $html);
+        $this->assertStringNotContainsString('we travel to you', $html);
+    }
+
     public function testWazeLinkSitsBesideDirections(): void
     {
         $html = $this->render([]);

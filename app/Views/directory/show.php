@@ -2,6 +2,10 @@
 
 <?php
 helper(['slug', 'directory_hours']); // slugify() for breadcrumbs; hours_* for the trading-hours card
+// A mobile business that hides its address: from here on the page only ever
+// sees the public copy — no street, suburb, postal code, pin or venue — so no
+// panel, meta tag or JSON-LD node below can render what the owner hid.
+$l = listing_public_view($l);
 $siteName = config('Directory')->siteName();
 $name = $l['display_name'] ?? '';
 $prof = $l['category']['name'] ?? ($l['category_name'] ?? '');
@@ -247,6 +251,8 @@ $metaDesc = listing_meta_description($l);
                 <?php if (signup_cta()['verified'] && ! listing_is_verified_business($l)): ?>
                     <a class="contact-suggest" href="<?= base_url('verified') ?>" rel="nofollow"><?= lucide('badge-check') ?>Is this your business? Get the Verified Business badge</a>
                 <?php endif; ?>
+
+                <?= view('directory/_service_area_panel', ['l' => $l, 'class' => 'mt-5'], ['saveData' => false]) ?>
 
                 <?= view('directory/_map_panel', [
                     'row'     => $l,

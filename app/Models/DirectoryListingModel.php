@@ -24,6 +24,7 @@ class DirectoryListingModel extends Model
         'published_at', 'is_featured', 'verified_until', 'hosting_paid_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
         'venue_id',
+        'customer_location', 'show_address', 'service_areas',
         'quality_score', 'quality_scored_at',
         'terms_accepted_at', 'terms_version',
         'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
@@ -95,6 +96,12 @@ class DirectoryListingModel extends Model
      * an owner who could write it could POST themselves to the top of every
      * result page. It is derived, never submitted — ListingQualityService is the
      * only writer, and the owner raises it by filling in the fields above.
+     *
+     * customer_location, show_address and service_areas are the owner's own
+     * statement of how they work. They decide only what the public page shows,
+     * never what is stored: the address stays required whatever they say, and
+     * the mutation service forces show_address back to 1 unless the business
+     * travels to its customers.
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
@@ -103,7 +110,19 @@ class DirectoryListingModel extends Model
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',
         'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        'customer_location', 'show_address', 'service_areas',
     ];
+
+    /** Where customers meet the business. 'visit' is the default and today's behaviour. */
+    public const CUSTOMER_LOCATIONS = [
+        'visit'  => 'Customers visit my business',
+        'travel' => 'I travel to customers',
+        'both'   => 'Both',
+    ];
+
+    /** service_areas caps: how many areas, and how long each may be. */
+    public const MAX_SERVICE_AREAS = 15;
+    public const MAX_SERVICE_AREA_LENGTH = 80;
 
     /**
      * The honorifics the "Title" dropdown offers. The single source for the

@@ -1829,6 +1829,15 @@
   .dark .consent-choice legend { @apply text-slate-200; }
   .dark .consent-choice label  { @apply text-slate-300; }
 
+  /* "Where do customers meet you?" — the consent-choice radios, plus a
+     checkbox and a textarea below them. The textarea's label is a field label
+     again, not a choice. [hidden] needs forcing: the label rules above set a
+     display that would otherwise outrank it. */
+  .service-area-choice .field          { @apply mb-0; }
+  .service-area-choice label[for]      { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+  .dark .service-area-choice label[for] { @apply text-slate-200; }
+  .service-area-choice [hidden]        { @apply !hidden; }
+
   /* Fields kept for administration only — see _form_fields.php. */
   .form-private {
     @apply mb-4 rounded-xl border border-dashed border-slate-300 px-4 pb-4 pt-2;

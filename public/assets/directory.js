@@ -2305,6 +2305,27 @@
     apply();
   })();
 
+  // Mobile / service-area section (_form_fields.php). Shows the parts that
+  // apply to the picked option: the "show address" box only for "I travel to
+  // customers", the service areas for travel and both. Hidden, not disabled,
+  // so whatever is posted still reaches ServiceArea::columns(), which is what
+  // actually enforces the rule. Without JavaScript everything shows.
+  (function () {
+    var wrap = document.querySelector('[data-service-area]');
+    if (!wrap) return;
+
+    function apply() {
+      var picked = wrap.querySelector('[data-customer-location]:checked');
+      var value  = picked ? picked.value : 'visit';
+      wrap.querySelectorAll('[data-service-area-show]').forEach(function (el) {
+        el.hidden = el.getAttribute('data-service-area-show').split(' ').indexOf(value) === -1;
+      });
+    }
+
+    wrap.addEventListener('change', apply);
+    apply();
+  })();
+
   // ------------------------------------------------------- stand-out sections
   // Most owners never opened the collapsed "Make your profile stand out"
   // sections, so their profiles went live with no hours, photos or services.

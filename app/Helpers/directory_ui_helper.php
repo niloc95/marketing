@@ -728,6 +728,71 @@ if (! function_exists('listing_is_verified_business')) {
     }
 }
 
+if (! function_exists('listing_address_public')) {
+    /**
+     * Whether the public may see this listing's street address and map pin.
+     *
+     * False only for a business that travels to its customers and has asked
+     * for its address to be hidden — the one combination ServiceArea::columns()
+     * allows to store show_address = 0. A row without the keys (a branch, a
+     * row from before the columns) is public, so nothing changes for it.
+     */
+    function listing_address_public(array $listing): bool
+    {
+        return ($listing['customer_location'] ?? 'visit') !== 'travel'
+            || (int) ($listing['show_address'] ?? 1) === 1;
+    }
+}
+
+if (! function_exists('listing_service_areas')) {
+    /** @return list<string> the areas a business travels to, in the owner's order */
+    function listing_service_areas(array $listing): array
+    {
+        return \App\Libraries\ServiceArea::parse($listing['service_areas'] ?? '');
+    }
+}
+
+if (! function_exists('listing_public_view')) {
+    /**
+     * The listing as the public may see it.
+     *
+     * When the address is hidden, every column that pins down where the owner
+     * actually is — street, line 2, suburb, postal code, coordinates and their
+     * precision — is blanked in the copy. City and province stay: the landing
+     * pages, filters and the profile's own locality line need them, and they
+     * say nothing a "we travel to you" business would mind. Near-me distance
+     * and any venue go too: either would point at the door.
+     *
+     * The one place the rule is applied. Every public renderer (profile, card,
+     * map JSON, typeahead, JSON-LD, meta description) reads through this, so a
+     * new surface that does the same cannot leak a field the others hide. The
+     * stored row is never changed.
+     *
+     * @param array<string,mixed> $listing
+     * @return array<string,mixed>
+     */
+    function listing_public_view(array $listing): array
+    {
+        if (listing_address_public($listing)) {
+            return $listing;
+        }
+
+        foreach (['address_line', 'address_line_2', 'suburb', 'postal_code', 'geocoded_address'] as $field) {
+            if (array_key_exists($field, $listing)) {
+                $listing[$field] = '';
+            }
+        }
+        // A venue is a building, so naming it would give the address away too.
+        foreach (['latitude', 'longitude', 'geocode_precision', 'distance_m', 'venue', 'venue_id', 'venue_name', 'venue_slug'] as $field) {
+            if (array_key_exists($field, $listing)) {
+                $listing[$field] = null;
+            }
+        }
+
+        return $listing;
+    }
+}
+
 if (! function_exists('team_member_anchor')) {
     /**
      * The fragment id of one team member on their business's profile.
