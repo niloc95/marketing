@@ -204,14 +204,15 @@ class DirectoryService
     }
 
     /**
-     * Typeahead suggestions for the search boxes: businesses, categories,
-     * venues and places matching the first few characters someone has typed.
+     * Typeahead suggestions for the search boxes: businesses, the people in
+     * Verified businesses, categories, venues and places matching the first
+     * few characters someone has typed.
      *
      * Deliberately NOT browse(). That method answers "what matches this
      * search" — FULLTEXT in boolean mode, four unanchored LIKEs and a
      * correlated EXISTS over two tables — and running it on every keystroke is
-     * the one thing a suggestion list must never do. These are four small
-     * indexed lookups with their own small limits.
+     * the one thing a suggestion list must never do. These are five small
+     * lookups with their own small limits.
      *
      * Ordering puts a prefix match above a mid-word one, so typing "plu" offers
      * "Plumbers" before "Superb Plumbing". LOCATE() rather than a second query:
@@ -258,6 +259,35 @@ class DirectoryService
                 'label' => (string) $row['display_name'],
                 'sub'   => trim(implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['province'] ?? '')]))),
                 'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+
+        // The people inside a business, so typing the name of the dentist
+        // you were referred to offers the practice. Same gate as the team
+        // EXISTS in applySearch(): a member is only offered while the badge
+        // that publishes the team panel is live, or the row would land on a
+        // profile that does not show them. The link goes to their card.
+        helper('directory_ui');
+        $staff = $db->table('xs_directory_listing_team tm')
+            ->select('tm.name, tm.slug, tm.role, l.display_name, l.slug AS listing_slug')
+            ->join('xs_directory_listings l', 'l.id = tm.listing_id')
+            ->where('l.status', 'published')
+            ->where('l.deleted_at', null)
+            ->where('l.verified_until >=', date('Y-m-d'))
+            ->like('tm.name', $q)
+            ->orderBy('LOCATE(' . $escaped . ', tm.name) = 1', 'DESC', false)
+            ->orderBy('tm.name', 'ASC')
+            ->limit(2)
+            ->get()
+            ->getResultArray();
+
+        foreach ($staff as $row) {
+            $anchor = team_member_anchor($row);
+            $out[]  = [
+                'type'  => 'person',
+                'label' => (string) $row['name'],
+                'sub'   => trim(implode(' · ', array_filter([(string) ($row['role'] ?? ''), (string) $row['display_name']]))),
+                'url'   => base_url('directory/' . $row['listing_slug']) . ($anchor !== '' ? '#' . $anchor : ''),
             ];
         }
 
@@ -667,8 +697,9 @@ class DirectoryService
      *   - the joined category name
      *   - the listing's town and suburb
      *   - its tags, via EXISTS on the pivot
-     *   - its team members' names and areas of focus, via EXISTS on the team
-     *     table, and only while the badge that publishes them is live
+     *   - its team members' names, roles, qualifications and areas of focus,
+     *     via EXISTS on the team table, and only while the badge that
+     *     publishes them is live
      *
      * @param \CodeIgniter\Database\BaseBuilder|\CodeIgniter\Model $builder
      */
@@ -711,8 +742,9 @@ class DirectoryService
 
         // Team members, for the same reason and in the same shape: a firm is
         // very often searched for by the name of the person you were referred
-        // to, or by an area of law only one of its attorneys practises, and
-        // neither string is anywhere on the listing row.
+        // to, by an area of law only one of its attorneys practises, or by a
+        // role or qualification ("dental hygienist", "CA(SA)"), and none of
+        // those strings is anywhere on the listing row.
         //
         // The verified_until clause is not optional. Team members only render
         // for a listing with a live badge, so without it a search would return
@@ -721,7 +753,10 @@ class DirectoryService
         $teamSql = 'EXISTS (SELECT 1 FROM xs_directory_listing_team tm'
             . ' WHERE tm.listing_id = xs_directory_listings.id'
             . ' AND xs_directory_listings.verified_until >= CURDATE()'
-            . ' AND (tm.name LIKE ' . $like . ' OR tm.specializations LIKE ' . $like . '))';
+            . ' AND (tm.name LIKE ' . $like
+            . ' OR tm.role LIKE ' . $like
+            . ' OR tm.credentials LIKE ' . $like
+            . ' OR tm.specializations LIKE ' . $like . '))';
         $builder->orWhere($teamSql, null, false);
 
         $builder->groupEnd();

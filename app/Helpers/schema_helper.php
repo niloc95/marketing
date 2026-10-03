@@ -648,17 +648,26 @@ if (! function_exists('schema_local_business')) {
         // here: these are named private individuals, and a machine-readable
         // contact card for each of them on a page the sitemap enumerates is a
         // scrape target we would be building on their behalf.
+        //
+        // Each Person points back at the business with worksFor, by @id rather
+        // than a copy, and carries an @id of its own that is the card's anchor
+        // on this page — so "who works where" survives a parser that reads the
+        // Person node on its own.
         $employees = [];
         foreach ($l['team'] ?? [] as $member) {
             $knowsAbout = \App\Services\TeamMemberService::splitSpecializations($member['specializations'] ?? null);
+            $anchor     = team_member_anchor($member);
 
             $employees[] = array_filter([
-                '@type'       => 'Person',
-                'name'        => trim((string) ($member['name'] ?? '')),
-                'jobTitle'    => trim((string) ($member['role'] ?? '')),
-                'image'       => listing_image_url($member['photo_path'] ?? null),
-                'description' => trim((string) ($member['bio'] ?? '')),
-                'knowsAbout'  => $knowsAbout !== [] ? $knowsAbout : null,
+                '@type'         => 'Person',
+                '@id'           => $anchor !== '' ? $canonical . '#' . $anchor : '',
+                'name'          => trim((string) ($member['name'] ?? '')),
+                'jobTitle'      => trim((string) ($member['role'] ?? '')),
+                'image'         => listing_image_url($member['photo_path'] ?? null),
+                'description'   => trim((string) ($member['bio'] ?? '')),
+                'knowsAbout'    => $knowsAbout !== [] ? $knowsAbout : null,
+                'hasCredential' => schema_member_credentials($member['credentials'] ?? null) ?: null,
+                'worksFor'      => ['@id' => $canonical . '#business'],
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
         }
 
@@ -789,6 +798,35 @@ if (! function_exists('schema_local_business')) {
             'amenityFeature'           => $amenities !== [] ? $amenities : null,
             'additionalProperty'       => $properties !== [] ? $properties : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
+    }
+}
+
+if (! function_exists('schema_member_credentials')) {
+    /**
+     * A team member's qualifications as credential nodes.
+     *
+     * The member field is one line ("BDS (Wits), MSc Dent (UP)"), unlike the
+     * listing's own box, which takes one per line, so this splits on commas and
+     * semicolons as well. A comma inside brackets is part of a credential
+     * ("MBChB (UCT, 2010)") and does not split it. Named only, for the same
+     * reason as the listing's credentials: it is the owner's claim, and there
+     * is nothing verified to add to it.
+     *
+     * @return list<array{'@type':string,name:string}>
+     */
+    function schema_member_credentials(?string $credentials): array
+    {
+        $parts = preg_split('/[;\r\n]+|,(?![^(]*\))/', trim((string) $credentials)) ?: [];
+
+        $out = [];
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part !== '') {
+                $out[] = ['@type' => 'EducationalOccupationalCredential', 'name' => $part];
+            }
+        }
+
+        return $out;
     }
 }
 

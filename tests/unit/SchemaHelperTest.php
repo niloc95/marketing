@@ -499,6 +499,32 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertStringNotContainsString('branch@example.test', json_encode($business));
     }
 
+    public function testTeamMembersAreLinkedPeopleWithTheirOwnCredentials(): void
+    {
+        $canonical = 'https://example.test/directory/smile-co';
+        $business  = schema_local_business([
+            'display_name' => 'Smile Co',
+            'category'     => ['group_name' => 'Health & Medical', 'slug' => 'dentist'],
+            'team'         => [
+                ['name' => 'Dr Ana Pillay', 'slug' => 'ana-pillay', 'role' => 'Dentist', 'credentials' => 'BDS (Wits, 2012); MSc Dent'],
+                ['name' => 'Sam Dube', 'slug' => '', 'credentials' => ''],
+            ],
+        ], $canonical);
+
+        [$ana, $sam] = $business['employee'];
+        $this->assertSame($canonical . '#team-ana-pillay', $ana['@id']);
+        $this->assertSame('Dentist', $ana['jobTitle']);
+        $this->assertSame(['@id' => $canonical . '#business'], $ana['worksFor']);
+        // A comma inside brackets belongs to the credential; a semicolon splits.
+        $this->assertSame(['BDS (Wits, 2012)', 'MSc Dent'], array_column($ana['hasCredential'], 'name'));
+        $this->assertSame('EducationalOccupationalCredential', $ana['hasCredential'][0]['@type']);
+
+        // No slug means no anchor to point at, and no qualifications means none claimed.
+        $this->assertArrayNotHasKey('@id', $sam);
+        $this->assertArrayNotHasKey('hasCredential', $sam);
+        $this->assertSame(['@id' => $canonical . '#business'], $sam['worksFor']);
+    }
+
     // ---- schema_faq_page -------------------------------------------------
 
     public function testFaqAnswersAreStrippedToPlainText(): void

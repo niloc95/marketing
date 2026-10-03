@@ -206,8 +206,8 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
 
 - **It suggests, it does not filter.** Picking a row navigates; Enter with nothing
   highlighted submits the form exactly as before, so search still works with JS off.
-- **`DirectoryService::suggest()` is deliberately not `browse()`** — four small indexed
-  lookups (businesses 5, categories 3, venues 2, cities 3, capped at 8 total), because `browse()` is
+- **`DirectoryService::suggest()` is deliberately not `browse()`** — five small
+  lookups (businesses 5, team members 2, categories 3, venues 2, cities 3, capped at 8 total), because `browse()` is
   FULLTEXT + four LIKEs + a correlated EXISTS and must never run per keystroke. Ordering
   puts a prefix match above a mid-word one.
 - **Its own throttle key** (`directory-suggest-`, 30/min). Sharing `directory-index-`
@@ -218,6 +218,10 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   the content view before the layout and shares one data array, so an omitted variable
   inherits the other box's value rather than the default — that is how the header bar,
   which must start empty everywhere, came back pre-filled with the current search.
+- **Team-member rows (`type: person`) link to `/directory/{slug}#team-{member slug}`.**
+  `team_member_anchor()` is the one definition of that fragment: the card id in
+  `_team_panel.php`, the Person `@id` in `schema_local_business()` and the typeahead URL all
+  call it. They are gated on a live badge like the team `EXISTS` in `applySearch()`.
 - Two CSS rules exist only to stop the dropdown being clipped: `.hero-home` is
   `overflow-x-clip` (not `overflow-hidden`), and `.header-search` becomes
   `max-md:overflow-visible` once `.is-solid`.
@@ -370,7 +374,7 @@ What the badge actually gates:
 | Green badge on profile + every search result | — | yes |
 | Team members (`TeamMemberService::MAX_MEMBERS`, 12) | — | yes |
 | Extra branches (`PracticeLocationService::MAX_LOCATIONS`, 6) | — | yes |
-| Matching a search for a team member's name/specialisation | — | yes |
+| Matching a search for a team member's name/role/qualification/specialisation, and the typeahead's "Person" rows | — | yes |
 | Posting job vacancies (and renewing them) on the Jobs board | — | yes |
 | Replying to service requests | — | yes |
 | Lead alerts for service requests | teaser ("Get verified to reply") | yes, alerted first |
