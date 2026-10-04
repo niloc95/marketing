@@ -162,13 +162,19 @@
                       // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
                       // gets its own spacing without a literal one.
                       //
-                      // While the badge is on sale this is "Get verified" at every width. It
-                      // goes to /add-listing, which shows a visitor who came straight here
-                      // both options (Verified first, Free still there) and a campaign
-                      // visitor the verified-only form. See signup_cta(). It fits the
-                      // phone's ~110px as well as "Free profile" does. ?>
+                      // While the badge is on sale this is "Add your business", not "Get
+                      // verified": it goes to /add-listing, which shows a visitor who came
+                      // straight here both options (Verified first, Free still there) and a
+                      // campaign visitor the verified-only form. See signup_cta(). Naming
+                      // only the paid path told free-profile visitors the button wasn't
+                      // for them; the upsell is the page's job. "Add business" is the
+                      // phone's ~110px version. Each width's phrase is one element, all
+                      // bold: split across two, .nav-cta's flex gap reads as a double space. ?>
                 <?php if (signup_cta()['verified']): ?>
-                    <a href="<?= esc(signup_cta()['url']) ?>" class="btn btn-accent nav-cta">Get verified</a>
+                    <a href="<?= esc(signup_cta()['url']) ?>" class="btn btn-accent nav-cta">
+                        <strong class="sm:hidden">Add business</strong>
+                        <strong class="hidden sm:inline">Add your business</strong>
+                    </a>
                 <?php else: ?>
                     <a href="<?= base_url('add-listing') ?>" class="btn btn-accent nav-cta">
                         <span class="sm:hidden">Free profile</span>

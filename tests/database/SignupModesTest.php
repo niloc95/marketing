@@ -122,9 +122,10 @@ final class SignupModesTest extends CIUnitTestCase
     {
         $home = $this->page('/');
 
-        // "Get verified" wording, but pointing at /add-listing, which decides the
+        // "Add your business" wording, pointing at /add-listing, which decides the
         // mode: a visitor who came straight to the site still gets the Free card.
-        $this->assertStringContainsString('href="' . base_url('add-listing') . '" class="btn btn-accent nav-cta">Get verified', $home);
+        $this->assertMatchesRegularExpression('#href="' . preg_quote(base_url('add-listing'), '#') . '" class="btn btn-accent nav-cta">\s*<strong class="sm:hidden">Add business</strong>#', $home);
+        $this->assertStringContainsString('<strong class="hidden sm:inline">Add your business</strong>', $home);
         $this->assertStringNotContainsString('<h3>Get started</h3>', $home, 'the footer leads with the badge while it is on sale');
 
         $direct = $this->page('add-listing');

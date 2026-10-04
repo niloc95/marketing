@@ -154,9 +154,10 @@ $row = static function (array $r, string $col): string {
               // axis entirely, which is why this sits on the Free card and not in
               // the ✓/✗ matrix below. ?>
         <p class="hint plan-terms">
-            For a business with a <strong>South African address</strong>. A business
-            based elsewhere needs an
-            <a href="<?= base_url('faq') ?>">International Listing</a> subscription.
+            Free for any business with a <strong>South African address</strong>, with
+            <a href="<?= base_url('verified') ?>">Verified</a> as an optional upgrade. A
+            business based outside South Africa needs an
+            <a href="<?= base_url('faq') ?>">International Listing</a> instead.
         </p>
         <ul class="plan-rows">
             <?php foreach ($rows as $r): ?>

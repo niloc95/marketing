@@ -198,7 +198,12 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     </div>
                 <?php endif; ?>
 
-                <button type="submit" class="btn btn-accent btn-block">Submit &amp; verify by email</button>
+                <?php // No "verify" here. It used to read "Submit & verify by email",
+                      // meaning confirm the email address, and sitting under the
+                      // Verified panel it read as signing up for the paid badge. One
+                      // label for both plans, so it names neither. ?>
+                <button type="submit" class="btn btn-accent btn-block">Create my profile</button>
+                <p class="hint mt-2 text-center">Next, we&rsquo;ll email you a link to confirm your email address.</p>
             </form>
 
             <p class="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
