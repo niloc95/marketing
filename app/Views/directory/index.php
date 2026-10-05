@@ -17,7 +17,11 @@ $group = $group ?? null;
 $title = 'Browse everything';
 if ($group !== null) { $title = $group['name']; }
 if ($category !== null) { $title = $category['name'] . ' profiles'; }
-if ($province !== null) { $title .= ' in ' . $province; }
+// $place is only ever read out of the words (see Directory::interpretSearch()),
+// and such a page is a ?q= search: noindexed and canonicalised to /directory
+// below, so the place in its title never reaches an index.
+$where = array_filter([$place ?? null, $province], static fn ($v) => $v !== null && $v !== '');
+if ($where !== []) { $title .= ' in ' . implode(', ', $where); }
 
 // A filtered browse view duplicates a landing page, and a ?q= result set is
 // endless thin permutations — canonicalise to the landing page where one exists
@@ -114,43 +118,44 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
         <?php else: ?>
             <h1 class="text-2xl sm:text-3xl">Browse</h1>
         <?php endif; ?>
-        <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <?= view('directory/_search_input', [
+        <?php // The box is the same composer as the home page's; the selects sit
+              // under it as a quieter row for refining, not beside it competing. ?>
+        <form class="search-form" method="get" action="<?= base_url('directory') ?>">
+            <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
                 'value'       => (string) $filters['q'],
-                'placeholder' => 'Name, service or keyword',
-                'ariaLabel'   => '',
-                'type'        => 'text',
-            ]) ?>
-            <?php // See home.php. data-selected-group re-selects a ?group= search
-                  // that has no category in it. ?>
-            <select name="category" aria-label="Category" data-category-picker data-group-param="group"
-                    data-selected-group="<?= esc((string) ($filters['group'] ?? ''), 'attr') ?>">
-                <option value="">All categories</option>
-                <?php foreach ($groups as $groupName => $cats): ?>
-                    <optgroup label="<?= esc($groupName, 'attr') ?>" data-slug="<?= esc((string) ($cats[0]['group_slug'] ?? ''), 'attr') ?>">
-                    <?php foreach ($cats as $p): ?>
-                        <option value="<?= esc($p['slug'], 'attr') ?>" <?= ($filters['category'] === $p['slug']) ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                'placeholder' => 'A business, service, person or place',
+            ], ['saveData' => false]) ?>
+            <div class="search-refine">
+                <?php // See home.php. data-selected-group re-selects a ?group= search
+                      // that has no category in it. ?>
+                <select name="category" aria-label="Category" data-category-picker data-group-param="group"
+                        data-selected-group="<?= esc((string) ($filters['group'] ?? ''), 'attr') ?>">
+                    <option value="">All categories</option>
+                    <?php foreach ($groups as $groupName => $cats): ?>
+                        <optgroup label="<?= esc($groupName, 'attr') ?>" data-slug="<?= esc((string) ($cats[0]['group_slug'] ?? ''), 'attr') ?>">
+                        <?php foreach ($cats as $p): ?>
+                            <option value="<?= esc($p['slug'], 'attr') ?>" <?= ($filters['category'] === $p['slug']) ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                        <?php endforeach; ?>
+                        </optgroup>
                     <?php endforeach; ?>
-                    </optgroup>
+                </select>
+                <select name="province" aria-label="Province">
+                    <option value="">All provinces</option>
+                    <?php foreach ($provinces as $prov): ?>
+                        <option value="<?= esc($prov, 'attr') ?>" <?= ($filters['province'] === $prov) ? 'selected' : '' ?>><?= esc($prov) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <?php // The map writes lat/lng/radius into the URL, and this form
+                      // rebuilds the query string from scratch on submit — without
+                      // these, refining a "near me" search by category would
+                      // silently drop the position and quietly widen the results. ?>
+                <?php foreach (['lat', 'lng', 'radius'] as $carry): ?>
+                    <?php if (($filters[$carry] ?? '') !== ''): ?>
+                        <input type="hidden" name="<?= $carry ?>" value="<?= esc($filters[$carry], 'attr') ?>">
+                    <?php endif; ?>
                 <?php endforeach; ?>
-            </select>
-            <select name="province">
-                <option value="">All provinces</option>
-                <?php foreach ($provinces as $prov): ?>
-                    <option value="<?= esc($prov, 'attr') ?>" <?= ($filters['province'] === $prov) ? 'selected' : '' ?>><?= esc($prov) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <?php // The map writes lat/lng/radius into the URL, and this form
-                  // rebuilds the query string from scratch on submit — without
-                  // these, refining a "near me" search by category would
-                  // silently drop the position and quietly widen the results. ?>
-            <?php foreach (['lat', 'lng', 'radius'] as $carry): ?>
-                <?php if (($filters[$carry] ?? '') !== ''): ?>
-                    <input type="hidden" name="<?= $carry ?>" value="<?= esc($filters[$carry], 'attr') ?>">
-                <?php endif; ?>
-            <?php endforeach; ?>
-            <button class="btn btn-primary" type="submit">Search</button>
+            </div>
         </form>
 
         <?php // Distance search. "Near me" is JS-only (it needs the browser's
@@ -158,8 +163,13 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
               // exists — an offer the browser cannot honour is worse than no
               // offer. The radius links work without JavaScript, but only once
               // a position is set, which is why they appear alongside it. ?>
+        <?php // When the words said "near me", the reading below offers this
+              // button with a line explaining it; one button, not two. ?>
+        <?php $nearPrompt = isset($intent) && $intent !== null && $intent->nearMe && ($filters['lat'] ?? '') === ''; ?>
         <div class="near-bar">
-            <button type="button" class="btn btn-ghost btn-xs" data-near-me hidden>Use my location</button>
+            <?php if (! $nearPrompt): ?>
+                <button type="button" class="btn btn-ghost btn-xs" data-near-me hidden>Use my location</button>
+            <?php endif; ?>
             <?php if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== ''): ?>
                 <span class="near-bar-label">Within</span>
                 <?php foreach ($radii as $km): ?>
@@ -172,6 +182,16 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             <?php endif; ?>
             <span class="near-bar-note" role="status" data-near-me-note></span>
         </div>
+
+        <?php // Right under the box it explains, not below the category photo:
+              // this is the answer to "what did you search for?". ?>
+        <?= view('directory/_search_reading', [
+            'intent'     => $intent ?? null,
+            'relaxed'    => $relaxed ?? false,
+            'filters'    => $filters,
+            'urlFilters' => $urlFilters,
+            'hasNear'    => ($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '',
+        ], ['saveData' => false]) ?>
     </div>
 </section>
 
@@ -263,9 +283,13 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                           // and left the map tucked under the solid one.
                           // Nothing else links here, so if this block is ever made
                           // conditional on something new, the anchor degrades to the page top. ?>
+                    <?php // The list widened past the keywords (see Directory::index());
+                          // the map reads the page's own query string, so it is told the
+                          // same through here rather than showing a different search. ?>
                     <div class="results-map scroll-mt-28"
                          id="map"
                          data-results-map
+                         <?php if ($relaxed ?? false): ?>data-map-query="relaxed=1"<?php endif; ?>
                          data-endpoint="<?= base_url('directory/map') ?>"
                          data-centre="<?= esc($mapCentre, 'attr') ?>"
                          data-tile-url="<?= esc(config('Directory')->mapTileUrl()) ?>"

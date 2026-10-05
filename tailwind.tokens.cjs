@@ -52,6 +52,16 @@ module.exports = {
   borderRadius: {
     xl: '1rem',
     '2xl': '1.5rem',
+    // The corner standard (local app, Oct 2026). Three sizes and nothing else:
+    //   control — anything you click or type into on one line: buttons,
+    //             inputs, selects, the search box, chips, icon buttons
+    //   surface — anything that contains things: cards, panels, forms,
+    //             alerts, maps, dropdown lists, photographs, video
+    //   inner   — small things inside a surface: logos, icon tiles, thumbnails,
+    //             textareas, tight sub-rows (padding under 16px)
+    control: '9999px',
+    surface: '1.5rem',
+    inner: '0.75rem',
   },
   maxWidth: {
     '7xl': '80rem',

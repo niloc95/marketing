@@ -8,6 +8,9 @@ use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\DomainChecker;
 use App\Libraries\MauticClient;
+use App\Services\DirectoryService;
+use App\Services\Search\QueryInterpreter;
+use App\Services\Search\RuleBasedInterpreter;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -51,6 +54,23 @@ class Services extends BaseService
         return $token !== ''
             ? new FallbackGeocoder(new MapboxGeocoder($token), new NominatimGeocoder())
             : new NominatimGeocoder();
+    }
+
+    /**
+     * Whatever reads a typed search into category, place and keywords.
+     *
+     * The rules today (free, local). A model-backed interpreter replaces this
+     * line, not the search: DirectoryService only ever sees the SearchIntent.
+     *
+     * Never shared, whatever $getShared says. The interpreter holds a snapshot
+     * of the vocabulary — the categories and places that exist — and a shared
+     * instance would keep yesterday's for the life of the process (and across
+     * tests, which reset the cache but not shared services). Building one is
+     * cheap: searchVocabulary() is cached.
+     */
+    public static function queryInterpreter(bool $getShared = false): QueryInterpreter
+    {
+        return new RuleBasedInterpreter((new DirectoryService())->searchVocabulary(), config('Search'));
     }
 
     /**

@@ -27,7 +27,7 @@ $admin = config('Directory')->adminEmail();
 
             <?php // Two things people arrive here wanting are self-service, and both are
                   // faster than waiting for a reply. Offer them before the form. ?>
-            <div class="mb-6 rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
+            <div class="mb-6 rounded-surface bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
                 <p class="font-medium text-slate-700 dark:text-slate-200">Looking for one of these?</p>
                 <ul class="mt-2 space-y-1 text-slate-500 dark:text-slate-400">
                     <li>Editing your own business details &mdash; <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>, no password needed.</li>

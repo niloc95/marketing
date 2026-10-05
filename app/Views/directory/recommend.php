@@ -33,7 +33,7 @@ $err = fn (string $f) => $errors[$f] ?? '';
             </p>
 
             <?php // The business's owner should list it themselves; say so up front. ?>
-            <div class="mb-6 rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
+            <div class="mb-6 rounded-surface bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
                 <p class="text-slate-500 dark:text-slate-400">
                     Is it your own business? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get it verified yourself' : 'Create its profile yourself' ?></a>. It's quicker.
                 </p>

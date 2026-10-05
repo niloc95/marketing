@@ -1132,7 +1132,7 @@
     // from every visitor who starts typing.
     var MIN_CHARS = 3;
 
-    var KIND = { category: 'Category', place: 'Place', person: 'Person' };
+    var KIND = { category: 'Category', place: 'Place', person: 'Person', search: 'Search' };
 
     var hideList = function () {
       list.hidden = true;
@@ -1281,6 +1281,48 @@
   }
 
   document.querySelectorAll('[data-search-suggest]').forEach(initSearchSuggest);
+
+  // ------------------------------------------------- refine selects apply now
+  // The results page's selects sit under the search box with no button of
+  // their own (.search-refine), so a change submits the form. Only a person's
+  // change: the category picker rebuilding its options fires no event.
+  document.querySelectorAll('.search-refine').forEach(function (row) {
+    var form = row.closest('form');
+    if (!form) return;
+    row.addEventListener('change', function (e) {
+      if (e.target && e.target.tagName === 'SELECT') {
+        if (form.requestSubmit) form.requestSubmit(); else form.submit();
+      }
+    });
+  });
+
+  // ------------------------------------------------ rotating search examples
+  // The home search's placeholder cycles through real example searches
+  // (DirectoryService::searchExamples) so the box shows what it can be asked.
+  //
+  // Only ever the placeholder: the field's accessible name is its aria-label
+  // and never changes, and nothing is typed into the field. Paused while the
+  // box has focus or text — a hint changing under someone's cursor is noise —
+  // and off entirely for prefers-reduced-motion.
+  (function () {
+    var input = document.querySelector('[data-rotate-placeholders]');
+    if (!input) return;
+    var examples;
+    try {
+      examples = JSON.parse(input.getAttribute('data-rotate-placeholders') || '[]');
+    } catch (e) {
+      return;
+    }
+    if (!Array.isArray(examples) || examples.length < 2) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var i = 0;
+    setInterval(function () {
+      if (document.activeElement === input || input.value !== '') return;
+      i = (i + 1) % examples.length;
+      input.setAttribute('placeholder', examples[i]);
+    }, 3500);
+  })();
 
   // ------------------------------------------------------- map pin picker
   // No geocoder finds every South African address — OpenStreetMap has never
@@ -1803,6 +1845,11 @@
       var params = new URLSearchParams(window.location.search);
       params.set('bounds', box);
       params.delete('page');
+      // Anything the page knows that its URL does not — today only that the
+      // list fell back past the keywords (data-map-query="relaxed=1").
+      new URLSearchParams(wrap.getAttribute('data-map-query') || '').forEach(function (v, k) {
+        params.set(k, v);
+      });
 
       var seq = ++fetchSeq;
       say('Loading…');
@@ -1945,14 +1992,18 @@
   // ungeocoded renders no map at all, and "search near me" still has to work
   // there — it is how those results get replaced with ones that do have
   // positions.
-  var nearMeBtn = document.querySelector('[data-near-me]');
-  if (nearMeBtn) {
+  // Every [data-near-me] on the page: the one in the near bar, and the one the
+  // search reading offers when the words said "near me" (_search_reading.php).
+  // Either way the position is asked for only on a click, never on page load.
+  document.querySelectorAll('[data-near-me]').forEach(function (nearMeBtn) {
+    var wrap = nearMeBtn.closest('[data-near-me-wrap]');
     if (!navigator.geolocation) {
       // Stays hidden. Offering something the browser cannot do is worse than
       // not offering it — the button would simply never respond.
       nearMeBtn.hidden = true;
     } else {
       nearMeBtn.hidden = false;
+      if (wrap) wrap.hidden = false;
 
       var nearMeNote = document.querySelector('[data-near-me-note]');
       var note = function (msg) { if (nearMeNote) nearMeNote.textContent = msg || ''; };
@@ -1980,7 +2031,7 @@
         }, { timeout: 10000, maximumAge: 300000 });
       });
     }
-  }
+  });
 
   function loadScript(url) {
     if (!url) return Promise.resolve();

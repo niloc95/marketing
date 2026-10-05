@@ -38,15 +38,10 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
             </p>
         <?php endif; ?>
 
-        <form class="searchbar mt-5" method="get" action="<?= base_url('directory') ?>">
-            <?= view('directory/_search_input', [
-                'listId'      => 'search-suggest-404',
-                'value'       => '',
-                'placeholder' => 'Name, service or keyword',
-                'ariaLabel'   => 'Search local businesses',
-                'type'        => 'text',
-            ]) ?>
-            <button class="btn btn-primary" type="submit">Search</button>
+        <form class="search-form" method="get" action="<?= base_url('directory') ?>">
+            <?= view('directory/_search_composer', [
+                'listId' => 'search-suggest-404',
+            ], ['saveData' => false]) ?>
         </form>
     </div>
 </section>

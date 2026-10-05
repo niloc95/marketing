@@ -84,37 +84,35 @@ $moments = [
     <section class="home-open">
         <div class="container">
             <p class="home-eyebrow"><?= esc($siteName) ?></p>
-            <h1 class="home-display">Find the people and businesses you need.</h1>
-            <p class="home-lede">Search for a business, service, professional or location.</p>
+            <h1 class="home-display">What are you looking for?</h1>
+            <p class="home-lede">Search businesses, services, professionals and locations across South Africa.</p>
 
-            <form class="searchbar home-search" method="get" action="<?= base_url('directory') ?>">
-                <?= view('directory/_search_input', [
+            <?php // One box. The words are read into category and place on the
+                  // results page (Directory::interpretSearch()), so the category
+                  // and province selects this used to carry are not needed here;
+                  // the results page still has them for refining.
+                  //
+                  // The examples are real category-and-town pairs with listings
+                  // behind them (DirectoryService::searchExamples()), so following
+                  // one never lands on nothing. ?>
+            <?php $examples = $examples ?? []; ?>
+            <form class="search-form home-search" method="get" action="<?= base_url('directory') ?>">
+                <?= view('directory/_search_composer', [
                     'listId'      => 'search-suggest-hero',
-                    'value'       => '',
-                    'placeholder' => 'Name, service or keyword',
-                    'ariaLabel'   => '',
-                    'type'        => 'text',
-                ]) ?>
-                <?php // data-group-param: the "Main category" select directory.js adds
-                      // submits as ?group=, so a main category alone searches all of it. ?>
-                <select name="category" aria-label="Category" data-category-picker data-group-param="group">
-                    <option value="">All categories</option>
-                    <?php foreach ($groups as $groupName => $cats): ?>
-                        <optgroup label="<?= esc($groupName, 'attr') ?>" data-slug="<?= esc((string) ($cats[0]['group_slug'] ?? ''), 'attr') ?>">
-                        <?php foreach ($cats as $p): ?>
-                            <option value="<?= esc($p['slug'], 'attr') ?>"><?= esc($p['name']) ?></option>
-                        <?php endforeach; ?>
-                        </optgroup>
-                    <?php endforeach; ?>
-                </select>
-                <select name="province" aria-label="Province">
-                    <option value="">All provinces</option>
-                    <?php foreach ($provinces as $prov): ?>
-                        <option value="<?= esc($prov, 'attr') ?>"><?= esc($prov) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <button class="btn btn-primary" type="submit">Search</button>
+                    'placeholder' => $examples !== [] ? 'Try “' . $examples[0] . '”' : 'A business, service, person or place',
+                    'ariaLabel'   => 'What are you looking for?',
+                    'size'        => 'lg',
+                    'rotate'      => array_map(static fn (string $e) => 'Try “' . $e . '”', $examples),
+                ], ['saveData' => false]) ?>
             </form>
+
+            <?php if ($examples !== []): ?>
+                <ul class="home-examples" aria-label="Example searches">
+                    <?php foreach (array_slice($examples, 0, 4) as $example): ?>
+                        <li><a href="<?= esc(base_url('directory') . '?q=' . rawurlencode($example), 'attr') ?>"><?= esc($example) ?></a></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
 
             <div class="home-open-foot">
                 <?php // The free profile is the offer this page leads with, so it goes

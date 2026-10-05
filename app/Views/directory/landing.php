@@ -104,17 +104,13 @@ $schema = schema_page(
         <p class="mt-2 text-sm text-white/80">
             <?= $total ?> <?= $total === 1 ? 'profile' : 'profiles' ?><?= $province !== null ? ' in ' . esc($province) : '' ?>.
         </p>
-        <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <?= view('directory/_search_input', [
+        <form class="search-form" method="get" action="<?= base_url('directory') ?>">
+            <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
-                'value'       => '',
                 'placeholder' => 'Search within ' . strtolower($plural),
-                'ariaLabel'   => '',
-                'type'        => 'text',
-            ]) ?>
+            ], ['saveData' => false]) ?>
             <input type="hidden" name="category" value="<?= esc($catSlug, 'attr') ?>">
             <?php if ($province !== null): ?><input type="hidden" name="province" value="<?= esc($province, 'attr') ?>"><?php endif; ?>
-            <button class="btn btn-primary" type="submit">Search</button>
         </form>
     </div>
 </section>

@@ -67,49 +67,43 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
             <?php endforeach; ?>
         </div>
 
-        <form method="get" action="<?= base_url('jobs') ?>" class="panel mb-6 p-4">
+        <?php // The site's one search box (directory/_search_composer.php), with
+              // the jobs board's own filters under it. No business typeahead: this
+              // box searches posts, and the suggestions are businesses. ?>
+        <form method="get" action="<?= base_url('jobs') ?>" class="search-form mb-6">
             <?php if ($filters['kind'] !== ''): ?>
                 <input type="hidden" name="kind" value="<?= esc($filters['kind'], 'attr') ?>">
             <?php endif; ?>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="field mb-0">
-                    <label for="jobs-q">Keyword</label>
-                    <input type="text" id="jobs-q" name="q" value="<?= esc($filters['q'], 'attr') ?>" placeholder="e.g. electrician">
-                </div>
-                <div class="field mb-0">
-                    <label for="jobs-province">Province</label>
-                    <select id="jobs-province" name="province">
-                        <option value="">Anywhere</option>
-                        <?php foreach ($provinces as $prov): ?>
-                            <option value="<?= esc($prov, 'attr') ?>" <?= $filters['province'] === $prov ? 'selected' : '' ?>><?= esc($prov) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="field mb-0">
-                    <label for="jobs-category">Category</label>
-                    <select id="jobs-category" name="category">
-                        <option value="">Any category</option>
-                        <?php foreach ($categories as $cat): ?>
-                            <option value="<?= esc($cat['slug'], 'attr') ?>" <?= $filters['category'] === $cat['slug'] ? 'selected' : '' ?>><?= esc($cat['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+            <?= view('directory/_search_composer', [
+                'listId'      => 'search-suggest-jobs',
+                'value'       => $filters['q'],
+                'placeholder' => 'Search jobs and requests, e.g. electrician',
+                'ariaLabel'   => 'Search jobs',
+                'suggest'     => false,
+            ], ['saveData' => false]) ?>
+            <div class="search-refine">
+                <select id="jobs-province" aria-label="Province" name="province">
+                    <option value="">Anywhere</option>
+                    <?php foreach ($provinces as $prov): ?>
+                        <option value="<?= esc($prov, 'attr') ?>" <?= $filters['province'] === $prov ? 'selected' : '' ?>><?= esc($prov) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select id="jobs-category" aria-label="Category" name="category">
+                    <option value="">Any category</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?= esc($cat['slug'], 'attr') ?>" <?= $filters['category'] === $cat['slug'] ? 'selected' : '' ?>><?= esc($cat['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
                 <?php if ($filters['kind'] !== 'service'): ?>
-                    <div class="field mb-0">
-                        <label for="jobs-type">Job type</label>
-                        <select id="jobs-type" name="type">
-                            <option value="">Any type</option>
-                            <?php foreach ($types as $key => $t): ?>
-                                <option value="<?= esc($key, 'attr') ?>" <?= $filters['type'] === $key ? 'selected' : '' ?>><?= esc($t['label']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                    <select id="jobs-type" aria-label="Job type" name="type">
+                        <option value="">Any type</option>
+                        <?php foreach ($types as $key => $t): ?>
+                            <option value="<?= esc($key, 'attr') ?>" <?= $filters['type'] === $key ? 'selected' : '' ?>><?= esc($t['label']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 <?php endif; ?>
-            </div>
-            <div class="mt-3 flex gap-2">
-                <button class="btn btn-primary" type="submit"><?= lucide('search', 'h-4 w-4 shrink-0') ?>Search</button>
                 <?php if (array_filter($filters) !== []): ?>
-                    <a class="btn btn-ghost" href="<?= base_url('jobs') ?>">Clear</a>
+                    <a class="search-reading-exact" href="<?= base_url('jobs') ?>">Clear</a>
                 <?php endif; ?>
             </div>
         </form>

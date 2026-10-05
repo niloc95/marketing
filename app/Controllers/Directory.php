@@ -10,9 +10,11 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\JobBoardService;
 use App\Services\HeroImageService;
+use App\Services\Search\SearchIntent;
 use App\Services\ListingMenuService;
 use App\Services\VerificationService;
 use CodeIgniter\Exceptions\PageNotFoundException;
+use Config\Services;
 
 class Directory extends BaseController
 {
@@ -36,9 +38,9 @@ class Directory extends BaseController
             'topCategories'  => $svc->topCategories(8),
             'provinceCounts' => $provinceCounts,
             'provinceCities' => $provinceCities,
-            'groups'         => $svc->categoriesGrouped(),
-            'provinces'      => $svc->provinces(),
             'stats'          => $svc->stats(),
+            // Real category-and-town pairs, so no example lands on nothing.
+            'examples'       => $svc->searchExamples(6),
             // Cached whole, and an empty array on any failure — the hero falls
             // back to its gradient rather than taking the home page with it.
             'slides'         => (new HeroImageService())->slides(),
@@ -65,14 +67,36 @@ class Directory extends BaseController
         $filters = $this->searchFilters();
         $page    = (int) ($this->request->getGet('page') ?? 1);
 
+        // $filters stays what the visitor sent — every link on the page is
+        // rebuilt from it, so the pager carries "dentist in sandton", not a
+        // category the visitor never picked. $effective is what is searched.
+        [$effective, $intent] = $this->interpretSearch($svc, $filters);
+
         // Facets are resolved before the browse rather than after it, unlike
         // the category and province below, because the view has to draw the
         // rail showing exactly which filters were honoured — and a filter the
         // sanitiser dropped but the rail still shows ticked is a bug nobody
-        // reports, because the page looks like it worked.
-        $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
+        // reports, because the page looks like it worked. Against the category
+        // being searched, which may be the one read out of the words.
+        $effective['facets'] = $svc->sanitiseFacets($filters['facets'], $effective['category']);
+        $filters['facets']   = $effective['facets'];
 
-        $result = $svc->browse($filters, $page);
+        $result = $svc->browse($effective, $page);
+
+        // One step back, and said out loud: "dentist in Sandton that does teeth
+        // whitening" with no match on the whitening shows Sandton's dentists
+        // under a notice saying so, rather than nothing. Only the keywords are
+        // dropped — never the category or place, which were understood — and
+        // only when something was understood, or dropping the keywords would
+        // just be "everything".
+        $relaxed = false;
+        if ((int) $result['total'] === 0 && $effective['q'] !== '' && $this->filtersFromWords($filters, $effective)) {
+            $wider = $svc->browse(['q' => ''] + $effective, $page);
+            if ((int) $wider['total'] > 0) {
+                $result  = $wider;
+                $relaxed = true;
+            }
+        }
 
         // Resolved here rather than in the view, because the view turns these
         // into the <title>, the og:title and a rel=canonical, and then asks for
@@ -82,15 +106,15 @@ class Directory extends BaseController
         // by anyone who can construct a query string. The sibling landing pages
         // (segment(), place()) have always resolved first; /directory was the
         // one entry point that did not.
-        $category = $filters['category'] !== ''
-            ? $svc->findCategoryBySlug($filters['category'])
+        $category = $effective['category'] !== ''
+            ? $svc->findCategoryBySlug($effective['category'])
             : null;
-        $province = in_array($filters['province'], DirectoryService::SA_PROVINCES, true)
-            ? $filters['province']
+        $province = in_array($effective['province'], DirectoryService::SA_PROVINCES, true)
+            ? $effective['province']
             : null;
         // An unknown ?group= is dropped outright — browse() already ignored it,
         // and clearing it here keeps it off the pager and every rebuilt link.
-        $group = $filters['group'] !== '' ? $svc->findGroupBySlug($filters['group']) : null;
+        $group = $effective['group'] !== '' ? $svc->findGroupBySlug($effective['group']) : null;
         if ($group === null) {
             $filters['group'] = '';
         }
@@ -98,6 +122,11 @@ class Directory extends BaseController
         return view('directory/index', [
             'result'      => $result,
             'filters'     => $filters,
+            // What the words were read as, or null for a literal search. The
+            // view names each part, with a link to take it away.
+            'intent'      => $intent,
+            'relaxed'     => $relaxed,
+            'place'       => $effective['place'] !== '' ? $effective['place'] : null,
             // Null means "asked for, but no such thing" — the view must not
             // treat that page as indexable or name it after the raw input.
             'category'    => $category,
@@ -139,8 +168,17 @@ class Directory extends BaseController
                 ->setJSON(['items' => []]);
         }
 
-        $svc               = new DirectoryService();
-        $filters           = $this->searchFilters();
+        $svc = new DirectoryService();
+        // Read exactly as index() reads it, so the pins are the list's.
+        $sent               = $this->searchFilters();
+        [$filters]          = $this->interpretSearch($svc, $sent);
+        // The list widened past the keywords (see index()) and told the map so
+        // through data-map-query. Honoured only where index() would have done
+        // the same; on its own, a crafted ?relaxed=1 can only show more pins
+        // of a search that is already public.
+        if ($this->request->getGet('relaxed') === '1' && $this->filtersFromWords($sent, $filters)) {
+            $filters['q'] = '';
+        }
         $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
         $items             = $svc->mapPoints($filters, 200);
 
@@ -245,7 +283,95 @@ class Directory extends BaseController
             // crafted query string making the sanitiser walk a huge array.
             'facets'   => $this->facetParams(),
             'sort'     => $this->sortParam(),
+            // ?exact=1: search the words as typed, uninterpreted. A string,
+            // not a bool, because the pager rebuilds the URL from this array
+            // and http_build_query() would write a false as "exact=0".
+            'exact'    => $this->request->getGet('exact') === '1' ? '1' : '',
+            // Never read from the URL. Only interpretSearch() sets it, from
+            // the words; the pager carries the words.
+            'place'    => '',
         ];
+    }
+
+    /**
+     * Whether anything read out of the words is actually narrowing the search.
+     * Not the same as "the words were understood": a category in the words
+     * that a picked category overrode is not narrowing anything, and dropping
+     * the keywords there would show everything in the picked one.
+     *
+     * @param array<string,mixed> $sent      as the visitor sent them
+     * @param array<string,mixed> $effective after interpretSearch()
+     */
+    private function filtersFromWords(array $sent, array $effective): bool
+    {
+        return $effective['place'] !== ''
+            || $effective['category'] !== $sent['category']
+            || $effective['group'] !== $sent['group']
+            || $effective['province'] !== $sent['province'];
+    }
+
+    /**
+     * Read the typed search into filters: "dentist in Sandton that does teeth
+     * whitening" becomes category=dentist, place=Sandton, q="teeth whitening".
+     *
+     * What the visitor chose outright wins over anything read from the words:
+     * a ?category= picked from the select is never replaced by one guessed
+     * from q. The words are left alone entirely when:
+     *   - ?exact=1 asks for that (the "search the exact words" link)
+     *   - a business is called what was typed — "Bob the Builder Plumbing" is
+     *     a name to find, not a request for builders (hasListingNamed())
+     *
+     * @param array<string,mixed> $filters from searchFilters()
+     * @return array{0: array<string,mixed>, 1: ?SearchIntent} the filters to
+     *         search with, and what the words were read as (null: literal)
+     */
+    private function interpretSearch(DirectoryService $svc, array $filters): array
+    {
+        if ($filters['q'] === '' || $filters['exact'] === '1') {
+            return [$filters, null];
+        }
+
+        $intent = Services::queryInterpreter()->interpret($filters['q']);
+        if ($intent->hasFilters() && $svc->hasListingNamed($filters['q'])) {
+            return [$filters, null];
+        }
+
+        $effective = $filters;
+        // A part the visitor overrode outright goes back to being words: "dentist"
+        // typed with Plumber picked from the select searches plumbers for
+        // "Dentist", rather than the word silently disappearing.
+        $overridden = [];
+
+        if ($filters['category'] === '' && $filters['group'] === '') {
+            $effective['category'] = $intent->categorySlug ?? '';
+            $effective['group']    = $intent->groupSlug ?? '';
+        } else {
+            $overridden[] = $intent->categoryName ?? $intent->groupName ?? '';
+        }
+        if ($intent->province !== null) {
+            if ($filters['province'] === '') {
+                $effective['province'] = $intent->province;
+            } else {
+                $overridden[] = $intent->province;
+            }
+        }
+        if ($intent->place !== null) {
+            if ($filters['city'] === '') {
+                $effective['place'] = $intent->place;
+            } else {
+                $overridden[] = $intent->place;
+            }
+        }
+
+        // Only filler ("find me a good") leaves no keywords and nothing
+        // understood; searching the raw words then is no worse than searching
+        // nothing. "near me" alone is understood — it asks for the location
+        // button, not for listings that use the word "near".
+        if ($intent->keywords() !== '' || $intent->hasFilters() || $intent->nearMe) {
+            $effective['q'] = trim(implode(' ', array_filter([...$overridden, $intent->keywords()])));
+        }
+
+        return [$effective, $intent];
     }
 
     /**

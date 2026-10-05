@@ -62,7 +62,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
             </div>
         <?php endif; ?>
 
-        <div class="form-card" id="listing-form">
+        <div class="form-card form-card-full" id="listing-form">
             <?php if (! $verificationOffered): ?>
                 <?php // No cards above, so the page still needs its own heading. ?>
                 <span class="eyebrow"><?= $eyebrow ?></span>

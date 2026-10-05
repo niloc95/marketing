@@ -2,8 +2,8 @@
 /**
  * One search box, with the typeahead listbox that belongs to it.
  *
- * Every search box on the site renders through here — the header bar and the
- * four hero .searchbar forms — so the markup contract the typeahead binds to
+ * Every search box on the site renders through here, by way of
+ * _search_composer.php, so the markup contract the typeahead binds to
  * (public/assets/directory.js) exists in exactly one place. The module is a
  * no-op wherever this partial is absent.
  *
@@ -12,8 +12,8 @@
  * the hero form), a listbox needs a real id for aria-controls, and duplicate
  * ids would point both comboboxes at the first list.
  *
- * The wrapper is what makes the dropdown position: .searchbar is a grid and
- * .header-search a flex row, neither of which is a positioning context. It also
+ * The wrapper is what makes the dropdown position: .search-composer is a flex
+ * row, which is not a positioning context. It also
  * becomes the grid/flex item in the input's place, which is why it carries the
  * full width rather than the input carrying it alone.
  *
@@ -22,6 +22,11 @@
  * @var string $placeholder
  * @var string $ariaLabel   accessible name where no visible label exists
  * @var string $type        'search' in the header (it gets the clear button), else 'text'
+ * @var list<string> $rotate optional: placeholders the home search cycles through
+ *                           (directory.js). Callers other than the home page leave
+ *                           it out, and the home page renders with saveData off,
+ *                           so it cannot leak into the header box the way the
+ *                           note below describes.
  *
  * EVERY caller must pass ALL of these, even where the value is the default.
  * CodeIgniter renders the content view before the layout and shares one data
@@ -35,6 +40,7 @@ $value       = $value       ?? '';
 $placeholder = $placeholder ?? 'Name, service or keyword';
 $ariaLabel   = $ariaLabel   ?? '';
 $type        = $type        ?? 'text';
+$rotate      = $rotate      ?? [];
 ?>
 <div class="search-suggest" data-search-suggest data-suggest-url="<?= base_url('directory/suggest') ?>">
     <?php // autocomplete="off" so the browser's own history dropdown does not
@@ -42,6 +48,7 @@ $type        = $type        ?? 'text';
     <input type="<?= esc($type, 'attr') ?>" name="q" value="<?= esc($value, 'attr') ?>"
            placeholder="<?= esc($placeholder, 'attr') ?>"
            <?php if ($ariaLabel !== ''): ?>aria-label="<?= esc($ariaLabel, 'attr') ?>"<?php endif; ?>
+           <?php if ($rotate !== []): ?>data-rotate-placeholders="<?= esc(json_encode(array_values($rotate)), 'attr') ?>"<?php endif; ?>
            autocomplete="off" data-search-suggest-input
            role="combobox" aria-autocomplete="list" aria-expanded="false"
            aria-controls="<?= esc($listId, 'attr') ?>">

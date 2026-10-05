@@ -41,6 +41,8 @@ const outDir = path.join(projectRoot, 'resources', 'icons');
 const ICONS = [
   // Chrome: header, mobile menu, theme switch.
   'moon', 'sun', 'menu', 'x', 'search',
+  // The search composer's round send button (directory/_search_send.php).
+  'arrow-up',
   // Listing cards and profiles. building-2 is the venue chip — the complex,
   // mall or building a listing sits in (directory/_card.php, show.php).
   'map-pin', 'star', 'badge-check', 'share', 'link', 'check', 'building-2',

@@ -141,7 +141,7 @@
   .dark .brand { @apply text-white; }
   /* .brand-mark stays ocean-on-white in both themes — it's the logo mark. */
   .brand-mark {
-    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary-500
+    @apply grid h-8 w-8 shrink-0 place-items-center rounded-inner bg-primary-500
            text-sm font-extrabold text-white;
   }
   /* The <img> variant of the mark. These three used to be a style="" attribute on
@@ -165,7 +165,7 @@
   /* Sun/moon theme switch in the header. Sized to sit level with .nav links
      rather than the taller .btn, which would stretch the header. */
   .theme-toggle {
-    @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border
+    @apply grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-control border
            border-slate-200 bg-transparent text-slate-600 transition-colors
            hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500;
   }
@@ -178,7 +178,7 @@
      directory.js already writes past 8px of scroll — so neither needs a line of
      new JavaScript, and neither can ever be out of step with the bar going solid
      behind it. With scripting off nothing is revealed, which is the right
-     degradation: every page still carries its own .searchbar in the hero.
+     degradation: every page still carries its own search box in the hero.
 
      Hidden with `invisible` + h-0 rather than `hidden`. Two reasons, both
      load-bearing: `display:none` cannot be transitioned, and — more importantly
@@ -232,19 +232,9 @@
      `>` for the same reason as above, and so the footer's .brand is untouched. */
   .site-header > .container > :is(.brand, .nav) { @apply h-16; }
 
-  /* min-w-0 for the same reason .brand has it — without it the input refuses to
-     shrink below its intrinsic width and pushes the nav off the bar. */
-  .header-search input {
-    @apply h-10 w-full min-w-0 rounded-xl border-slate-200 text-sm text-slate-900
-           focus:border-primary-500 focus:ring-primary-500;
-  }
-  .dark .header-search input {
-    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
-           focus:border-primary-300 focus:ring-primary-300;
-  }
-  /* .btn is px-5 py-3 (~44px), which overfills a 64px bar sitting beside a 40px
-     input. Trimmed to match the field rather than the page's buttons. */
-  .header-search .btn { @apply h-10 shrink-0 gap-1.5 px-4 py-0; }
+  /* The header bar's box is the site's one composer at its small size (see
+     "search composer"); it only has to fill the middle column. */
+  .header-search .search-composer { @apply w-full; }
 
   /* --------------------------------------------- header on scroll: quick strip */
   /* Same reveal as .header-search, same reasons for h-0 + invisible. The border
@@ -290,7 +280,7 @@
   /* Same box as .theme-toggle so the two read as a pair when both are on the
      bar at md and up — except .menu-toggle is md:hidden, so they never are. */
   .menu-toggle {
-    @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border
+    @apply grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-control border
            border-slate-200 bg-transparent text-slate-600 transition-colors
            hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500;
   }
@@ -383,10 +373,27 @@
   /* Sign out is a POST (see Routes.php), so it is a button dressed as a link. */
   .admin-bar-link { @apply cursor-pointer border-0 bg-transparent p-0 text-white/80 hover:text-white; }
 
+  /* ------------------------------------------------------ corner standard */
+  /* The floor for every form control on the site, wherever it sits: one-line
+     controls are pills, a textarea takes the inner corner. The forms plugin
+     resets them all to square, so anything not inside a .field (the report box
+     under a review, the reason box in an admin queue) used to stay square. A
+     class rule like .field input or .search-composer input still wins. See
+     tailwind.tokens.cjs for the three sizes. */
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="tel"], input[type="url"],
+  input[type="date"], input[type="time"], input[type="search"], select {
+    @apply rounded-control;
+  }
+  textarea { @apply rounded-inner; }
+  /* Small inline boxes beside a .btn-xs: the 36px size. */
+  .review-report input[type="text"],
+  .tablewrap form input[type="text"] { @apply h-9 border-slate-200 px-4 text-xs; }
+
   /* --------------------------------------------------------------- buttons */
   .btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl
-           border-0 px-5 py-3 text-sm font-semibold transition-colors duration-200
+    @apply inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-control
+           border-0 px-5 py-0 text-sm font-semibold transition-colors duration-200
            focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
   /* NB: no `.dark .btn` rule here. @apply pulls in every rule whose selector
@@ -404,7 +411,7 @@
   .dark .btn-primary,
   .dark .btn-accent { @apply ring-offset-[#0f1419]; }
   .dark .btn-ghost  { @apply border-slate-700 bg-transparent text-slate-200 ring-offset-[#0f1419] hover:bg-slate-800; }
-  .btn-xs      { @apply px-3 py-1.5 text-xs; }
+  .btn-xs      { @apply h-9 px-4 text-xs; }
   .btn-block   { @apply w-full; }
 
   /* --------------------------------------------------------------- surfaces */
@@ -412,8 +419,8 @@
      surface is a hairline and a rounded corner, never a shadow. These are shared
      with the admin and owner pages, which is why they stay boxes at all — the
      public templates thin them further where they are scoped. */
-  .card  { @apply rounded-3xl border border-slate-200/80 bg-white; }
-  .panel { @apply rounded-3xl border border-slate-200/80 bg-white p-6; }
+  .card  { @apply rounded-surface border border-slate-200/80 bg-white; }
+  .panel { @apply rounded-surface border border-slate-200/80 bg-white p-6; }
   .empty { @apply px-4 py-16 text-center text-lg text-slate-500; }
   .dark .card,
   .dark .panel { @apply border-slate-800 bg-[#141a21]; }
@@ -458,7 +465,7 @@
      content, rounded, after the copy — the same frame as the home media band. */
   .hero-collage-grid,
   .hero-vertical-img {
-    @apply relative order-last mx-auto mt-10 w-[calc(100%-2rem)] max-w-[77rem] overflow-hidden rounded-[2rem]
+    @apply relative order-last mx-auto mt-10 w-[calc(100%-2rem)] max-w-[77rem] overflow-hidden rounded-surface
            sm:w-[calc(100%-3rem)];
     height: clamp(12rem, 32vh, 22rem);
   }
@@ -504,13 +511,13 @@
      .hero-captions), and `hidden` on one axis forces the other to `auto` and
      would clip them. */
   .hero-home {
-    @apply relative isolate mx-auto w-[calc(100%-2rem)] max-w-[77rem] overflow-x-clip rounded-[2rem]
+    @apply relative isolate mx-auto w-[calc(100%-2rem)] max-w-[77rem] overflow-x-clip rounded-surface
            bg-gradient-to-br from-primary-500 to-primary-700 sm:w-[calc(100%-3rem)];
     height: clamp(18rem, 62vh, 42rem);
   }
   /* The rounding has to be on the clipping box too, or the photographs and
      the video paint square corners over it. */
-  .hero-home .hero-media { @apply rounded-[2rem]; }
+  .hero-home .hero-media { @apply rounded-surface; }
   .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
   /* A video band with reduced motion on is a blank dark slab — the clips are
      never started (see .hero-video below) and there is no photo to fall back
@@ -660,31 +667,74 @@
     .hero-slide.is-leaving { animation: none; }
   }
 
-  /* ------------------------------------------------------------ search bar */
-  .searchbar {
-    @apply mt-8 grid gap-2 rounded-2xl border border-slate-200 bg-white p-2.5
-           sm:grid-cols-[1fr_auto_auto_auto];
+  /* ------------------------------------------------------ search composer */
+  /* The search box as a chat composer, after ChatGPT's: one wide pill, no
+     inner border on the field, the round send arrow inside the box at the
+     right. Every hero search uses it (_search_send.php is the button); the
+     results page puts its selects in .search-refine under it.
+
+     The shadow is the only depth on the canvas, and it deepens on focus in
+     place of the browser's ring — the ring would draw around the borderless
+     input inside the pill, not around the box people see. The send button
+     keeps a visible focus ring of its own. */
+  /* Full container width, the same edges as the media band and every section
+     below it: the hero reads as part of the one column, not a narrower card. */
+  .search-composer {
+    @apply flex h-14 w-full items-center gap-2 rounded-control border border-slate-200
+           bg-white py-0 pl-5 pr-2 transition-shadow duration-200;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
   }
-  /* One more column once directory.js has put the "Main category" select in
-     front of the category one. Keyed on the select itself, so a page where the
-     script did not run keeps the four-column bar with no empty cell. */
-  .searchbar:has(> [data-category-group]) {
-    @apply sm:grid-cols-[1fr_auto_auto_auto_auto];
+  .search-composer:focus-within {
+    @apply border-slate-300;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 12px 32px rgb(15 23 42 / 0.12);
   }
-  /* text-slate-900 is explicit: .searchbar sits inside .hero, whose text-white
-     would otherwise be inherited and render the select's text invisible. */
-  .searchbar input,
-  .searchbar select {
-    @apply w-full rounded-xl border-slate-200 text-sm text-slate-900
+  .search-composer .search-suggest { @apply min-w-0 flex-1; }
+  .search-composer input {
+    @apply w-full border-0 bg-transparent px-0 py-0 text-base text-slate-900 shadow-none
+           placeholder:text-slate-400 focus:outline-none focus:ring-0;
+  }
+  .search-composer-send {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-slate-900
+           text-white transition-colors hover:bg-slate-700
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-primary-500;
+  }
+  /* Quiet until there is something to send, the way the chat box greys its
+     arrow. Still a working button: an empty search browses everything. */
+  .search-composer:has(input:placeholder-shown) .search-composer-send { @apply bg-slate-200 text-slate-500; }
+  /* The typeahead hangs under the whole pill, not just the text inside it. */
+  .search-composer .search-suggest-list { @apply -left-5 right-[-3.5rem] mt-3; }
+
+  /* Sizes, on the control scale every button and input uses: 56px (the
+     composer and the home CTA), 44px (buttons, inputs, the header bar's box)
+     and 36px (small buttons, refine selects). lg only sets the home page's
+     larger type — same height, same padding. sm is the header bar's. */
+  .search-composer-lg { @apply pl-6; }
+  .search-composer-lg input { @apply sm:text-lg; }
+  .search-composer-lg .search-suggest-list { @apply -left-6; }
+  .search-composer-sm { @apply h-11 gap-1.5 pl-4 pr-1.5; }
+  .search-composer-sm input { @apply text-sm; }
+  .search-composer-sm .search-composer-send { @apply h-8 w-8; }
+  .search-composer-sm .search-suggest-list { @apply -left-4 right-[-2.5rem] mt-2; }
+
+  /* A search form is the box plus whatever the page puts under it. In a hero
+     it keeps the old bar's distance from the heading. */
+  .hero .search-form { @apply mt-8; }
+  .dark .search-composer { @apply border-slate-700 bg-[#212121]; box-shadow: none; }
+  .dark .search-composer:focus-within { @apply border-slate-500; }
+  .dark .search-composer input { @apply text-white placeholder:text-slate-500; }
+  .dark .search-composer-send { @apply bg-white text-slate-900 hover:bg-slate-200; }
+  .dark .search-composer:has(input:placeholder-shown) .search-composer-send { @apply bg-slate-700 text-slate-400; }
+
+  /* Refining a results page: small pill selects under the composer. They
+     apply on change (directory.js), since there is no button beside them. */
+  .search-refine { @apply mt-3 flex flex-wrap items-center gap-2; }
+  .search-refine select {
+    @apply h-9 w-auto max-w-[15rem] rounded-control border-slate-200 bg-white py-0 pl-4 pr-9 text-sm text-slate-700
            focus:border-primary-500 focus:ring-primary-500;
   }
-  .dark .searchbar { @apply border-slate-700 bg-[#141a21]; }
-  /* text-white for the same reason the light rule sets text-slate-900: the
-     explicit colour above would otherwise win over anything inherited. */
-  .dark .searchbar input,
-  .dark .searchbar select {
-    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
-           focus:border-primary-300 focus:ring-primary-300;
+  .dark .search-refine select {
+    @apply border-slate-700 bg-transparent text-slate-200 focus:border-primary-300 focus:ring-primary-300;
   }
 
   /* ------------------------------------------------------ homepage sections */
@@ -815,18 +865,18 @@
   /* ---- opening */
   .home-open { padding-top: clamp(3.5rem, 11vh, 8rem); padding-bottom: clamp(4rem, 10vh, 7rem); }
   .home-open .home-display { @apply mt-5 max-w-[15ch]; }
-  /* The search is the page's main object, so it is bigger than anywhere else
-     and outlined rather than floated on a shadow. */
-  .home-search { @apply mt-10 max-w-5xl p-2 sm:mt-12 sm:gap-2 sm:p-2.5; }
-  .home-search input,
-  .home-search select { @apply sm:py-3.5 sm:text-base; }
-  /* An auto column is as wide as its longest option, and the "Main category"
-     select directory.js adds has some long ones: uncapped, the selects took the
-     row and squeezed the keyword field to a stub. */
-  .home-search select { @apply sm:max-w-[12rem]; }
-  .home-search .btn { @apply sm:px-8 sm:py-3.5 sm:text-base; }
+  /* The search is the page's main object, so its composer is the biggest one
+     on the site (the shared rules are under "search composer"). */
+  .home-search { @apply mt-10 sm:mt-12; }
+  /* Example searches under the box: plain links, quiet until hovered. */
+  .home-examples { @apply m-0 mt-4 flex list-none flex-wrap gap-2 p-0; }
+  .home-examples a {
+    @apply inline-flex h-8 items-center rounded-control border border-slate-200 px-3.5 text-sm text-slate-600
+           no-underline hover:border-primary-300 hover:text-primary-600;
+  }
+  .dark .home-examples a { @apply border-slate-700 text-slate-300 hover:border-primary-400 hover:text-primary-300; }
   .home-open-foot {
-    @apply mt-6 flex max-w-5xl flex-col items-start gap-3
+    @apply mt-6 flex flex-col items-start gap-3
            sm:flex-row sm:items-center sm:justify-between;
   }
   .home-stats { @apply m-0 flex flex-wrap gap-x-2 text-sm text-slate-500; }
@@ -878,17 +928,17 @@
   .dark .moment-tag { @apply bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25; }
 
   /* The stage the preview sits on: a tone, not a card. */
-  .moment-visual { @apply rounded-[2rem] bg-slate-50 px-5 py-10 sm:p-14; }
+  .moment-visual { @apply rounded-surface bg-slate-50 px-5 py-10 sm:p-14; }
   .dark .moment-visual { @apply bg-[#141a21]; }
 
   /* ---- profile previews (_moment_preview.php) */
-  .preview { @apply mx-auto w-full max-w-md select-none rounded-3xl border border-slate-200 bg-white p-6 sm:p-7; }
+  .preview { @apply mx-auto w-full max-w-md select-none rounded-surface border border-slate-200 bg-white p-6 sm:p-7; }
   .preview-head { @apply flex items-center gap-4; }
   .preview-avatar {
     @apply grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-50
            text-xs font-bold text-primary-600;
   }
-  .preview-avatar-lg { @apply h-14 w-14 rounded-2xl bg-primary-500 text-base text-white; }
+  .preview-avatar-lg { @apply h-14 w-14 rounded-inner bg-primary-500 text-base text-white; }
   .preview-name  { @apply m-0 text-lg font-bold text-slate-900; }
   .preview-meta  { @apply m-0 text-sm text-slate-500; }
   .preview-label { @apply m-0 text-xs font-semibold uppercase tracking-wider text-slate-400; }
@@ -901,7 +951,7 @@
   .preview-rows-stacked li > span:last-child { @apply flex flex-col text-xs text-slate-500; }
   .preview-rows-stacked strong { @apply text-sm font-semibold text-slate-900; }
   .preview-photos { @apply mt-5 grid grid-cols-3 gap-2; }
-  .preview-photos span { @apply aspect-[4/3] rounded-xl bg-gradient-to-br from-slate-100 to-slate-200; }
+  .preview-photos span { @apply aspect-[4/3] rounded-inner bg-gradient-to-br from-slate-100 to-slate-200; }
   .dark .preview { @apply border-slate-800 bg-[#1a202c]; }
   .dark .preview-avatar { @apply bg-primary-500/20 text-primary-200; }
   .dark .preview-avatar-lg { @apply bg-primary-500 text-white; }
@@ -947,10 +997,10 @@
   }
   .feature-strip > li { @apply w-[78vw] shrink-0 snap-start sm:w-[22rem]; }
   .feature-card {
-    @apply flex h-full flex-col rounded-3xl bg-slate-50 p-6 transition-colors hover:bg-slate-100 sm:p-8;
+    @apply flex h-full flex-col rounded-surface bg-slate-50 p-6 transition-colors hover:bg-slate-100 sm:p-8;
   }
   .feature-card-mark {
-    @apply grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-white
+    @apply grid h-20 w-20 place-items-center overflow-hidden rounded-inner bg-white
            text-xl font-bold text-primary-500;
   }
   .feature-card-mark img { @apply h-full w-full object-contain p-2; }
@@ -978,7 +1028,7 @@
   /* ---- closing */
   .home-close { @apply text-center; }
   .home-close-title { @apply mx-auto mt-16 max-w-[16ch] sm:mt-24; }
-  .home-cta { @apply mt-10 px-8 py-4 text-base; }
+  .home-cta { @apply mt-10 h-14 px-8 text-base; }
   .home-fine { @apply mx-auto mt-6 max-w-xl text-sm leading-relaxed text-slate-500; }
   .dark .home-fine { @apply text-slate-400; }
 
@@ -1006,8 +1056,8 @@
      cat-tint-* class — a province, or "Browse all categories" — falls back to
      the slate it has always been, so those need no branching in the view. */
   .chip {
-    @apply inline-flex items-center rounded-full px-2.5 py-1
-           text-xs font-medium transition-colors;
+    @apply inline-flex h-8 items-center rounded-control px-3.5
+           text-sm font-medium transition-colors;
     background-color: var(--tint-bg, theme(colors.slate.100));
     color: var(--tint-fg, theme(colors.slate.600));
   }
@@ -1034,13 +1084,21 @@
   .link-group { @apply mt-12 border-t border-slate-200 pt-8; }
   .link-group > h3 { @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500; }
   .link-group > div { column-gap: 1.75rem; row-gap: 0.5rem; }
-  .link-group .chip,
+  .link-group .chip {
+    @apply h-auto rounded-none bg-transparent p-0 text-lg font-semibold;
+    color: theme(colors.primary.500);
+  }
+  /* Hover changes the colour and nothing else. It used to repeat the size and
+     weight above, and at 0,3,0 that outranked .link-group-lg .chip below: on
+     /directory/categories a hovered link dropped from 30px bold to 18px, the
+     line reflowed, the next link slid under the pointer and shrank in turn —
+     the page flickered as the mouse moved along a row. Anything that changes a
+     link's box on hover does that; keep it to colour. */
   .link-group .chip:hover {
-    @apply rounded-none bg-transparent p-0 text-lg font-semibold;
+    @apply bg-transparent;
+    color: theme(colors.brand.orange);
     filter: none;
   }
-  .link-group .chip { color: theme(colors.primary.500); }
-  .link-group .chip:hover { color: theme(colors.brand.orange); }
   .link-group .chip-count { @apply text-xs font-medium text-slate-400 opacity-100; }
   /* /directory/categories, where these lists ARE the page. */
   .link-group-lg { @apply mt-0 border-t-0 pt-0; }
@@ -1057,11 +1115,11 @@
   .tile-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5; }
 
   .cat-tile {
-    @apply flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4
+    @apply flex h-full flex-col rounded-surface border border-slate-200 bg-white p-4
            shadow-brand transition-shadow hover:shadow-brand-lg sm:p-5;
   }
   .cat-tile-icon {
-    @apply mb-3 grid h-11 w-11 place-items-center rounded-xl sm:h-12 sm:w-12;
+    @apply mb-3 grid h-11 w-11 place-items-center rounded-inner sm:h-12 sm:w-12;
     background-color: var(--tint-bg, theme(colors.primary.50));
     color: var(--tint-fg, theme(colors.primary.600));
   }
@@ -1111,7 +1169,7 @@
   .cat-tile-photo .cat-tile-icon,
   .dark .cat-tile-photo .cat-tile-icon {
     /* Dark glass, not white: a white chip vanishes on a bright photo. */
-    @apply mb-auto h-9 w-9 rounded-lg bg-slate-950/40 text-white ring-1 ring-white/20
+    @apply mb-auto h-9 w-9 rounded-inner bg-slate-950/40 text-white ring-1 ring-white/20
            backdrop-blur-sm sm:h-10 sm:w-10;
   }
   .cat-tile-photo .cat-tile-name,
@@ -1320,7 +1378,7 @@
      with no category (category_id is nullable) gets. */
   .hero-vertical {
     /* overflow-x-clip, never overflow-hidden — the same trap .hero-home
-       documents. This band contains a .searchbar, and its typeahead listbox is
+       documents. This band contains a search box, and its typeahead listbox is
        absolutely positioned below the input with a max height of 18rem, so it
        opens well past the bottom edge of a band this short. overflow-hidden
        clipped it at the hero's edge; clip on one axis leaves the other genuinely
@@ -1350,7 +1408,7 @@
   .loc-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
 
   .loc-card {
-    @apply flex min-h-[11rem] flex-col justify-end rounded-2xl bg-gradient-to-br p-5
+    @apply flex min-h-[11rem] flex-col justify-end rounded-surface bg-gradient-to-br p-5
            text-white shadow-brand transition-shadow hover:shadow-brand-xl;
   }
   /* Rotated by position in _location_card.php. Spelled out in full because
@@ -1376,7 +1434,7 @@
   .card-grid-4 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
 
   .avatar {
-    @apply grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl
+    @apply grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-inner
            bg-primary-50 text-sm font-bold text-primary-600;
   }
   .avatar img { @apply h-full w-full object-cover; }
@@ -1448,7 +1506,7 @@
   .verified-tip { @apply relative; }
   .verified-tip-text {
     @apply pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-max max-w-[14rem]
-           -translate-x-1/2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-center text-xs font-medium
+           -translate-x-1/2 rounded-inner bg-slate-900 px-2.5 py-1.5 text-center text-xs font-medium
            leading-snug text-white shadow-brand
            max-sm:left-0 max-sm:max-w-[9rem] max-sm:translate-x-0;
   }
@@ -1473,7 +1531,7 @@
   .compare-chip-paid    { @apply bg-amber-50 text-amber-800; }
   .compare-chip-no      { @apply bg-slate-100 text-slate-500; }
   .compare-plus { @apply text-xs font-semibold text-slate-400; }
-  .compare-wrap { @apply rounded-2xl border border-slate-200 bg-white shadow-brand max-md:border-0 max-md:bg-transparent max-md:shadow-none; }
+  .compare-wrap { @apply rounded-surface border border-slate-200 bg-white shadow-brand max-md:border-0 max-md:bg-transparent max-md:shadow-none; }
   .compare-table { @apply w-full table-fixed border-collapse text-left text-sm; }
   .compare-table thead th:first-child { @apply w-[16%]; }
   .compare-table thead th {
@@ -1494,11 +1552,11 @@
     .compare-table tbody th,
     .compare-table tbody td { @apply block; }
     .compare-table tbody tr {
-      @apply mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-brand;
+      @apply mb-4 rounded-surface border border-slate-200 bg-white p-4 shadow-brand;
     }
     .compare-table tbody tr + tr > * { @apply border-t-0; }
     .compare-table tbody th { @apply mb-2 p-0 text-base; }
-    .compare-table tbody td { @apply rounded-lg px-0 py-2; }
+    .compare-table tbody td { @apply rounded-inner px-0 py-2; }
     .compare-table tbody td.compare-ours { @apply -mx-2 px-2; }
     .compare-table tbody td::before {
       content: attr(data-label);
@@ -1555,7 +1613,7 @@
   .dark .review-meta { @apply text-slate-400; }
   .review-body  { @apply mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-slate-700; }
   .dark .review-body { @apply text-slate-200; }
-  .review-reply { @apply mt-3 rounded-xl bg-slate-50 p-3 text-sm; }
+  .review-reply { @apply mt-3 rounded-inner bg-slate-50 p-3 text-sm; }
   .dark .review-reply { @apply bg-slate-800/60; }
   .review-reply-body { @apply mt-1 whitespace-pre-line break-words text-slate-700; }
   .dark .review-reply-body { @apply text-slate-200; }
@@ -1652,10 +1710,10 @@
      (one) and the button renders underlined in link blue. */
   .prose-legal a:not(.btn)  { @apply text-primary-600 underline underline-offset-2 hover:text-primary-500; }
   .prose-legal strong { @apply font-semibold text-slate-900; }
-  /* rounded-lg rather than the bare rounded it carried — the only 4px corner in
+  /* rounded-inner (the corner standard) rather than the bare rounded it carried — the only 4px corner in
      the sheet, on the one element nobody looks at twice. */
   .prose-legal code {
-    @apply rounded-lg bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
+    @apply rounded-inner bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
   }
   .prose-legal .table { @apply mb-6; }
   .dark .prose-legal h2,
@@ -1770,7 +1828,7 @@
   /* Sits between .profile-head and .profile-grid, which brings its own mt-6 —
      so only a top margin here, or the gap below doubles. */
   .gallery      { @apply mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4; }
-  .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-2xl border-0 p-0; }
+  .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-surface border-0 p-0; }
   /* The first photo leads, at four times the size: an editorial spread rather
      than a contact sheet. Only once there are enough photos to fill the rows
      around it. */
@@ -1784,11 +1842,11 @@
      everything on the page, including the z-40 sticky header. */
   .lightbox        { @apply fixed inset-0 z-[1000] grid place-items-center bg-slate-900/90 p-4; }
   .lightbox[hidden] { @apply hidden; }
-  .lightbox img     { @apply max-h-[85vh] max-w-full rounded-lg; }
+  .lightbox img     { @apply max-h-[85vh] max-w-full rounded-surface; }
   .lightbox-close,
   .lightbox-prev,
   .lightbox-next {
-    @apply absolute grid h-10 w-10 cursor-pointer place-items-center rounded-full
+    @apply absolute grid h-11 w-11 cursor-pointer place-items-center rounded-control
            border-0 bg-white/10 text-white hover:bg-white/20;
   }
   .lightbox-close { @apply right-4 top-4; }
@@ -1806,7 +1864,7 @@
      Pages sit in a grid of portrait tiles: a menu page is taller than wide. */
   .menu-file  { @apply gap-2; }
   .menu-pages { @apply grid grid-cols-2 gap-3 sm:grid-cols-4; }
-  .menu-page  { @apply block overflow-hidden rounded-lg border border-slate-200; }
+  .menu-page  { @apply block overflow-hidden rounded-inner border border-slate-200; }
   .menu-page img { @apply aspect-[3/4] h-auto w-full object-cover object-top; }
   .dark .menu-page { @apply border-slate-700; }
 
@@ -1829,9 +1887,9 @@
 
   /* ---------------------------------------------------------- trading hours */
   .hours-day-row     { @apply items-start; }
-  .hours-today       { @apply rounded-lg bg-primary-50 px-2; }
+  .hours-today       { @apply rounded-inner bg-primary-50 px-2; }
   .hours-today-badge {
-    @apply ml-1 rounded-full bg-primary-500 px-1.5 py-0.5 text-[10px] font-semibold text-white;
+    @apply ml-1 rounded-full bg-primary-500 px-2.5 py-0.5 text-xs font-semibold text-white;
   }
   .hours-note-text { @apply text-xs text-slate-500; }
   /* The badge keeps its ocean fill — it reads as a chip in both themes. */
@@ -1850,7 +1908,7 @@
      header. Isolating confines Leaflet's scale to the map. Fullscreen is
      unaffected: the top layer sits above every stacking context. */
   .map-view {
-    @apply relative isolate aspect-[4/3] w-full overflow-hidden rounded-xl border border-slate-200;
+    @apply relative isolate aspect-[4/3] w-full overflow-hidden rounded-surface border border-slate-200;
   }
   .map-view-canvas { @apply h-full w-full; }
   /* Fullscreen paints the element against a black backdrop by default, and the
@@ -1872,15 +1930,28 @@
      below, not the main event. */
   /* `isolate` for the same reason as .map-view above. */
   .results-map {
-    @apply relative isolate mb-8 h-[320px] w-full overflow-hidden rounded-3xl border border-slate-200
+    @apply relative isolate mb-8 h-[320px] w-full overflow-hidden rounded-surface border border-slate-200
            sm:h-[420px];
   }
   .results-map-canvas { @apply h-full w-full; }
   .results-map:fullscreen { @apply h-full rounded-none border-0; }
-  /* rounded-lg, the step every other small floating chip uses. It was the one
+  /* Leaflet's own zoom and fullscreen bars ship 4px corners with 2px buttons.
+     On the corner standard they are a small surface: one inner corner on the
+     bar, and the buttons inside clipped to it rather than rounded themselves. */
+  /* `html` up front because leaflet.css loads after this file (lazily, see
+     data-leaflet-css) and its .leaflet-touch .leaflet-bar is as specific as a
+     two-class rule here — the later file would win the tie. */
+  html .leaflet-bar,
+  html .leaflet-touch .leaflet-bar { @apply overflow-hidden rounded-inner; }
+  html .leaflet-bar a,
+  html .leaflet-bar a:first-child,
+  html .leaflet-bar a:last-child,
+  html .leaflet-touch .leaflet-bar a:first-child,
+  html .leaflet-touch .leaflet-bar a:last-child { border-radius: 0; }
+  /* rounded-inner, the step every other small floating label uses. It was the one
      rounded-md in the stylesheet. */
   .results-map-status {
-    @apply pointer-events-none absolute bottom-2 left-2 z-[500] rounded-lg bg-white/90 px-2 py-1
+    @apply pointer-events-none absolute bottom-2 left-2 z-[500] rounded-inner bg-white/90 px-2 py-1
            text-xs text-slate-600 shadow-sm;
   }
   .results-map-status:empty { @apply hidden; }
@@ -1897,13 +1968,40 @@
   .near-bar-note   { @apply text-xs text-slate-500; }
   .near-bar-note:empty { @apply hidden; }
   .near-chip {
-    @apply rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600
+    @apply inline-flex h-8 items-center rounded-control border border-slate-200 px-3.5 text-sm font-medium text-slate-600
            no-underline hover:border-primary-300 hover:text-primary-600;
   }
   .near-chip.is-active {
     @apply border-primary-500 bg-primary-500 text-white hover:text-white;
   }
   .card-distance { @apply text-xs font-medium text-primary-600; }
+
+  /* How a typed search was read (directory/_search_reading.php). It sits in
+     the hero, so every paragraph here is scoped under .search-reading: two
+     classes outrank .hero p, which would otherwise make them lede-sized. */
+  .search-reading { @apply mt-5 space-y-3; }
+  .search-reading p { @apply m-0 max-w-none; }
+  .search-reading .search-reading-line { @apply text-base text-slate-700; }
+  .search-reading-line strong { @apply font-semibold text-slate-900; }
+  .search-reading-chips { @apply m-0 flex list-none flex-wrap items-center gap-2 p-0; }
+  .search-chip {
+    @apply inline-flex items-center gap-1.5 h-8 rounded-control border border-slate-200 bg-white px-3.5
+           text-sm font-medium text-slate-700 no-underline hover:border-primary-300 hover:text-primary-600;
+  }
+  .search-reading-exact { @apply text-sm font-medium text-primary-500 underline-offset-4 hover:underline; }
+  .search-reading .search-reading-near { @apply flex flex-wrap items-center gap-3 text-sm text-slate-600; }
+  /* The fallback has to be impossible to miss: the list below it is not the
+     answer to everything that was asked, and this is what says so. */
+  .search-notice { @apply rounded-surface border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900; }
+  .search-reading .search-notice p { @apply text-sm text-amber-900; }
+  .search-notice-title { @apply font-semibold; }
+  .dark .search-reading .search-reading-line { @apply text-slate-300; }
+  .dark .search-reading-line strong { @apply text-white; }
+  .dark .search-chip { @apply border-slate-700 bg-transparent text-slate-200 hover:border-primary-400 hover:text-primary-300; }
+  .dark .search-reading-exact { @apply text-primary-300; }
+  .dark .search-reading .search-reading-near { @apply text-slate-400; }
+  .dark .search-notice { @apply border-amber-500/40 bg-amber-500/10; }
+  .dark .search-reading .search-notice p { @apply text-amber-100; }
   .dark .near-bar-label,
   .dark .near-bar-note  { @apply text-slate-400; }
   .dark .near-chip      { @apply border-slate-700 text-slate-300 hover:border-primary-400 hover:text-primary-300; }
@@ -1912,14 +2010,14 @@
 
   /* Marker popups. Leaflet supplies the bubble; this is what goes inside. */
   .map-popup           { @apply min-w-[200px] text-sm; }
-  .map-popup-logo      { @apply mb-2 h-10 w-auto max-w-20 rounded-lg bg-white object-contain; }
+  .map-popup-logo      { @apply mb-2 h-10 w-auto max-w-20 rounded-inner bg-white object-contain; }
   .map-popup-name      { @apply text-sm font-semibold text-slate-900; }
   .map-popup-meta      { @apply mt-0.5 text-xs text-slate-500; }
   .map-popup-open      { @apply mt-1 text-xs font-semibold text-emerald-600; }
   .map-popup-shut      { @apply mt-1 text-xs font-semibold text-slate-500; }
   .map-popup-actions   { @apply mt-2 flex flex-wrap gap-1.5; }
   .map-popup-btn {
-    @apply rounded-lg bg-primary-500 px-2.5 py-1 text-xs font-medium text-white no-underline
+    @apply inline-flex h-8 items-center rounded-control bg-primary-500 px-3 text-xs font-medium text-white no-underline
            hover:bg-primary-600;
   }
   /* The popup sits on the light raster tiles, so it stays light in dark mode —
@@ -1942,7 +2040,7 @@
   /* ------------------------------------------------------------------- share */
   .share-row  { @apply flex flex-wrap items-start gap-1.5; }
   .share-icon {
-    @apply grid h-9 w-9 cursor-pointer place-items-center rounded-full border
+    @apply grid h-11 w-11 cursor-pointer place-items-center rounded-control border
            border-slate-200 bg-white text-slate-500 transition-colors
            hover:border-primary-500 hover:text-primary-500;
   }
@@ -1958,7 +2056,8 @@
   .share-icon.is-copied .icon-check { @apply block; }
 
   /* ----------------------------------------------------------------- forms */
-  .form-card { @apply mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 sm:p-10; }
+  .form-card { @apply mx-auto max-w-3xl rounded-surface border border-slate-200 bg-white p-6 sm:p-10; }
+  .form-card-full { @apply max-w-none; }
   .form-row  { @apply grid gap-4 sm:grid-cols-2; }
   .field     { @apply mb-4; }
   .field label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
@@ -1975,9 +2074,14 @@
   .field input[type="date"],
   .field select,
   .field textarea {
-    @apply w-full rounded-xl border-slate-200 text-sm
+    @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm
            focus:border-primary-500 focus:ring-primary-500;
   }
+  /* The corner standard (tailwind.tokens.cjs): every one-line control is a
+     44px pill, padded 16px a side. A select keeps room on the right for its
+     arrow; a textarea is many lines, so it takes the inner radius and grows. */
+  .field select   { @apply pr-10; }
+  .field textarea { @apply h-auto rounded-inner py-3; }
   .hint { @apply mt-1 text-xs text-slate-500; }
   .err  { @apply mt-1 text-sm font-medium text-brand-crimson; }
   /* Set by "failed-save errors" in directory.js on the field each message is for. */
@@ -1986,7 +2090,7 @@
   .is-invalid { @apply border-brand-crimson ring-1 ring-brand-crimson/40; }
   /* Unsaved edits put back after a reload — see "draft backup" in directory.js. */
   .draft-banner {
-    @apply mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border
+    @apply mb-5 flex flex-wrap items-center justify-between gap-3 rounded-surface border
            border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900;
   }
   .draft-banner p { @apply m-0 min-w-0 flex-1 basis-60; }
@@ -2017,7 +2121,7 @@
 
   /* Fields kept for administration only — see _form_fields.php. */
   .form-private {
-    @apply mb-4 rounded-xl border border-dashed border-slate-300 px-4 pb-4 pt-2;
+    @apply mb-4 rounded-surface border border-dashed border-slate-300 px-4 pb-4 pt-2;
   }
   .form-private .field  { @apply mb-0; }
   .form-private legend  { @apply px-1 text-sm font-semibold text-slate-700; }
@@ -2060,7 +2164,7 @@
      top-left and dark on the bottom-right. */
   .field input[type="file"] {
     @apply w-full cursor-pointer rounded-none border-0 p-0 text-sm text-slate-500
-           file:mr-3 file:cursor-pointer file:rounded-lg file:border
+           file:mr-3 file:cursor-pointer file:rounded-control file:border
            file:border-solid file:border-slate-200 file:bg-white file:px-4 file:py-2
            file:text-sm file:font-semibold file:text-primary-700
            file:transition-colors hover:file:bg-primary-50
@@ -2087,7 +2191,9 @@
 
   /* Free vs Verified Business, above the signup form. Two cards over an
      identical set of rows — see _plan_cards.php for why the rows are shared. */
-  .plan-choose       { @apply mx-auto mb-6 max-w-3xl; }
+  /* Full container width, like the hero and the content around it: the plan
+     cards and the form below them share the page's edges (add-listing only). */
+  .plan-choose       { @apply mb-6; }
   .plan-choose-title { @apply mb-4 text-2xl font-extrabold text-slate-900; }
   .dark .plan-choose-title { @apply text-white; }
 
@@ -2098,7 +2204,7 @@
   .plan-grid-single { @apply max-w-xl sm:grid-cols-1; }
 
   .plan-card {
-    @apply relative flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-brand;
+    @apply relative flex flex-col rounded-surface border border-slate-200 bg-white p-5 shadow-brand;
   }
   /* Emerald edge to tie the paid card to the badge itself rather than to the
      orange CTA, which is the same on both. */
@@ -2169,7 +2275,7 @@
      pitch in one line — same technique as .verify-cta-details further down, which
      is where this came from. */
   .verify-pick   { @apply mb-5; }
-  .verify-offer  { @apply rounded-xl border border-slate-200 bg-slate-50 px-4 py-3; }
+  .verify-offer  { @apply rounded-surface border border-slate-200 bg-slate-50 px-4 py-3; }
   /* Stacked, not the one-line flex row this used to be: the summary is a whole
      block of copy now. list-none plus the ::-webkit- rule drop the disclosure
      triangle, which would otherwise sit above the button and give away that this
@@ -2288,7 +2394,7 @@
 
   /* Checkout summary — a receipt-shaped block, so what is being bought reads as
      a set of facts rather than another paragraph of marketing. */
-  .checkout-summary { @apply my-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2; }
+  .checkout-summary { @apply my-5 rounded-surface border border-slate-200 bg-slate-50 px-4 py-2; }
   .checkout-line    { @apply flex items-start justify-between gap-4 border-b border-slate-200 py-2.5 text-sm text-slate-700; }
   .checkout-line:last-child { @apply border-b-0; }
   .checkout-label   { @apply shrink-0 font-medium text-slate-500; }
@@ -2332,12 +2438,12 @@
   /* h-14 with a free width, for the reason .avatar-logo explains: this box is
      showing the operator what is stored, and a 423x93 logo squeezed into 56x56
      is 56x12 of unreadable sliver. */
-  .upload-current img { @apply h-14 w-auto min-w-14 max-w-48 shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-1; }
+  .upload-current img { @apply h-14 w-auto min-w-14 max-w-48 shrink-0 rounded-inner border border-slate-200 bg-white object-contain p-1; }
   .upload-current .hint { @apply mt-0; }
 
   /* Thumbnails of what was just picked, drawn from the downscaled blob. */
   .upload-preview     { @apply mt-2 flex flex-wrap gap-2 empty:mt-0; }
-  .upload-thumb       { @apply relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-50; }
+  .upload-thumb       { @apply relative h-20 w-20 overflow-hidden rounded-inner border border-slate-200 bg-slate-50; }
   .upload-thumb img   { @apply h-full w-full object-cover; }
   .upload-thumb-size  {
     @apply absolute inset-x-0 bottom-0 bg-slate-900/70 px-1 py-0.5
@@ -2355,7 +2461,7 @@
   .dark .upload-note        { @apply text-amber-400; }
 
   /* --------------------------------------------- existing gallery, editable */
-  .photo-manage      { @apply mb-3 mt-1 rounded-xl border border-slate-200 bg-slate-50 p-4; }
+  .photo-manage      { @apply mb-3 mt-1 rounded-surface border border-slate-200 bg-slate-50 p-4; }
   /* Enter-to-save stand-in — see _form_fields.php. Off-screen, not display:none. */
   .form-default-submit { @apply absolute -left-[9999px] h-px w-px overflow-hidden; }
   .photo-manage-head { @apply mb-3 flex flex-wrap items-baseline justify-between gap-2; }
@@ -2364,7 +2470,7 @@
   /* A delete that failed in place — see "photo delete" in directory.js. */
   .photo-manage-error { @apply mb-3 text-xs font-medium text-brand-crimson; }
   .photo-manage-grid { @apply grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6; }
-  .photo-manage-item { @apply relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white; }
+  .photo-manage-item { @apply relative aspect-square overflow-hidden rounded-inner border border-slate-200 bg-white; }
   .photo-manage-item img { @apply h-full w-full object-cover; }
   .photo-manage-remove {
     @apply absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full
@@ -2381,10 +2487,10 @@
      <details>/<summary> for the disclosure — no JavaScript, and the content is
      still findable with ctrl-F once open, same as the FAQ. */
   .disclosure {
-    @apply mb-5 rounded-xl border border-slate-200 bg-slate-50;
+    @apply mb-5 rounded-surface border border-slate-200 bg-slate-50;
   }
   .disclosure-summary {
-    @apply flex cursor-pointer flex-wrap items-baseline justify-between gap-2 rounded-xl
+    @apply flex cursor-pointer flex-wrap items-baseline justify-between gap-2 rounded-surface
            px-4 py-3 text-sm font-semibold text-slate-700
            hover:bg-slate-100 focus-visible:outline focus-visible:outline-2
            focus-visible:outline-offset-2 focus-visible:outline-primary-500;
@@ -2403,15 +2509,15 @@
   .dark .hours-appointment { @apply text-slate-200; }
 
   .required-chip {
-    @apply ml-2 inline-block rounded-full bg-primary-100 px-2 py-0.5 align-middle text-[0.7rem]
+    @apply ml-2 inline-block rounded-full bg-primary-100 px-2.5 py-0.5 align-middle text-xs
            font-semibold uppercase tracking-wide text-primary-700;
   }
   .dark .required-chip { @apply bg-primary-900/60 text-primary-200; }
 
-  /* rounded-xl, matching .hours-row: both are a repeated sub-row inside one
+  /* rounded-inner, matching .hours-row: both are a repeated sub-row inside one
      form field, and on /manage they are a few hundred pixels apart. It was lg. */
   .repeat-row {
-    @apply mb-3 rounded-xl border border-slate-200 bg-white p-3;
+    @apply mb-3 rounded-inner border border-slate-200 bg-white p-3;
   }
   .repeat-row-head { @apply mb-2 flex items-center justify-between gap-3; }
   .repeat-remove   { @apply ml-auto flex items-center gap-1.5 text-xs text-slate-500; }
@@ -2499,7 +2605,7 @@
      once it is a 20rem sidebar. */
   .results-filters .attr-grid { @apply lg:grid-cols-1; }
 
-  /* The panel itself is .panel — the same surface as .form-card (rounded-2xl,
+  /* The panel itself is .panel — the same surface as .form-card (rounded-surface,
      slate border, white / #1a202c, shadow-brand) at p-5 instead of p-6 sm:p-8.
      That is the whole of "make it look like the listing form": no new surface,
      just stop using .disclosure's slate-50 band.
@@ -2560,7 +2666,7 @@
   /* The number boxes sit in a fieldset, not a .field, so the shared input rule
      above does not reach them. */
   .facet-field input[type="number"] {
-    @apply w-full rounded-xl border-slate-200 text-sm
+    @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm
            focus:border-primary-500 focus:ring-primary-500;
   }
   .results-filter-actions { @apply mt-5 flex items-center gap-2; }
@@ -2625,7 +2731,7 @@
 
   /* address autocomplete dropdown, in the shared listing form */
   .address-suggest-list {
-    @apply absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl
+    @apply absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-surface
            border border-slate-200 bg-white py-1 text-sm shadow-brand-lg;
   }
   .address-suggest-list li { @apply cursor-pointer px-3 py-2 text-slate-700; }
@@ -2648,7 +2754,7 @@
      and its rows carry a second line the address list has no use for. */
   .search-suggest { @apply relative w-full; }
   .search-suggest-list {
-    @apply absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-auto rounded-xl
+    @apply absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-auto rounded-surface
            border border-slate-200 bg-white py-1 text-left text-sm shadow-brand-lg;
   }
   .search-suggest-list li { @apply flex cursor-pointer items-baseline gap-2 px-3 py-2 text-slate-700; }
@@ -2659,7 +2765,7 @@
   }
   .search-suggest-label { @apply min-w-0 flex-1 truncate font-medium; }
   .search-suggest-sub   { @apply shrink-0 text-xs text-slate-500; }
-  .search-suggest-kind  { @apply shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500; }
+  .search-suggest-kind  { @apply shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500; }
   .dark .search-suggest-list { @apply border-slate-700 bg-[#1a202c]; }
   .dark .search-suggest-list li { @apply text-slate-300; }
   .dark .search-suggest-list li.is-active,
@@ -2673,11 +2779,11 @@
   /* pin picker, in the shared listing form */
   .map-picker-optional  { @apply ml-1 text-xs font-normal text-slate-400; }
   .map-picker-help      { @apply mb-2 text-xs text-slate-500; }
-  .map-picker-warn      { @apply rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-800; }
+  .map-picker-warn      { @apply rounded-inner border border-amber-200 bg-amber-50 p-2 text-amber-800; }
   /* `isolate` for the same reason as .map-view: without it Leaflet's panes and
      controls (400/800/1000) outrank the z-20 address-suggest dropdown that
      opens directly above this map, and the picker paints over the suggestions. */
-  .map-picker-canvas    { @apply relative isolate h-64 w-full overflow-hidden rounded-xl border border-slate-200; }
+  .map-picker-canvas    { @apply relative isolate h-64 w-full overflow-hidden rounded-surface border border-slate-200; }
   .map-picker-actions   { @apply mt-2 flex flex-wrap items-center gap-2; }
   /* .btn sets display:inline-flex, which outranks the [hidden] attribute's
      display:none from preflight — without this the "Clear pin" button shows
@@ -2689,7 +2795,7 @@
      not a correction — the pin is already saved, and this is only an offer to
      match the text to it. */
   .map-picker-suggestion {
-    @apply mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3;
+    @apply mt-2 rounded-inner border border-slate-200 bg-slate-50 p-3;
   }
   .map-picker-suggestion[hidden]    { @apply !hidden; }
   .map-picker-suggestion-label      { @apply text-xs text-slate-500; }
@@ -2728,7 +2834,7 @@
      get a floor of 7rem so the native clock icon always has room beside the
      digits, the dash shrink-wraps, and what is left goes to the note. */
   .hours-row    {
-    @apply grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-slate-100 p-2 text-sm
+    @apply grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-inner border border-slate-100 p-2 text-sm
            sm:grid-cols-[90px_100px_minmax(7rem,1fr)_auto_minmax(7rem,1fr)_minmax(0,2fr)];
   }
   .hours-day    { @apply col-span-2 font-medium text-slate-700 sm:col-span-1; }
@@ -2737,16 +2843,16 @@
            sm:justify-self-auto;
   }
   /* Both controls in the row get identical chrome. They sit side by side, so a
-     12px note box against 8px time boxes reads as a mistake rather than a
+     pill note box against square-ish time boxes reads as a mistake rather than a
      choice — which is what it was: .hours-note has no radius of its own and was
-     picking up rounded-xl from the .field input[type="text"] rule.
+     picking up the .field input[type="text"] rule's corner instead.
 
      Written as `input.hours-note` rather than `.hours-note` deliberately: that
      rule is (0,2,1) and a lone class is (0,1,0), so the class alone would lose
      and the note would stay 12px. This matches its specificity and comes later
-     in the file, which is what makes rounded-lg land. */
+     in the file, which is what makes this rule's pill land. */
   .hours-row input[type="time"],
-  .hours-row input.hours-note { @apply w-full rounded-lg border-slate-200 text-sm; }
+  .hours-row input.hours-note { @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm; }
   .dark .hours-row    { @apply border-slate-800; }
   .dark .hours-day    { @apply text-slate-200; }
   .dark .hours-closed { @apply text-slate-400; }
@@ -2773,7 +2879,7 @@
   .hp   { @apply absolute -left-[9999px] h-0 w-0 overflow-hidden; }
 
   /* ---------------------------------------------------------------- alerts */
-  .alert         { @apply rounded-xl border px-4 py-3 text-sm; }
+  .alert         { @apply rounded-surface border px-4 py-3 text-sm; }
   .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
   .alert-error   { @apply border-red-200 bg-red-50 text-red-800; }
   .alert-info    { @apply border-sky-200 bg-sky-50 text-sky-800; }
@@ -2788,14 +2894,14 @@
 
   /* ------------------------------------------------------------ admin table */
   .tabs   { @apply mb-4 flex flex-wrap gap-1 border-b border-slate-200; }
-  .tabs a { @apply rounded-t-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-primary-500; }
+  .tabs a { @apply inline-flex h-9 items-center rounded-control px-4 text-sm font-medium text-slate-500 hover:text-primary-500; }
   .tabs a.active { @apply bg-white text-primary-500 shadow-[inset_0_-2px_0_0_#F77F00]; }
   .dark .tabs   { @apply border-slate-800; }
   .dark .tabs a { @apply text-slate-400 hover:text-white; }
   /* The orange inset underline carries the active state in both themes. */
   .dark .tabs a.active { @apply bg-[#1a202c] text-white; }
 
-  .tablewrap { @apply overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-brand; }
+  .tablewrap { @apply overflow-x-auto rounded-surface border border-slate-200 bg-white shadow-brand; }
   .table     { @apply w-full border-collapse text-sm; }
   .table th  { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
   .table td  { @apply border-t border-slate-100 px-4 py-3 align-top; }
@@ -2822,8 +2928,8 @@
 
   /* ---------------------------------------------------------------- pager */
   .pager        { @apply mt-6 flex flex-wrap justify-center gap-1.5; }
-  .pager a      { @apply rounded-full px-3.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100; }
-  .pager .current { @apply rounded-full bg-primary-500 px-3.5 py-1.5 text-sm font-semibold text-white; }
+  .pager a      { @apply inline-flex h-8 items-center rounded-control px-3.5 text-sm text-slate-600 hover:bg-slate-100; }
+  .pager .current { @apply inline-flex h-8 items-center rounded-control bg-primary-500 px-3.5 text-sm font-semibold text-white; }
   .dark .pager a { @apply text-slate-300 hover:bg-slate-800; }
   /* primary-500 is near-black — invisible as a "current page" chip on a dark
      page. primary-300 with dark text is the readable inversion. */
@@ -2843,10 +2949,10 @@
     @apply not-italic text-slate-400;
   }
   .rt-editor .ql-toolbar.ql-snow {
-    @apply rounded-t-xl border-slate-200 bg-slate-50;
+    @apply rounded-t-inner border-slate-200 bg-slate-50;
   }
   .rt-editor .ql-container.ql-snow {
-    @apply rounded-b-xl border-slate-200 bg-white font-sans;
+    @apply rounded-b-inner border-slate-200 bg-white font-sans;
   }
   .rt-editor .ql-snow .ql-picker { @apply text-slate-700; }
   .rt-editor .ql-snow .ql-stroke  { stroke: theme('colors.slate.600'); }

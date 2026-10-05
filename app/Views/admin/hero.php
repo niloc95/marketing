@@ -149,7 +149,7 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
                         <div class="card flex flex-wrap items-start gap-4 p-3">
                             <?php // A preview the admin can play; preload metadata only, so the
                                   // screen does not pull every clip in full. ?>
-                            <video class="h-24 w-40 rounded-lg bg-black object-cover" src="<?= esc(base_url($vid['path'])) ?>"
+                            <video class="h-24 w-40 rounded-inner bg-black object-cover" src="<?= esc(base_url($vid['path'])) ?>"
                                    muted controls preload="metadata"></video>
                             <form method="post" action="<?= base_url('admin/hero/videos/' . (int) $vid['id']) ?>" enctype="multipart/form-data"
                                   class="flex flex-1 flex-wrap items-end gap-3">
@@ -262,7 +262,7 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
                     <div class="flex flex-wrap items-start gap-4">
                         <img src="<?= esc(base_url($img['path_sm'] ?: $img['path'])) ?>"
                              alt="" width="160" height="90"
-                             class="h-[90px] w-[160px] shrink-0 rounded-xl object-cover<?= $img['is_active'] ? '' : ' opacity-40' ?>">
+                             class="h-[90px] w-[160px] shrink-0 rounded-inner object-cover<?= $img['is_active'] ? '' : ' opacity-40' ?>">
 
                         <form method="post" action="<?= base_url('admin/hero/' . $img['id']) ?>"
                               enctype="multipart/form-data" class="flex flex-1 flex-wrap items-end gap-3">

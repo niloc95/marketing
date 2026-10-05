@@ -47,16 +47,12 @@ $schema = schema_page(
         <p class="mt-2 text-sm text-white/80">
             <?= number_format($total) ?> <?= $total === 1 ? 'profile' : 'profiles' ?> in <?= esc($province) ?>.
         </p>
-        <form class="searchbar" method="get" action="<?= base_url('directory') ?>">
-            <?= view('directory/_search_input', [
+        <form class="search-form" method="get" action="<?= base_url('directory') ?>">
+            <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
-                'value'       => '',
                 'placeholder' => 'Search in ' . $province,
-                'ariaLabel'   => '',
-                'type'        => 'text',
-            ]) ?>
+            ], ['saveData' => false]) ?>
             <input type="hidden" name="province" value="<?= esc($province, 'attr') ?>">
-            <button class="btn btn-primary" type="submit">Search</button>
         </form>
     </div>
 </section>

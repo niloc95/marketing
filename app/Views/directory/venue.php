@@ -86,16 +86,13 @@ $schema = schema_page(
         <?php // Posts back to this page, not to /directory: the box says "search
               // within {venue}" and it has to mean it. venue() passes q straight
               // to browse(), so the venue filter is never lost. ?>
-        <form class="searchbar" method="get" action="<?= esc($canonical) ?>">
-            <?= view('directory/_search_input', [
+        <form class="search-form" method="get" action="<?= esc($canonical) ?>">
+            <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
                 'value'       => $q,
                 'placeholder' => 'Search within ' . $name,
-                'ariaLabel'   => '',
-                'type'        => 'text',
-            ]) ?>
+            ], ['saveData' => false]) ?>
             <?php if ($category !== ''): ?><input type="hidden" name="category" value="<?= esc($category, 'attr') ?>"><?php endif; ?>
-            <button class="btn btn-primary" type="submit">Search</button>
         </form>
     </div>
 </section>

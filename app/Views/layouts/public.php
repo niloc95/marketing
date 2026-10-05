@@ -90,19 +90,19 @@
             <?php // The scrolled-state search. Collapsed to nothing at the top of the
                   // page and revealed by .is-solid, which directory.js already writes
                   // past 8px of scroll — so the bar is untouched over a hero, and the
-                  // moment you scroll away from a page's own .searchbar this takes over.
+                  // moment you scroll away from a page's own search box this takes over.
                   //
                   // One form, two shapes: inline between the brand and the nav on
                   // desktop, and a wrapped full-width row beneath them on phones, where
                   // the bar has no horizontal room to give. See .header-search.
                   //
-                  // Carries `q` and nothing else. The page's own .searchbar keeps its
+                  // Carries `q` and nothing else. The page's own search box keeps its
                   // hidden lat/lng/radius fields precisely so refining a search does not
                   // lose your position; this is the opposite gesture — a fresh search
                   // from anywhere — and inheriting the last one's filters would silently
                   // narrow it.
                   //
-                  // role="search" with a name. The pages' own .searchbar forms carry no
+                  // role="search" with a name. The pages' own search forms carry no
                   // role, so this is currently the only search landmark on the site —
                   // but it is the one that is on every page, and it is the one that
                   // appears and disappears under the reader, so it is worth naming. ?>
@@ -110,17 +110,11 @@
                 <?php // No value, deliberately — see the comment above: this bar is the
                       // "fresh search from anywhere" gesture, so it starts empty even on
                       // a results page, where the hero form holds the current query. ?>
-                <?= view('directory/_search_input', [
-                    'listId'      => 'search-suggest-header',
-                    'value'       => '',
-                    'placeholder' => 'Name, service or keyword',
-                    'ariaLabel'   => 'Search local businesses',
-                    'type'        => 'search',
-                ]) ?>
-                <button class="btn btn-primary" type="submit">
-                    <?= lucide('search', 'h-4 w-4 shrink-0') ?>
-                    <span>Search</span>
-                </button>
+                <?= view('directory/_search_composer', [
+                    'listId' => 'search-suggest-header',
+                    'size'   => 'sm',
+                    'type'   => 'search',
+                ], ['saveData' => false]) ?>
             </form>
             <nav class="nav">
                 <?php // Three links is the most that stays visible without crowding the

@@ -39,7 +39,7 @@ $canPostJobs = $svc->canUseJobsFeatures($listing);
 
     <?php if ($published): ?>
         <?php if (! $canPostJobs): ?>
-            <p class="mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-200">
+            <p class="mt-3 rounded-inner bg-emerald-50 p-3 text-sm text-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-200">
                 <strong>Post job vacancies and reply to customers' requests</strong> with the Verified Business
                 badge. Your vacancies are set up so eligible ones can appear in Google's job search.
                 <a class="font-semibold underline" href="#get-verified">Get verified</a>

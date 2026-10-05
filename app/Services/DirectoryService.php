@@ -12,6 +12,8 @@ use App\Models\DirectoryCategoryGroupModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryTagModel;
 use App\Models\DirectoryVenueModel;
+use App\Services\Search\RuleBasedInterpreter;
+use App\Services\Search\SearchVocabulary;
 use CodeIgniter\Database\BaseBuilder;
 use CodeIgniter\Model;
 
@@ -107,6 +109,13 @@ class DirectoryService
             ->where('xs_directory_listings.status', 'published');
 
         $q = trim($filters['q'] ?? '');
+        // Ranked by how well each listing matches only when the visitor asked
+        // a question with words in it and no other order: "near me" is ordered
+        // by distance and "newest" by date, and both are what was asked for.
+        $byRelevance = $q !== '' && $near === null && ($filters['sort'] ?? '') !== 'new';
+        if ($byRelevance) {
+            $builder->select($this->relevanceSelect($q) . ' AS relevance', false);
+        }
         if ($q !== '') {
             // Everything applySearch adds is one OR group. Any filter appended
             // after it must be a plain where() — an orWhere here would escape
@@ -124,6 +133,9 @@ class DirectoryService
         }
         if (! empty($filters['city'])) {
             $builder->like('xs_directory_listings.city', trim($filters['city']));
+        }
+        if (! empty($filters['place'])) {
+            $this->applyPlace($builder, (string) $filters['place']);
         }
         // where(), never orWhere() — see the comment above applySearch(). The
         // venue page asks for one building, and an orWhere here would hand it
@@ -191,6 +203,16 @@ class DirectoryService
             $builder->orderBy('xs_directory_listings.published_at', 'DESC')
                 ->orderBy('xs_directory_listings.quality_score', 'DESC');
         } else {
+            // A search is ordered by how well each listing answers it first,
+            // and only then by the editorial order below. Before this, the
+            // match score was computed and thrown away: a business named
+            // exactly what was typed could sit on page three behind fuller
+            // profiles that mentioned the word once. relevanceSelect() is built
+            // from what a listing says about itself, never from the badge or
+            // its reviews — see the note there.
+            if ($byRelevance) {
+                $builder->orderBy('relevance', 'DESC', false);
+            }
             $builder->orderBy('xs_directory_listings.is_featured', 'DESC')
                 ->orderBy('xs_directory_listings.quality_score', 'DESC')
                 ->orderBy('xs_directory_listings.published_at', 'DESC');
@@ -251,9 +273,22 @@ class DirectoryService
             return [];
         }
 
+        // "dentist in sa" is a search being typed, not a business name, and a
+        // LIKE on the whole of it finds nothing. Read it first: offer the
+        // searches it is heading towards, then look up only the words that
+        // were not understood ("sa" here, too short to bother with). When
+        // every word was understood, fall back to the whole string.
+        $intent = \Config\Services::queryInterpreter()->interpret($q);
+        $out    = $this->intentSuggestions($intent);
+        if ($intent->hasFilters() && $intent->keywords() !== '') {
+            $q = $intent->keywords();
+        }
+        if (mb_strlen($q) < 3) {
+            return array_slice($out, 0, max(1, $limit));
+        }
+
         $db      = db_connect();
         $escaped = $db->escape($q);
-        $out     = [];
 
         $listings = $this->listings
             ->select('display_name, slug, city, province, quality_score', false)
@@ -366,6 +401,217 @@ class DirectoryService
     }
 
     /**
+     * Whole searches to offer while one is being typed: "Dentist in Sandton"
+     * once the category is understood and the last word starts a place we
+     * have listings in, or the understood search itself once it names both.
+     *
+     * Only places from searchVocabulary(), so every row leads somewhere with
+     * results — the same reason the city rows below come from listings.
+     *
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function intentSuggestions(\App\Services\Search\SearchIntent $intent): array
+    {
+        $subject = $intent->categoryName ?? $intent->groupName;
+        if ($subject === null) {
+            return [];
+        }
+
+        $labels = [];
+        if ($intent->place !== null) {
+            $labels[] = $subject . ' in ' . $intent->place;
+        } else {
+            $words    = explode(' ', RuleBasedInterpreter::normalise($intent->raw));
+            $fragment = (string) end($words);
+            $leftover = array_merge($intent->terms, $intent->serviceTerms);
+            if (mb_strlen($fragment) >= 2 && in_array($fragment, $leftover, true)) {
+                // Towns before suburbs: "sa" should offer Sandton the town
+                // before every suburb called Sa-something.
+                $places = $this->searchVocabulary()->places;
+                uasort($places, static fn ($a, $b) => [$a['kind'] !== 'city', $a['name']] <=> [$b['kind'] !== 'city', $b['name']]);
+                foreach ($places as $key => $place) {
+                    if (str_starts_with($key, $fragment)) {
+                        $labels[] = $subject . ' in ' . $place['name'];
+                    }
+                    if (count($labels) >= 3) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        $out = [];
+        foreach (array_unique($labels) as $label) {
+            $out[] = [
+                'type'  => 'search',
+                'label' => $label,
+                'sub'   => '',
+                'url'   => base_url('directory') . '?q=' . rawurlencode($label),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Everything the search interpreter can recognise, from our own data: the
+     * active categories and main categories, the towns and visible suburbs
+     * that published listings are in, and the words their service menus and
+     * tags use.
+     *
+     * Cached for ten minutes. A new town appearing in search a few minutes
+     * after its first listing is published costs nothing; reading four tables
+     * on every search would. A cache failure reads through.
+     */
+    public function searchVocabulary(): SearchVocabulary
+    {
+        $key = 'search_vocabulary_v1';
+        try {
+            $cached = cache()->get($key);
+            if ($cached instanceof SearchVocabulary) {
+                return $cached;
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'Search vocabulary cache unavailable, reading through: ' . $e->getMessage());
+        }
+
+        $vocabulary = $this->buildSearchVocabulary();
+
+        try {
+            cache()->save($key, $vocabulary, 600);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Could not cache the search vocabulary: ' . $e->getMessage());
+        }
+
+        return $vocabulary;
+    }
+
+    private function buildSearchVocabulary(): SearchVocabulary
+    {
+        $norm = static fn (string $text): string => RuleBasedInterpreter::normalise($text);
+
+        $categories = [];
+        foreach ($this->categories() as $c) {
+            $entry = ['slug' => (string) $c['slug'], 'name' => (string) $c['name']];
+            $categories[$norm((string) $c['name'])] ??= $entry;
+            $categories[$norm(str_replace('-', ' ', (string) $c['slug']))] ??= $entry;
+        }
+
+        $groups = [];
+        foreach ($this->groups->ordered() as $g) {
+            $groups[$norm((string) $g['name'])] ??= ['slug' => (string) $g['slug'], 'name' => (string) $g['name']];
+        }
+
+        // Towns first, so a suburb that shares a town's name stays a town.
+        $places = [];
+        $towns  = $this->listings->select('DISTINCT city', false)
+            ->where('status', 'published')->where('city !=', '')
+            ->findAll();
+        foreach ($towns as $row) {
+            $k = $norm((string) $row['city']);
+            if (mb_strlen($k) >= 3) {
+                $places[$k] ??= ['name' => trim((string) $row['city']), 'kind' => 'city'];
+            }
+        }
+        // Only suburbs the public can see — see HIDDEN_ADDRESS_SQL. Otherwise
+        // a hidden owner's suburb would become a word the search recognises.
+        $suburbs = $this->listings->select('DISTINCT suburb', false)
+            ->where('status', 'published')->where('suburb !=', '')
+            ->where('NOT ' . self::HIDDEN_ADDRESS_SQL, null, false)
+            ->findAll();
+        foreach ($suburbs as $row) {
+            $k = $norm((string) $row['suburb']);
+            if (mb_strlen($k) >= 3) {
+                $places[$k] ??= ['name' => trim((string) $row['suburb']), 'kind' => 'suburb'];
+            }
+        }
+
+        $db    = $this->listings->db;
+        $names = array_merge(
+            array_column($db->table('xs_directory_listing_services sv')
+                ->select('DISTINCT sv.name', false)
+                ->join('xs_directory_listings l', 'l.id = sv.listing_id')
+                ->where('l.status', 'published')->where('l.deleted_at', null)
+                ->limit(5000)->get()->getResultArray(), 'name'),
+            array_column($db->table('xs_directory_tags t')
+                ->select('DISTINCT t.name', false)
+                ->join('xs_directory_listing_tags lt', 'lt.tag_id = t.id')
+                ->join('xs_directory_listings l', 'l.id = lt.listing_id')
+                ->where('l.status', 'published')->where('l.deleted_at', null)
+                ->limit(5000)->get()->getResultArray(), 'name'),
+        );
+        $filler = array_flip(config('Search')->fillerWords);
+        $words  = [];
+        foreach ($names as $name) {
+            foreach (explode(' ', $norm((string) $name)) as $word) {
+                if (mb_strlen($word) >= 4 && ! isset($filler[$word])) {
+                    $words[$word] = true;
+                }
+            }
+        }
+
+        return new SearchVocabulary($categories, $groups, $places, $words);
+    }
+
+    /**
+     * Example searches for the home page, built from what is actually here:
+     * the busiest category-and-town pairs, one per category. An example must
+     * never land on an empty page, so nothing is invented — with too few real
+     * pairs, the config's fallbacks are used instead.
+     *
+     * @return list<string> e.g. "Dentist in Sandton"
+     */
+    public function searchExamples(int $limit = 6): array
+    {
+        $rows = $this->listings
+            ->select('p.name AS category, xs_directory_listings.city, COUNT(*) AS c', false)
+            ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id')
+            ->where('xs_directory_listings.status', 'published')
+            ->where('p.is_active', 1)
+            ->where('xs_directory_listings.city !=', '')
+            ->groupBy('p.id, p.name, xs_directory_listings.city')
+            ->orderBy('c', 'DESC')
+            ->orderBy('p.name', 'ASC')
+            ->limit(40)
+            ->findAll();
+
+        $out = $seen = [];
+        foreach ($rows as $row) {
+            if (isset($seen[$row['category']])) {
+                continue;
+            }
+            $seen[$row['category']] = true;
+            $out[] = $row['category'] . ' in ' . trim((string) $row['city']);
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+
+        return count($out) >= 3 ? $out : array_slice(config('Search')->fallbackExamples, 0, $limit);
+    }
+
+    /**
+     * Whether a published business is called something containing $q.
+     *
+     * The guard against over-reading a name: "Bob the Builder Plumbing" holds a
+     * category word, and filtering it to Builders would hide the one business
+     * the visitor typed the name of. When a name matches, the search runs on
+     * the words as typed instead.
+     */
+    public function hasListingNamed(string $q): bool
+    {
+        $q = trim($q);
+        if (mb_strlen($q) < 4) {
+            return false;
+        }
+
+        return $this->listings
+            ->where('status', 'published')
+            ->like('display_name', $q)
+            ->countAllResults() > 0;
+    }
+
+    /**
      * Every published listing with a position inside the given viewport, for
      * the search map.
      *
@@ -422,6 +668,9 @@ class DirectoryService
         }
         if (! empty($filters['city'])) {
             $builder->like('xs_directory_listings.city', trim($filters['city']));
+        }
+        if (! empty($filters['place'])) {
+            $this->applyPlace($builder, (string) $filters['place']);
         }
         if ($near !== null) {
             $this->applyNear($builder, $near);
@@ -706,7 +955,7 @@ class DirectoryService
      *
      * People search by service ("hair salon") far more than by business name, so
      * matching only the listing's own text misses the most common query there
-     * is. This deliberately spans four sources:
+     * is. This deliberately spans these sources:
      *
      *   - FULLTEXT over display_name / description_text / credentials, in
      *     BOOLEAN mode with a trailing * so "hairdress" reaches "hairdresser".
@@ -716,34 +965,28 @@ class DirectoryService
      *   - the joined category name
      *   - the listing's town and suburb
      *   - its tags, via EXISTS on the pivot
+     *   - its service menu, via EXISTS — "teeth whitening" is usually a line on
+     *     the menu, not a word in the description
      *   - its team members' names, roles, qualifications and areas of focus,
      *     via EXISTS on the team table, and only while the badge that
      *     publishes them is live
+     *
+     * The whole phrase is tried everywhere, and each word on its own against
+     * the name, category, tags and services: "teeth whitening" should still
+     * find a menu that says "Whitening". relevanceSelect() is what puts the
+     * listing that matched the whole phrase first.
      *
      * @param \CodeIgniter\Database\BaseBuilder|\CodeIgniter\Model $builder
      */
     private function applySearch($builder, string $q): void
     {
-        $db = $this->listings->db;
-
-        // Strip boolean operators before handing the term to MySQL: a stray "("
-        // or "+" is a syntax error in BOOLEAN mode, which would throw rather
-        // than simply returning nothing.
-        $terms = preg_split('/\s+/', preg_replace('/[+\-><()~*"@]+/', ' ', $q) ?? '') ?: [];
-        $terms = array_values(array_filter($terms, static fn ($t) => $t !== ''));
+        $terms = $this->searchTerms($q);
+        $like  = $this->likePattern($q);
 
         $builder->groupStart();
 
         if ($terms !== []) {
-            // Prefix-match every term; MySQL ignores tokens below
-            // innodb_ft_min_token_size (3 by default), which is fine here.
-            $expr = implode(' ', array_map(static fn ($t) => $t . '*', $terms));
-            $builder->where(
-                'MATCH(xs_directory_listings.display_name, xs_directory_listings.description_text, xs_directory_listings.credentials) '
-                . 'AGAINST (' . $db->escape($expr) . ' IN BOOLEAN MODE)',
-                null,
-                false
-            );
+            $builder->where($this->fulltextMatch($terms), null, false);
         }
 
         $builder
@@ -756,18 +999,25 @@ class DirectoryService
         // A suburb match only for an address the public may see: otherwise a
         // search for "Bromhof" would say where a hidden-address owner lives.
         $builder->orWhere(
-            '(xs_directory_listings.suburb LIKE ' . $db->escape('%' . $db->escapeLikeString($q) . '%')
+            '(xs_directory_listings.suburb LIKE ' . $like
             . " ESCAPE '!' AND NOT " . self::HIDDEN_ADDRESS_SQL . ')',
             null,
             false
         );
 
-        // Tags live in a pivot, so they cannot be part of the FULLTEXT index.
-        $tagSql = 'EXISTS (SELECT 1 FROM xs_directory_listing_tags lt'
-            . ' JOIN xs_directory_tags t ON t.id = lt.tag_id'
-            . ' WHERE lt.listing_id = xs_directory_listings.id'
-            . ' AND t.name LIKE ' . $db->escape('%' . $db->escapeLikeString($q) . '%') . ')';
-        $builder->orWhere($tagSql, null, false);
+        // Tags and services live in their own tables, so they cannot be part
+        // of the FULLTEXT index. Services carry no gate: the menu is part of
+        // every free profile.
+        $builder->orWhere($this->tagExists($q, $this->likeTerms($terms)), null, false);
+        $builder->orWhere($this->serviceExists($q, $this->likeTerms($terms)), null, false);
+
+        // Each word on its own, against the fields short enough for a word to
+        // mean something in. Not the description: FULLTEXT above already
+        // covers it, as whole words rather than any substring.
+        foreach ($this->likeTerms($terms) as $term) {
+            $builder->orLike('xs_directory_listings.display_name', $term)
+                ->orLike('p.name', $term);
+        }
 
         // Team members, for the same reason and in the same shape: a firm is
         // very often searched for by the name of the person you were referred
@@ -778,17 +1028,221 @@ class DirectoryService
         // The verified_until clause is not optional. Team members only render
         // for a listing with a live badge, so without it a search would return
         // a business on the strength of a panel the visitor cannot see.
-        $like    = $db->escape('%' . $db->escapeLikeString($q) . '%');
-        $teamSql = 'EXISTS (SELECT 1 FROM xs_directory_listing_team tm'
-            . ' WHERE tm.listing_id = xs_directory_listings.id'
-            . ' AND xs_directory_listings.verified_until >= CURDATE()'
-            . ' AND (tm.name LIKE ' . $like
-            . ' OR tm.role LIKE ' . $like
-            . ' OR tm.credentials LIKE ' . $like
-            . ' OR tm.specializations LIKE ' . $like . '))';
-        $builder->orWhere($teamSql, null, false);
+        $builder->orWhere($this->teamExists($q), null, false);
 
         $builder->groupEnd();
+    }
+
+    /**
+     * How well a listing answers the search, as a number to sort by.
+     *
+     * Weighted by where the words were found, strongest first: the business's
+     * own name, its service menu, its category, its tags, its team, and
+     * anywhere in its description. A match on the whole phrase scores more
+     * than a match on one of its words.
+     *
+     *   name 12 exact / 10 starts with / 8 contains, +3 a word (max 6)
+     *   service 9 phrase / 5 a word      category 8 phrase / 4 a word
+     *   tag 6 phrase / 3 a word          team 4 phrase
+     *   town or service area 2           description (FULLTEXT) up to 4
+     *
+     * Two things are deliberately NOT in it, for the reason browse() gives for
+     * its own order: reviews, and the paid badge. The team weight is where the
+     * badge could creep in, because team members only exist on a Verified
+     * profile — so it is held at the description's level, below anything a
+     * free profile can match on. A Verified business is found by its team; it
+     * is not ranked above a free one for having one.
+     */
+    private function relevanceSelect(string $q): string
+    {
+        $db        = $this->listings->db;
+        $terms     = $this->searchTerms($q);
+        $wordTerms = $this->likeTerms($terms);
+        $like      = $this->likePattern($q);
+        $prefix    = $db->escape($db->escapeLikeString($q) . '%');
+        $name      = 'xs_directory_listings.display_name';
+
+        $nameWords = $wordTerms === [] ? '0'
+            : 'LEAST(3 * (' . implode(' + ', array_map(
+                fn (string $t) => '(' . $name . ' LIKE ' . $this->likePattern($t) . " ESCAPE '!')",
+                $wordTerms
+            )) . '), 6)';
+
+        $parts = [
+            'CASE WHEN ' . $name . ' = ' . $db->escape($q) . ' THEN 12'
+                . ' WHEN ' . $name . ' LIKE ' . $prefix . " ESCAPE '!' THEN 10"
+                . ' WHEN ' . $name . ' LIKE ' . $like . " ESCAPE '!' THEN 8"
+                . ' ELSE ' . $nameWords . ' END',
+            'GREATEST(9 * ' . $this->serviceExists($q, []) . ', 5 * ' . $this->serviceExists('', $wordTerms) . ')',
+            'GREATEST(8 * COALESCE(p.name LIKE ' . $like . " ESCAPE '!', 0), 4 * " . $this->anyLike('p.name', $wordTerms) . ')',
+            'GREATEST(6 * ' . $this->tagExists($q, []) . ', 3 * ' . $this->tagExists('', $wordTerms) . ')',
+            '4 * ' . $this->teamExists($q),
+            '2 * (COALESCE(xs_directory_listings.city LIKE ' . $like . " ESCAPE '!', 0)"
+                . ' OR COALESCE(xs_directory_listings.service_areas LIKE ' . $like . " ESCAPE '!', 0))",
+        ];
+        if ($terms !== []) {
+            $parts[] = 'LEAST(2 * ' . $this->fulltextMatch($terms) . ', 4)';
+        }
+
+        return '(' . implode(' + ', $parts) . ')';
+    }
+
+    /**
+     * Restrict to one place: a town, a visible suburb, or a service area.
+     *
+     * The suburb clause carries the same hidden-address guard as applySearch():
+     * a filter for "Bromhof" must not return the travelling business whose
+     * owner lives there and chose not to say so. Their town and the areas they
+     * serve are public, and match as normal.
+     */
+    private function applyPlace(BaseBuilder|Model $builder, string $place): void
+    {
+        $like = $this->likePattern(trim($place));
+        $builder->where(
+            '(xs_directory_listings.city LIKE ' . $like . " ESCAPE '!'"
+            . ' OR xs_directory_listings.service_areas LIKE ' . $like . " ESCAPE '!'"
+            . ' OR (xs_directory_listings.suburb LIKE ' . $like . " ESCAPE '!' AND NOT " . self::HIDDEN_ADDRESS_SQL . '))',
+            null,
+            false
+        );
+    }
+
+    /**
+     * The search split into words, with the characters BOOLEAN mode treats as
+     * operators removed: a stray "(" or "+" is a syntax error there, which
+     * would throw rather than simply return nothing. Capped, because each word
+     * becomes more SQL and nobody types ten.
+     *
+     * @return list<string>
+     */
+    private function searchTerms(string $q): array
+    {
+        $terms = preg_split('/\s+/', preg_replace('/[+\-><()~*"@]+/', ' ', $q) ?? '') ?: [];
+        $terms = array_values(array_unique(array_filter($terms, static fn ($t) => $t !== '')));
+
+        return array_slice($terms, 0, 8);
+    }
+
+    /**
+     * The words worth a substring match on their own: three letters or more
+     * (below that, "%it%" is in every second name) and not filler — "the" in
+     * "The Plumbing Co" is not a reason to match every other "The".
+     *
+     * @param list<string> $terms
+     * @return list<string>
+     */
+    private function likeTerms(array $terms): array
+    {
+        static $filler = null;
+        $filler ??= array_flip(config('Search')->fillerWords);
+
+        $out = [];
+        foreach ($terms as $term) {
+            if (mb_strlen($term) >= 3 && ! isset($filler[mb_strtolower($term)])) {
+                $out[] = $term;
+            }
+        }
+
+        return array_slice($out, 0, 6);
+    }
+
+    /** @param list<string> $terms */
+    private function fulltextMatch(array $terms): string
+    {
+        // Prefix-match every term; MySQL ignores tokens below
+        // innodb_ft_min_token_size (3 by default), which is fine here.
+        $expr = implode(' ', array_map(static fn ($t) => $t . '*', $terms));
+
+        return 'MATCH(xs_directory_listings.display_name, xs_directory_listings.description_text, xs_directory_listings.credentials) '
+            . 'AGAINST (' . $this->listings->db->escape($expr) . ' IN BOOLEAN MODE)';
+    }
+
+    /** '%term%', escaped for a LIKE with ESCAPE '!'. */
+    private function likePattern(string $term): string
+    {
+        $db = $this->listings->db;
+
+        return $db->escape('%' . $db->escapeLikeString($term) . '%');
+    }
+
+    /**
+     * 1 when $column contains any of the words, else 0.
+     *
+     * @param list<string> $terms
+     */
+    private function anyLike(string $column, array $terms): string
+    {
+        if ($terms === []) {
+            return '0';
+        }
+
+        return 'COALESCE(' . implode(' OR ', array_map(
+            fn (string $t) => $column . ' LIKE ' . $this->likePattern($t) . " ESCAPE '!'",
+            $terms
+        )) . ', 0)';
+    }
+
+    /**
+     * EXISTS over the listing's tags containing the phrase or any of the words.
+     * Either may be empty; with both empty this is a constant 0.
+     *
+     * @param list<string> $terms
+     */
+    private function tagExists(string $phrase, array $terms): string
+    {
+        $match = $this->phraseOrWords('t.name', $phrase, $terms);
+
+        return $match === null ? '0'
+            : 'EXISTS (SELECT 1 FROM xs_directory_listing_tags lt'
+                . ' JOIN xs_directory_tags t ON t.id = lt.tag_id'
+                . ' WHERE lt.listing_id = xs_directory_listings.id AND ' . $match . ')';
+    }
+
+    /**
+     * EXISTS over the listing's service menu, same contract as tagExists().
+     *
+     * @param list<string> $terms
+     */
+    private function serviceExists(string $phrase, array $terms): string
+    {
+        $match = $this->phraseOrWords('sv.name', $phrase, $terms);
+
+        return $match === null ? '0'
+            : 'EXISTS (SELECT 1 FROM xs_directory_listing_services sv'
+                . ' WHERE sv.listing_id = xs_directory_listings.id AND ' . $match . ')';
+    }
+
+    /** EXISTS over the team, only while the badge that shows them is live. */
+    private function teamExists(string $phrase): string
+    {
+        $like = $this->likePattern($phrase);
+
+        return 'EXISTS (SELECT 1 FROM xs_directory_listing_team tm'
+            . ' WHERE tm.listing_id = xs_directory_listings.id'
+            . ' AND xs_directory_listings.verified_until >= CURDATE()'
+            . ' AND (tm.name LIKE ' . $like . " ESCAPE '!'"
+            . ' OR tm.role LIKE ' . $like . " ESCAPE '!'"
+            . ' OR tm.credentials LIKE ' . $like . " ESCAPE '!'"
+            . ' OR tm.specializations LIKE ' . $like . " ESCAPE '!'))";
+    }
+
+    /**
+     * "(col LIKE '%phrase%' OR col LIKE '%word%' …)", or null for nothing to
+     * match.
+     *
+     * @param list<string> $terms
+     */
+    private function phraseOrWords(string $column, string $phrase, array $terms): ?string
+    {
+        $patterns = array_values(array_unique(array_merge($phrase === '' ? [] : [$phrase], $terms)));
+        if ($patterns === []) {
+            return null;
+        }
+
+        return '(' . implode(' OR ', array_map(
+            fn (string $t) => $column . ' LIKE ' . $this->likePattern($t) . " ESCAPE '!'",
+            $patterns
+        )) . ')';
     }
 
     /**
