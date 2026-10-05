@@ -40,6 +40,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
             <?php endif; ?>
 
             <?php // Unsaved-draft backup — see manage_edit.php. ?>
+            <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
             <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data"
                   data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] ?>"
                   data-draft-version="<?= esc((string) ($base['updated_at'] ?? ''), 'attr') ?>">

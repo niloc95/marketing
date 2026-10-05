@@ -3190,4 +3190,82 @@
       e.returnValue = '';
     });
   })();
+
+  // -------------------------------------------------------- failed-save errors
+  // A rejected save comes back at the top of a long form, with the messages in
+  // small print under fields far below — some in sections that start folded.
+  // The server lists every message above the form (directory/_error_summary);
+  // this links each one to its field, marks the field, opens whatever section
+  // hides it, and takes the owner to the first one. Last module on purpose: the
+  // draft banner and the standout sections above have already moved things.
+  (function () {
+    var summary = document.querySelector('[data-error-summary]');
+    if (!summary) return;
+    var form = summary.nextElementSibling && summary.nextElementSibling.tagName === 'FORM'
+      ? summary.nextElementSibling
+      : document.querySelector('form[data-draft], form[action$="add-listing"]');
+    if (!form) return;
+
+    var CONTROLS = 'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), .ql-editor';
+    function visible(el) { return !!(el && el.getClientRects().length); }
+
+    var marked = [];
+    form.querySelectorAll('.err').forEach(function (err, i) {
+      // Open every folded section on the way up first, or nothing inside is
+      // visible to check.
+      for (var d = err.parentElement; d && d !== form; d = d.parentElement) {
+        if (d.tagName === 'DETAILS') d.open = true;
+      }
+      if (!visible(err)) return; // e.g. the province/region pair not shown for this country
+
+      var wrap = err.closest('.field') || err.parentElement;
+      var control = null;
+      wrap.querySelectorAll(CONTROLS).forEach(function (c) {
+        if (!control && visible(c)) control = c;
+      });
+
+      if (!err.id) err.id = 'form-err-' + i;
+      wrap.classList.add('has-error');
+      if (control) {
+        control.classList.add('is-invalid');
+        control.setAttribute('aria-invalid', 'true');
+        var by = control.getAttribute('aria-describedby');
+        control.setAttribute('aria-describedby', (by ? by + ' ' : '') + err.id);
+        var clear = function () {
+          control.classList.remove('is-invalid');
+          control.removeAttribute('aria-invalid');
+        };
+        control.addEventListener('input', clear, { once: true });
+        control.addEventListener('change', clear, { once: true });
+      }
+      marked.push({ err: err, control: control, text: err.textContent.trim() });
+    });
+    if (!marked.length) return;
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function go(m, smooth) {
+      (m.control || m.err).scrollIntoView({ behavior: smooth && !reduce ? 'smooth' : 'auto', block: 'center' });
+      if (m.control) m.control.focus({ preventScroll: true });
+    }
+
+    // Matched on the message text: the summary is built from the same array.
+    summary.querySelectorAll('li').forEach(function (li) {
+      var text = li.textContent.trim();
+      var m = marked.filter(function (x) { return x.text === text; })[0];
+      if (!m) return;
+      var a = document.createElement('a');
+      a.href = '#' + m.err.id;
+      a.className = 'underline';
+      a.textContent = text;
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        go(m, true);
+      });
+      li.textContent = '';
+      li.appendChild(a);
+    });
+
+    // After layout settles (map, editor), not before.
+    window.requestAnimationFrame(function () { go(marked[0], false); });
+  })();
 })();

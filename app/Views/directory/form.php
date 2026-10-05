@@ -81,6 +81,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile &mdash; it's free.</p>
             <?php endif; ?>
 
+            <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
+
             <form method="post" action="<?= base_url('add-listing') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <!-- honeypot -->

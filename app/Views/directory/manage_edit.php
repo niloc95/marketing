@@ -106,6 +106,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
             <?php // data-draft: directory.js keeps a browser-side copy of unsaved edits
                   // and puts them back after any reload. The version is what tells a
                   // draft apart from one made before the listing was saved elsewhere. ?>
+            <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
             <form method="post" action="<?= base_url('manage/edit') ?>" enctype="multipart/form-data"
                   data-draft="manage-<?= (int) $listing['id'] ?>"
                   data-draft-version="<?= esc((string) ($listing['updated_at'] ?? ''), 'attr') ?>">

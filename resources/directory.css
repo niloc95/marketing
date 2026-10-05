@@ -1806,7 +1806,11 @@
            focus:border-primary-500 focus:ring-primary-500;
   }
   .hint { @apply mt-1 text-xs text-slate-500; }
-  .err  { @apply mt-1 text-xs font-medium text-brand-crimson; }
+  .err  { @apply mt-1 text-sm font-medium text-brand-crimson; }
+  /* Set by "failed-save errors" in directory.js on the field each message is for. */
+  .has-error > label { @apply text-brand-crimson; }
+  .field .is-invalid,
+  .is-invalid { @apply border-brand-crimson ring-1 ring-brand-crimson/40; }
   /* Unsaved edits put back after a reload — see "draft backup" in directory.js. */
   .draft-banner {
     @apply mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border
@@ -2145,6 +2149,9 @@
   .dark .checkout-terms   { @apply text-slate-400; }
   /* brand-crimson is too dark to read on #1a202c. */
   .dark .err  { @apply text-red-400; }
+  .dark .has-error > label { @apply text-red-400; }
+  .dark .field .is-invalid,
+  .dark .is-invalid { @apply border-red-400 ring-red-400/40; }
 
   /* ------------------------------------------------- image upload previews */
   /* What is already stored, so an editor can see it before replacing it. */
