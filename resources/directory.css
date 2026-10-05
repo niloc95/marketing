@@ -982,6 +982,33 @@
     color: var(--tint-fg-dark, theme(colors.primary.300));
     filter: brightness(1.25);
   }
+  /* ------------------------------------------------------------ link groups */
+  /* The "by province", "related categories" and "towns" lists at the foot of
+     the landing pages, and the groups on /directory/categories: a hairline and
+     a small tracked label instead of a panel, with the chips set as plain text
+     links — the home page's type lists, at a size a long list can carry. */
+  .link-group { @apply mt-12 border-t border-slate-200 pt-8; }
+  .link-group > h3 { @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500; }
+  .link-group > div { column-gap: 1.75rem; row-gap: 0.5rem; }
+  .link-group .chip,
+  .link-group .chip:hover {
+    @apply rounded-none bg-transparent p-0 text-lg font-semibold;
+    filter: none;
+  }
+  .link-group .chip { color: theme(colors.primary.500); }
+  .link-group .chip:hover { color: theme(colors.brand.orange); }
+  .link-group .chip-count { @apply text-xs font-medium text-slate-400 opacity-100; }
+  /* /directory/categories, where these lists ARE the page. */
+  .link-group-lg { @apply mt-0 border-t-0 pt-0; }
+  .link-group-lg + .link-group-lg { @apply mt-14 border-t pt-10; }
+  .link-group-lg .chip { @apply font-bold tracking-tight; font-size: clamp(1.25rem, 2.4vw, 1.875rem); }
+  .dark .link-group { @apply border-slate-800; }
+  .dark .link-group > h3 { @apply text-slate-400; }
+  .dark .link-group .chip,
+  .dark .link-group .chip:hover { @apply bg-transparent; filter: none; }
+  .dark .link-group .chip { color: theme(colors.white); }
+  .dark .link-group .chip:hover { color: theme(colors.brand.orange); }
+
   /* ------------------------------------------------- explore by category */
   .tile-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5; }
 
@@ -1293,6 +1320,12 @@
 
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+
+  /* A listing in a grid (_card.php): a tone on the canvas, the same move as the
+     home page's featured cards, rather than an outlined box. Hover deepens the
+     tone instead of lifting a shadow. */
+  .listing-card { @apply border-transparent bg-slate-50 p-5 transition-colors hover:bg-slate-100; }
+  .dark .listing-card { @apply border-transparent bg-[#141a21] hover:bg-[#1a202c]; }
   /* Four-up variant for the homepage rows. .card-grid stays at three columns —
      index.php and landing.php depend on it. */
   .card-grid-4 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
@@ -1746,7 +1779,7 @@
      below, not the main event. */
   /* `isolate` for the same reason as .map-view above. */
   .results-map {
-    @apply relative isolate mb-6 h-[320px] w-full overflow-hidden rounded-xl border border-slate-200
+    @apply relative isolate mb-8 h-[320px] w-full overflow-hidden rounded-3xl border border-slate-200
            sm:h-[420px];
   }
   .results-map-canvas { @apply h-full w-full; }
@@ -2397,6 +2430,16 @@
      same gutter again at the bottom. */
   .results-filter-panel {
     @apply mb-6 lg:sticky lg:top-32 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto;
+  }
+  /* A sidebar from lg up is a column on the canvas, not a box: no border, no
+     fill, just a hairline on its right edge. Below lg it stays the panel it is,
+     because there it is a collapsed disclosure above the results and needs an
+     edge to read as one. */
+  @media (min-width: 1024px) {
+    .results-filter-panel {
+      @apply rounded-none border-0 border-r border-slate-200 bg-transparent py-0 pl-0 pr-6;
+    }
+    .dark .results-filter-panel { @apply border-slate-800 bg-transparent; }
   }
 
   /* Hidden from lg up: the sidebar is always open there, so a toggle that

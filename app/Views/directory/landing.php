@@ -187,7 +187,7 @@ $schema = schema_page(
 
         <?php // Internal links: without these the landing pages are orphans. ?>
         <?php if ($provinceCounts !== []): ?>
-            <div class="panel mt-8">
+            <div class="link-group">
                 <h3><?= esc($plural) ?> by province</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($provinceCounts as $prov => $count): ?>
@@ -211,7 +211,7 @@ $schema = schema_page(
         <?php endif; ?>
 
         <?php if ($siblings !== []): ?>
-            <div class="panel mt-4">
+            <div class="link-group">
                 <h3>Related categories</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($siblings as $s): ?>

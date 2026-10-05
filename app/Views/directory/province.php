@@ -92,7 +92,7 @@ $schema = schema_page(
               // parent of the category × province pages, so it has to pass equity
               // down to them rather than dead-ending. ?>
         <?php if ($categories !== []): ?>
-            <div class="panel mt-8">
+            <div class="link-group">
                 <h3>Popular categories in <?= esc($province) ?></h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($categories as $c): ?>
@@ -111,7 +111,7 @@ $schema = schema_page(
         <?php // Towns have no landing tier of their own, so these are filtered
               // search links — navigation for a visitor, not pages for a crawler. ?>
         <?php if ($cityCounts !== []): ?>
-            <div class="panel mt-4">
+            <div class="link-group">
                 <h3>Towns and cities in <?= esc($province) ?></h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($cityCounts as $city => $count): ?>
@@ -125,7 +125,7 @@ $schema = schema_page(
             </div>
         <?php endif; ?>
 
-        <div class="panel mt-4">
+        <div class="link-group">
             <h3>Other provinces</h3>
             <div class="flex flex-wrap gap-2">
                 <?php foreach (App\Services\DirectoryService::SA_PROVINCES as $p): ?>

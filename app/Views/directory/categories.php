@@ -61,11 +61,11 @@ $schema = schema_page(
             <?php $linkable = array_filter($cats, static fn ($c) => (int) $c['listing_count'] > 0); ?>
             <?php if ($linkable === []): continue; endif; ?>
             <?php $style = category_group_style($groupName); ?>
-            <?php // The tint class on the band rather than on each of the three
+            <?php // The tint class on the group rather than on each of the three
                   // things that read it: the icon, the heading and every chip below
                   // all inherit the custom properties from here, so the group is
                   // one colour decision instead of three. ?>
-            <div class="panel mb-6 <?= $style['tint'] ?>">
+            <div class="link-group link-group-lg <?= $style['tint'] ?>">
                 <h2 class="cat-group-title mb-3 flex items-center gap-2 text-lg font-bold">
                     <span class="cat-group-icon"><?= lucide($style['icon'], 'h-5 w-5 shrink-0') ?></span><?= esc($groupName) ?>
                 </h2>
