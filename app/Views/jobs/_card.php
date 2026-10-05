@@ -11,7 +11,7 @@ $salary  = $isJob ? $svc->salaryText($p) : '';
 $type    = $isJob ? $svc->employmentLabel($p) : '';
 $posted  = ! empty($p['published_at']) ? date('j M', strtotime((string) $p['published_at'])) : '';
 ?>
-<div class="card flex flex-col gap-2 p-4 transition-shadow hover:shadow-brand-lg">
+<div class="card listing-card flex flex-col gap-2">
     <div class="flex flex-wrap items-center gap-2">
         <span class="badge badge-category gap-1 <?= $isJob ? 'cat-tint-blue' : 'cat-tint-amber' ?>">
             <?= lucide($isJob ? 'briefcase' : 'wrench', 'h-3 w-3 shrink-0') ?><?= $isJob ? 'Job' : 'Service needed' ?>

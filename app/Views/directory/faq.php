@@ -216,7 +216,7 @@ $schema = schema_page(
 </section>
 
 <section class="section">
-    <div class="container prose-legal">
+    <div class="container prose-legal page-flow">
         <div class="panel">
             <?php foreach ($groups as $group): ?>
                 <div class="faq-group">

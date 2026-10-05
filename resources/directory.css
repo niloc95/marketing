@@ -438,7 +438,8 @@
     padding-top: clamp(2.5rem, 7vh, 5.5rem);
     padding-bottom: clamp(1rem, 3vh, 2.5rem);
   }
-  .hero .eyebrow { @apply mb-4; }
+  /* Two classes, so it outranks .hero p when the eyebrow is a <p> (the 404). */
+  .hero .eyebrow { @apply mb-4 mt-0 text-xs text-brand-orange; }
   /* Beats the text-2xl / sm:text-3xl utilities several views still carry on
      their h1: one class plus an element outranks one class. */
   .hero h1 {
@@ -697,7 +698,12 @@
      stretching to the full column width once the row collapses. */
   .section-head-split { @apply mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between; }
   .section-head h2,
-  .section-head-split h2 { @apply text-2xl font-extrabold text-slate-900 sm:text-3xl; }
+  .section-head-split h2 {
+    @apply font-bold text-primary-500;
+    font-size: clamp(1.75rem, 3.6vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+  }
   .section-head p        { @apply mx-auto mt-3 max-w-2xl text-slate-500; }
   .section-head-split p  { @apply mt-2 max-w-xl text-slate-500; }
   .dark .section-head h2,
@@ -708,6 +714,41 @@
   /* Alternating band, so five stacked sections don't read as one slab. */
   .section-alt { @apply bg-transparent; }
 
+
+  /* -------------------------------------------------------------- page flow */
+  /* The content pages (verified, FAQ, compare, the legal pages, the 404): one
+     class on the container turns its top-level panels into sections on the
+     canvas — a hairline between them, generous space, the heading in statement
+     type — so a page of boxes reads as one continuous document. A centred
+     panel is the page's closing call to action and gets the room the home
+     page's closing has. Panels nested deeper (and .card-grid pairs) keep a
+     surface: there they are side-by-side things, not sections. */
+  .page-flow > .panel {
+    @apply mb-0 mt-0 rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-10 sm:py-14;
+  }
+  .page-flow > .panel:first-child { @apply border-t-0 pt-0; }
+  /* A document set on the canvas starts where the heading above it starts,
+     as on the home page, rather than in a centred column: the container keeps
+     its full width and the reading measure moves to its children. */
+  .container.prose-legal.page-flow { @apply max-w-7xl; }
+  .prose-legal.page-flow > * { @apply max-w-3xl; }
+  .page-flow > .panel.text-center { @apply py-16 sm:py-20; }
+  /* One class + child + element outranks the text-lg / text-slate-900 the
+     views carry on these h2s; dark mode is restated because dark:text-white
+     would otherwise lose too. */
+  .page-flow > .panel > h2 {
+    @apply mb-4 font-bold text-primary-500;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+  }
+  .page-flow > .panel.text-center > h2 { font-size: clamp(1.75rem, 4vw, 3rem); }
+  .page-flow > .panel > p { @apply text-base; }
+  .page-flow .card-grid { @apply mb-12 gap-4 sm:grid-cols-2 lg:grid-cols-2; }
+  .page-flow .card-grid > .panel { @apply border-transparent bg-slate-50 p-8; }
+  .dark .page-flow > .panel { @apply border-slate-800 bg-transparent; }
+  .dark .page-flow > .panel > h2 { @apply text-white; }
+  .dark .page-flow .card-grid > .panel { @apply border-transparent bg-[#141a21]; }
 
   /* ------------------------------------------------------------ breadcrumbs */
   .crumbs { @apply mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500; }
@@ -1555,9 +1596,12 @@
   /* Native <details>/<summary> — no JavaScript, so the answers are readable
      (and findable with ctrl-F after expanding) even if directory.js never
      loads, and each one is keyboard-operable for free. */
-  .faq-group   { @apply mb-10 last:mb-0; }
-  .faq-group h2 { @apply mb-3 text-lg font-bold text-slate-900; }
-  .dark .faq-group h2 { @apply text-white; }
+  .faq-group   { @apply mb-14 last:mb-0; }
+  /* Two classes deep so it outranks .prose-legal h2 — the FAQ sits inside one. */
+  .faq-group h2,
+  .prose-legal .faq-group h2 { @apply mb-2 mt-0 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500; }
+  .dark .faq-group h2,
+  .dark .prose-legal .faq-group h2 { @apply text-slate-400; }
 
   .faq-item {
     @apply border-b border-slate-200 last:border-b-0;
@@ -1565,8 +1609,8 @@
   .dark .faq-item { @apply border-slate-800; }
 
   .faq-item summary {
-    @apply flex cursor-pointer list-none items-center justify-between gap-4 py-4;
-    @apply text-sm font-semibold text-slate-900;
+    @apply flex cursor-pointer list-none items-center justify-between gap-4 py-5;
+    @apply text-base font-semibold text-slate-900 sm:text-lg;
   }
   .dark .faq-item summary { @apply text-white; }
   .faq-item summary:hover { @apply text-primary-600; }
@@ -1588,7 +1632,7 @@
   }
   .faq-item[open] summary::after { @apply rotate-180; }
 
-  .faq-item .faq-answer { @apply pb-5 pr-8 text-sm leading-relaxed text-slate-600; }
+  .faq-item .faq-answer { @apply pb-6 pr-8 text-base leading-relaxed text-slate-600; }
   .dark .faq-item .faq-answer { @apply text-slate-400; }
   .faq-item .faq-answer a { @apply font-medium text-primary-600 hover:underline; }
   .dark .faq-item .faq-answer a { @apply text-primary-300; }
@@ -1598,10 +1642,10 @@
      headings. @tailwindcss/typography is not installed and these three pages do
      not justify adding it. */
   .prose-legal { @apply mx-auto max-w-3xl; }
-  .prose-legal h2 { @apply mb-3 mt-8 text-lg font-bold text-slate-900 first:mt-0; }
-  .prose-legal h3 { @apply mb-2 mt-6 text-base font-semibold text-slate-900; }
-  .prose-legal p  { @apply mb-4 text-sm leading-relaxed text-slate-600; }
-  .prose-legal ul { @apply mb-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-slate-600; }
+  .prose-legal h2 { @apply mb-4 mt-12 text-2xl font-bold tracking-tight text-primary-500 first:mt-0; }
+  .prose-legal h3 { @apply mb-2 mt-8 text-lg font-semibold text-slate-900; }
+  .prose-legal p  { @apply mb-4 text-base leading-relaxed text-slate-600; }
+  .prose-legal ul { @apply mb-4 list-disc space-y-2 pl-5 text-base leading-relaxed text-slate-600; }
   /* :not(.btn) so a call-to-action inside a document — the FAQ's "Contact us"
      — keeps its button styling instead of being repainted as an underlined
      body link. Without it .prose-legal a (two classes) outweighs .btn-accent

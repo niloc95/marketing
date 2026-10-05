@@ -74,7 +74,7 @@ $faqs = [
 </section>
 
 <section class="section">
-    <div class="container prose-legal">
+    <div class="container prose-legal page-flow">
 
         <div class="card-grid mb-8">
             <div class="panel">

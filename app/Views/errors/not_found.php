@@ -25,7 +25,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
 <?= $this->section('content') ?>
 <section class="hero">
     <div class="container">
-        <p class="mb-2 text-sm font-semibold uppercase tracking-wide text-white/70">Error 404</p>
+        <p class="eyebrow">Error 404</p>
         <?php if ($wasListing): ?>
             <h1 class="text-2xl sm:text-3xl">We couldn't find that business</h1>
             <p class="mt-2 text-sm text-white/80">
@@ -52,7 +52,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
 </section>
 
 <section class="section">
-    <div class="container">
+    <div class="container page-flow">
         <?php if ($popular !== []): ?>
             <div class="panel mb-6">
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Popular categories</h2>
