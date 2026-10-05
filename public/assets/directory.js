@@ -1,9 +1,9 @@
 /* WebScheduler Directory — small page behaviour.
-   Seventeen independent modules (theme toggle / header on scroll / mobile menu /
+   Independent modules (theme toggle / header on scroll / mobile menu /
    plan picker / reveal / gallery lightbox / share / image uploads / photo delete /
    verification documents / address autocomplete / search typeahead / map pin
-   picker / trading hours / description rich text / home hero rotation / draft
-   backup), each a no-op if its markup isn't on the page. Event delegation from one
+   picker / trading hours / description rich text / home scroll reveal / home hero
+   rotation / draft backup and more), each a no-op if its markup isn't on the page. Event delegation from one
    listener each, so this works for content injected later too.
 
    Two modules have a dependency, both loaded ahead of this file on the three
@@ -2783,6 +2783,44 @@
       if (document.readyState === 'complete') start();
       else window.addEventListener('load', start, { once: true });
     }
+  })();
+
+  // ------------------------------------------------------ home scroll reveal
+  // The home page's statements fade up as they come into view. Everything is
+  // visible until this runs: .js-reveal on <html> is what lets the CSS hide
+  // anything, and only this module adds it, so a page without the script (or
+  // without IntersectionObserver) simply shows the lot.
+  //
+  // Reduced motion: nothing is hidden and nothing moves.
+  (function () {
+    var items = Array.prototype.slice.call(document.querySelectorAll('[data-scroll-reveal]'));
+    if (!items.length || !('IntersectionObserver' in window)) return;
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) { /* no matchMedia — fall through and animate */ }
+
+    // Anything already on screen when the script runs stays put. The page has
+    // painted by now (this file is deferred), and fading out something the
+    // visitor is already reading only to fade it back in is a flicker.
+    var fold = window.innerHeight || document.documentElement.clientHeight;
+    var pending = items.filter(function (el) {
+      if (el.getBoundingClientRect().top < fold) {
+        el.classList.add('is-revealed');
+        return false;
+      }
+      return true;
+    });
+    document.documentElement.classList.add('js-reveal');
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-revealed');
+        io.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.1 });
+
+    pending.forEach(function (el) { io.observe(el); });
   })();
 
   // ------------------------------------------------------ home hero rotation

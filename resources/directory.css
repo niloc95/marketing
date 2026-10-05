@@ -307,11 +307,11 @@
      Grouped into two rules so the long selector is written twice rather than
      once per element. .brand-mark and the orange CTA are deliberately absent —
      both are already solid blocks of colour that read fine on any frame. */
-  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+  body:has(.site-main > .hero:first-child)
     .site-header:not(.is-solid) :is(.brand, .nav a, .nav a:hover, .theme-toggle, .menu-toggle) {
     @apply text-white;
   }
-  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+  body:has(.site-main > .hero:first-child)
     .site-header:not(.is-solid) :is(.theme-toggle, .menu-toggle) {
     @apply border-white/30 hover:bg-white/10;
   }
@@ -320,36 +320,15 @@
      from that same ocean — it disappeared into it. Restated as the translucent
      white the hero's own eyebrow uses, which the photograph and the gradient
      both take. The white "W" inside is unchanged. */
-  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+  body:has(.site-main > .hero:first-child)
     .site-header:not(.is-solid) .brand-mark {
     @apply bg-white/15 ring-1 ring-inset ring-white/25 backdrop-blur-sm;
   }
   /* ...but not the <img> mark: the orange badge carries its own white centre
      and reads on any ground, so it gets no tile in either theme or on a hero. */
-  body:has(.site-main > .hero:first-child, .site-main > .hero-home:first-child)
+  body:has(.site-main > .hero:first-child)
     .site-header:not(.is-solid) img.brand-mark {
     @apply rounded-none bg-transparent p-0 ring-0 backdrop-blur-none;
-  }
-
-  /* Only the home page, and only because its backdrop is a photograph: the
-     gradient band on every other hero is a known dark colour, but a photo can
-     put a white wall behind the nav links — which is exactly what the salon
-     frame does. The fade down from the top is the same trick .hero-veil plays
-     horizontally, and the drop-shadow is the same belt-and-braces .hero-home h1
-     already carries for the same reason.
-     It is a pseudo-element rather than a background on the bar because it has to
-     be twice the bar's height: a fade that ends exactly on the bottom edge
-     leaves a visible seam ruled across the photograph. -z-10 keeps it behind the
-     lettering, and inside the bar's own stacking context, so it cannot reach the
-     search box below. */
-  body:has(.site-main > .hero-home:first-child) .site-header:not(.is-solid)::before {
-    content: '';
-    @apply pointer-events-none absolute inset-x-0 top-0 -z-10 h-32
-           bg-gradient-to-b from-black/35 to-transparent;
-  }
-  body:has(.site-main > .hero-home:first-child)
-    .site-header:not(.is-solid) :is(.brand, .nav a) {
-    @apply drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)];
   }
 
   /* Opaque, unlike the bar above it: an open panel forces the bar to .is-solid,
@@ -385,16 +364,14 @@
      bar. Pages that DO open with a hero take it away again below. */
   .site-main { @apply min-h-0 flex-1 pt-16; }
 
-  /* This is what puts the gradient (or, on the home page, the photograph) behind
-     the bar. :first-child is the test rather than plain .hero because a flash
+  /* This is what puts the gradient behind the bar. :first-child is the test rather than plain .hero because a flash
      message renders above the hero: when one is present the page must not slide
      up, or the message is what ends up hidden behind the bar. The same test
      gates the light lettering further down, so the two cannot disagree.
 
      Browsers without :has() (pre-2023) never match that rule and simply keep the
      old arrangement — an opaque bar with the hero starting below it. */
-  .site-main > .hero:first-child,
-  .site-main > .hero-home:first-child { @apply -mt-16; }
+  .site-main > .hero:first-child { @apply -mt-16; }
 
   /* Four-column footer, matching the marketing site's shape. The bottom bar is a
      separate strip so its top border spans the full width, not just .container. */
@@ -495,8 +472,7 @@
 
      pt-16 is the fixed header's height, and box-sizing: border-box means it
      comes out of the minimum rather than adding to it — so the band is 640px
-     and the copy is centred in the part of it the bar is not covering. Same
-     reasoning, and the same numbers, as .hero-home.
+     and the copy is centred in the part of it the bar is not covering.
 
      The padding used to be `pt-24 pb-8 sm:pt-28 sm:pb-10`, repeated verbatim on
      all ten pages that use this class. It lives here now; do not put it back on
@@ -550,92 +526,38 @@
   .dark .company-steps    { @apply divide-slate-800 border-slate-800; }
   .dark .company-steps a  { @apply text-primary-300 hover:text-primary-200; }
 
-  /* ------------------------------------------ home: the five profile pillars */
-  /* Business, services, locations, people, opportunities. Five across on a
-     wide screen, two then one below. .pillar-tag marks the Verified Business
-     features in the badge's own emerald (see .badge-verified). */
-  .hero-actions   { @apply mt-6 flex flex-wrap gap-3; }
-  .pillars        { @apply m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-5; }
-  .pillar         { @apply flex flex-col rounded-2xl border border-slate-200 bg-white p-5; }
-  .pillar-icon    { @apply grid h-10 w-10 place-items-center rounded-xl bg-brand-orange/10 text-brand-orange; }
-  .pillar h3      { @apply mt-4 font-bold text-slate-900; }
-  .pillar p       { @apply mt-1.5 flex-1 text-sm leading-relaxed text-slate-600; }
-  .pillar-tag     { @apply mt-4 inline-flex items-center gap-1 self-start rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 no-underline hover:bg-emerald-100; }
-  .pillars-foot   { @apply mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-slate-600; }
-  .pillars-foot strong { @apply text-slate-900; }
-  .pillars-foot a { @apply font-medium text-primary-600 underline underline-offset-2 hover:text-primary-500; }
-  .dark .pillar        { @apply border-slate-800 bg-[#1a202c]; }
-  .dark .pillar-icon   { @apply bg-brand-orange/15; }
-  .dark .pillar h3,
-  .dark .pillars-foot strong { @apply text-white; }
-  .dark .pillar p,
-  .dark .pillars-foot  { @apply text-slate-400; }
-  .dark .pillar-tag    { @apply bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25; }
-  .dark .pillars-foot a { @apply text-primary-300 hover:text-primary-200; }
+  /* ------------------------------------------------ home: full-bleed media */
+  /* The photographs or the video, as one edge-to-edge moment below the opening
+     search rather than a backdrop behind it. Nothing is set over them, so there
+     is no veil and no drop-shadowed headline to protect. Deliberately NOT a
+     modifier on .hero, which ten other pages share for their gradient band.
 
-  /* ------------------------------------------------- home page photo hero */
-  /* Deliberately NOT a modifier on .hero. That class is shared by ten pages —
-     browse, categories, province, landing, verified, faq and the three legal
-     pages — and every one of them wants the short gradient band it already has.
-     This is the home page's own thing.
+     The ocean gradient is the ground the first photo fades up on, and what
+     shows if it never loads.
 
-     The gradient below is the same one .hero uses, and it is the fallback, not
-     decoration: with no rows in directory_hero_images (a fresh install, a
-     database blip, an operator who deactivated everything) no <img> renders at
-     all and this is what shows. The hero degrades to its old self instead of a
-     white hole.
-
-     pt-16 is the fixed header's height. border-box means it comes out of the
-     min-height rather than adding to it, so the hero is the same size it always
-     was and items-center now centres the copy in the part of it the bar isn't
-     covering. */
-  /* overflow-x-clip, not overflow-hidden: the decorative artwork still must not
-     widen the page, but the search typeahead opens downwards out of this box and
-     overflow-hidden cut it off at the hero's edge. Clip on one axis leaves the
-     other genuinely visible, where `hidden` on one axis forces the other to
-     `auto` and would clip it anyway. */
+     overflow-x-clip, not overflow-hidden: the captions hang below the band (see
+     .hero-captions), and `hidden` on one axis forces the other to `auto` and
+     would clip them. */
   .hero-home {
-    @apply relative isolate flex min-h-[520px] items-center overflow-x-clip pt-16
-           bg-gradient-to-br from-primary-500 to-primary-700 text-white sm:min-h-[640px];
+    @apply relative isolate overflow-x-clip bg-gradient-to-br from-primary-500 to-primary-700;
+    height: clamp(20rem, 70vh, 46rem);
   }
   .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
-  .hero-inner { @apply relative z-10 py-14 sm:py-24; }
-  /* The shared .eyebrow is a pale pill for a pale page, and its dark variant is
-     primary-300 on a 15% wash — over a photograph that reads as floating blue
-     text with no pill at all. Restated here for both themes as the same
-     translucent white the chips use, which is legible on any frame. */
-  .hero-home .eyebrow,
-  .dark .hero-home .eyebrow {
-    @apply mb-4 bg-white/15 text-white ring-1 ring-inset ring-white/25 backdrop-blur-sm sm:mb-5;
+  /* A video band with reduced motion on is a blank dark slab — the clips are
+     never started (see .hero-video below) and there is no photo to fall back
+     on — so the page goes straight from the search to the statement. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-home-video { display: none; }
   }
-  /* text-3xl on phones is the size the hero already used. 4xl fits, but it
-     pushes the search box below the fold on a 375px screen, and the box is the
-     thing someone came here to use. */
-  /* max-w in ch is what keeps the headline inside the veil. Unconstrained,
-     "Find someone local you can trust" sets on one line at desktop widths and
-     runs to about 75% of the frame — past where the fade has gone, and straight
-     onto the bright wall in the salon photo. 18ch wraps it after "local", so it
-     stays in the protected column at every size and the fade can stay narrow.
-     The unit matters: ch scales with the font, so this holds at 3xl, 5xl and
-     6xl without three separate values.
 
-     drop-shadow is load-bearing rather than decorative now that no overlay
-     covers the whole photo — it is what stops the headline dissolving into a
-     light frame at the point the veil has faded out. */
-  .hero-home h1 {
-    @apply max-w-[18ch] text-3xl font-extrabold leading-[1.1] drop-shadow-lg
-           sm:text-5xl lg:text-6xl;
-  }
-  .hero-home p  { @apply mt-4 max-w-2xl text-base text-white/85 sm:text-lg; }
 
   /* overflow-hidden HERE rather than on .hero-home, which is the distinction
      that matters: .hero-slide runs a 12s Ken Burns zoom to scale(1.06), and on a
      640px band that is ~19px of growth — ~7px past each edge by the end. The
-     hero is overflow-x-clip (it must be: the search typeahead opens downwards
-     out of it), so Y was left visible and the photograph painted over the top of
-     the stat bar below, by an amount that grew as the animation ran.
-     .hero-media holds only the photographs — no form, no typeahead — so clipping
-     it costs nothing and bounds the zoom to the band. */
+     band is overflow-x-clip (it must be: the captions hang below it), so Y is
+     left visible and the photograph would paint over the captions, by an amount
+     that grew as the animation ran. .hero-media holds only the photographs, so
+     clipping it costs nothing and bounds the zoom to the band. */
   .hero-media { @apply absolute inset-0 -z-10 overflow-hidden; }
   /* Every slide is stacked in the same box and only opacity separates them, so
      nothing reflows as the rotation runs — a cross-fade must not be a layout
@@ -670,8 +592,7 @@
      photos entirely and fades in only once it is really playing — directory.js
      adds .is-playing on the video's 'playing' event, or on YouTube's own
      "playing" state message — so a slow or failed video leaves the plain dark
-     band rather than a YouTube error card or a spinner.
-     .hero-veil still lies over it: it is a later sibling of .hero-media. */
+     band rather than a YouTube error card or a spinner. */
   .hero-video,
   .hero-youtube {
     @apply absolute inset-0 z-[3] opacity-0 transition-opacity duration-1000;
@@ -723,60 +644,38 @@
     will-change: opacity, transform;
   }
 
-  /* Readability for the text, at no cost to the photograph.
-     
-     A horizontal fade, not a full-cover scrim: it is opaque where the headline
-     starts and gone by the middle of the frame, so the subject of every photo —
-     which sits right of centre in all six seeded shots — is seen at full
-     colour and contrast. Neutral black rather than the brand ocean, because a
-     colour that tints the photo is exactly what made the heroes look cheap.
-
-     The reach is wider on phones. There the copy runs the whole width of the
-     screen instead of sitting in a left column, so a fade that stopped at 60%
-     would leave the end of every line unprotected. */
-  .hero-veil {
-    @apply absolute inset-0 -z-10 bg-gradient-to-r from-black/75
-           via-black/50 via-45% to-transparent to-95%
-           sm:via-[32%] sm:to-[70%];
-  }
-  .dark .hero-veil { @apply from-black/85 via-black/60; }
-
   /* ------------------------------------------------------- hero captions */
   /* A one-cell grid, not a flex row: every caption is placed in that same cell
      so they stack instead of sitting side by side. Same reason the slides are
      absolutely positioned — swapping a short caption for a long one must not
      move anything. pointer-events-none on the strip keeps the invisible ones
-     from eating clicks meant for the photo behind. */
-  .hero-captions { @apply pointer-events-none absolute inset-x-0 bottom-0 z-10 grid px-4 pb-4 sm:px-6 sm:pb-5; }
+     from eating clicks. */
+  /* Under the band as small type, not pills over the photograph. top-full puts
+     the strip just below the band's bottom edge, in the whitespace before the
+     next statement. */
+  .hero-captions { @apply pointer-events-none absolute inset-x-0 top-full z-10 grid px-4 pt-3 sm:px-6; }
   /* Delayed so it changes once the photo it names is most of the way in.
      Swapping the label first makes the caption look like it belongs to the
      picture still on screen. */
   .hero-caption {
     grid-area: 1 / 1;
-    @apply pointer-events-auto flex w-fit items-center gap-2 justify-self-end rounded-full
-           bg-black/40 px-3 py-1.5 text-xs opacity-0 backdrop-blur-sm
+    @apply pointer-events-auto flex w-fit flex-wrap items-center gap-x-3 gap-y-1 text-sm opacity-0
            transition-opacity delay-500 duration-700;
   }
   .hero-caption.is-active { @apply opacity-100; }
   /* A slide with neither caption nor credit still gets an element, so the
      rotation's indexes stay aligned with the slides. It just never shows. */
   .hero-caption.is-bare { @apply invisible; }
-  .hero-caption-link { @apply inline-flex items-center gap-1.5 font-semibold text-white; }
-  a.hero-caption-link:hover { @apply underline; }
-  .hero-credit { @apply text-white/60; }
-  a.hero-credit:hover { @apply text-white/90 underline; }
+  .hero-caption-link { @apply inline-flex items-center gap-1.5 font-medium text-slate-700; }
+  a.hero-caption-link:hover { @apply text-primary-500 underline underline-offset-4; }
+  .hero-credit { @apply text-slate-400; }
+  a.hero-credit:hover { @apply text-slate-600 underline; }
+  .dark .hero-caption-link { @apply text-slate-300; }
+  .dark a.hero-caption-link:hover { @apply text-white; }
+  .dark .hero-credit { @apply text-slate-500; }
+  .dark a.hero-credit:hover { @apply text-slate-300; }
 
-  /* Yelp-scale search box: on a photograph the bar is the one thing that must
-     read as an object rather than a panel, so it gets more air and a heavier
-     shadow than the gradient version. Colours are untouched — the text-slate-900
-     rules further down already handle inheriting text-white from the hero. */
-  /* The size bump is sm: and up only. Below that the bar has already collapsed
-     to four stacked full-width rows, and taller rows there just push the search
-     button off the screen. */
-  .hero-home .searchbar { @apply mt-7 shadow-2xl sm:mt-8 sm:gap-2.5 sm:p-3; }
-  .hero-home .searchbar input,
-  .hero-home .searchbar select { @apply sm:py-3 sm:text-base; }
-  .hero-home .searchbar .btn { @apply sm:px-7 sm:py-3 sm:text-base; }
+
   /* Non-negotiable. The rotation is ambience; for anyone who has asked their
      system for less movement it is just movement. The JS bails on the same
      query, so slide one simply stands still — these rules are the belt to that
@@ -841,10 +740,248 @@
   .section-alt { @apply bg-white; }
   .dark .section-alt { @apply bg-[#141a21]; }
 
-  .stat-bar { @apply border-y border-slate-200 bg-white py-4 text-sm text-slate-500; }
-  .stat strong { @apply font-bold text-slate-900; }
-  .dark .stat-bar    { @apply border-slate-800 bg-[#141a21] text-slate-400; }
-  .dark .stat strong { @apply text-white; }
+
+  /* ---------------------------------------------------------- home canvas */
+  /* The home page is one continuous surface: statement, whitespace,
+     statement, visual. No section bands, no shadows, almost no boxes. Type size
+     and the vertical rhythm below do all of the separating, so most sizes here
+     are fluid clamp()s rather than breakpoint steps — the page should scale as
+     one piece, not jump between three layouts.
+
+     Orange is kept for the actions and the small accents. Display type is the
+     brand ocean on white, white on the dark page. */
+  body:has(.home-canvas) { @apply bg-white; }
+  .dark body:has(.home-canvas) { @apply bg-[#0f1419]; }
+  /* The header's category strip is a second row of chrome over a page that is
+     built to have almost none; the scroll-revealed search stays. */
+  body:has(.home-canvas) .header-quick { @apply hidden; }
+
+  .home-eyebrow { @apply text-xs font-semibold uppercase tracking-[0.2em] text-brand-orange; }
+  .home-display {
+    @apply font-extrabold text-primary-500;
+    font-size: clamp(2.5rem, 7vw, 6rem);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .home-statement {
+    @apply font-bold text-primary-500;
+    font-size: clamp(1.75rem, 4.2vw, 3.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .home-lede { @apply mt-6 max-w-2xl text-lg text-slate-600 sm:text-xl; }
+  .dark .home-display,
+  .dark .home-statement { @apply text-white; }
+  .dark .home-lede { @apply text-slate-400; }
+
+  .home-link {
+    @apply inline-flex items-center gap-1.5 font-semibold text-primary-500
+           underline-offset-4 hover:underline;
+  }
+  .home-link-accent { @apply text-brand-orange hover:text-accent-600; }
+  .dark .home-link { @apply text-primary-300; }
+  .dark .home-link-accent { @apply text-brand-orange hover:text-accent-500; }
+
+  .home-rule { @apply m-0 border-0 border-t border-slate-200; }
+  .dark .home-rule { @apply border-slate-800; }
+
+  /* The one rhythm everything on the page is spaced by. */
+  .home-backbone,
+  .home-moments,
+  .home-discover,
+  .home-close { padding-top: clamp(6rem, 14vw, 12rem); }
+  .home-moments > * + * { margin-top: clamp(6rem, 14vw, 12rem); }
+  .home-close { padding-bottom: clamp(4rem, 8vw, 6rem); }
+
+  /* ---- opening */
+  .home-open { padding-top: clamp(3.5rem, 11vh, 8rem); padding-bottom: clamp(4rem, 10vh, 7rem); }
+  .home-open .home-display { @apply mt-5 max-w-[15ch]; }
+  /* The search is the page's main object, so it is bigger than anywhere else
+     and outlined rather than floated on a shadow. */
+  .home-search { @apply mt-10 max-w-5xl border border-slate-200 p-2 shadow-none sm:mt-12 sm:gap-2 sm:p-2.5; }
+  .dark .home-search { @apply border-slate-700; }
+  .home-search input,
+  .home-search select { @apply sm:py-3.5 sm:text-base; }
+  /* An auto column is as wide as its longest option, and the "Main category"
+     select directory.js adds has some long ones: uncapped, the selects took the
+     row and squeezed the keyword field to a stub. */
+  .home-search select { @apply sm:max-w-[12rem]; }
+  .home-search .btn { @apply sm:px-8 sm:py-3.5 sm:text-base; }
+  .home-open-foot {
+    @apply mt-6 flex max-w-5xl flex-col items-start gap-3
+           sm:flex-row sm:items-center sm:justify-between;
+  }
+  .home-stats { @apply m-0 flex flex-wrap gap-x-2 text-sm text-slate-500; }
+  .home-stats span + span::before { content: '·'; @apply mr-2 text-slate-300; }
+  .home-stats strong { @apply font-semibold text-slate-900; }
+  .dark .home-stats { @apply text-slate-400; }
+  .dark .home-stats strong { @apply text-white; }
+  .dark .home-stats span + span::before { @apply text-slate-600; }
+
+  /* ---- backbone: "Your business. Your services. ..." */
+  .home-stack {
+    @apply flex flex-col font-extrabold text-primary-500;
+    font-size: clamp(2.75rem, 8.5vw, 7.5rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+  .home-stack-your { @apply text-slate-400; }
+  .dark .home-stack { @apply text-white; }
+  .dark .home-stack-your { @apply text-slate-600; }
+  /* Set off to the right on a wide screen: the asymmetry is what makes it read
+     as a reply to the stack rather than the next block down. */
+  .home-essay { @apply mt-16 max-w-2xl sm:mt-24 lg:ml-auto lg:mr-[8%]; }
+  .home-essay-body { @apply mt-6 text-lg leading-relaxed text-slate-600 sm:text-xl; }
+  .dark .home-essay-body { @apply text-slate-400; }
+
+  /* ---- the five moments */
+  .moment-inner { @apply grid items-center gap-10 lg:grid-cols-2 lg:gap-20; }
+  .moment-flip .moment-copy { @apply lg:order-2; }
+  .moment-eyebrow {
+    @apply m-0 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500;
+  }
+  .moment-num { @apply font-mono text-brand-orange; }
+  .moment-title {
+    @apply mt-5 flex flex-col font-extrabold text-primary-500;
+    font-size: clamp(2rem, 3.8vw, 3.5rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+  .moment-text { @apply mt-6 max-w-md text-lg leading-relaxed text-slate-600; }
+  /* The badge's own emerald, as on .badge-verified. */
+  .moment-tag {
+    @apply mr-5 mt-6 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5
+           text-xs font-medium text-emerald-700 hover:bg-emerald-100;
+  }
+  .moment-copy .home-link { @apply mt-6; }
+  .dark .moment-eyebrow { @apply text-slate-400; }
+  .dark .moment-title { @apply text-white; }
+  .dark .moment-text { @apply text-slate-400; }
+  .dark .moment-tag { @apply bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25; }
+
+  /* The stage the preview sits on: a tone, not a card. */
+  .moment-visual { @apply rounded-[2rem] bg-slate-50 px-5 py-10 sm:p-14; }
+  .dark .moment-visual { @apply bg-[#141a21]; }
+
+  /* ---- profile previews (_moment_preview.php) */
+  .preview { @apply mx-auto w-full max-w-md select-none rounded-3xl border border-slate-200 bg-white p-6 sm:p-7; }
+  .preview-head { @apply flex items-center gap-4; }
+  .preview-avatar {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-50
+           text-xs font-bold text-primary-600;
+  }
+  .preview-avatar-lg { @apply h-14 w-14 rounded-2xl bg-primary-500 text-base text-white; }
+  .preview-name  { @apply m-0 text-lg font-bold text-slate-900; }
+  .preview-meta  { @apply m-0 text-sm text-slate-500; }
+  .preview-label { @apply m-0 text-xs font-semibold uppercase tracking-wider text-slate-400; }
+  .preview-rows { @apply m-0 mt-4 list-none divide-y divide-slate-100 p-0; }
+  .preview-head + .preview-rows { @apply mt-6 border-t border-slate-100; }
+  .preview-rows li { @apply flex items-center gap-3 py-3 text-sm text-slate-700; }
+  .preview-rows svg { @apply text-slate-400; }
+  .preview-rows-split li { @apply justify-between; }
+  .preview-price { @apply font-semibold text-slate-900; }
+  .preview-rows-stacked li > span:last-child { @apply flex flex-col text-xs text-slate-500; }
+  .preview-rows-stacked strong { @apply text-sm font-semibold text-slate-900; }
+  .preview-photos { @apply mt-5 grid grid-cols-3 gap-2; }
+  .preview-photos span { @apply aspect-[4/3] rounded-xl bg-gradient-to-br from-slate-100 to-slate-200; }
+  .dark .preview { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .preview-avatar { @apply bg-primary-500/20 text-primary-200; }
+  .dark .preview-avatar-lg { @apply bg-primary-500 text-white; }
+  .dark .preview-name,
+  .dark .preview-price,
+  .dark .preview-rows-stacked strong { @apply text-white; }
+  .dark .preview-rows { @apply divide-slate-800; }
+  .dark .preview-head + .preview-rows { @apply border-slate-800; }
+  .dark .preview-rows li { @apply text-slate-300; }
+  .dark .preview-photos span { @apply from-slate-800 to-slate-700; }
+
+  /* ---- the Verified interruption */
+  .home-interlude .container { @apply max-w-4xl text-center; }
+  .home-interlude-text { @apply mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600; }
+  .home-interlude .home-link { @apply mt-8; }
+  .dark .home-interlude-text { @apply text-slate-400; }
+
+  /* ---- discover */
+  .home-discover-title { @apply mt-16 max-w-4xl sm:mt-24; }
+  .home-group { @apply mt-16 sm:mt-24; }
+  .home-group-head h3,
+  .home-group-label { @apply m-0 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500; }
+  .home-group-head p { @apply mt-2 text-slate-600; }
+  .home-group > .home-link { @apply mt-8; }
+  .dark .home-group-head h3,
+  .dark .home-group-label { @apply text-slate-400; }
+  .dark .home-group-head p { @apply text-slate-400; }
+
+  /* Full-bleed and sideways on every screen. The inline padding lines the
+     first card up with .container's left edge (max-w-7xl, px-4 / sm:px-6), so
+     the strip starts where the text above it does and runs off the right. */
+  .feature-strip {
+    @apply m-0 mt-8 flex list-none snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:gap-6 sm:px-6;
+    scroll-padding-inline: 1rem;
+    scrollbar-width: thin;
+  }
+  @media (min-width: 80rem) {
+    .feature-strip {
+      padding-inline: calc((100% - 80rem) / 2 + 1.5rem);
+      scroll-padding-inline: calc((100% - 80rem) / 2 + 1.5rem);
+    }
+  }
+  .feature-strip > li { @apply w-[78vw] shrink-0 snap-start sm:w-[22rem]; }
+  .feature-card {
+    @apply flex h-full flex-col rounded-3xl bg-slate-50 p-6 transition-colors hover:bg-slate-100 sm:p-8;
+  }
+  .feature-card-mark {
+    @apply grid h-20 w-20 place-items-center overflow-hidden rounded-2xl bg-white
+           text-xl font-bold text-primary-500;
+  }
+  .feature-card-mark img { @apply h-full w-full object-contain p-2; }
+  .feature-card-name { @apply mt-10 text-2xl font-bold leading-tight tracking-tight text-primary-500; }
+  .feature-card-meta { @apply mt-2 text-sm text-slate-500; }
+  .dark .feature-card { @apply bg-[#141a21] hover:bg-[#1a202c]; }
+  .dark .feature-card-mark { @apply bg-[#1a202c] text-white; }
+  .dark .feature-card-name { @apply text-white; }
+  .dark .feature-card-meta { @apply text-slate-400; }
+
+  /* Categories and provinces as type, not tiles. */
+  .type-list { @apply m-0 mt-6 flex list-none flex-wrap gap-x-8 gap-y-3 p-0 sm:gap-x-10; }
+  .type-list a {
+    @apply font-bold tracking-tight text-primary-500 transition-colors hover:text-brand-orange;
+    font-size: clamp(1.5rem, 3.2vw, 2.75rem);
+    line-height: 1.15;
+  }
+  .type-list sup { @apply ml-1 text-xs font-semibold text-slate-400; }
+  .type-list-places li { @apply flex flex-col; }
+  .type-list-note { @apply text-sm text-slate-500; }
+  .dark .type-list a { @apply text-white hover:text-brand-orange; }
+  .dark .type-list sup,
+  .dark .type-list-note { @apply text-slate-500; }
+
+  /* ---- closing */
+  .home-close { @apply text-center; }
+  .home-close-title { @apply mx-auto mt-16 max-w-[16ch] sm:mt-24; }
+  .home-cta { @apply mt-10 px-8 py-4 text-base; }
+  .home-fine { @apply mx-auto mt-6 max-w-xl text-sm leading-relaxed text-slate-500; }
+  .dark .home-fine { @apply text-slate-400; }
+
+  /* ---- scroll reveal */
+  /* Visible by default. Only once directory.js has put .js-reveal on <html>
+     does anything start hidden, so a page without the script — or with it
+     broken — shows everything. Reduced motion skips the script altogether, and
+     the media query is the belt to that braces. */
+  .js-reveal [data-scroll-reveal] {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 800ms cubic-bezier(0.2, 0.7, 0.2, 1),
+                transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .js-reveal [data-scroll-reveal].is-revealed { opacity: 1; transform: none; }
+  .js-reveal .reveal-delay-1 { transition-delay: 150ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .js-reveal [data-scroll-reveal] { opacity: 1; transform: none; transition: none; }
+  }
 
   /* The chip that index/categories/landing/province all share. Written as its
      own rule rather than @apply .badge — .badge has a .dark override, and
@@ -1195,9 +1332,8 @@
   }
 
   /* The text-side fade, in black rather than a brand or group colour, so it
-     darkens the photo without tinting it. Heavier and wider than .hero-veil on
-     the home page: this band is shorter and its headline longer ("Dentists in
-     Gauteng"), so the ground under the end of the line needs more. On a phone
+     darkens the photo without tinting it. Heavy and wide: the headline is long
+     ("Dentists in Gauteng"), so the ground under the end of the line needs it. On a phone
      the copy runs the full width, so the fade is a near-even scrim there. */
   .hero-vertical:has(> .hero-vertical-img)::before {
     content: '';

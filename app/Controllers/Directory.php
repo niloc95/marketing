@@ -23,7 +23,7 @@ class Directory extends BaseController
         $svc            = new DirectoryService();
         $provinceCounts = $svc->provinceCounts();
 
-        // The location cards want a "Johannesburg · Pretoria · Soweto" line, so
+        // The location list wants a "Johannesburg · Pretoria · Soweto" line, so
         // each province needs its own city query. Bounded by design: there are
         // nine provinces, and only those holding listings are queried at all.
         $provinceCities = [];
@@ -33,7 +33,6 @@ class Directory extends BaseController
 
         return view('directory/home', [
             'featured'       => $svc->featured(8),
-            'recent'         => $svc->recent(4),
             'topCategories'  => $svc->topCategories(8),
             'provinceCounts' => $provinceCounts,
             'provinceCities' => $provinceCities,
