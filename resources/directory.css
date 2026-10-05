@@ -526,9 +526,11 @@
   .dark .company-steps    { @apply divide-slate-800 border-slate-800; }
   .dark .company-steps a  { @apply text-primary-300 hover:text-primary-200; }
 
-  /* ------------------------------------------------ home: full-bleed media */
-  /* The photographs or the video, as one edge-to-edge moment below the opening
-     search rather than a backdrop behind it. Nothing is set over them, so there
+  /* ----------------------------------------------------- home: media band */
+  /* The photographs or the video, as one moment below the opening search
+     rather than a backdrop behind it. Held to the same width as .container's
+     content (max-w-7xl less its px-4 / sm:px-6), so it lines up with the text
+     above and below it, and rounded like the moment stages. Nothing is set over them, so there
      is no veil and no drop-shadowed headline to protect. Deliberately NOT a
      modifier on .hero, which ten other pages share for their gradient band.
 
@@ -539,9 +541,13 @@
      .hero-captions), and `hidden` on one axis forces the other to `auto` and
      would clip them. */
   .hero-home {
-    @apply relative isolate overflow-x-clip bg-gradient-to-br from-primary-500 to-primary-700;
-    height: clamp(20rem, 70vh, 46rem);
+    @apply relative isolate mx-auto w-[calc(100%-2rem)] max-w-[77rem] overflow-x-clip rounded-[2rem]
+           bg-gradient-to-br from-primary-500 to-primary-700 sm:w-[calc(100%-3rem)];
+    height: clamp(18rem, 62vh, 42rem);
   }
+  /* The rounding has to be on the clipping box too, or the photographs and
+     the video paint square corners over it. */
+  .hero-home .hero-media { @apply rounded-[2rem]; }
   .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
   /* A video band with reduced motion on is a blank dark slab — the clips are
      never started (see .hero-video below) and there is no photo to fall back
@@ -653,7 +659,7 @@
   /* Under the band as small type, not pills over the photograph. top-full puts
      the strip just below the band's bottom edge, in the whitespace before the
      next statement. */
-  .hero-captions { @apply pointer-events-none absolute inset-x-0 top-full z-10 grid px-4 pt-3 sm:px-6; }
+  .hero-captions { @apply pointer-events-none absolute inset-x-0 top-full z-10 grid pt-3; }
   /* Delayed so it changes once the photo it names is most of the way in.
      Swapping the label first makes the caption look like it belongs to the
      picture still on screen. */

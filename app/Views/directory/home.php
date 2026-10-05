@@ -25,7 +25,7 @@ $schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
 // section bands and no card grids on this page. Type and spacing do the
 // separating (see "home canvas" in resources/directory.css).
 //
-// The photographs or video are one full-bleed moment below the opening search,
+// The photographs or video are one moment below the opening search,
 // not a backdrop behind it. Everything about them is conditional: with none, the
 // band is simply not rendered, and the page goes straight from the search to the
 // statement. That is also what a database or cache failure gets, by way of
@@ -132,7 +132,7 @@ $moments = [
         </div>
     </section>
 
-    <?php // ------------------------------------------------- full-bleed media ?>
+    <?php // ------------------------------------------------------ media band ?>
     <?php if ($hasMedia): ?>
     <section class="hero-home<?= $heroBg !== null ? ' hero-home-video' : '' ?>"<?= $hasSlides && $heroBg === null ? ' data-hero' : '' ?>>
         <?php // aria-hidden and alt="": these carry no information a screen reader
