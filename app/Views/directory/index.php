@@ -106,10 +106,11 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
               // the three now agree instead of the h1 saying "Browse" while the tab
               // says "Dentist profiles in Gauteng". Unfiltered, it is still Browse. ?>
         <?php if ($vertical !== null): ?>
-            <h1 class="flex items-center gap-2.5 text-2xl sm:text-3xl">
-                <?= lucide($vertical['icon'], 'h-7 w-7 shrink-0 opacity-80 sm:h-8 sm:w-8') ?>
-                <span><?= esc($title) ?></span>
-            </h1>
+            <?php // The group as the eyebrow, as on landing.php. ?>
+            <?php if (($styled['group_name'] ?? '') !== ''): ?>
+                <p class="eyebrow hero-group"><?= lucide($vertical['icon'], 'h-4 w-4 shrink-0') ?><?= esc($styled['group_name']) ?></p>
+            <?php endif; ?>
+            <h1><?= esc($title) ?></h1>
         <?php else: ?>
             <h1 class="text-2xl sm:text-3xl">Browse</h1>
         <?php endif; ?>

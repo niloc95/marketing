@@ -449,7 +449,6 @@
     letter-spacing: -0.035em;
     text-wrap: balance;
   }
-  .hero h1 svg { @apply text-brand-orange opacity-100; }
   /* Same specificity argument against the old text-white/80 on these lines. */
   .hero p { @apply mt-4 max-w-2xl text-lg text-slate-600 sm:text-xl; }
   .dark .hero h1 { @apply text-white; }
@@ -1331,10 +1330,11 @@
   }
   /* The group's photograph, as the contained band after the copy (shared
      with .hero-collage-grid above). The group's colour now lives in the
-     heading's icon rather than a gradient behind everything. */
+     eyebrow over the heading (.hero-group) rather than a gradient behind
+     everything. */
   .hero-vertical-img { @apply object-cover; }
-  .hero-vertical h1 svg { color: var(--tint-fg, theme(colors.brand.orange)); }
-  .dark .hero-vertical h1 svg { color: var(--tint-fg-dark, theme(colors.brand.orange)); }
+  .hero .hero-group { color: var(--tint-fg, theme(colors.brand.orange)); }
+  .dark .hero .hero-group { color: var(--tint-fg-dark, theme(colors.brand.orange)); }
 
   /* Panel headings take the group's hue inside a tinted scope. The selector is
      the whole point of .vertical-scope: one class on a wrapper, and every panel
