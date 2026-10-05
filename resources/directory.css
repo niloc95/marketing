@@ -75,7 +75,7 @@
      than a column of the bar. Measured: 109px at md and up, 161px below it. */
   html { scroll-behavior: smooth; @apply scroll-pt-44 md:scroll-pt-28; }
   body {
-    @apply bg-slate-50 font-sans text-slate-900 antialiased;
+    @apply bg-white font-sans text-slate-900 antialiased;
     @apply transition-colors duration-200;
 
     /* Sticky footer. A column flexbox at least a viewport tall, with .site-main
@@ -104,7 +104,7 @@
 @layer components {
   /* ---------------------------------------------------------------- layout */
   .container { @apply mx-auto w-full max-w-7xl px-4 sm:px-6; }
-  .section   { @apply py-10 sm:py-14; }
+  .section   { @apply py-12 sm:py-16; }
 
   /* Fixed rather than sticky, which is the whole point: the bar sits *over* the
      page instead of above it, so a hero can run up behind it. Transparent at
@@ -298,39 +298,6 @@
     @apply border-slate-700 text-slate-300 hover:bg-slate-800 focus:ring-primary-300;
   }
 
-  /* ------------------------------------------- the bar while it is over a hero */
-  /* Same :first-child test as the pull-up on .site-main, for the same reason.
-     Everything in the bar that is dark-on-light has to invert for as long as it
-     is over the ocean gradient or the home photograph; .is-solid ends it, and so
-     does opening the burger panel, which turns .is-solid on.
-
-     Grouped into two rules so the long selector is written twice rather than
-     once per element. .brand-mark and the orange CTA are deliberately absent —
-     both are already solid blocks of colour that read fine on any frame. */
-  body:has(.site-main > .hero:first-child)
-    .site-header:not(.is-solid) :is(.brand, .nav a, .nav a:hover, .theme-toggle, .menu-toggle) {
-    @apply text-white;
-  }
-  body:has(.site-main > .hero:first-child)
-    .site-header:not(.is-solid) :is(.theme-toggle, .menu-toggle) {
-    @apply border-white/30 hover:bg-white/10;
-  }
-
-  /* The mark is a solid ocean square, and the .hero band it now sits on starts
-     from that same ocean — it disappeared into it. Restated as the translucent
-     white the hero's own eyebrow uses, which the photograph and the gradient
-     both take. The white "W" inside is unchanged. */
-  body:has(.site-main > .hero:first-child)
-    .site-header:not(.is-solid) .brand-mark {
-    @apply bg-white/15 ring-1 ring-inset ring-white/25 backdrop-blur-sm;
-  }
-  /* ...but not the <img> mark: the orange badge carries its own white centre
-     and reads on any ground, so it gets no tile in either theme or on a hero. */
-  body:has(.site-main > .hero:first-child)
-    .site-header:not(.is-solid) img.brand-mark {
-    @apply rounded-none bg-transparent p-0 ring-0 backdrop-blur-none;
-  }
-
   /* Opaque, unlike the bar above it: an open panel forces the bar to .is-solid,
      which is bg-white/90 + backdrop-blur — fine for a 64px strip, but it turns a
      full list of links into a mess over scrolled content. Padding matches .container so the links line up with
@@ -363,15 +330,6 @@
      — otherwise every page that doesn't open with a hero starts underneath the
      bar. Pages that DO open with a hero take it away again below. */
   .site-main { @apply min-h-0 flex-1 pt-16; }
-
-  /* This is what puts the gradient behind the bar. :first-child is the test rather than plain .hero because a flash
-     message renders above the hero: when one is present the page must not slide
-     up, or the message is what ends up hidden behind the bar. The same test
-     gates the light lettering further down, so the two cannot disagree.
-
-     Browsers without :has() (pre-2023) never match that rule and simply keep the
-     old arrangement — an opaque bar with the hero starting below it. */
-  .site-main > .hero:first-child { @apply -mt-16; }
 
   /* Four-column footer, matching the marketing site's shape. The bottom bar is a
      separate strip so its top border spans the full width, not just .container. */
@@ -446,65 +404,66 @@
   .btn-block   { @apply w-full; }
 
   /* --------------------------------------------------------------- surfaces */
-  .card  { @apply rounded-2xl border border-slate-200 bg-white shadow-brand; }
-  .panel { @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-brand; }
-  .empty { @apply rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500; }
+  /* Quiet on purpose: the site is one white canvas (see "home canvas"), so a
+     surface is a hairline and a rounded corner, never a shadow. These are shared
+     with the admin and owner pages, which is why they stay boxes at all — the
+     public templates thin them further where they are scoped. */
+  .card  { @apply rounded-3xl border border-slate-200/80 bg-white; }
+  .panel { @apply rounded-3xl border border-slate-200/80 bg-white p-6; }
+  .empty { @apply px-4 py-16 text-center text-lg text-slate-500; }
   .dark .card,
-  .dark .panel { @apply border-slate-800 bg-[#1a202c]; }
-  .dark .empty { @apply border-slate-700 bg-[#1a202c] text-slate-400; }
+  .dark .panel { @apply border-slate-800 bg-[#141a21]; }
+  .dark .empty { @apply text-slate-400; }
 
+  /* Tracked caps in orange, the home page's eyebrow, rather than a pill. */
   .eyebrow {
-    @apply inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1
-           text-xs font-semibold uppercase tracking-wider text-primary-600;
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-orange;
   }
-  .dark .eyebrow { @apply bg-primary-500/15 text-primary-300; }
 
-  /* The same band the home page gets, so moving between the home page, a
-     category, a search and the legal pages never jumps the fold — the site reads
-     as one continuous surface rather than a stack of differently proportioned
-     pages.
+  /* The opening of every page that is not the home page: a heading set on
+     the canvas, in the home page's type, rather than a gradient band. It used
+     to be a 520/640px ocean band with the header inverted over it; the site is
+     one white surface now, so the header rests dark-on-light everywhere and
+     this is just generous space and large type.
 
-     min-height + flex + items-center rather than tall padding: the content of
-     these pages varies from a breadcrumb and a heading (the legal pages) to a
-     heading, a count and a search bar (a category), and centring absorbs that
-     difference where a fixed padding would leave each one sitting at a different
-     height. The section still grows past the minimum if content ever exceeds it.
-
-     pt-16 is the fixed header's height, and box-sizing: border-box means it
-     comes out of the minimum rather than adding to it — so the band is 640px
-     and the copy is centred in the part of it the bar is not covering.
-
-     The padding used to be `pt-24 pb-8 sm:pt-28 sm:pb-10`, repeated verbatim on
-     all ten pages that use this class. It lives here now; do not put it back on
-     the sections, or they stop matching each other the moment one is edited. */
+     A flex column so a photograph inside it (.hero-vertical-img, the
+     .hero-collage grid) can be ordered after the copy as a contained band,
+     whatever its position in the markup. */
   .hero {
-    @apply relative flex min-h-[520px] items-center
-           bg-gradient-to-br from-primary-500 to-primary-700 pt-16 text-white sm:min-h-[640px];
+    @apply relative flex flex-col;
+    padding-top: clamp(2.5rem, 7vh, 5.5rem);
+    padding-bottom: clamp(1rem, 3vh, 2.5rem);
   }
-  /* The ocean gradient is already dark, but against a #0f1419 page it reads as
-     a bright band — start it at the page colour so it recedes instead. */
-  .dark .hero { @apply from-[#0f1419] to-primary-700; }
-  /* The pill sits right on top of the h1 otherwise — give it room to breathe. */
-  .hero .eyebrow { @apply mb-4 sm:mb-5; }
-  .hero h1 { @apply text-3xl font-extrabold leading-tight sm:text-5xl; }
-  .hero p  { @apply mt-3 max-w-2xl text-base text-white/80 sm:text-lg; }
+  .hero .eyebrow { @apply mb-4; }
+  /* Beats the text-2xl / sm:text-3xl utilities several views still carry on
+     their h1: one class plus an element outranks one class. */
+  .hero h1 {
+    @apply font-extrabold text-primary-500;
+    font-size: clamp(2.25rem, 5.5vw, 4.5rem);
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .hero h1 svg { @apply text-brand-orange opacity-100; }
+  /* Same specificity argument against the old text-white/80 on these lines. */
+  .hero p { @apply mt-4 max-w-2xl text-lg text-slate-600 sm:text-xl; }
+  .dark .hero h1 { @apply text-white; }
+  .dark .hero p  { @apply text-slate-400; }
 
-  /* /company's variant: a collage of people at work behind the band. isolate +
-     -z-10 on the layers, the same stacking .hero-home uses, so the copy needs
-     no z-index of its own. The gradient underneath stays the fallback if the
-     photos never load. 3 columns on a phone, 6 from sm: 18 tiles fill both. */
-  .hero-collage { @apply isolate overflow-hidden; }
-  .hero-collage-grid {
-    @apply absolute inset-0 -z-10 grid grid-cols-3 auto-rows-fr gap-0.5 sm:grid-cols-6;
+  /* The contained photo band every .hero can carry: the width of .container's
+     content, rounded, after the copy — the same frame as the home media band. */
+  .hero-collage-grid,
+  .hero-vertical-img {
+    @apply relative order-last mx-auto mt-10 w-[calc(100%-2rem)] max-w-[77rem] overflow-hidden rounded-[2rem]
+           sm:w-[calc(100%-3rem)];
+    height: clamp(12rem, 32vh, 22rem);
   }
+
+  /* /company's variant: a collage of people at work, as that band. 3 columns
+     on a phone, 6 from sm: 18 tiles fill both. */
+  .hero-collage-grid { @apply grid grid-cols-3 auto-rows-fr gap-0.5 sm:grid-cols-6; }
   .hero-collage-grid img { @apply h-full w-full object-cover; }
-  /* Even all over on a phone, where the copy spans the full width; lighter
-     to the right from sm, where the copy only covers the left. */
-  .hero-collage-veil {
-    @apply absolute inset-0 -z-10 bg-gradient-to-r from-black/80 via-black/65 to-black/55
-           sm:from-black/80 sm:via-black/60 sm:to-black/30;
-  }
-  .dark .hero-collage-veil { @apply from-black/85 via-black/70 to-black/60 sm:to-black/40; }
+  .hero-collage-veil { @apply hidden; }
 
   /* /company. Text-first: one large statement, then short headed points and
      a numbered list, on the site's usual .section bands rather than panels. */
@@ -699,7 +658,7 @@
 
   /* ------------------------------------------------------------ search bar */
   .searchbar {
-    @apply mt-6 grid gap-2 rounded-2xl bg-white p-3 shadow-brand-lg
+    @apply mt-8 grid gap-2 rounded-2xl border border-slate-200 bg-white p-2.5
            sm:grid-cols-[1fr_auto_auto_auto];
   }
   /* One more column once directory.js has put the "Main category" select in
@@ -715,7 +674,7 @@
     @apply w-full rounded-xl border-slate-200 text-sm text-slate-900
            focus:border-primary-500 focus:ring-primary-500;
   }
-  .dark .searchbar { @apply bg-[#1a202c]; }
+  .dark .searchbar { @apply border-slate-700 bg-[#141a21]; }
   /* text-white for the same reason the light rule sets text-slate-900: the
      explicit colour above would otherwise win over anything inherited. */
   .dark .searchbar input,
@@ -743,9 +702,19 @@
   .dark .section-head-split p  { @apply text-slate-400; }
 
   /* Alternating band, so five stacked sections don't read as one slab. */
-  .section-alt { @apply bg-white; }
-  .dark .section-alt { @apply bg-[#141a21]; }
+  .section-alt { @apply bg-transparent; }
 
+
+  /* ------------------------------------------------------------ breadcrumbs */
+  .crumbs { @apply mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500; }
+  .crumbs a { @apply text-slate-500 hover:text-primary-500 hover:underline underline-offset-4; }
+  .crumbs [aria-current] { @apply font-medium text-slate-800; }
+  .crumbs-sep { @apply text-slate-300; }
+  .dark .crumbs,
+  .dark .crumbs a { @apply text-slate-400; }
+  .dark .crumbs a:hover { @apply text-white; }
+  .dark .crumbs [aria-current] { @apply text-slate-200; }
+  .dark .crumbs-sep { @apply text-slate-600; }
 
   /* ---------------------------------------------------------- home canvas */
   /* The home page is one continuous surface: statement, whitespace,
@@ -756,8 +725,6 @@
 
      Orange is kept for the actions and the small accents. Display type is the
      brand ocean on white, white on the dark page. */
-  body:has(.home-canvas) { @apply bg-white; }
-  .dark body:has(.home-canvas) { @apply bg-[#0f1419]; }
   /* The header's category strip is a second row of chrome over a page that is
      built to have almost none; the scroll-revealed search stays. */
   body:has(.home-canvas) .header-quick { @apply hidden; }
@@ -806,8 +773,7 @@
   .home-open .home-display { @apply mt-5 max-w-[15ch]; }
   /* The search is the page's main object, so it is bigger than anywhere else
      and outlined rather than floated on a shadow. */
-  .home-search { @apply mt-10 max-w-5xl border border-slate-200 p-2 shadow-none sm:mt-12 sm:gap-2 sm:p-2.5; }
-  .dark .home-search { @apply border-slate-700; }
+  .home-search { @apply mt-10 max-w-5xl p-2 sm:mt-12 sm:gap-2 sm:p-2.5; }
   .home-search input,
   .home-search select { @apply sm:py-3.5 sm:text-base; }
   /* An auto column is as wide as its longest option, and the "Main category"
@@ -1111,12 +1077,11 @@
      amber, yellow and lime take a -700 foreground; their -600 is illegible on a
      -50 ground. The rest are fine at -600.
 
-     --tint-hero-from/-to are the category hero's gradient. They are darker than
-     the foreground pair because white body text sits on them: -700 to -900
-     clears 4.5:1 for every hue except amber, yellow and lime, which start at
-     -800 for the same reason they take a -700 foreground above. There is no
-     dark-mode pair — .dark .hero-vertical starts from the page colour and runs
-     to this same -to, which is the trick .dark .hero already plays.
+     --tint-hero-from/-to were the category hero's gradient. Nothing paints
+     them since the heroes moved onto the white canvas, but every group keeps
+     the full set (VerticalProfileTest checks it), so a deep surface in the
+     group's hue — white text on -700 to -900 clears 4.5:1 for every hue except
+     amber, yellow and lime, which start at -800 — is one var() away.
 
      slate is the fallback's colour and nothing else's. An unmapped group has to
      look like nothing rather than borrow a real group's hue — which is also why
@@ -1274,22 +1239,14 @@
   .dark .cat-group-title { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
   /* ------------------------------------------- the category's own colour world */
-  /* A category landing page in its group's hue instead of the shared navy, so a
-     doctor's listing page and a spice retailer's no longer open identically.
+  /* A category landing page in its group's hue, so a doctor's page and a
+     spice retailer's no longer open identically. On the white canvas the hue is
+     an accent — the heading's icon here, the panel headings below — not a band.
 
      A modifier on .hero rather than a replacement for it: the padding, the type
-     scale and the h1/p rules all still come from .hero, and this overrides the
-     one thing that differs. That also means a group with no tint class on the
-     wrapper renders the navy gradient it always did, via the var() fallbacks —
-     which is what a listing with no category (category_id is nullable) gets.
-
-     background-image, not @apply bg-gradient-to-br: the utility sets
-     --tw-gradient-* and composes a gradient from them, and there is no way to
-     feed it a custom property per stop. Written out longhand it is one
-     declaration and reads the tint vars directly.
-
-     isolate + a stacking context, because the photograph below is positioned
-     inside it. */
+     scale and the h1/p rules all still come from .hero. A group with no tint
+     class falls back to orange via the var() fallbacks, which is what a listing
+     with no category (category_id is nullable) gets. */
   .hero-vertical {
     /* overflow-x-clip, never overflow-hidden — the same trap .hero-home
        documents. This band contains a .searchbar, and its typeahead listbox is
@@ -1297,67 +1254,15 @@
        opens well past the bottom edge of a band this short. overflow-hidden
        clipped it at the hero's edge; clip on one axis leaves the other genuinely
        visible, where `hidden` on one axis forces the other to `auto` and would
-       clip it anyway.
-
-       The image cannot overflow regardless — it is inset-0 with object-cover —
-       so this is insurance against a future child widening the page, not load
-       bearing for the photograph. */
+       clip it anyway. */
     @apply relative isolate overflow-x-clip;
-    background-image: linear-gradient(
-      to bottom right,
-      var(--tint-hero-from, theme(colors.primary.500)),
-      var(--tint-hero-to, theme(colors.primary.700))
-    );
   }
-  /* Same recede-into-the-page move .dark .hero makes: against a #0f1419 body an
-     already-dark gradient reads as a bright band, so it starts at the page
-     colour and only arrives at the hue. No second set of vars needed. */
-  .dark .hero-vertical {
-    background-image: linear-gradient(
-      to bottom right,
-      #0f1419,
-      var(--tint-hero-to, theme(colors.primary.700))
-    );
-  }
-
-  /* The group photograph behind the band, at full colour.
-
-     It used to be multiplied into the group's hue: safe for contrast, but it
-     turned every photo into a red or pink wash that read as cheap. Yelp's hero
-     is the model now: a real photograph shown as it was taken, with legibility
-     coming from a neutral dark fade behind the text only (::before below). The
-     tint gradient on .hero-vertical stays as the fallback a band with no photo
-     shows.
-
-     -z-20 under the fade's -z-10, both under the copy, which stays in flow. The
-     isolate on .hero-vertical keeps both inside the hero. No width/height and
-     no aspect box: a cover crop in a band whose height is already fixed, so
-     there is no layout to shift. */
-  .hero-vertical-img {
-    @apply absolute inset-0 -z-20 h-full w-full object-cover;
-  }
-
-  /* The text-side fade, in black rather than a brand or group colour, so it
-     darkens the photo without tinting it. Heavy and wide: the headline is long
-     ("Dentists in Gauteng"), so the ground under the end of the line needs it. On a phone
-     the copy runs the full width, so the fade is a near-even scrim there. */
-  .hero-vertical:has(> .hero-vertical-img)::before {
-    content: '';
-    @apply absolute inset-0 -z-10;
-    background: linear-gradient(to right, rgb(0 0 0 / 0.72), rgb(0 0 0 / 0.55) 60%, rgb(0 0 0 / 0.4));
-  }
-  @media (min-width: 640px) {
-    .hero-vertical:has(> .hero-vertical-img)::before {
-      background: linear-gradient(to right, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.5) 45%, rgb(0 0 0 / 0.1) 90%);
-    }
-  }
-  /* Belt and braces for the brightest frames: a soft shadow under the white
-     copy costs nothing where the fade is already enough. */
-  .hero-vertical:has(> .hero-vertical-img) h1,
-  .hero-vertical:has(> .hero-vertical-img) p,
-  .hero-vertical:has(> .hero-vertical-img) nav {
-    text-shadow: 0 1px 12px rgb(0 0 0 / 0.45);
-  }
+  /* The group's photograph, as the contained band after the copy (shared
+     with .hero-collage-grid above). The group's colour now lives in the
+     heading's icon rather than a gradient behind everything. */
+  .hero-vertical-img { @apply object-cover; }
+  .hero-vertical h1 svg { color: var(--tint-fg, theme(colors.brand.orange)); }
+  .dark .hero-vertical h1 svg { color: var(--tint-fg-dark, theme(colors.brand.orange)); }
 
   /* Panel headings take the group's hue inside a tinted scope. The selector is
      the whole point of .vertical-scope: one class on a wrapper, and every panel
@@ -1927,7 +1832,7 @@
   .share-icon.is-copied .icon-check { @apply block; }
 
   /* ----------------------------------------------------------------- forms */
-  .form-card { @apply mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-brand sm:p-8; }
+  .form-card { @apply mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 sm:p-10; }
   .form-row  { @apply grid gap-4 sm:grid-cols-2; }
   .field     { @apply mb-4; }
   .field label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
@@ -2781,9 +2686,9 @@
 
   /* ---------------------------------------------------------------- pager */
   .pager        { @apply mt-6 flex flex-wrap justify-center gap-1.5; }
-  .pager a      { @apply rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50; }
-  .pager .current { @apply rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-semibold text-white; }
-  .dark .pager a { @apply border-slate-700 bg-[#1a202c] text-slate-300 hover:bg-slate-800; }
+  .pager a      { @apply rounded-full px-3.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100; }
+  .pager .current { @apply rounded-full bg-primary-500 px-3.5 py-1.5 text-sm font-semibold text-white; }
+  .dark .pager a { @apply text-slate-300 hover:bg-slate-800; }
   /* primary-500 is near-black — invisible as a "current page" chip on a dark
      page. primary-300 with dark text is the readable inversion. */
   .dark .pager .current { @apply bg-primary-300 text-[#0f1419]; }

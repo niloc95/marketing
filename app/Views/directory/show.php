@@ -84,13 +84,13 @@ $metaDesc = listing_meta_description($l);
           // no per-panel plumbing. An unmapped group resolves to cat-tint-slate
           // and every consumer falls back to navy on its own. ?>
     <div class="container vertical-scope <?= $style['tint'] ?>">
-        <nav class="mb-4 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+        <nav class="crumbs" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>
-                <?php if ($i > 0): ?><span class="mx-1">/</span><?php endif; ?>
+                <?php if ($i > 0): ?><span class="crumbs-sep">/</span><?php endif; ?>
                 <?php if ($i < count($crumbs) - 1): ?>
-                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['url']) ?>"><?= esc($crumb['name']) ?></a>
+                    <a href="<?= esc($crumb['url']) ?>"><?= esc($crumb['name']) ?></a>
                 <?php else: ?>
-                    <span class="text-slate-700 dark:text-slate-300"><?= esc($crumb['name']) ?></span>
+                    <span aria-current="page"><?= esc($crumb['name']) ?></span>
                 <?php endif; ?>
             <?php endforeach; ?>
         </nav>

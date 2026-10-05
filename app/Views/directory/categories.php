@@ -45,10 +45,10 @@ $schema = schema_page(
 <?= $this->section('content') ?>
 <section class="hero">
     <div class="container">
-        <nav class="mb-2 text-sm text-white/70" aria-label="Breadcrumb">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
-            <span class="mx-1">/</span>
-            <span class="text-white">All categories</span>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('directory') ?>">Browse</a>
+            <span class="crumbs-sep">/</span>
+            <span aria-current="page">All categories</span>
         </nav>
         <h1 class="text-2xl sm:text-3xl">Browse by category</h1>
         <p class="mt-2 text-sm text-white/80">Everything on <?= esc($siteName) ?>, grouped for easy browsing.</p>

@@ -84,14 +84,14 @@ $schema = schema_page(
              sizes="100vw" alt="" decoding="async" fetchpriority="high">
     <?php endif; ?>
     <div class="container">
-        <nav class="mb-2 text-sm text-white/70">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
-            <span class="mx-1">/</span>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('directory') ?>">Browse</a>
+            <span class="crumbs-sep">/</span>
             <?php if ($province !== null): ?>
-                <a class="hover:text-white" href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
-                <span class="mx-1">/</span><span class="text-white"><?= esc($province) ?></span>
+                <a href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
+                <span class="crumbs-sep">/</span><span aria-current="page"><?= esc($province) ?></span>
             <?php else: ?>
-                <span class="text-white"><?= esc($catName) ?></span>
+                <span aria-current="page"><?= esc($catName) ?></span>
             <?php endif; ?>
         </nav>
         <?php // The same icon the homepage tile and the /categories heading use for
