@@ -339,6 +339,10 @@
   .dark .site-footer { @apply border-slate-800 bg-[#0b0f14] text-slate-400; }
   .site-footer a       { @apply text-slate-600 hover:text-primary-500; }
   .dark .site-footer a { @apply text-slate-400 hover:text-white; }
+  /* The footer's own call to action is a button, not a link: without this the
+     link colour above wins and it reads as slate (dark: grey) on orange. */
+  .site-footer a.btn,
+  .dark .site-footer a.btn { @apply text-white hover:text-white; }
 
   .site-footer-grid    { @apply grid gap-10 py-12 md:grid-cols-4; }
   .site-footer-tagline { @apply mt-4 max-w-xs text-sm text-slate-500; }
@@ -1639,7 +1643,48 @@
            sm:grid-cols-[auto_minmax(0,1fr)_auto];
   }
   .profile-head > .share-row { @apply col-span-2 sm:col-span-1; }
-  .profile-grid { @apply mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]; }
+  /* The business's name in the home page's statement type. One class plus an
+     element outranks the text-2xl / sm:text-3xl / text-slate-900 utilities the
+     h1 carries; dark mode's dark:text-white still wins, which is the point. */
+  .profile-head h1 {
+    @apply font-extrabold text-primary-500;
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .profile-grid { @apply mt-10 grid gap-10 lg:grid-cols-[2fr_1fr] lg:gap-14; }
+
+  /* The left column is the profile's story, so its panels are sections on the
+     canvas, not boxes: a hairline above, generous space, and the heading as a
+     tracked label in the group's colour (.vertical-scope supplies it). Direct
+     children only — a branch inside _location_panel re-renders the contact, map
+     and hours panels, and those stay contained cards within its section. */
+  .profile-grid > div:first-child > :is(.panel, .branch-section) {
+    @apply mb-0 rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-8;
+  }
+  .profile-grid > div:first-child > :first-child { @apply border-t-0 pt-0; }
+  /* Descendant, not child: the reviews panel sets its h3 in a row beside the
+     rating. Each of these panels has exactly one h3. */
+  .profile-grid > div:first-child > .panel h3,
+  .profile-grid > div:first-child > .branch-section > .branch-section-title {
+    @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em];
+  }
+  .profile-grid > div:first-child > .branch-section > .branch-section-title {
+    color: var(--tint-fg, theme(colors.primary.600));
+  }
+  .dark .profile-grid > div:first-child > .branch-section > .branch-section-title {
+    color: var(--tint-fg-dark, theme(colors.primary.300));
+  }
+  .dark .profile-grid > div:first-child > :is(.panel, .branch-section) { @apply border-slate-800 bg-transparent; }
+
+  /* The right column is where a visitor acts — call, find, check the hours —
+     so it is one tonal stage, the same tone as the home page's moment stages,
+     with each panel a quiet section of it. */
+  .profile-related { @apply mt-16 border-t border-slate-200 pt-12 sm:mt-20; }
+  .dark .profile-related { @apply border-slate-800; }
+  .profile-grid > div:last-child > .panel { @apply border-transparent bg-slate-50; }
+  .dark .profile-grid > div:last-child > .panel { @apply border-transparent bg-[#141a21]; }
   /* .kv is one label/value row; panels stack several of them. */
   .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
   .kv .k { @apply shrink-0 font-medium text-slate-500; }
@@ -1680,8 +1725,12 @@
   /* Already dark by design (slate-900/90 scrim, white controls) — no override. */
   /* Sits between .profile-head and .profile-grid, which brings its own mt-6 —
      so only a top margin here, or the gap below doubles. */
-  .gallery      { @apply mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4; }
-  .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-xl border-0 p-0; }
+  .gallery      { @apply mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4; }
+  .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-2xl border-0 p-0; }
+  /* The first photo leads, at four times the size: an editorial spread rather
+     than a contact sheet. Only once there are enough photos to fill the rows
+     around it. */
+  .gallery:has(> .gallery-item:nth-child(5)) > .gallery-item:first-child { @apply col-span-2 row-span-2; }
   .gallery-item img { @apply h-full w-full object-cover transition-opacity hover:opacity-90; }
 
   /* z-[1000], not z-50: Leaflet ships its own z-index scale (panes 400,

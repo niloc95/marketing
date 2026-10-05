@@ -297,15 +297,15 @@ $metaDesc = listing_meta_description($l);
         <?php // "More like this" — keeps visitors moving and pushes crawl depth
               // into sibling listings and their landing page. ?>
         <?php if (! empty($related)): ?>
-            <div class="mt-10">
-                <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+            <div class="profile-related">
+                <div class="mb-6 flex flex-wrap items-end justify-between gap-2">
+                    <h2 class="home-statement">
                         <?php // Category names are singular ("Hair Salon"); pluralise for the heading. ?>
                         More <?= esc(strtolower(rtrim($prof, 's') . 's')) ?><?= $province !== '' ? ' in ' . esc($province) : '' ?>
                     </h2>
                     <?php if ($catSlug !== ''): ?>
-                        <a class="text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline"
-                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : ''))) ?>">See all <?= lucide('arrow-right', 'inline-block h-4 w-4') ?></a>
+                        <a class="home-link"
+                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : ''))) ?>">See all<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
                     <?php endif; ?>
                 </div>
                 <div class="card-grid">
