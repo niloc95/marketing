@@ -117,6 +117,18 @@ final class SmartSearchTest extends CIUnitTestCase
         $this->assertStringContainsString('data-map-query="relaxed=1"', $body);
     }
 
+    public function testAPlaceAloneNeverFallsBackToEverythingThere(): void
+    {
+        // "school" is no category here, so only the place was understood.
+        // Dropping the keyword would list every business in Sandton.
+        $this->listing('Sandton Smiles', 'dentist', ['city' => 'Sandton']);
+
+        $body = $this->search('a school in Sandton');
+
+        $this->assertStringNotContainsString('class="search-notice"', $body);
+        $this->assertStringNotContainsString('Sandton Smiles', $body);
+    }
+
     public function testNearMeOffersTheButtonAndAsksForNothing(): void
     {
         $this->listing('Sandton Smiles', 'dentist', ['city' => 'Sandton']);

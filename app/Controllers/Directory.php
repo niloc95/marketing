@@ -89,8 +89,14 @@ class Directory extends BaseController
         // dropped — never the category or place, which were understood — and
         // only when something was understood, or dropping the keywords would
         // just be "everything".
+        //
+        // A category (or main category) has to be among what was understood. A
+        // place alone is not enough: "a school in Cape Town" with no category
+        // called School would drop the one word that says what is wanted and
+        // show every business in Cape Town under it.
         $relaxed = false;
-        if ((int) $result['total'] === 0 && $effective['q'] !== '' && $this->filtersFromWords($filters, $effective)) {
+        $categoryFromWords = $effective['category'] !== $filters['category'] || $effective['group'] !== $filters['group'];
+        if ((int) $result['total'] === 0 && $effective['q'] !== '' && $categoryFromWords) {
             $wider = $svc->browse(['q' => ''] + $effective, $page);
             if ((int) $wider['total'] > 0) {
                 $result  = $wider;
@@ -176,7 +182,8 @@ class Directory extends BaseController
         // through data-map-query. Honoured only where index() would have done
         // the same; on its own, a crafted ?relaxed=1 can only show more pins
         // of a search that is already public.
-        if ($this->request->getGet('relaxed') === '1' && $this->filtersFromWords($sent, $filters)) {
+        if ($this->request->getGet('relaxed') === '1'
+            && ($filters['category'] !== $sent['category'] || $filters['group'] !== $sent['group'])) {
             $filters['q'] = '';
         }
         $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
@@ -291,23 +298,6 @@ class Directory extends BaseController
             // the words; the pager carries the words.
             'place'    => '',
         ];
-    }
-
-    /**
-     * Whether anything read out of the words is actually narrowing the search.
-     * Not the same as "the words were understood": a category in the words
-     * that a picked category overrode is not narrowing anything, and dropping
-     * the keywords there would show everything in the picked one.
-     *
-     * @param array<string,mixed> $sent      as the visitor sent them
-     * @param array<string,mixed> $effective after interpretSearch()
-     */
-    private function filtersFromWords(array $sent, array $effective): bool
-    {
-        return $effective['place'] !== ''
-            || $effective['category'] !== $sent['category']
-            || $effective['group'] !== $sent['group']
-            || $effective['province'] !== $sent['province'];
     }
 
     /**
