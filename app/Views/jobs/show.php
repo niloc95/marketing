@@ -43,10 +43,10 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container max-w-3xl">
-        <nav class="mb-3 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
-            <a class="hover:underline" href="<?= base_url('jobs') ?>">Jobs &amp; services</a>
-            <span class="mx-1">/</span>
-            <a class="hover:underline" href="<?= base_url('jobs?kind=' . $post['kind']) ?>"><?= $isJob ? 'Vacancies' : 'Services needed' ?></a>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('jobs') ?>">Jobs &amp; services</a>
+            <span class="crumbs-sep">/</span>
+            <a href="<?= base_url('jobs?kind=' . $post['kind']) ?>"><?= $isJob ? 'Vacancies' : 'Services needed' ?></a>
         </nav>
 
         <?php if (! $isLive && $isAdmin): ?>

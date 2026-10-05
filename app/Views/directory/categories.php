@@ -45,10 +45,10 @@ $schema = schema_page(
 <?= $this->section('content') ?>
 <section class="hero">
     <div class="container">
-        <nav class="mb-2 text-sm text-white/70" aria-label="Breadcrumb">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
-            <span class="mx-1">/</span>
-            <span class="text-white">All categories</span>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('directory') ?>">Browse</a>
+            <span class="crumbs-sep">/</span>
+            <span aria-current="page">All categories</span>
         </nav>
         <h1 class="text-2xl sm:text-3xl">Browse by category</h1>
         <p class="mt-2 text-sm text-white/80">Everything on <?= esc($siteName) ?>, grouped for easy browsing.</p>
@@ -61,11 +61,11 @@ $schema = schema_page(
             <?php $linkable = array_filter($cats, static fn ($c) => (int) $c['listing_count'] > 0); ?>
             <?php if ($linkable === []): continue; endif; ?>
             <?php $style = category_group_style($groupName); ?>
-            <?php // The tint class on the band rather than on each of the three
+            <?php // The tint class on the group rather than on each of the three
                   // things that read it: the icon, the heading and every chip below
                   // all inherit the custom properties from here, so the group is
                   // one colour decision instead of three. ?>
-            <div class="panel mb-6 <?= $style['tint'] ?>">
+            <div class="link-group link-group-lg <?= $style['tint'] ?>">
                 <h2 class="cat-group-title mb-3 flex items-center gap-2 text-lg font-bold">
                     <span class="cat-group-icon"><?= lucide($style['icon'], 'h-5 w-5 shrink-0') ?></span><?= esc($groupName) ?>
                 </h2>

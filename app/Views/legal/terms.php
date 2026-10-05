@@ -23,7 +23,7 @@ $contact   = config('Directory')->adminEmail();
 </section>
 
 <section class="section">
-    <div class="container prose-legal">
+    <div class="container prose-legal page-flow">
         <div class="panel">
             <h2>1. Agreement</h2>
             <p>By using <?= esc($siteName) ?> ("the site"), whether to search for someone local or to add a business, you agree to these terms. If you do not agree, please do not use the site.</p>

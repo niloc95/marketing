@@ -91,7 +91,7 @@ $otherCell = static function (string $status): string {
 </section>
 
 <section class="section">
-    <div class="container">
+    <div class="container page-flow">
         <div class="compare-legend" aria-label="What the labels mean">
             <span><span class="compare-chip compare-chip-free"><?= lucide('check', 'h-3.5 w-3.5 shrink-0') ?>Free</span> on every free business profile</span>
             <span><?= $verifiedPill() ?> needs Verified Business<?= $offered ? ', R' . esc($amount) . ' a month' : '' ?></span>

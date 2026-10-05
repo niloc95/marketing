@@ -23,7 +23,7 @@ $analyticsId = config('Directory')->analyticsId();
 </section>
 
 <section class="section">
-    <div class="container prose-legal">
+    <div class="container prose-legal page-flow">
         <div class="panel">
             <h2>The short version</h2>
             <p>We use a small number of cookies and browser storage entries. The ones that make the site work are always on. <?= $analyticsId !== '' ? 'Analytics is off until you accept it, and you can change your mind at any time.' : 'We currently run no analytics and no advertising cookies at all.' ?></p>

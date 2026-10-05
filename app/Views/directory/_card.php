@@ -30,7 +30,7 @@ if (isset($l['distance_m'])) {
     }
 }
 ?>
-<div class="card flex flex-col gap-3 p-4 transition-shadow hover:shadow-brand-lg">
+<div class="card listing-card flex flex-col gap-3">
     <div class="flex items-start gap-3">
         <?php // avatar-logo only when there is a logo: it swaps the square crop for
               // a contained fit that shows a wide lockup whole. Without an image the

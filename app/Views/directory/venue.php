@@ -69,14 +69,14 @@ $schema = schema_page(
 <?= $this->section('content') ?>
 <section class="hero">
     <div class="container">
-        <nav class="mb-2 text-sm text-white/70">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
-            <span class="mx-1">/</span>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('directory') ?>">Browse</a>
+            <span class="crumbs-sep">/</span>
             <?php if ($activeCategory !== ''): ?>
-                <a class="hover:text-white" href="<?= esc($canonical) ?>"><?= esc($name) ?></a>
-                <span class="mx-1">/</span><span class="text-white"><?= esc($activeCategory) ?></span>
+                <a href="<?= esc($canonical) ?>"><?= esc($name) ?></a>
+                <span class="crumbs-sep">/</span><span aria-current="page"><?= esc($activeCategory) ?></span>
             <?php else: ?>
-                <span class="text-white"><?= esc($name) ?></span>
+                <span aria-current="page"><?= esc($name) ?></span>
             <?php endif; ?>
         </nav>
         <h1 class="text-2xl sm:text-3xl"><?= esc($heading) ?></h1>

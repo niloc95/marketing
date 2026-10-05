@@ -23,7 +23,7 @@ $contact   = config('Directory')->adminEmail();
 </section>
 
 <section class="section">
-    <div class="container prose-legal">
+    <div class="container prose-legal page-flow">
         <div class="panel">
             <h2>1. Who we are</h2>
             <p><strong>WebScheduler (Pty) Ltd</strong>, registration number 2026/138798/07, is a South African technology company providing online scheduling, appointment-booking, business listing and related Software as a Service (SaaS) services.</p>

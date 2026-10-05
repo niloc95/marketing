@@ -84,13 +84,13 @@ $metaDesc = listing_meta_description($l);
           // no per-panel plumbing. An unmapped group resolves to cat-tint-slate
           // and every consumer falls back to navy on its own. ?>
     <div class="container vertical-scope <?= $style['tint'] ?>">
-        <nav class="mb-4 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+        <nav class="crumbs" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>
-                <?php if ($i > 0): ?><span class="mx-1">/</span><?php endif; ?>
+                <?php if ($i > 0): ?><span class="crumbs-sep">/</span><?php endif; ?>
                 <?php if ($i < count($crumbs) - 1): ?>
-                    <a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc($crumb['url']) ?>"><?= esc($crumb['name']) ?></a>
+                    <a href="<?= esc($crumb['url']) ?>"><?= esc($crumb['name']) ?></a>
                 <?php else: ?>
-                    <span class="text-slate-700 dark:text-slate-300"><?= esc($crumb['name']) ?></span>
+                    <span aria-current="page"><?= esc($crumb['name']) ?></span>
                 <?php endif; ?>
             <?php endforeach; ?>
         </nav>
@@ -297,15 +297,15 @@ $metaDesc = listing_meta_description($l);
         <?php // "More like this" — keeps visitors moving and pushes crawl depth
               // into sibling listings and their landing page. ?>
         <?php if (! empty($related)): ?>
-            <div class="mt-10">
-                <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+            <div class="profile-related">
+                <div class="mb-6 flex flex-wrap items-end justify-between gap-2">
+                    <h2 class="home-statement">
                         <?php // Category names are singular ("Hair Salon"); pluralise for the heading. ?>
                         More <?= esc(strtolower(rtrim($prof, 's') . 's')) ?><?= $province !== '' ? ' in ' . esc($province) : '' ?>
                     </h2>
                     <?php if ($catSlug !== ''): ?>
-                        <a class="text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline"
-                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : ''))) ?>">See all <?= lucide('arrow-right', 'inline-block h-4 w-4') ?></a>
+                        <a class="home-link"
+                           href="<?= esc(base_url('directory/' . $catSlug . ($province !== '' ? '/' . slugify($province) : ''))) ?>">See all<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
                     <?php endif; ?>
                 </div>
                 <div class="card-grid">

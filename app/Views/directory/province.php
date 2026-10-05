@@ -38,10 +38,10 @@ $schema = schema_page(
 <?= $this->section('content') ?>
 <section class="hero">
     <div class="container">
-        <nav class="mb-2 text-sm text-white/70" aria-label="Breadcrumb">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
-            <span class="mx-1">/</span>
-            <span class="text-white"><?= esc($province) ?></span>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('directory') ?>">Browse</a>
+            <span class="crumbs-sep">/</span>
+            <span aria-current="page"><?= esc($province) ?></span>
         </nav>
         <h1 class="text-2xl sm:text-3xl"><?= esc($heading) ?></h1>
         <p class="mt-2 text-sm text-white/80">
@@ -92,7 +92,7 @@ $schema = schema_page(
               // parent of the category × province pages, so it has to pass equity
               // down to them rather than dead-ending. ?>
         <?php if ($categories !== []): ?>
-            <div class="panel mt-8">
+            <div class="link-group">
                 <h3>Popular categories in <?= esc($province) ?></h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($categories as $c): ?>
@@ -111,7 +111,7 @@ $schema = schema_page(
         <?php // Towns have no landing tier of their own, so these are filtered
               // search links — navigation for a visitor, not pages for a crawler. ?>
         <?php if ($cityCounts !== []): ?>
-            <div class="panel mt-4">
+            <div class="link-group">
                 <h3>Towns and cities in <?= esc($province) ?></h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($cityCounts as $city => $count): ?>
@@ -125,7 +125,7 @@ $schema = schema_page(
             </div>
         <?php endif; ?>
 
-        <div class="panel mt-4">
+        <div class="link-group">
             <h3>Other provinces</h3>
             <div class="flex flex-wrap gap-2">
                 <?php foreach (App\Services\DirectoryService::SA_PROVINCES as $p): ?>

@@ -84,23 +84,23 @@ $schema = schema_page(
              sizes="100vw" alt="" decoding="async" fetchpriority="high">
     <?php endif; ?>
     <div class="container">
-        <nav class="mb-2 text-sm text-white/70">
-            <a class="hover:text-white" href="<?= base_url('directory') ?>">Browse</a>
-            <span class="mx-1">/</span>
+        <nav class="crumbs" aria-label="Breadcrumb">
+            <a href="<?= base_url('directory') ?>">Browse</a>
+            <span class="crumbs-sep">/</span>
             <?php if ($province !== null): ?>
-                <a class="hover:text-white" href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
-                <span class="mx-1">/</span><span class="text-white"><?= esc($province) ?></span>
+                <a href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
+                <span class="crumbs-sep">/</span><span aria-current="page"><?= esc($province) ?></span>
             <?php else: ?>
-                <span class="text-white"><?= esc($catName) ?></span>
+                <span aria-current="page"><?= esc($catName) ?></span>
             <?php endif; ?>
         </nav>
-        <?php // The same icon the homepage tile and the /categories heading use for
-              // this group, so the three surfaces agree on what a category looks
-              // like. shrink-0 because the heading wraps on a phone. ?>
-        <h1 class="flex items-center gap-2.5 text-2xl sm:text-3xl">
-            <?= lucide($style['icon'], 'h-7 w-7 shrink-0 opacity-80 sm:h-8 sm:w-8') ?>
-            <span><?= esc($heading) ?></span>
-        </h1>
+        <?php // The group, in its own colour and with the icon /categories uses for
+              // it, as the eyebrow over the heading: an icon at the eyebrow's size
+              // rather than a small one beside display type. ?>
+        <?php if ($group !== null && $group !== ''): ?>
+            <p class="eyebrow hero-group"><?= lucide($style['icon'], 'h-4 w-4 shrink-0') ?><?= esc($group) ?></p>
+        <?php endif; ?>
+        <h1><?= esc($heading) ?></h1>
         <p class="mt-2 text-sm text-white/80">
             <?= $total ?> <?= $total === 1 ? 'profile' : 'profiles' ?><?= $province !== null ? ' in ' . esc($province) : '' ?>.
         </p>
@@ -187,7 +187,7 @@ $schema = schema_page(
 
         <?php // Internal links: without these the landing pages are orphans. ?>
         <?php if ($provinceCounts !== []): ?>
-            <div class="panel mt-8">
+            <div class="link-group">
                 <h3><?= esc($plural) ?> by province</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($provinceCounts as $prov => $count): ?>
@@ -211,7 +211,7 @@ $schema = schema_page(
         <?php endif; ?>
 
         <?php if ($siblings !== []): ?>
-            <div class="panel mt-4">
+            <div class="link-group">
                 <h3>Related categories</h3>
                 <div class="flex flex-wrap gap-2">
                     <?php foreach ($siblings as $s): ?>
