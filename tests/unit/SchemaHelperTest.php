@@ -287,7 +287,7 @@ final class SchemaHelperTest extends CIUnitTestCase
             'address_line' => '',
         ]);
 
-        $this->assertSame('0825292242', $item['telephone']);
+        $this->assertSame('+27825292242', $item['telephone']);
         $this->assertSame('Johannesburg', $item['address']['addressLocality']);
         $this->assertSame('Gauteng', $item['address']['addressRegion']);
         $this->assertArrayNotHasKey('streetAddress', $item['address']);
@@ -371,6 +371,41 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('What is on the page.', $page['description']);
         $this->assertSame($canonical . '#featured', $page['mainEntity']['@id']);
         $this->assertSame(schema_id('website'), $page['isPartOf']['@id']);
+    }
+
+    public function testPhonesArePublishedInInternationalFormat(): void
+    {
+        $this->assertSame('+27117285501', schema_phone('011 728 5501'));
+        $this->assertSame('+27768287070', schema_phone('0768287070'));
+        $this->assertSame('+27829974805', schema_phone('+27829974805'));
+        $this->assertSame('+442071234567', schema_phone('+44 20 7123 4567'));
+        // Unparseable is published as typed, not dropped.
+        $this->assertSame('ask for Thabo', schema_phone(' ask for Thabo '));
+        $this->assertSame('', schema_phone(''));
+    }
+
+    public function testStreetLineDropsTheCityAndPostcodeTypedIntoIt(): void
+    {
+        $row = ['address_line' => '40 Packwood Road, Gresswold, Johannesburg, 2090', 'city' => 'Johannesburg', 'province' => 'Gauteng', 'postal_code' => '2090'];
+        $this->assertSame('40 Packwood Road, Gresswold', schema_street_address($row));
+
+        // Nothing to drop, and a city mid-line is left alone.
+        $this->assertSame('38 Central Street', schema_street_address(['address_line' => '38 Central Street', 'city' => 'Johannesburg']));
+        $this->assertSame('Johannesburg Road, Lyndhurst', schema_street_address(['address_line' => 'Johannesburg Road, Lyndhurst', 'city' => 'Johannesburg']));
+        // A street line that is only the city is kept rather than emptied.
+        $this->assertSame('Sandton', schema_street_address(['address_line' => 'Sandton', 'city' => 'Sandton']));
+    }
+
+    public function testListItemUsesTheProfileAddressAndPhoneRules(): void
+    {
+        $item = schema_listing_item([
+            'slug' => 'q', 'display_name' => 'Q', 'phone' => '082 997 4805',
+            'address_line' => '40 Packwood Road, Gresswold, Johannesburg, 2090',
+            'city' => 'Johannesburg', 'province' => 'Gauteng', 'postal_code' => '2090',
+        ]);
+
+        $this->assertSame('+27829974805', $item['telephone']);
+        $this->assertSame('40 Packwood Road, Gresswold', $item['address']['streetAddress']);
     }
 
     public function testBreadcrumbNodeIsWiredToThePage(): void
@@ -523,7 +558,7 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('Dentist', $first['@type']);
         $this->assertSame('https://example.test/directory/smile-co#branch-2', $first['@id']);
         $this->assertSame('Rosebank rooms', $first['name']);
-        $this->assertSame('0115550000', $first['telephone']);
+        $this->assertSame('+27115550000', $first['telephone']);
         $this->assertArrayHasKey('geo', $first);
         // An unnamed branch borrows the business name and its town.
         $this->assertSame('Smile Co — Pretoria', $second['name']);

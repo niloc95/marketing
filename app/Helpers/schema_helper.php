@@ -149,14 +149,6 @@ if (! function_exists('schema_listing_item')) {
         $row = listing_public_view($row);
         $url = base_url('directory/' . ($row['slug'] ?? ''));
 
-        $address = array_filter([
-            '@type'           => 'PostalAddress',
-            'streetAddress'   => trim((string) ($row['address_line'] ?? '')),
-            'addressLocality' => trim((string) ($row['city'] ?? '')),
-            'addressRegion'   => trim((string) ($row['province'] ?? '')),
-            'postalCode'      => trim((string) ($row['postal_code'] ?? '')),
-        ], static fn ($v) => $v !== '');
-
         return array_filter([
             // The same type the profile page publishes for this business —
             // the search query already selects both category columns.
@@ -164,11 +156,11 @@ if (! function_exists('schema_listing_item')) {
             '@id'       => $url . '#business',
             'name'      => (string) ($row['display_name'] ?? ''),
             'url'       => $url,
-            'telephone' => trim((string) ($row['phone'] ?? '')),
+            // The same builders the profile page uses, so a business reads
+            // identically in a list and on its own page.
+            'telephone' => schema_phone((string) ($row['phone'] ?? '')),
             'image'     => ($row['logo_path'] ?? null) !== null ? listing_image_url($row['logo_path']) : '',
-            // count > 1 because @type is always present — a bare @type
-            // PostalAddress with no actual address in it is noise.
-            'address'   => count($address) > 1 ? $address : null,
+            'address'   => schema_postal_address($row),
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }
@@ -551,7 +543,7 @@ if (! function_exists('schema_postal_address')) {
     {
         $address = array_filter([
             '@type'           => 'PostalAddress',
-            'streetAddress'   => trim((string) ($row['address_line'] ?? '')),
+            'streetAddress'   => schema_street_address($row),
             'addressLocality' => trim((string) ($row['city'] ?? '')),
             // addressRegion is schema.org's one slot for "the bit between city
             // and country", which province and region are the local and
@@ -562,6 +554,33 @@ if (! function_exists('schema_postal_address')) {
         ], static fn ($v) => $v !== '');
 
         return count($address) > 1 ? $address : null;
+    }
+}
+
+if (! function_exists('schema_street_address')) {
+    /**
+     * The street line alone. Owners often type the whole address into it
+     * ("40 Packwood Road, Gresswold, Johannesburg, 2090"), which then repeats
+     * the city and postcode that have their own properties. Trailing
+     * comma-separated parts equal to the city, province, region, postcode or
+     * country are dropped; the suburb and anything mid-line stay.
+     *
+     * @param array<string,mixed> $row
+     */
+    function schema_street_address(array $row): string
+    {
+        $street = trim((string) ($row['address_line'] ?? ''));
+        $known  = array_filter(array_map(
+            static fn ($v) => mb_strtolower(trim((string) $v)),
+            [$row['city'] ?? '', $row['province'] ?? '', $row['region'] ?? '', $row['postal_code'] ?? '', $row['country'] ?? '', 'South Africa'],
+        ), static fn (string $v) => $v !== '');
+
+        $parts = array_map('trim', explode(',', $street));
+        while (count($parts) > 1 && in_array(mb_strtolower(end($parts)), $known, true)) {
+            array_pop($parts);
+        }
+
+        return implode(', ', $parts);
     }
 }
 
@@ -589,6 +608,22 @@ if (! function_exists('schema_geo')) {
     }
 }
 
+if (! function_exists('schema_phone')) {
+    /**
+     * One number in international format ("011 728 5501" -> "+27117285501"),
+     * by the same rule as the WhatsApp button: a leading 0 is South African.
+     * A number that does not parse is published as typed rather than dropped.
+     */
+    function schema_phone(string $phone): string
+    {
+        helper('directory_ui');
+        $phone  = trim($phone);
+        $digits = whatsapp_digits($phone);
+
+        return $digits !== null && $digits !== '' ? '+' . $digits : $phone;
+    }
+}
+
 if (! function_exists('schema_telephone')) {
     /**
      * Both contact numbers, in the order the profile shows them, with blanks
@@ -603,8 +638,8 @@ if (! function_exists('schema_telephone')) {
     function schema_telephone(array $row)
     {
         $phones = array_values(array_filter([
-            trim((string) ($row['phone'] ?? '')),
-            trim((string) ($row['phone_alt'] ?? '')),
+            schema_phone((string) ($row['phone'] ?? '')),
+            schema_phone((string) ($row['phone_alt'] ?? '')),
         ], static fn (string $p) => $p !== ''));
 
         return $phones === [] ? null : (count($phones) === 1 ? $phones[0] : $phones);
