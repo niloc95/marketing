@@ -680,7 +680,7 @@
   /* Full container width, the same edges as the media band and every section
      below it: the hero reads as part of the one column, not a narrower card. */
   .search-composer {
-    @apply flex h-14 w-full items-center gap-2 rounded-control border border-slate-200
+    @apply relative flex h-14 w-full items-center gap-2 rounded-control border border-slate-200
            bg-white py-0 pl-5 pr-2 transition-shadow duration-200;
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
   }
@@ -688,7 +688,9 @@
     @apply border-slate-300;
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 12px 32px rgb(15 23 42 / 0.12);
   }
-  .search-composer .search-suggest { @apply min-w-0 flex-1; }
+  /* static, so the typeahead below is positioned from the pill (relative,
+     above) rather than from the field, which sits in the pill's middle. */
+  .search-composer .search-suggest { @apply static min-w-0 flex-1; }
   .search-composer input {
     @apply w-full border-0 bg-transparent px-0 py-0 text-base text-slate-900 shadow-none
            placeholder:text-slate-400 focus:outline-none focus:ring-0;
@@ -702,8 +704,14 @@
   /* Quiet until there is something to send, the way the chat box greys its
      arrow. Still a working button: an empty search browses everything. */
   .search-composer:has(input:placeholder-shown) .search-composer-send { @apply bg-slate-200 text-slate-500; }
-  /* The typeahead hangs under the whole pill, not just the text inside it. */
-  .search-composer .search-suggest-list { @apply -left-5 right-[-3.5rem] mt-3; }
+  /* The typeahead hangs under the whole pill, edge to edge, with a clear gap.
+     It used to be measured from the field, and a gap from the field's bottom
+     edge put the list's top over the pill's own rounded bottom corners. */
+  .search-composer .search-suggest-list { @apply left-0 right-0 top-full mt-2; }
+  /* The browser's own clear button for type="search" (the header bar): a
+     blue cross in Safari and Chrome that matches nothing here. Esc still
+     clears the field. */
+  .search-composer input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
   /* Sizes, on the control scale every button and input uses: 56px (the
      composer and the home CTA), 44px (buttons, inputs, the header bar's box)
@@ -711,11 +719,9 @@
      larger type — same height, same padding. sm is the header bar's. */
   .search-composer-lg { @apply pl-6; }
   .search-composer-lg input { @apply sm:text-lg; }
-  .search-composer-lg .search-suggest-list { @apply -left-6; }
   .search-composer-sm { @apply h-11 gap-1.5 pl-4 pr-1.5; }
   .search-composer-sm input { @apply text-sm; }
   .search-composer-sm .search-composer-send { @apply h-8 w-8; }
-  .search-composer-sm .search-suggest-list { @apply -left-4 right-[-2.5rem] mt-2; }
 
   /* A search form is the box plus whatever the page puts under it. In a hero
      it keeps the old bar's distance from the heading. */
@@ -2819,9 +2825,12 @@
   .search-suggest { @apply relative w-full; }
   .search-suggest-list {
     @apply absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-auto rounded-surface
-           border border-slate-200 bg-white py-1 text-left text-sm shadow-brand-lg;
+           border border-slate-200 bg-white p-2 text-left text-sm shadow-brand-lg;
   }
-  .search-suggest-list li { @apply flex cursor-pointer items-baseline gap-2 px-3 py-2 text-slate-700; }
+  /* Rows take the inner corner, inset by the list's padding, so the
+     highlighted row is a rounded shape inside the surface rather than a
+     square strip running into its rounded corners. */
+  .search-suggest-list li { @apply flex cursor-pointer items-baseline gap-2 rounded-inner px-3 py-2 text-slate-700; }
   .search-suggest-list li.is-active,
   .search-suggest-list li:hover { @apply bg-primary-50 text-primary-700; }
   .search-suggest-list li.is-empty {
