@@ -8,13 +8,54 @@ $siteName = config('Directory')->siteName();
 // them in full — every other page references the same two @ids instead, which
 // is what merges them into a single entity rather than a page-full of
 // look-alikes.
-$schema = schema_page([], base_url('/'), 'WebPage', $siteName, true);
+//
+// The page node then says what is actually on it: the featured businesses (its
+// main entity), the busiest categories and the provinces, as three ItemLists
+// with their own @ids, since schema_item_list()'s default #list would collide.
+// All three come from data the controller already loaded, so no extra queries.
+$canonical   = base_url('/');
+$description = 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.';
+
+$homeLists = [];
+if ($featured !== []) {
+    $homeLists['featured'] = schema_item_list('Featured businesses', schema_listing_elements($featured));
+}
+if ($topCategories !== []) {
+    $homeLists['categories'] = schema_item_list('Popular categories', schema_link_elements(array_map(
+        static fn (array $c) => ['url' => base_url('directory/' . ($c['slug'] ?? '')), 'name' => (string) ($c['name'] ?? '')],
+        $topCategories,
+    )));
+}
+if ($provinceCounts !== []) {
+    $homeLists['provinces'] = schema_item_list('Businesses by province', schema_link_elements(array_map(
+        static fn (string $p) => ['url' => base_url('directory/province/' . slugify($p)), 'name' => $p],
+        array_map('strval', array_keys($provinceCounts)),
+    )));
+}
+foreach ($homeLists as $key => $list) {
+    $homeLists[$key] = ['@type' => 'ItemList', '@id' => $canonical . '#' . $key] + $list;
+}
+
+$pageProps = [
+    'description'        => $description,
+    'inLanguage'         => 'en-ZA',
+    'primaryImageOfPage' => ['@type' => 'ImageObject', 'url' => base_url(config('Directory')->ogImage())],
+];
+if (isset($homeLists['featured'])) {
+    $pageProps['mainEntity'] = ['@id' => $canonical . '#featured'];
+}
+$parts = array_values(array_diff_key($homeLists, ['featured' => true]));
+if ($parts !== []) {
+    $pageProps['hasPart'] = array_map(static fn (array $l) => ['@id' => $l['@id']], $parts);
+}
+
+$schema = schema_page(array_values($homeLists), $canonical, 'WebPage', $siteName, true, $pageProps);
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => $siteName . ' — Discover local businesses, services and professionals',
-    'description' => 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.',
-    'canonical'   => base_url('/'),
+    'description' => $description,
+    'canonical'   => $canonical,
     'schema'      => $schema,
 ]) ?>
 <?= $this->endSection() ?>

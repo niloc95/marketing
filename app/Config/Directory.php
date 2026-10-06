@@ -13,6 +13,18 @@ class Directory extends BaseConfig
     public string $siteName = 'WebScheduler Local';
 
     /**
+     * What the site is, in one paragraph and one line. Published as the
+     * Organization and WebSite description and slogan in the homepage JSON-LD,
+     * which is the text search engines read about the brand itself. Positioning
+     * copy: never "directory", and nothing that presents a Verified feature as free.
+     */
+    public string $siteDescription = 'A local business discovery and visibility platform built for South Africa. '
+        . 'Discover businesses, services, locations, professionals and opportunities near you, '
+        . 'or create a free business profile: no monthly fee, no subscription, no obligation.';
+
+    public string $slogan = 'More than a business listing.';
+
+    /**
      * WebScheduler Local's own social profiles: brand_icon() name => URL.
      *
      * Rendered as icons on /company and in the footer (directory/_our_socials)

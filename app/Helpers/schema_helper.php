@@ -49,17 +49,23 @@ if (! function_exists('schema_organization')) {
      */
     function schema_organization(): array
     {
-        $siteName = config('Directory')->siteName();
+        $config   = config('Directory');
+        $siteName = $config->siteName();
 
         $org = [
-            '@type' => 'Organization',
-            '@id'   => schema_id('organization'),
-            'name'  => $siteName,
-            'url'   => base_url('/'),
-            'logo'  => [
+            '@type'       => 'Organization',
+            '@id'         => schema_id('organization'),
+            'name'        => $siteName,
+            'url'         => base_url('/'),
+            'description' => $config->siteDescription,
+            'slogan'      => $config->slogan,
+            'logo'        => [
                 '@type' => 'ImageObject',
-                'url'   => base_url(config('Directory')->ogImage()),
+                'url'   => base_url($config->ogImage()),
             ],
+            // Businesses outside South Africa can list (International Listing),
+            // but the audience the site is built for is South African.
+            'areaServed'  => ['@type' => 'Country', 'name' => 'South Africa'],
         ];
         $sameAs = array_values(config('Directory')->socialLinks);
         if ($sameAs !== []) {
@@ -84,6 +90,8 @@ if (! function_exists('schema_website')) {
             '@id'             => schema_id('website'),
             'name'            => config('Directory')->siteName(),
             'url'             => base_url('/'),
+            'description'     => config('Directory')->siteDescription,
+            'inLanguage'      => 'en-ZA',
             'publisher'       => ['@id' => schema_id('organization')],
             'potentialAction' => [
                 '@type'       => 'SearchAction',
@@ -891,12 +899,16 @@ if (! function_exists('schema_page')) {
      * A BreadcrumbList in $nodes is auto-wired to WebPage.breadcrumb, and a
      * business node to WebPage.mainEntity, so callers never repeat that.
      *
+     * $props are extra WebPage properties (description, mainEntity, hasPart…),
+     * merged last so a caller can set what the auto-wiring cannot guess.
+     *
      * @param list<array<string,mixed>> $nodes
      * @param 'WebPage'|'CollectionPage'|'ProfilePage'|'ItemPage' $type
+     * @param array<string,mixed> $props
      *
      * @return array<string,mixed>
      */
-    function schema_page(array $nodes, string $canonical, string $type = 'WebPage', string $name = '', bool $full = false): array
+    function schema_page(array $nodes, string $canonical, string $type = 'WebPage', string $name = '', bool $full = false, array $props = []): array
     {
         $nodes = array_values(array_filter($nodes));
 
@@ -924,6 +936,8 @@ if (! function_exists('schema_page')) {
                 $page['about'] = ['@id' => $node['@id']];
             }
         }
+
+        $page = array_merge($page, $props);
 
         // The references carry @type and name as well as @id. A bare {"@id"}
         // is valid JSON-LD, but validators report it as "Unspecified Type",

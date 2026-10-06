@@ -342,6 +342,37 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertArrayHasKey('potentialAction', $this->nodeOfType($full, 'WebSite'));
     }
 
+    public function testFullOrganizationAndWebsiteDescribeTheBrand(): void
+    {
+        $full = schema_page([], base_url('/'), 'WebPage', 'Home', true);
+        $org  = $this->nodeOfType($full, 'Organization');
+        $site = $this->nodeOfType($full, 'WebSite');
+
+        $this->assertSame(config('Directory')->siteDescription, $org['description']);
+        $this->assertSame(config('Directory')->slogan, $org['slogan']);
+        $this->assertSame(['@type' => 'Country', 'name' => 'South Africa'], $org['areaServed']);
+        $this->assertSame(config('Directory')->siteDescription, $site['description']);
+        $this->assertSame('en-ZA', $site['inLanguage']);
+        // Positioning rule: the brand is never called a directory.
+        $this->assertStringNotContainsStringIgnoringCase('directory', $org['description']);
+    }
+
+    public function testPagePropsAreMergedIntoThePageNode(): void
+    {
+        $canonical = base_url('/');
+        $page      = $this->nodeOfType(
+            schema_page([], $canonical, 'WebPage', 'Home', true, [
+                'description' => 'What is on the page.',
+                'mainEntity'  => ['@id' => $canonical . '#featured'],
+            ]),
+            'WebPage',
+        );
+
+        $this->assertSame('What is on the page.', $page['description']);
+        $this->assertSame($canonical . '#featured', $page['mainEntity']['@id']);
+        $this->assertSame(schema_id('website'), $page['isPartOf']['@id']);
+    }
+
     public function testBreadcrumbNodeIsWiredToThePage(): void
     {
         $canonical = base_url('directory/hair');
