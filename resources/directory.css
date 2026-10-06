@@ -983,25 +983,97 @@
   /* Full-bleed and sideways on every screen. The inline padding lines the
      first card up with .container's left edge (max-w-7xl, px-4 / sm:px-6), so
      the strip starts where the text above it does and runs off the right. */
-  /* Featured businesses: a grid inside the container, so the cards share the
-     page's edges and never scroll sideways (see home.php). */
-  .feature-grid {
-    @apply m-0 mt-8 grid list-none gap-4 p-0 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4;
+  /* ---- featured carousel (after deepmind.google's home carousel) */
+  /* The track starts on the content edge and runs to the right edge of the
+     screen, so the next card peeks in. Its inline padding is the container's
+     gutter, so the first card lines up with the heading above it and the last
+     one with the right edge once scrolled to the end. No visible scrollbar: it
+     moves with the buttons under it, a swipe or a trackpad, and the arrow keys
+     when it has focus. */
+  .showcase-track {
+    @apply m-0 mt-8 flex list-none gap-4 overflow-x-auto px-4 py-1 sm:gap-6 sm:px-6 lg:gap-8
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1rem;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
   }
-  .feature-card {
-    @apply flex h-full flex-col rounded-surface bg-slate-50 p-6 transition-colors hover:bg-slate-100 sm:p-8;
+  .showcase-track::-webkit-scrollbar { display: none; }
+  @media (min-width: 640px) { .showcase-track { scroll-padding-inline: 1.5rem; } }
+  @media (min-width: 80rem) {
+    .showcase-track {
+      padding-inline: calc((100% - 80rem) / 2 + 1.5rem);
+      scroll-padding-inline: calc((100% - 80rem) / 2 + 1.5rem);
+    }
   }
-  .feature-card-mark {
-    @apply grid h-20 w-20 place-items-center overflow-hidden rounded-inner bg-white
-           text-xl font-bold text-primary-500;
+  .showcase-track > li { @apply shrink-0 snap-start; }
+
+  /* Tall picture card: name at the top, one pill at the bottom. */
+  .showcase-card {
+    @apply relative isolate flex h-[28rem] w-[82vw] flex-col justify-between overflow-hidden
+           rounded-surface bg-slate-50 p-6 no-underline sm:h-[34rem] sm:w-[25rem] sm:p-7 lg:h-[37.5rem];
   }
-  .feature-card-mark img { @apply h-full w-full object-contain p-2; }
-  .feature-card-name { @apply mt-10 text-2xl font-bold leading-tight tracking-tight text-primary-500; }
-  .feature-card-meta { @apply mt-2 text-sm text-slate-500; }
-  .dark .feature-card { @apply bg-[#141a21] hover:bg-[#1a202c]; }
-  .dark .feature-card-mark { @apply bg-[#1a202c] text-white; }
-  .dark .feature-card-name { @apply text-white; }
-  .dark .feature-card-meta { @apply text-slate-400; }
+  .showcase-card-img {
+    @apply absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-700;
+  }
+  .showcase-card:hover .showcase-card-img { @apply scale-[1.03]; }
+  /* Darken the top and bottom bands only, where the type and the pill sit;
+     the middle of the photograph stays as it is. */
+  .showcase-card-photo::before {
+    content: '';
+    @apply absolute inset-0;
+    /* Above the photo (-10), below the type (auto). ::before comes first in
+       the box, so at the same -10 it painted under the image and did nothing. */
+    z-index: -5;
+    /* Strong enough for white type on a bright, white-walled photograph,
+       which is what owners mostly upload. */
+    background: linear-gradient(to bottom, rgb(2 6 23 / 0.78), rgb(2 6 23 / 0.35) 28%,
+                                rgb(2 6 23 / 0) 48%, rgb(2 6 23 / 0) 68%, rgb(2 6 23 / 0.5));
+  }
+  .showcase-card-head { @apply flex flex-col gap-1.5; }
+  .showcase-card-name { @apply text-xl font-semibold leading-snug tracking-tight text-slate-900 sm:text-2xl; }
+  .showcase-card-meta { @apply text-sm leading-snug text-slate-600 sm:text-base; }
+  .showcase-card-photo .showcase-card-head { text-shadow: 0 1px 12px rgb(2 6 23 / 0.45); }
+  .showcase-card-photo .showcase-card-name { @apply text-white; }
+  .showcase-card-photo .showcase-card-meta { @apply text-white/90; }
+  .showcase-card-mark {
+    @apply absolute left-1/2 top-1/2 -z-10 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2
+           place-items-center overflow-hidden rounded-inner bg-white text-3xl font-bold text-primary-500;
+  }
+  .showcase-card-mark img { @apply h-full w-full object-contain p-3; }
+  .showcase-card-foot { @apply flex gap-2; }
+  /* The control scale's 36px pill. Dark on the plain card, white on a photo. */
+  .showcase-card-btn {
+    @apply inline-flex h-9 items-center rounded-control bg-slate-900 px-4 text-sm font-medium text-white
+           transition-colors;
+  }
+  .showcase-card:hover .showcase-card-btn { @apply bg-slate-700; }
+  .showcase-card-photo .showcase-card-btn { @apply bg-white text-slate-900; }
+  .showcase-card-photo:hover .showcase-card-btn { @apply bg-slate-100; }
+  .dark .showcase-card { @apply bg-[#141a21]; }
+  .dark .showcase-card-name { @apply text-white; }
+  .dark .showcase-card-meta { @apply text-slate-400; }
+  .dark .showcase-card-photo .showcase-card-meta { @apply text-white/90; }
+  .dark .showcase-card-mark { @apply bg-[#1a202c] text-white; }
+  .dark .showcase-card-btn { @apply bg-white text-slate-900; }
+
+  /* Previous / next: two 44px round buttons in one quiet pill, under the
+     first card. Hidden until directory.js finds there is something to move. */
+  .showcase-controls { @apply mt-8 inline-flex gap-1 rounded-control bg-slate-100 p-1; }
+  .showcase-controls[hidden] { display: none; }
+  .showcase-btn {
+    @apply grid h-11 w-11 cursor-pointer place-items-center rounded-control border-0 bg-transparent
+           text-slate-700 transition-colors hover:bg-white
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500;
+  }
+  .showcase-btn:disabled { @apply cursor-default text-slate-300 hover:bg-transparent; }
+  .dark .showcase-controls { @apply bg-slate-800/70; }
+  .dark .showcase-btn { @apply text-slate-200 hover:bg-slate-700; }
+  .dark .showcase-btn:disabled { @apply text-slate-600 hover:bg-transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    .showcase-card-img { @apply transition-none; }
+    .showcase-card:hover .showcase-card-img { transform: none; }
+  }
 
   /* Categories and provinces as type, not tiles. */
   .type-list { @apply m-0 mt-6 flex list-none flex-wrap gap-x-8 gap-y-3 p-0 sm:gap-x-10; }

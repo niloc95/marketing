@@ -1340,7 +1340,7 @@ class DirectoryService
      */
     public function featured(int $limit = 8): array
     {
-        return $this->listings
+        $rows = $this->listings
             ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
@@ -1350,6 +1350,26 @@ class DirectoryService
             ->orderBy('xs_directory_listings.published_at', 'DESC')
             ->limit($limit)
             ->findAll();
+
+        // The home carousel shows each business on its own first gallery
+        // photo. One query for the whole row, first photo per listing by the
+        // owner's own order, rather than one lookup per card.
+        if ($rows !== []) {
+            $covers = [];
+            foreach ($this->photos
+                ->select('listing_id, path')
+                ->whereIn('listing_id', array_column($rows, 'id'))
+                ->orderBy('sort_order', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->findAll() as $photo) {
+                $covers[(int) $photo['listing_id']] ??= (string) $photo['path'];
+            }
+            foreach ($rows as $i => $row) {
+                $rows[$i]['cover_path'] = $covers[(int) $row['id']] ?? null;
+            }
+        }
+
+        return $rows;
     }
 
     /**

@@ -320,17 +320,25 @@ $moments = [
                     <h3>Featured</h3>
                     <p>Hand-picked from across South Africa, and open for enquiries.</p>
                 </div>
-                <?php // A grid in the content column, not a sideways strip. The strip ran
-                      // past the page's edges and, as soon as the cards did not fit,
-                      // showed a cut-off card and a scrollbar — with a handful of
-                      // featured businesses that read as a broken carousel. Four across
-                      // on a laptop, down to one on a phone; nothing scrolls sideways. ?>
-                <div class="container">
-                    <ul class="feature-grid" aria-label="Featured businesses">
+                <?php // A carousel after deepmind.google's: tall picture cards that start
+                      // on the content edge and run off the right of the screen, so the
+                      // next one peeks in. No scrollbar; it moves a card at a time with
+                      // the round buttons under it (directory.js, "showcase"), and
+                      // swipes on touch. The buttons stay hidden while every card fits,
+                      // so one or two featured businesses never look like a broken
+                      // carousel. The strip takes focus, so arrow keys scroll it too. ?>
+                <div class="showcase" data-showcase>
+                    <ul class="showcase-track" id="featured-track" data-showcase-track tabindex="0" aria-label="Featured businesses">
                         <?php foreach ($featured as $l): ?>
                             <li><?= view('directory/_featured_strip_card', ['l' => $l]) ?></li>
                         <?php endforeach; ?>
                     </ul>
+                    <div class="container">
+                        <div class="showcase-controls" data-showcase-controls hidden>
+                            <button type="button" class="showcase-btn" data-showcase-prev aria-controls="featured-track" aria-label="Previous businesses"><?= lucide('chevron-left', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
+                            <button type="button" class="showcase-btn" data-showcase-next aria-controls="featured-track" aria-label="Next businesses"><?= lucide('chevron-right', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>

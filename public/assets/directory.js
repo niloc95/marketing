@@ -1282,6 +1282,56 @@
 
   document.querySelectorAll('[data-search-suggest]').forEach(initSearchSuggest);
 
+  // ------------------------------------------------------------ showcase
+  // The home page's featured carousel (home.php, "featured carousel" in the
+  // CSS). The track is an ordinary scroll container, so swiping, trackpads and
+  // the arrow keys already work; this only adds the previous / next buttons
+  // and keeps them honest — hidden while every card fits, each one disabled at
+  // its end.
+  document.querySelectorAll('[data-showcase]').forEach(function (root) {
+    var track = root.querySelector('[data-showcase-track]');
+    var controls = root.querySelector('[data-showcase-controls]');
+    var prev = root.querySelector('[data-showcase-prev]');
+    var next = root.querySelector('[data-showcase-next]');
+    if (!track || !controls || !prev || !next) return;
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // One card and the gap after it: what a press moves.
+    var step = function () {
+      var first = track.querySelector('li');
+      if (!first) return track.clientWidth;
+      var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+      return first.getBoundingClientRect().width + gap;
+    };
+
+    var update = function () {
+      var max = track.scrollWidth - track.clientWidth;
+      controls.hidden = max <= 2;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= max - 2;
+    };
+
+    var move = function (dir) {
+      track.scrollBy({ left: dir * step(), behavior: reduce ? 'auto' : 'smooth' });
+    };
+    prev.addEventListener('click', function () { move(-1); });
+    next.addEventListener('click', function () { move(1); });
+
+    var queued = false;
+    var schedule = function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; update(); });
+    };
+    track.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    // Images arriving late can change nothing here (the cards have fixed
+    // sizes), but a web font can nudge widths; one more check after load.
+    window.addEventListener('load', update);
+    update();
+  });
+
   // ------------------------------------------------- refine selects apply now
   // The results page's selects sit under the search box with no button of
   // their own (.search-refine), so a change submits the form. Only a person's
