@@ -691,8 +691,11 @@
   /* static, so the typeahead below is positioned from the pill (relative,
      above) rather than from the field, which sits in the pill's middle. */
   .search-composer .search-suggest { @apply static min-w-0 flex-1; }
+  /* pl-2 on top of the pill's own padding puts the caret and the first letter
+     where the pill's curve ends (28px on the 56px box, 22px on the header's
+     44px one) rather than up against the curve. */
   .search-composer input {
-    @apply w-full border-0 bg-transparent px-0 py-0 text-base text-slate-900 shadow-none
+    @apply w-full border-0 bg-transparent py-0 pl-2 pr-0 text-base text-slate-900 shadow-none
            placeholder:text-slate-400 focus:outline-none focus:ring-0;
   }
   .search-composer-send {
