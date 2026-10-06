@@ -11,7 +11,8 @@ $siteName = config('Directory')->siteName();
 //
 // The page node then says what is actually on it: the featured businesses (its
 // main entity), the busiest categories and the provinces, as three ItemLists
-// with their own @ids, since schema_item_list()'s default #list would collide.
+// with their own @ids (the featured list as mainEntity, the other two as
+// mentions), since schema_item_list()'s default #list would collide.
 // All three come from data the controller already loaded, so no extra queries.
 $canonical   = base_url('/');
 $description = 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.';
@@ -44,9 +45,11 @@ $pageProps = [
 if (isset($homeLists['featured'])) {
     $pageProps['mainEntity'] = ['@id' => $canonical . '#featured'];
 }
+// mentions, not hasPart: hasPart expects a CreativeWork, and Google's validator
+// reports an ItemList there as an error. mentions takes any Thing.
 $parts = array_values(array_diff_key($homeLists, ['featured' => true]));
 if ($parts !== []) {
-    $pageProps['hasPart'] = array_map(static fn (array $l) => ['@id' => $l['@id']], $parts);
+    $pageProps['mentions'] = array_map(static fn (array $l) => ['@id' => $l['@id']], $parts);
 }
 
 $schema = schema_page(array_values($homeLists), $canonical, 'WebPage', $siteName, true, $pageProps);
