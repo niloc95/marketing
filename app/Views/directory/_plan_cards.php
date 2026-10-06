@@ -134,7 +134,7 @@ $row = static function (array $r, string $col): string {
             <a class="btn btn-accent btn-block plan-cta" href="#listing-form">Get Verified</a>
         <?php else: ?>
             <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
-               href="<?= base_url('add-listing') ?>">Get Verified</a>
+               href="<?= base_url('add-profile') ?>">Get Verified</a>
         <?php endif; ?>
     </div>
 
@@ -168,7 +168,7 @@ $row = static function (array $r, string $col): string {
               // shareable. data-plan-pick is what the picker module intercepts to
               // do the swap in place instead — see "plan picker" in directory.js. ?>
         <a class="btn btn-ghost btn-block plan-cta" data-plan-pick="free"
-           href="<?= base_url('add-listing?plan=free') ?>">Start free</a>
+           href="<?= base_url('add-profile?plan=free') ?>">Start free</a>
     </div>
     <?php endif; ?>
 

@@ -1095,7 +1095,7 @@ if (! function_exists('signup_cta')) {
      * Where the site's own "list your business" buttons point, and what they say.
      *
      * Verified Business is the offer we lead with, so while the badge is on sale
-     * every button says "Get verified". They all point at /add-listing, which
+     * every button says "Get verified". They all point at /add-profile, which
      * decides the mode itself (Listing::create()): a visitor who came straight
      * to the site gets both cards, Verified first and preselected, with the Free
      * Listing one click away. A visitor who came through one of our links (an
@@ -1104,7 +1104,7 @@ if (! function_exists('signup_cta')) {
      * advertise a badge that cannot be sold.
      *
      * Text that talks about listing *for free* (the FAQ, the Terms, the privacy
-     * policy, the "is it free?" answer on /verified) links to /add-listing
+     * policy, the "is it free?" answer on /verified) links to /add-profile
      * directly instead, because pointing it at a page with no Free card would
      * contradict the sentence it sits in.
      *
@@ -1126,8 +1126,8 @@ if (! function_exists('signup_cta')) {
         }
 
         return $verified
-            ? ['url' => base_url('add-listing'), 'label' => 'Get your business verified', 'verified' => true]
-            : ['url' => base_url('add-listing'), 'label' => 'Create your FREE business profile', 'verified' => false];
+            ? ['url' => base_url('add-profile'), 'label' => 'Get your business verified', 'verified' => true]
+            : ['url' => base_url('add-profile'), 'label' => 'Create your FREE business profile', 'verified' => false];
     }
 }
 

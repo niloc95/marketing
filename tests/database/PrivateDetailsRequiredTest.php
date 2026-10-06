@@ -176,7 +176,7 @@ final class PrivateDetailsRequiredTest extends CIUnitTestCase
         ], true);
 
         foreach ([
-            $this->get('add-listing'),
+            $this->get('add-profile'),
             $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit'),
         ] as $result) {
             $result->assertOK();

@@ -145,7 +145,7 @@ final class ReferralFlowTest extends CIUnitTestCase
         $body = html_entity_decode((string) $mail['body']);
         $this->assertStringNotContainsString('lindiwe@example.test', $body, 'the referrer\'s address is never shown');
         $this->assertStringContainsString('Lindiwe', $body, 'a customer\'s first name is');
-        $this->assertSame(1, preg_match('#add-listing(?:/verified)?\?invite=([a-f0-9]{64})#', $body, $m));
+        $this->assertSame(1, preg_match('#add-profile(?:/verified)?\?invite=([a-f0-9]{64})#', $body, $m));
 
         $row = $this->referrals->find($id);
         $this->assertSame(DirectoryReferralModel::STATUS_INVITED, $row['status']);
@@ -158,12 +158,12 @@ final class ReferralFlowTest extends CIUnitTestCase
         $this->assertSame([], $this->sent);
 
         // esc(..., 'attr') encodes spaces, so compare decoded markup.
-        $form = html_entity_decode((string) $this->get('add-listing?invite=' . $m[1])->response()->getBody());
+        $form = html_entity_decode((string) $this->get('add-profile?invite=' . $m[1])->response()->getBody());
         $this->assertStringContainsString('value="Drip Doctors"', $form);
         $this->assertStringContainsString('value="info@dripdoctors.test"', $form);
         $this->assertStringContainsString('name="invite" value="' . $m[1] . '"', $form);
 
-        $bad = html_entity_decode((string) $this->get('add-listing?invite=' . str_repeat('a', 64))->response()->getBody());
+        $bad = html_entity_decode((string) $this->get('add-profile?invite=' . str_repeat('a', 64))->response()->getBody());
         $this->assertStringNotContainsString('Drip Doctors', $bad);
         $this->assertStringNotContainsString('name="invite"', $bad);
     }
@@ -183,7 +183,7 @@ final class ReferralFlowTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Included with every listing', $body);
         $this->assertGreaterThan(strpos($body, 'With a Verified Business profile you get:'), strpos($body, 'Jobs:'));
         $this->assertStringContainsString('Your business profile stays free either way.', $body);
-        $this->assertStringContainsString('add-listing/verified?invite=', $body);
+        $this->assertStringContainsString('add-profile/verified?invite=', $body);
         $this->assertDoesNotMatchRegularExpression('/rank|higher position|top of/i', strip_tags($body), 'no ranking promise');
     }
 
@@ -334,7 +334,7 @@ final class ReferralFlowTest extends CIUnitTestCase
     private function inviteAndGetToken(int $id): string
     {
         $this->assertTrue($this->svc->invite($id)['ok']);
-        preg_match('#add-listing(?:/verified)?\?invite=([a-f0-9]{64})#', html_entity_decode((string) end($this->sent)['body']), $m);
+        preg_match('#add-profile(?:/verified)?\?invite=([a-f0-9]{64})#', html_entity_decode((string) end($this->sent)['body']), $m);
         $this->sent = [];
 
         return $m[1];

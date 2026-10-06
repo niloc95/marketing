@@ -17,10 +17,10 @@ use Tests\Support\ValidListingInput;
  * Pinned:
  *
  * 1. **Links we control open the verified-only form.** That means
- *    /add-listing/verified, or any /add-listing visit with a ?via= / invite
+ *    /add-profile/verified, or any /add-profile visit with a ?via= / invite
  *    source. It has no Free card and no "keep my profile free" link, and it
  *    still says a South African listing is free (the Terms promise it).
- * 2. **A direct /add-listing shows both options**, with Verified first and
+ * 2. **A direct /add-profile shows both options**, with Verified first and
  *    preselected. ?plan=free picks Free.
  * 3. **With the badge off, every mode is the plain free form.**
  * 4. **A verified-only submit with no documents still saves the listing**, and
@@ -61,7 +61,7 @@ final class SignupModesTest extends CIUnitTestCase
     public function testTheVerifiedOnlyFormHasNoFreeOption(): void
     {
         // Whitespace-normalised: the small print wraps across lines in the template.
-        $html = (string) preg_replace('/\s+/', ' ', $this->page('add-listing/verified'));
+        $html = (string) preg_replace('/\s+/', ' ', $this->page('add-profile/verified'));
 
         $this->assertStringNotContainsString('data-plan-card="free"', $html);
         $this->assertStringNotContainsString('keep my profile free', $html);
@@ -74,16 +74,16 @@ final class SignupModesTest extends CIUnitTestCase
 
     public function testADirectVisitSeesVerifiedFirstAndPicked(): void
     {
-        $html = $this->page('add-listing');
+        $html = $this->page('add-profile');
 
         $verified = strpos($html, 'data-plan-card="verified"');
         $free     = strpos($html, 'data-plan-card="free"');
         $this->assertNotFalse($free, 'a direct visitor can still choose Free');
         $this->assertLessThan($free, $verified, 'Verified comes first');
         $this->assertStringContainsString('name="plan" value="verified"', $html);
-        $this->assertStringContainsString('add-listing?plan=free', $html);
+        $this->assertStringContainsString('add-profile?plan=free', $html);
 
-        $this->assertStringContainsString('name="plan" value="free"', $this->page('add-listing?plan=free'));
+        $this->assertStringContainsString('name="plan" value="free"', $this->page('add-profile?plan=free'));
     }
 
     public function testACampaignSourceMakesEveryAddListingVerifiedOnly(): void
@@ -92,8 +92,8 @@ final class SignupModesTest extends CIUnitTestCase
         $this->assertSame('whatsapp', $_SESSION[SignupChannel::SESSION_KEY] ?? null, 'the filter remembers ?via=');
 
         $this->withSession([SignupChannel::SESSION_KEY => 'whatsapp']);
-        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-listing'));
-        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-listing?plan=free'));
+        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-profile'));
+        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-profile?plan=free'));
     }
 
     public function testAMalformedViaIsIgnored(): void
@@ -107,14 +107,14 @@ final class SignupModesTest extends CIUnitTestCase
     {
         $this->badge(false);
 
-        foreach (['add-listing', 'add-listing/verified'] as $uri) {
+        foreach (['add-profile', 'add-profile/verified'] as $uri) {
             $html = $this->page($uri);
             $this->assertStringNotContainsString('data-plan-card', $html, $uri);
             $this->assertStringContainsString('name="form_mode" value="both"', $html, $uri);
         }
 
         $home = $this->page('/');
-        $this->assertStringNotContainsString('add-listing/verified', $home, 'no button advertises a badge we cannot sell');
+        $this->assertStringNotContainsString('add-profile/verified', $home, 'no button advertises a badge we cannot sell');
         $this->assertStringContainsString('Create your FREE business profile', $home);
     }
 
@@ -122,19 +122,19 @@ final class SignupModesTest extends CIUnitTestCase
     {
         $home = $this->page('/');
 
-        // "Add your business" wording, pointing at /add-listing, which decides the
+        // "Add your business" wording, pointing at /add-profile, which decides the
         // mode: a visitor who came straight to the site still gets the Free card.
-        $this->assertMatchesRegularExpression('#href="' . preg_quote(base_url('add-listing'), '#') . '" class="btn btn-accent nav-cta">\s*<strong class="sm:hidden">Add business</strong>#', $home);
+        $this->assertMatchesRegularExpression('#href="' . preg_quote(base_url('add-profile'), '#') . '" class="btn btn-accent nav-cta">\s*<strong class="sm:hidden">Add business</strong>#', $home);
         $this->assertStringContainsString('<strong class="hidden sm:inline">Add your business</strong>', $home);
         $this->assertStringNotContainsString('<h3>Get started</h3>', $home, 'the footer leads with the badge while it is on sale');
 
-        $direct = $this->page('add-listing');
+        $direct = $this->page('add-profile');
         $this->assertStringContainsString('data-plan-card="free"', $direct, 'the Free Listing stays available to a direct visitor');
         $this->assertLessThan(strpos($direct, 'data-plan-card="free"'), strpos($direct, 'data-plan-card="verified"'));
 
         // The same button, for someone who came in on a campaign link.
         $this->withSession([SignupChannel::SESSION_KEY => 'flyer']);
-        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-listing'));
+        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-profile'));
     }
 
     // ------------------------------------------------------ saving and source
@@ -158,7 +158,7 @@ final class SignupModesTest extends CIUnitTestCase
         ]]);
 
         $result = $this->withSession([SignupChannel::SESSION_KEY => 'whatsapp', 'listing_form_rendered_at' => time() - 60])
-            ->post('add-listing', $this->withRequiredSections([
+            ->post('add-profile', $this->withRequiredSections([
                 // A complete South African signup, as in BookingUrlTest::signup():
                 // address, the private "Your details" pair, the consent answers,
                 // and coordinates so nothing is geocoded over the network.

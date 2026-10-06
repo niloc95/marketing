@@ -486,7 +486,7 @@ class ReferralService
                     'We have already filled in what we were told about your business. Just check your details and upload the two documents.',
                     'Your business profile stays free either way.',
                 ],
-                'button'       => ['Get your business verified', base_url('add-listing/verified?invite=' . $token)],
+                'button'       => ['Get your business verified', base_url('add-profile/verified?invite=' . $token)],
                 'footnote'     => 'We will not email you about this again. Not interested?',
                 'footnoteLink' => $stop,
             ]);
@@ -499,7 +499,7 @@ class ReferralService
                 $site . ' is a local business discovery and visibility platform for South Africa.' . $by,
                 'A business profile is free: no monthly fee, no subscription, no obligation. It takes a few minutes, and we have filled in what we were told, so you only need to check it and add the rest.',
             ],
-            'button'       => ['Create your free business profile', base_url('add-listing?invite=' . $token)],
+            'button'       => ['Create your free business profile', base_url('add-profile?invite=' . $token)],
             'footnote'     => 'We will not email you about this again. Not interested?',
             'footnoteLink' => $stop,
         ]);

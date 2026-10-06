@@ -172,7 +172,7 @@ final class CategoryGroupTest extends CIUnitTestCase
         $this->category('Spa', 'Beauty & Wellness');
         $this->category('Traditional Healer', 'Alternative & Traditional Medicine');
 
-        $html = $this->get('add-listing')->getBody();
+        $html = $this->get('add-profile')->getBody();
 
         $this->assertStringContainsString('data-category-picker', $html);
         $this->assertStringContainsString('data-slug="beauty-wellness"', $html);

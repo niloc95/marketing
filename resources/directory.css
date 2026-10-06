@@ -2265,7 +2265,7 @@
   /* Free vs Verified Business, above the signup form. Two cards over an
      identical set of rows — see _plan_cards.php for why the rows are shared. */
   /* Full container width, like the hero and the content around it: the plan
-     cards and the form below them share the page's edges (add-listing only). */
+     cards and the form below them share the page's edges (add-profile only). */
   .plan-choose       { @apply mb-6; }
   .plan-choose-title { @apply mb-4 text-2xl font-extrabold text-slate-900; }
   .dark .plan-choose-title { @apply text-white; }

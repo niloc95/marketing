@@ -24,7 +24,24 @@ class Listing extends BaseController
     public const SOURCE_SITE   = 'site';
 
     /**
-     * /add-listing, where every button on the site points (signup_cta()).
+     * /add-listing and /add-listing/verified, the signup's address until
+     * 6 Oct 2026: a permanent redirect to the same page under /add-profile,
+     * query string and all. The invite token and the ?via= tag ride on it, and
+     * the global signupchannel filter has already recorded them by the time
+     * this runs.
+     */
+    public function legacyRedirect()
+    {
+        $path  = str_ends_with(trim($this->request->getUri()->getPath(), '/'), '/verified')
+            ? 'add-profile/verified'
+            : 'add-profile';
+        $query = $this->request->getUri()->getQuery();
+
+        return redirect()->to(base_url($path) . ($query !== '' ? '?' . $query : ''), 301);
+    }
+
+    /**
+     * /add-profile, where every button on the site points (signup_cta()).
      *
      * A visitor who came straight to the site (typed the address, Google, a
      * bookmark) gets both options, Verified first and preselected. The Free
@@ -117,7 +134,7 @@ class Listing extends BaseController
             // offer than to take documents for a badge we cannot sell.
             'verificationOffered' => $offered,
             'verificationAmount'  => $verification->monthlyAmount(),
-            // A /add-listing/verified link that outlives the offer being switched
+            // A /add-profile/verified link that outlives the offer being switched
             // off falls back to the free form rather than rendering an upload for
             // a badge nobody can buy.
             'plan' => $offered ? $plan : 'free',
@@ -166,7 +183,7 @@ class Listing extends BaseController
 
         // Where this signup came from. Always overwritten here, so the form
         // cannot claim a channel. With no campaign source, form_mode tells a
-        // visit to /add-listing/verified with no tag ('site') from the both-
+        // visit to /add-profile/verified with no tag ('site') from the both-
         // options page ('direct'), which is where the site's own buttons go.
         $post['signup_source'] = self::campaignSource()
             ?? ($this->request->getPost('form_mode') === 'verified-only' ? self::SOURCE_SITE : self::SOURCE_DIRECT);

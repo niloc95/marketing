@@ -110,7 +110,7 @@ $faqs = [
                 <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Get Verified</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
                     Send us your company registration document and the owner's ID, either from the
-                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-listing') ?>">create your business profile</a>
+                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-profile') ?>">create your business profile</a>
                     form or at any time afterwards from
                     <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>.
                     We review them, usually within two working days.

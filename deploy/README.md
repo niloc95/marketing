@@ -167,10 +167,10 @@ and nothing else is wrong.
 
 **App behaviour:**
 ```bash
-curl -sI https://local.webscheduler.co.za/add-listing | grep -i set-cookie
+curl -sI https://local.webscheduler.co.za/add-profile | grep -i set-cookie
     # Secure; HttpOnly; SameSite=Lax
 curl -s -o /dev/null -w '%{http_code}\n' -X POST \
-     -d "display_name=x" https://local.webscheduler.co.za/add-listing
+     -d "display_name=x" https://local.webscheduler.co.za/add-profile
     # 403 — CSRF blocking the write
 curl -s "https://local.webscheduler.co.za/health?token=$HEALTHTOKEN"
     # every check green

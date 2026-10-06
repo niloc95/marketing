@@ -162,7 +162,7 @@ $moments = [
                 <?php // The free profile is the offer this page leads with, so it goes
                       // to the Free card (?plan=free) rather than through signup_cta(),
                       // which leads with the badge. ?>
-                <a class="home-link home-link-accent" href="<?= base_url('add-listing?plan=free') ?>">Create your FREE Business Profile<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+                <a class="home-link home-link-accent" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Business Profile<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
                 <?php if ($stats['listings'] > 0): ?>
                     <p class="home-stats">
                         <span><strong><?= number_format($stats['listings']) ?></strong> profiles</span>
@@ -432,7 +432,7 @@ $moments = [
                     <a class="btn btn-accent home-cta" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
                 <?php else: ?>
                     <h2 class="home-display home-close-title">Your business should be easy to find.</h2>
-                    <a class="btn btn-accent home-cta" href="<?= base_url('add-listing?plan=free') ?>">Create your FREE Business Profile</a>
+                    <a class="btn btn-accent home-cta" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Business Profile</a>
                 <?php endif; ?>
                 <p class="home-fine">
                     A free business profile covers your business information, services, contact details, address

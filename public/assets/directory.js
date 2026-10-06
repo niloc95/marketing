@@ -136,8 +136,8 @@
 
   // ------------------------------------------------------------- plan picker
   // The Verified Business / Free comparison cards on the signup form, shown only
-  // to a visitor who came straight to /add-listing. Their buttons are real links,
-  // /add-listing (Verified, the default) and /add-listing?plan=free, which is what
+  // to a visitor who came straight to /add-profile. Their buttons are real links,
+  // /add-profile (Verified, the default) and /add-profile?plan=free, which is what
   // makes them work with JS off. The verified-only page, where every link of ours
   // points, has one card and no [data-plan-cards], so this module stays off there.
   //
@@ -3342,7 +3342,7 @@
     if (!summary) return;
     var form = summary.nextElementSibling && summary.nextElementSibling.tagName === 'FORM'
       ? summary.nextElementSibling
-      : document.querySelector('form[data-draft], form[action$="add-listing"]');
+      : document.querySelector('form[data-draft], form[action$="add-profile"]');
     if (!form) return;
 
     var CONTROLS = 'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), .ql-editor';

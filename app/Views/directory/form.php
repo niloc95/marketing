@@ -23,7 +23,7 @@ if ($verifiedOnly) {
     $headline = 'Be discovered by local customers';
 }
 
-// Both pages canonicalise to /add-listing. They are one form showing the same
+// Both pages canonicalise to /add-profile. They are one form showing the same
 // fields, so the verified variant is not a separate thing to index — and the
 // free one is the page we want people landing on from search.
 ?>
@@ -31,7 +31,7 @@ if ($verifiedOnly) {
 <?= seo_meta([
     'title'       => 'Create your free business profile — ' . $siteName,
     'description' => 'Create a free business profile on ' . $siteName . ' so local customers can discover your business, services and location. No monthly fee, no subscription.',
-    'canonical'   => base_url('add-listing'),
+    'canonical'   => base_url('add-profile'),
 ]) ?>
 <?= $this->endSection() ?>
 
@@ -83,12 +83,12 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
 
             <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
 
-            <form method="post" action="<?= base_url('add-listing') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('add-profile') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <!-- honeypot -->
                 <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
                 <?php // From a "Recommend a business" invite; closes that referral. See Listing::renderForm(). ?>
-                <?php // Tells store() a site-button arrival ('site') from a typed /add-listing
+                <?php // Tells store() a site-button arrival ('site') from a typed /add-profile
                       // ('direct') for signup_source. Attribution only; changes nothing saved. ?>
                 <input type="hidden" name="form_mode" value="<?= $verifiedOnly ? 'verified-only' : 'both' ?>">
                 <?php if (($invite ?? '') !== ''): ?>
@@ -188,7 +188,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                       // without documents, which is what keeps that mode honest. ?>
                                 <?php if (! $verifiedOnly): ?>
                                     <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
-                                       href="<?= base_url('add-listing?plan=free') ?>">Remove &mdash; keep my profile free</a>
+                                       href="<?= base_url('add-profile?plan=free') ?>">Remove &mdash; keep my profile free</a>
                                 <?php endif; ?>
                             </div>
                         </details>

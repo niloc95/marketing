@@ -208,7 +208,7 @@ final class SignupQualityRulesTest extends CIUnitTestCase
         // The controller decides _has_photo from the actual upload, and
         // overwrites whatever the form posted — so a forged "yes" is ignored.
         $this->withSession(['listing_form_rendered_at' => time() - 60])
-            ->post('add-listing', $this->signup([
+            ->post('add-profile', $this->signup([
                 '_has_photo'   => '1',
                 csrf_token()   => csrf_hash(),
             ]))

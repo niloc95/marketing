@@ -337,10 +337,10 @@ Then, on the server
 Verify
 ------
   curl -sI https://www.<domain>/                     # 301 -> https://, NOT http://
-  curl -sI https://<domain>/add-listing | grep -i set-cookie
+  curl -sI https://<domain>/add-profile | grep -i set-cookie
                                                      # Secure; HttpOnly; SameSite=Lax
   curl -s -o /dev/null -w '%{http_code}\\n' -X POST \\
-       -d "display_name=x" https://<domain>/add-listing
+       -d "display_name=x" https://<domain>/add-profile
                                                      # 403 (CSRF blocking the write)
   curl -s https://<domain>/sitemap.xml | head -5     # <loc> uses the real domain,
                                                      # not CHANGE-ME or localhost

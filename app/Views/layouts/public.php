@@ -157,7 +157,7 @@
                       // gets its own spacing without a literal one.
                       //
                       // While the badge is on sale this is "Add your business", not "Get
-                      // verified": it goes to /add-listing, which shows a visitor who came
+                      // verified": it goes to /add-profile, which shows a visitor who came
                       // straight here both options (Verified first, Free still there) and a
                       // campaign visitor the verified-only form. See signup_cta(). Naming
                       // only the paid path told free-profile visitors the button wasn't
@@ -170,7 +170,7 @@
                         <strong class="hidden sm:inline">Add your business</strong>
                     </a>
                 <?php else: ?>
-                    <a href="<?= base_url('add-listing') ?>" class="btn btn-accent nav-cta">
+                    <a href="<?= base_url('add-profile') ?>" class="btn btn-accent nav-cta">
                         <span class="sm:hidden">Free profile</span>
                         <span class="hidden sm:inline">Create your</span>
                         <strong class="hidden sm:inline">free profile</strong>
@@ -388,7 +388,7 @@
                 <?php else: ?>
                     <h3>Get started</h3>
                     <p class="site-footer-tagline">Create your business profile in a couple of minutes. No monthly fee. No subscription. No obligation.</p>
-                    <a class="btn btn-accent mt-4" href="<?= base_url('add-listing') ?>">Create your FREE business profile</a>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Create your FREE business profile</a>
                 <?php endif; ?>
             </div>
         </div>

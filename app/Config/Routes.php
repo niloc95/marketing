@@ -8,11 +8,21 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Directory::home');
 
 // Public submission
-$routes->get('add-listing', 'Listing::create');
+$routes->get('add-profile', 'Listing::create');
 // The same form, entered from the Verified Business card on the plan comparison.
-// A GET only: it posts to add-listing below, because it IS that form — the paid
+// A GET only: it posts to add-profile below, because it IS that form — the paid
 // path differs in what it shows, never in what it saves.
-$routes->get('add-listing/verified', 'Listing::createVerified');
+$routes->get('add-profile/verified', 'Listing::createVerified');
+$routes->post('add-profile', 'Listing::store');
+// Renamed from /add-listing on 6 Oct 2026 ("business profile", never "listing").
+// The old address is on referral emails already sent (?invite=), outreach mail,
+// flyers and QR codes (?via=), so it redirects for good. A controller rather
+// than addRedirect(): that builds the target from the path alone and would drop
+// the invite token and the ?via= tag (see Listing::legacyRedirect).
+$routes->get('add-listing', 'Listing::legacyRedirect');
+$routes->get('add-listing/verified', 'Listing::legacyRedirect');
+// A form left open in a tab across the rename still posts here. A redirect
+// would turn that POST into a GET and lose everything typed, so it is saved.
 $routes->post('add-listing', 'Listing::store');
 // Renamed from /list-your-practice, a leftover from the healthcare-only era.
 // Permanent and kept indefinitely: the old path was indexed and is on printed
@@ -21,7 +31,7 @@ $routes->post('add-listing', 'Listing::store');
 // Exact-match only, which is all that is needed — DEPLOY.md's cross-app
 // handoff names /list-your-practice/prefill, but no such endpoint has ever
 // existed here, so there is no sub-path worth redirecting.
-$routes->addRedirect('list-your-practice', 'add-listing', 301);
+$routes->addRedirect('list-your-practice', 'add-profile', 301);
 
 // Contact. Top-level like the legal pages, so it never meets the
 // directory/{segment} catch-all. Deliberately on this domain rather than a link

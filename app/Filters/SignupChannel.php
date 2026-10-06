@@ -16,7 +16,7 @@ use CodeIgniter\HTTP\ResponseInterface;
  *
  *   - Listing::create(), which shows the verified-only signup form to anyone
  *     with a source. A visitor who came straight to the site sees both options
- *     on /add-listing, Free included, even after clicking our own buttons.
+ *     on /add-profile, Free included, even after clicking our own buttons.
  *   - Listing::store(), which records it as the new listing's signup_source.
  *
  * GET only, and it never redirects or changes the page. The canonical URL

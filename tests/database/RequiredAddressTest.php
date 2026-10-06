@@ -212,7 +212,7 @@ final class RequiredAddressTest extends CIUnitTestCase
             'category_id'  => $this->categoryId,
         ], true);
 
-        $signup = $this->get('add-listing');
+        $signup = $this->get('add-profile');
         $signup->assertOK();
         $this->assertStringContainsString('<label>Address *</label>', $signup->getBody());
         $this->assertStringContainsString('<label>City / town *</label>', $signup->getBody());

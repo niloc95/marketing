@@ -91,7 +91,7 @@ final class MarketingConsentTest extends CIUnitTestCase
     public function testTheSignupBoxRendersTicked(): void
     {
         // The whole change lives or dies on this: the default the person sees.
-        $body = (string) $this->get('add-listing')->response()->getBody();
+        $body = (string) $this->get('add-profile')->response()->getBody();
 
         $this->assertMatchesRegularExpression(
             '/<input type="checkbox" name="marketing_opt_in" value="1" checked>/',
@@ -106,7 +106,7 @@ final class MarketingConsentTest extends CIUnitTestCase
         // it silently re-ticked on the way back. Only the marker is flashed,
         // because an unticked checkbox posts nothing.
         $body = (string) $this->withSession($this->flashedOld(['marketing_present' => '1']))
-            ->get('add-listing')->response()->getBody();
+            ->get('add-profile')->response()->getBody();
 
         $this->assertStringContainsString(
             '<input type="checkbox" name="marketing_opt_in" value="1" >',
@@ -117,7 +117,7 @@ final class MarketingConsentTest extends CIUnitTestCase
     public function testARejectedSaveKeepsTheBoxTicked(): void
     {
         $body = (string) $this->withSession($this->flashedOld(['marketing_present' => '1', 'marketing_opt_in' => '1']))
-            ->get('add-listing')->response()->getBody();
+            ->get('add-profile')->response()->getBody();
 
         $this->assertStringContainsString(
             '<input type="checkbox" name="marketing_opt_in" value="1" checked>',

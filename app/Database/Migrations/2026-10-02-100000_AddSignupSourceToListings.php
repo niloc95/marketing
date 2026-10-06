@@ -7,7 +7,7 @@ use CodeIgniter\Database\Migration;
 /**
  * `signup_source`: which channel brought a listing in. It is 'invite' (a
  * referral), a ?via= campaign tag, 'site' (one of the site's own "Get
- * verified" buttons) or 'direct' (someone who typed /add-listing). It tells
+ * verified" buttons) or 'direct' (someone who typed /add-profile). It tells
  * the admin which way of promoting the Verified Business badge actually
  * produces signups.
  *

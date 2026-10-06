@@ -51,7 +51,7 @@ final class SocialProfilesTest extends CIUnitTestCase
 
     public function testTheSignupFormRendersEveryField(): void
     {
-        $result = $this->get('add-listing');
+        $result = $this->get('add-profile');
 
         $result->assertOK();
         foreach (['whatsapp', 'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok'] as $field) {

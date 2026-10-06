@@ -300,7 +300,7 @@ final class ListingCountryTest extends CIUnitTestCase
         // hidden AND disabled. Disabled is the load-bearing half — without it
         // the inactive field still posts, and the row ends up claiming a
         // province and a region at once.
-        $signup = $this->get('add-listing');
+        $signup = $this->get('add-profile');
         $signup->assertOK();
         $html = $signup->getBody();
         $this->assertMatchesRegularExpression('/data-address-province\s*>/', $html);
