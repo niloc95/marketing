@@ -320,14 +320,18 @@ $moments = [
                     <h3>Featured</h3>
                     <p>Hand-picked from across South Africa, and open for enquiries.</p>
                 </div>
-                <?php // Scrolls sideways on every screen size. It is a list, so it
-                      // says so to a screen reader; the strip itself takes focus so a
-                      // keyboard user can scroll it. ?>
-                <ul class="feature-strip" tabindex="0" aria-label="Featured businesses">
-                    <?php foreach ($featured as $l): ?>
-                        <li><?= view('directory/_featured_strip_card', ['l' => $l]) ?></li>
-                    <?php endforeach; ?>
-                </ul>
+                <?php // A grid in the content column, not a sideways strip. The strip ran
+                      // past the page's edges and, as soon as the cards did not fit,
+                      // showed a cut-off card and a scrollbar — with a handful of
+                      // featured businesses that read as a broken carousel. Four across
+                      // on a laptop, down to one on a phone; nothing scrolls sideways. ?>
+                <div class="container">
+                    <ul class="feature-grid" aria-label="Featured businesses">
+                        <?php foreach ($featured as $l): ?>
+                            <li><?= view('directory/_featured_strip_card', ['l' => $l]) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
             </div>
         <?php endif; ?>
 
