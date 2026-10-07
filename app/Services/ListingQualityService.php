@@ -341,7 +341,7 @@ class ListingQualityService
                 'A street address',
                 self::PTS_ADDRESS,
                 $this->filled($listing, 'address_line'),
-                'A directory without addresses is a phone book.',
+                'A profile without an address is hard to find on a map.',
                 'field-address'
             ),
             $this->flag(

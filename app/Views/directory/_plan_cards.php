@@ -157,7 +157,7 @@ $row = static function (array $r, string $col): string {
             Free for any business with a <strong>South African address</strong>, with
             <a href="<?= base_url('verified') ?>">Verified</a> as an optional upgrade. A
             business based outside South Africa needs an
-            <a href="<?= base_url('faq') ?>">International Listing</a> instead.
+            <a href="<?= base_url('faq') ?>">International Profile</a> instead.
         </p>
         <ul class="plan-rows">
             <?php foreach ($rows as $r): ?>

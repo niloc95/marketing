@@ -26,7 +26,7 @@ $contact   = config('Directory')->adminEmail();
     <div class="container prose-legal page-flow">
         <div class="panel">
             <h2>1. Who we are</h2>
-            <p><strong>WebScheduler (Pty) Ltd</strong>, registration number 2026/138798/07, is a South African technology company providing online scheduling, appointment-booking, business listing and related Software as a Service (SaaS) services.</p>
+            <p><strong>WebScheduler (Pty) Ltd</strong>, registration number 2026/138798/07, is a South African technology company providing online scheduling, appointment-booking, local business discovery and related Software as a Service (SaaS) services.</p>
             <p>This Privacy Policy explains how WebScheduler (Pty) Ltd collects, uses, stores, protects and otherwise processes personal information in connection with <strong><?= esc($siteName) ?></strong>, our local business discovery and visibility platform.</p>
             <p><?= esc($siteName) ?> provides a platform where businesses, professionals and service providers can create and maintain public business profiles that help people discover local services and businesses in South Africa.</p>
             <p>We process personal information in accordance with applicable South African data-protection requirements, including the <strong>Protection of Personal Information Act, 2013 (POPIA)</strong>.</p>
@@ -42,9 +42,9 @@ $contact   = config('Directory')->adminEmail();
                 <li><strong>Website</strong> — <a href="https://webscheduler.co.za/" rel="noopener">webscheduler.co.za</a></li>
             </ul>
 
-            <h2>3. The WebScheduler Listing Service</h2>
-            <p>The WebScheduler Listing Service allows businesses and service providers to create and maintain an online business profile.</p>
-            <p>A listing may contain information such as:</p>
+            <h2>3. WebScheduler Local business profiles</h2>
+            <p>WebScheduler Local allows businesses and service providers to create and maintain an online business profile.</p>
+            <p>A business profile may contain information such as:</p>
             <ul>
                 <li>Business or trading name</li>
                 <li>Business category</li>
@@ -59,10 +59,10 @@ $contact   = config('Directory')->adminEmail();
                 <li>Business logo and photographs</li>
                 <li>Information about delivery, card payments and online bookings</li>
             </ul>
-            <p>Businesses and service providers are responsible for ensuring that information they submit to the service is accurate and that they have the necessary authority to provide any personal information included in their listing.</p>
-            <p>Because the purpose of <?= esc($siteName) ?> is to provide a public business discovery platform, information included in a published listing may be visible to anyone and may be indexed by search engines.</p>
+            <p>Businesses and service providers are responsible for ensuring that information they submit to the service is accurate and that they have the necessary authority to provide any personal information included in their profile.</p>
+            <p>Because the purpose of <?= esc($siteName) ?> is to provide a public business discovery platform, information included in a published profile may be visible to anyone and may be indexed by search engines.</p>
             <p>You should therefore not submit personal information that you do not want to make publicly available.</p>
-            <p>The email address used to verify and manage a listing is not displayed publicly as part of the listing.</p>
+            <p>The email address used to verify and manage a profile is not displayed publicly as part of the profile.</p>
 
             <h2>4. Hosting and technology infrastructure</h2>
             <p>Our services are hosted using infrastructure provided by <strong>Amazon Web Services (AWS)</strong>.</p>
@@ -73,8 +73,8 @@ $contact   = config('Directory')->adminEmail();
             <p>We use technical and organisational measures designed to protect personal information against unauthorised access, loss, misuse, alteration or disclosure. These measures include HTTPS/TLS encryption, access controls, application-level authorisation and other security controls appropriate to the services we provide.</p>
             <p>Our technology stack and infrastructure may be updated, replaced or expanded from time to time.</p>
 
-            <h2>5. Information you provide when creating a business listing</h2>
-            <p>Creating a business listing is voluntary.</p>
+            <h2>5. Information you provide when creating a business profile</h2>
+            <p>Creating a business profile is voluntary.</p>
             <p>When you submit a business through <a href="<?= base_url('add-profile') ?>">Create your free business profile</a>, we may collect:</p>
 
             <h3>Business information</h3>
@@ -117,15 +117,15 @@ $contact   = config('Directory')->adminEmail();
             <p>Most of this information forms part of the public business profile and is therefore intended for publication.</p>
 
             <h2>6. Verified Business badge</h2>
-            <p>Applying for a <strong>Verified Business</strong> badge is optional. A business listing can operate without verification.</p>
+            <p>Applying for a <strong>Verified Business</strong> badge is optional. A business profile can operate without verification.</p>
             <p>If you choose to apply, we may request:</p>
             <ul>
                 <li>A company registration document for the business; and</li>
                 <li>An identity document for the business owner, such as an identity card, identity document or passport.</li>
             </ul>
             <p>These documents are <strong>not published</strong> and do not form part of the public business profile.</p>
-            <p>Verification documents are stored separately from publicly accessible listing information and are protected against direct public access. Access is restricted to authorised personnel through the administrative system, with access activity recorded.</p>
-            <p>We seek to collect only the information reasonably necessary to perform the verification process. We do not intentionally reproduce or publish information contained in the submitted documents as part of the public listing.</p>
+            <p>Verification documents are stored separately from publicly accessible profile information and are protected against direct public access. Access is restricted to authorised personnel through the administrative system, with access activity recorded.</p>
+            <p>We seek to collect only the information reasonably necessary to perform the verification process. We do not intentionally reproduce or publish information contained in the submitted documents as part of the public profile.</p>
             <p>The verification process records the outcome of the review, together with relevant administrative information such as who performed the review and when.</p>
             <p>The Verified Business badge itself is the only verification information displayed publicly.</p>
 
@@ -142,12 +142,12 @@ $contact   = config('Directory')->adminEmail();
             <p>We use this information to respond to your enquiry, provide assistance and address potential misuse of the service.</p>
 
             <h3>Newsletter</h3>
-            <p>The newsletter sign-up in the footer of every page is a separate, deliberate opt-in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business listing does not subscribe you to this newsletter &mdash; the listing carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
+            <p>The newsletter sign-up in the footer of every page is a separate, deliberate opt-in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business profile does not subscribe you to this newsletter &mdash; the profile carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
             <p>Once you are subscribed we keep your email address, the date you confirmed, and ordinary delivery records (whether a message reached you, and whether you opened it or clicked a link in it) so that the list works and unsubscribes are honoured. Every newsletter carries an unsubscribe link.</p>
 
             <h3>Recommending a business</h3>
             <p>If you use <a href="<?= base_url('recommend') ?>">Recommend a business</a>, we receive the business details you enter (its name, category, area, email address, phone number and, if you give one, its website) and your name, your email address, how you know the business and your reason for recommending it. We also keep a one-way hash of your IP address to limit abuse. Nothing you enter is published.</p>
-            <p>We review each recommendation. We do not contact the business automatically. If we decide to invite it, we send it <strong>one</strong> email. That email may mention your first name if you said you are a customer. It never includes your email address. The email contains a link that stops us ever sending another invitation to that address, whoever recommends it. If you asked us to, we email you once when the business is listed.</p>
+            <p>We review each recommendation. We do not contact the business automatically. If we decide to invite it, we send it <strong>one</strong> email. That email may mention your first name if you said you are a customer. It never includes your email address. The email contains a link that stops us ever sending another invitation to that address, whoever recommends it. If you asked us to, we email you once when the business has a profile.</p>
             <p>Businesses: if you received an invitation, the details in it came from the person who recommended you. You can ask us to delete them at any time through the <a href="<?= base_url('contact') ?>">contact form</a>.</p>
 
             <h2>8. The Jobs board</h2>
@@ -158,7 +158,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Your name, email address and, optionally, phone number. <strong>These are never published.</strong> We use them to confirm the post, to tell you when it is live, closing or declined, and to pass on applications and replies.</li>
                 <li>The content of the post &mdash; title, description, area, company name, pay or budget &mdash; which <strong>is published</strong> while the post is open and may be indexed by search engines, including Google for Jobs.</li>
             </ul>
-            <p>If you post from a listed business, the post shows the business's name and links to its profile.</p>
+            <p>If you post from a business with a profile, the post shows the business's name and links to its profile.</p>
 
             <h3>If you apply for a job</h3>
             <p>The name, email address, optional phone number, optional CV link and message you enter are sent by email to the address the employer gave for applications, with your email address set as the reply address. <strong>We do not store the application.</strong> You are asked to agree to this before it is sent. Once the employer receives it, the employer decides how it is used and is responsible for it under POPIA.</p>
@@ -166,8 +166,8 @@ $contact   = config('Directory')->adminEmail();
             <h3>If your business replies to a request</h3>
             <p>Your message, together with your business name, profile link, phone number and email address, is sent to the person who posted the request. We keep your message and a record that you replied, so that each business replies only once and the reply limit is applied. The requester's own email address is not shown to you unless they reply.</p>
 
-            <h3>Request alerts to listed businesses</h3>
-            <p>When a request for a service is published, we may email it to a small number of listed businesses in the same category and province. The email contains the request as published and a link to it; it does not contain the requester's contact details. These alerts are on for listed businesses by default, and can be switched off from any alert or from Manage your profile.</p>
+            <h3>Request alerts to businesses with a profile</h3>
+            <p>When a request for a service is published, we may email it to a small number of businesses with a profile in the same category and province. The email contains the request as published and a link to it; it does not contain the requester's contact details. These alerts are on for businesses with a profile by default, and can be switched off from any alert or from Manage your profile.</p>
 
             <h3>Reports</h3>
             <p>If you report a post, we keep the reason you give and a one-way hash of your IP address, so that one visitor's reports count once. The hash cannot be turned back into your IP address.</p>
@@ -187,7 +187,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>IP addresses</h3>
             <p>We may process IP addresses for security purposes, including rate-limiting abusive traffic involving search, mapping, address lookup, owner login and administrative functions.</p>
-            <p>Where an IP address is hashed for rate-limiting or security purposes, it is not intended to be used to create a personal profile or associate browsing activity with a particular business listing.</p>
+            <p>Where an IP address is hashed for rate-limiting or security purposes, it is not intended to be used to create a personal profile or associate browsing activity with a particular business profile.</p>
 
             <h3>Analytics</h3>
             <p>Analytics information is collected only where you have provided the applicable cookie consent.</p>
@@ -203,18 +203,18 @@ $contact   = config('Directory')->adminEmail();
             <table class="table">
                 <thead><tr><th>Purpose</th><th>Basis for processing</th></tr></thead>
                 <tbody>
-                    <tr><td>Creating and publishing a business profile</td><td>Consent provided when you submit and verify the listing</td></tr>
+                    <tr><td>Creating and publishing a business profile</td><td>Consent provided when you submit and verify the profile</td></tr>
                     <tr><td>Sending verification and profile-management links</td><td>Necessary to provide the service you requested</td></tr>
                     <tr><td>Responding to enquiries submitted through the contact form</td><td>Necessary to respond to your request</td></tr>
                     <tr><td>Reviewing documents for a Verified Business badge</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
                     <tr><td>Processing payment for the Verified Business badge</td><td>Necessary to perform the agreement for the service</td></tr>
                     <tr><td>Confirming, reviewing and publishing a Jobs board post, and emailing the poster about it</td><td>Consent provided when you submit the post, and processing necessary to provide the service you requested</td></tr>
                     <tr><td>Passing a job application to the employer</td><td>Your consent, given on the application form before it is sent</td></tr>
-                    <tr><td>Passing a listed business's reply to the person who asked for a service</td><td>Necessary to provide the service both of you requested</td></tr>
-                    <tr><td>Emailing listed businesses about matching service requests</td><td>Our legitimate interest, and theirs, in connecting requests with businesses that offer the service. On by default and can be switched off at any time</td></tr>
+                    <tr><td>Passing a reply from a business with a profile to the person who asked for a service</td><td>Necessary to provide the service both of you requested</td></tr>
+                    <tr><td>Emailing businesses with a profile about matching service requests</td><td>Our legitimate interest, and theirs, in connecting requests with businesses that offer the service. On by default and can be switched off at any time</td></tr>
                     <tr><td>Confirming, checking and publishing a customer review, and telling the business about it</td><td>Consent provided when you submit the review, and processing necessary to provide the service you requested</td></tr>
                     <tr><td>Security, rate-limiting and fraud prevention</td><td>Necessary for the security, integrity and availability of the service</td></tr>
-                    <tr><td>Sending a profile owner the monthly analytics report about their own listing</td><td>Necessary to provide the service you requested, and our legitimate interest in showing you how your listing performs. It is on by default and you can switch it off at any time, at signup, in Manage your profile, or from any report</td></tr>
+                    <tr><td>Sending a profile owner the monthly analytics report about their own profile</td><td>Necessary to provide the service you requested, and our legitimate interest in showing you how your profile performs. It is on by default and you can switch it off at any time, at signup, in Manage your profile, or from any report</td></tr>
                     <tr><td>Sending the newsletter to people who signed up for it</td><td>Your consent, confirmed by clicking the link we email you, which you can withdraw at any time</td></tr>
                     <tr><td>Analytics</td><td>Consent, where applicable</td></tr>
                 </tbody>
@@ -225,7 +225,7 @@ $contact   = config('Directory')->adminEmail();
             <p>We do not sell personal information or share personal information with third parties for their own advertising purposes.</p>
             <p>Information may be disclosed or made available in the following circumstances:</p>
 
-            <h3>Public business listings</h3>
+            <h3>Public business profiles</h3>
             <p>Information that you choose to publish as part of a business profile is publicly accessible and may be indexed by search engines.</p>
 
             <h3>Customer reviews</h3>
@@ -233,7 +233,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Mapping and address services</h3>
             <p>We may use mapping and geocoding services to convert an address into geographic coordinates and display or support location-based search functionality.</p>
-            <p>For example, the address entered on a listing form, including as you type it, may be sent to <strong>Mapbox</strong> for address suggestions and geocoding. See <a href="https://www.mapbox.com/legal/privacy" rel="noopener">Mapbox's privacy policy</a>. The address may also be sent to <strong>OpenStreetMap's Nominatim service</strong>. See the <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">OSM Foundation privacy policy</a>. These requests are made by our server, not your browser, so neither service receives your IP address from them.</p>
+            <p>For example, the address entered on a profile form, including as you type it, may be sent to <strong>Mapbox</strong> for address suggestions and geocoding. See <a href="https://www.mapbox.com/legal/privacy" rel="noopener">Mapbox's privacy policy</a>. The address may also be sent to <strong>OpenStreetMap's Nominatim service</strong>. See the <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">OSM Foundation privacy policy</a>. These requests are made by our server, not your browser, so neither service receives your IP address from them.</p>
             <p>Mapping services such as <strong>CARTO</strong> may also receive technical information, including your IP address, when your browser loads map content directly from their infrastructure. See <a href="https://carto.com/privacy/" rel="noopener">CARTO's privacy policy</a>.</p>
 
             <h3>Analytics</h3>
@@ -243,8 +243,8 @@ $contact   = config('Directory')->adminEmail();
             <p>We use an email service provider to deliver verification, profile-management and other necessary service communications.</p>
             <p>The newsletter, and the monthly analytics report to profile owners who have it switched on, are sent through our own mailing system at <code>updates.webscheduler.co.za</code>. While the report is switched on we pass the owner's email address, contact name and business name to that system; when it is switched off, we mark them there as not to be contacted.</p>
 
-            <h3>Employers, requesters and listed businesses</h3>
-            <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to listed businesses; the requester's contact details are not included.</p>
+            <h3>Employers, requesters and businesses with a profile</h3>
+            <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to businesses with a profile; the requester's contact details are not included.</p>
 
             <h3>Payment processing</h3>
             <p>If you purchase a Verified Business badge, payment processing is handled by <strong>PayFast</strong>. See <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
@@ -263,7 +263,7 @@ $contact   = config('Directory')->adminEmail();
             <h2>14. How long we keep personal information</h2>
             <p>We retain personal information only for as long as reasonably necessary for the purposes for which it was collected, to provide the relevant service, to comply with legal obligations, resolve disputes, enforce agreements and protect the security of our services.</p>
 
-            <h3>Business listings</h3>
+            <h3>Business profiles</h3>
             <p>A published business profile may remain available until:</p>
             <ul>
                 <li>You request its removal;</li>
@@ -273,7 +273,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Unverified submissions may expire and be deleted if they are not completed within the applicable verification period.</p>
 
             <h3>Consent records</h3>
-            <p>We keep a record of when you accepted our terms and of your analytics email choice — when you switched it on or off, and where — for as long as your business listing exists, so that we can show what you chose and make sure an opt-out is respected.</p>
+            <p>We keep a record of when you accepted our terms and of your analytics email choice — when you switched it on or off, and where — for as long as your business profile exists, so that we can show what you chose and make sure an opt-out is respected.</p>
 
             <h3>Verification links</h3>
             <p>Verification and profile-management links are designed to expire after limited periods for security purposes.</p>
@@ -303,7 +303,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Verification documents are retained while the Verified Business badge remains active or paused, where reasonably necessary to support the verification status.</p>
             <p>Where a Verified Business subscription lapses or an application is rejected, the associated verification documents are retained for up to <strong>12 months</strong> from that point and are then deleted automatically. This period allows us to answer a billing or verification query raised after the fact.</p>
             <p>If you submit replacement verification documents, the documents they replace are retained for up to <strong>90 days</strong> and are then deleted automatically.</p>
-            <p>Verification documents are deleted in full when the associated business listing is deleted.</p>
+            <p>Verification documents are deleted in full when the associated business profile is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>
 
             <h2>15. Your rights under POPIA</h2>
@@ -317,8 +317,8 @@ $contact   = config('Directory')->adminEmail();
                 <li>Object to certain processing activities where applicable; and</li>
                 <li>Lodge a complaint concerning the processing of your personal information.</li>
             </ul>
-            <p>Where profile-management functionality is available, you can also update or remove your business listing directly using <a href="<?= base_url('manage') ?>">Manage your profile</a>.</p>
-            <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your listing needs, such as profile-management links.</p>
+            <p>Where profile-management functionality is available, you can also update or remove your business profile directly using <a href="<?= base_url('manage') ?>">Manage your profile</a>.</p>
+            <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your profile needs, such as profile-management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy-related request.</p>
 
             <h2>16. Complaints</h2>
@@ -333,7 +333,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h2>18. Children</h2>
             <p><?= esc($siteName) ?> is intended for businesses, professionals and service providers and is not directed at children.</p>
-            <p>We do not knowingly seek to collect personal information from children under the age of 18 through the business listing service.</p>
+            <p>We do not knowingly seek to collect personal information from children under the age of 18 through WebScheduler Local.</p>
             <p>If you believe that a child has provided personal information to us, please <a href="<?= base_url('contact') ?>">contact us</a> so that we can investigate and take appropriate action.</p>
 
             <h2>19. Changes to this Privacy Policy</h2>

@@ -174,7 +174,7 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
 
         <button type="button" class="btn btn-ghost btn-xs" data-repeat-add
                 data-repeat-max="<?= (int) $max ?>"
-                data-repeat-full="You have listed the maximum of <?= (int) $max ?> locations.">
+                data-repeat-full="You have added the maximum of <?= (int) $max ?> locations.">
             + Add another location
         </button>
     </div>

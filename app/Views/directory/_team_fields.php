@@ -147,7 +147,7 @@ $row = function ($i, array $m = []) use ($err): string {
 
         <button type="button" class="btn btn-ghost btn-xs" data-repeat-add
                 data-repeat-max="<?= (int) $max ?>"
-                data-repeat-full="You have listed the maximum of <?= (int) $max ?> people.">
+                data-repeat-full="You have added the maximum of <?= (int) $max ?> people.">
             + Add another person
         </button>
     </div>

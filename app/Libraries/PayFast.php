@@ -117,11 +117,11 @@ class PayFast
             // statement, so it has to name the thing they are actually buying.
             // An international subscriber charged for a "Verified Business
             // badge" they never asked for is a chargeback waiting to happen.
-            'item_name'        => $isInternational ? 'International Listing' : 'Verified Business badge',
+            'item_name'        => $isInternational ? 'International Profile' : 'Verified Business badge',
             // Truncated because PayFast caps this field and silently rejects
             // the whole request rather than trimming it for us.
             'item_description' => mb_substr(
-                ($isInternational ? 'Monthly International Listing for ' : 'Monthly Verified Business badge for ') . $name,
+                ($isInternational ? 'Monthly International Profile for ' : 'Monthly Verified Business badge for ') . $name,
                 0,
                 200
             ),
@@ -292,7 +292,7 @@ class PayFast
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_USERAGENT      => 'WebScheduler Directory',
+            CURLOPT_USERAGENT      => 'WebScheduler Local',
         ]);
 
         $response = curl_exec($ch);

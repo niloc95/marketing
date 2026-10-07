@@ -931,7 +931,7 @@ class DirectoryListingMutationService
         // DirectoryAdminService), so an import or a phone capture can still be
         // entered with neither.
         if ($this->clean($input['contact_person'] ?? '') === '') {
-            $errors['contact_person'] = 'Please tell us who we should speak to about this listing.';
+            $errors['contact_person'] = 'Please tell us who we should speak to about this profile.';
         }
         // Both from a fixed list now. A title stored before the dropdown
         // (free text, "Sister", "Pastor") stays acceptable while unchanged:

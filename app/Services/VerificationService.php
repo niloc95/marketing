@@ -283,7 +283,7 @@ class VerificationService
             return [
                 'ok'      => false,
                 'message' => $existing['state'] === DirectoryVerificationModel::STATE_ACTIVE
-                    ? 'Your listing is already verified.'
+                    ? 'Your profile is already verified.'
                     : 'Your documents are already with us — we’ll email you when the review is done.',
             ];
         }

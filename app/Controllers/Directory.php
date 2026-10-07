@@ -680,7 +680,7 @@ class Directory extends BaseController
 
                 return redirect()->to(base_url($to))
                     ->with('success', 'Your email is confirmed and you are signed in. '
-                        . 'Businesses outside South Africa need an International Listing '
+                        . 'Businesses outside South Africa need an International Profile '
                         . 'subscription before the profile goes live — this is the last step.');
             }
 

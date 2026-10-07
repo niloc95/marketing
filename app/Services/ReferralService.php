@@ -196,7 +196,7 @@ class ReferralService
             return 'This address asked not to be contacted.';
         }
         if ((new DirectoryListingModel())->findActiveByEmail($email) !== null) {
-            return 'A listing already uses this email.';
+            return 'A business profile already uses this email.';
         }
         // One invite per business, not per referral: five people recommending
         // the same shop must not mean five emails to it.
@@ -349,8 +349,8 @@ class ReferralService
                 ]);
 
                 if ((int) $r['notify_referrer'] === 1 && ! empty($r['referrer_email'])) {
-                    $this->notice((string) $r['referrer_email'], $this->headerSafe((string) $listing['display_name']) . ' is now listed', [
-                        'heading'    => 'Thanks — they are listed',
+                    $this->notice((string) $r['referrer_email'], $this->headerSafe((string) $listing['display_name']) . ' now has a profile', [
+                        'heading'    => 'Thanks — they now have a profile',
                         'paragraphs' => [
                             'You recommended ' . $listing['display_name'] . ' to ' . $this->site->siteName() . '. Their profile is live now.',
                         ],

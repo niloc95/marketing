@@ -250,7 +250,7 @@ class Listing extends BaseController
             // Came in off the Verified Business card and attached nothing. Told,
             // not blocked — for the same reason the whole block sits after the
             // commit. Missing documents cost you the badge, never the listing.
-            $verified['errors'][] = 'Your listing is saved, but we did not receive both documents, '
+            $verified['errors'][] = 'Your profile is saved, but we did not receive both documents, '
                 . 'so no badge application was started. You can send them at any time from '
                 . 'manage your profile.';
         }
@@ -270,7 +270,7 @@ class Listing extends BaseController
             ['country' => (string) $this->request->getPost('country')]
         )) {
             $message .= ' Because your business is outside South Africa, your profile '
-                . 'also needs an International Listing subscription before it goes live — '
+                . 'also needs an International Profile subscription before it goes live — '
                 . 'we will take you to it once your email is confirmed.';
         }
 

@@ -106,7 +106,7 @@ $changeNote = static function (?array $change): string {
                 </p>
 
                 <div class="field">
-                    <label for="intl-price">International Listing price (rand per month)</label>
+                    <label for="intl-price">International Profile price (rand per month)</label>
                     <input type="text" id="intl-price" name="international_price" inputmode="decimal"
                            value="<?= esc($v('international_price', $intlPrice), 'attr') ?>">
                     <?php if ($err('international_price')): ?>

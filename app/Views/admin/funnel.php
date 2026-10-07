@@ -27,7 +27,7 @@ $convTable = static function (array $rows) use ($pct): string {
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Verified Business funnel</h1>
         <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">
-            From signup to renewal, badge plan only. International Listing subscriptions and deleted profiles are left out.
+            From signup to renewal, badge plan only. International Profile subscriptions and deleted profiles are left out.
         </p>
 
         <div class="panel mb-8">

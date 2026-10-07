@@ -43,7 +43,7 @@ $prettyDate = static function (?string $date): string {
 ?>
 <div class="panel verify-panel">
     <h2 class="verify-panel-title">
-        <span class="badge gap-1"><?= lucide('globe', 'h-3.5 w-3.5 shrink-0') ?>International Listing</span>
+        <span class="badge gap-1"><?= lucide('globe', 'h-3.5 w-3.5 shrink-0') ?>International Profile</span>
     </h2>
 
     <?php if ($active): ?>
@@ -68,7 +68,7 @@ $prettyDate = static function (?string $date): string {
             </div>
         <?php else: ?>
             <form method="post" action="<?= base_url('manage/verification/cancel') ?>"
-                  data-confirm="Cancel your International Listing? Your profile stays live until <?= esc($prettyDate($row['paid_until'] ?? null), 'attr') ?>, then comes down.">
+                  data-confirm="Cancel your International Profile? Your profile stays live until <?= esc($prettyDate($row['paid_until'] ?? null), 'attr') ?>, then comes down.">
                 <?= csrf_field() ?>
                 <?php // See _verification_panel.php — the route cancels the plan
                       // it is told to, never the one it guesses. ?>
@@ -91,7 +91,7 @@ $prettyDate = static function (?string $date): string {
         <div class="alert alert-warning">
             <strong>Your profile is not published yet.</strong>
             A business profile in South Africa is free. Yours is outside South
-            Africa, which needs an International Listing subscription at
+            Africa, which needs an International Profile subscription at
             <strong>R<?= esc($amount) ?> per month</strong>.
             <?php // Everything they have already done still exists. Someone
                   // looking at an unpublished profile needs to know they are
