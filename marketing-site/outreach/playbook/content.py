@@ -23,8 +23,8 @@ EDITION is stamped on the cover and in the PDF metadata. It is the one value
 that has to be revisited when this is re-cut.
 """
 
-EDITION = "SEPTEMBER 2026 EDITION"
-EDITION_FOOTER = "WebScheduler Local · South Africa · September 2026"
+EDITION = "OCTOBER 2026 EDITION"
+EDITION_FOOTER = "WebScheduler Local · South Africa · October 2026"
 
 DOC_TITLE = "The Local Visibility Playbook for Small Businesses"
 DOC_AUTHOR = "WebScheduler Local"
@@ -48,7 +48,10 @@ def cta_url(source: str, medium: str) -> str:
 # The A4 document
 # --------------------------------------------------------------------------
 # Block kinds the PDF renderer understands:
-#   eyebrow    small orange label            h1/h2/h3   headings
+#   eyebrow    tracked orange caps           h1/h2/h3   headings
+#   label      tracked slate caps, a quiet section heading
+#   lockup     badge + wordmark {size_mm}    badge      the badge alone {size_mm}
+#   banner     the cover photographs as rounded tiles {height_mm}
 #   para       body paragraph                small      muted small print
 #   statement  the big bold pull-quote       bullets    list of strings
 #   table      {header: [...], rows: [[...]], widths: [fractions of text width]}
@@ -64,9 +67,11 @@ _PAGES = [
         "id": "cover",
         "cover": True,
         "blocks": [
-            {"kind": "eyebrow", "text": "WebScheduler Local"},
-            {"kind": "banner"},
-            {"kind": "gap", "mm": 8},
+            # Type first, photographs after: how every page on the app opens
+            # since the October 2026 facelift.
+            {"kind": "lockup", "size_mm": 15},
+            {"kind": "gap", "mm": 18},
+            {"kind": "eyebrow", "text": "Local visibility playbook"},
             {"kind": "cover_title",
              "text": "The local visibility<br/>playbook for<br/>small businesses."},
             # Was 38 words and named Facebook on the cover. A conference handout
@@ -75,14 +80,16 @@ _PAGES = [
              "text": "Why local search deserves a place in your budget before paid social — and "
                      "how to build a business profile that keeps answering the question long after a "
                      "campaign would have stopped."},
-            {"kind": "gap", "mm": 13},
+            {"kind": "gap", "mm": 4},
+            {"kind": "banner", "height_mm": 66},
+            {"kind": "gap", "mm": 8},
             {"kind": "small", "text": "<b>Inside:</b>"},
             {"kind": "small",
              "text": "Paid social vs search intent · how local search decides · what you own and "
                      "what you rent · the local visibility loop · a complete profile · SEO "
                      "foundations · service + location visibility · the customer journey · a "
                      "worked example · a 30-day rollout plan"},
-            {"kind": "gap", "mm": 8},
+            {"kind": "gap", "mm": 3},
             {"kind": "small", "text": EDITION},
         ],
     },
@@ -129,7 +136,7 @@ _PAGES = [
                      "works at the level of a category. A search matches your actual words."},
             {"kind": "eyebrow", "text": "THE SHIFT, IN ONE LINE"},
             {"kind": "statement",
-             "text": 'From <font color="#666666">paying to interrupt a broad audience</font> — to '
+             "text": 'From <font color="#94A3B8">paying to interrupt a broad audience</font> — to '
                      'being findable by people who are already looking.'},
             {"kind": "para",
              "text": "This does not mean Facebook advertising never works. Paid social and local "
@@ -244,7 +251,7 @@ _PAGES = [
                 ("03", "TURN DISCOVERY INTO ACTION",
                  "One obvious next step: call, message, visit the website or book."),
             ]},
-            {"kind": "h2", "text": "WHAT WEBSCHEDULER LOCAL SUPPLIES"},
+            {"kind": "label", "text": "WHAT WEBSCHEDULER LOCAL SUPPLIES"},
             {"kind": "table", "widths": [0.32, 0.68],
              "header": ["PART", "PURPOSE"],
              "rows": [
@@ -267,7 +274,7 @@ _PAGES = [
              "text": "A business profile is not a digital business card. Every field you complete is one "
                      "more question a customer does not have to ask, and one more fact a search "
                      "engine can corroborate."},
-            {"kind": "h2", "text": "THE CORE PROFILE"},
+            {"kind": "label", "text": "THE CORE PROFILE"},
             {"kind": "table", "widths": [0.3, 0.7],
              "header": ["ELEMENT", "WHAT IT DOES"],
              "rows": [
@@ -302,7 +309,7 @@ _PAGES = [
             {"kind": "para",
              "text": "SEO is not something added to a profile afterwards. It decides how the "
                      "profile is structured in the first place."},
-            {"kind": "h2", "text": "THE LOCAL SEO FOUNDATION"},
+            {"kind": "label", "text": "THE LOCAL SEO FOUNDATION"},
             {"kind": "table", "widths": [0.3, 0.7],
              "header": ["FOUNDATION", "PRACTICAL APPROACH"],
              "rows": [
@@ -444,7 +451,9 @@ _PAGES = [
         "id": "back-cover",
         "back_cover": True,
         "blocks": [
-            {"kind": "gap", "mm": 18},
+            {"kind": "gap", "mm": 10},
+            {"kind": "badge", "size_mm": 38},
+            {"kind": "gap", "mm": 10},
             {"kind": "eyebrow", "text": "WEBSCHEDULER LOCAL"},
             {"kind": "h1", "text": "Be found by the<br/>people already<br/>looking for you."},
             {"kind": "para",
@@ -722,8 +731,9 @@ def pdf_pages(vertical: str = "general") -> list:
         if page["id"] == "worked-example":
             pages.append(_worked_example(v))
         elif page["id"] == "cover" and v["audience"]:
-            blocks = list(page["blocks"])
-            blocks[0] = {"kind": "eyebrow", "text": f"WebScheduler Local \u00b7 {v['audience']}"}
+            blocks = [{**b, "text": f"{b['text']} \u00b7 {v['audience']}"}
+                      if b["kind"] == "eyebrow" else b
+                      for b in page["blocks"]]
             pages.append({**page, "blocks": blocks})
         else:
             pages.append(page)

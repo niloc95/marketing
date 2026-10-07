@@ -50,21 +50,34 @@ import content as C  # noqa: E402
 # --------------------------------------------------------------------------
 # Brand
 # --------------------------------------------------------------------------
-# Mirrors tailwind.tokens.cjs (ocean / orange / golden / crimson / cream).
-# PAPER is the playbook's own warmer paper tone, lighter than brand cream so
-# body text stays legible over a full-bleed background.
+# Mirrors the local app's canvas (resources/directory.css, Oct 2026 facelift):
+# white paper, display type in brand ocean, Tailwind slate for everything
+# quiet, orange only for accents. Tables are a tone with hairlines, not boxes.
 ORANGE = "#F77F00"
 OCEAN = "#003049"
-INK = "#111111"
-BODY = "#333333"
-GREY = "#666666"
-PAPER = "#FFF8E8"
-TABLE_HEAD = "#F0E6D2"
-TABLE_ROW = "#FCF6E8"
-RULE = "#E3D9C2"
+INK = OCEAN               # headings and display type: .home-display
+BODY = "#475569"          # slate-600, running text: .home-lede
+GREY = "#64748B"          # slate-500, small print and captions
+MUTED = "#94A3B8"         # slate-400, the folio and the quiet half of a statement
+PAPER = "#FFFFFF"
+TONE = "#F8FAFC"          # slate-50, the surface a table sits on: .moment-visual
+RULE = "#E2E8F0"          # slate-200, every hairline: .home-rule
 
 BANNER = HERE / "assets" / "cover-banner.webp"
+# The current badge, the same master the site's favicons and header mark are
+# cut from. Drawn as its own element so a logo change never means re-cutting
+# the cover photograph.
+BADGE = REPO / "resources" / "brand" / "webscheduler-local-badge-1024.png"
 INTER_DIR = REPO / "marketing-site" / "assets" / "fonts"
+
+# The cover plate (1640x664) has the OLD badge burnt into its middle, over
+# five tiles, so no single crop removes it. These two boxes are the collage
+# cut at its own seams either side of it: the faces collage, whose top tile
+# ends at x=541, and the two-girls photograph, which starts by x=1080. Set
+# side by side as two rounded tiles they read as picture cards, the way the
+# app shows photographs, not as a splice.
+PLATE_SIZE = (1640, 664)
+TILES = [(0, 0, 541, 664), (1080, 0, 1640, 664)]
 
 PDF_STEM = "WebScheduler-Local-Visibility-Playbook"
 
@@ -79,13 +92,18 @@ PUBLISH_STEM = "webscheduler-local-visibility-playbook"
 # Fonts
 # --------------------------------------------------------------------------
 def resolve_fonts(cache: Path) -> dict:
-    """Return {'regular':path|None,'bold':path|None,'name':str}.
+    """Return {'regular','semibold','bold','black': path|None, 'name': str}.
 
-    Order: Inter (unpacked from the repo's woff2) → DejaVu → whatever the OS
-    has. None means "fall back to a PDF core font", which ReportLab always has.
+    semibold (600) sets the tracked eyebrows and black (800) the display
+    headings, as on the site. Order: Inter (unpacked from the repo's woff2) →
+    DejaVu → whatever the OS has; the fallbacks reuse their bold for both.
+    None means "fall back to a PDF core font", which ReportLab always has.
     """
     cache.mkdir(parents=True, exist_ok=True)
-    want = {"regular": "inter-latin-400-normal.woff2", "bold": "inter-latin-700-normal.woff2"}
+    want = {"regular": "inter-latin-400-normal.woff2",
+            "semibold": "inter-latin-600-normal.woff2",
+            "bold": "inter-latin-700-normal.woff2",
+            "black": "inter-latin-800-normal.woff2"}
 
     if all((INTER_DIR / f).exists() for f in want.values()):
         try:
@@ -112,26 +130,30 @@ def resolve_fonts(cache: Path) -> dict:
          "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "Arial"),
     ]:
         if Path(reg).exists() and Path(bold).exists():
-            return {"regular": Path(reg), "bold": Path(bold), "name": label}
+            return {"regular": Path(reg), "semibold": Path(bold), "bold": Path(bold),
+                    "black": Path(bold), "name": label}
 
-    return {"regular": None, "bold": None, "name": "Helvetica (core)"}
+    return {"regular": None, "semibold": None, "bold": None, "black": None,
+            "name": "Helvetica (core)"}
 
 
 # --------------------------------------------------------------------------
 # Banner
 # --------------------------------------------------------------------------
-def prepare_banner(cache: Path, max_px: int = 2100):
-    """Flatten, downscale and re-encode the cover banner.
+def prepare_tiles(cache: Path, max_px: int = 2100) -> list:
+    """Cut the cover plate into its TILES and re-encode each one.
 
-    Returns (path, aspect_ratio) or (None, None) when the source is absent.
+    Returns [path, ...], or [] when the source is absent. A plate of any other
+    size is used whole as a single tile with a warning, because the TILES
+    boxes only mean something on the 1640x664 plate they were measured on.
 
     `.convert("RGB")` on its own would composite any transparency onto BLACK,
-    which fringes badly against the cream page — so alpha is composited onto
-    PAPER explicitly. Downscaling caps the embedded pixels at roughly 2x print
-    size; a lead magnet gets downloaded over mobile data.
+    which fringes badly against the page — so alpha is composited onto PAPER
+    explicitly. Downscaling caps the embedded pixels at roughly 2x print size;
+    a lead magnet gets downloaded over mobile data.
     """
     if not BANNER.exists():
-        return None, None
+        return []
 
     from PIL import Image as PILImage
 
@@ -144,11 +166,37 @@ def prepare_banner(cache: Path, max_px: int = 2100):
     else:
         img = img.convert("RGB")
 
-    ratio = img.width / img.height
-    img.thumbnail((max_px, max_px), PILImage.LANCZOS)
-    dst = cache / "cover-banner.jpg"
-    img.save(dst, "JPEG", quality=92, optimize=True)
-    return dst, ratio
+    boxes = TILES
+    if img.size != PLATE_SIZE:
+        print(f"  ! cover plate is {img.width}x{img.height}, not {PLATE_SIZE[0]}x{PLATE_SIZE[1]} — "
+              f"using it whole; re-measure TILES for this plate", file=sys.stderr)
+        boxes = [(0, 0, img.width, img.height)]
+
+    out = []
+    for i, box in enumerate(boxes):
+        tile = img.crop(box)
+        tile.thumbnail((max_px, max_px), PILImage.LANCZOS)
+        dst = cache / f"cover-tile-{i}.jpg"
+        tile.save(dst, "JPEG", quality=92, optimize=True)
+        out.append(dst)
+    return out
+
+
+def prepare_badge(cache: Path, px: int = 640):
+    """The badge as a transparent PNG at a sensible size, or None if absent.
+
+    640px holds 300 dpi up to 54 mm, past the largest place it is drawn.
+    """
+    if not BADGE.exists():
+        return None
+    from PIL import Image as PILImage
+
+    dst = cache / f"badge-{px}.png"
+    if not dst.exists() or dst.stat().st_mtime < BADGE.stat().st_mtime:
+        img = PILImage.open(BADGE).convert("RGBA")
+        img.thumbnail((px, px), PILImage.LANCZOS)
+        img.save(dst, "PNG", optimize=True)
+    return dst
 
 
 # --------------------------------------------------------------------------
@@ -188,7 +236,7 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
     from reportlab.lib.units import mm
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.platypus import (BaseDocTemplate, Flowable, Frame, Image, NextPageTemplate,
+    from reportlab.platypus import (BaseDocTemplate, Flowable, Frame, NextPageTemplate,
                                     PageBreak, PageTemplate, Paragraph, Spacer, Table, TableStyle)
 
     P = PROFILES[profile]
@@ -196,13 +244,14 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
     AUDIENCE = C.VERTICALS[vertical]["audience"]
 
     if fonts["regular"]:
-        for name, path in (("Body", fonts["regular"]), ("Body-Bold", fonts["bold"])):
+        for name, key in (("Body", "regular"), ("Body-Semi", "semibold"),
+                          ("Body-Bold", "bold"), ("Body-Black", "black")):
             if name not in pdfmetrics.getRegisteredFontNames():
-                pdfmetrics.registerFont(TTFont(name, str(path)))
+                pdfmetrics.registerFont(TTFont(name, str(fonts[key])))
         pdfmetrics.registerFontFamily("Body", normal="Body", bold="Body-Bold")
-        REG, BOLD = "Body", "Body-Bold"
+        REG, SEMI, BOLD, BLACK = "Body", "Body-Semi", "Body-Bold", "Body-Black"
     else:
-        REG, BOLD = "Helvetica", "Helvetica-Bold"
+        REG, SEMI, BOLD, BLACK = "Helvetica", "Helvetica-Bold", "Helvetica-Bold", "Helvetica-Bold"
 
     # --- geometry -------------------------------------------------------
     TRIM_W, TRIM_H = A4
@@ -220,26 +269,153 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
                               textColor=colors.HexColor(color), **kw)
 
     st = {
-        "eyebrow": S("eyebrow", BOLD, 9, 12, ORANGE, spaceBefore=6, spaceAfter=7),
-        "h1": S("h1", BOLD, 28, 31, INK, spaceAfter=10),
         "h2": S("h2", BOLD, 13.5, 17, INK, spaceBefore=8, spaceAfter=6),
         "h3": S("h3", BOLD, 12, 16, INK, spaceBefore=10, spaceAfter=5),
         "para": S("para", REG, 10, 15, BODY, spaceAfter=8),
         "small": S("small", REG, 8.5, 12, GREY, spaceAfter=5),
-        "statement": S("statement", BOLD, 17, 21, INK, spaceBefore=2, spaceAfter=9),
+        "statement": S("statement", BOLD, 17, 20.5, INK, spaceBefore=2, spaceAfter=9),
         "bullet": S("bullet", REG, 10, 15, BODY, leftIndent=8, spaceAfter=4),
         "cell": S("cell", REG, 8.5, 11.5, BODY),
-        "cellhead": S("cellhead", BOLD, 8, 11, INK),
-        "num": S("num", BOLD, 17, 20, INK),
+        "cellhead": S("cellhead", SEMI, 7, 10, GREY),
+        "num": S("num", BOLD, 17, 20, ORANGE),
         "numhead": S("numhead", BOLD, 12.5, 16, INK, spaceAfter=3),
         "numbody": S("numbody", REG, 9.5, 14, BODY),
-        "cover_title": S("cover_title", BOLD, 34, 37, INK, spaceAfter=12),
-        "cover_sub": S("cover_sub", REG, 12.5, 18, GREY, spaceAfter=10),
+        "cover_sub": S("cover_sub", REG, 12.5, 18, BODY, spaceAfter=10),
         "qrcap": S("qrcap", REG, 9, 12, GREY),
     }
 
-    banner_path, banner_ratio = prepare_banner(cache)
+    # Type ReportLab's Paragraph cannot set: it has no letter-spacing. The
+    # site's display headings run tight (-0.03em) and its eyebrows and labels
+    # run wide (0.2em caps), so those are drawn as tracked lines instead.
+    # (font, size, leading, colour, tracking in em, upper, before, after)
+    tracked = {
+        "eyebrow":     (SEMI, 7.5, 10, ORANGE, 0.2, True, 6, 8),
+        "label":       (SEMI, 7.5, 10, GREY, 0.2, True, 10, 7),
+        "h1":          (BLACK, 28, 29.5, INK, -0.03, False, 0, 11),
+        "cover_title": (BLACK, 40, 41.5, INK, -0.035, False, 0, 14),
+    }
+
+    tiles = prepare_tiles(cache)
+    badge_path = prepare_badge(cache)
     qr_url = C.cta_url("pdf", P["utm_medium"])
+
+    class Tracked(Flowable):
+        """Plain text with letter-spacing, word-wrapped to the frame.
+
+        Copy for these kinds is plain text; <br/> is the only markup honoured.
+        """
+
+        def __init__(self, text, font, size, leading, color, track_em, upper, before, after):
+            super().__init__()
+            text = text.upper() if upper else text
+            self.segments = [s.strip() for s in re.split(r"<br\s*/?>", text, flags=re.I)]
+            self.font, self.size, self.leading, self.color = font, size, leading, color
+            self.track = track_em * size
+            self.spaceBefore, self.spaceAfter = before, after
+
+        def _w(self, s):
+            return pdfmetrics.stringWidth(s, self.font, self.size) + self.track * max(0, len(s) - 1)
+
+        def wrap(self, aw, ah):
+            self.lines = []
+            for seg in self.segments:
+                cur = ""
+                for word in seg.split():
+                    trial = f"{cur} {word}".strip()
+                    if self._w(trial) <= aw or not cur:
+                        cur = trial
+                    else:
+                        self.lines.append(cur)
+                        cur = word
+                self.lines.append(cur)
+            # Room below the last baseline for descenders.
+            self.height = len(self.lines) * self.leading + 0.15 * self.size
+            return aw, self.height
+
+        def draw(self):
+            t = self.canv.beginText()
+            t.setFont(self.font, self.size)
+            t.setCharSpace(self.track)
+            t.setFillColor(colors.HexColor(self.color))
+            n = len(self.lines)
+            for i, line in enumerate(self.lines):
+                t.setTextOrigin(0, (n - 1 - i) * self.leading + 0.15 * self.size)
+                t.textOut(line)
+            self.canv.drawText(t)
+
+    class Lockup(Flowable):
+        """The header brand, as on the site: badge mark, then the wordmark
+        with "Local" in orange (.brand in app/Views/layouts/public.php)."""
+
+        def __init__(self, size_mm):
+            super().__init__()
+            self.size = size_mm * mm
+
+        def wrap(self, aw, ah):
+            return aw, self.size
+
+        def draw(self):
+            c = self.canv
+            if badge_path:
+                c.drawImage(str(badge_path), 0, 0, self.size, self.size, mask="auto")
+            fs = self.size * 0.36
+            x, y = self.size + 3 * mm, self.size / 2 - fs * 0.36
+            c.setFont(BOLD, fs)
+            c.setFillColor(colors.HexColor(OCEAN))
+            c.drawString(x, y, "WebScheduler ")
+            c.setFillColor(colors.HexColor(ORANGE))
+            c.drawString(x + pdfmetrics.stringWidth("WebScheduler ", BOLD, fs), y, "Local")
+
+    class Badge(Flowable):
+        def __init__(self, size_mm):
+            super().__init__()
+            self.size = size_mm * mm
+
+        def wrap(self, aw, ah):
+            return aw, self.size
+
+        def draw(self):
+            if badge_path:
+                self.canv.drawImage(str(badge_path), 0, 0, self.size, self.size, mask="auto")
+
+    class PhotoTiles(Flowable):
+        """The cover photographs as rounded tiles across the text width.
+
+        Each tile gets a share of the width in proportion to its own aspect,
+        then is cover-fitted into its box. A crop that has to lose height keeps
+        more of the top, where the faces are.
+        """
+
+        RADIUS = 5 * mm
+        GAP = 3 * mm
+
+        def __init__(self, paths, height_mm):
+            super().__init__()
+            from reportlab.lib.utils import ImageReader
+            self.images = [ImageReader(str(p)) for p in paths]
+            self.h = height_mm * mm
+
+        def wrap(self, aw, ah):
+            self.w = aw
+            return aw, self.h
+
+        def draw(self):
+            c = self.canv
+            aspects = [w / h for w, h in (im.getSize() for im in self.images)]
+            usable = self.w - self.GAP * (len(aspects) - 1)
+            x = 0
+            for im, a in zip(self.images, aspects):
+                bw = usable * a / sum(aspects)
+                dw, dh = max(bw, self.h * a), max(bw, self.h * a) / a
+                dx = x - (dw - bw) / 2
+                dy = -0.65 * (dh - self.h)
+                c.saveState()
+                p = c.beginPath()
+                p.roundRect(x, 0, bw, self.h, self.RADIUS)
+                c.clipPath(p, stroke=0, fill=0)
+                c.drawImage(im, dx, dy, dw, dh)
+                c.restoreState()
+                x += bw + self.GAP
 
     class VectorQR(Flowable):
         """A QR drawn as vector rectangles.
@@ -310,7 +486,7 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
         if page not in (1, LAST):  # covers carry no running foot
             canvas.setFont(REG, 7.5)
-            canvas.setFillColor(colors.HexColor(GREY))
+            canvas.setFillColor(colors.HexColor(MUTED))
             baseline = OFF + 10 * mm
             left_edge = OFF + (INNER if (P["mirror"] and recto) else OUTER)
             right_edge = OFF + TRIM_W - (INNER if (P["mirror"] and not recto) else OUTER)
@@ -348,21 +524,28 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
         if kind == "qr":
             return [VectorQR(qr_url, block["size_mm"], block.get("caption"))]
 
+        if kind in tracked:
+            return [Tracked(block["text"], *tracked[kind])]
+
+        if kind == "lockup":
+            return [Lockup(block["size_mm"])]
+
+        if kind == "badge":
+            return [Badge(block["size_mm"])]
+
         if kind == "banner":
-            if not banner_path:
+            if not tiles:
                 ph = Table([[Paragraph("<b>BANNER MISSING</b> — drop the cover image at "
                                        "assets/cover-banner.webp", st["cell"])]],
-                           colWidths=[TEXT_W], rowHeights=[46 * mm])
+                           colWidths=[TEXT_W], rowHeights=[block["height_mm"] * mm])
                 ph.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(TABLE_HEAD)),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(TONE)),
                     ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor(ORANGE)),
                     ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ]))
                 return [ph]
-            img = Image(str(banner_path), width=TEXT_W, height=TEXT_W / banner_ratio)
-            img.hAlign = "CENTER"
-            return [img]
+            return [PhotoTiles(tiles, block["height_mm"])]
 
         if kind == "bullets":
             return [Paragraph(f"• {item}", st["bullet"]) for item in block["items"]]
@@ -389,16 +572,18 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
             data = [[Paragraph(c, st["cellhead"]) for c in block["header"]]]
             data += [[Paragraph(c, st["cell"]) for c in row] for row in block["rows"]]
             t = Table(data, colWidths=widths, repeatRows=1)
+            # A tone with hairlines between rows, no box and no header band:
+            # how the app's results pages present lists since the facelift.
             t.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(TABLE_HEAD)),
-                ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor(TABLE_ROW)),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(TONE)),
+                ("ROUNDEDCORNERS", [3 * mm] * 4),
                 ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor(RULE)),
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor(RULE)),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 7),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING", (0, 0), (-1, -1), 9),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, 0), 9),
             ]))
             return [Spacer(1, 3), t, Spacer(1, 9)]
 
@@ -591,6 +776,13 @@ def build_social(out_dir: Path, variant: str, fonts: dict) -> list:
 
     slides = C.social_slides(variant)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # The footer lockup, as in the site header: badge mark, then the wordmark.
+    MARK = 44
+    mark = None
+    if BADGE.exists():
+        mark = Image.open(BADGE).convert("RGBA")
+        mark.thumbnail((MARK, MARK), Image.LANCZOS)
     for f in out_dir.glob("slide-*.png"):
         f.unlink()
 
@@ -611,9 +803,16 @@ def build_social(out_dir: Path, variant: str, fonts: dict) -> list:
 
         d = ImageDraw.Draw(img)
         d.text((PAD, PAD), s["eyebrow"], font=font(True, 26), fill=ORANGE)
-        d.text((PAD, H - PAD - 24), "WebScheduler Local", font=font(True, 24), fill=GREY)
-        d.text((W - PAD, H - PAD - 24), f"{i}/{len(slides)}", font=font(False, 24),
-               fill=GREY, anchor="ra")
+        foot_y = H - PAD - 24
+        x = PAD
+        if mark:
+            img.paste(mark, (PAD, foot_y + 12 - MARK // 2), mark)
+            x += MARK + 14
+        d.text((x, foot_y + 12), "WebScheduler ", font=font(True, 24), fill=OCEAN, anchor="lm")
+        x += d.textlength("WebScheduler ", font=font(True, 24))
+        d.text((x, foot_y + 12), "Local", font=font(True, 24), fill=ORANGE, anchor="lm")
+        d.text((W - PAD, foot_y + 12), f"{i}/{len(slides)}", font=font(False, 24),
+               fill=GREY, anchor="rm")
 
         dst = out_dir / f"slide-{i:02d}.png"
         img.save(dst, "PNG", optimize=True)
@@ -638,7 +837,7 @@ def check_glyph_coverage(fonts: dict) -> list:
         return []
 
     covered = set()
-    for key in ("regular", "bold"):
+    for key in ("regular", "semibold", "bold", "black"):
         covered |= set(FTFont(str(fonts[key])).getBestCmap().keys())
 
     def strings(obj):

@@ -6,7 +6,7 @@ social cut, all generated from one copy source.
 ```
 build_playbook.py     the generator
 content.py            all copy, for every output
-assets/               cover-banner.webp (not committed — see below)
+assets/               cover-banner.webp (not committed — see "The cover, and the logos")
 build/                output, gitignored
 ```
 
@@ -127,35 +127,44 @@ Two things to tell them, and two to watch:
 The `-web.pdf` is plain A4 with no marks or bleed, symmetric margins, and live
 links — that is the one to publish and email.
 
-## The cover banner
+## The cover, and the logos
 
-`assets/cover-banner.webp` is **not committed** — it is a licensed photo collage.
-Drop it in before building anything for distribution. Without it the PDF still
-builds, with a placeholder block on the cover and a loud warning; that file is
-not for distribution.
+The playbook follows the local app's canvas since the October 2026 facelift:
+white paper, display type in ocean, slate for everything quiet, tracked orange
+eyebrows, and tables drawn as a tone with hairlines instead of boxes. The
+palette at the top of `build_playbook.py` names the `resources/directory.css`
+class each value comes from — change it there, not page by page.
 
-Two things about that image, both worth revisiting before a print run:
+**The logo is drawn, not baked in.** The cover lockup (badge plus
+"WebScheduler **Local**", as in the site header), the back-cover badge and the
+social deck footer all read `resources/brand/webscheduler-local-badge-1024.png`,
+the same master the site's favicons and header mark are cut from. Replace that
+file and the next build carries the new logo everywhere.
 
-- It contains identifiable faces, including children. A printed conference
-  handout is unambiguously commercial use — the licence and the model releases
-  have to cover it. Confirm before each run, not once.
-- "A brand of Webscheduler" is baked into the bitmap. It cannot be edited,
-  translated or rebranded without re-cutting the image. If that wording will
-  ever change, it belongs on the cover as text instead.
+`assets/cover-banner.webp` is **not committed** — it is a licensed photo
+collage. Drop it in before building anything for distribution. Without it the
+PDF still builds, with a placeholder block on the cover and a loud warning;
+that file is not for distribution. Use the **clean plate** (`Facebook -
+Smile.webp`, 1640x664) — the other plate has "A brand of Webscheduler" burnt
+into the bottom right, which lands inside the right-hand tile.
 
-The current source is 1640x664, which lands at **235 dpi** across the 178 mm it
-occupies — under the 300 dpi print standard. Acceptable for photos on a digital
-press; the burnt-in byline is the element that shows it most. A 2102px-wide
-export would make it exactly 300 dpi.
+Every plate has the **old** badge burnt into its middle, across five tiles, so
+no single crop removes it. The build cuts the plate at its own seams either
+side of the badge (`TILES` in `build_playbook.py`: the faces collage, and the
+two-girls photograph) and sets the two as rounded tiles with a gap, the way the
+app shows photographs. Those boxes are measured on the 1640x664 plate; a plate
+of any other size is used whole with a warning. If a badge-free export of the
+collage ever exists, drop it in, set `TILES` to one full-plate box, and the
+cover goes back to a single photograph.
 
-There are two plates of this image: the one in `assets/` carries the
-"A brand of Webscheduler" byline in its pixels, and a clean plate without it
-exists (`Facebook - Smile.webp`, same 1640x664). Swapping to the clean plate and
-drawing the byline as live Inter text plus `marketing-site/assets/logo.svg`
-would make that line vector-sharp in print and editable. Not done yet.
+Worth revisiting before a print run:
 
-The build caps any banner at 2100px. If the cover is ever redesigned to run
-full-bleed, raise that cap.
+- The photographs contain identifiable faces, including children. A printed
+  conference handout is unambiguously commercial use — the licence and the
+  model releases have to cover it. Confirm before each run, not once.
+- Each tile is about 541–560px across ~86 mm, roughly **160 dpi** — under the
+  300 dpi print standard. Fine on screen, soft on paper. A plate exported at
+  2x would fix it with no code change beyond re-measuring `TILES`.
 
 ## Editing the copy
 
@@ -205,7 +214,7 @@ phone. Post the PNG deck on all three and link the PDF.
 
 ## Type
 
-Inter, taken from `marketing-site/assets/fonts/*.woff2` and unpacked to TTF at
+Inter 400/600/700/800, taken from `marketing-site/assets/fonts/*.woff2` and unpacked to TTF at
 build time into `build/.cache/`. No font binaries are committed. If
 fontTools/brotli are missing the build falls back to DejaVu or Arial and says
 which face it used — check that line before sending anything to a printer.
