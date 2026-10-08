@@ -229,7 +229,14 @@ def _qr_matrix(url):
 
 
 def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
-              vertical: str = "general") -> Path:
+              vertical: str = "general", doc=None, stem: str = PDF_STEM) -> Path:
+    """Build one PDF from a copy module.
+
+    `doc` defaults to the playbook's content.py. Any module with the same
+    names (pdf_pages, VERTICALS, cta_url, DOC_*, RUNNING_FOOTER) can be
+    passed instead, which is how the proposal reuses this renderer.
+    """
+    D = doc or C
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
@@ -240,8 +247,8 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
                                     PageBreak, PageTemplate, Paragraph, Spacer, Table, TableStyle)
 
     P = PROFILES[profile]
-    PAGES = C.pdf_pages(vertical)
-    AUDIENCE = C.VERTICALS[vertical]["audience"]
+    PAGES = D.pdf_pages(vertical)
+    AUDIENCE = D.VERTICALS[vertical]["audience"]
 
     if fonts["regular"]:
         for name, key in (("Body", "regular"), ("Body-Semi", "semibold"),
@@ -288,45 +295,59 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
     # site's display headings run tight (-0.03em) and its eyebrows and labels
     # run wide (0.2em caps), so those are drawn as tracked lines instead.
     # (font, size, leading, colour, tracking in em, upper, before, after)
+    # (font, size, leading, colour, tracking in em, upper, before, after, alt colour)
+    # A run in [[double brackets]] takes the alt colour: the site's grey "Your"
+    # in front of each pillar, the orange number in a moment's eyebrow.
     tracked = {
-        "eyebrow":     (SEMI, 7.5, 10, ORANGE, 0.2, True, 6, 8),
-        "label":       (SEMI, 7.5, 10, GREY, 0.2, True, 10, 7),
-        "h1":          (BLACK, 28, 29.5, INK, -0.03, False, 0, 11),
-        "cover_title": (BLACK, 40, 41.5, INK, -0.035, False, 0, 14),
+        "eyebrow":      (SEMI, 7.5, 10, ORANGE, 0.2, True, 6, 8, ORANGE),
+        "label":        (SEMI, 7.5, 10, GREY, 0.2, True, 10, 7, ORANGE),
+        "meyebrow":     (SEMI, 7.5, 10, GREY, 0.2, True, 0, 9, ORANGE),
+        "h1":           (BLACK, 28, 29.5, INK, -0.03, False, 0, 11, MUTED),
+        "moment_title": (BLACK, 19, 20.5, INK, -0.03, False, 0, 9, MUTED),
+        "stack":        (BLACK, 54, 53, INK, -0.045, False, 0, 18, MUTED),
+        "cover_title":  (BLACK, 40, 41.5, INK, -0.035, False, 0, 14, MUTED),
     }
 
     tiles = prepare_tiles(cache)
     badge_path = prepare_badge(cache)
-    qr_url = C.cta_url("pdf", P["utm_medium"])
+    qr_url = D.cta_url("pdf", P["utm_medium"])
 
     class Tracked(Flowable):
         """Plain text with letter-spacing, word-wrapped to the frame.
 
-        Copy for these kinds is plain text; <br/> is the only markup honoured.
+        Copy for these kinds is plain text. <br/> breaks a line, and a run in
+        [[double brackets]] is drawn in the kind's alt colour.
         """
 
-        def __init__(self, text, font, size, leading, color, track_em, upper, before, after):
+        def __init__(self, text, font, size, leading, color, track_em, upper, before, after, alt):
             super().__init__()
             text = text.upper() if upper else text
-            self.segments = [s.strip() for s in re.split(r"<br\s*/?>", text, flags=re.I)]
-            self.font, self.size, self.leading, self.color = font, size, leading, color
+            self.segments = []
+            for seg in re.split(r"<br\s*/?>", text, flags=re.I):
+                words = []
+                for part in re.split(r"(\[\[.*?\]\])", seg):
+                    is_alt = part.startswith("[[")
+                    words += [(w, is_alt) for w in part.strip("[]").split()]
+                self.segments.append(words)
+            self.font, self.size, self.leading = font, size, leading
+            self.color, self.alt = color, alt
             self.track = track_em * size
             self.spaceBefore, self.spaceAfter = before, after
 
-        def _w(self, s):
+        def _w(self, words):
+            s = " ".join(w for w, _ in words)
             return pdfmetrics.stringWidth(s, self.font, self.size) + self.track * max(0, len(s) - 1)
 
         def wrap(self, aw, ah):
             self.lines = []
             for seg in self.segments:
-                cur = ""
-                for word in seg.split():
-                    trial = f"{cur} {word}".strip()
-                    if self._w(trial) <= aw or not cur:
-                        cur = trial
+                cur = []
+                for word in seg:
+                    if not cur or self._w(cur + [word]) <= aw:
+                        cur.append(word)
                     else:
                         self.lines.append(cur)
-                        cur = word
+                        cur = [word]
                 self.lines.append(cur)
             # Room below the last baseline for descenders.
             self.height = len(self.lines) * self.leading + 0.15 * self.size
@@ -336,12 +357,34 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
             t = self.canv.beginText()
             t.setFont(self.font, self.size)
             t.setCharSpace(self.track)
-            t.setFillColor(colors.HexColor(self.color))
             n = len(self.lines)
             for i, line in enumerate(self.lines):
                 t.setTextOrigin(0, (n - 1 - i) * self.leading + 0.15 * self.size)
-                t.textOut(line)
+                for j, (word, is_alt) in enumerate(line):
+                    t.setFillColor(colors.HexColor(self.alt if is_alt else self.color))
+                    t.textOut(word + (" " if j < len(line) - 1 else ""))
             self.canv.drawText(t)
+
+    class Tag(Flowable):
+        """The "With Verified" pill: the badge's own emerald, as .moment-tag."""
+
+        def __init__(self, text):
+            super().__init__()
+            self.text = text
+            self.fs = 7.5
+            self.spaceBefore, self.spaceAfter = 4, 4
+
+        def wrap(self, aw, ah):
+            self.w = pdfmetrics.stringWidth(self.text, SEMI, self.fs) + 5 * mm
+            return self.w, 5.5 * mm
+
+        def draw(self):
+            c = self.canv
+            c.setFillColor(colors.HexColor("#ECFDF5"))
+            c.roundRect(0, 0, self.w, 5.5 * mm, 2.75 * mm, stroke=0, fill=1)
+            c.setFillColor(colors.HexColor("#047857"))
+            c.setFont(SEMI, self.fs)
+            c.drawString(2.5 * mm, 1.9 * mm, self.text)
 
     class Lockup(Flowable):
         """The header brand, as on the site: badge mark, then the wordmark
@@ -493,9 +536,9 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
             if P["mirror"] and not recto:
                 # Verso: folio to the outside, which is the left-hand edge.
                 canvas.drawString(left_edge, baseline, str(page))
-                canvas.drawRightString(right_edge, baseline, C.RUNNING_FOOTER)
+                canvas.drawRightString(right_edge, baseline, D.RUNNING_FOOTER)
             else:
-                canvas.drawString(left_edge, baseline, C.RUNNING_FOOTER)
+                canvas.drawString(left_edge, baseline, D.RUNNING_FOOTER)
                 canvas.drawRightString(right_edge, baseline, str(page))
 
         if P["marks"]:
@@ -514,6 +557,82 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
                             OFF + TRIM_W + BLEED, OFF + TRIM_H + BLEED))
         canvas.restoreState()
 
+    # --- home-page pieces -----------------------------------------------
+    # The home page's five "moments": copy on one side, a profile preview on a
+    # tone on the other (.moment-visual / .preview in resources/directory.css).
+    pv = {
+        "name": S("pv_name", BOLD, 11, 14, "#0F172A"),
+        "meta": S("pv_meta", REG, 8, 11, GREY),
+        "label": S("pv_label", SEMI, 6.5, 9, MUTED),
+        "left": S("pv_left", REG, 8, 11, BODY),
+        "right": S("pv_right", BOLD, 8, 11, "#0F172A", alignment=2),
+        "text": S("m_text", REG, 9.5, 14.5, BODY, spaceAfter=4),
+    }
+
+    def preview(block, width):
+        """A white profile card on a slate-50 stage. Illustrative content only."""
+        card_w = min(width - 8 * mm, 92 * mm)
+        rows = [[[Paragraph(block["name"], pv["name"]),
+                  Paragraph(block.get("meta", ""), pv["meta"])], ""]]
+        styling = [
+            ("SPAN", (0, 0), (1, 0)),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("ROUNDEDCORNERS", [3 * mm] * 4),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor(RULE)),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3.5 * mm),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3.5 * mm),
+            ("TOPPADDING", (0, 0), (-1, -1), 2.2 * mm),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2.2 * mm),
+            ("TOPPADDING", (0, 0), (-1, 0), 4 * mm),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 3 * mm),
+        ]
+        if block.get("label"):
+            rows.append([Paragraph(block["label"].upper(), pv["label"]), ""])
+            styling.append(("SPAN", (0, len(rows) - 1), (1, len(rows) - 1)))
+        first = len(rows)
+        for left, right in block["rows"]:
+            rows.append([Paragraph(left, pv["left"]), Paragraph(right, pv["right"])])
+        for i in range(first, len(rows) - 1):
+            styling.append(("LINEBELOW", (0, i), (-1, i), 0.5, colors.HexColor("#F1F5F9")))
+        styling.append(("LINEABOVE", (0, first), (-1, first), 0.5, colors.HexColor("#F1F5F9")))
+        styling.append(("BOTTOMPADDING", (0, -1), (-1, -1), 4 * mm))
+        card = Table(rows, colWidths=[card_w * 0.44, card_w * 0.56])
+        card.setStyle(TableStyle(styling))
+        stage = Table([[card]], colWidths=[width])
+        stage.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(TONE)),
+            ("ROUNDEDCORNERS", [5 * mm] * 4),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7 * mm),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7 * mm),
+        ]))
+        return stage
+
+    def moment(block):
+        """One moment: number + label, a title, the copy, an optional tag,
+        and a preview beside it. "flip" puts the preview on the left."""
+        gap = 8 * mm
+        copy_w = (TEXT_W - gap) * 0.56
+        vis_w = TEXT_W - gap - copy_w
+        copy = [Tracked(f"[[{block['num']}]] {block['label']}", *tracked["meyebrow"]),
+                Tracked(block["title"], *tracked["moment_title"]),
+                Paragraph(block["text"], pv["text"])]
+        if block.get("tag"):
+            copy.append(Tag(block["tag"]))
+        visual = preview(block["preview"], vis_w)
+        cells = [visual, "", copy] if block.get("flip") else [copy, "", visual]
+        widths = [vis_w, gap, copy_w] if block.get("flip") else [copy_w, gap, vis_w]
+        t = Table([cells], colWidths=widths)
+        t.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        return [t, Spacer(1, block.get("after_mm", 12) * mm)]
+
     # --- blocks ---------------------------------------------------------
     def render(block):
         kind = block["kind"]
@@ -526,6 +645,15 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
         if kind in tracked:
             return [Tracked(block["text"], *tracked[kind])]
+
+        if kind == "tag":
+            return [Tag(block["text"])]
+
+        if kind == "preview":
+            return [preview(block, TEXT_W)]
+
+        if kind == "moment":
+            return moment(block)
 
         if kind == "lockup":
             return [Lockup(block["size_mm"])]
@@ -605,9 +733,9 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
     def document(target):
         doc = Booklet(target, pagesize=MEDIA,
-                      title=C.DOC_TITLE + (f" — {AUDIENCE}" if AUDIENCE else ""),
-                      author=C.DOC_AUTHOR,
-                      subject=C.DOC_SUBJECT, keywords=C.DOC_KEYWORDS)
+                      title=D.DOC_TITLE + (f" — {AUDIENCE}" if AUDIENCE else ""),
+                      author=D.DOC_AUTHOR,
+                      subject=D.DOC_SUBJECT, keywords=D.DOC_KEYWORDS)
         h = TRIM_H - TOP - BOTTOM
         doc.addPageTemplates([
             PageTemplate(id="recto", onPage=furniture, frames=[
@@ -621,7 +749,7 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
     out_dir.mkdir(parents=True, exist_ok=True)
     edition = "" if vertical == "general" else f"-{vertical}"
-    out = out_dir / f"{PDF_STEM}{edition}{P['suffix']}.pdf"
+    out = out_dir / f"{stem}{edition}{P['suffix']}.pdf"
 
     story = []
     for i, page in enumerate(PAGES):
