@@ -26,6 +26,8 @@ class DirectoryListingModel extends Model
         'venue_id',
         'customer_location', 'show_address', 'service_areas',
         'quality_score', 'quality_scored_at',
+        // Written by ProfileNudgeService only, never OWNER_EDITABLE.
+        'quality_nudge_sent_at',
         'terms_accepted_at', 'terms_version',
         'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
         // Lead alerts. Service-written only (JobBoardService), never OWNER_EDITABLE.

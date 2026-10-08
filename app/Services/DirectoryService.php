@@ -1929,6 +1929,13 @@ class DirectoryService
         $rows = $this->listings
             ->select('slug, updated_at')
             ->where('status', 'published')
+            // listing_is_indexable() in SQL: a page that says noindex has no
+            // business in the sitemap. Grouped so the OR cannot escape the
+            // status filter, and unscored rows pass for the reason recent() gives.
+            ->groupStart()
+                ->where('quality_scored_at', null)
+                ->orWhere('quality_score >=', (int) config('Directory')->indexMinQuality)
+            ->groupEnd()
             ->orderBy('updated_at', 'DESC')
             ->findAll();
 

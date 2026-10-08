@@ -28,6 +28,14 @@ MAILTO=""
 # or edited since their last score.
 15 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:quality:recalculate --stale --quiet
 
+# --- Profile-strength nudge ---------------------------------------------------
+# One email per profile, ever: a few days after going live, owners still under
+# Config\Directory::$qualityTarget get the top things to fill in, with a sign-in
+# button. Morning rather than 3am so it lands when people read mail; it re-scores
+# each profile just before sending, so it does not need to follow the sweep.
+# Not load-bearing — a missed run is caught the next day (fortnight window).
+0 7 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:quality:nudge --quiet
+
 # --- Jobs board housekeeping --------------------------------------------------
 # Renew reminders, expiry, deleting posts never confirmed, and wiping poster
 # contact details 12 months after a post ends (POPIA retention). Like the badge

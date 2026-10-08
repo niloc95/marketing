@@ -53,7 +53,7 @@ $groups = [
             ],
             [
                 'q' => 'How is the order of search results decided?',
-                'a' => 'If you have shared your location, by distance — nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website, a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it — the <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. So are reviews and star ratings: they are there for you to read, not to sort by. We worked out how the order should work before we worked out what to sell, and we are not going to sell it.',
+                'a' => 'If you have shared your location, by distance — nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website or another way to reach you online (WhatsApp or a social page — no website needed), a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it — the <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. So are reviews and star ratings: they are there for you to read, not to sort by. We worked out how the order should work before we worked out what to sell, and we are not going to sell it. Every profile goes live as soon as you confirm your email, however much is filled in; a profile with very little on it is simply not offered to search engines like Google until it has a bit more, and it is picked up automatically once it does.',
             ],
             [
                 'q' => 'Are the businesses here checked?',
@@ -81,6 +81,10 @@ $groups = [
             [
                 'q' => 'What can a free business profile include?',
                 'a' => 'Your business information and description, your services (with prices if you want to show them), your phone number, website and social links, your address with a map pin, your opening hours, and a logo plus up to ' . (int) $gallery . ' photos. Customers can review your business, and you can reply publicly to every review. You can edit any of it at any time.',
+            ],
+            [
+                'q' => 'Do I need a website to create a profile?',
+                'a' => 'No. Your profile has its own address — ' . esc(preg_replace('#^https?://#i', '', base_url('directory'))) . '/your-business — and it already holds what most small-business websites hold: your services and prices, opening hours, photos, a map, WhatsApp and phone buttons, and reviews. Put that address anywhere you would put a website: your Google Business Profile, Facebook page, email signature and business cards. If you get a website later, add it to your profile and we will link to it.',
             ],
             [
                 'q' => 'Can I add more than one location?',

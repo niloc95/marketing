@@ -40,11 +40,14 @@
  * @var array{score:int,max:int,band:string,percent:int,next:list<array{
  *     key:string,label:string,points:int,earned:int,done:bool,hint:string,anchor:string}>} $strength
  * @var int $floor Config\Directory::$recentMinQuality — the homepage cut-off
+ * @var int $target Config\Directory::$qualityTarget — the score owners are told
+ *                  to aim for; at or above both floors, so the line is true
  */
 $score   = (int) $strength['score'];
 $percent = max(0, min(100, (int) $strength['percent']));
 $next    = $strength['next'] ?? [];
 $floor   = (int) ($floor ?? 0);
+$target  = (int) ($target ?? 0);
 
 // Three steps, matching the three the service bands on. Colour is a hint, not
 // the message — the band label says it in words for anyone who cannot see it.
@@ -94,6 +97,14 @@ $tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg
                 </li>
             <?php endforeach; ?>
         </ul>
+
+        <?php if ($target > 0 && $score < $target): ?>
+            <p class="strength-panel-note">
+                <strong>Aim for <?= $target ?>.</strong> Profiles at <?= $target ?> or more appear higher
+                in search, can be featured on the home page and are shown to Google &mdash; you are
+                <?= $target - $score ?> point<?= $target - $score === 1 ? '' : 's' ?> away.
+            </p>
+        <?php endif; ?>
 
         <?php if ($floor > 0 && $score < $floor): ?>
             <p class="strength-panel-note">

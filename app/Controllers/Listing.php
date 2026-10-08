@@ -255,6 +255,12 @@ class Listing extends BaseController
                 . 'manage your profile.';
         }
 
+        // Branches on what this visitor just typed, like the country check
+        // below, so it says nothing about what is already stored.
+        if (trim((string) $this->request->getPost('website')) === '') {
+            $message .= ' No website? Once you are live, your profile address works as one — share it anywhere.';
+        }
+
         // A business outside South Africa is about to be told to check its
         // email "to verify and publish", and publishing is not what will
         // happen — the International Listing subscription is what publishes it.

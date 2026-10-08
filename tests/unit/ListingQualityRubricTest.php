@@ -418,4 +418,37 @@ final class ListingQualityRubricTest extends CIUnitTestCase
             $this->quality->score($this->blank(), $legacy)
         );
     }
+
+    // ------------------------------------------- no website, no penalty
+
+    /**
+     * The signup form tells a business without a website that its profile is
+     * its website. These hold the score to that: WhatsApp or any social page
+     * earns the website line in full, and stacking them earns it only once.
+     */
+    public function testWhatsAppOrASocialPageEarnsTheWebsitePoints(): void
+    {
+        $withWebsite = $this->quality->score($this->blank(['website' => 'https://example.co.za']), $this->counts());
+
+        $this->assertSame(ListingQualityService::PTS_WEBSITE, $withWebsite);
+        $this->assertSame($withWebsite, $this->quality->score($this->blank(['whatsapp' => '27821234567']), $this->counts()));
+        $this->assertSame($withWebsite, $this->quality->score($this->blank(['social_facebook' => 'https://facebook.com/acme']), $this->counts()));
+        $this->assertSame($withWebsite, $this->quality->score($this->blank(['social_tiktok' => 'acme']), $this->counts()));
+    }
+
+    public function testTheWebsiteLineNeverPaysTwice(): void
+    {
+        $all = $this->blank([
+            'website'          => 'https://example.co.za',
+            'whatsapp'         => '27821234567',
+            'social_instagram' => 'acme',
+        ]);
+
+        $this->assertSame(ListingQualityService::PTS_WEBSITE, $this->quality->score($all, $this->counts()));
+    }
+
+    public function testNoWayOnlineEarnsNothing(): void
+    {
+        $this->assertSame(0, $this->quality->score($this->blank(['whatsapp' => '   ']), $this->counts()));
+    }
 }

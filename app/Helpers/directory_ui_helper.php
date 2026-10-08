@@ -539,6 +539,27 @@ if (! function_exists('safe_external_url')) {
     }
 }
 
+if (! function_exists('listing_is_indexable')) {
+    /**
+     * Whether a published profile is offered to search engines: robots meta on
+     * its page, and its place in the sitemap (DirectoryService::sitemapUrls()
+     * applies the same rule in SQL — change one, change both).
+     *
+     * Fails open on a listing we have never scored, for the reason recent()
+     * gives: our own sweep running late must not hide anybody.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_is_indexable(array $listing): bool
+    {
+        if (($listing['quality_scored_at'] ?? null) === null) {
+            return true;
+        }
+
+        return (int) ($listing['quality_score'] ?? 0) >= (int) config('Directory')->indexMinQuality;
+    }
+}
+
 if (! function_exists('listing_social_networks')) {
     /**
      * The social profiles a listing can carry: column => [label, hosts, handle URL].

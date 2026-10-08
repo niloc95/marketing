@@ -46,16 +46,22 @@ use App\Models\DirectoryListingModel;
  *  - credentials: a physiotherapist has some, a plumber has none. Scoring it
  *    would depress whole categories for something they cannot fix.
  *  - phone_alt, address_line_2, suburb: marginal.
- *  - social_* and whatsapp: the form writes them since 2026-09-29, but they
- *    are unscored until there is data on how many listings fill them in.
- *    Adding points is a recalibration of the brackets above, not a one-liner.
+ *  - social_* and whatsapp on their own. Since 2026-10-08 they share the
+ *    website line instead (see contactItems()): a business with no website is
+ *    told its profile IS its website, so the 6 points go to having any second
+ *    place to reach you — a website, WhatsApp or a social page — and never
+ *    more than once.
  *
  * ── Calibration ────────────────────────────────────────────────────────────
  *
  * A listing forced through signup's REQUIRED_ADDRESS_FIELDS lands at 25.
- * Add a phone and it is 35; add a paragraph and it is 43. So the homepage
- * floor of 40 (Config\Directory::$recentMinQuality) means "a phone number and
- * a paragraph", not "a full afternoon".
+ * Add a phone and it is 35; add a paragraph and it is 43. Three bars read the
+ * number (all in Config\Directory, all tunable per server):
+ *  - 40, $indexMinQuality: offered to Google — "a phone number and a paragraph";
+ *  - 55, $recentMinQuality: the home page's "Recently added" strip;
+ *  - 65, $qualityTarget: what owners are told to aim for, and the line the
+ *    one-off nudge email (ProfileNudgeService) is sent under.
+ * None of them gates publishing.
  */
 class ListingQualityService
 {
@@ -105,7 +111,7 @@ class ListingQualityService
     public function __construct()
     {
         $this->listings = new DirectoryListingModel();
-        helper('directory_hours');
+        helper(['directory_hours', 'directory_ui']);
     }
 
     /**
@@ -390,12 +396,17 @@ class ListingQualityService
                 'One line, and it is the thing most people click.',
                 'field-phone'
             ),
+            // A website is not required: the profile is meant to stand in for
+            // one, and the signup form says so. So this line pays for any one
+            // second way to reach you, and a business without a website earns
+            // it with WhatsApp or a social page. Key and anchor stay 'website'
+            // so stored checklists and #field-website links keep working.
             $this->flag(
                 'website',
-                'A website link',
+                'A website, WhatsApp or social page',
                 self::PTS_WEBSITE,
-                $this->filled($listing, 'website'),
-                'Where someone goes for everything we do not store.',
+                $this->hasOnlinePresence($listing),
+                'No website needed — a WhatsApp number or a Facebook, Instagram, LinkedIn or TikTok page earns these points too.',
                 'field-website'
             ),
             // The offers_online_booking checkbox scores nothing on its own —
@@ -599,6 +610,22 @@ class ListingQualityService
     private function filled(array $listing, string $field): bool
     {
         return trim((string) ($listing[$field] ?? '')) !== '';
+    }
+
+    /**
+     * A website, a WhatsApp number or any social page — whichever is filled.
+     * The social columns come from listing_social_networks(), so a network
+     * added there counts here with no change.
+     */
+    private function hasOnlinePresence(array $listing): bool
+    {
+        foreach (['website', 'whatsapp', ...array_keys(listing_social_networks())] as $field) {
+            if ($this->filled($listing, $field)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

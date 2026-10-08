@@ -6,6 +6,10 @@ helper(['slug', 'directory_hours']); // slugify() for breadcrumbs; hours_* for t
 // sees the public copy — no street, suburb, postal code, pin or venue — so no
 // panel, meta tag or JSON-LD node below can render what the owner hid.
 $l = listing_public_view($l);
+// Below Config\Directory::$indexMinQuality the page is noindex (and out of the
+// sitemap) until the owner fills it in — live and shareable, just not offered
+// to Google yet. listing_is_indexable() has the rule.
+$indexable = listing_is_indexable($l);
 $siteName = config('Directory')->siteName();
 $name = $l['display_name'] ?? '';
 $prof = $l['category']['name'] ?? ($l['category_name'] ?? '');
@@ -72,6 +76,7 @@ $metaDesc = listing_meta_description($l);
     'image'       => $logoUrl,
     'type'        => 'profile',
     'schema'      => $schema,
+    'robots'      => $indexable,
 ]) ?>
 <?= $this->endSection() ?>
 

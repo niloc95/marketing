@@ -186,6 +186,7 @@ class Manage extends BaseController
                 'menu'       => count($menuFiles),
             ]),
             'strengthFloor' => (int) config('Directory')->recentMinQuality,
+            'strengthTarget' => (int) config('Directory')->qualityTarget,
             'slots'      => $this->gallerySlots((int) $listing['id']),
             'galleryMax' => self::GALLERY_MAX,
 

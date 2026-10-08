@@ -63,6 +63,12 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                             &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug'])) ?>" target="_blank">View public page</a>
                         <?php endif; ?>
                     </p>
+                    <?php if ($listing['status'] === 'published' && trim((string) ($listing['website'] ?? '')) === ''): ?>
+                        <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+                            No website? Use <strong class="text-slate-700 dark:text-slate-200"><?= esc(preg_replace('#^https?://#i', '', base_url('directory/' . $listing['slug']))) ?></strong>
+                            wherever a form asks for one — Google Business Profile, Facebook, your email signature, business cards.
+                        </p>
+                    <?php endif; ?>
                 </div>
                 <?php // data-draft-signout: signing out also drops this browser's
                       // unsaved-draft copy, so the details don't linger on a shared PC. ?>
@@ -101,6 +107,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
             <?= view('directory/_strength_panel', [
                 'strength' => $strength,
                 'floor'    => $strengthFloor,
+                'target'   => $strengthTarget ?? 0,
             ]) ?>
 
             <?php // data-draft: directory.js keeps a browser-side copy of unsaved edits
@@ -143,6 +150,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     'photos'       => $photos,
                     'deleteBase'   => base_url('manage/photo-delete'),
                     'menuFiles'    => $menuFiles ?? [],
+                    'profileUrl'   => base_url('directory/' . $listing['slug']),
                     'showExtras'   => $showExtras,
                 ]) ?>
 

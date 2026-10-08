@@ -154,17 +154,46 @@ class Directory extends BaseConfig
      * thing on the site still led by recency and a thin new listing lands at
      * the top of it by definition.
      *
-     * 40 is roughly "an address, a phone number and a paragraph" — see the
-     * calibration note in ListingQualityService. A listing that has never been
-     * scored is let through regardless, so a missed backfill empties nothing;
-     * DirectoryService::recent() has the reasoning.
+     * 55 (raised from 40 on 2026-10-08) is "an address, a phone number, a full
+     * description and a little more" — see the calibration note in
+     * ListingQualityService. The home page is the shop window, so it gets the
+     * higher bar; Google gets $indexMinQuality below. A listing that has never
+     * been scored is let through regardless, so a missed backfill empties
+     * nothing; DirectoryService::recent() has the reasoning.
      *
      * Overridable per environment as directory.recentMinQuality, so the number
      * can be tuned on a live server without a deploy. Check the real
      * distribution before raising it — on a thin directory a high floor empties
      * the strip and looks like a bug.
      */
-    public int $recentMinQuality = 40;
+    public int $recentMinQuality = 55;
+
+    /**
+     * Minimum quality score before a profile page is offered to search engines:
+     * below it the page is noindex and left out of the sitemap.
+     *
+     * The page itself stays live, linkable and shareable — publishing is never
+     * gated on score, because a near-empty new profile is usually one that is
+     * about to be filled in. What this stops is hundreds of near-empty pages
+     * telling Google the whole site is thin. Same idea as $landingMinListings.
+     * Unscored listings pass, as in recent(). See listing_is_indexable().
+     *
+     * Overridable as directory.indexMinQuality.
+     */
+    public int $indexMinQuality = 40;
+
+    /**
+     * The score owners are told to aim for: the manage page's strength panel
+     * names it, and the one-off nudge email (directory:quality:nudge) goes to
+     * profiles still under it a few days after going live. Keep it at or above
+     * both floors above, or the panel's "at this score you are on the home page
+     * and in Google" stops being true.
+     *
+     * Overridable as directory.qualityTarget / directory.qualityNudgeAfterDays.
+     */
+    public int $qualityTarget = 65;
+
+    public int $qualityNudgeAfterDays = 3;
 
     /**
      * The goal /admin/funnel measures pace against: this many active Verified

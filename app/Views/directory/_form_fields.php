@@ -61,6 +61,10 @@ $vAttributes = $vAttributes ?? [];
 $photos      = $photos      ?? [];
 $menuFiles   = $menuFiles   ?? [];
 $deleteBase  = $deleteBase  ?? '';
+// The owner's own public address, passed by manage_edit.php only, so the
+// "no website?" hint can name it. Signup has no slug yet and admin does not
+// need telling, so both fall back to the generic wording.
+$profileUrl  = $profileUrl  ?? '';
 
 // Only public signup insists on an address. The two edit pages pass false
 // explicitly: 10 of the listings that predate the rule have no street address,
@@ -181,8 +185,17 @@ helper('directory_hours');
 </div>
 
 <div class="field">
-    <label for="field-website">Website</label>
+    <label for="field-website">Website <span class="font-normal text-slate-500 dark:text-slate-400">(optional)</span></label>
     <input type="text" id="field-website" name="website" value="<?= esc($v('website'), 'attr') ?>" maxlength="255" placeholder="www.yourbusiness.co.za" inputmode="url" autocomplete="url">
+    <?php // Nothing is saved in place of a blank website: the profile would link
+          // to itself, and the slug changes with the name. This is copy only. ?>
+    <div class="hint">
+        <?php if ($profileUrl !== ''): ?>
+            No website? No problem — your profile at <strong><?= esc(preg_replace('#^https?://#i', '', $profileUrl)) ?></strong> is your website. Share it anywhere you would share a web address.
+        <?php else: ?>
+            No website? No problem — leave this blank. Your WebScheduler Local profile becomes your website: one address with your services, hours, photos, map and reviews that you can share anywhere. A complete profile does the job a website would.
+        <?php endif; ?>
+    </div>
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
