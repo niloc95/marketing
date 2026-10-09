@@ -751,6 +751,17 @@ class VerificationService
             $this->mailOwner($listingId, 'activated', []);
         }
 
+        // Partner commission, after the commit like the mail above: the
+        // payment is banked whatever happens here. recordCommission() swallows
+        // its own failures, and partners:sweep rebuilds any it missed.
+        if ($status === 'COMPLETE') {
+            try {
+                (new PartnerService())->recordCommission($verificationId, $pfPaymentId, $amountGross);
+            } catch (\Throwable $e) {
+                log_message('error', 'Partner commission hook failed: ' . $this->oneLine($e->getMessage()));
+            }
+        }
+
         return 'applied';
     }
 

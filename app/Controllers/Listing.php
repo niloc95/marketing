@@ -8,6 +8,7 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\ListingQualityService;
+use App\Services\PartnerService;
 use App\Services\ReferralService;
 use App\Services\VerificationService;
 
@@ -222,6 +223,13 @@ class Listing extends BaseController
         $invite = (string) $this->request->getPost('invite');
         if ($invite !== '') {
             (new ReferralService())->attachListing($invite, (int) $result['id']);
+        }
+
+        // Credit the Partner Program affiliate whose link brought them here.
+        // Same terms as above: after the save, and it swallows its own errors.
+        $partnerCode = $this->request->getCookie(PartnerService::COOKIE);
+        if (is_string($partnerCode) && $partnerCode !== '') {
+            (new PartnerService())->attribute((int) $result['id'], $partnerCode);
         }
 
         // Score the profile now that everything that counts towards it exists.

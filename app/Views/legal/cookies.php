@@ -40,6 +40,15 @@ $analyticsId = config('Directory')->analyticsId();
                 </tbody>
             </table>
 
+            <h2 id="partners">Partner referral</h2>
+            <p>Set only when you open a link from one of our <a href="<?= base_url('partners') ?>">partners</a>, so that if you create a business profile we know which partner to thank. It holds the partner's code and nothing about you, and it is not shared with the partner or anyone else.</p>
+            <table class="table">
+                <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Lifetime</th></tr></thead>
+                <tbody>
+                    <tr><td><code>ws_partner</code></td><td>Cookie</td><td>Remembers which partner link you arrived through.</td><td><?= (int) config('Partners')->cookieDays ?> days</td></tr>
+                </tbody>
+            </table>
+
             <h2>Analytics</h2>
             <?php if ($analyticsId !== ''): ?>
                 <p>We use Google Analytics 4 to understand which pages people find useful. It is loaded with <strong>Google Consent Mode v2</strong> and every storage category defaults to <em>denied</em>, so no analytics cookie is written and no measurement data is stored until you press Accept.</p>

@@ -39,6 +39,7 @@ class Filters extends BaseFilters
         'bottrap'       => \App\Filters\BotTrap::class,
         'headrequest'   => \App\Filters\HeadRequest::class,
         'signupchannel' => \App\Filters\SignupChannel::class,
+        'partnerref'    => \App\Filters\PartnerRef::class,
     ];
 
     /**
@@ -137,6 +138,8 @@ class Filters extends BaseFilters
             // updated whenever the checkout route is renamed — there is nothing
             // that would fail loudly if it drifted.
             'honeypot' => ['except' => ['payfast/notify', 'manage/verification/checkout']],
+            // Sets the Partner Program cookie for a ?ref= arrival. See the class.
+            'partnerref',
             'secureheaders',
             // Strips the body from a HEAD response, which Config\Routes now
             // routes to the same controllers as GET. Last on purpose: every

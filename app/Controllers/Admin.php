@@ -10,6 +10,7 @@ use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
+use App\Models\DirectoryPartnerModel;
 use App\Models\DirectoryReferralModel;
 use App\Models\DirectoryReviewModel;
 use App\Models\DirectoryReviewReportModel;
@@ -29,6 +30,7 @@ use App\Services\JobBoardService;
 use App\Services\ListingFacetService;
 use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
+use App\Services\PartnerService;
 use App\Services\PracticeLocationService;
 use App\Services\ReferralService;
 use App\Services\ReviewService;
@@ -510,6 +512,107 @@ class Admin extends BaseController
             'Referral dismissed. Nobody was emailed.',
             'Could not dismiss that referral.'
         );
+    }
+
+    // ------------------------------------------------------ partner program
+
+    /** Partner Program applications and partners, by status. */
+    public function partners()
+    {
+        $model  = new DirectoryPartnerModel();
+        $status = (string) ($this->request->getGet('status') ?? DirectoryPartnerModel::STATUS_APPLIED);
+        $page   = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $result = $model->queue($status, $page);
+
+        return view('admin/partners', [
+            'status' => $status,
+            'rows'   => $result['rows'],
+            'pager'  => $result['pager'],
+            'counts' => $model->counts(),
+            'svc'    => new PartnerService(),
+        ]);
+    }
+
+    /** One partner: their numbers, commissions, credited profiles and controls. */
+    public function partner(int $id)
+    {
+        $partner = (new DirectoryPartnerModel())->find($id);
+        if (! is_array($partner)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $svc = new PartnerService();
+
+        return view('admin/partner', [
+            'partner'  => $partner,
+            'd'        => $svc->dashboard($partner),
+            'svc'      => $svc,
+            'listings' => (new \App\Models\DirectoryListingModel())->select('id, display_name, slug, email, verified_until, partner_attributed_at')
+                ->where('partner_id', $id)->orderBy('partner_attributed_at', 'DESC')->findAll(200),
+        ]);
+    }
+
+    public function approvePartner(int $id)
+    {
+        return $this->backWith((new PartnerService())->approve($id, $this->adminActor()));
+    }
+
+    public function rejectPartner(int $id)
+    {
+        return $this->backWith((new PartnerService())->reject($id, $this->adminActor(), trim((string) $this->request->getPost('note'))));
+    }
+
+    public function suspendPartner(int $id)
+    {
+        return $this->backWith((new PartnerService())->suspend($id, $this->adminActor(), trim((string) $this->request->getPost('note'))));
+    }
+
+    public function partnerRate(int $id)
+    {
+        return $this->backWith((new PartnerService())->setRate($id, (string) $this->request->getPost('rate')));
+    }
+
+    public function creditPartnerListing(int $id)
+    {
+        return $this->backWith((new PartnerService())->creditListing($id, (string) $this->request->getPost('slug')));
+    }
+
+    public function uncreditPartnerListing(int $listingId)
+    {
+        return $this->outcome(
+            (new PartnerService())->uncreditListing($listingId),
+            'Profile no longer credited to a partner. Commission already earned stays.',
+            'Could not change that profile.'
+        );
+    }
+
+    public function voidCommission(int $id)
+    {
+        return $this->outcome(
+            (new PartnerService())->void($id, trim((string) $this->request->getPost('reason'))),
+            'Commission cancelled.',
+            'Only a held or ready commission can be cancelled.'
+        );
+    }
+
+    /** Partners owed at least the minimum, with the account to pay. */
+    public function partnerPayouts()
+    {
+        $svc = new PartnerService();
+
+        return view('admin/partner_payouts', [
+            'rows' => $svc->payable(),
+            'svc'  => $svc,
+        ]);
+    }
+
+    public function markPartnerPaid(int $id)
+    {
+        return $this->backTo('admin/partners/payouts', (new PartnerService())->markPaid(
+            $id,
+            (string) $this->request->getPost('eft_reference'),
+            $this->adminActor()
+        ));
     }
 
     // ----------------------------------------------------- verified business
@@ -1030,5 +1133,18 @@ class Admin extends BaseController
             : base_url('admin');
 
         return redirect()->to($safe)->with('success', $message);
+    }
+
+    /**
+     * back() for a service result: the same safe redirect, flashed as success
+     * or error by the result.
+     *
+     * @param array{ok:bool,message:string} $result
+     */
+    private function backWith(array $result)
+    {
+        return $result['ok']
+            ? $this->back($result['message'])
+            : redirect()->back()->with('error', $result['message']);
     }
 }

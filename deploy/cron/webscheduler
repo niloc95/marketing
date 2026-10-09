@@ -50,6 +50,12 @@ MAILTO=""
 # promise in the privacy policy, like jobs:expire.
 45 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark referrals:prune --quiet
 
+# --- Partner Program ----------------------------------------------------------
+# Moves partner commissions past their 30 day hold to "ready to pay", and
+# rebuilds commission for any payment in the last week whose hook failed. Load
+# bearing for what partners see as owed; a missed run only delays it a day.
+50 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark partners:sweep --quiet
+
 # Customer reviews: delete unconfirmed ones, wipe reviewer details from
 # rejected/hidden ones after 30 days (POPIA), and email the admin one digest
 # of the day's review reports.

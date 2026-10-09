@@ -58,6 +58,20 @@ $routes->post('recommend', 'Referral::submit');
 $routes->get('recommend/stop/(:segment)', 'Referral::stopConfirm/$1');
 $routes->post('recommend/stop/(:segment)', 'Referral::stop/$1');
 
+// Partner Program: the pitch and application, the partner's tracked link, and
+// their dashboard (emailed single use sign in link, like manage/). The literal
+// segments MUST precede partners/login/{token}. ?ref={code} on any page does
+// what p/{code} does; see App\Filters\PartnerRef.
+$routes->get('partners', 'Partners::index');
+$routes->post('partners', 'Partners::apply');
+$routes->get('partners/login', 'Partners::login');
+$routes->post('partners/login', 'Partners::requestLogin');
+$routes->get('partners/dashboard', 'Partners::dashboard');
+$routes->post('partners/bank', 'Partners::saveBank');
+$routes->get('partners/signout', 'Partners::signout');
+$routes->get('partners/login/(:segment)', 'Partners::redeem/$1');
+$routes->get('p/(:segment)', 'Partners::track/$1');
+
 // Legal. Top-level, so they never meet the directory/{segment} catch-all.
 $routes->get('privacy', 'Legal::privacy');
 $routes->get('terms', 'Legal::terms');
@@ -230,6 +244,20 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('referrals', 'Admin::referrals');
     $routes->post('referrals/(:num)/invite', 'Admin::inviteReferral/$1');
     $routes->post('referrals/(:num)/dismiss', 'Admin::dismissReferral/$1');
+
+    // Partner Program: applications, partners, and the monthly payout list.
+    // partners/payouts is a literal, so it MUST precede partners/{id}.
+    $routes->get('partners', 'Admin::partners');
+    $routes->get('partners/payouts', 'Admin::partnerPayouts');
+    $routes->post('partners/payouts/(:num)', 'Admin::markPartnerPaid/$1');
+    $routes->post('partners/commissions/(:num)/void', 'Admin::voidCommission/$1');
+    $routes->post('partners/listings/(:num)/uncredit', 'Admin::uncreditPartnerListing/$1');
+    $routes->get('partners/(:num)', 'Admin::partner/$1');
+    $routes->post('partners/(:num)/approve', 'Admin::approvePartner/$1');
+    $routes->post('partners/(:num)/reject', 'Admin::rejectPartner/$1');
+    $routes->post('partners/(:num)/suspend', 'Admin::suspendPartner/$1');
+    $routes->post('partners/(:num)/rate', 'Admin::partnerRate/$1');
+    $routes->post('partners/(:num)/credit', 'Admin::creditPartnerListing/$1');
 
     // The home page hero rotation. Content, not configuration — which photo
     // represents which category is an editorial call, so it lives here rather

@@ -434,6 +434,44 @@ the rows are `directory_referrals`.
 - Emails go through `emails/job-notice` with an `$eyebrow`, and render with `saveData => false`.
 - Tests: `tests/database/ReferralFlowTest.php`.
 
+## Partner Program (`/partners`, added 9 Oct 2026)
+
+Affiliates who promote the site with a tracked link and earn a share of what
+referred businesses pay. Rules are in `PartnerService`, the only writer of the
+`directory_partner*` tables and of `xs_directory_listings.partner_id` /
+`partner_attributed_at` (query builder; deliberately not in the model's
+`allowedFields` or `OWNER_EDITABLE`). Settings are in `Config\Partners`
+(`.env` as `partners.*`); a per partner rate on the row beats the default.
+
+- **Flow:** apply at `/partners` → admin approves at `/admin/partners` (emails
+  the link and a sign in link) → `/p/{code}` or `?ref={code}` on any GET
+  (`App\Filters\PartnerRef`, after filter) sets the `ws_partner` cookie, last
+  click wins → `Listing::store()` calls `attribute()` after the save → each
+  COMPLETE payment calls `recordCommission()` after `recordPayment()` commits.
+- **Attribution refuses:** an unapproved partner, a profile older than
+  `attributionWindowMinutes` (submitPublic() returns an EXISTING profile's id
+  for a known email), a profile already credited, and the partner's own email.
+- **Commission:** `amount_gross × rate`, only for an approved partner, only for
+  payments at or after `partner_attributed_at`, within `commissionMonths` of
+  `activated_at`. The unique key on `pf_payment_id` is the replay guard. Held
+  `holdDays`, then `available`.
+- **Nothing here may cost a profile or a payment.** Both hooks swallow their
+  failures; `php spark partners:sweep` (cron 03:50) releases holds, rebuilds
+  missed commission from the last 7 days of verification events, and deletes
+  declined applications after 12 months (privacy §10 promises it).
+- **Clicks** are daily totals only; link preview fetchers (WhatsApp, Facebook…)
+  are not counted (`NOT_A_CLICK`).
+- **Payouts** are manual: `/admin/partners/payouts` lists partners owed at least
+  `minimumPayout`, with the decrypted account; "Mark paid" needs the EFT
+  reference, settles every available commission in one transaction and emails a
+  statement. A paid commission cannot be voided.
+- **Bank details** are encrypted with the CI4 Encrypter. With no
+  `encryption.key` (the local default) saving is refused, never stored plain.
+- **Dashboard** at `/partners/dashboard`: emailed single use sign in link
+  (1h), session key `partner_id`, like `/manage`.
+- Terms §19, privacy §10, and the cookie policy describe all of this.
+- Tests: `tests/database/PartnerProgramTest.php`.
+
 ## Verified Business — the one paid feature
 
 A monthly badge on an otherwise free listing — R29.99 at the time of writing, but the live

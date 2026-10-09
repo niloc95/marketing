@@ -737,6 +737,7 @@ class Directory extends BaseController
                     ['loc' => base_url('company'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('verified'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('compare'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('partners'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('jobs'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('contact'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('privacy'), 'lastmod' => date('Y-m-d')],

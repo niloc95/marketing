@@ -22,6 +22,9 @@ $reviewsPending = (new App\Models\DirectoryReviewModel())
 $referralsPending = (new App\Models\DirectoryReferralModel())
     ->where('status', App\Models\DirectoryReferralModel::STATUS_PENDING)
     ->countAllResults();
+$partnersPending = (new App\Models\DirectoryPartnerModel())
+    ->where('status', App\Models\DirectoryPartnerModel::STATUS_APPLIED)
+    ->countAllResults();
 ?>
 <div class="admin-bar">
     <div class="container">
@@ -32,6 +35,7 @@ $referralsPending = (new App\Models\DirectoryReferralModel())
             <a href="<?= base_url('admin/jobs') ?>">Jobs<?= $jobsPending > 0 ? ' (' . (int) $jobsPending . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/reviews') ?>">Reviews<?= $reviewsPending > 0 ? ' (' . (int) $reviewsPending . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/referrals') ?>">Referrals<?= $referralsPending > 0 ? ' (' . (int) $referralsPending . ')' : '' ?></a> &middot;
+            <a href="<?= base_url('admin/partners') ?>">Partners<?= $partnersPending > 0 ? ' (' . (int) $partnersPending . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
             <a href="<?= base_url('admin/venues') ?>">Venues</a> &middot;
             <a href="<?= base_url('admin/hero') ?>">Hero photos</a> &middot;

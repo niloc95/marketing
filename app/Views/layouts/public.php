@@ -349,6 +349,7 @@
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
                     <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Create your free profile' ?></a></li>
                     <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
+                    <li><a href="<?= base_url('partners') ?>">Partner Program</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
             </div>

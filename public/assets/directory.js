@@ -368,6 +368,20 @@
     }
   }
 
+  // ------------------------------------------------------------ copy buttons
+  // <button data-copy="text"> copies its text and says so for a moment. Used
+  // by the partner dashboard for the partner's link.
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(btn.getAttribute('data-copy')).then(function () {
+        var label = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(function () { btn.textContent = label; }, 1500);
+      });
+    });
+  });
+
   // ------------------------------------------------------------ image uploads
   // Preview what was picked, and downscale it in the browser before it is sent.
   //

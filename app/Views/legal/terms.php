@@ -158,7 +158,22 @@ $contact   = config('Directory')->adminEmail();
             <h2>18. Governing law</h2>
             <p>These terms are governed by the law of the Republic of South Africa, and the South African courts have jurisdiction.</p>
 
-            <h2>19. Contact</h2>
+            <h2 id="partners">19. Partner Program</h2>
+            <p>The <a href="<?= base_url('partners') ?>">Partner Program</a> pays commission to approved partners who refer businesses to WebScheduler Local. Joining is free, and we may accept or decline any application.</p>
+            <p><strong>How referrals are counted.</strong> Each partner gets a personal link. When someone opens it, a cookie on their browser remembers the partner for the period shown on the Partner Program page. A business profile created on that browser in that time is credited to the partner. If the visitor later opens another partner's link, the newer link counts. We may also credit a profile by hand when a partner shows us a referral the link missed.</p>
+            <p><strong>What earns commission.</strong> A partner earns the rate shown on the Partner Program page, or a rate we have agreed with them in writing, on each payment that clears for Verified Business or an International Profile from a business credited to them, for the period shown on that page after the business's first payment. Free profiles earn nothing. A change of rate applies only to payments made after it, and we will give partners at least 30 days notice by email before lowering the default rate.</p>
+            <p><strong>Holding and paying.</strong> Each commission is held for 30 days in case the payment is refunded or reversed, and is cancelled if it is. Once the hold ends, we pay by EFT into a South African bank account, once a month, when a partner is owed at least the minimum shown on the Partner Program page. Partners are responsible for any tax due on what they earn, and for giving us correct bank details.</p>
+            <p><strong>Partners may not:</strong></p>
+            <ul>
+                <li>send spam or unsolicited bulk email or messages, or contact anyone who has asked not to be contacted;</li>
+                <li>create or submit a business profile without its owner's agreement, or refer their own business;</li>
+                <li>bid on WebScheduler or WebScheduler Local in paid search ads, or use our name in a way that suggests they are us;</li>
+                <li>promise anything we do not offer, including a higher place in search results;</li>
+                <li>offer businesses cash or rewards to sign up through their link.</li>
+            </ul>
+            <p><strong>Ending.</strong> A partner may leave at any time by telling us. We may suspend or end a partnership, and cancel commission that has not been paid, if we believe these terms were broken. Commission fairly earned before then is still paid. Partners are independent: nothing here makes a partner our employee, agent or representative.</p>
+
+            <h2>20. Contact</h2>
             <?php if ($contact !== ''): ?>
                 <p><a href="mailto:<?= esc($contact, 'attr') ?>"><?= esc($contact) ?></a></p>
             <?php else: ?>
