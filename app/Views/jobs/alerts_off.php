@@ -17,7 +17,7 @@
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-lg">
+        <div class="form-card form-card-narrow">
             <span class="eyebrow">Request alerts</span>
             <h1 class="mb-2 text-2xl font-extrabold text-slate-900 dark:text-white">Stop request emails?</h1>
             <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">

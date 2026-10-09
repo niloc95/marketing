@@ -18,7 +18,7 @@ $siteName = config('Directory')->siteName();
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-lg">
+        <div class="form-card form-card-narrow">
             <span class="eyebrow">Email preferences</span>
 
             <?php if ($listing === null): ?>

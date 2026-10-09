@@ -42,7 +42,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
 
 <?= $this->section('content') ?>
 <section class="section">
-    <div class="container max-w-3xl">
+    <div class="container">
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services</a>
             <span class="crumbs-sep">/</span>
@@ -82,13 +82,13 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                 'Closes'    => date('j F Y', strtotime((string) $post['valid_through'])),
             ], static fn ($v) => $v !== '');
             ?>
-            <div class="mt-4">
+            <div class="mt-4 max-w-xl">
                 <?php foreach ($facts as $label => $value): ?>
                     <div class="kv"><span class="k"><?= esc($label) ?></span><span><?= esc($value) ?></span></div>
                 <?php endforeach; ?>
             </div>
 
-            <div class="listing-prose mt-5"><?= nl2br(esc((string) $post['description'])) ?></div>
+            <div class="listing-prose mt-5 max-w-prose"><?= nl2br(esc((string) $post['description'])) ?></div>
         </div>
 
         <?php if ($isJob): ?>

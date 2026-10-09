@@ -2157,8 +2157,12 @@
   .share-icon.is-copied .icon-check { @apply block; }
 
   /* ----------------------------------------------------------------- forms */
-  .form-card { @apply mx-auto max-w-3xl rounded-surface border border-slate-200 bg-white p-6 sm:p-10; }
-  .form-card-full { @apply max-w-none; }
+  /* Two widths, and only two. A card spans its .container by default, like every
+     list and table page. A single action form (sign in, unsubscribe, contact,
+     checkout, bank details) adds .form-card-narrow. Views never set their own
+     max-w-* on a card or a .container; ViewWidthStandardTest checks that. */
+  .form-card { @apply rounded-surface border border-slate-200 bg-white p-6 sm:p-10; }
+  .form-card-narrow { @apply mx-auto max-w-lg; }
   .form-row  { @apply grid gap-4 sm:grid-cols-2; }
   .field     { @apply mb-4; }
   .field label { @apply mb-1.5 block text-sm font-medium text-slate-700; }

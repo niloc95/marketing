@@ -27,7 +27,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-2xl">
+        <div class="form-card">
             <?php // A service request is free for anyone. Vacancies from a listed
                   // business are a Verified Business feature, so "free" goes on the
                   // request form only. ?>

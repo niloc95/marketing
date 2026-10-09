@@ -43,7 +43,7 @@ $changeNote = static function (?array $change): string {
 
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-2xl">
+        <div class="form-card">
             <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 Operational values you can change without touching the server.

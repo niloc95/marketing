@@ -139,7 +139,7 @@ $prettyDate = static function (?string $date): string {
             </div>
         <?php endif; ?>
 
-        <div class="form-card max-w-lg" id="bank">
+        <div class="form-card" id="bank">
             <h2 class="mb-1.5 text-lg font-bold text-slate-900 dark:text-white">Where we pay you</h2>
             <?php if ($d['bank'] !== ''): ?>
                 <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">We pay into <strong><?= esc($d['bank']) ?></strong>. To change it, enter the new account below.</p>

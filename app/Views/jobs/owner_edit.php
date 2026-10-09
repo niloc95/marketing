@@ -18,7 +18,7 @@ $isJob = $post['kind'] === App\Models\JobPostModel::KIND_JOB;
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-2xl">
+        <div class="form-card">
             <a class="text-sm text-slate-500 hover:underline dark:text-slate-400" href="<?= base_url('manage/edit') ?>#jobs">&larr; Back to your dashboard</a>
             <span class="eyebrow mt-3">Edit <?= $isJob ? 'job' : 'request' ?></span>
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc($post['title']) ?></h1>

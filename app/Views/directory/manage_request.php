@@ -13,7 +13,7 @@
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-lg">
+        <div class="form-card form-card-narrow">
             <span class="eyebrow">Manage your profile</span>
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Edit your business details</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">

@@ -23,7 +23,7 @@ $err = fn (string $f) => $errors[$f] ?? '';
 ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-lg">
+        <div class="form-card form-card-narrow">
             <span class="eyebrow">Recommend a business</span>
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Know a business that should be here?</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">

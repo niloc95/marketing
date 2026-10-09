@@ -30,7 +30,7 @@ $editable = in_array($status, [JobPostModel::STATUS_PENDING, JobPostModel::STATU
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <div class="form-card max-w-2xl">
+        <div class="form-card">
             <span class="eyebrow">Your post</span>
             <h1 class="mb-2 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc($post['title']) ?></h1>
             <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
