@@ -368,6 +368,25 @@
     }
   }
 
+  // ---------------------------------------------------------- admin More menu
+  // A <details>, so it opens without this. This only closes it the way a menu
+  // should: a click anywhere else, or Escape (focus returns to its button).
+  var adminMore = document.querySelector('[data-admin-more]');
+  if (adminMore) {
+    document.addEventListener('click', function (e) {
+      if (adminMore.open && !adminMore.contains(e.target)) adminMore.open = false;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && adminMore.open) {
+        adminMore.open = false;
+        adminMore.querySelector('summary').focus();
+      }
+    });
+    // Keep the current tab in view when the strip scrolls on a phone.
+    var activeTab = document.querySelector('.admin-tab.is-active[aria-current]');
+    if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+
   // ------------------------------------------------------------ copy buttons
   // <button data-copy="text"> copies its text and says so for a moment. Used
   // by the partner dashboard for the partner's link.

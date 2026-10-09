@@ -366,12 +366,40 @@
   .dark .site-footer-legal button { @apply text-slate-400 hover:text-white; }
 
   /* Already ocean-on-white — only its seam against the page needs darkening. */
-  .admin-bar { @apply border-b border-slate-200 bg-primary-500 py-2.5 text-sm text-white; }
+  /* Admin bar (admin/_bar.php): queue tabs that scroll sideways on a phone,
+     and a More menu that does not. More's panel hangs below the bar, so the
+     bar itself must not clip: only the tab strip scrolls. */
+  .admin-bar       { @apply relative z-30 border-b border-slate-200 bg-primary-500 text-sm text-white; }
   .dark .admin-bar { @apply border-slate-800; }
-  .admin-bar .container { @apply flex items-center justify-between; }
-  .admin-bar a { @apply text-white/80 hover:text-white; }
+  .admin-bar-inner { @apply flex items-center gap-2 py-2 sm:gap-3; }
+  .admin-bar-brand { @apply shrink-0 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white hover:bg-white/20; }
+  .admin-bar-scroll { @apply relative min-w-0 flex-1 overflow-x-auto; scrollbar-width: none; }  /* relative: clips the sr-only text in a count, which is absolutely positioned */
+  .admin-bar-scroll::-webkit-scrollbar { display: none; }
+  /* Below md the tabs can run off either edge; a soft fade says "there is more". */
+  @media (max-width: 767px) {
+    .admin-bar-scroll { -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
+    .admin-tabs { @apply px-4; }
+  }
+  .admin-tabs      { @apply flex w-max min-w-full items-center gap-1 whitespace-nowrap; }
+  .admin-tab       { @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white; }
+  .admin-tab.is-active { @apply bg-white text-primary-600 hover:bg-white hover:text-primary-600; }
+  .admin-count     { @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
+
+  .admin-more      { @apply relative shrink-0; }
+  .admin-more > summary { list-style: none; }
+  .admin-more > summary::-webkit-details-marker { display: none; }
+  .admin-more-chevron { @apply transition-transform; }
+  .admin-more[open] .admin-more-chevron { @apply rotate-180; }
+  .admin-more-panel { @apply absolute right-0 top-full z-50 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 text-slate-700 shadow-xl; }
+  .dark .admin-more-panel { @apply border-slate-700 bg-slate-900 text-slate-200; }
+  .admin-more-heading { @apply px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400; }
+  .admin-more-link { @apply block w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900; }
+  .dark .admin-more-link { @apply text-slate-200 hover:bg-slate-800 hover:text-white; }
+  .admin-more-link.is-active { @apply bg-primary-50 font-semibold text-primary-600; }
+  .dark .admin-more-link.is-active { @apply bg-white/10 text-white; }
   /* Sign out is a POST (see Routes.php), so it is a button dressed as a link. */
-  .admin-bar-link { @apply cursor-pointer border-0 bg-transparent p-0 text-white/80 hover:text-white; }
+  .admin-more-signout { @apply mt-1 border-t border-slate-200 pt-1; }
+  .dark .admin-more-signout { @apply border-slate-700; }
 
   /* ------------------------------------------------------ corner standard */
   /* The floor for every form control on the site, wherever it sits: one-line
