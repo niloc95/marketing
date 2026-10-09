@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Referrals — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Referrals | ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -29,7 +29,7 @@ $link = static fn (string $s) => base_url('admin/referrals') . '?' . http_build_
 $prettyDate = static function (?string $date): string {
     $ts = $date ? strtotime($date) : false;
 
-    return $ts === false ? '—' : date('j M Y', $ts);
+    return $ts === false ? 'n/a' : date('j M Y', $ts);
 };
 ?>
 <?= view('admin/_bar') ?>
@@ -38,7 +38,7 @@ $prettyDate = static function (?string $date): string {
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Recommended businesses</h1>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-            Invite sends the business one email with a pre-filled signup link. Nothing else here contacts them.
+            Invite sends the business one email with a prefilled signup link. Nothing else here contacts them.
         </p>
 
         <div class="tabs">

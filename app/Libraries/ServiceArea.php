@@ -70,7 +70,7 @@ final class ServiceArea
                 return sprintf('Each service area must be under %d characters.', DirectoryListingModel::MAX_SERVICE_AREA_LENGTH + 1);
             }
             if (preg_match('#https?://|www\.|@#i', $area) === 1) {
-                return 'Please list only place names as service areas — no links or email addresses.';
+                return 'Please list only place names as service areas, no links or email addresses.';
             }
             if (preg_match_all('/\d/u', $area) >= 5) {
                 return 'Please leave phone numbers out of your service areas.';

@@ -70,9 +70,9 @@ $otherCell = static function (string $status): string {
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'How ' . $siteName . ' compares — Google Business Profile, LinkedIn and SA directories',
+    'title'       => 'How ' . $siteName . ' compares | Google Business Profile, LinkedIn and SA directories',
     'description' => $siteName . ' next to Google Business Profile, LinkedIn and South African directories: '
-        . 'searchable staff profiles, document-checked verification and two-way jobs, and which features are free.',
+        . 'searchable staff profiles, document checked verification and two way jobs, and which features are free.',
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'WebPage', 'How ' . $siteName . ' compares'),
 ]) ?>

@@ -4,7 +4,7 @@
     <div style="max-width:520px;margin:0 auto">
         <?php $event = $event ?? 'published'; ?>
         <h2 style="color:#003049;font-size:18px;margin:0 0 12px">
-            <?= $event === 'edited' ? 'Profile edited' : 'New published profile' ?> — <?= esc($site) ?>
+            <?= $event === 'edited' ? 'Profile edited' : 'New published profile' ?> | <?= esc($site) ?>
         </h2>
         <p style="font-size:15px">
             <strong><?= esc($listing['display_name'] ?? '') ?></strong>

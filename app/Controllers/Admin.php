@@ -297,7 +297,7 @@ class Admin extends BaseController
         return $this->outcome(
             (new DirectoryAdminService())->publish($id),
             'Profile published.',
-            'Could not publish that profile — it may be in the trash. Restore it first.'
+            'Could not publish that profile. It may be in the trash. Restore it first.'
         );
     }
 
@@ -306,7 +306,7 @@ class Admin extends BaseController
         return $this->outcome(
             (new DirectoryAdminService())->unpublish($id),
             'Profile unpublished.',
-            'Could not unpublish that profile — it may be in the trash.'
+            'Could not unpublish that profile. It may be in the trash.'
         );
     }
 
@@ -323,7 +323,7 @@ class Admin extends BaseController
         return $this->outcome(
             (new DirectoryListingMutationService())->resendVerification($id),
             'Verification email resent.',
-            'Could not resend — that profile is not awaiting verification.'
+            'Could not resend. That profile is not awaiting verification.'
         );
     }
 
@@ -341,7 +341,7 @@ class Admin extends BaseController
         return $this->outcome(
             (new DirectoryAdminService())->restore($id),
             'Profile restored.',
-            'Could not restore that profile — it may not be in the trash.'
+            'Could not restore that profile. It may not be in the trash.'
         );
     }
 
@@ -544,7 +544,7 @@ class Admin extends BaseController
         return $this->outcome(
             (new VerificationService())->approve($id, $this->adminActor()),
             'Approved. The owner has been emailed a link to activate and pay.',
-            'Could not approve that application — only one awaiting review can be approved.'
+            'Could not approve that application. Only one awaiting review can be approved.'
         );
     }
 
@@ -553,13 +553,13 @@ class Admin extends BaseController
         $reason = trim((string) $this->request->getPost('reason'));
 
         if ($reason === '') {
-            return redirect()->back()->with('error', 'Give a reason — the owner sees it, and "rejected" on its own is not actionable.');
+            return redirect()->back()->with('error', 'Give a reason. The owner sees it, and "rejected" on its own is not actionable.');
         }
 
         return $this->outcome(
             (new VerificationService())->reject($id, $reason, $this->adminActor()),
-            'Rejected. The owner has been emailed the reason and can re-submit.',
-            'Could not reject that application — only one awaiting review can be rejected.'
+            'Rejected. The owner has been emailed the reason and can resubmit.',
+            'Could not reject that application. Only one awaiting review can be rejected.'
         );
     }
 
@@ -574,7 +574,7 @@ class Admin extends BaseController
         return $this->outcome(
             (new VerificationService())->activateManually($id, $this->adminActor(), $months),
             sprintf('Badge activated for %d month%s.', max(1, $months), $months === 1 ? '' : 's'),
-            'Could not activate that badge — an application still awaiting review has to be approved first.'
+            'Could not activate that badge. An application still awaiting review has to be approved first.'
         );
     }
 
@@ -582,7 +582,7 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new VerificationService())->revoke($id, $this->adminActor()),
-            'Badge removed. Cancel the subscription in the PayFast dashboard too — we cannot do that from here.',
+            'Badge removed. Cancel the subscription in the PayFast dashboard too. We cannot do that from here.',
             'Could not remove that badge.'
         );
     }

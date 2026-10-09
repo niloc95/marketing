@@ -92,7 +92,7 @@ $offeredHint = implode(', ', array_slice(array_column($offered, 'label'), 0, 3))
                            min="<?= (int) $facet['min'] ?>" max="<?= (int) $facet['max'] ?>"
                            placeholder="<?= $facet['unit'] === 'months' ? 'Age in months' : 'Rand' ?>">
                     <div class="hint"><?= $facet['unit'] === 'months'
-                        ? 'e.g. 36 for a three-year-old'
+                        ? 'e.g. 36 for a three year old'
                         : 'Shows anyone starting at or below this' ?></div>
 
                 <?php else: ?>

@@ -217,7 +217,7 @@ if (! function_exists('listing_meta_description')) {
         }
         // A category-less listing still says where: "Selfast at Oriental Plaza,
         // Fordsburg" is the half of the search that is not the name.
-        $lead = $prof !== '' ? $name . ' — ' . $prof . $where . '.' : $name . $where . '.';
+        $lead = $prof !== '' ? $name . ': ' . $prof . $where . '.' : $name . $where . '.';
 
         $hours   = seo_hours_summary(is_array($l['trading_hours'] ?? null) ? $l['trading_hours'] : null);
         $hasHours = $hours !== '' || ! empty(array_filter(

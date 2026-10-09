@@ -77,7 +77,7 @@ _PAGES = [
             # Was 38 words and named Facebook on the cover. A conference handout
             # is skimmed in twenty seconds by people you did not choose.
             {"kind": "cover_sub",
-             "text": "Why local search deserves a place in your budget before paid social — and "
+             "text": "Why local search deserves a place in your budget before paid social, and "
                      "how to build a business profile that keeps answering the question long after a "
                      "campaign would have stopped."},
             {"kind": "gap", "mm": 4},
@@ -131,12 +131,12 @@ _PAGES = [
             # systems. The defensible line is interest-category vs query match.
             {"kind": "para",
              "text": "You have probably felt the difference as a customer. Look for one specific "
-                     "thing — navy cargo pants — and paid social will show you pants for weeks: "
+                     "thing, navy cargo pants, and paid social will show you pants for weeks: "
                      "the category you signalled, not the thing you asked for. Interest targeting "
                      "works at the level of a category. A search matches your actual words."},
             {"kind": "eyebrow", "text": "THE SHIFT, IN ONE LINE"},
             {"kind": "statement",
-             "text": 'From <font color="#94A3B8">paying to interrupt a broad audience</font> — to '
+             "text": 'From <font color="#94A3B8">paying to interrupt a broad audience</font>, to '
                      'being findable by people who are already looking.'},
             {"kind": "para",
              "text": "This does not mean Facebook advertising never works. Paid social and local "
@@ -165,7 +165,7 @@ _PAGES = [
              "rows": [
                  ["Does this business exist?",
                   "The same business name, address and phone number appearing consistently across "
-                  "independent sources — your own site, your Google Business Profile, directories, "
+                  "independent sources. Your own site, your Google Business Profile, directories, "
                   "invoices and signage."],
                  ["What does it do?",
                   "Service language that matches how customers describe the problem, rather than "
@@ -179,7 +179,7 @@ _PAGES = [
              "text": "Ten references that agree are worth more than fifty that contradict each "
                      "other. An old address, a number you stopped answering or a trading name that "
                      "does not match your registration all give a search engine a reason to trust "
-                     "you less. For most businesses, correcting contradictions is higher-value "
+                     "you less. For most businesses, correcting contradictions is higher value "
                      "work than adding new listings."},
         ],
     },
@@ -205,7 +205,7 @@ _PAGES = [
                   "terms or take it down."],
                  ["YOUR GOOGLE BUSINESS PROFILE",
                   "Controlled, not owned. Free to claim, and the single most important local "
-                  "surface for most South African businesses. Google sets the rules — but claim it "
+                  "surface for most South African businesses. Google sets the rules, but claim it "
                   "first, before anything else on this page."],
                  ["LOCAL PLATFORMS, INCLUDING OURS",
                   "Corroboration and discovery. An independent, consistent profile that supports the "
@@ -216,8 +216,8 @@ _PAGES = [
             {"kind": "eyebrow", "text": "WHERE WEBSCHEDULER LOCAL FITS"},
             {"kind": "statement",
              "text": "We are the third row, not the first. A business profile here corroborates "
-                     "the business you already run — your services, locations, people and "
-                     "opportunities — and gives South African customers another route to find it. Claim your Google Business Profile first, then make every source "
+                     "the business you already run. Your services, locations, people and "
+                     "opportunities, and gives South African customers another route to find it. Claim your Google Business Profile first, then make every source "
                      "agree with it."},
             # The point a regulated practice needs to hear: a code that limits
             # advertising rarely limits being listed accurately.
@@ -226,7 +226,7 @@ _PAGES = [
              "text": "Doctors, attorneys, accountants and tax practitioners work under codes that "
                      "restrict how they may advertise. Very few of those codes restrict being "
                      "listed accurately. A complete, factual, findable profile is usually the "
-                     "route a professional code is most comfortable with \u2014 which makes "
+                     "route a professional code is most comfortable with, which makes "
                      "search visibility worth more to a regulated practice, not less."},
         ],
     },
@@ -245,7 +245,7 @@ _PAGES = [
                 ("01", "BUILD THE LOCAL PROFILE",
                  "A complete profile: business name, category, description, services, contact "
                  "details, location and hours."),
-                ("02", "MAKE IT SEARCH-READY",
+                ("02", "MAKE IT SEARCH READY",
                  "Clear service and location language, accurate titles and descriptions, and a "
                  "structure that tells a search engine what you do and where you do it."),
                 ("03", "TURN DISCOVERY INTO ACTION",
@@ -283,7 +283,7 @@ _PAGES = [
                  ["Services", "The services customers search for, named the way they say them."],
                  ["Location", "Your address, or the areas you actually travel to."],
                  ["Contact",
-                  "Phone, email and website — and which of them you answer fastest."],
+                  "Phone, email and website, and which of them you answer fastest."],
                  ["Trust information",
                   "Credentials, registration numbers, qualifications and photographs of real "
                   "work."],
@@ -317,7 +317,7 @@ _PAGES = [
                   "Say what you do in the words customers use. Cut the marketing language."],
                  ["Location relevance",
                   "Make the service area unambiguous to customers and search engines alike."],
-                 ["Service-specific content",
+                 ["Service specific content",
                   "Give each important service its own description instead of one paragraph "
                   "covering everything."],
                  ["Unique page content",
@@ -331,7 +331,7 @@ _PAGES = [
                   "Fast pages, mobile layouts, crawlable content, canonical URLs and sensible "
                   "structured data."],
                  ["Consistency",
-                  "One business name, one address, one phone number — everywhere it appears."],
+                  "One business name, one address, one phone number, everywhere it appears."],
              ]},
             # The legal shield. Deliberately left hedged.
             {"kind": "h3", "text": "Important distinction"},
@@ -350,7 +350,7 @@ _PAGES = [
             {"kind": "h1", "text": "Service + location visibility"},
             {"kind": "para",
              "text": "Local businesses answer more than one customer need. A single homepage "
-                     "cannot answer every service-and-location search."},
+                     "cannot answer every service and location search."},
             {"kind": "h2", "text": "Instead of thinking only:"},
             {"kind": "h2", "text": "“I have a business in Sandton.”"},
             {"kind": "h2", "text": "Think about the searches customers actually make:"},
@@ -365,7 +365,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "The principle"},
             {"kind": "statement",
              "text": "One business is relevant to several service searches and several local "
-                     "searches. A well-organised local presence makes those relationships clear "
+                     "searches. A well organised local presence makes those relationships clear "
                      "without creating thin or duplicated pages."},
         ],
     },
@@ -384,7 +384,7 @@ _PAGES = [
                 ("02", "UNDERSTAND", "“Do they offer exactly what I need?”"),
                 ("03", "CHECK", "“Where are they, and how do I contact them?”"),
                 ("04", "TRUST",
-                 "“Does this business look legitimate?” — answered by complete details, "
+                 "“Does this business look legitimate?” Answered by complete details, "
                  "photographs of real work, and reviews they can find."),
                 ("05", "ACT", "“Can I call, message, visit, book or learn more?”"),
             ]},
@@ -496,7 +496,7 @@ VERTICALS = {
             ["no hot water this morning",
              "The description uses the words a customer would, not trade terminology."],
             ["emergency plumber Sunday",
-             "Hours stated plainly, including how after-hours calls are handled."],
+             "Hours stated plainly, including how after hours calls are handled."],
             ["plumber near Fourways",
              "The category, plus a service area that names Fourways explicitly."],
             ["is Thabo's Plumbing legitimate",
@@ -516,7 +516,7 @@ VERTICALS = {
             ["no hot water this morning",
              "The description uses the words a customer would, not trade terminology."],
             ["emergency plumber Sunday",
-             "Hours stated plainly, including how after-hours calls are handled."],
+             "Hours stated plainly, including how after hours calls are handled."],
             ["blocked drain near Fourways",
              "Drain clearing named as a service, with the suburbs actually covered."],
             ["is Thabo's Plumbing legitimate",
@@ -530,7 +530,7 @@ VERTICALS = {
         "business": "Bergview Family Practice",
         "caveat": "A factual practice listing is what the HPCSA's rules permit: name, "
                   "qualifications, services, hours, location and registration. What they "
-                  "restrict is claims — of superiority, of outcomes, or testimonials. List "
+                  "restrict is claims, of superiority, of outcomes, or testimonials. List "
                   "freely; describe results carefully.",
         "rows": [
             ["GP open on Saturday Randburg",
@@ -539,7 +539,7 @@ VERTICALS = {
              "Travel medicine listed as its own service rather than left inside "
              "\u201cconsultations\u201d."],
             ["walk in clinic Randburg",
-             "Whether the practice takes walk-ins, said plainly."],
+             "Whether the practice takes walk ins, said plainly."],
             ["does Bergview take Discovery",
              "The medical aids the practice is contracted to."],
             ["Bergview Family Practice contact number",
@@ -551,7 +551,7 @@ VERTICALS = {
         "heading": "A law firm in Randburg.",
         "business": "Mokoena & Partners",
         "caveat": "The Legal Practice Council's rules permit factual information about "
-                  "practice areas, location and registration — which is what a listing is. "
+                  "practice areas, location and registration, which is what a listing is. "
                   "What they restrict is comparative claims and anything promising an "
                   "outcome. Name what you do; do not promise how it ends.",
         "rows": [
@@ -581,7 +581,7 @@ VERTICALS = {
             ["nail salon open Sunday Bryanston",
              "Sunday hours on the profile."],
             ["walk in nail bar Bryanston",
-             "Whether walk-ins are taken, and how busy Saturdays work."],
+             "Whether walk ins are taken, and how busy Saturdays work."],
             ["Lilac Nail Studio photos",
              "Photographs of actual work, and reviews people can find."],
         ],
@@ -591,7 +591,7 @@ VERTICALS = {
         "heading": "A skin clinic in Rosebank.",
         "business": "Vantage Skin Studio",
         "caveat": "Describing a treatment and naming who is qualified to perform it is "
-                  "straightforward. Promising a result is not — treatment claims are "
+                  "straightforward. Promising a result is not. Treatment claims are "
                   "regulated. Where a therapist is registered with a body such as SAAHSP, say "
                   "so; it is both factual and persuasive.",
         "rows": [
@@ -600,7 +600,7 @@ VERTICALS = {
             ["laser hair removal near me",
              "Each modality listed separately, with who is qualified to perform it."],
             ["beauty salon open late Thursday",
-             "Late-night hours stated rather than implied."],
+             "Late night hours stated rather than implied."],
             ["somatologist Rosebank",
              "The professional qualification named, because some customers search for it."],
             ["is Vantage Skin Studio any good",
@@ -612,7 +612,7 @@ VERTICALS = {
         "heading": "A travel agency in Sandton.",
         "business": "Compass Travel Co",
         "caveat": "Membership of ASATA, or IATA accreditation, is factual, checkable and "
-                  "worth stating — it is often the thing a nervous customer is actually "
+                  "worth stating. It is often the thing a nervous customer is actually "
                   "looking for. Publish nothing you cannot hold: prices and availability "
                   "move.",
         "rows": [
@@ -632,8 +632,8 @@ VERTICALS = {
         "audience": "For accounting practices",
         "heading": "An accounting practice in Randburg.",
         "business": "Nkosi Accounting",
-        "caveat": "If the practice holds a professional designation \u2014 SAICA, SAIPA, ACCA or "
-                  "similar \u2014 state it exactly as the body permits. It is the single most "
+        "caveat": "If the practice holds a professional designation (SAICA, SAIPA, ACCA or "
+                  "similar), state it exactly as the body permits. It is the single most "
                   "checkable trust signal an accounting practice has.",
         "rows": [
             ["who can register my company at CIPC",
@@ -654,7 +654,7 @@ VERTICALS = {
         "business": "Meridian Tax",
         "caveat": "Being findable is not the regulated part. Giving tax advice for reward is: "
                   "that requires registration with SARS and a recognised controlling body. "
-                  "Publish the registration — it is a fact, and it is exactly what an anxious "
+                  "Publish the registration. It is a fact, and it is exactly what an anxious "
                   "taxpayer is checking for.",
         "rows": [
             ["I got a SARS audit letter",
@@ -673,14 +673,14 @@ VERTICALS = {
         "audience": "For architects, engineers and consultants",
         "heading": "An architectural practice in Parktown.",
         "business": "Studio Verlaan",
-        "caveat": "Statutory registration \u2014 SACAP for architects, ECSA for engineers \u2014 "
+        "caveat": "Statutory registration (SACAP for architects, ECSA for engineers) "
                   "is both a legal requirement for certain work and the clearest trust signal you "
                   "can publish. State it precisely.",
         "rows": [
             ["architect for house plan approval",
              "Plan approval and council submission named as a service."],
             ["engineer to sign off a structural plan",
-             "The specific sign-off named, not \u201cconsulting services\u201d."],
+             "The specific sign off named, not \u201cconsulting services\u201d."],
             ["heritage approval Parktown",
              "Specialist work listed separately, with the areas it covers."],
             ["SACAP registered architect Johannesburg",
@@ -703,7 +703,7 @@ def _worked_example(v: dict) -> dict:
                  "second kind of search and misses the first."},
         {"kind": "para",
          "text": f"{v['business']} is an invented business, used here to keep the argument "
-                 "concrete. This is not a case study and not a prediction \u2014 it is one "
+                 "concrete. This is not a case study and not a prediction. It is one "
                  "profile, and the different questions a complete version of it can answer."},
         {"kind": "table", "widths": [0.36, 0.64],
          "header": ["WHAT SOMEONE SEARCHES", "WHAT ON THE PROFILE ANSWERS IT"],
@@ -829,10 +829,10 @@ def social_slides(variant: str = "linkedin"):
          "eyebrow": "30 DAYS",
          "title": "A practical\nrollout plan.",
          "items": [
-             "Week 1 — Create and complete your profile",
-             "Week 2 — Strengthen service + location content",
-             "Week 3 — Improve SEO foundations",
-             "Week 4 — Measure and improve",
+             "Week 1: Create and complete your profile",
+             "Week 2: Strengthen service + location content",
+             "Week 3: Improve SEO foundations",
+             "Week 4: Measure and improve",
          ]},
 
         # 8 — the honest caveat. Keeps the deck claim-safe on its own.
@@ -849,5 +849,5 @@ def social_slides(variant: str = "linkedin"):
          "title": "More than a\nbusiness listing.",
          "url_display": CTA_BARE,
          "url_target": cta_url("linkedin" if not meta else "meta", "social-deck"),
-         "footnote": "Full playbook in the link — South Africa · 2026"},
+         "footnote": "Full playbook in the link. South Africa · 2026"},
     ]

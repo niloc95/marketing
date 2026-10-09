@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Settings — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Settings | ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -25,7 +25,7 @@ $sourceNote = static function (string $source): string {
     return match ($source) {
         DirectorySettings::SOURCE_DATABASE    => 'Set here, on this page.',
         DirectorySettings::SOURCE_ENVIRONMENT => 'Currently coming from the server\'s .env file. Saving here overrides it from now on.',
-        default                               => 'Currently the built-in default. Saving here overrides it from now on.',
+        default                               => 'Currently the built in default. Saving here overrides it from now on.',
     };
 };
 
@@ -47,7 +47,7 @@ $changeNote = static function (?array $change): string {
             <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 Operational values you can change without touching the server.
-                Credentials are deliberately not here &mdash; they stay in the server's
+                Credentials are deliberately not here. They stay in the server's
                 <code>.env</code>, where changing them needs filesystem access.
             </p>
 
@@ -77,7 +77,7 @@ $changeNote = static function (?array $change): string {
                       // emails — or worse, an expectation of back-charging. ?>
                 <div class="alert alert-info">
                     <strong>A price change applies to new applications only.</strong>
-                    Businesses already paying keep the amount they signed up at &mdash; PayFast
+                    Businesses already paying keep the amount they signed up at. PayFast
                     keeps billing their existing subscription at that figure, and we cannot change
                     it from here. A business you have already approved but who has not paid yet
                     also keeps the price they were quoted.
@@ -117,7 +117,7 @@ $changeNote = static function (?array $change): string {
                         <?php // Worth saying out loud on the page that sets it: PayFast
                               // settles in rand, so this is what a foreign card is charged
                               // and it is subject to that card accepting a ZA merchant. ?>
-                        Charged in rand &mdash; PayFast settles in ZAR, so the subscriber's card
+                        Charged in rand: PayFast settles in ZAR, so the subscriber's card
                         has to accept a South African merchant.
                         <?php if ($n = $changeNote($lastIntlPrice)): ?><br><?= esc($n) ?><?php endif; ?>
                     </div>
@@ -134,7 +134,7 @@ $changeNote = static function (?array $change): string {
                               // this off must not strand anyone: a listing that cannot be
                               // charged must publish, not sit pending with no way to pay. ?>
                         Unticked, listings outside South Africa publish free like any other and
-                        nobody is charged &mdash; existing subscriptions are left alone rather
+                        nobody is charged, and existing subscriptions are left alone rather
                         than cancelled. Ticked, such a listing publishes only once paid.
                         <?= esc($sourceNote($intlEnabledSource)) ?>
                         <?php if ($n = $changeNote($lastIntlEnabled)): ?><br><?= esc($n) ?><?php endif; ?>

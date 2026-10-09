@@ -733,7 +733,7 @@ class DirectoryAdminService
         if ($inUse > 0) {
             return [
                 'ok'      => false,
-                'message' => "That category is used by {$inUse} profile(s). Deactivate it instead — deleting would strip the category from them.",
+                'message' => "That category is used by {$inUse} profile(s). Deactivate it instead. Deleting would strip the category from them.",
             ];
         }
 

@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Venues — Admin']) ?>
+<?= seo_meta(['title' => 'Venues | Admin']) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -58,7 +58,7 @@
                     <div class="field">
                         <label>Province</label>
                         <select name="province">
-                            <option value="">—</option>
+                            <option value="">Choose a province</option>
                             <?php foreach ($provinces as $prov): ?>
                                 <option value="<?= esc($prov, 'attr') ?>"><?= esc($prov) ?></option>
                             <?php endforeach; ?>
@@ -99,7 +99,7 @@
                         <div class="field mb-0">
                             <label class="text-xs">Province</label>
                             <select name="province" class="w-36">
-                                <option value="">—</option>
+                                <option value="">Choose a province</option>
                                 <?php foreach ($provinces as $prov): ?>
                                     <option value="<?= esc($prov, 'attr') ?>" <?= $ven['province'] === $prov ? 'selected' : '' ?>><?= esc($prov) ?></option>
                                 <?php endforeach; ?>

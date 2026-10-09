@@ -31,9 +31,9 @@
     <p class="preview-label">Services</p>
     <ul class="preview-rows preview-rows-split">
         <li><span>Consultation</span><span class="preview-price">R 450</span></li>
-        <li><span>Follow-up visit</span><span class="preview-price">R 300</span></li>
-        <li><span>Call-out</span><span class="preview-price">On request</span></li>
-        <li><span>After-hours</span><span class="preview-price">On request</span></li>
+        <li><span>Follow up visit</span><span class="preview-price">R 300</span></li>
+        <li><span>Callout</span><span class="preview-price">On request</span></li>
+        <li><span>After hours</span><span class="preview-price">On request</span></li>
     </ul>
 
 <?php elseif ($kind === 'locations'): ?>
@@ -55,8 +55,8 @@
 <?php elseif ($kind === 'opportunities'): ?>
     <p class="preview-label">Vacancies</p>
     <ul class="preview-rows preview-rows-stacked">
-        <li><?= lucide('briefcase', 'h-4 w-4 shrink-0') ?><span><strong>Receptionist</strong>Full-time · Your town</span></li>
-        <li><?= lucide('briefcase', 'h-4 w-4 shrink-0') ?><span><strong>Apprentice</strong>Part-time · Your town</span></li>
+        <li><?= lucide('briefcase', 'h-4 w-4 shrink-0') ?><span><strong>Receptionist</strong>Full time · Your town</span></li>
+        <li><?= lucide('briefcase', 'h-4 w-4 shrink-0') ?><span><strong>Apprentice</strong>Part time · Your town</span></li>
     </ul>
 <?php endif; ?>
 </div>

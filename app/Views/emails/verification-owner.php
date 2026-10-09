@@ -26,7 +26,7 @@ $paidUntil = $paid_until ?? '';
 
         <?php if ($event === 'approved'): ?>
             <p style="font-size:15px;line-height:1.6">
-                Good news — we've checked your company registration document and owner ID, and both are in order.
+                Good news. We've checked your company registration document and owner ID, and both are in order.
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Your Verified Business badge is ready to switch on. It costs
@@ -37,7 +37,7 @@ $paidUntil = $paid_until ?? '';
                 <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Activate my badge</a>
             </p>
             <p style="font-size:13px;color:#64748b">
-                That button takes you straight to the payment page — no password, nothing else to fill in.
+                That button takes you straight to the payment page: no password, nothing else to fill in.
                 It works once, and expires in 7 days.
             </p>
 
@@ -49,7 +49,7 @@ $paidUntil = $paid_until ?? '';
                 <?= nl2br(esc($reason)) ?>
             </p>
             <p style="font-size:15px;line-height:1.6">
-                You're welcome to send new documents whenever you're ready — nothing has been charged,
+                You're welcome to send new documents whenever you're ready. Nothing has been charged,
                 and your business profile itself is unaffected.
             </p>
             <p style="margin:22px 0">
@@ -61,7 +61,7 @@ $paidUntil = $paid_until ?? '';
                 Your payment came through and your <strong>Verified Business</strong> badge is now live on your profile.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                It renews automatically each month. You can cancel any time from your dashboard — the
+                It renews automatically each month. You can cancel any time from your dashboard. The
                 badge stays up until the month you've paid for runs out.
             </p>
             <p style="margin:22px 0">

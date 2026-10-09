@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Admin sign in — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Admin sign in | ' . config('Directory')->siteName()]) ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>

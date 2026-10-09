@@ -173,7 +173,7 @@ class NominatimGeocoder implements GeocoderInterface
                 }
                 if (! $this->nearAnchor($result, $anchor)) {
                     log_message('info', 'NominatimGeocoder: rejected a street match too far from '
-                        . ($suburb !== '' ? $suburb : $city) . ' — ' . ($result['display_name'] ?? ''));
+                        . ($suburb !== '' ? $suburb : $city) . ', ' . ($result['display_name'] ?? ''));
 
                     continue;
                 }

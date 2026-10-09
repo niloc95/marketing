@@ -17,7 +17,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => ($isJob ? 'Post a job' : 'Request a service') . ' — ' . $siteName,
+    'title'       => ($isJob ? 'Post a job' : 'Request a service') . ' | ' . $siteName,
     'description' => 'Post a job or ask for a service on ' . $siteName . '.',
     'canonical'   => base_url('jobs/post'),
     'robots'      => $mode === 'unlisted' && $isJob,

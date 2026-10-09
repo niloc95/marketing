@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Comparison — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Comparison | ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -55,12 +55,12 @@ if (! empty($lastChange['at'])) {
             <p class="mb-2 text-sm text-slate-500 dark:text-slate-400">
                 What <a class="text-primary-500 hover:underline" href="<?= base_url('compare') ?>" target="_blank" rel="noopener">/compare</a>
                 shows. Saving takes effect immediately.
-                <?= ! empty($table['custom']) ? 'Showing your edited table.' : 'Showing the built-in defaults.' ?>
+                <?= ! empty($table['custom']) ? 'Showing your edited table.' : 'Showing the built in defaults.' ?>
                 <?= esc($changed) ?>
             </p>
             <ul class="mb-6 list-disc pl-5 text-sm text-slate-500 dark:text-slate-400">
                 <li>Plain text only. <code>{gallery}</code>, <code>{locations}</code>, <code>{team}</code> and <code>{price}</code> are filled in from the live caps and price.</li>
-                <li>Every competitor claim should be something their own help pages say. Update the checked-on date when you re-check.</li>
+                <li>Every competitor claim should be something their own help pages say. Update the checked on date when you recheck.</li>
                 <li>The WebScheduler Local column must match what the site actually gates: staff, branches and vacancies are Verified Business.</li>
                 <li>Rows show in Position order. Clear a row's label to delete it.</li>
             </ul>
@@ -86,8 +86,8 @@ if (! empty($lastChange['at'])) {
                             <input type="text" id="col-<?= $col ?>" name="columns[<?= $col ?>][label]"
                                    maxlength="<?= App\Services\ComparisonService::MAX_COLUMN_LABEL ?>"
                                    value="<?= esc((string) ($columns[$col]['label'] ?? ''), 'attr') ?>">
-                            <input type="text" class="mt-2" name="columns[<?= $col ?>][sub]" aria-label="Sub-heading"
-                                   placeholder="Sub-heading (optional)"
+                            <input type="text" class="mt-2" name="columns[<?= $col ?>][sub]" aria-label="Subheading"
+                                   placeholder="Subheading (optional)"
                                    maxlength="<?= App\Services\ComparisonService::MAX_COLUMN_SUB ?>"
                                    value="<?= esc((string) ($columns[$col]['sub'] ?? ''), 'attr') ?>">
                         </div>
@@ -124,7 +124,7 @@ if (! empty($lastChange['at'])) {
                                 <div class="field mb-0">
                                     <label for="row-<?= $i ?>-<?= $col ?>"><?= esc((string) ($columns[$col]['label'] ?? $col)) ?></label>
                                     <select id="row-<?= $i ?>-<?= $col ?>" name="rows[<?= $i ?>][cells][<?= $col ?>][status]">
-                                        <option value="">— pick —</option>
+                                        <option value="">Pick one</option>
                                         <?php foreach ($options as $value => $label): ?>
                                             <option value="<?= $value ?>" <?= ($cell['status'] ?? '') === $value ? 'selected' : '' ?>><?= esc($label) ?></option>
                                         <?php endforeach; ?>
@@ -148,7 +148,7 @@ if (! empty($lastChange['at'])) {
             <form method="post" action="<?= base_url('admin/comparison/reset') ?>">
                 <?= csrf_field() ?>
                 <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                    Throw away your edits and show the built-in table again.
+                    Throw away your edits and show the built in table again.
                 </p>
                 <button type="submit" class="btn btn-ghost">Reset to defaults</button>
             </form>

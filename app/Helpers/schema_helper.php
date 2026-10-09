@@ -814,7 +814,7 @@ if (! function_exists('schema_local_business')) {
                 '@id'                       => $canonical . '#branch-' . ($i + 2),
                 'name'                      => $branchName !== ''
                     ? $branchName
-                    : trim((string) ($l['display_name'] ?? '')) . ($city !== '' ? ' — ' . $city : ''),
+                    : trim((string) ($l['display_name'] ?? '')) . ($city !== '' ? ', ' . $city : ''),
                 'telephone'                 => schema_telephone($loc),
                 'address'                   => schema_postal_address($loc),
                 'geo'                       => schema_geo($loc),

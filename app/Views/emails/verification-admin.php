@@ -3,7 +3,7 @@
 <body style="font-family:Inter,Arial,sans-serif;color:#0f172a;padding:24px">
     <div style="max-width:520px;margin:0 auto">
         <h2 style="color:#003049;font-size:18px;margin:0 0 12px">
-            Verification documents submitted — <?= esc($site) ?>
+            Verification documents submitted | <?= esc($site) ?>
         </h2>
         <p style="font-size:15px">
             <strong><?= esc($listing['display_name'] ?? '') ?></strong>
@@ -14,7 +14,7 @@
             <li>City: <?= esc(trim(($listing['city'] ?? '') . ' ' . ($listing['province'] ?? ''))) ?></li>
             <li>Listing status: <?= esc($listing['status'] ?? '') ?></li>
             <?php if (empty($listing['is_verified'])): ?>
-                <li><strong>Email address not confirmed yet</strong> — worth waiting before you review.</li>
+                <li><strong>Email address not confirmed yet</strong>: worth waiting before you review.</li>
             <?php endif; ?>
         </ul>
         <?php

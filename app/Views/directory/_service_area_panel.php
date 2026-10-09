@@ -34,7 +34,7 @@ $list  = count($named) > 1
     <h3>Service areas</h3>
     <p class="flex items-start gap-1.5 text-sm font-medium text-slate-900 dark:text-white">
         <?= lucide('car', 'mt-0.5 h-4 w-4 shrink-0') ?>
-        <span><?= $location === 'travel' ? 'Mobile service &mdash; we travel to you' : 'We also travel to customers' ?></span>
+        <span><?= $location === 'travel' ? 'Mobile service: we travel to you' : 'We also travel to customers' ?></span>
     </p>
     <?php if ($list !== ''): ?>
         <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">We travel to customers in <?= esc($list) ?> and surrounding areas.</p>

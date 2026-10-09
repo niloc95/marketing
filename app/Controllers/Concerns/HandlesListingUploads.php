@@ -165,7 +165,7 @@ trait HandlesListingUploads
         foreach ($files as $file) {
             if (count($photos) >= $slots) {
                 $errors[] = sprintf(
-                    '“%s” was not added — a profile can have at most %d photos%s.',
+                    '“%s” was not added. A profile can have at most %d photos%s.',
                     $file->getClientName(),
                     self::GALLERY_MAX,
                     $existing > 0 ? sprintf(' and this one already has %d', $existing) : ''
@@ -292,7 +292,7 @@ trait HandlesListingUploads
         if (! ListingMenuService::offersMenu($category['group_name'] ?? null, $category['slug'] ?? null)) {
             return $uploads === []
                 ? []
-                : ['The menu was not added — menus are for restaurants and other food businesses.'];
+                : ['The menu was not added. Menus are for restaurants and other food businesses.'];
         }
 
         if ($uploads !== []) {

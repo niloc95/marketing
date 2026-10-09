@@ -126,7 +126,7 @@ $error = static fn (string $f) => $err($f) !== '' ? '<div class="err">' . esc($e
         <div class="field">
             <label for="f-period">Pay period <span class="text-slate-400">(if you give a salary)</span></label>
             <select id="f-period" name="salary_period">
-                <option value="">—</option>
+                <option value="">Not given</option>
                 <?php foreach ($periods as $key => $p): ?>
                     <option value="<?= esc($key, 'attr') ?>" <?= $v('salary_period') === $key ? 'selected' : '' ?>><?= esc(ucfirst($p['label'])) ?></option>
                 <?php endforeach; ?>

@@ -390,7 +390,7 @@ class Manage extends BaseController
 
         if (! $service->canTakePayment()) {
             return redirect()->to(base_url('manage/edit'))
-                ->with('error', 'Card payments are not available at the moment — we will be in touch about payment.');
+                ->with('error', 'Card payments are not available at the moment. We will be in touch about payment.');
         }
 
         // Which subscription is being paid for.
@@ -545,14 +545,14 @@ class Manage extends BaseController
             session()->remove(self::PAYMENT_PENDING_KEY);
 
             return redirect()->to(base_url('directory/' . $listing['slug']))
-                ->with('success', 'Payment confirmed — your Verified Business badge is live.');
+                ->with('success', 'Payment confirmed. Your Verified Business badge is live.');
         }
 
         session()->set(self::PAYMENT_PENDING_KEY, time());
 
         return redirect()->to(base_url('manage/edit'))->with(
             'info',
-            'Thanks — we have your payment and PayFast is confirming it. Your badge goes live within '
+            'Thanks, we have your payment and PayFast is confirming it. Your badge goes live within '
                 . 'a few minutes; refresh this page to check.'
         );
     }

@@ -121,7 +121,7 @@ class ListingFacets extends BaseConfig
                 'type'    => 'one',
                 'options' => [
                     'public'      => 'Public (government)',
-                    'no-fee'      => 'Public, no-fee',
+                    'no-fee'      => 'Public, no fee',
                     'independent' => 'Independent (private)',
                 ],
                 'filter' => true,
@@ -131,7 +131,7 @@ class ListingFacets extends BaseConfig
                 'label'   => 'Learners',
                 'type'    => 'one',
                 'options' => [
-                    'co-ed' => 'Co-educational',
+                    'co-ed' => 'Coeducational',
                     'girls' => 'Girls only',
                     'boys'  => 'Boys only',
                 ],
@@ -175,7 +175,7 @@ class ListingFacets extends BaseConfig
                 'max'    => 156,
                 'filter' => true,
                 'card'   => true,
-                'hint'   => 'In months for babies and toddlers — 18 months to 6 years is typical.',
+                'hint'   => 'In months for babies and toddlers. Typically 18 months to 6 years.',
             ],
             'programme' => [
                 'label'   => 'What you offer',
@@ -200,7 +200,7 @@ class ListingFacets extends BaseConfig
                     'montessori' => 'Montessori',
                     'waldorf'    => 'Waldorf / Steiner',
                     'reggio'     => 'Reggio Emilia',
-                    'play-based' => 'Play-based',
+                    'play-based' => 'Play based',
                     'other'      => 'Other',
                 ],
                 'filter' => true,
@@ -306,10 +306,10 @@ class ListingFacets extends BaseConfig
                 'label'   => 'How to order',
                 'type'    => 'multi',
                 'options' => [
-                    'dine-in'    => 'Dine-in',
+                    'dine-in'    => 'Dine in',
                     'takeaway'   => 'Takeaway',
                     'delivery'   => 'Delivery',
-                    'drive-thru' => 'Drive-thru',
+                    'drive-thru' => 'Drive thru',
                 ],
                 'filter' => true,
                 'card'   => true,

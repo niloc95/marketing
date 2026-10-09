@@ -1,13 +1,13 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Funnel — Admin']) ?>
+<?= seo_meta(['title' => 'Funnel | Admin']) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <?php
-$pct = static fn (int $n, int $of) => $of > 0 ? number_format(100 * $n / $of, 1) . '%' : '—';
+$pct = static fn (int $n, int $of) => $of > 0 ? number_format(100 * $n / $of, 1) . '%' : 'n/a';
 $top = (int) ($funnel['stages'][0]['count'] ?? 0);
 $convTable = static function (array $rows) use ($pct): string {
     $html = '';
@@ -55,7 +55,7 @@ $convTable = static function (array $rows) use ($pct): string {
                     <tr>
                         <td><?= esc($s['label']) ?></td>
                         <td><?= number_format($s['count']) ?></td>
-                        <td><?= $prev === null ? '—' : esc($pct($s['count'], $prev)) ?></td>
+                        <td><?= $prev === null ? 'n/a' : esc($pct($s['count'], $prev)) ?></td>
                         <td><?= esc($pct($s['count'], $top)) ?></td>
                     </tr>
                 <?php $prev = $s['count']; endforeach; ?>

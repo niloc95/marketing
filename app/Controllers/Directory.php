@@ -681,7 +681,7 @@ class Directory extends BaseController
                 return redirect()->to(base_url($to))
                     ->with('success', 'Your email is confirmed and you are signed in. '
                         . 'Businesses outside South Africa need an International Profile '
-                        . 'subscription before the profile goes live — this is the last step.');
+                        . 'subscription before the profile goes live. This is the last step.');
             }
 
             // The moment they are most likely to say yes: signed in, listing just
@@ -696,8 +696,8 @@ class Directory extends BaseController
             }
 
             return redirect()->to(base_url('directory/' . $listing['slug']))
-                ->with('success', 'Your profile is verified and now live. You are signed in — '
-                    . 'use Manage your profile to edit it or apply for the Verified Business badge.');
+                ->with('success', 'Your profile is verified and now live. You are signed in. '
+                    . 'Use Manage your profile to edit it or apply for the Verified Business badge.');
         }
         return redirect()->to(base_url('/'))
             ->with('error', 'That verification link is invalid or has expired.');

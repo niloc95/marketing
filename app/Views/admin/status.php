@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'System status — Admin']) ?>
+<?= seo_meta(['title' => 'System status | Admin']) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -13,7 +13,7 @@
  * attacker-influenced, and a <script> tag inside <pre> still executes.
  */
 $pill = static fn (bool $ok) => $ok ? 'pill pill-published' : 'pill pill-pending';
-$when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
+$when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : 'n/a';
 ?>
 <?= view('admin/_bar') ?>
 
@@ -76,7 +76,7 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                 </div>
                 <?php if (($stalePending ?? 0) > 0): ?>
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                        These owners can no longer verify — the link expired and there is no self-serve way to request another.
+                        These owners can no longer verify. The link expired and there is no self serve way to request another.
                         A climbing number is the fingerprint of a mail outage. Publish them by hand, or delete them.
                     </p>
                 <?php endif; ?>
@@ -97,7 +97,7 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                 <div class="kv"><span class="k">Rejected</span><span><?= (int) ($verifCounts['rejected'] ?? 0) ?></span></div>
                 <?php if (($verifCounts['submitted'] ?? 0) > 0): ?>
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                        Owners waiting on a decision. Nobody has been charged yet — payment only follows approval.
+                        Owners waiting on a decision. Nobody has been charged yet. Payment only follows approval.
                         <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('admin/verifications') ?>">Open the queue</a>.
                     </p>
                 <?php endif; ?>
@@ -132,7 +132,7 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                 <div class="kv"><span class="k">Uploads</span><span><?= esc($svc->bytes($storage['logos']['bytes'] + $storage['gallery']['bytes'])) ?></span></div>
                 <ul class="alert-list mt-3 text-xs text-slate-500 dark:text-slate-400">
                     <li>Check hPanel for what your plan covers and how far back it goes.</li>
-                    <li>Confirm it covers the database <em>and</em> <code>public/assets/listings</code> — a database-only backup restores a site where every logo is broken.</li>
+                    <li>Confirm it covers the database <em>and</em> <code>public/assets/listings</code>. A database only backup restores a site where every logo is broken.</li>
                     <li>Do one restore into a scratch database before you need it.</li>
                 </ul>
             </div>
@@ -146,14 +146,14 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : '—';
                         <span class="<?= $row['warn'] ? 'text-brand-crimson dark:text-red-400' : '' ?>"><?= esc($row['value']) ?></span>
                     </div>
                 <?php endforeach; ?>
-                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">* not overridable from <code>.env</code> — change requires a deploy.</p>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">* not overridable from <code>.env</code>. Changing it requires a deploy.</p>
             </div>
         </div>
 
         <!-- ------------------------------------------------------------ log -->
         <h2 class="mb-3 mt-8 text-base font-semibold text-slate-900 dark:text-white">Recent log</h2>
         <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">
-            Warnings and above. <code>DEBUG</code> is never shown — it is noise, and this page is only as trusted as the admin session.
+            Warnings and above. <code>DEBUG</code> is never shown. It is noise, and this page is only as trusted as the admin session.
         </p>
 
         <form method="get" action="<?= base_url('admin/status') ?>" class="mb-4 flex flex-wrap items-end gap-3">

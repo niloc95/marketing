@@ -204,7 +204,7 @@ class TeamMemberService
 
         if (count($submitted) > self::MAX_MEMBERS) {
             $errors['team'] = sprintf(
-                'A profile can list at most %d team members — you have %d.',
+                'A profile can list at most %d team members. You have %d.',
                 self::MAX_MEMBERS,
                 count($submitted)
             );
@@ -314,7 +314,7 @@ class TeamMemberService
 
             if (mb_strlen($part) > self::MAX_SPECIALIZATION_LENGTH) {
                 $errors[$errorKey] = sprintf(
-                    'Each area of focus must be %d characters or fewer — “%s” is longer.',
+                    'Each area of focus must be %d characters or fewer. “%s” is longer.',
                     self::MAX_SPECIALIZATION_LENGTH,
                     mb_substr($part, 0, 30) . '…'
                 );

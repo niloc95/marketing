@@ -16,7 +16,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
       // is whatever a scanner or a spam link asked for. That must not be
       // reflected into the page. ?>
 <?= seo_meta([
-    'title'     => 'Page not found — ' . $siteName,
+    'title'     => 'Page not found | ' . $siteName,
     'robots'    => 'noindex, follow',
     'canonical' => base_url('/'),
 ]) ?>

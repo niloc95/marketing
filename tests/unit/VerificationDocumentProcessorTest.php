@@ -257,7 +257,7 @@ final class VerificationDocumentProcessorTest extends CIUnitTestCase
         $result = (new VerificationDocumentProcessor())->process($this->upload('reg.pdf', $big, 'application/pdf'), $this->dest);
 
         $this->assertFalse($result['ok']);
-        $this->assertStringContainsString('the limit is', $result['error']);
+        $this->assertStringContainsString('The limit is', $result['error']);
     }
 
     public function testEveryRejectionExplainsItself(): void

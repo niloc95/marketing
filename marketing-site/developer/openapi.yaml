@@ -84,7 +84,7 @@ components:
       type: http
       scheme: bearer
       description: >
-        Opaque per-user API key (`xsk_<prefix>_<secret>`). NOT a JWT — do not
+        Opaque per-user API key (`xsk_<prefix>_<secret>`). NOT a JWT, do not
         attempt to decode it. Issued via `php spark api:key`.
 
   parameters:

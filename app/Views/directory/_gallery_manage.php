@@ -32,7 +32,7 @@ $used = count($photos);
         <div class="photo-manage-head">
             <h2>Current photos</h2>
             <span class="hint" data-photo-count data-max="<?= (int) $max ?>">
-                <?= $used ?> of <?= (int) $max ?> used<?= $used < $max ? ' — ' . ($max - $used) . ' slot' . ($max - $used === 1 ? '' : 's') . ' left' : '' ?>
+                <?= $used ?> of <?= (int) $max ?> used<?= $used < $max ? ', ' . ($max - $used) . ' slot' . ($max - $used === 1 ? '' : 's') . ' left' : '' ?>
             </span>
         </div>
         <p class="photo-manage-error" role="alert" data-photo-error hidden></p>

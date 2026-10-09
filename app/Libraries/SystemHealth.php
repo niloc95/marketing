@@ -149,7 +149,7 @@ class SystemHealth
         $problems = [];
 
         if (config('Email')->protocol === 'mail') {
-            $problems[] = "email.protocol is 'mail' (PHP mail(), not SMTP) — check .env";
+            $problems[] = "email.protocol is 'mail' (PHP mail(), not SMTP). Check .env";
         }
 
         if (MailHealth::isFailing()) {

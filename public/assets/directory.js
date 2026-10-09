@@ -443,7 +443,7 @@
         render();
         if (rejected > 0) {
           renderNotice('Only the first ' + maxFiles + ' photo' + (maxFiles === 1 ? '' : 's') +
-            ' can be added — ' + rejected + ' more ' + (rejected === 1 ? 'was' : 'were') + ' left out.');
+            ' can be added, ' + rejected + ' more ' + (rejected === 1 ? 'was' : 'were') + ' left out.');
         }
       });
     });
@@ -649,7 +649,7 @@
       .catch(function () {
         if (btn) btn.disabled = false;
         if (errEl) {
-          errEl.textContent = 'That photo could not be deleted — check your connection and try again.';
+          errEl.textContent = 'That photo could not be deleted. Check your connection and try again.';
           errEl.hidden = false;
         }
       });
@@ -666,7 +666,7 @@
       } else if (count && typeof remaining === 'number') {
         var left = max - remaining;
         count.textContent = remaining + ' of ' + max + ' used' +
-          (left > 0 ? ' — ' + left + ' slot' + (left === 1 ? '' : 's') + ' left' : '');
+          (left > 0 ? ', ' + left + ' slot' + (left === 1 ? '' : 's') + ' left' : '');
       }
     }
 
@@ -854,7 +854,7 @@
         var empty = document.createElement('li');
         empty.className = 'is-empty';
         empty.setAttribute('aria-disabled', 'true');
-        empty.textContent = 'No matching addresses found — you can still type the address manually.';
+        empty.textContent = 'No matching addresses found. You can still type the address manually.';
         suggestList.appendChild(empty);
         suggestList.hidden = false;
         addressInput.setAttribute('aria-expanded', 'true');
@@ -909,7 +909,7 @@
             placeFromCoords(data.lat, data.lng, data.precision || 'street');
           })
           .catch(function (err) {
-            console.error('Address autocomplete: /address-locate failed — ' + err.message);
+            console.error('Address autocomplete: /address-locate failed, ' + err.message);
           });
       }
       suppressClear = false;
@@ -960,7 +960,7 @@
         .catch(function (err) {
           // Network hiccup — surface it instead of failing silently, but
           // leave the list as-is rather than showing a scary error state.
-          console.error('Address autocomplete: fetch failed — ' + err.message);
+          console.error('Address autocomplete: fetch failed, ' + err.message);
         });
     };
 
@@ -1165,7 +1165,7 @@
         var empty = document.createElement('li');
         empty.className = 'is-empty';
         empty.setAttribute('aria-disabled', 'true');
-        empty.textContent = 'No quick matches — press Enter to search everything.';
+        empty.textContent = 'No quick matches. Press Enter to search everything.';
         list.appendChild(empty);
         list.hidden = false;
         input.setAttribute('aria-expanded', 'true');
@@ -1234,7 +1234,7 @@
         })
         .catch(function (err) {
           // The form still works. Say so in the console and leave the page alone.
-          console.error('Search suggestions: fetch failed — ' + err.message);
+          console.error('Search suggestions: fetch failed, ' + err.message);
         });
     };
 
@@ -1507,7 +1507,7 @@
         say('Drag the marker if this is not the right spot.');
       } else {
         map.center(SA_CENTRE[0], SA_CENTRE[1], 5);
-        say('No pin yet — search for your address or click the map.');
+        say('No pin yet. Search for your address or click the map.');
       }
 
       // Let the autocomplete drop the pin when a suggestion is chosen. The
@@ -1564,7 +1564,7 @@
                 // Expected, not exceptional — some real addresses resolve to
                 // nothing. The map stays usable, so the user can still place
                 // the pin by hand.
-                say('Could not find that address — click the map to place your pin.');
+                say('Could not find that address. Click the map to place your pin.');
                 return;
               }
               // Never write these to the form: this is only a starting point for
@@ -1576,11 +1576,11 @@
               });
               say(data.precision === 'exact'
                 ? 'Found it. Drag the marker if it is not quite right.'
-                : 'Roughly located — drag the marker onto your exact spot.');
+                : 'Roughly located. Drag the marker onto your exact spot.');
             })
             .catch(function (err) {
-              console.error('Pin picker: lookup failed — ' + err.message);
-              say('Lookup failed — click the map to place your pin.');
+              console.error('Pin picker: lookup failed, ' + err.message);
+              say('Lookup failed. Click the map to place your pin.');
             })
             .finally(function () { locateBtn.disabled = false; });
         });
@@ -1592,7 +1592,7 @@
           writePin('', '', '');
           hideSuggestion();
           resetBtn.hidden = true;
-          say('Pin cleared — we will work your location out from the address.');
+          say('Pin cleared. We will work your location out from the address.');
         });
       }
 
@@ -1819,7 +1819,7 @@
         initResultsMap(L, resultsMap, say);
       }).catch(function (err) {
         console.error('Search map: ' + err.message);
-        say('The map could not load — the list below still works.');
+        say('The map could not load. The list below still works.');
       });
     };
 
@@ -1931,7 +1931,7 @@
           if (added.length) cluster.addLayers(added);
 
           say(items.length === 0
-            ? 'No businesses in this part of the map — try zooming out.'
+            ? 'No businesses in this part of the map. Try zooming out.'
             : items.length + (items.length === 1 ? ' business shown' : ' businesses shown'));
         })
         .catch(function (err) {
@@ -2076,8 +2076,8 @@
           // Declining is a choice, not a fault. Say so plainly and leave the
           // search exactly as it was rather than blocking on it.
           note(err.code === err.PERMISSION_DENIED
-            ? 'Location access declined — search by suburb or city instead.'
-            : 'Could not get your location — search by suburb or city instead.');
+            ? 'Location access declined. Search by suburb or city instead.'
+            : 'Could not get your location. Search by suburb or city instead.');
         }, { timeout: 10000, maximumAge: 300000 });
       });
     }
@@ -3290,7 +3290,7 @@
 
         banner('We restored your unsaved changes from ' + when(draft.savedAt) +
           '. Nothing is saved until you press Save' +
-          ' — and any photos you had chosen will need choosing again.', true);
+          ', and any photos you had chosen will need choosing again.', true);
         lastJson = JSON.stringify(snapshot());
       }
     }

@@ -193,7 +193,7 @@ class HeroImageService
         if ($errors !== []) {
             $this->discard($uploaded['path'], $uploaded['path_sm']);
 
-            return $this->fail($errors, 'That photo could not be saved — see the notes below.');
+            return $this->fail($errors, 'That photo could not be saved. See the notes below.');
         }
 
         $data = [
@@ -380,7 +380,7 @@ class HeroImageService
         }
 
         if ($errors !== []) {
-            return $this->fail($errors, 'The hero background was not changed — see the notes below.');
+            return $this->fail($errors, 'The hero background was not changed. See the notes below.');
         }
 
         $model = new DirectorySettingModel();
@@ -441,7 +441,7 @@ class HeroImageService
         if ($errors !== []) {
             $this->discard($newPath);
 
-            return $this->fail($errors, 'That video could not be saved — see the notes below.');
+            return $this->fail($errors, 'That video could not be saved. See the notes below.');
         }
 
         $data = [
@@ -638,7 +638,7 @@ class HeroImageService
         $none = ['path' => '', 'path_sm' => '', 'width' => null, 'height' => null];
 
         if (strtolower($file->getClientExtension()) === 'gif') {
-            return $none + ['error' => 'GIFs are not supported here — save the frame you want as a JPEG or PNG.'];
+            return $none + ['error' => 'GIFs are not supported here. Save the frame you want as a JPEG or PNG.'];
         }
 
         $dest      = rtrim(FCPATH, '/') . '/' . self::UPLOAD_DIR;

@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Verification queue — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Verification queue | ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -38,11 +38,11 @@ $link = static fn (string $state, $page = '') => base_url('admin/verifications')
 
 $prettyDate = static function (?string $date): string {
     if ($date === null || $date === '') {
-        return '—';
+        return 'n/a';
     }
     $ts = strtotime($date);
 
-    return $ts === false ? '—' : date('j M Y', $ts);
+    return $ts === false ? 'n/a' : date('j M Y', $ts);
 };
 ?>
 <?= view('admin/_bar') ?>
@@ -81,7 +81,7 @@ $prettyDate = static function (?string $date): string {
                     <?php foreach ($rows as $r): ?>
                         <tr>
                             <td>
-                                <strong><?= esc($r['listing_name'] ?? '—') ?></strong>
+                                <strong><?= esc($r['listing_name'] ?? 'n/a') ?></strong>
                                 <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($r['listing_email'] ?? '') ?></div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($r['listing_city'] ?? '') ?></div>
                                 <?php // An application whose email was never confirmed is not worth
@@ -111,7 +111,7 @@ $prettyDate = static function (?string $date): string {
                             <td>
                                 <?php $docs = $documents->forVerification((int) $r['id']); ?>
                                 <?php if ($docs === []): ?>
-                                    —
+                                    None
                                 <?php else: ?>
                                     <div class="actions">
                                     <?php foreach ($docs as $doc): ?>
@@ -196,7 +196,7 @@ $prettyDate = static function (?string $date): string {
                                         </form>
                                     <?php elseif ($r['state'] === DirectoryVerificationModel::STATE_ACTIVE): ?>
                                         <form method="post" action="<?= base_url('admin/verifications/' . $r['id'] . '/revoke') ?>"
-                                              data-confirm="Remove this badge now? You must also cancel the subscription in PayFast — this does not do that.">
+                                              data-confirm="Remove this badge now? You must also cancel the subscription in PayFast. This does not do that.">
                                             <?= csrf_field() ?>
                                             <button class="btn btn-ghost btn-xs text-brand-crimson">Revoke badge</button>
                                         </form>

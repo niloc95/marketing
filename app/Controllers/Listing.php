@@ -258,7 +258,7 @@ class Listing extends BaseController
         // Branches on what this visitor just typed, like the country check
         // below, so it says nothing about what is already stored.
         if (trim((string) $this->request->getPost('website')) === '') {
-            $message .= ' No website? Once you are live, your profile address works as one — share it anywhere.';
+            $message .= ' No website? Once you are live, your profile address works as one. Share it anywhere.';
         }
 
         // A business outside South Africa is about to be told to check its
@@ -276,8 +276,8 @@ class Listing extends BaseController
             ['country' => (string) $this->request->getPost('country')]
         )) {
             $message .= ' Because your business is outside South Africa, your profile '
-                . 'also needs an International Profile subscription before it goes live — '
-                . 'we will take you to it once your email is confirmed.';
+                . 'also needs an International Profile subscription before it goes live. '
+                . 'We will take you to it once your email is confirmed.';
         }
 
         return $this->withUploadErrors(
@@ -293,6 +293,6 @@ class Listing extends BaseController
     private function fakeSuccess()
     {
         return redirect()->to(base_url('/'))
-            ->with('success', 'Almost done — check your email to verify and publish your profile.');
+            ->with('success', 'Almost done. Check your email to verify and publish your profile.');
     }
 }

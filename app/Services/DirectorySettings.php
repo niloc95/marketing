@@ -209,7 +209,7 @@ class DirectorySettings
         }
 
         if ($errors !== []) {
-            return ['ok' => false, 'errors' => $errors, 'message' => 'Nothing was saved — please check the highlighted field.'];
+            return ['ok' => false, 'errors' => $errors, 'message' => 'Nothing was saved. Please check the highlighted field.'];
         }
 
         if ($writes === []) {
@@ -260,7 +260,7 @@ class DirectorySettings
         if (! preg_match('/\d/', $raw) || (float) $price <= 0) {
             $errors[$field] = 'The price must be a number greater than zero.';
         } elseif ((float) $price > self::MAX_PRICE) {
-            $errors[$field] = 'That price looks like a typo — the maximum is R' . number_format(self::MAX_PRICE, 2) . '.';
+            $errors[$field] = 'That price looks like a typo. The maximum is R' . number_format(self::MAX_PRICE, 2) . '.';
         }
 
         return $price;

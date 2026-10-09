@@ -3,7 +3,7 @@
 <?php $siteName = config('Directory')->siteName(); ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Recommend a business — ' . $siteName,
+    'title'       => 'Recommend a business | ' . $siteName,
     'description' => 'Know a South African business that should be on ' . $siteName . '? Tell us and we will invite them to create a free business profile.',
     'canonical'   => base_url('recommend'),
 ]) ?>
@@ -29,7 +29,7 @@ $err = fn (string $f) => $errors[$f] ?? '';
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 Tell us about them. We check every recommendation, and if they're a good fit we send
                 them <strong>one</strong> email inviting them to create a free business profile. We never add a business
-                without its owner's say-so.
+                without its owner's say so.
             </p>
 
             <?php // The business's owner should list it themselves; say so up front. ?>

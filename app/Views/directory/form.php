@@ -29,7 +29,7 @@ if ($verifiedOnly) {
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Create your free business profile — ' . $siteName,
+    'title'       => 'Create your free business profile | ' . $siteName,
     'description' => 'Create a free business profile on ' . $siteName . ' so local customers can discover your business, services and location. No monthly fee, no subscription.',
     'canonical'   => base_url('add-profile'),
 ]) ?>
@@ -74,11 +74,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
             <?php if ($isVerified): ?>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                     Tell us about your business, then attach your two documents at the bottom.
-                    We'll email you a link to verify and publish your profile &mdash; and your
+                    We'll email you a link to verify and publish your profile, and your
                     profile goes live either way, whatever the badge review decides.
                 </p>
             <?php else: ?>
-                <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile &mdash; it's free.</p>
+                <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile. It's free.</p>
             <?php endif; ?>
 
             <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
@@ -154,7 +154,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                 <span class="verify-cta-heading">Want the Verified Business badge?</span>
                                 <span class="hint">
                                     R<?= esc($verificationAmount) ?> a month. We review your documents first and
-                                    only ask for payment if they check out &mdash; nothing to pay now. Cancel any
+                                    only ask for payment if they check out. Nothing to pay now. Cancel any
                                     time, and your business profile is free either way.
                                 </span>
                                 <?php // A span, not a <button>: the <summary> is already the control,
@@ -164,7 +164,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                             <div>
                                 <p class="verify-chosen">
                                     <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span>
-                                    added &mdash; R<?= esc($verificationAmount) ?> a month once we have approved you
+                                    added, R<?= esc($verificationAmount) ?> a month once we have approved you
                                 </p>
                                 <p class="hint verify-offer-docs">
                                     <?php // Careful not to contradict _verification_fields.php below,
@@ -188,7 +188,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                       // without documents, which is what keeps that mode honest. ?>
                                 <?php if (! $verifiedOnly): ?>
                                     <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
-                                       href="<?= base_url('add-profile?plan=free') ?>">Remove &mdash; keep my profile free</a>
+                                       href="<?= base_url('add-profile?plan=free') ?>">Remove, keep my profile free</a>
                                 <?php endif; ?>
                             </div>
                         </details>

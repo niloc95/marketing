@@ -84,7 +84,7 @@
       '<div class="wsc-inner">'
       + '<p class="wsc-text">We use cookies for analytics to understand how visitors use this site. '
       + 'You can accept or decline'
-      + (PRIVACY_URL ? ' — see our <a href="' + escAttr(PRIVACY_URL) + '">privacy policy</a>' : '')
+      + (PRIVACY_URL ? '. See our <a href="' + escAttr(PRIVACY_URL) + '">privacy policy</a>' : '')
       + '.</p>'
       + '<div class="wsc-actions">'
       + '<button type="button" class="wsc-btn wsc-decline">Decline</button>'

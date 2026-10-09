@@ -54,7 +54,7 @@ $prettyDate = static function (?string $date): string {
         <?php if ($cancelled): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your badge is <strong>cancelled and will not renew</strong>. It stays on your profile
-                until <strong><?= esc($prettyDate($row['paid_until'])) ?></strong> &mdash; you have
+                until <strong><?= esc($prettyDate($row['paid_until'])) ?></strong>: you have
                 paid for that time and you keep it.
             </p>
             <p class="hint">Changed your mind? Get in touch and we will start it up again.</p>
@@ -86,7 +86,7 @@ $prettyDate = static function (?string $date): string {
 
         <p class="text-sm text-slate-600 dark:text-slate-300">
             Your documents are with us. We usually review within two working days and will email you
-            either way &mdash; <strong>you have not been charged anything</strong>.
+            either way. <strong>You have not been charged anything</strong>.
         </p>
         <ul class="verify-doclist">
             <?php foreach ($docs as $doc): ?>
@@ -106,18 +106,18 @@ $prettyDate = static function (?string $date): string {
                   // for instead — and claim nothing, because the money is not
                   // confirmed until the ITN says so. ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                <strong>Thanks &mdash; we have your payment.</strong> PayFast is confirming it now.
+                <strong>Thanks, we have your payment.</strong> PayFast is confirming it now.
             </p>
             <p class="hint">
                 Your badge goes live on your profile as soon as that clears, usually within a few
-                minutes. Refresh this page to check &mdash; there is nothing else for you to do, and
+                minutes. Refresh this page to check. There is nothing else for you to do, and
                 you will not be charged twice.
             </p>
 
         <?php elseif ($payable): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your documents check out. Switch the badge on for
-                <strong>R<?= esc($amount) ?> a month</strong> &mdash; it appears on your profile and
+                <strong>R<?= esc($amount) ?> a month</strong>: it appears on your profile and
                 everywhere your business shows up in search.
             </p>
             <p class="mt-4">
@@ -129,7 +129,7 @@ $prettyDate = static function (?string $date): string {
                   // that leads nowhere — an approved application must never look
                   // like it stalled. ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Good news &mdash; your documents check out and your business is approved.
+                Good news. Your documents check out and your business is approved.
             </p>
             <p class="hint">
                 We will email you about payment (<strong>R<?= esc($amount) ?> a month</strong>) and
@@ -140,7 +140,7 @@ $prettyDate = static function (?string $date): string {
     <?php elseif ($state === DirectoryVerificationModel::STATE_LAPSED): ?>
 
         <p class="text-sm text-slate-600 dark:text-slate-300">
-            Your badge is paused &mdash; we stopped receiving payments
+            Your badge is paused. We stopped receiving payments
             <?php if (! empty($row['paid_until'])): ?>
                 after <strong><?= esc($prettyDate($row['paid_until'])) ?></strong>
             <?php endif; ?>.
@@ -152,11 +152,11 @@ $prettyDate = static function (?string $date): string {
                   // paid must not be shown a button that reads as "that failed,
                   // try again". ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                <strong>Thanks &mdash; we have your payment.</strong> PayFast is confirming it now.
+                <strong>Thanks, we have your payment.</strong> PayFast is confirming it now.
             </p>
             <p class="hint">
                 Your badge goes back up as soon as that clears, usually within a few minutes.
-                Refresh this page to check &mdash; you will not be charged twice.
+                Refresh this page to check. You will not be charged twice.
             </p>
 
         <?php elseif ($payable): ?>
@@ -170,7 +170,7 @@ $prettyDate = static function (?string $date): string {
                 We still have your approved documents, so starting again really is one step.
             </p>
             <p class="mt-4">
-                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge &mdash; R<?= esc($amount) ?> a month</a>
+                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge, R<?= esc($amount) ?> a month</a>
             </p>
         <?php else: ?>
             <p class="hint">
@@ -213,7 +213,7 @@ $prettyDate = static function (?string $date): string {
               // from, so it does the selling. The upload fields stay folded away
               // behind the button: two file inputs are a wall, and the decision to
               // make first is "do I want this", not "where is my ID". ?>
-        <h3 class="verify-cta-heading">Get verified &mdash; show customers your business is real</h3>
+        <h3 class="verify-cta-heading">Get verified: show customers your business is real</h3>
         <?= view('directory/_verification_pitch', ['amount' => $amount]) ?>
         <p class="hint mt-2">
             To apply, send your company registration document and the owner's ID. We review them,

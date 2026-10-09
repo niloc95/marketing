@@ -51,7 +51,7 @@ $pages = array_values(array_filter($menuFiles, static fn (array $m): bool => $m[
           // input gives: it is what makes iOS offer the photo library. ?>
     <input type="file" id="menu-input" name="menu[]" accept="application/pdf,.pdf,image/*" multiple>
     <div class="hint">
-        One PDF, or photos of up to <?= ListingMenuService::MAX_PAGES ?> pages — 10 MB each.
+        One PDF, or photos of up to <?= ListingMenuService::MAX_PAGES ?> pages, 10 MB each.
         <?= $menuFiles !== [] ? 'Uploading replaces the current menu.' : 'Customers can open it straight from your profile.' ?>
     </div>
 </div>

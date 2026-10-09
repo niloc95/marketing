@@ -162,7 +162,7 @@ final class CategoryGroupTest extends CIUnitTestCase
         $html = $result->getBody();
 
         $this->assertStringContainsString('Calm Spa', $html);
-        $this->assertMatchesRegularExpression('/<title>Beauty &amp; Wellness &mdash; /', $html);
+        $this->assertMatchesRegularExpression('/<title>Beauty &amp; Wellness \| /', $html);
         $this->assertMatchesRegularExpression('/<meta name="robots" content="noindex/', $html);
         $this->assertStringContainsString('data-selected-group="beauty-wellness"', $html);
     }

@@ -57,7 +57,7 @@ $schema = schema_page(
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $heading . ' — ' . $siteName,
+    'title'       => $heading . ' | ' . $siteName,
     'description' => 'Find ' . strtolower($plural) . $where . '. Discover their services, locations and contact details, free.',
     'canonical'   => $canonical,
     'robots'      => $indexable,

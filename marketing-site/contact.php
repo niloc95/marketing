@@ -152,7 +152,7 @@ const REQUIRED_KEYS = ['CONTACT_TO', 'CONTACT_FROM', 'CONTACT_SECRET', 'SMTP_HOS
 /** Fallback address shown to visitors whenever we cannot take the message. */
 const FALLBACK_ADDRESS = 'info@webscheduler.co.za';
 
-const SUCCESS_MESSAGE = 'Thanks — your message is on its way. We usually reply within one business day.';
+const SUCCESS_MESSAGE = 'Thanks, your message is on its way. We usually reply within one business day.';
 const THROTTLE_MESSAGE = 'Too many submissions. Please wait a little while and try again.';
 
 $config = loadConfig();
@@ -187,7 +187,7 @@ final class FileThrottle
             // letting one spammer through, and the honeypot and form token
             // still apply. A silent failure here would be invisible forever.
             if (! $this->warned) {
-                error_log('contact.php: rate-limit store unwritable at ' . $this->dir . ' — limits are OFF');
+                error_log('contact.php: rate limit store unwritable at ' . $this->dir . ', limits are OFF');
                 $this->warned = true;
             }
 
@@ -370,7 +370,7 @@ function renderPage(int $status, string $title, string $inner): never
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>{$t} — WebScheduler</title>
+      <title>{$t} | WebScheduler</title>
       <meta name="robots" content="noindex, nofollow" />
       <meta name="theme-color" content="#003049" media="(prefers-color-scheme: light)" />
       <meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)" />
@@ -469,7 +469,7 @@ $missing = array_values(array_filter(
 ));
 if ($missing !== []) {
     error_log('contact.php: missing config key(s): ' . implode(', ', $missing));
-    $msg = 'Sorry — the contact form is temporarily unavailable. Please email ' . FALLBACK_ADDRESS . ' directly.';
+    $msg = 'Sorry, the contact form is temporarily unavailable. Please email ' . FALLBACK_ADDRESS . ' directly.';
     if (wantsJson()) {
         respondJson(503, false, $msg);
     }
@@ -636,14 +636,14 @@ function sendMail(array $config, array $fields): void
         $m->addReplyTo($fields['email'], $fields['name']);
 
         $m->isHTML(false);   // plain text: no escaping surface, no injection question
-        $m->Subject = 'Demo request — ' . ($fields['business'] !== '' ? $fields['business'] : $fields['name']);
+        $m->Subject = 'Demo request: ' . ($fields['business'] !== '' ? $fields['business'] : $fields['name']);
         $m->Body    = implode("\n", [
             'New demo request from webscheduler.co.za',
             '',
             'Name:     ' . $fields['name'],
-            'Business: ' . ($fields['business'] !== '' ? $fields['business'] : '—'),
+            'Business: ' . ($fields['business'] !== '' ? $fields['business'] : 'n/a'),
             'Email:    ' . $fields['email'],
-            'Phone:    ' . ($fields['phone'] !== '' ? $fields['phone'] : '—'),
+            'Phone:    ' . ($fields['phone'] !== '' ? $fields['phone'] : 'n/a'),
             '',
             'Message:',
             $fields['message'],
@@ -681,7 +681,7 @@ function renderConfirm(array $config, array $fields, bool $consent, array $error
     $isRetry = $errors !== [];
     $heading = $isRetry ? 'Check your details' : 'One more step';
     $intro   = $isRetry
-        ? 'Almost there — please correct the highlighted fields and send again.'
+        ? 'Almost there. Please correct the highlighted fields and send again.'
         : 'Your browser is not running our scripts, so we could not verify the form automatically. Press Confirm and your message goes straight to us.';
 
     $rows = '';

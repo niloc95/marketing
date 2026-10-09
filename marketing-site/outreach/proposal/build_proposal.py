@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WebScheduler Local business proposal — the generator.
+WebScheduler Local business proposal. The generator.
 
     ../playbook/.venv/bin/python build_proposal.py
     ../playbook/.venv/bin/python build_proposal.py --profile both   # + print version
@@ -48,7 +48,7 @@ def main() -> int:
     fonts = B.resolve_fonts(cache)
     print(f"  • type: {fonts['name']}")
     if not B.BANNER.exists():
-        print(f"  ! cover photographs missing — expected {B.BANNER} (placeholder used, "
+        print(f"  ! cover photographs missing, expected {B.BANNER} (placeholder used, "
               f"NOT FOR DISTRIBUTION)", file=sys.stderr)
 
     stem = "WebScheduler-Local-Proposal"
@@ -57,7 +57,7 @@ def main() -> int:
         P.PROFILE = name  # web: company contact details; print: the founder's own
         pdf = B.build_pdf(out_dir, cache, fonts, name, doc=P, stem=stem)
         print(f"  • {pdf.name}  ({pdf.stat().st_size / 1024:.0f} KB, "
-              f"{len(P.pdf_pages())} pp — {B.PROFILES[name]['label']})")
+              f"{len(P.pdf_pages())} pp, {B.PROFILES[name]['label']})")
 
     if args.publish:
         # Only ever the web build. The print build carries the founder's own

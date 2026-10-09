@@ -83,7 +83,7 @@ $prettyDate = static function (?string $date): string {
         <div class="alert alert-info">
             <strong>We are confirming your payment.</strong>
             This usually takes a moment. Your profile goes live as soon as the
-            payment is confirmed — you do not need to pay again, and you will
+            payment is confirmed. You do not need to pay again, and you will
             get an email either way.
         </div>
 
@@ -96,7 +96,7 @@ $prettyDate = static function (?string $date): string {
             <?php // Everything they have already done still exists. Someone
                   // looking at an unpublished profile needs to know they are
                   // not being asked to start again. ?>
-            Everything you have entered is saved — the profile goes live the
+            Everything you have entered is saved. The profile goes live the
             moment the first payment clears, and comes back untouched if you
             ever stop and start again.
         </div>

@@ -116,7 +116,7 @@ class VerificationDocumentProcessor
 
         if ($file->getSize() > self::MAX_UPLOAD_BYTES) {
             return $this->fail(sprintf(
-                '“%s” is %s — the limit is %s per document.',
+                '“%s” is %s. The limit is %s per document.',
                 $name,
                 $this->humanBytes((int) $file->getSize()),
                 $this->humanBytes(self::MAX_UPLOAD_BYTES)

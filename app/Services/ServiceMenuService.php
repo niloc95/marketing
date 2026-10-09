@@ -101,7 +101,7 @@ class ServiceMenuService
             }
             if (mb_strlen($row['price_label']) > self::MAX_PRICE_LENGTH) {
                 $errors[sprintf('services.%d.price_label', $index)] = sprintf(
-                    'Keep the price under %d characters — e.g. “from R250”.',
+                    'Keep the price under %d characters, for example “from R250”.',
                     self::MAX_PRICE_LENGTH + 1
                 );
             }
@@ -113,7 +113,7 @@ class ServiceMenuService
         $named = array_filter($rows, static fn (array $r): bool => $r['name'] !== '');
         if (count($named) > self::MAX_SERVICES) {
             $errors['services'] = sprintf(
-                'List at most %d services — you have %d.',
+                'List at most %d services. You have %d.',
                 self::MAX_SERVICES,
                 count($named)
             );

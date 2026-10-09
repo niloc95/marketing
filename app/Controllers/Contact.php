@@ -27,7 +27,7 @@ class Contact extends BaseController
     private const MAX_MESSAGE = 2000;
 
     /** What the visitor sees when it worked. */
-    private const SENT_MESSAGE = 'Thanks — your message is on its way. We usually reply within one business day.';
+    private const SENT_MESSAGE = 'Thanks, your message is on its way. We usually reply within one business day.';
 
     /**
      * The FAQ lives here rather than in Legal (which is documents) because it is
@@ -180,10 +180,10 @@ class Contact extends BaseController
             // Nowhere to send it. Say so rather than showing a success page for
             // a message that went in the bin — the visitor can still email us
             // some other way, but only if they know it failed.
-            log_message('error', 'Contact form submitted but directory.adminEmail is unset — message discarded.');
+            log_message('error', 'Contact form submitted but directory.adminEmail is unset, message discarded.');
 
             return redirect()->to(base_url('contact'))->with('old', $post)
-                ->with('error', 'Sorry — we could not send your message just now. Please try again later.');
+                ->with('error', 'Sorry, we could not send your message just now. Please try again later.');
         }
 
         $body = view('emails/contact', [
@@ -206,7 +206,7 @@ class Contact extends BaseController
 
         if (! $sent) {
             return redirect()->to(base_url('contact'))->with('old', $post)
-                ->with('error', 'Sorry — we could not send your message just now. Please try again in a few minutes.');
+                ->with('error', 'Sorry, we could not send your message just now. Please try again in a few minutes.');
         }
 
         session()->remove('contact_form_rendered_at');

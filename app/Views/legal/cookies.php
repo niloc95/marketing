@@ -8,7 +8,7 @@ $analyticsId = config('Directory')->analyticsId();
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Cookie policy — ' . $siteName,
+    'title'       => 'Cookie policy | ' . $siteName,
     'description' => 'What ' . $siteName . ' stores in your browser, why, and how to change your choice.',
     'canonical'   => $canonical,
 ]) ?>
@@ -33,8 +33,8 @@ $analyticsId = config('Directory')->analyticsId();
             <table class="table">
                 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Lifetime</th></tr></thead>
                 <tbody>
-                    <tr><td><code>ci_session</code></td><td>Cookie</td><td>Keeps you signed in while you edit your profile, and carries one-off status messages between pages.</td><td>Session</td></tr>
-                    <tr><td><code>csrf_cookie_name</code></td><td>Cookie</td><td>Protects forms against cross-site request forgery.</td><td>Session</td></tr>
+                    <tr><td><code>ci_session</code></td><td>Cookie</td><td>Keeps you signed in while you edit your profile, and carries once off status messages between pages.</td><td>Session</td></tr>
+                    <tr><td><code>csrf_cookie_name</code></td><td>Cookie</td><td>Protects forms against cross site request forgery.</td><td>Session</td></tr>
                     <tr><td><code>xs-theme</code></td><td>Local storage</td><td>Remembers whether you chose light or dark mode. Shared with webscheduler.co.za so the choice carries across both sites.</td><td>Until cleared</td></tr>
                     <tr><td><code>ws-consent</code></td><td>Local storage</td><td>Remembers your answer to the cookie banner, so we stop asking.</td><td>Until cleared</td></tr>
                 </tbody>
@@ -50,7 +50,7 @@ $analyticsId = config('Directory')->analyticsId();
                         <tr><td><code>_ga_&lt;id&gt;</code></td><td>Google</td><td>Keeps session state for the property.</td><td>2 years</td></tr>
                     </tbody>
                 </table>
-                <p>If you decline, these are never written. If you accept and change your mind, the same applies from that moment on — though cookies already set stay in your browser until you clear them.</p>
+                <p>If you decline, these are never written. If you accept and change your mind, the same applies from that moment on, though cookies already set stay in your browser until you clear them.</p>
 
                 <h2>Changing your choice</h2>
                 <p>
@@ -58,16 +58,16 @@ $analyticsId = config('Directory')->analyticsId();
                 </p>
                 <p>You can also clear site data in your browser settings, which resets us to asking again.</p>
             <?php else: ?>
-                <p>We do not currently run analytics, advertising or any other non-essential cookies on this site. If that changes, this page will be updated and you will be asked before anything is stored.</p>
+                <p>We do not currently run analytics, advertising or any other nonessential cookies on this site. If that changes, this page will be updated and you will be asked before anything is stored.</p>
             <?php endif; ?>
 
             <h2>Third parties that see your request</h2>
             <p>Some things your browser loads come from other companies, which necessarily see your IP address even though they set no cookie of ours:</p>
             <ul>
-                <li><strong>CARTO</strong> serves the map tiles on profile and search pages — <a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>.</li>
-                <li><strong>OpenStreetMap</strong> handles address lookup when you type an address into the business form — <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>.</li>
+                <li><strong>CARTO</strong> serves the map tiles on profile and search pages: <a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>.</li>
+                <li><strong>OpenStreetMap</strong> handles address lookup when you type an address into the business form: <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>.</li>
                 <?php if (! empty($youtubeHero)): ?>
-                    <li><strong>YouTube</strong> (Google) plays the background video on the home page, through its privacy-enhanced player. It is not loaded at all if your device is set to reduce motion — <a href="https://policies.google.com/privacy" rel="noopener">privacy policy</a>.</li>
+                    <li><strong>YouTube</strong> (Google) plays the background video on the home page, through its privacy enhanced player. It is not loaded at all if your device is set to reduce motion: <a href="https://policies.google.com/privacy" rel="noopener">privacy policy</a>.</li>
                 <?php endif; ?>
             </ul>
             <p>Fonts, styles and scripts are served from our own domain, so nothing else is fetched from a third party as you browse.</p>

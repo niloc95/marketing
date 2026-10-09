@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Categories — Admin']) ?>
+<?= seo_meta(['title' => 'Categories | Admin']) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -20,7 +20,7 @@ $groupNames = array_keys($byGroup);
 <section class="section">
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Categories <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= count($categories) ?>)</span></h1>
-        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">A category in use cannot be deleted — deactivate it instead, which hides it from the signup form without touching existing profiles.</p>
+        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">A category in use cannot be deleted. Deactivate it instead, which hides it from the signup form without touching existing profiles.</p>
 
         <div class="panel mb-8">
             <h3>Main category order</h3>

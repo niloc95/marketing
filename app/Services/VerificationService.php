@@ -265,7 +265,7 @@ class VerificationService
 
             return [
                 'ok'      => false,
-                'message' => 'We need both documents — the company registration document and the owner’s ID.',
+                'message' => 'We need both documents. The company registration document and the owner’s ID.',
             ];
         }
 
@@ -284,7 +284,7 @@ class VerificationService
                 'ok'      => false,
                 'message' => $existing['state'] === DirectoryVerificationModel::STATE_ACTIVE
                     ? 'Your profile is already verified.'
-                    : 'Your documents are already with us — we’ll email you when the review is done.',
+                    : 'Your documents are already with us. We’ll email you when the review is done.',
             ];
         }
 
@@ -360,7 +360,7 @@ class VerificationService
 
         return [
             'ok'      => true,
-            'message' => 'Thanks — your documents are with us. We’ll email you once they have been reviewed, '
+            'message' => 'Thanks, your documents are with us. We’ll email you once they have been reviewed, '
                 . 'and you’ll only be asked to pay after they are approved.',
         ];
     }
@@ -474,8 +474,8 @@ class VerificationService
             return [
                 'ok'      => true,
                 'message' => $isInternational
-                    ? 'Your subscription is already cancelled — your profile stays live until it expires.'
-                    : 'Your badge is already cancelled — it stays up until it expires.',
+                    ? 'Your subscription is already cancelled. Your profile stays live until it expires.'
+                    : 'Your badge is already cancelled. It stays up until it expires.',
             ];
         }
 
@@ -487,7 +487,7 @@ class VerificationService
         // human, since somebody may be invoicing them by EFT.
         if ($token === '') {
             $this->verifications->update((int) $row['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
-            $this->notifyAdminOfCancellation($listingId, 'manually-activated ' . $what . ', no PayFast subscription to cancel');
+            $this->notifyAdminOfCancellation($listingId, 'manually activated ' . $what . ', no PayFast subscription to cancel');
 
             return [
                 'ok'      => true,
@@ -500,12 +500,12 @@ class VerificationService
         }
 
         if (! $this->payfast->cancelSubscription($token)) {
-            $this->notifyAdminOfCancellation($listingId, 'PAYFAST API CALL FAILED — cancel this subscription by hand in the PayFast dashboard');
+            $this->notifyAdminOfCancellation($listingId, 'PAYFAST API CALL FAILED. Cancel this subscription by hand in the PayFast dashboard');
 
             return [
                 'ok'      => false,
                 'message' => 'We could not cancel your subscription automatically. We have alerted our team '
-                    . 'and someone will sort it out today — you will get an email confirming it.',
+                    . 'and someone will sort it out today. You will get an email confirming it.',
             ];
         }
 
@@ -515,9 +515,9 @@ class VerificationService
         return [
             'ok'      => true,
             'message' => $isInternational
-                ? 'Cancelled — you will not be charged again. Your profile stays live until '
+                ? 'Cancelled. You will not be charged again. Your profile stays live until '
                     . $this->prettyDate($row['paid_until']) . ', then comes down.'
-                : 'Cancelled — you will not be charged again. Your badge stays on your profile until '
+                : 'Cancelled. You will not be charged again. Your badge stays on your profile until '
                     . $this->prettyDate($row['paid_until']) . '.',
         ];
     }
@@ -1114,7 +1114,7 @@ class VerificationService
         }
 
         $subjects = [
-            'approved'  => 'Your documents are approved — activate your Verified Business badge',
+            'approved'  => 'Your documents are approved: activate your Verified Business badge',
             'rejected'  => 'We could not verify your business yet',
             'activated' => 'Your Verified Business badge is live',
             'renewing'  => 'Your Verified Business badge renews soon',

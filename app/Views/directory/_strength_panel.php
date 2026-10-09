@@ -76,7 +76,7 @@ $tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg
 
     <?php if ($next === []): ?>
         <p class="strength-panel-lead">
-            Your profile is as complete as it gets. Nothing left to fill in &mdash; thank you for
+            Your profile is as complete as it gets. Nothing left to fill in. Thank you for
             taking the time.
         </p>
     <?php else: ?>
@@ -101,7 +101,7 @@ $tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg
         <?php if ($target > 0 && $score < $target): ?>
             <p class="strength-panel-note">
                 <strong>Aim for <?= $target ?>.</strong> Profiles at <?= $target ?> or more appear higher
-                in search, can be featured on the home page and are shown to Google &mdash; you are
+                in search, can be featured on the home page and are shown to Google. You are
                 <?= $target - $score ?> point<?= $target - $score === 1 ? '' : 's' ?> away.
             </p>
         <?php endif; ?>

@@ -187,13 +187,13 @@ class SystemStatusService
             // plaintext logs a warning on every single login.
             [
                 'label' => 'Admin password',
-                'value' => $hash !== '' ? 'hashed (correct)' : ($plaintext !== '' ? 'PLAINTEXT — deprecated, run spark directory:adminhash' : 'not set'),
+                'value' => $hash !== '' ? 'hashed (correct)' : ($plaintext !== '' ? 'PLAINTEXT, deprecated, run spark directory:adminhash' : 'not set'),
                 'env'   => true,
                 'warn'  => $hash === '',
             ],
             [
                 'label' => 'Health token',
-                'value' => $healthToken !== '' ? 'configured' : 'not set — /health detail is disabled',
+                'value' => $healthToken !== '' ? 'configured' : 'not set, /health detail is disabled',
                 'env'   => true,
                 'warn'  => $healthToken === '',
             ],
@@ -206,19 +206,19 @@ class SystemStatusService
             // system would ever complain about it.
             [
                 'label' => 'PayFast credentials',
-                'value' => $payfastReady ? 'configured' : 'not set — the Verified Business badge is switched off',
+                'value' => $payfastReady ? 'configured' : 'not set. The Verified Business badge is switched off',
                 'env'   => true,
                 'warn'  => ! $payfastReady,
             ],
             [
                 'label' => 'PayFast passphrase',
-                'value' => $c->payfastPassphrase() !== '' ? 'configured' : 'not set — notifications cannot be authenticated',
+                'value' => $c->payfastPassphrase() !== '' ? 'configured' : 'not set, notifications cannot be authenticated',
                 'env'   => true,
                 'warn'  => $payfastReady && $c->payfastPassphrase() === '',
             ],
             [
                 'label' => 'PayFast mode',
-                'value' => $c->payfastSandbox() ? 'SANDBOX — no real payments' : 'live',
+                'value' => $c->payfastSandbox() ? 'SANDBOX, no real payments' : 'live',
                 'env'   => true,
                 'warn'  => $c->payfastSandbox(),
             ],

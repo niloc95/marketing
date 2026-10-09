@@ -191,9 +191,9 @@ helper('directory_hours');
           // to itself, and the slug changes with the name. This is copy only. ?>
     <div class="hint">
         <?php if ($profileUrl !== ''): ?>
-            No website? No problem — your profile at <strong><?= esc(preg_replace('#^https?://#i', '', $profileUrl)) ?></strong> is your website. Share it anywhere you would share a web address.
+            No website? No problem. Your profile at <strong><?= esc(preg_replace('#^https?://#i', '', $profileUrl)) ?></strong> is your website. Share it anywhere you would share a web address.
         <?php else: ?>
-            No website? No problem — leave this blank. Your WebScheduler Local profile becomes your website: one address with your services, hours, photos, map and reviews that you can share anywhere. A complete profile does the job a website would.
+            No website? No problem. Leave this blank. Your WebScheduler Local profile becomes your website: one address with your services, hours, photos, map and reviews that you can share anywhere. A complete profile does the job a website would.
         <?php endif; ?>
     </div>
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
@@ -225,7 +225,7 @@ helper('directory_hours');
     </div>
     <div class="rt-count" data-rich-text-count hidden></div>
     <div class="hint">
-        Keep it short &mdash; up to <?= number_format(\App\Libraries\RichText::MAX_PLAIN_LENGTH) ?> characters.
+        Keep it short, up to <?= number_format(\App\Libraries\RichText::MAX_PLAIN_LENGTH) ?> characters.
         Cover <strong>what you do</strong>, <strong>who it&rsquo;s for</strong> and <strong>why choose you</strong>.
         List individual services and prices under <em>Services &amp; prices</em> below instead.
     </div>
@@ -297,13 +297,13 @@ helper('directory_hours');
         <?php if ($pinIsApprox): ?>
             <p class="map-picker-help map-picker-warn">
                 <strong><?= esc($approxWording) ?>.</strong>
-                Please drag the marker onto your exact spot &mdash; otherwise directions may send
+                Please drag the marker onto your exact spot. Otherwise directions may send
                 customers to the wrong part of the road.
             </p>
         <?php else: ?>
             <p class="map-picker-help">
                 Drag the marker to where your business actually is. Worth doing if the map looks
-                wrong &mdash; we can&rsquo;t always find smaller suburbs automatically.
+                wrong. We can&rsquo;t always find smaller suburbs automatically.
             </p>
         <?php endif; ?>
         <div class="map-picker-canvas" data-map-picker-canvas></div>
@@ -360,7 +360,7 @@ $showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
         <label><input type="checkbox" name="show_address" value="1" <?= $showAddress ? 'checked' : '' ?>> Show my business address publicly</label>
         <div class="hint">
             Untick this if customers never come to you. Your address stays on record for verification
-            and our maps &mdash; only your public profile hides it, and shows your service areas instead.
+            and our maps. Only your public profile hides it, and shows your service areas instead.
             Only available when you travel to customers.
         </div>
     </div>
@@ -483,7 +483,7 @@ $hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool 
           // booked clients. It satisfies the compulsory-hours rule on its own;
           // any times filled in as well are still shown. ?>
     <div class="field">
-        <label><input type="checkbox" name="by_appointment" value="1" <?= $vByAppointment ? 'checked' : '' ?>> By appointment only &mdash; I don&rsquo;t keep regular opening hours</label>
+        <label><input type="checkbox" name="by_appointment" value="1" <?= $vByAppointment ? 'checked' : '' ?>> By appointment only: I don&rsquo;t keep regular opening hours</label>
     </div>
 <?= view('directory/_hours_inputs', [
     'n'     => static fn (string $f): string => $f,
@@ -550,12 +550,12 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
         <div class="upload-current" data-image-current>
             <?php // Same absolute-vs-relative rule the card and profile pages use. ?>
             <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo)) ?>" alt="Current logo">
-            <span class="hint">Current logo — choosing a file replaces it.</span>
+            <span class="hint">Current logo. Choosing a file replaces it.</span>
         </div>
     <?php endif; ?>
     <input type="file" id="logo-input" name="logo" accept="image/*" data-image-upload="single">
     <div class="upload-preview" data-image-preview></div>
-    <div class="hint">JPEG, PNG, WebP, GIF, BMP or AVIF — up to 10 MB, resized automatically.</div>
+    <div class="hint">JPEG, PNG, WebP, GIF, BMP or AVIF, up to 10 MB, resized automatically.</div>
 </div>
 <?php // Rendered even when the gallery is full, just hidden: deleting a photo
       // happens in place now (see _gallery_manage.php), so the script needs an
@@ -577,7 +577,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
         <div class="upload-preview" data-image-preview></div>
         <div class="hint">
             Up to <span data-gallery-slots><?= (int) $gallerySlots ?> more photo<?= $gallerySlots === 1 ? '' : 's' ?></span>, 10 MB each.
-            Any common photo format — resized and optimised automatically.
+            Any common photo format, resized and optimised automatically.
         </div>
     </div>
     <div class="hint" data-gallery-full <?= $gallerySlots > 0 ? 'hidden' : '' ?>>This profile already has the maximum number of photos. Delete one above to add another.</div>
@@ -603,8 +603,8 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 </div>
 <div class="field">
     <label>Areas of focus</label>
-    <input type="text" id="field-tags" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma-separated, e.g. Bridal packages, Emergency callouts, Home visits">
-    <div class="hint">Separate with commas — up to 20.</div>
+    <input type="text" id="field-tags" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma separated, e.g. Bridal packages, Emergency callouts, Home visits">
+    <div class="hint">Separate with commas, up to 20.</div>
     <?php if ($err('specializations')): ?><div class="err"><?= esc($err('specializations')) ?></div><?php endif; ?>
 </div>
     </div>
@@ -636,7 +636,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
           $vMarketing = $v('marketing_present') === '1' ? $v('marketing_opt_in') === '1' : true; ?>
     <div class="field">
         <input type="hidden" name="marketing_present" value="1">
-        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile — how many views it got and where your leads came from.</label>
+        <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile: how many views it got and where your leads came from.</label>
         <div class="hint">Untick if you'd rather not. You can change this any time in Manage your profile, and every report has an unsubscribe link.</div>
     </div>
 <?php endif; ?>

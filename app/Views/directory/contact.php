@@ -3,8 +3,8 @@
 <?php $siteName = config('Directory')->siteName(); ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Contact us — ' . $siteName,
-    'description' => 'Get in touch with ' . $siteName . ' — questions about a profile, a correction, a removal request, or anything else.',
+    'title'       => 'Contact us | ' . $siteName,
+    'description' => 'Get in touch with ' . $siteName . ': questions about a profile, a correction, a removal request, or anything else.',
     'canonical'   => base_url('contact'),
 ]) ?>
 <?= $this->endSection() ?>
@@ -22,7 +22,7 @@ $admin = config('Directory')->adminEmail();
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Get in touch</h1>
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 Questions about a profile, a correction to your own details, a removal request, or
-                anything else about <?= esc($siteName) ?> &mdash; send it here and we'll come back to you.
+                anything else about <?= esc($siteName) ?>. Send it here and we'll come back to you.
             </p>
 
             <?php // Two things people arrive here wanting are self-service, and both are
@@ -30,9 +30,9 @@ $admin = config('Directory')->adminEmail();
             <div class="mb-6 rounded-surface bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
                 <p class="font-medium text-slate-700 dark:text-slate-200">Looking for one of these?</p>
                 <ul class="mt-2 space-y-1 text-slate-500 dark:text-slate-400">
-                    <li>Editing your own business details &mdash; <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>, no password needed.</li>
-                    <li>No profile yet &mdash; <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= esc(lcfirst(signup_cta()['label'])) ?></a>.</li>
-                    <li>Something else &mdash; the <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('faq') ?>">FAQ</a> may already answer it.</li>
+                    <li>Editing your own business details: <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>, no password needed.</li>
+                    <li>No profile yet: <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= esc(lcfirst(signup_cta()['label'])) ?></a>.</li>
+                    <li>Something else: the <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('faq') ?>">FAQ</a> may already answer it.</li>
                 </ul>
             </div>
 

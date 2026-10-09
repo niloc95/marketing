@@ -112,7 +112,7 @@ class ListingMenuService
             foreach ($uploads as $i => $file) {
                 if ($i >= self::MAX_PAGES) {
                     $errors[] = sprintf(
-                        '“%s” was not added — a menu can have at most %d pages.',
+                        '“%s” was not added. A menu can have at most %d pages.',
                         $file->getClientName(),
                         self::MAX_PAGES
                     );

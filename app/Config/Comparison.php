@@ -109,7 +109,7 @@ class Comparison extends BaseConfig
             'cells' => [
                 'local'    => ['status' => 'free', 'note' => ''],
                 'google'   => ['status' => 'yes', 'note' => ''],
-                'linkedin' => ['status' => 'partial', 'note' => 'Address and website; built for networking rather than walk-in customers'],
+                'linkedin' => ['status' => 'partial', 'note' => 'Address and website; built for networking rather than walk in customers'],
                 'sa'       => ['status' => 'yes', 'note' => ''],
             ],
         ],
@@ -159,7 +159,7 @@ class Comparison extends BaseConfig
             'cells' => [
                 'local'    => ['status' => 'verified', 'note' => 'Shown as the business enters them; we check the business, not each qualification'],
                 'google'   => ['status' => 'no', 'note' => 'A practitioner may put a title or degree in their profile name'],
-                'linkedin' => ['status' => 'partial', 'note' => 'Self-reported on each person\'s own profile'],
+                'linkedin' => ['status' => 'partial', 'note' => 'Self reported on each person\'s own profile'],
                 'sa'       => ['status' => 'varies', 'note' => 'Medpages shows them on its paid listing, for healthcare practitioners only'],
             ],
         ],
@@ -195,7 +195,7 @@ class Comparison extends BaseConfig
         ],
         [
             'key'   => 'document_verification',
-            'label' => 'Document-checked verification',
+            'label' => 'Document checked verification',
             'cells' => [
                 'local'    => ['status' => 'verified', 'note' => 'Company registration and the owner\'s ID, checked by a person'],
                 'google'   => ['status' => 'partial', 'note' => 'Standard verification proves you control the business. Paid "Google Screened" and "Google Guaranteed" badges, with licence or background checks, exist in some countries, not South Africa'],
@@ -217,7 +217,7 @@ class Comparison extends BaseConfig
             'key'   => 'reviews',
             'label' => 'Customer reviews',
             'cells' => [
-                'local'    => ['status' => 'free', 'note' => 'Email-confirmed, read by us before they go up, and you can reply'],
+                'local'    => ['status' => 'free', 'note' => 'Email confirmed, read by us before they go up, and you can reply'],
                 'google'   => ['status' => 'yes', 'note' => ''],
                 'linkedin' => ['status' => 'partial', 'note' => 'On members\' Service Pages'],
                 'sa'       => ['status' => 'varies', 'note' => 'Cylex and Snupit have reviews'],

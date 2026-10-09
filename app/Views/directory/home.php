@@ -56,7 +56,7 @@ $schema = schema_page(array_values($homeLists), $canonical, 'WebPage', $siteName
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $siteName . ' — Discover local businesses, services and professionals',
+    'title'       => $siteName . ' | Discover local businesses, services and professionals',
     'description' => $description,
     'canonical'   => $canonical,
     'schema'      => $schema,
@@ -362,7 +362,7 @@ $moments = [
             <div class="home-group">
                 <div class="container home-group-head" data-scroll-reveal>
                     <h3>Featured</h3>
-                    <p>Hand-picked from across South Africa, and open for enquiries.</p>
+                    <p>Handpicked from across South Africa, and open for enquiries.</p>
                 </div>
                 <?php // A carousel after deepmind.google's: tall picture cards that start
                       // on the content edge and run off the right of the screen, so the

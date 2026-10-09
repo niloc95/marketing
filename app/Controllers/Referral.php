@@ -21,7 +21,7 @@ class Referral extends BaseController
     /** Nobody reads the page and fills the form this fast. */
     private const MIN_FORM_SECONDS = 3;
 
-    private const SENT_MESSAGE = "Thanks — we'll take a look and, if they're a good fit, invite them to create a free business profile.";
+    private const SENT_MESSAGE = "Thanks, we'll take a look and, if they're a good fit, invite them to create a free business profile.";
 
     public function index()
     {

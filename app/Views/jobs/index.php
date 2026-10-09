@@ -32,7 +32,7 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Jobs, opportunities and services needed — ' . $siteName,
+    'title'       => 'Jobs, opportunities and services needed | ' . $siteName,
     'description' => 'Discover local job vacancies and opportunities across South Africa, posted by businesses on ' . $siteName . ', and requests from people who need work done.',
     'canonical'   => $canonical,
     'robots'      => $indexable,

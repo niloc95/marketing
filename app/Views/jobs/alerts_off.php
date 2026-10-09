@@ -11,7 +11,7 @@
 ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Stop request alerts — ' . config('Directory')->siteName(), 'robots' => 'noindex, nofollow']) ?>
+<?= seo_meta(['title' => 'Stop request alerts | ' . config('Directory')->siteName(), 'robots' => 'noindex, nofollow']) ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>

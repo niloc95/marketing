@@ -200,7 +200,7 @@ final class ListingImageProcessorTest extends CIUnitTestCase
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('huge.jpg', $result['error']);
-        $this->assertStringContainsString('the limit is', $result['error']);
+        $this->assertStringContainsString('The limit is', $result['error']);
         $this->assertStringContainsString('10 MB', $result['error']);
     }
 

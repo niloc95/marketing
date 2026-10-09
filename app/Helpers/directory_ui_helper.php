@@ -1164,7 +1164,7 @@ if (! function_exists('local_datetime')) {
     function local_datetime(?string $utc): string
     {
         if ($utc === null || trim($utc) === '') {
-            return '—';
+            return 'n/a';
         }
 
         try {
@@ -1172,7 +1172,7 @@ if (! function_exists('local_datetime')) {
                 ->setTimezone(new DateTimeZone('Africa/Johannesburg'))
                 ->format('j M Y, H:i');
         } catch (Exception) {
-            return '—';
+            return 'n/a';
         }
     }
 }

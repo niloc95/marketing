@@ -130,7 +130,7 @@ class ListingImageProcessor
 
         if ($file->getSize() > self::MAX_UPLOAD_BYTES) {
             return $this->fail(sprintf(
-                '“%s” is %s — the limit is %s per image.',
+                '“%s” is %s. The limit is %s per image.',
                 $name,
                 $this->humanBytes((int) $file->getSize()),
                 $this->humanBytes(self::MAX_UPLOAD_BYTES)
@@ -153,7 +153,7 @@ class ListingImageProcessor
         if (in_array($ext, self::HEIC_EXT, true)) {
             return $this->fail(sprintf(
                 '“%s” is an iPhone HEIC photo that reached us unconverted. Your browser normally '
-                . 'converts these automatically — try again with JavaScript enabled, or set '
+                . 'converts these automatically. Try again with JavaScript enabled, or set '
                 . 'iPhone Camera → Formats → Most Compatible.',
                 $name
             ));
@@ -175,7 +175,7 @@ class ListingImageProcessor
             if ($file->getSize() > self::MAX_PASSTHROUGH_BYTES) {
                 return $this->fail(sprintf(
                     '“%s” is %s. A GIF may be animated, so it is stored exactly as it '
-                    . 'arrives rather than resized — the limit for GIFs is %s. Save it as '
+                    . 'arrives rather than resized. The limit for GIFs is %s. Save it as '
                     . 'a JPEG or PNG and the limit is %s.',
                     $name,
                     $this->humanBytes((int) $file->getSize()),
@@ -279,7 +279,7 @@ class ListingImageProcessor
         $info     = @getimagesize($tmpPath);
         if ($info === false) {
             log_message('error', 'ListingImageProcessor: upload is not a valid image');
-            return $this->fail(sprintf('“%s” could not be read as an image — the file may be corrupt.', $clientNm));
+            return $this->fail(sprintf('“%s” could not be read as an image. The file may be corrupt.', $clientNm));
         }
 
         // Between the header read above and the full decode below — see
@@ -306,7 +306,7 @@ class ListingImageProcessor
         $source = @imagecreatefromstring($bytes);
         if ($source === false) {
             log_message('error', 'ListingImageProcessor: imagecreatefromstring failed');
-            return $this->fail(sprintf('“%s” could not be read as an image — the file may be corrupt.', $clientNm));
+            return $this->fail(sprintf('“%s” could not be read as an image. The file may be corrupt.', $clientNm));
         }
         // imagewebp() rejects palette (indexed-colour) images — a plain PNG
         // export from most graphics tools. No-op if already truecolor.

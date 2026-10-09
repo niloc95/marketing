@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Local Visibility Playbook — the one generator.
+Local Visibility Playbook. The one generator.
 
 Builds BOTH distributable forms of the playbook from the single copy source in
 content.py, so the A4 document and the social deck can never drift:
@@ -119,9 +119,9 @@ def resolve_fonts(cache: Path) -> dict:
                 out[weight] = dst
             return {**out, "name": "Inter"}
         except ImportError:
-            print("  ! fontTools/brotli not installed — falling back off Inter", file=sys.stderr)
+            print("  ! fontTools/brotli not installed, falling back off Inter", file=sys.stderr)
         except Exception as exc:  # pragma: no cover - font corruption
-            print(f"  ! could not unpack Inter ({exc}) — falling back", file=sys.stderr)
+            print(f"  ! could not unpack Inter ({exc}), falling back", file=sys.stderr)
 
     for reg, bold, label in [
         ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -148,7 +148,7 @@ def prepare_tiles(cache: Path, max_px: int = 2100) -> list:
     boxes only mean something on the 1640x664 plate they were measured on.
 
     `.convert("RGB")` on its own would composite any transparency onto BLACK,
-    which fringes badly against the page — so alpha is composited onto PAPER
+    which fringes badly against the page, so alpha is composited onto PAPER
     explicitly. Downscaling caps the embedded pixels at roughly 2x print size;
     a lead magnet gets downloaded over mobile data.
     """
@@ -168,8 +168,8 @@ def prepare_tiles(cache: Path, max_px: int = 2100) -> list:
 
     boxes = TILES
     if img.size != PLATE_SIZE:
-        print(f"  ! cover plate is {img.width}x{img.height}, not {PLATE_SIZE[0]}x{PLATE_SIZE[1]} — "
-              f"using it whole; re-measure TILES for this plate", file=sys.stderr)
+        print(f"  ! cover plate is {img.width}x{img.height}, not {PLATE_SIZE[0]}x{PLATE_SIZE[1]}, "
+              f"using it whole; remeasure TILES for this plate", file=sys.stderr)
         boxes = [(0, 0, img.width, img.height)]
 
     out = []
@@ -212,7 +212,7 @@ PROFILES = {
     "web": dict(suffix="-web", bleed=0, marks=0, mirror=False, outer=16, gutter=0,
                 utm_medium="playbook", label="screen / download"),
     "print": dict(suffix="-print", bleed=3, marks=7, mirror=True, outer=15, gutter=3,
-                  utm_medium="print-booklet", label="saddle-stitched A4, 3mm bleed + marks"),
+                  utm_medium="print-booklet", label="saddle stitched A4, 3mm bleed + marks"),
 }
 
 
@@ -663,7 +663,7 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
         if kind == "banner":
             if not tiles:
-                ph = Table([[Paragraph("<b>BANNER MISSING</b> — drop the cover image at "
+                ph = Table([[Paragraph("<b>BANNER MISSING</b>. Drop the cover image at "
                                        "assets/cover-banner.webp", st["cell"])]],
                            colWidths=[TEXT_W], rowHeights=[block["height_mm"] * mm])
                 ph.setStyle(TableStyle([
@@ -733,7 +733,7 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
     def document(target):
         doc = Booklet(target, pagesize=MEDIA,
-                      title=D.DOC_TITLE + (f" — {AUDIENCE}" if AUDIENCE else ""),
+                      title=D.DOC_TITLE + (f" | {AUDIENCE}" if AUDIENCE else ""),
                       author=D.DOC_AUTHOR,
                       subject=D.DOC_SUBJECT, keywords=D.DOC_KEYWORDS)
         h = TRIM_H - TOP - BOTTOM
@@ -769,12 +769,12 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
             probe = document(BytesIO())
             probe.build(story_for(page))
             if probe.page != 1:
-                print(f"  ! page '{page['id']}' overflows to {probe.page} pages — "
+                print(f"  ! page '{page['id']}' overflows to {probe.page} pages, "
                       f"trim its copy or reduce a font size", file=sys.stderr)
         raise SystemExit(1)
 
     if LAST % 4:
-        print(f"  ! {LAST} pages cannot be saddle-stitched — needs a multiple of 4",
+        print(f"  ! {LAST} pages cannot be saddle stitched, needs a multiple of 4",
               file=sys.stderr)
 
     return out
@@ -827,7 +827,7 @@ def build_social(out_dir: Path, variant: str, fonts: dict) -> list:
 
         Resizing a QR by a fractional factor drops or doubles module rows and
         can make it undecodable, so the module grid is rendered at 1px and then
-        scaled by an integer — the result is near `target_px`, never exactly it.
+        scaled by an integer. The result is near `target_px`, never exactly it.
         """
         try:
             import qrcode
@@ -952,8 +952,8 @@ def build_social(out_dir: Path, variant: str, fonts: dict) -> list:
 def check_glyph_coverage(fonts: dict) -> list:
     """Every character in the copy must exist in the chosen face.
 
-    The repo ships Inter as a LATIN SUBSET for the web. Anything outside it —
-    arrows, maths signs, most symbols — renders as a tofu box in the PDF and
+    The repo ships Inter as a LATIN SUBSET for the web. Anything outside it,
+    arrows, maths signs, most symbols, renders as a tofu box in the PDF and
     nobody notices until it is downloaded. Curly quotes, em dashes and the
     middot are covered; U+2192 is not.
     """
@@ -991,7 +991,7 @@ def check_glyph_coverage(fonts: dict) -> list:
                 continue
             if ord(ch) not in covered:
                 missing.setdefault(ch, text.strip()[:60])
-    return [f"{fonts['name']} has no glyph for {ch!r} (U+{ord(ch):04X}) — "
+    return [f"{fonts['name']} has no glyph for {ch!r} (U+{ord(ch):04X}), "
             f"renders as tofu. Seen in: {sample!r}"
             for ch, sample in missing.items()]
 
@@ -1042,14 +1042,14 @@ def main() -> int:
 
     if args.only != "social":
         if not BANNER.exists():
-            warnings.append(f"cover banner missing — expected {BANNER.relative_to(REPO)}")
+            warnings.append(f"cover banner missing, expected {BANNER.relative_to(REPO)}")
         profiles = ["web", "print"] if args.profile == "both" else [args.profile]
         editions = sorted(C.VERTICALS) if args.vertical == "all" else [args.vertical]
         for vertical in editions:
             for name in profiles:
                 pdf = build_pdf(out_dir, cache, fonts, name, vertical)
                 print(f"  • {pdf.name}  ({pdf.stat().st_size / 1024:.0f} KB, "
-                      f"12 pp — {PROFILES[name]['label']})")
+                      f"12 pp, {PROFILES[name]['label']})")
 
     if args.publish:
         # Deliberately the WEB build. The print one carries crop marks, a 3mm

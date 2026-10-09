@@ -21,7 +21,7 @@ are invented examples and are labelled as such.
 
 EDITION = "October 2026"
 
-DOC_TITLE = "WebScheduler Local — Business Proposal"
+DOC_TITLE = "WebScheduler Local: Business Proposal"
 DOC_AUTHOR = "WebScheduler (Pty) Ltd"
 DOC_SUBJECT = "A local business discovery and visibility platform for South African businesses"
 DOC_KEYWORDS = ("WebScheduler Local, business profile, local visibility, Verified Business, "
@@ -61,7 +61,7 @@ _PAGES = [
             {"kind": "cover_title", "text": "A local presence<br/>[[that keeps working.]]"},
             {"kind": "cover_sub",
              "text": "WebScheduler Local is a local business discovery and visibility platform built "
-                     "for South Africa — for businesses, professionals, service businesses, mobile "
+                     "for South Africa, for businesses, professionals, service businesses, mobile "
                      "businesses, and the people they hire."},
             {"kind": "gap", "mm": 4},
             {"kind": "banner", "height_mm": 66},
@@ -123,7 +123,7 @@ _PAGES = [
             {"kind": "para",
              "text": "Claim your Google Business Profile first. A WebScheduler Local business profile "
                      "then gives South African customers another route to you, and gives search "
-                     "engines one more consistent, well-structured source that agrees with it."},
+                     "engines one more consistent, well structured source that agrees with it."},
         ],
     },
 
@@ -135,7 +135,7 @@ _PAGES = [
             {"kind": "moment", "num": "01", "label": "Your business",
              "title": "Tell people what you do.<br/>Show them who you are.<br/>[[Let them find you.]]",
              "text": "What you do, your story, your photos and your opening hours, on a profile "
-                     "customers find in search, on the map and in your category — with every way "
+                     "customers find in search, on the map and in your category, with every way "
                      "to reach you, including <i>Chat on WhatsApp</i> and <i>Book online</i> buttons. "
                      "Free.",
              "preview": {"name": "Thabo's Plumbing", "meta": "Plumber · Fourways, Gauteng",
@@ -148,7 +148,7 @@ _PAGES = [
             {"kind": "moment", "num": "02", "label": "Your services", "flip": True,
              "title": "Make the services<br/>you provide<br/>[[discoverable.]]",
              "text": "The services you offer, named the way customers search for them, with prices "
-                     "if you want them — so “burst geyser Fourways” finds you, not only “plumber”. "
+                     "if you want them, so “burst geyser Fourways” finds you, not only “plumber”. "
                      "Free.",
              "preview": {"name": "Thabo's Plumbing", "meta": "Services",
                          "label": "Example profile",
@@ -167,7 +167,7 @@ _PAGES = [
             {"kind": "moment", "num": "03", "label": "Your locations", "tag": "With Verified",
              "title": "One business.<br/>Multiple practices.<br/>[[One local presence.]]",
              "text": "Every branch or practice with its own address, map pin, contact details and "
-                     "hours — up to 6 more on one profile, each described to Google as a business "
+                     "hours, up to 6 more on one profile, each described to Google as a business "
                      "location in its own right. A free profile shows your main address, or the "
                      "suburbs you travel to.",
              "preview": {"name": "Northside Dental", "meta": "Dentist · 3 practices",
@@ -192,8 +192,8 @@ _PAGES = [
                  "One button. The badge stays for the month you paid for; your profile stays as it is."),
             ]},
             {"kind": "small",
-             "text": "The badge checks identity, not quality — not qualifications, licences, insurance "
-                     "or the standard of anyone's work — and it does not move a business up the "
+             "text": "The badge checks identity, not quality, not qualifications, licences, insurance "
+                     "or the standard of anyone's work, and it does not move a business up the "
                      "results. We sell the check, not the ranking."},
         ],
     },
@@ -207,7 +207,7 @@ _PAGES = [
              "flip": True,
              "title": "Meet the people<br/>[[behind the business.]]",
              "text": "Up to 12 team members, each with a photo, their role, their qualifications "
-                     "and their areas of expertise — so a customer who was referred to a person, not "
+                     "and their areas of expertise, so a customer who was referred to a person, not "
                      "a business, lands in the right place.",
              "preview": {"name": "Northside Dental", "meta": "Our team",
                          "label": "Example profile",
@@ -218,8 +218,8 @@ _PAGES = [
              "after_mm": 14},
             {"kind": "eyebrow", "text": "More searches find you"},
             {"kind": "statement",
-             "text": "A search for one of your people by name — or for something only one of them "
-                     "does — brings up your business too."},
+             "text": "A search for one of your people by name, or for something only one of them "
+                     "does, brings up your business too."},
             {"kind": "para",
              "text": "For a practice, a firm or a salon, customers often remember the person before "
                      "the business. Showing your team turns every one of them into another way in. "
@@ -248,10 +248,10 @@ _PAGES = [
             {"kind": "moment", "num": "05", "label": "Hiring", "tag": "With Verified",
              "title": "Post a vacancy<br/>[[from your profile.]]",
              "text": "Advertise a job in minutes from your dashboard. Applicants see your full "
-                     "profile — your services, your people, your reviews — before they apply.",
+                     "profile, your services, your people, your reviews, before they apply.",
              "preview": {"name": "Dental assistant", "meta": "Northside Dental · Sandton, Gauteng",
                          "label": "Example post · job",
-                         "rows": [("Job type", "Full-time"),
+                         "rows": [("Job type", "Full time"),
                                   ("Salary a month", "R9 000–R12 000"),
                                   ("Closes", "In 30 days"),
                                   ("Apply", "Online form")]},
@@ -263,13 +263,13 @@ _PAGES = [
                                     "Posts that show pay get more applicants."],
                  ["Live straight away", "Posts from a business profile normally go live immediately."],
                  ["Applications, privately", "Applicants apply through a form and we pass it on by "
-                                             "email — your address is never shown. Or send them to "
+                                             "email. Your address is never shown. Or send them to "
                                              "your own careers page. We keep no CVs."],
                  ["No stale posts", "A post closes after 30 days unless you choose a date, and we "
                                     "email you before it closes so you can renew it."],
-                 ["A board people trust", "Every post carries a never-pay-to-apply warning, and a "
+                 ["A board people trust", "Every post carries a never pay to apply warning, and a "
                                           "post visitors report is hidden until we have looked at "
-                                          "it — so genuine employers are not drowned out by scams."],
+                                          "it, so genuine employers are not drowned out by scams."],
              ]},
         ],
     },
@@ -284,7 +284,7 @@ _PAGES = [
              "title": "Someone nearby<br/>[[needs what you do.]]",
              "text": "Anyone can post a request for a service on the Jobs board, free. When one "
                      "matches your category and province, we email it to a small number of "
-                     "businesses — verified businesses first.",
+                     "businesses, verified businesses first.",
              "preview": {"name": "Burst geyser, needed today", "meta": "Service request · Fourways",
                          "label": "Example post · service needed",
                          "rows": [("Category", "Plumber"),
@@ -304,12 +304,12 @@ _PAGES = [
                  "From your dashboard. Each request takes only a limited number of replies, so being "
                  "first matters."),
                 ("04", "THEY CHOOSE",
-                 "Your reply is passed on by email. Your profile — services, prices, photos, reviews "
-                 "and people — does the rest."),
+                 "Your reply is passed on by email. Your profile, services, prices, photos, reviews "
+                 "and people, does the rest."),
             ]},
             {"kind": "eyebrow", "text": "The difference"},
             {"kind": "statement",
-             "text": "No pay-per-lead. No bidding. Replying is part of Verified Business, at "
+             "text": "No pay per lead. No bidding. Replying is part of Verified Business, at "
                      f"{PRICE_VERIFIED} a month."},
         ],
     },
@@ -329,18 +329,18 @@ _PAGES = [
              "rows": [
                  ["<b>A professional practice</b><br/>doctors, dentists, attorneys, accountants, "
                   "tax practitioners",
-                  "A complete, factual profile — the kind of presence professional codes are most "
+                  "A complete, factual profile. The kind of presence professional codes are most "
                   "comfortable with. With Verified Business: each practitioner shown with their role "
                   "and qualifications, and found by name."],
                  ["<b>A service business</b><br/>salons, spas, studios, clinics, tutors",
                   "Services with prices, a <i>Book online</i> button, photographs of your work and "
                   "reviews you can reply to."],
-                 ["<b>A mobile or home-based business</b><br/>plumbers, electricians, mobile "
+                 ["<b>A mobile or home based business</b><br/>plumbers, electricians, mobile "
                   "hairdressers, cleaners",
                   "Choose “I travel to customers”: your profile shows your town and the suburbs you "
-                  "serve, and keeps your street address private. A WhatsApp button — and, with "
+                  "serve, and keeps your street address private. A WhatsApp button, and, with "
                   "Verified Business, requests for work from people nearby."],
-                 ["<b>A business with branches</b><br/>practices, franchises, multi-site clinics",
+                 ["<b>A business with branches</b><br/>practices, franchises, multisite clinics",
                   "With Verified Business: up to 6 more locations on one profile, each with its own "
                   "address, phone, map pin and hours."],
                  ["<b>An employer</b><br/>any business that is hiring",
@@ -348,7 +348,7 @@ _PAGES = [
                   "search, posted straight from your profile."],
                  ["<b>A sole trader or freelancer</b>",
                   "A free profile as an individual, with your services, your area and every way to "
-                  "reach you — no website needed."],
+                  "reach you, no website needed."],
                  ["<b>Based outside South Africa</b>",
                   "Welcome on a monthly <b>International Profile</b> subscription, billed in rand; "
                   "the price is shown before you pay."],
@@ -384,7 +384,7 @@ _PAGES = [
                   "Not a core feature"],
                  ["Requests for work from the public", "Free to post; replying is Verified",
                   "Not in South Africa", "Some sites charge per lead"],
-                 ["Document-checked verification", "Verified: registration and owner's ID, checked "
+                 ["Document checked verification", "Verified: registration and owner's ID, checked "
                                                    "by a person", "Partly", "Varies"],
              ]},
             {"kind": "small",
@@ -415,11 +415,11 @@ _PAGES = [
                  ["A logo and up to 8 photos", "Included", "Included"],
                  ["Customer reviews, with your replies", "Included", "Included"],
                  ["Monthly report: views and where your leads came from", "Included", "Included"],
-                 ["Verified Business badge, documents checked", "—", "Included"],
-                 ["Up to 6 more branches or practices", "—", "Included"],
-                 ["Up to 12 team members, found by name", "—", "Included"],
-                 ["Post job vacancies, set up for Google's job search", "—", "Included"],
-                 ["Reply to requests for work, alerted first", "—", "Included"],
+                 ["Verified Business badge, documents checked", "Not included", "Included"],
+                 ["Up to 6 more branches or practices", "Not included", "Included"],
+                 ["Up to 12 team members, found by name", "Not included", "Included"],
+                 ["Post job vacancies, set up for Google's job search", "Not included", "Included"],
+                 ["Reply to requests for work, alerted first", "Not included", "Included"],
                  ["<b>Price</b>", "<b>R0, always</b>", f"<b>{PRICE_VERIFIED} a month</b>"],
              ]},
             {"kind": "para",
@@ -431,7 +431,7 @@ _PAGES = [
                      "monthly in rand, with the price shown before you pay."},
             {"kind": "small",
              "text": "Results are ordered by distance when a customer shares their location, and "
-                     "otherwise by how complete a profile is — and everything that counts towards "
+                     "otherwise by how complete a profile is, and everything that counts towards "
                      "complete is free. Nothing you buy changes your position."},
         ],
     },
@@ -450,7 +450,7 @@ _PAGES = [
                      "No subscription. No obligation."},
             {"kind": "numbered", "items": [
                 ("01", "CREATE YOUR PROFILE", "A few minutes. Confirm your email address and it is live."),
-                ("02", "COMPLETE IT", "Services, area, hours and photos — every field is one less "
+                ("02", "COMPLETE IT", "Services, area, hours and photos, every field is one less "
                                       "question a customer has to ask."),
                 ("03", "MAKE EVERY SOURCE AGREE", "One name, one address, one phone number, the same "
                                                   "as your Google Business Profile."),

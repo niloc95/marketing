@@ -122,7 +122,7 @@ class ProfileNudgeService
 
         $sent = (new Mailer())->send(
             (string) $listing['email'],
-            'Your profile is live — a few minutes will help more people find it',
+            'Your profile is live. A few minutes will help more people find it',
             $body
         );
 

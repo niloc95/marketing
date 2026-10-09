@@ -2,7 +2,7 @@
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'  => 'Edit your profile — ' . config('Directory')->siteName(),
+    'title'  => 'Edit your profile | ' . config('Directory')->siteName(),
     'robots' => 'noindex, nofollow',
 ]) ?>
 <?= $this->endSection() ?>
@@ -66,7 +66,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     <?php if ($listing['status'] === 'published' && trim((string) ($listing['website'] ?? '')) === ''): ?>
                         <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
                             No website? Use <strong class="text-slate-700 dark:text-slate-200"><?= esc(preg_replace('#^https?://#i', '', base_url('directory/' . $listing['slug']))) ?></strong>
-                            wherever a form asks for one — Google Business Profile, Facebook, your email signature, business cards.
+                            wherever a form asks for one: Google Business Profile, Facebook, your email signature, business cards.
                         </p>
                     <?php endif; ?>
                 </div>
@@ -159,8 +159,8 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 <div class="field">
                     <label>Email preferences</label>
                     <input type="hidden" name="marketing_present" value="1">
-                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile — how many views it got and where your leads came from.</label>
-                    <div class="hint">Optional. Emails about your profile itself — edit links and any badge billing — still arrive either way.</div>
+                    <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile: how many views it got and where your leads came from.</label>
+                    <div class="hint">Optional. Emails about your profile itself (edit links and any badge billing) still arrive either way.</div>
                 </div>
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>

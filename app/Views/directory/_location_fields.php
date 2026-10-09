@@ -156,8 +156,8 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
 
     <div class="disclosure-body">
         <p class="hint">
-            Other places customers can find you. Your main address stays the one below &mdash;
-            these appear as &ldquo;Other locations&rdquo; on your profile. Up to <?= (int) $max ?>.
+            Other places customers can find you. Your main address stays the one below.
+            These appear as &ldquo;Other locations&rdquo; on your profile. Up to <?= (int) $max ?>.
         </p>
         <?php if ($err('locations')): ?><div class="err"><?= esc($err('locations')) ?></div><?php endif; ?>
 

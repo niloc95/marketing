@@ -561,7 +561,7 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('+27115550000', $first['telephone']);
         $this->assertArrayHasKey('geo', $first);
         // An unnamed branch borrows the business name and its town.
-        $this->assertSame('Smile Co — Pretoria', $second['name']);
+        $this->assertSame('Smile Co, Pretoria', $second['name']);
         $this->assertStringNotContainsString('branch@example.test', json_encode($business));
     }
 

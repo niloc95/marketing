@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => ($listing ? 'Edit' : 'New') . ' listing — Admin']) ?>
+<?= seo_meta(['title' => ($listing ? 'Edit' : 'New') . ' listing | Admin']) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -111,10 +111,10 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     <div class="field">
                         <label>Venue <span class="text-xs font-normal text-slate-400">complex, mall or building</span></label>
                         <select name="venue_id">
-                            <option value="">— none —</option>
+                            <option value="">None</option>
                             <?php foreach ($venues as $ven): ?>
                                 <option value="<?= (int) $ven['id'] ?>" <?= (string) $v('venue_id') === (string) $ven['id'] ? 'selected' : '' ?>>
-                                    <?= esc($ven['name']) ?><?= $ven['city'] ? ' — ' . esc($ven['city']) : '' ?>
+                                    <?= esc($ven['name']) ?><?= $ven['city'] ? ', ' . esc($ven['city']) : '' ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -132,7 +132,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                         <div class="field">
                             <label>Consent record</label>
                             <p class="text-sm text-slate-600 dark:text-slate-300">
-                                Terms: <?= $listing['terms_accepted_at'] ? 'accepted ' . esc($fmt($listing['terms_accepted_at'])) . ' (version ' . esc((string) $listing['terms_version']) . ')' : 'no record — listed before consent was stored' ?><br>
+                                Terms: <?= $listing['terms_accepted_at'] ? 'accepted ' . esc($fmt($listing['terms_accepted_at'])) . ' (version ' . esc((string) $listing['terms_version']) . ')' : 'no record, listed before consent was stored' ?><br>
                                 Analytics report:
                                 <?php if (! empty($listing['marketing_opt_in'])): ?>
                                     on <?= esc($fmt($listing['marketing_consent_at']) . $src()) ?>

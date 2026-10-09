@@ -58,7 +58,7 @@ $open = $ticked > 0 || $v('booking_url') !== '' || $err('booking_url') !== '';
 <details class="disclosure" <?= $open ? 'open' : '' ?> data-attributes>
     <summary class="disclosure-summary">
         <span>Features &amp; amenities</span>
-        <span class="hint"><?= $ticked > 0 ? $ticked . ' ticked' : 'Parking, card payments, walk-ins…' ?></span>
+        <span class="hint"><?= $ticked > 0 ? $ticked . ' ticked' : 'Parking, card payments, walk ins…' ?></span>
     </summary>
 
     <div class="disclosure-body">

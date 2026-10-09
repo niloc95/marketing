@@ -32,14 +32,14 @@ class ListingAttributes extends BaseConfig
         'wheelchair_accessible' => 'Wheelchair accessible',
         'parking'               => 'Parking available',
         'ev_charging'           => 'EV charging on site',
-        'free_wifi'             => 'Free Wi-Fi',
+        'free_wifi'             => 'Free WiFi',
         'kid_friendly'          => 'Kid friendly',
         'pet_friendly'          => 'Pet friendly',
-        'walk_ins_welcome'      => 'Walk-ins welcome',
+        'walk_ins_welcome'      => 'Walk ins welcome',
         'appointment_only'      => 'By appointment only',
-        'after_hours'           => 'After-hours service',
-        'women_owned'           => 'Women-owned',
-        'black_owned'           => 'Black-owned',
+        'after_hours'           => 'After hours service',
+        'women_owned'           => 'Women owned',
+        'black_owned'           => 'Black owned',
         'speaks_afrikaans'      => 'Afrikaans spoken',
         'speaks_isizulu'        => 'isiZulu spoken',
         'speaks_isixhosa'       => 'isiXhosa spoken',
@@ -58,7 +58,7 @@ class ListingAttributes extends BaseConfig
         'Beauty & Wellness' => [
             'bridal'          => 'Bridal & events',
             'home_visits'     => 'Home visits',
-            'vegan_products'  => 'Vegan / cruelty-free products',
+            'vegan_products'  => 'Vegan / cruelty free products',
             'gift_vouchers'   => 'Gift vouchers',
             'couples_treatments' => 'Couples treatments',
             'mens_grooming'   => "Men's grooming",
@@ -71,7 +71,7 @@ class ListingAttributes extends BaseConfig
         ],
         'Motoring' => [
             'free_quotes'        => 'Free quotes',
-            'mobile_service'     => 'Mobile / on-site service',
+            'mobile_service'     => 'Mobile / on site service',
             'guarantee_on_work'  => 'Guarantee on work',
             'insurance_approved' => 'Insurance approved',
             'towing'             => 'Towing available',
@@ -80,13 +80,13 @@ class ListingAttributes extends BaseConfig
         'Legal & Financial' => [
             'free_consultation' => 'Free first consultation',
             'online_meetings'   => 'Online meetings',
-            'fixed_fees'        => 'Fixed-fee options',
+            'fixed_fees'        => 'Fixed fee options',
             'registered_body'   => 'Registered with a professional body',
             'pro_bono'          => 'Pro bono work',
         ],
         'Home & Trades' => [
             'free_quotes'        => 'Free quotes',
-            'emergency_callouts' => 'Emergency call-outs',
+            'emergency_callouts' => 'Emergency callouts',
             'guarantee_on_work'  => 'Guarantee on work',
             'insured'            => 'Insured',
             'coc_certificates'   => 'Certificates of compliance issued',
@@ -95,7 +95,7 @@ class ListingAttributes extends BaseConfig
         'Professional Services' => [
             'free_consultation' => 'Free first consultation',
             'online_meetings'   => 'Online meetings',
-            'fixed_fees'        => 'Fixed-fee options',
+            'fixed_fees'        => 'Fixed fee options',
             'registered_body'   => 'Registered with a professional body',
             'nationwide'        => 'Works nationwide',
         ],
@@ -115,7 +115,7 @@ class ListingAttributes extends BaseConfig
         // Config\ListingFacets, because a tick-box cannot say "2 to 6 years".
         'Education & Training' => [
             'online_lessons'     => 'Online lessons',
-            'one_on_one'         => 'One-on-one lessons',
+            'one_on_one'         => 'One on one lessons',
             'group_lessons'      => 'Group lessons',
             'accredited_courses' => 'Accredited courses',
             'home_visits'        => 'Home visits',
@@ -123,7 +123,7 @@ class ListingAttributes extends BaseConfig
             'aftercare'          => 'Aftercare',
             'school_transport'   => 'School transport',
             'meals_provided'     => 'Meals provided',
-            'extra_murals'       => 'Extra-murals',
+            'extra_murals'       => 'Extramurals',
             'sports_facilities'  => 'Sports facilities',
         ],
         'Events & Hospitality' => [
@@ -153,7 +153,7 @@ class ListingAttributes extends BaseConfig
         'Travel & Tourism' => [
             'airport_transfers' => 'Airport transfers',
             'guided_tours'      => 'Guided tours',
-            'self_catering'     => 'Self-catering',
+            'self_catering'     => 'Self catering',
             'breakfast_included' => 'Breakfast included',
             'pool'              => 'Swimming pool',
             'backup_power'      => 'Backup power',
@@ -167,9 +167,9 @@ class ListingAttributes extends BaseConfig
         ],
         'Everyday Services' => [
             'free_quotes'    => 'Free quotes',
-            'same_day'       => 'Same-day service',
-            'collection_dropoff' => 'Collection & drop-off',
-            'mobile_service' => 'Mobile / on-site service',
+            'same_day'       => 'Same day service',
+            'collection_dropoff' => 'Collection & drop off',
+            'mobile_service' => 'Mobile / on site service',
         ],
         'Retail & Other' => [
             'online_shop'       => 'Online shop',

@@ -2,7 +2,7 @@
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'  => 'Activate your Verified Business badge — ' . config('Directory')->siteName(),
+    'title'  => 'Activate your Verified Business badge | ' . config('Directory')->siteName(),
     'robots' => 'noindex, nofollow',
 ]) ?>
 <?= $this->endSection() ?>
@@ -18,7 +18,7 @@
             </p>
 
             <?php if ($sandbox): ?>
-                <p class="alert alert-warning">Sandbox mode &mdash; no real money will move.</p>
+                <p class="alert alert-warning">Sandbox mode. No real money will move.</p>
             <?php endif; ?>
 
             <?php // The order summary. Every figure comes from the verification row or
@@ -51,7 +51,7 @@
             </div>
 
             <ul class="checkout-terms">
-                <li>Cancel any time from your dashboard &mdash; your badge stays up until the month you have paid for ends.</li>
+                <li>Cancel any time from your dashboard: your badge stays up until the month you have paid for ends.</li>
                 <li>Your business profile is free and stays free whether or not you buy this.</li>
                 <li>PayFast takes the payment. <strong>We never see your card details.</strong></li>
             </ul>

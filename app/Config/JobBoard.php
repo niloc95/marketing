@@ -86,8 +86,8 @@ class JobBoard extends BaseConfig
      * @var array<string,array{label:string,schema:string}>
      */
     public array $employmentTypes = [
-        'full_time'  => ['label' => 'Full-time',  'schema' => 'FULL_TIME'],
-        'part_time'  => ['label' => 'Part-time',  'schema' => 'PART_TIME'],
+        'full_time'  => ['label' => 'Full time',  'schema' => 'FULL_TIME'],
+        'part_time'  => ['label' => 'Part time',  'schema' => 'PART_TIME'],
         'contract'   => ['label' => 'Contract',   'schema' => 'CONTRACTOR'],
         'temporary'  => ['label' => 'Temporary',  'schema' => 'TEMPORARY'],
         'internship' => ['label' => 'Internship / learnership', 'schema' => 'INTERN'],

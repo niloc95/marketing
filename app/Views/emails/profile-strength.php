@@ -54,14 +54,14 @@ $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
             <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Finish my profile</a>
         </p>
         <p style="font-size:13px;color:#64748b">
-            That button signs you straight in — no password. It works once, and expires in 7 days.
+            That button signs you straight in, no password. It works once, and expires in 7 days.
             Nothing on this list costs money.
         </p>
 
         <?php if (! $hasWebsite): ?>
             <p style="font-size:15px;line-height:1.6;background:#f1f5f9;border-radius:8px;padding:12px 16px">
                 <strong>No website? You don't need one.</strong> Your profile address works as your
-                website — put <?= esc($profileLabel) ?> on your Google Business Profile, Facebook page,
+                website. Put <?= esc($profileLabel) ?> on your Google Business Profile, Facebook page,
                 email signature and business cards.
             </p>
         <?php endif; ?>

@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Admin — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Admin | ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -31,7 +31,7 @@ $isTrash = $status === 'trashed';
     <div class="container mt-5">
         <div class="alert alert-error">
             <strong>Outbound email is failing.</strong>
-            Verification and manage links are not reaching people — signups will sit in Pending.
+            Verification and manage links are not reaching people. Signups will sit in Pending.
             Last failure <?= esc(date('j M Y H:i', $mailError['at'])) ?>:
             <?= esc($mailError['reason']) ?>
         </div>
@@ -103,8 +103,8 @@ $isTrash = $status === 'trashed';
                             <?php if (! empty($l['is_featured'])): ?> <span class="pill badge-featured" title="Featured"><?= lucide('star', 'h-3.5 w-3.5') ?></span><?php endif; ?>
                             <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($l['email'] ?? '') ?></div>
                         </td>
-                        <td><?= esc($l['category_name'] ?? '—') ?></td>
-                        <td><?= esc(trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''))) ?: '—' ?></td>
+                        <td><?= esc($l['category_name'] ?? 'n/a') ?></td>
+                        <td><?= esc(trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''))) ?: 'n/a' ?></td>
                         <?php
                         // How good is this listing's map pin? Anything below
                         // exact/manual is a centroid that can sit hundreds of
@@ -115,18 +115,18 @@ $isTrash = $status === 'trashed';
                         $pinGood  = in_array($pin, ['manual', 'exact'], true);
                         ?>
                         <td>
-                            <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate — worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
+                            <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate: worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
                         </td>
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
                         <td class="whitespace-nowrap text-xs"><?= esc(local_datetime($l['created_at'] ?? null)) ?></td>
-                        <td><?= ! empty($l['is_verified']) ? lucide('check', 'h-4 w-4 text-emerald-600 dark:text-emerald-400') : '—' ?></td>
+                        <td><?= ! empty($l['is_verified']) ? lucide('check', 'h-4 w-4 text-emerald-600 dark:text-emerald-400') : 'n/a' ?></td>
                         <td>
                             <?php if (listing_is_verified_business($l)): ?>
                                 <span class="pill pill-published" title="Paid through <?= esc($l['verified_until'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
                             <?php elseif (! empty($l['verified_until'])): ?>
                                 <span class="pill pill-unpublished" title="Lapsed <?= esc($l['verified_until'], 'attr') ?>">lapsed</span>
                             <?php else: ?>
-                                —
+                                No
                             <?php endif; ?>
                         </td>
                         <?php // Wants the monthly analytics report. Read-only here — see admin/edit.php. ?>
@@ -134,7 +134,7 @@ $isTrash = $status === 'trashed';
                             <?php if (! empty($l['marketing_opt_in'])): ?>
                                 <span class="pill pill-published" title="Analytics report on <?= esc((string) $l['marketing_consent_at'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
                             <?php else: ?>
-                                —
+                                No
                             <?php endif; ?>
                         </td>
                         <td>

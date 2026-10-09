@@ -350,7 +350,7 @@ class ReferralService
 
                 if ((int) $r['notify_referrer'] === 1 && ! empty($r['referrer_email'])) {
                     $this->notice((string) $r['referrer_email'], $this->headerSafe((string) $listing['display_name']) . ' now has a profile', [
-                        'heading'    => 'Thanks — they now have a profile',
+                        'heading'    => 'Thanks, they now have a profile',
                         'paragraphs' => [
                             'You recommended ' . $listing['display_name'] . ' to ' . $this->site->siteName() . '. Their profile is live now.',
                         ],
@@ -516,7 +516,7 @@ class ReferralService
         $this->notice($admin, 'Business recommended: ' . $this->headerSafe((string) $r['business_name']), [
             'heading'    => 'A business was recommended',
             'paragraphs' => array_values(array_filter([
-                (string) $r['business_name'] . ' — ' . trim(($r['city'] ?? '') . ', ' . ($r['province'] ?? ''), ', '),
+                (string) $r['business_name'] . ', ' . trim(($r['city'] ?? '') . ', ' . ($r['province'] ?? ''), ', '),
                 (string) ($r['note'] ?? ''),
             ])),
             'button' => ['Review referrals', base_url('admin/referrals')],

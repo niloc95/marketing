@@ -87,7 +87,7 @@ final class ServiceAreaBusinessTest extends CIUnitTestCase
         foreach (['15 Tin Road', 'Bromhof', '2188', self::LAT, self::LNG, 'data-map-view', 'maps/dir', 'waze.com', 'streetAddress', '"geo"'] as $leak) {
             $this->assertStringNotContainsString($leak, $html, $leak . ' leaked');
         }
-        $this->assertStringContainsString('Mobile service &mdash; we travel to you', $html);
+        $this->assertStringContainsString('Mobile service: we travel to you', $html);
         $this->assertStringContainsString('Randburg, Sandton and Fourways', $html);
         $this->assertStringContainsString('"areaServed":[{"@type":"Place","name":"Randburg"}', $html);
         // City and province stay — the locality line and landing pages need them.

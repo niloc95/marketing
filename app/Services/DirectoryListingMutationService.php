@@ -37,7 +37,7 @@ class DirectoryListingMutationService
      * differently worded success — the signup form becomes an oracle for
      * whether any given address is in the directory.
      */
-    private const SIGNUP_MESSAGE = 'Almost done — check your email to verify and publish your profile.';
+    private const SIGNUP_MESSAGE = 'Almost done. Check your email to verify and publish your profile.';
 
     private DirectoryListingModel $listings;
     private DirectoryTagModel $tags;
@@ -904,14 +904,14 @@ class DirectoryListingMutationService
                 $errors['display_name'] = $problem;
             } elseif (mb_strlen(ListingText::tidyName($name)) > ListingText::NAME_MAX) {
                 $errors['display_name'] = sprintf(
-                    'Please keep your business name under %d characters — put the rest in your description.',
+                    'Please keep your business name under %d characters. Put the rest in your description.',
                     ListingText::NAME_MAX + 1
                 );
             }
         }
         $email = trim((string) ($input['email'] ?? ''));
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'A valid email is required — we send a verification link to it.';
+            $errors['email'] = 'A valid email is required. We send a verification link to it.';
         }
 
         // The two fields in the private "Your details" fieldset. Neither is
@@ -939,7 +939,7 @@ class DirectoryListingMutationService
         // it posts it straight back.
         $title = $this->clean($input['title'] ?? '');
         if ($title === '') {
-            $errors['title'] = 'Please choose a title — Mr, Mrs, Dr and so on.';
+            $errors['title'] = 'Please choose a title: Mr, Mrs, Dr and so on.';
         } elseif (! in_array($title, DirectoryListingModel::TITLES, true) && $changed('title', $title)) {
             $errors['title'] = 'Please choose a title from the list.';
         }
@@ -949,7 +949,7 @@ class DirectoryListingMutationService
         if (! $isNew && ! array_key_exists('position', $input)) {
             // nothing to judge
         } elseif ($position === '') {
-            $errors['position'] = 'Please choose your position — Owner, Director, Manager and so on.';
+            $errors['position'] = 'Please choose your position: Owner, Director, Manager and so on.';
         } elseif (! in_array($position, DirectoryListingModel::POSITIONS, true) && $changed('position', $position)) {
             $errors['position'] = 'Please choose a position from the list.';
         }
@@ -993,7 +993,7 @@ class DirectoryListingMutationService
         if (! isset($errors['description']) && ($isNew || array_key_exists('description', $input))) {
             $squash = static fn (string $t): string => trim((string) preg_replace('/\s+/u', ' ', $t));
             if ($description === '') {
-                $errors['description'] = 'Please describe your business — what you do, who it’s for, and why people choose you.';
+                $errors['description'] = 'Please describe your business: what you do, who it’s for, and why people choose you.';
             } elseif (mb_strlen($description) < ListingText::DESCRIPTION_MIN
                 && ($storedDescriptionText === null || $squash($description) !== $squash($storedDescriptionText))) {
                 $errors['description'] = sprintf(
@@ -1165,7 +1165,7 @@ class DirectoryListingMutationService
         if (($isNew || array_key_exists('hours', $input))
             && empty($input['by_appointment'])
             && ! $this->hoursComplete($input['hours'] ?? null)) {
-            $errors['hours'] = 'Please add your opening hours — times for each day, or tick Closed. '
+            $errors['hours'] = 'Please add your opening hours: times for each day, or tick Closed. '
                 . 'If you only see people by booking, tick “By appointment only”.';
         }
         if (($isNew || array_key_exists(ServiceMenuService::SERVICES_MARKER, $input))

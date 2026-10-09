@@ -406,7 +406,7 @@ class ListingQualityService
                 'A website, WhatsApp or social page',
                 self::PTS_WEBSITE,
                 $this->hasOnlinePresence($listing),
-                'No website needed — a WhatsApp number or a Facebook, Instagram, LinkedIn or TikTok page earns these points too.',
+                'No website needed, a WhatsApp number or a Facebook, Instagram, LinkedIn or TikTok page earns these points too.',
                 'field-website'
             ),
             // The offers_online_booking checkbox scores nothing on its own —
@@ -539,7 +539,7 @@ class ListingQualityService
                 $counts['attributes'] + ($counts['facets'] ?? 0),
                 self::CAP_ATTRIBUTES,
                 self::PTS_ATTRIBUTE,
-                'Parking, wheelchair access, ages taken, curriculum — whatever applies.',
+                'Parking, wheelchair access, ages taken, curriculum, whatever applies.',
                 'field-features'
             ),
             $this->countable(

@@ -30,7 +30,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $post['title'] . ($isJob ? ' — ' . $employer : '') . ' — ' . $siteName,
+    'title'       => $post['title'] . ($isJob ? ', ' . $employer : '') . ' | ' . $siteName,
     'description' => seo_excerpt((string) $post['description'], 155),
     'canonical'   => $canonical,
     'image'       => ! empty($post['listing_logo']) ? listing_image_url((string) $post['listing_logo']) : '',

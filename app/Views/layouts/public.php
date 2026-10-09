@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' — Discover local businesses in South Africa']) ?>
+    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' | Discover local businesses in South Africa']) ?>
     <?php // Every icon is the orange WebScheduler Local badge, generated from
           // resources/brand/webscheduler-local-badge-1024.png. favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
           // skip the .ico entirely. The apple-touch icon is on white because iOS

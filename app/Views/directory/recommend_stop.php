@@ -12,7 +12,7 @@ $siteName = config('Directory')->siteName();
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'  => 'Stop invitations — ' . $siteName,
+    'title'  => 'Stop invitations | ' . $siteName,
     'robots' => 'noindex, nofollow',
 ]) ?>
 <?= $this->endSection() ?>

@@ -78,15 +78,15 @@ $rows = [
     // card says what visitors will be told on hover. Keep in step with the
     // first item of _verification_pitch.php.
     ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every search result you appear in', 'note' => VERIFIED_BADGE_EXPLAINER . ': your business registration document and your ID', 'free' => false, 'paid' => true],
-    ['label' => '<strong>All your locations</strong> &mdash; up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
-    ['label' => '<strong>Your people</strong> &mdash; up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
-    ['label' => '<strong>More searches find you</strong> &mdash; a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
+    ['label' => '<strong>All your locations</strong>: up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
+    ['label' => '<strong>Your people</strong>: up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
+    ['label' => '<strong>More searches find you</strong>: a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
     // A Verified Business feature: JobBoardService::canUseJobsFeatures() gates
     // posting vacancies and replying to requests. Requesting a service stays open
     // to everyone, which is why this row says vacancies, not "the Jobs board".
-    ['label' => '<strong>Post jobs</strong> &mdash; advertise your vacancies on our Jobs board, set up so eligible vacancies can appear in Google&rsquo;s job search, and reply to customers who post a request for your kind of service', 'free' => false, 'paid' => true],
+    ['label' => '<strong>Post jobs</strong>: advertise your vacancies on our Jobs board, set up so eligible vacancies can appear in Google&rsquo;s job search, and reply to customers who post a request for your kind of service', 'free' => false, 'paid' => true],
     // JobBoardService::alertMatchingBusinesses() orders badge holders first.
-    ['label' => '<strong>First to hear about new work</strong> &mdash; when someone in your province asks for your kind of service, verified businesses are the first we alert', 'free' => false, 'paid' => true],
+    ['label' => '<strong>First to hear about new work</strong>: when someone in your province asks for your kind of service, verified businesses are the first we alert', 'free' => false, 'paid' => true],
 ];
 
 /** One row, rendered for whichever column is asking. */

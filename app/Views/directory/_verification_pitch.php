@@ -46,7 +46,7 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 <ul class="verify-benefits">
     <li>
         <strong>A checked badge</strong> on your profile and beside your name in every
-        search result you appear in &mdash; so someone deciding between you and a business
+        search result you appear in, so someone deciding between you and a business
         with no badge can see we have checked who you are. Visitors who hover over or tap
         the badge are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
         business registration document and your ID.
@@ -54,21 +54,21 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
     <li>
         <strong>All your locations.</strong> Add up to <?= (int) $locations ?> more branches or
         practices, each with its own address, phone number, map pin and opening hours, and each
-        described to Google as a business location in its own right &mdash; so customers find
+        described to Google as a business location in its own right, so customers find
         the right business in the right place, instead of one address for a business that has
         several.
     </li>
     <li>
         <strong>Your people.</strong> People want to know who they are dealing with. Show up to
         <?= (int) $team ?> team members with a photo, their role, their qualifications and their
-        areas of expertise &mdash; so a customer who was referred to a person, not a business,
+        areas of expertise, so a customer who was referred to a person, not a business,
         lands in the right place.
     </li>
     <li>
         <?php // Deliberately "more searches match you", never "you rank higher".
               // See the docblock — the badge has no effect on ordering. ?>
         <strong>More searches find you.</strong> Once your team is listed, a search for one
-        of your people by name &mdash; or for something only one of them does &mdash; brings
+        of your people by name, or for something only one of them does, brings
         up your business too.
     </li>
     <li>

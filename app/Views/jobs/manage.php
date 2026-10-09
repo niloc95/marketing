@@ -24,7 +24,7 @@ $editable = in_array($status, [JobPostModel::STATUS_PENDING, JobPostModel::STATU
 ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Manage your post — ' . config('Directory')->siteName(), 'robots' => 'noindex, nofollow']) ?>
+<?= seo_meta(['title' => 'Manage your post | ' . config('Directory')->siteName(), 'robots' => 'noindex, nofollow']) ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>

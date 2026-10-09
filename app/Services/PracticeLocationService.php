@@ -165,7 +165,7 @@ class PracticeLocationService
 
         if (count($submitted) > self::MAX_LOCATIONS) {
             $errors['locations'] = sprintf(
-                'A profile can list at most %d extra locations — you have %d.',
+                'A profile can list at most %d extra locations. You have %d.',
                 self::MAX_LOCATIONS,
                 count($submitted)
             );

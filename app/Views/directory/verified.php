@@ -27,7 +27,7 @@ $faqs = [
         'q' => 'What does it not mean?',
         'a' => 'It is not a rating, a recommendation or a quality check. We do not verify qualifications, '
             . 'licences, insurance, or the standard of anyone\'s work, and a badge is not a reason to skip the '
-            . 'checks you would normally make. It answers one question — is this business who it says it is — '
+            . 'checks you would normally make. It answers one question (is this business who it says it is?) '
             . 'and nothing else.',
     ],
     [
@@ -38,14 +38,14 @@ $faqs = [
     [
         'q' => 'Can a business pay to get the badge without being checked?',
         'a' => 'No. The documents are reviewed first, and we only ask for payment once they have passed. '
-            . 'If we cannot verify a business, nothing is charged — there is no way to buy the badge outright.',
+            . 'If we cannot verify a business, nothing is charged. There is no way to buy the badge outright.',
     ],
 ];
 ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'What the Verified Business badge means — ' . $siteName,
+    'title'       => 'What the Verified Business badge means | ' . $siteName,
     'description' => 'The Verified Business badge on ' . $siteName . ' means we have checked a company registration '
         . 'document and the owner\'s ID. Here is exactly what we check, and what we do not.',
     'canonical'   => $canonical,
@@ -80,8 +80,8 @@ $faqs = [
             <div class="panel">
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white">What we check</h2>
                 <ul class="checkout-terms mt-3">
-                    <li>A company registration document &mdash; the business is really registered.</li>
-                    <li>An identity document for the owner &mdash; the person behind the profile is really them.</li>
+                    <li>A company registration document: the business is really registered.</li>
+                    <li>An identity document for the owner: the person behind the profile is really them.</li>
                 </ul>
             </div>
             <div class="panel">
@@ -122,7 +122,7 @@ $faqs = [
                 <?= view('directory/_verification_pitch', ['amount' => $amount]) ?>
                 <p class="hint mt-3">
                     Your documents are stored privately, never appear on your profile, and are only seen by
-                    our review team &mdash; see our
+                    our review team. See our
                     <a href="<?= base_url('privacy') ?>">privacy policy</a> for how long we keep them.
                 </p>
                 <p class="mt-5">

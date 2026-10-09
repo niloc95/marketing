@@ -94,8 +94,8 @@ $row = function ($i, array $m = []) use ($err): string {
             <label>Areas of focus</label>
             <input type="text" name="team[<?= $i ?>][specializations]" maxlength="500"
                    value="<?= esc($val('specializations'), 'attr') ?>"
-                   placeholder="Comma-separated, e.g. Conveyancing, Commercial litigation">
-            <div class="hint">Separate with commas &mdash; up to 12 per person.</div>
+                   placeholder="Comma separated, e.g. Conveyancing, Commercial litigation">
+            <div class="hint">Separate with commas, up to 12 per person.</div>
             <?php if ($e('specializations')): ?><div class="err"><?= esc($e('specializations')) ?></div><?php endif; ?>
         </div>
         <div class="field">

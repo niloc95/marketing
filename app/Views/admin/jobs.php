@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Jobs queue — ' . config('Directory')->siteName()]) ?>
+<?= seo_meta(['title' => 'Jobs queue | ' . config('Directory')->siteName()]) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -32,7 +32,7 @@ $link = static fn (string $s) => base_url('admin/jobs') . '?' . http_build_query
 $prettyDate = static function (?string $date): string {
     $ts = $date ? strtotime($date) : false;
 
-    return $ts === false ? '—' : date('j M Y', $ts);
+    return $ts === false ? 'n/a' : date('j M Y', $ts);
 };
 ?>
 <?= view('admin/_bar') ?>

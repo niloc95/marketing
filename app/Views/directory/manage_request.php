@@ -3,7 +3,7 @@
 <?php $siteName = config('Directory')->siteName(); ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Manage your profile — ' . $siteName,
+    'title'       => 'Manage your profile | ' . $siteName,
     'description' => 'Update the details of your business profile on ' . $siteName . '.',
     'canonical'   => base_url('manage'),
     'robots'      => 'noindex, nofollow',

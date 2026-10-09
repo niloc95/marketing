@@ -70,7 +70,7 @@ $row = function ($i, array $m = []) use ($err): string {
 <details class="disclosure" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat>
     <summary class="disclosure-summary">
         <span>Services &amp; prices<?php if ($required ?? false): ?> <span class="required-chip">Required</span><?php endif; ?></span>
-        <span class="hint"><?= $used > 0 ? $used . ' listed' : 'What you offer, e.g. classes, treatments, call-outs' ?></span>
+        <span class="hint"><?= $used > 0 ? $used . ' listed' : 'What you offer, e.g. classes, treatments, callouts' ?></span>
     </summary>
 
     <div class="disclosure-body">
@@ -78,7 +78,7 @@ $row = function ($i, array $m = []) use ($err): string {
               // list means "clear my services" rather than "not submitted". ?>
         <input type="hidden" name="<?= ServiceMenuService::SERVICES_MARKER ?>" value="1">
         <p class="hint">
-            One line per service or class, e.g. &ldquo;Beginner yoga class&rdquo;. Prices are optional &mdash; &ldquo;R250&rdquo;,
+            One line per service or class, e.g. &ldquo;Beginner yoga class&rdquo;. Prices are optional: &ldquo;R250&rdquo;,
             &ldquo;from R150&rdquo; or &ldquo;POA&rdquo; all work.
         </p>
         <?php if ($err('services')): ?><div class="err"><?= esc($err('services')) ?></div><?php endif; ?>

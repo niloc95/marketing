@@ -44,7 +44,7 @@ $wazeUrl = map_waze_url($row);
          data-lat="<?= esc((string) $map['lat'], 'attr') ?>"
          data-lng="<?= esc((string) $map['lng'], 'attr') ?>"
          data-zoom="<?= esc((string) $map['zoom'], 'attr') ?>"
-         data-label="<?= esc($name . ' — ' . $map['label'], 'attr') ?>"
+         data-label="<?= esc($name . ', ' . $map['label'], 'attr') ?>"
          data-tile-url="<?= esc(config('Directory')->mapTileUrl()) ?>"
          data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
          data-icon-path="<?= base_url('assets/vendor/leaflet/images/') ?>"
@@ -54,7 +54,7 @@ $wazeUrl = map_waze_url($row);
              aria-label="Map showing the location of <?= esc($name, 'attr') ?>"></div>
     </div>
     <?php if ($map['approximate']): ?>
-        <p class="map-approx">Approximate location &mdash; use the address above for exact directions.</p>
+        <p class="map-approx">Approximate location. Use the address above for exact directions.</p>
     <?php endif; ?>
     <?php if ($dirUrl !== ''): ?>
         <a class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc($dirUrl) ?>" target="_blank" rel="noopener nofollow">Get directions<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>

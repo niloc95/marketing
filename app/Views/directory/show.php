@@ -70,7 +70,7 @@ $metaDesc = listing_meta_description($l);
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => trim($name . ($prof ? ' · ' . $prof : '') . ($city !== '' ? ' in ' . $city : '')) . ' — ' . $siteName,
+    'title'       => trim($name . ($prof ? ' · ' . $prof : '') . ($city !== '' ? ' in ' . $city : '')) . ' | ' . $siteName,
     'description' => $metaDesc,
     'canonical'   => $canonical,
     'image'       => $logoUrl,
@@ -126,7 +126,7 @@ $metaDesc = listing_meta_description($l);
                 <?php if (listing_is_verified_business($l)): ?>
                     <a class="float-right ml-3 block" href="<?= base_url('verified') ?>"
                        title="<?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"
-                       aria-label="Verified Business &mdash; <?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
+                       aria-label="Verified Business, <?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
                 <?php endif; ?>
                 <?php // Category and province link to their landing pages: this is what
                       // stops those pages being orphans and gives them internal authority. ?>
@@ -161,7 +161,7 @@ $metaDesc = listing_meta_description($l);
                 <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured mt-2 gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
             </div>
             <?php
-            $shareText = $name . ($prof ? ' — ' . $prof : '');
+            $shareText = $name . ($prof ? ', ' . $prof : '');
             $shareLinks = [
                 'whatsapp' => 'https://wa.me/?text=' . rawurlencode($shareText . ' ' . $canonical),
                 'facebook' => 'https://www.facebook.com/sharer/sharer.php?u=' . rawurlencode($canonical),
@@ -198,7 +198,7 @@ $metaDesc = listing_meta_description($l);
                         <img src="<?= esc(base_url($p['path'])) ?>"
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
-                             alt="<?= esc($name) ?> — photo <?= $i + 1 ?>"
+                             alt="<?= esc($name) ?>, photo <?= $i + 1 ?>"
                              loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
                     </button>
                 <?php endforeach; ?>

@@ -39,7 +39,7 @@ $looking = [
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'About us — ' . $siteName,
+    'title'       => 'About us | ' . $siteName,
     'description' => $siteName . ' is a local business discovery and visibility platform built for South Africa. '
         . 'Discover businesses, services, locations, professionals and opportunities, or create a free business profile.',
     'canonical'   => $canonical,

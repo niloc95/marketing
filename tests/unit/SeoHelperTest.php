@@ -156,7 +156,7 @@ final class SeoHelperTest extends CIUnitTestCase
     public function testDescriptionLeadsWithVenueHoursAndContact(): void
     {
         $this->assertSame(
-            'Regal Jewellers — Jewellery at Oriental Plaza, Fordsburg, Johannesburg. '
+            'Regal Jewellers: Jewellery at Oriental Plaza, Fordsburg, Johannesburg. '
             . 'Open Mon–Fri 09:00–16:30, Sat 08:00–13:00. Phone number, address and directions.',
             listing_meta_description($this->regal())
         );
@@ -166,14 +166,14 @@ final class SeoHelperTest extends CIUnitTestCase
     {
         $desc = listing_meta_description($this->regal(['venue' => null, 'address_line' => '']));
 
-        $this->assertStringStartsWith('Regal Jewellers — Jewellery in Fordsburg, Johannesburg, Gauteng. Open Mon–Fri', $desc);
+        $this->assertStringStartsWith('Regal Jewellers: Jewellery in Fordsburg, Johannesburg, Gauteng. Open Mon–Fri', $desc);
         $this->assertStringEndsWith('Phone number.', $desc);
     }
 
     public function testDescriptionWithNothingButTheLead(): void
     {
         $this->assertSame(
-            'Regal Jewellers — Jewellery in Fordsburg, Johannesburg, Gauteng.',
+            'Regal Jewellers: Jewellery in Fordsburg, Johannesburg, Gauteng.',
             listing_meta_description($this->regal([
                 'venue' => null, 'phone' => '', 'address_line' => '', 'trading_hours' => null,
             ]))
@@ -212,7 +212,7 @@ final class SeoHelperTest extends CIUnitTestCase
         ]));
 
         $this->assertLessThanOrEqual(160, mb_strlen($desc));
-        $this->assertStringStartsWith('Regal Jewellers — Jewellery in Fordsburg, Johannesburg, Gauteng. Fine gold', $desc);
+        $this->assertStringStartsWith('Regal Jewellers: Jewellery in Fordsburg, Johannesburg, Gauteng. Fine gold', $desc);
         $this->assertStringEndsWith('…', $desc);
     }
 
@@ -228,7 +228,7 @@ final class SeoHelperTest extends CIUnitTestCase
     public function testSuburbRepeatingTheCityIsSaidOnce(): void
     {
         $this->assertStringStartsWith(
-            'Regal Jewellers — Jewellery at Oriental Plaza, Johannesburg. Open',
+            'Regal Jewellers: Jewellery at Oriental Plaza, Johannesburg. Open',
             listing_meta_description($this->regal(['suburb' => 'Johannesburg']))
         );
     }

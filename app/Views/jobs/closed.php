@@ -14,7 +14,7 @@ $siteName = config('Directory')->siteName();
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'This post has closed — ' . $siteName,
+    'title'       => 'This post has closed | ' . $siteName,
     'description' => 'This post on ' . $siteName . ' is no longer open.',
     'canonical'   => $svc->url($post),
     'robots'      => 'noindex, follow',

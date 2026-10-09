@@ -35,8 +35,8 @@ $schema = schema_page(
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'All categories — ' . $siteName,
-    'description' => 'Every category on ' . $siteName . ' — discover local businesses, services and professionals, or create your free business profile.',
+    'title'       => 'All categories | ' . $siteName,
+    'description' => 'Every category on ' . $siteName . '. Discover local businesses, services and professionals, or create your free business profile.',
     'canonical'   => $canonical,
     'schema'      => $schema,
 ]) ?>

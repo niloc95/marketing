@@ -12,7 +12,7 @@ $isJob = $post['kind'] === App\Models\JobPostModel::KIND_JOB;
 ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Edit your post — ' . config('Directory')->siteName(), 'robots' => 'noindex, nofollow']) ?>
+<?= seo_meta(['title' => 'Edit your post | ' . config('Directory')->siteName(), 'robots' => 'noindex, nofollow']) ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>

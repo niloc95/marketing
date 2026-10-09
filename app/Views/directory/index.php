@@ -69,7 +69,7 @@ if ($indexable && ! empty($result['items'])) {
 }
 ?>
 <?= seo_meta([
-    'title'       => $title . ' — ' . $siteName,
+    'title'       => $title . ' | ' . $siteName,
     'description' => 'Discover and search South African businesses, services and professionals by category, province and city.',
     'canonical'   => $canonical,
     'robots'      => $indexable,

@@ -31,8 +31,8 @@ final class LocalDatetimeTest extends CIUnitTestCase
 
     public function testBlankOrBrokenInputIsADash(): void
     {
-        $this->assertSame('—', local_datetime(null));
-        $this->assertSame('—', local_datetime(''));
-        $this->assertSame('—', local_datetime('garbage'));
+        $this->assertSame('n/a', local_datetime(null));
+        $this->assertSame('n/a', local_datetime(''));
+        $this->assertSame('n/a', local_datetime('garbage'));
     }
 }

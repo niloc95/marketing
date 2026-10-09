@@ -62,13 +62,13 @@ final class ListingText
         }
 
         if (preg_match('#https?://|www\.|\.(co\.za|com|net|org)\b|@\S+\.\S#i', $name) === 1) {
-            return 'Please leave website and email addresses out of your business name — there are fields for them below.';
+            return 'Please leave website and email addresses out of your business name. There are fields for them below.';
         }
         if (preg_match_all('/\d/u', self::nfkc($name)) >= 7) {
             return 'Please put your phone number in the Phone field, not in your business name.';
         }
         if (preg_match(self::NAME_ALLOWED, $name) !== 1) {
-            return 'Please use only letters, numbers and ordinary punctuation in your business name — no symbols, emoji or brackets.';
+            return 'Please use only letters, numbers and ordinary punctuation in your business name, no symbols, emoji or brackets.';
         }
         if (substr_count($name, ',') > self::NAME_MAX_COMMAS) {
             return 'Please list the areas you serve in your description, not in your business name.';

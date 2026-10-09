@@ -174,7 +174,7 @@ class ComparisonService
             $c             = (array) ($in['columns'][$col] ?? []);
             $columns[$col] = [
                 'label' => $text($c['label'] ?? '', self::MAX_COLUMN_LABEL, true, "columns.$col.label", 'A column heading'),
-                'sub'   => $text($c['sub'] ?? '', self::MAX_COLUMN_SUB, false, "columns.$col.sub", 'A column sub-heading'),
+                'sub'   => $text($c['sub'] ?? '', self::MAX_COLUMN_SUB, false, "columns.$col.sub", 'A column subheading'),
             ];
         }
 

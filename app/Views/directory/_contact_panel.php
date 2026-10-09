@@ -134,7 +134,7 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
 
     <?php if (! $addressPublic): ?>
         <div class="contact-row">
-            <a href="#service-areas">Mobile service &mdash; we travel to you</a>
+            <a href="#service-areas">Mobile service: we travel to you</a>
             <?= lucide('car') ?>
         </div>
     <?php endif; ?>

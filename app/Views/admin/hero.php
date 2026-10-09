@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/public') ?>
 
 <?= $this->section('head') ?>
-<?= seo_meta(['title' => 'Hero photos — Admin']) ?>
+<?= seo_meta(['title' => 'Hero photos | Admin']) ?>
 <meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
@@ -31,7 +31,7 @@ $full = count($images) >= HeroImageService::MAX_SLIDES;
 
 /** The category <select>, shared by the add form and every row. */
 $categorySelect = static function (?int $selected) use ($grouped): string {
-    $html = '<option value="">No link — caption only</option>';
+    $html = '<option value="">No link, caption only</option>';
     foreach ($grouped as $group => $cats) {
         $html .= '<optgroup label="' . esc($group, 'attr') . '">';
         foreach ($cats as $c) {
@@ -51,9 +51,9 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Hero photos <span class="text-sm font-normal text-slate-500 dark:text-slate-400">(<?= count($images) ?> of <?= HeroImageService::MAX_SLIDES ?>)</span></h1>
         <p class="mb-5 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-            The photographs that cross-fade behind the search box on the home page, in <strong>Sort</strong> order.
+            The photographs that crossfade behind the search box on the home page, in <strong>Sort</strong> order.
             The first one is what a visitor sees before anything else loads, so put your strongest photo at sort&nbsp;0.
-            Landscape shots with the subject to one side work best &mdash; the headline sits over the left of the frame.
+            Landscape shots with the subject to one side work best. The headline sits over the left of the frame.
             With no active photos the hero falls back to the plain blue gradient, which is a safe place to be.
         </p>
 
@@ -66,7 +66,7 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
             <h3>Hero background</h3>
             <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
                 What plays behind the search box. Videos play muted, with no controls and no YouTube buttons,
-                and replace the photos completely &mdash; the photos are kept and come back if you switch to the photo rotation.
+                and replace the photos completely. The photos are kept and come back if you switch to the photo rotation.
                 Visitors whose phone or computer is set to reduce motion see a plain dark background instead of a video.
             </p>
             <form method="post" action="<?= base_url('admin/hero/background') ?>">
@@ -198,8 +198,8 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
                         <div class="err"><?= esc($err('photo')) ?></div>
                     <?php endif; ?>
                     <div class="hint">
-                        JPEG, PNG or WebP, up to 10&nbsp;MB. Upload the largest version you have &mdash;
-                        it is resized and converted to WebP here, at two sizes, so phones do not download the big one.
+                        JPEG, PNG or WebP, up to 10&nbsp;MB. Upload the largest version you have.
+                        It is resized and converted to WebP here, at two sizes, so phones do not download the big one.
                         Aim for at least 1600&nbsp;px wide and landscape.
                     </div>
                 </div>
@@ -249,7 +249,7 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
 
         <?php if ($images === []): ?>
             <div class="empty">
-                <p>No hero photos yet — the home page is showing the plain gradient.</p>
+                <p>No hero photos yet. The home page is showing the plain gradient.</p>
             </div>
         <?php endif; ?>
 

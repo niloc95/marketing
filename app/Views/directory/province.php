@@ -27,8 +27,8 @@ $schema = schema_page(
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $heading . ' — ' . $siteName,
-    'description' => 'Discover local businesses in ' . $province . ' — doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Their services, locations and contact details, free.',
+    'title'       => $heading . ' | ' . $siteName,
+    'description' => 'Discover local businesses in ' . $province . ': doctors, attorneys, vets, dog walkers, home bakers, plumbers and more. Their services, locations and contact details, free.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
     'schema'      => $schema,

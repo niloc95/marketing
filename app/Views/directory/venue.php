@@ -58,7 +58,7 @@ $schema = schema_page(
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $name . ($place !== '' ? ' — ' . $place : '') . ' — ' . $siteName,
+    'title'       => $name . ($place !== '' ? ', ' . $place : '') . ' | ' . $siteName,
     'description' => 'Every business at ' . $name . ($place !== '' ? ', ' . $place : '') . '. Shops, services and contact details, free to browse.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
