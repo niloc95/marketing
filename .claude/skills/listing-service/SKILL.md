@@ -472,6 +472,15 @@ referred businesses pay. Rules are in `PartnerService`, the only writer of the
 - Terms §19, privacy §10, and the cookie policy describe all of this.
 - Tests: `tests/database/PartnerProgramTest.php`.
 
+## Internal documents (`/admin/documents`)
+
+PDFs for staff only (the Partner Program guide, the founder's proposal). Files
+in `resources/documents/`, registered in `Config\AdminDocuments`; the build
+copies them into `directory-app/` outside the web root and fails on a missing
+one. `Admin::document($key)` streams by registry key, never by path, with the
+same nosniff/no-store/locked CSP as verification documents. Tests:
+`tests/database/AdminDocumentsTest.php`.
+
 ## Verified Business — the one paid feature
 
 A monthly badge on an otherwise free listing — R29.99 at the time of writing, but the live

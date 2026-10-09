@@ -245,6 +245,11 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('referrals/(:num)/invite', 'Admin::inviteReferral/$1');
     $routes->post('referrals/(:num)/dismiss', 'Admin::dismissReferral/$1');
 
+    // Internal documents (Config\AdminDocuments). Served from outside the web
+    // root and only here; the segment is a registry key, never a path.
+    $routes->get('documents', 'Admin::documents');
+    $routes->get('documents/(:segment)', 'Admin::document/$1');
+
     // Partner Program: applications, partners, and the monthly payout list.
     // partners/payouts is a literal, so it MUST precede partners/{id}.
     $routes->get('partners', 'Admin::partners');

@@ -9,7 +9,8 @@ playbook's type, palette and badge, and its build guard: a page that
 overflows fails the build and is named.
 
 Internal: never publish it to public/. Output:
-build/WebScheduler-Local-Partner-Program-web.pdf (A4).
+build/WebScheduler-Local-Partner-Program-web.pdf (A4). --admin also copies it
+to resources/documents/, where /admin/documents serves it to signed in admins.
 """
 
 from __future__ import annotations
@@ -34,6 +35,8 @@ _spec.loader.exec_module(G)
 def main() -> int:
     ap = argparse.ArgumentParser(description="Build the internal Partner Program guide PDF.")
     ap.add_argument("--out", default=str(HERE / "build"))
+    ap.add_argument("--admin", action="store_true",
+                    help="copy it to resources/documents/ for /admin/documents (never public/)")
     args = ap.parse_args()
 
     out_dir = Path(args.out).resolve()
@@ -46,6 +49,13 @@ def main() -> int:
     stem = "WebScheduler-Local-Partner-Program"
     pdf = B.build_pdf(out_dir, cache, fonts, "web", doc=G, stem=stem)
     print(f"  • {pdf.name}  ({pdf.stat().st_size / 1024:.0f} KB, {len(G.pdf_pages())} pp)")
+
+    if args.admin:
+        import shutil
+        dst = B.REPO / "resources" / "documents" / "partner-program-guide.pdf"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(pdf, dst)
+        print(f"  • admin copy → {dst.relative_to(B.REPO)}")
     return 0
 
 

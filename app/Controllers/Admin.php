@@ -514,6 +514,54 @@ class Admin extends BaseController
         );
     }
 
+    // ------------------------------------------------------------- documents
+
+    /** Internal documents (Config\AdminDocuments), for staff only. */
+    public function documents()
+    {
+        $config = config('AdminDocuments');
+        $docs   = [];
+        foreach ($config->documents as $key => $doc) {
+            $path   = $config->path($key);
+            $docs[] = $doc + [
+                'key'      => $key,
+                'bytes'    => $path !== null ? (int) filesize($path) : null,
+                'modified' => $path !== null ? (int) filemtime($path) : null,
+            ];
+        }
+
+        return view('admin/documents', ['docs' => $docs]);
+    }
+
+    /**
+     * Stream one internal document. Looked up by key, never by path, so a
+     * request can only ever reach a file the registry names.
+     */
+    public function document(string $key)
+    {
+        $config = config('AdminDocuments');
+        $path   = $config->path($key);
+        if ($path === null) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        log_message('info', sprintf('Admin opened document %s from %s', $key, $this->request->getIPAddress()));
+
+        $contents = (string) file_get_contents($path);
+        $download = $this->request->getGet('download') === '1';
+
+        $this->lockDownCspForDocument();
+
+        return $this->response
+            ->setStatusCode(200)
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Length', (string) strlen($contents))
+            ->setHeader('Content-Disposition', ($download ? 'attachment' : 'inline') . '; filename="' . basename($config->documents[$key]['file']) . '"')
+            ->setHeader('X-Content-Type-Options', 'nosniff')
+            ->setHeader('Cache-Control', 'no-store, private, max-age=0')
+            ->setBody($contents);
+    }
+
     // ------------------------------------------------------ partner program
 
     /** Partner Program applications and partners, by status. */

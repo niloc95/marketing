@@ -36,6 +36,7 @@ $partnersPending = (new App\Models\DirectoryPartnerModel())
             <a href="<?= base_url('admin/reviews') ?>">Reviews<?= $reviewsPending > 0 ? ' (' . (int) $reviewsPending . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/referrals') ?>">Referrals<?= $referralsPending > 0 ? ' (' . (int) $referralsPending . ')' : '' ?></a> &middot;
             <a href="<?= base_url('admin/partners') ?>">Partners<?= $partnersPending > 0 ? ' (' . (int) $partnersPending . ')' : '' ?></a> &middot;
+            <a href="<?= base_url('admin/documents') ?>">Documents</a> &middot;
             <a href="<?= base_url('admin/categories') ?>">Categories</a> &middot;
             <a href="<?= base_url('admin/venues') ?>">Venues</a> &middot;
             <a href="<?= base_url('admin/hero') ?>">Hero photos</a> &middot;

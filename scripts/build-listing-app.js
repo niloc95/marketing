@@ -112,6 +112,22 @@ if (!fs.existsSync(iconsFrom)) {
 copyDir(iconsFrom, path.join(appOut, 'resources', 'icons'));
 console.log('  • resources/icons/ (' + fs.readdirSync(iconsFrom).length + ' icons)');
 
+// 2a') Internal documents for /admin/documents (Config\AdminDocuments). Beside
+//      the code in directory-app/, never under public/: they must have no URL
+//      of their own. Every file the registry names must be here, or the admin
+//      page would offer a document the server cannot open.
+const docsFrom = path.join(projectRoot, 'resources', 'documents');
+const docsRegistry = fs.readFileSync(path.join(projectRoot, 'app', 'Config', 'AdminDocuments.php'), 'utf8');
+for (const m of docsRegistry.matchAll(/'file'\s*=>\s*'([^']+)'/g)) {
+  if (!fs.existsSync(path.join(docsFrom, m[1]))) {
+    fail('Config\\AdminDocuments names resources/documents/' + m[1] + ', which does not exist.');
+  }
+}
+if (fs.existsSync(docsFrom)) {
+  copyDir(docsFrom, path.join(appOut, 'resources', 'documents'));
+  console.log('  • resources/documents/ (' + fs.readdirSync(docsFrom).filter((f) => f.endsWith('.pdf')).length + ' documents)');
+}
+
 // 2b) writable/ skeleton: the directory structure and its deny rules, never the
 //     local cache/logs/session contents.
 const writableOut = path.join(appOut, 'writable');

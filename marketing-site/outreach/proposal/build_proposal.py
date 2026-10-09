@@ -39,6 +39,8 @@ def main() -> int:
     ap.add_argument("--out", default=str(HERE / "build"))
     ap.add_argument("--publish", action="store_true",
                     help="copy the WEB build to public/assets/proposal/ for the listing app")
+    ap.add_argument("--admin", action="store_true",
+                    help="copy the PRINT build to resources/documents/ for /admin/documents")
     args = ap.parse_args()
 
     out_dir = Path(args.out).resolve()
@@ -72,6 +74,19 @@ def main() -> int:
         import shutil
         shutil.copy2(src, dst)
         print(f"  • published → {dst.relative_to(B.REPO)}")
+
+    if args.admin:
+        # The founder's version, for staff to email to clients. Into the admin
+        # portal's documents, which have no public URL, never into public/.
+        src = out_dir / f"{stem}-print.pdf"
+        if not src.exists():
+            print(f"  ! nothing for admin: {src.name} was not built (use --profile both)", file=sys.stderr)
+            return 1
+        import shutil
+        dst = B.REPO / "resources" / "documents" / "business-proposal-print.pdf"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        print(f"  • admin copy → {dst.relative_to(B.REPO)}")
     return 0
 
 
