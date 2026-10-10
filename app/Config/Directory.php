@@ -129,6 +129,22 @@ class Directory extends BaseConfig
      */
     public string $mapboxToken = '';
 
+    /**
+     * Cloudflare Workers AI, which rewrites the template draft behind "Help me
+     * write this" (Services::descriptionWriter()). Both empty here and set per
+     * environment as `directory.workersAiAccountId` / `directory.workersAiToken`:
+     * the token is a credential and this file is committed. Either one empty
+     * means templates only, which is a complete feature on its own.
+     *
+     * Free up to 10,000 Neurons a day per Cloudflare account. One draft with
+     * the 8B model is about 30, so the daily cap below stays well inside it;
+     * past the cap, drafts are templates until midnight UTC.
+     */
+    public string $workersAiAccountId = '';
+    public string $workersAiToken     = '';
+    public string $workersAiModel     = '@cf/meta/llama-3.1-8b-instruct';
+    public int $aiDraftsPerDay        = 150;
+
     /** Attribution HTML shown in the map corner. Required by every tile provider. */
     public string $mapTileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -548,6 +564,20 @@ class Directory extends BaseConfig
         $env = env('directory.mapboxToken');
 
         return is_string($env) && trim($env) !== '' ? trim($env) : trim($this->mapboxToken);
+    }
+
+    /** @return array{account:string,token:string} both '' when Workers AI is not set up */
+    public function workersAi(): array
+    {
+        $read = static function (string $key, string $fallback): string {
+            $env = env('directory.' . $key);
+
+            return is_string($env) && trim($env) !== '' ? trim($env) : trim($fallback);
+        };
+        $account = $read('workersAiAccountId', $this->workersAiAccountId);
+        $token   = $read('workersAiToken', $this->workersAiToken);
+
+        return $account !== '' && $token !== '' ? ['account' => $account, 'token' => $token] : ['account' => '', 'token' => ''];
     }
 
     /**

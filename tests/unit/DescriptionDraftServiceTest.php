@@ -41,7 +41,9 @@ final class DescriptionDraftServiceTest extends CIUnitTestCase
 
         $this->assertStringStartsWith('Sandton Smiles is a dentist', $text);
         $this->assertStringContainsString('Sandton, Johannesburg', $text);
-        $this->assertStringContainsString('teeth whitening, check ups and braces', $text);
+        $this->assertStringContainsString('teeth whitening and check ups', $text);
+        // Areas of focus are not services, so they get their own sentence.
+        $this->assertMatchesRegularExpression('/(areas of focus include|special interest in) braces/', $text);
         $this->assertStringContainsString('medical aid accepted and parking available', $text);
     }
 
@@ -54,6 +56,31 @@ final class DescriptionDraftServiceTest extends CIUnitTestCase
             $this->assertStringNotContainsString('{', $text, $type);
             $this->assertStringNotContainsString('  ', $text, $type);
         }
+    }
+
+    public function testACategoryThatIsAFieldOfWorkGetsANoun(): void
+    {
+        $intro = fn (string $category, string $type = 'practice'): string => explode('.', $this->plain(['type' => $type, 'name' => 'X', 'category' => $category]))[0];
+
+        $this->assertSame('X is a dentist', $intro('Dentist'));
+        $this->assertSame('X is a hair salon', $intro('Hair Salon'));
+        $this->assertSame('X is a clothing and apparel business', $intro('Clothing & Apparel'));
+        $this->assertSame('X is a cleaning services business', $intro('Cleaning Services'));
+        $this->assertSame('X is a home decor business', $intro('Home Decor'));
+        $this->assertSame('X is an estate agent', $intro('Estate Agent'));
+        $this->assertSame('X is a heritage site and landmark', $intro('Heritage Site & Landmark', 'place'));
+    }
+
+    public function testArticlesFollowTheSound(): void
+    {
+        $intro = fn (string $category): string => explode('.', $this->plain(['name' => 'X', 'category' => $category]))[0];
+
+        $this->assertSame('X is a university', $intro('University'));
+        $this->assertSame('X is a urologist', $intro('Urologist'));
+        $this->assertSame('X is an optometrist', $intro('Optometrist'));
+        $this->assertSame('X is an IT support business', $intro('IT Support'));
+        $this->assertSame('X is an NGO and nonprofit business', $intro('NGO & Nonprofit'));
+        $this->assertSame('X is a DJ and entertainment business', $intro('DJ & Entertainment'));
     }
 
     public function testNothingToWriteFromGivesNothing(): void

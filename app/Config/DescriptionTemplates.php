@@ -16,11 +16,14 @@ use CodeIgniter\Config\BaseConfig;
  *
  * Placeholders:
  *   {name}        business name as typed
- *   {a_category}  "a dentist", "an optometrist"
+ *   {a_category}  "a dentist", "an optometrist", or "a towing business"
+ *                 when the category is not a word for the business itself
+ *                 (see $nouns)
  *   {category}    the category in lower case: "children and youth"
  *   {a_kind}      what a non business is: "a nonprofit organisation"
  *   {place}       "Sandton, Johannesburg", or the town alone
- *   {list}        services and areas of focus, joined: "x, y and z"
+ *   {list}        services, joined: "x, y and z"
+ *   {focus}       areas of focus, joined the same way
  *   {areas}       service areas, joined the same way
  *   {features}    ticked features, joined the same way
  */
@@ -69,6 +72,10 @@ class DescriptionTemplates extends BaseConfig
                 'Our services include {list}.',
                 'We help with {list}.',
             ],
+            'focus' => [
+                'Our areas of focus include {focus}.',
+                'We have a special interest in {focus}.',
+            ],
             'reach' => [
                 'We come to you in {areas}.',
                 'We travel to clients in {areas}.',
@@ -96,6 +103,9 @@ class DescriptionTemplates extends BaseConfig
                 'You will find {list}.',
                 'We offer {list}.',
             ],
+            'focus' => [
+                'Our areas of focus include {focus}.',
+            ],
             'reach' => [
                 'We serve people from {areas}.',
             ],
@@ -119,6 +129,10 @@ class DescriptionTemplates extends BaseConfig
             'offer' => [
                 'Our work includes {list}.',
                 'We focus on {list}.',
+            ],
+            'focus' => [
+                'Our work focuses on {focus}.',
+                'Our areas of focus include {focus}.',
             ],
             'reach' => [
                 'We serve communities in {areas}.',
@@ -157,6 +171,48 @@ class DescriptionTemplates extends BaseConfig
         'provide', 'provides', 'providing', 'based', 'area', 'areas', 'south',
         'africa', 'african', 'pty', 'ltd', 'cc', 'npc', 'est', 'established',
     ];
+
+    /**
+     * Category names that read as the business itself after "is a": "a
+     * dentist", "a hair salon". Checked on the last word, singular. Anything
+     * else is a field of work ("Clothing & Apparel", "Towing") and gets
+     * $nounSuffix for its family: "a towing business", "a venue hire venue"
+     * would read badly, so places get "place" instead.
+     *
+     * Words ending in $nounEndings count too (plumber, florist, optician,
+     * accountant, tutor), less $notNouns, which only look like them.
+     *
+     * @var list<string>
+     */
+    public array $nouns = [
+        'salon', 'studio', 'clinic', 'practice', 'centre', 'center', 'shop', 'store',
+        'school', 'college', 'university', 'academy', 'church', 'mosque', 'temple',
+        'synagogue', 'hospital', 'pharmacy', 'chemist', 'restaurant', 'cafe', 'bar',
+        'spa', 'gym', 'agency', 'firm', 'club', 'hall', 'garage', 'nursery', 'creche',
+        'preschool', 'daycare', 'bakery', 'butchery', 'laboratory', 'lab', 'takeaway',
+        'hotel', 'lodge', 'guesthouse', 'venue', 'range', 'park', 'course', 'museum',
+        'gallery', 'library', 'mall', 'market', 'garden', 'reserve', 'zoo', 'theatre',
+        'cinema', 'stadium', 'field', 'farm', 'kennel', 'cattery', 'dealership',
+        'workshop', 'office', 'surgeon', 'doctor', 'vet', 'organisation', 'trust',
+        'foundation', 'association', 'project', 'scheme', 'home', 'barber',
+        'dj', 'plaza', 'complex', 'kitchen', 'boutique', 'parlour', 'bistro', 'pub',
+        'nurse', 'midwife', 'locksmith', 'handyman', 'architect', 'attorney', 'notary',
+        'homeopath', 'naturopath', 'grill', 'steakhouse', 'guide', 'worship', 'site',
+        'landmark', 'area', 'arena', 'healer', 'artist', 'baker', 'agent',
+    ];
+
+    /** @var list<string> */
+    public array $nounEndings = ['er', 'or', 'ist', 'ian', 'ant', 'ent'];
+
+    /** @var list<string> */
+    public array $notNouns = [
+        'decor', 'interior', 'water', 'paper', 'laser', 'power', 'charter', 'floor', 'door',
+        'outdoor', 'indoor', 'motor', 'labour', 'colour', 'leather', 'equipment', 'management',
+        'development', 'treatment', 'entertainment', 'investment', 'environment', 'event', 'transfer',
+    ];
+
+    /** @var array<string,string> family => what follows a category that is not a noun */
+    public array $nounSuffix = ['business' => 'business', 'place' => 'place', 'cause' => ''];
 
     /** How many owner items go into one sentence, and the longest one used. */
     public int $maxListItems = 5;

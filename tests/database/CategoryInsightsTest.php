@@ -40,6 +40,11 @@ final class CategoryInsightsTest extends CIUnitTestCase
     {
         parent::setUp();
         cache()->clean();
+        // Templates only: a developer's .env may hold real Workers AI
+        // credentials, and a test must never call Cloudflare.
+        $_ENV['directory.workersAiAccountId'] = '';
+        $_ENV['directory.workersAiToken']     = '';
+        \Config\Services::resetSingle('descriptionWriter');
         $this->listings = new DirectoryListingModel();
 
         foreach ([
@@ -51,6 +56,13 @@ final class CategoryInsightsTest extends CIUnitTestCase
                 'name' => $name, 'slug' => $slug, 'group_name' => $group, 'is_active' => 1,
             ], true);
         }
+    }
+
+    protected function tearDown(): void
+    {
+        unset($_ENV['directory.workersAiAccountId'], $_ENV['directory.workersAiToken']);
+        \Config\Services::resetSingle('descriptionWriter');
+        parent::tearDown();
     }
 
     public function testServicesSharedByThreeListingsBecomeHints(): void
@@ -179,7 +191,8 @@ final class CategoryInsightsTest extends CIUnitTestCase
         $json = json_decode($this->get('description/draft?' . $query)->getJSON(), true);
 
         $this->assertStringContainsString('Sandton Smiles is a dentist', $json['html']);
-        $this->assertStringContainsString('fillings, braces and nervous patients', $json['html']);
+        $this->assertStringContainsString('fillings', $json['html']);
+        $this->assertStringContainsString('braces and nervous patients', $json['html']);
         $this->assertStringContainsString('parking available and card payments accepted', $json['html']);
         $this->assertStringNotContainsString('not_a_feature', $json['html']);
     }

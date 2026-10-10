@@ -51,10 +51,11 @@ final class DescriptionDraftService implements DescriptionWriter
         $values = [
             'name'       => $name,
             'category'   => $category,
-            'a_category' => $this->article($category) . ' ' . $category,
+            'a_category' => $this->aCategory($category, $family),
             'a_kind'     => $this->config->kinds[$type] ?? '',
             'place'      => $place,
-            'list'       => $this->join(array_merge($facts['services'] ?? [], $facts['tags'] ?? [])),
+            'list'       => $this->join($facts['services'] ?? []),
+            'focus'      => $this->join($facts['tags'] ?? []),
             'features'   => $this->join($facts['features'] ?? []),
             'areas'      => '',
         ];
@@ -72,13 +73,16 @@ final class DescriptionDraftService implements DescriptionWriter
         $second = [];
         $first[]  = ['keep', $this->pick($set['intro'] ?? [], $values, $seed)];
         $first[]  = ['keep', $this->pick($set['offer'] ?? [], $values, $seed + 1)];
+        $first[]  = ['focus', $this->pick($set['focus'] ?? [], $values, $seed + 5)];
         $second[] = ['reach', $this->pick($set[$reachSlot] ?? [], $values, $seed + 2)];
         $second[] = ['features', $this->pick($set['features'] ?? [], $values, $seed + 3)];
         $second[] = ['keep', $this->pick($set['closing'] ?? [], $values, $seed + 4)];
 
-        foreach ([null, 'features', 'reach'] as $drop) {
+        foreach ([null, 'features', 'reach', 'focus'] as $drop) {
             if ($drop !== null) {
-                $second = array_values(array_filter($second, static fn (array $s): bool => $s[0] !== $drop));
+                $keep   = static fn (array $s): bool => $s[0] !== $drop;
+                $first  = array_values(array_filter($first, $keep));
+                $second = array_values(array_filter($second, $keep));
             }
             $html = $this->paragraphs($first, $second);
             if (! RichText::exceedsCap(RichText::toPlainText($html))) {
@@ -199,8 +203,46 @@ final class DescriptionDraftService implements DescriptionWriter
         return trim((string) preg_replace('/\s+/u', ' ', strip_tags($text)), " \t\n\r\0\x0B.;:");
     }
 
-    private function article(string $word): string
+    /**
+     * "a dentist", or "a towing business" when the category names a field of
+     * work rather than the business. See DescriptionTemplates::$nouns.
+     */
+    private function aCategory(string $category, string $family): string
     {
-        return preg_match('/^[aeiou]/i', $word) === 1 ? 'an' : 'a';
+        // The last word as written, never singularised: "cleaning services"
+        // is a field of work, even though "service" alone would be a noun.
+        $words = explode(' ', mb_strtolower($category));
+        $last  = (string) end($words);
+
+        $noun = in_array($last, $this->config->nouns, true);
+        if (! $noun && ! in_array($last, $this->config->notNouns, true)) {
+            foreach ($this->config->nounEndings as $ending) {
+                if (str_ends_with($last, $ending) && mb_strlen($last) >= mb_strlen($ending) + 3) {
+                    $noun = true;
+                    break;
+                }
+            }
+        }
+
+        $suffix = $noun ? '' : ($this->config->nounSuffix[$family] ?? '');
+
+        return $this->article($category) . ' ' . $category . ($suffix !== '' ? ' ' . $suffix : '');
+    }
+
+    /**
+     * By sound, not spelling: "a university", "a urologist", but "an NGO" and
+     * "an IT support business", because an acronym is read letter by letter.
+     */
+    private function article(string $phrase): string
+    {
+        $first = (string) strtok($phrase, ' ');
+        if (preg_match('/^\p{Lu}{2,}$/u', $first) === 1) {
+            return str_contains('AEFHILMNORSX', $first[0]) ? 'an' : 'a';
+        }
+        if (preg_match('/^(uni|uro|use|usu|uti|eu|one)/i', $first) === 1) {
+            return 'a';
+        }
+
+        return preg_match('/^[aeiou]/i', $first) === 1 ? 'an' : 'a';
     }
 }

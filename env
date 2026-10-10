@@ -111,6 +111,14 @@
 # checked against a browser Referer that these requests don't carry.
 # directory.mapboxToken = 'pk.CHANGE-ME'
 
+# "Help me write this" on the description field drafts from templates. Set both
+# of these and Cloudflare Workers AI rewrites each draft into warmer prose,
+# free up to 10,000 Neurons a day (about 300 drafts). Create the token from the
+# "Workers AI" template in the Cloudflare dashboard, scoped to this account.
+# Unset, or past directory.aiDraftsPerDay, the templates are used as they are.
+# directory.workersAiAccountId = ''
+# directory.workersAiToken = ''
+
 # Tile source for every map in the app. Defaults to CARTO's Voyager
 # raster basemap — the same OpenStreetMap data, served from a CDN built for
 # embedding. Deliberately NOT tile.openstreetmap.org: those servers are

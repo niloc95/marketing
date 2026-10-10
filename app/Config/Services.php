@@ -10,6 +10,7 @@ use App\Libraries\DomainChecker;
 use App\Libraries\MauticClient;
 use App\Services\Description\DescriptionDraftService;
 use App\Services\Description\DescriptionWriter;
+use App\Services\Description\WorkersAiWriter;
 use App\Services\DirectoryService;
 use App\Services\Search\QueryInterpreter;
 use App\Services\Search\RuleBasedInterpreter;
@@ -76,9 +77,9 @@ class Services extends BaseService
     }
 
     /**
-     * Whatever drafts a description for "Help me write this": the templates
-     * today (free, local). A model-backed writer replaces this line, not the
-     * endpoint. See DescriptionWriter.
+     * Whatever drafts a description for "Help me write this": Cloudflare
+     * Workers AI over the templates when its credentials are set, the
+     * templates alone otherwise. See DescriptionWriter.
      */
     public static function descriptionWriter(bool $getShared = true): DescriptionWriter
     {
@@ -86,7 +87,13 @@ class Services extends BaseService
             return static::getSharedInstance('descriptionWriter');
         }
 
-        return new DescriptionDraftService();
+        $config = config('Directory');
+        $ai     = $config->workersAi();
+        if ($ai['token'] === '') {
+            return new DescriptionDraftService();
+        }
+
+        return new WorkersAiWriter($ai['account'], $ai['token'], $config->workersAiModel, $config->aiDraftsPerDay);
     }
 
     /**
