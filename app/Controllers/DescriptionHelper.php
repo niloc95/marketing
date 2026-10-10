@@ -57,6 +57,7 @@ class DescriptionHelper extends BaseController
         }
 
         $location = (string) $this->request->getGet('customer_location');
+        $location = in_array($location, ['visit', 'travel', 'both'], true) ? $location : 'visit';
         $facts    = [
             'type'              => (string) $this->request->getGet('type'),
             'name'              => mb_substr($name, 0, 200),
@@ -64,7 +65,7 @@ class DescriptionHelper extends BaseController
             'group'             => (string) $category['group_name'],
             'city'              => mb_substr(trim((string) $this->request->getGet('city')), 0, 120),
             'suburb'            => mb_substr(trim((string) $this->request->getGet('suburb')), 0, 120),
-            'customer_location' => in_array($location, ['visit', 'travel', 'both'], true) ? $location : 'visit',
+            'customer_location' => $location,
             'service_areas'     => $areas,
             'services'          => array_slice($services, 0, 20),
             'tags'              => array_slice($tags, 0, 20),

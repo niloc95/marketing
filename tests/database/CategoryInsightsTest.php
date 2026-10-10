@@ -192,6 +192,15 @@ final class CategoryInsightsTest extends CIUnitTestCase
         $this->assertStringContainsString('category', $json['message']);
     }
 
+    public function testNoAnswerOnWhereCustomersMeetYouMeansTheyVisit(): void
+    {
+        $query = http_build_query(['category_id' => $this->categories['dentist'], 'display_name' => 'Sandton Smiles', 'services' => ['Fillings']]);
+
+        $json = json_decode($this->get('description/draft?' . $query)->getJSON(), true);
+
+        $this->assertStringNotContainsString('travel', $json['message']);
+    }
+
     /** @param list<string> $services */
     private function listing(string $name, string $category, array $overrides = [], array $services = []): int
     {
