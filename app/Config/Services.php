@@ -8,6 +8,8 @@ use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\DomainChecker;
 use App\Libraries\MauticClient;
+use App\Services\Description\DescriptionDraftService;
+use App\Services\Description\DescriptionWriter;
 use App\Services\DirectoryService;
 use App\Services\Search\QueryInterpreter;
 use App\Services\Search\RuleBasedInterpreter;
@@ -71,6 +73,20 @@ class Services extends BaseService
     public static function queryInterpreter(bool $getShared = false): QueryInterpreter
     {
         return new RuleBasedInterpreter((new DirectoryService())->searchVocabulary(), config('Search'));
+    }
+
+    /**
+     * Whatever drafts a description for "Help me write this": the templates
+     * today (free, local). A model-backed writer replaces this line, not the
+     * endpoint. See DescriptionWriter.
+     */
+    public static function descriptionWriter(bool $getShared = true): DescriptionWriter
+    {
+        if ($getShared) {
+            return static::getSharedInstance('descriptionWriter');
+        }
+
+        return new DescriptionDraftService();
     }
 
     /**

@@ -34,6 +34,11 @@
   var setDescriptionHtml = null;
   var movePinTo = null;
 
+  // And one for the description helper: put a draft into the editor as an
+  // edit the owner can undo. Set by the description editor; while it is null
+  // the helper writes into the plain textarea instead.
+  var replaceDescription = null;
+
   // -------------------------------------------------------- theme toggle
   // The .dark class is already on <html> — the blocking guard in the layout's
   // <head> set it before first paint. This only flips it and persists the
@@ -2705,6 +2710,10 @@
     // before being told. 1000 if the attribute is somehow missing.
     var MAX = parseInt(field.getAttribute('data-rich-text-max') || '', 10) || 1000;
 
+    // ListingQualityService::DESCRIPTION_FULL_CHARS, the length that earns
+    // the description's full points on the profile strength panel.
+    var GOAL = counter ? parseInt(counter.getAttribute('data-rich-text-goal') || '', 10) || 0 : 0;
+
     shell.hidden = true;
     if (counter) counter.hidden = true;
 
@@ -2815,7 +2824,8 @@
       if (!counter) return;
       counter.textContent = used > MAX
         ? (used - MAX) + ' characters over the limit'
-        : (MAX - used) + ' characters left';
+        : (MAX - used) + ' characters left' +
+          (GOAL && used > 0 && used < GOAL ? ' \u00b7 ' + (GOAL - used) + ' more for full profile points' : '');
       counter.classList.toggle('is-over', used > MAX);
     }
 
@@ -2857,7 +2867,191 @@
       render();
     };
 
+    // Unlike setDescriptionHtml, a 'user' change: it lands in the undo
+    // history, and the text-change handler syncs the textarea for the draft
+    // backup like any typed edit.
+    replaceDescription = function (html) {
+      quill.setText('', 'user');
+      quill.clipboard.dangerouslyPasteHTML(0, html, 'user');
+      quill.setSelection(quill.getLength(), 0, 'silent');
+      quill.focus();
+    };
+
     form.addEventListener('submit', syncTextarea);
+  })();
+
+  // ------------------------------------------------- description helper
+  // "Help me write this" under the description, and the hints from the chosen
+  // category. Both answers come from DescriptionHelper: a template draft built
+  // from the form as filled in so far, and services, areas of focus and word
+  // pairs that at least three published listings in the category share. No
+  // model behind either. A hint is never put in the description directly; a
+  // click adds it to Areas of focus, and the next draft uses it from there, so
+  // the draft only ever says what the owner said.
+  (function () {
+    var box = document.querySelector('[data-describe-help]');
+    if (!box || !window.fetch || !window.URLSearchParams) return;
+
+    var form      = box.closest('form');
+    var button    = box.querySelector('[data-describe-draft]');
+    var status    = box.querySelector('[data-describe-status]');
+    var hints     = box.querySelector('[data-describe-hints]');
+    var hintLabel = box.querySelector('[data-describe-hints-label]');
+    var hintList  = box.querySelector('[data-describe-hints-list]');
+    var textarea  = form && form.querySelector('textarea[name="description"]');
+    var tags      = form && form.querySelector('#field-tags');
+    var category  = form && form.querySelector('select[name="category_id"]');
+    if (!form || !button || !textarea) return;
+
+    var MAX_TAGS = 20;
+    box.hidden = false;
+
+    function say(text) { if (status) status.textContent = text; }
+
+    // Exact names only: branch rows name theirs locations[i][city], so the
+    // first exact match is the main address.
+    function value(name) {
+      var el = form.querySelector('[name="' + name + '"]');
+      return el ? el.value : '';
+    }
+
+    function params() {
+      var p = new URLSearchParams();
+      ['type', 'category_id', 'display_name', 'city', 'suburb', 'service_areas'].forEach(function (n) {
+        p.append(n, value(n));
+      });
+      var where = form.querySelector('[name="customer_location"]:checked');
+      p.append('customer_location', where ? where.value : 'visit');
+      p.append('tags', value('specializations'));
+      form.querySelectorAll('input[name^="services["][name$="[name]"]').forEach(function (input) {
+        var remove = form.querySelector('[name="' + input.name.replace('[name]', '[_remove]') + '"]');
+        if ((remove && remove.checked) || !input.value.trim()) return;
+        p.append('services[]', input.value.trim());
+      });
+      form.querySelectorAll('input[name="attributes[]"]:checked').forEach(function (el) {
+        p.append('features[]', el.value);
+      });
+      ['accepts_card_payments', 'offers_delivery', 'offers_online_booking'].forEach(function (n) {
+        var el = form.querySelector('input[name="' + n + '"]');
+        if (el && el.checked) p.append('features[]', n);
+      });
+      return p;
+    }
+
+    function getJson(url) {
+      return fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); });
+    }
+
+    function currentLength() {
+      // The editor's own text when it is mounted, the textarea's otherwise.
+      var editor = form.querySelector('.rt-editor .ql-editor');
+      var text = editor && !editor.closest('[hidden]') ? editor.textContent : textarea.value;
+      return text.trim().length;
+    }
+
+    function useDraft(html) {
+      if (replaceDescription) {
+        replaceDescription(html);
+        return;
+      }
+      // No editor: the plain textarea posts text, and the server turns blank
+      // lines into paragraphs. DOMParser rather than innerHTML, so nothing in
+      // the answer can run.
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      textarea.value = Array.prototype.map.call(doc.querySelectorAll('p'), function (p) {
+        return p.textContent;
+      }).join('\n\n');
+    }
+
+    button.addEventListener('click', function () {
+      if (currentLength() > 0 &&
+          !window.confirm('Replace what you have written with a new draft? You can undo it afterwards.')) {
+        return;
+      }
+      button.disabled = true;
+      say('Writing a draft\u2026');
+      getJson(box.getAttribute('data-draft-url') + '?' + params().toString())
+        .then(function (data) {
+          if (data && data.html) useDraft(data.html);
+          say((data && data.message) || '');
+          button.disabled = false;
+        })
+        .catch(function () {
+          say('We could not write a draft just now. Please try again in a moment.');
+          button.disabled = false;
+        });
+    });
+
+    // ---- hints
+    function tagList() {
+      return tags ? tags.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
+    }
+
+    function hasTag(text) {
+      var want = text.toLowerCase();
+      return tagList().some(function (t) { return t.toLowerCase() === want; });
+    }
+
+    function addTag(chip) {
+      var text = chip.textContent;
+      if (!tags) return;
+      if (hasTag(text)) {
+        say('"' + text + '" is already in your Areas of focus.');
+        return;
+      }
+      var list = tagList();
+      if (list.length >= MAX_TAGS) {
+        say('Areas of focus takes up to ' + MAX_TAGS + '. Remove one to add "' + text + '".');
+        return;
+      }
+      list.push(text);
+      tags.value = list.join(', ');
+      tags.dispatchEvent(new Event('input', { bubbles: true }));
+      var more = tags.closest('details');
+      if (more) more.open = true;
+      chip.setAttribute('aria-pressed', 'true');
+      say('Added "' + text + '" to Areas of focus. Press Help me write this to use it in a draft.');
+    }
+
+    function labelFor(data) {
+      if (data.source === 'category') return 'Others in ' + data.category + ' often mention these. Tap any you offer to add it to your Areas of focus.';
+      if (data.source === 'group') return 'Similar businesses often mention these. Tap any you offer to add it to your Areas of focus.';
+      return 'People looking for ' + data.category + ' also search for these. Tap any you offer to add it to your Areas of focus.';
+    }
+
+    function loadHints() {
+      if (!hints || !hintList || !category) return;
+      var id = category.value;
+      hints.hidden = true;
+      hintList.textContent = '';
+      if (!id) return;
+      getJson(box.getAttribute('data-insights-url') + '?category_id=' + encodeURIComponent(id))
+        .then(function (data) {
+          // A later change of category wins over a slow earlier answer.
+          if (category.value !== id || !data || !data.hints || !data.hints.length || !tags) return;
+          data.hints.forEach(function (text) {
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip';
+            chip.textContent = text;
+            chip.setAttribute('aria-pressed', hasTag(text) ? 'true' : 'false');
+            hintList.appendChild(chip);
+          });
+          if (hintLabel) hintLabel.textContent = labelFor(data);
+          hints.hidden = false;
+        })
+        .catch(function () { /* hints are optional; the button still works */ });
+    }
+
+    if (hintList) {
+      hintList.addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip');
+        if (chip) addTag(chip);
+      });
+    }
+    if (category) category.addEventListener('change', loadHints);
+    loadHints();
   })();
 
   // ---------------------------------------------------- home hero background video

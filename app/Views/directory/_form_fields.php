@@ -232,7 +232,23 @@ helper('directory_hours');
     <div class="rt-editor" hidden>
         <div data-rich-text-for="description"></div>
     </div>
-    <div class="rt-count" data-rich-text-count hidden></div>
+    <div class="rt-count" data-rich-text-count data-rich-text-goal="<?= \App\Services\ListingQualityService::DESCRIPTION_FULL_CHARS ?>" hidden></div>
+    <?php // "Help me write this": directory.js reveals it, drafts from the form
+          // as filled in so far (DescriptionHelper::draft) and shows hints from
+          // the chosen category (::insights). Templates, not a model, and
+          // nothing is saved until the form is. Hidden without the script. ?>
+    <div class="describe-help" data-describe-help hidden
+         data-draft-url="<?= base_url('description/draft') ?>"
+         data-insights-url="<?= base_url('description/insights') ?>">
+        <div class="describe-help-row">
+            <button type="button" class="btn-ghost btn-xs" data-describe-draft>Help me write this</button>
+            <span class="hint describe-help-status" data-describe-status role="status" aria-live="polite">Writes a first draft from your category, town, services and features. Nothing is saved until you save the form.</span>
+        </div>
+        <div class="describe-hints" data-describe-hints hidden>
+            <div class="hint" data-describe-hints-label></div>
+            <div class="describe-hints-list" data-describe-hints-list></div>
+        </div>
+    </div>
     <div class="hint">
         Keep it short, up to <?= number_format(\App\Libraries\RichText::MAX_PLAIN_LENGTH) ?> characters.
         Cover <strong>what you do</strong>, <strong>who it&rsquo;s for</strong> and <strong>why choose you</strong>.

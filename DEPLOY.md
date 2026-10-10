@@ -202,6 +202,18 @@ Add a second daily job:
 It recomputes the profile-completeness score that orders search results
 (`ListingQualityService`).
 
+### Cron: the description hints
+
+A third daily job, after the quality sweep:
+
+```
+20 3 * * * cd /home/<cpuser>/<appdir> && php spark directory:insights:build --quiet
+```
+
+It rebuilds the "Others in Dentist often mention" hints under the description
+field (`CategoryInsightsService`) from the day's listings. Skipping it only
+makes the hints a day older; a cold cache is mined on the first request.
+
 Unlike the verification sweep above, this one **is** load-bearing, and it is worth
 knowing why. Scores are written at six controller choke points, and sooner or later
 somebody adds a seventh write path and does not call `recalculate()`. That is designed

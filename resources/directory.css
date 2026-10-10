@@ -3093,6 +3093,15 @@
   .rt-count.is-over    { @apply font-semibold text-brand-crimson; }
   .dark .rt-count      { @apply text-slate-400; }
 
+  /* "Help me write this" and the category hints under the description. */
+  .describe-help              { @apply mt-2; }
+  .describe-help-row          { @apply flex flex-wrap items-center gap-x-3 gap-y-1; }
+  .describe-help-status       { @apply mt-0; }
+  .describe-hints             { @apply mt-3; }
+  .describe-hints-list        { @apply mt-1.5 flex flex-wrap gap-2; }
+  .describe-hints-list .chip  { @apply h-7 px-3 text-xs; }
+  .describe-hints-list .chip[aria-pressed="true"] { @apply opacity-60; }
+
   .dark .rt-editor .ql-toolbar.ql-snow  { @apply border-slate-700 bg-slate-900; }
   .dark .rt-editor .ql-container.ql-snow { @apply border-slate-700 bg-slate-800; }
   .dark .rt-editor .ql-editor            { @apply text-white; }

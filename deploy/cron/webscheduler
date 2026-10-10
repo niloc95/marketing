@@ -28,6 +28,14 @@ MAILTO=""
 # or edited since their last score.
 15 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:quality:recalculate --stale --quiet
 
+# --- Description hints ------------------------------------------------------
+# Rebuilds the "Others in Dentist often mention" hints under the description
+# field from the day's published listings. After the quality sweep, because
+# the word pairs come from listings at the quality target. Not load-bearing:
+# a missed run leaves the hints a day older, and a cold cache is mined on the
+# first request.
+20 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:insights:build --quiet
+
 # --- Profile-strength nudge ---------------------------------------------------
 # One email per profile, ever: a few days after going live, owners still under
 # Config\Directory::$qualityTarget get the top things to fill in, with a sign-in

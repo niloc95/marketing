@@ -89,6 +89,12 @@ $routes->get('address-suggest', 'AddressSuggest::index');
 $routes->get('address-locate', 'AddressSuggest::locate');
 $routes->get('address-reverse', 'AddressSuggest::reverse');
 
+// "Help me write this" on the description field of the same three forms: a
+// template draft from the form as filled in so far, and hints mined from the
+// category. Read-only GETs, so no CSRF token to thread through.
+$routes->get('description/draft', 'DescriptionHelper::draft');
+$routes->get('description/insights', 'DescriptionHelper::insights');
+
 // Owner self-service (passwordless: emailed single-use magic link).
 // The literal segments MUST precede the {token} catch-all.
 $routes->get('manage', 'Manage::index');
