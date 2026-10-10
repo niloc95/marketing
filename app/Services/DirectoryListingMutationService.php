@@ -300,7 +300,7 @@ class DirectoryListingMutationService
         $name        = ListingText::tidyName((string) $input['display_name']);
 
         return [
-            'type'           => in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true) ? $input['type'] : 'person',
+            'type'           => DirectoryListingModel::normaliseType($input['type'] ?? ''),
             'display_name'   => $name,
             'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'title'          => $this->clean($input['title'] ?? ''),
@@ -646,9 +646,7 @@ class DirectoryListingMutationService
                 }
             }
         }
-        $data['type'] = in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true)
-            ? $input['type']
-            : ($listing['type'] ?? 'person');
+        $data['type'] = DirectoryListingModel::normaliseType($input['type'] ?? '', (string) ($listing['type'] ?? 'person'));
         $data['category_id'] = (int) ($input['category_id'] ?? 0) ?: null;
         // Country is deliberately NOT read from $input and NOT copied here.
         //

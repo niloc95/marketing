@@ -2301,6 +2301,100 @@
       sub.value = '';
       sub.dispatchEvent(new Event('change', { bubbles: true }));
     });
+
+    // The profile type's shortlist. Each type option may carry data-suggest,
+    // the category ids TYPE_SUGGESTIONS picks for it. That becomes a
+    // "Suggested for {type}" entry at the top of the main list, holding CLONES
+    // of the real options: cloneNode keeps data-group, data-menu and
+    // data-facet-set, so the blocks below read a suggested pick exactly as
+    // they read the original. The originals stay in their own groups, so any
+    // category is still one choice away.
+    //
+    // Choosing a type opens its shortlist. At load nothing is chosen for the
+    // person: an edit keeps its saved group, and a fresh form only opens the
+    // shortlist when no category is set yet.
+    var type = !isFilter && sub.form ? sub.form.querySelector('select[data-type-picker]') : null;
+    if (type) {
+      var suggestOpt   = null;
+      var suggestGroup = null;
+
+      var buildSuggested = function () {
+        var opt = type.options[type.selectedIndex];
+        var ids = opt ? (opt.getAttribute('data-suggest') || '') : '';
+
+        // Out with the previous type's entry, wherever it was showing.
+        if (suggestOpt) {
+          var wasShown = main.selectedIndex === 1;
+          main.removeChild(suggestOpt);
+          if (suggestGroup.parentNode === sub) sub.removeChild(suggestGroup);
+          groups.shift();
+          suggestOpt = suggestGroup = null;
+          if (wasShown) main.selectedIndex = 0;
+        }
+        if (ids === '') return false;
+
+        var label = 'Suggested for ' + opt.textContent.trim();
+        suggestGroup = document.createElement('optgroup');
+        suggestGroup.label = label;
+        ids.split(',').forEach(function (id) {
+          var original = null;
+          groups.forEach(function (g) {
+            if (!original) original = g.querySelector('option[value="' + id + '"]');
+          });
+          if (original) {
+            var copy = original.cloneNode(true);
+            copy.selected = false;
+            copy.removeAttribute('selected');
+            suggestGroup.appendChild(copy);
+          }
+        });
+        if (!suggestGroup.children.length) {
+          suggestGroup = null;
+          return false;
+        }
+
+        suggestOpt = new Option(label, '__suggested');
+        main.insertBefore(suggestOpt, main.options[1] || null);
+        groups.unshift(suggestGroup);
+        return true;
+      };
+
+      var built = buildSuggested();
+      // The <option> indexes moved up by one; keep the visible group showing.
+      if (built && start >= 0) main.selectedIndex = start + 2;
+      if (built && start < 0 && sub.value === '') {
+        main.selectedIndex = 1;
+        show(0);
+      }
+
+      // Which group (by groups index) holds a category id, skipping the shortlist.
+      var groupOf = function (id) {
+        for (var i = suggestOpt ? 1 : 0; i < groups.length; i++) {
+          if (groups[i].querySelector('option[value="' + id + '"]')) return i;
+        }
+        return -1;
+      };
+      var open = function (i, keep) {
+        main.selectedIndex = i + 1;
+        show(i);
+        sub.value = keep;
+        if (sub.value !== keep) sub.value = '';
+        sub.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+
+      // A category already picked survives a change of type wherever it can:
+      // in the new shortlist if it is on it, else in its own main category.
+      type.addEventListener('change', function () {
+        var keep = sub.disabled ? '' : sub.value;
+        if (buildSuggested()) {
+          open(0, suggestGroup.querySelector('option[value="' + keep + '"]') ? keep : '');
+        } else if (keep !== '') {
+          open(groupOf(keep), keep);
+        } else if (main.selectedIndex === 0) {
+          open(-1, '');
+        }
+      });
+    }
   });
 
   // ------------------------------------------------------- features by category

@@ -104,11 +104,20 @@ helper('directory_hours');
 <div class="form-row">
     <div class="field">
         <label>Profile type</label>
-        <select name="type">
-            <?php foreach (['person' => 'Individual / sole trader', 'practice' => 'Business / practice', 'facility' => 'Facility / branch'] as $k => $lbl): ?>
-                <option value="<?= $k ?>" <?= $v('type', 'person') === $k ? 'selected' : '' ?>><?= esc($lbl) ?></option>
+        <?php // data-type-picker: directory.js turns each option's data-suggest
+              // (category ids, from TYPE_SUGGESTIONS) into a "Suggested for …"
+              // entry at the top of the main category list, and opens it when the
+              // type is chosen. Without the script, nothing changes. ?>
+        <?php $typeSuggest = type_suggestion_ids($categories); ?>
+        <select name="type" data-type-picker>
+            <?php foreach (\App\Models\DirectoryListingModel::TYPES as $k => $lbl): ?>
+                <?php $ids = $typeSuggest[$k] ?? []; ?>
+                <option value="<?= $k ?>" <?= $v('type', 'person') === $k ? 'selected' : '' ?><?= $ids !== [] ? ' data-suggest="' . implode(',', $ids) . '"' : '' ?>><?= esc($lbl) ?></option>
             <?php endforeach; ?>
         </select>
+        <?php // Places link to the businesses inside them, but only we can make
+              // that link (a venue is admin set), so the form says how. ?>
+        <div class="hint">A club, complex or mall? Choose Place or Venue, tick your facilities, then <a href="<?= base_url('contact') ?>">contact us</a> to link the businesses inside it.</div>
     </div>
     <div class="field">
         <label for="field-category">Category *</label>

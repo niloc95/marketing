@@ -63,6 +63,7 @@ const ICONS = [
   'stethoscope', 'sparkles', 'scissors', 'car', 'scale', 'wrench', 'briefcase',
   'dumbbell', 'graduation-cap', 'party-popper', 'plane', 'paw-print',
   'washing-machine', 'shopping-bag', 'cake-slice', 'utensils', 'leaf', 'folder',
+  'heart-handshake', 'landmark', 'bird',
 ];
 
 /**

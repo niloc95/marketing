@@ -118,6 +118,22 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if (! $isNew && ($listing['type'] ?? '') === 'place'): ?>
+                            <?php $ownVenue = null;
+                            foreach ($venues as $ven) {
+                                if ((int) ($ven['listing_id'] ?? 0) === (int) $listing['id']) {
+                                    $ownVenue = $ven;
+                                }
+                            } ?>
+                            <?php if ($ownVenue !== null): ?>
+                                <div class="hint">This place is the venue <a href="<?= esc(base_url('directory/at/' . $ownVenue['slug'])) ?>" target="_blank"><?= esc($ownVenue['name']) ?></a>. Set the businesses inside it to this venue and they show on its profile.</div>
+                            <?php else: ?>
+                                <?php // formaction: the button sits inside the edit form, which
+                                      // cannot hold a second form. Unsaved edits are not kept. ?>
+                                <button class="btn btn-ghost btn-xs mt-2" formaction="<?= base_url('admin/edit/' . (int) $listing['id'] . '/make-venue') ?>" formnovalidate>Create venue from this place</button>
+                                <div class="hint">Save your edits first. Copies the name, address and pin.</div>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     </div>
                     <div class="field">
                         <label class="font-medium"><input type="checkbox" name="is_verified" value="1" <?= $v('is_verified') ? 'checked' : '' ?>> Email verified</label>

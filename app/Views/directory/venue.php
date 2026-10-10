@@ -83,6 +83,11 @@ $schema = schema_page(
         <p class="mt-2 text-sm text-white/80">
             <?= $total ?> <?= $total === 1 ? 'business' : 'businesses' ?> here<?= $addressLine !== '' ? ' &middot; ' . esc($addressLine) : '' ?>.
         </p>
+        <?php if (is_array($placeProfile ?? null)): ?>
+            <p class="mt-2 text-sm">
+                <a class="font-semibold text-white underline hover:no-underline" href="<?= esc(base_url('directory/' . $placeProfile['slug'])) ?>">About <?= esc($placeProfile['display_name']) ?> and its facilities</a>
+            </p>
+        <?php endif; ?>
         <?php // Posts back to this page, not to /directory: the box says "search
               // within {venue}" and it has to mean it. venue() passes q straight
               // to browse(), so the venue filter is never lost. ?>

@@ -290,7 +290,7 @@ class DirectoryAdminService
             $data['email'] = $email;
         }
         if (array_key_exists('type', $input) || $id === null) {
-            $data['type'] = in_array($input['type'] ?? '', ['person', 'practice', 'facility'], true) ? $input['type'] : 'person';
+            $data['type'] = DirectoryListingModel::normaliseType($input['type'] ?? '');
         }
         if (array_key_exists('category_id', $input) || $id === null) {
             $data['category_id'] = (int) ($input['category_id'] ?? 0) ?: null;
@@ -747,7 +747,12 @@ class DirectoryAdminService
     /** @return array<int,array<string,mixed>> */
     public function allVenues(): array
     {
-        return $this->venues->orderBy('name', 'ASC')->findAll();
+        // place_slug: the linked Place profile, for the venues page field.
+        return $this->venues
+            ->select($this->venues->table . '.*, l.slug AS place_slug')
+            ->join('xs_directory_listings l', 'l.id = ' . $this->venues->table . '.listing_id', 'left')
+            ->orderBy($this->venues->table . '.name', 'ASC')
+            ->findAll();
     }
 
     /** @return array<int,int> venue_id => published listings */
@@ -788,19 +793,115 @@ class DirectoryAdminService
             $data[$coord] = is_numeric($value) ? $value : null;
         }
 
+        // The place's own profile, by slug. Only written when the form posts
+        // the field, so an older form or a script that omits it leaves the
+        // link alone.
+        $placeId = null;
+        if (array_key_exists('place_slug', $input)) {
+            $place = $this->placeForVenue($this->clean($input['place_slug']), $id);
+            if (is_string($place)) {
+                return ['ok' => false, 'message' => $place];
+            }
+            $placeId            = $place['id'] ?? null;
+            $data['listing_id'] = $placeId;
+        }
+
         if ($id === null) {
             $data['slug'] = ensure_unique_slug($this->venues, 'slug', $name, null, listing_reserved_slugs(), 180);
 
-            return $this->venues->insert($data)
-                ? ['ok' => true, 'message' => 'Venue added.']
-                : ['ok' => false, 'message' => 'Could not add that venue.'];
+            $newId = $this->venues->insert($data);
+            if (! $newId) {
+                return ['ok' => false, 'message' => 'Could not add that venue.'];
+            }
+            $this->groupPlaceInVenue($placeId, (int) $newId);
+
+            return ['ok' => true, 'message' => 'Venue added.'];
         }
 
         // Slug left alone on rename, same as saveCategory(): it is the public
         // URL of the venue page and changing it breaks every link to it.
-        return $this->venues->update($id, $data)
-            ? ['ok' => true, 'message' => 'Venue updated.']
-            : ['ok' => false, 'message' => 'Could not update that venue.'];
+        if (! $this->venues->update($id, $data)) {
+            return ['ok' => false, 'message' => 'Could not update that venue.'];
+        }
+        $this->groupPlaceInVenue($placeId, $id);
+
+        return ['ok' => true, 'message' => 'Venue updated.'];
+    }
+
+    /**
+     * Turn a Place profile (type = place) into a venue: same name, address and
+     * pin, linked both ways, so the businesses inside it can then be added to
+     * the venue and show on the place's profile. Admin only, like venue_id: a
+     * venue is a claim about a shared building.
+     *
+     * @return array{ok:bool,message:string,venue_id?:int}
+     */
+    public function venueFromPlace(int $listingId): array
+    {
+        helper('slug');
+
+        $listing = $this->listings->find($listingId);
+        if ($listing === null || ($listing['type'] ?? '') !== 'place') {
+            return ['ok' => false, 'message' => 'Only a profile of type Place can become a venue.'];
+        }
+        if ($this->venues->where('listing_id', $listingId)->first() !== null) {
+            return ['ok' => false, 'message' => 'This place already has a venue.'];
+        }
+
+        $name    = (string) $listing['display_name'];
+        $venueId = $this->venues->insert([
+            'name'         => $name,
+            'slug'         => ensure_unique_slug($this->venues, 'slug', $name, null, listing_reserved_slugs(), 180),
+            'listing_id'   => $listingId,
+            'address_line' => $listing['address_line'] ?: null,
+            'suburb'       => $listing['suburb'] ?: null,
+            'city'         => $listing['city'] ?: null,
+            'province'     => $listing['province'] ?: null,
+            'postal_code'  => $listing['postal_code'] ?: null,
+            'latitude'     => $listing['latitude'] ?: null,
+            'longitude'    => $listing['longitude'] ?: null,
+            'is_active'    => 1,
+        ]);
+        if (! $venueId) {
+            return ['ok' => false, 'message' => 'Could not create the venue.'];
+        }
+        $this->groupPlaceInVenue($listingId, (int) $venueId);
+
+        return ['ok' => true, 'message' => "Venue created for {$name}. Add the businesses inside it from the venues page or each profile.", 'venue_id' => (int) $venueId];
+    }
+
+    /**
+     * The Place profile a venue form names, or why it cannot be linked.
+     * Empty slug means "no profile" and returns [].
+     *
+     * @return array<string,mixed>|string
+     */
+    private function placeForVenue(string $slug, ?int $venueId): array|string
+    {
+        if ($slug === '') {
+            return [];
+        }
+        $listing = $this->listings->where('slug', $slug)->first();
+        if ($listing === null) {
+            return 'No profile has that slug.';
+        }
+        if (($listing['type'] ?? '') !== 'place') {
+            return 'That profile is not of type Place. Change its profile type first.';
+        }
+        $taken = $this->venues->where('listing_id', (int) $listing['id'])->first();
+        if ($taken !== null && (int) $taken['id'] !== (int) $venueId) {
+            return 'That profile is already linked to the venue "' . $taken['name'] . '".';
+        }
+
+        return $listing;
+    }
+
+    /** The place sits in its own venue, so the venue page lists it too. */
+    private function groupPlaceInVenue(?int $listingId, int $venueId): void
+    {
+        if ($listingId !== null) {
+            $this->listings->builder()->where('id', $listingId)->update(['venue_id' => $venueId]);
+        }
     }
 
     /**

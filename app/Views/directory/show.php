@@ -137,6 +137,7 @@ $metaDesc = listing_meta_description($l);
                         <span class="text-sm font-bold text-brand-orange"><?= esc($prof) ?></span>
                     <?php endif; ?>
                 <?php endif; ?>
+                <?php if (($typeBadge = listing_type_badge($l)) !== ''): ?><span class="ml-1 align-middle"><?= $typeBadge ?></span><?php endif; ?>
                 <h1 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl"><?= esc($name) ?></h1>
                 <?php $headRating = rating_summary($l); ?>
                 <?php if ($headRating !== ''): ?>

@@ -1333,6 +1333,24 @@
     --tint-hero-from: theme(colors.pink.700);
     --tint-hero-to: theme(colors.pink.900);
   }
+  /* Places & Venues. Stone, not slate: slate is the unmapped fallback. */
+  .cat-tint-stone {
+    --tint-bg: theme(colors.stone.100);
+    --tint-fg: theme(colors.stone.700);
+    --tint-bg-dark: theme(colors.stone.500 / 15%);
+    --tint-fg-dark: theme(colors.stone.300);
+    --tint-hero-from: theme(colors.stone.700);
+    --tint-hero-to: theme(colors.stone.900);
+  }
+  /* Green came free: no group had it. Community & Nonprofit. */
+  .cat-tint-green {
+    --tint-bg: theme(colors.green.50);
+    --tint-fg: theme(colors.green.700);
+    --tint-bg-dark: theme(colors.green.500 / 15%);
+    --tint-fg-dark: theme(colors.green.300);
+    --tint-hero-from: theme(colors.green.700);
+    --tint-hero-to: theme(colors.green.900);
+  }
   .cat-tint-fuchsia {
     --tint-bg: theme(colors.fuchsia.50);
     --tint-fg: theme(colors.fuchsia.600);
@@ -1586,6 +1604,10 @@
   .badge-verified { @apply bg-emerald-50 text-emerald-700 no-underline; }
   /* The venue chip — the complex a listing sits in. A link, hence no-underline,
      and slate rather than a claim colour: it is a place, not a judgement. */
+  /* Not a business: Nonprofit, Place… Green, the Community group's hue,
+     but neither the Verified emerald nor a category tint. */
+  .badge-type { @apply bg-green-50 text-green-800; }
+  .dark .badge-type { @apply bg-green-500/15 text-green-300; }
   .badge-venue { @apply bg-slate-100 text-slate-600 no-underline hover:bg-slate-200 hover:text-slate-900; }
   .dark .badge          { @apply bg-slate-800 text-slate-300; }
   .dark .badge-featured { @apply bg-brand-golden/20 text-brand-golden; }

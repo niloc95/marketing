@@ -152,7 +152,7 @@ if (! function_exists('schema_listing_item')) {
         return array_filter([
             // The same type the profile page publishes for this business —
             // the search query already selects both category columns.
-            '@type'     => schema_business_type((string) ($row['category_group'] ?? ''), (string) ($row['category_slug'] ?? '')),
+            '@type'     => schema_business_type((string) ($row['category_group'] ?? ''), (string) ($row['category_slug'] ?? ''), (string) ($row['type'] ?? '')),
             '@id'       => $url . '#business',
             'name'      => (string) ($row['display_name'] ?? ''),
             'url'       => $url,
@@ -294,11 +294,56 @@ if (! function_exists('schema_business_type')) {
      *
      * Keys are slugify() of the names in DirectoryCategoriesSeeder.
      *
+     * $profileType is the listing's own type (DirectoryListingModel::TYPES).
+     * An NGO, community body, foundation or project is an NGO whatever category
+     * it filed under, so that tier wins outright, as a pair with LocalBusiness
+     * for the same reason the schools are. A Place falls through to its
+     * category: a sports club is still a SportsActivityLocation.
+     *
      * @return string|list<string>
      */
-    function schema_business_type(string $group, string $slug = '')
+    function schema_business_type(string $group, string $slug = '', string $profileType = '')
     {
+        // Places of worship first: schema.org names each one exactly, and a
+        // church filed as an NGO would be the wrong claim. Paired with
+        // LocalBusiness like the schools, so hours and address still validate.
+        $worship = [
+            'church'           => 'Church',
+            'mosque'           => 'Mosque',
+            'hindu-temple'     => 'HinduTemple',
+            'synagogue'        => 'Synagogue',
+            'buddhist-temple'  => 'BuddhistTemple',
+            'place-of-worship' => 'PlaceOfWorship',
+        ];
+        // Places & Venues. ShoppingCenter and StadiumOrArena are LocalBusiness
+        // types already; the civic ones (museum, park, hall, landmark) are not,
+        // so they pair like the worship rows.
+        $places = [
+            'stadium-arena'            => 'StadiumOrArena',
+            'community-hall-centre'    => 'EventVenue',
+            'theatre-arts-venue'       => 'PerformingArtsTheater',
+            'museum-gallery'           => 'Museum',
+            'heritage-site-landmark'   => 'LandmarksOrHistoricalBuildings',
+            'park-recreation-area'     => 'Park',
+        ];
+        $worship += $places;
+        if (isset($worship[$slug])) {
+            return ['LocalBusiness', $worship[$slug]];
+        }
+        if ($slug === 'shopping-centre-mall') {
+            return 'ShoppingCenter';
+        }
+
+        if (in_array($profileType, ['ngo', 'community', 'foundation', 'project'], true)
+            || $group === 'Community & Nonprofit') {
+            return ['LocalBusiness', 'NGO'];
+        }
+
         $bySlug = [
+            // Fitness & Sport: the clubs and courts schema.org names exactly.
+            'sports-club'              => 'SportsClub',
+            'tennis-courts'            => 'TennisComplex',
+            'golf-club-driving-range'  => 'GolfCourse',
             // Health & Medical
             'general-practitioner'   => 'Physician',
             'specialist-physician'   => 'Physician',
@@ -798,7 +843,7 @@ if (! function_exists('schema_local_business')) {
             }
         }
 
-        $type = schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? ''));
+        $type = schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? ''), (string) ($l['type'] ?? ''));
 
         // Other branches, each a business of the same type in its own right —
         // what a search for that suburb should find. Everything the branch

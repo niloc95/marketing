@@ -1286,6 +1286,15 @@ class DirectoryService
         if (is_array($listing['venue'])) {
             $listing['venue']['listing_count'] = $this->venueListingCount((int) $listing['venue_id']);
         }
+        // A Place profile and the venue made from it link both ways: the place
+        // lists what is inside it, and a business inside links to the place.
+        $listing['inside'] = null;
+        $placeId           = (int) ($listing['venue']['listing_id'] ?? 0);
+        if ($placeId === (int) $listing['id']) {
+            $listing['inside'] = $this->insidePlace((int) $listing['venue_id'], (int) $listing['id']);
+        } elseif ($placeId > 0) {
+            $listing['venue']['place'] = $this->placeProfileFor($listing['venue']);
+        }
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
 
         // Free for every listing — see ServiceMenuService.
@@ -1824,6 +1833,43 @@ class DirectoryService
     public function findVenueBySlug(string $slug): ?array
     {
         return $this->venues->findBySlug($slug);
+    }
+
+    /**
+     * What a Place profile shows under "Inside": the published businesses on
+     * its venue, minus the place itself. browse() rather than a query of its
+     * own, so hidden address listings stay out exactly as on the venue page.
+     *
+     * @return array{items:list<array<string,mixed>>,total:int}
+     */
+    public function insidePlace(int $venueId, int $placeId, int $limit = 12): array
+    {
+        $items = array_values(array_filter(
+            $this->browse(['venue' => $venueId], 1, $limit + 1)['items'] ?? [],
+            static fn (array $r): bool => (int) $r['id'] !== $placeId
+        ));
+
+        return [
+            'items' => array_slice($items, 0, $limit),
+            'total' => max(0, $this->venueListingCount($venueId) - 1),
+        ];
+    }
+
+    /**
+     * The published Place profile a venue was made from, if any.
+     *
+     * @param array<string,mixed> $venue
+     * @return array{display_name:string,slug:string}|null
+     */
+    public function placeProfileFor(array $venue): ?array
+    {
+        $id = (int) ($venue['listing_id'] ?? 0);
+        if ($id === 0) {
+            return null;
+        }
+        $row = $this->listings->select('display_name, slug')->where('status', 'published')->find($id);
+
+        return $row ?: null;
     }
 
     /** Published listings in a venue. */

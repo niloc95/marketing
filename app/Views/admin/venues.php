@@ -115,6 +115,12 @@
                             <label class="text-xs">Longitude</label>
                             <input type="text" name="longitude" value="<?= esc($ven['longitude'], 'attr') ?>" class="w-28">
                         </div>
+                        <?php // A Place profile (type Place) this venue is. Its profile
+                              // then lists the businesses here, and theirs link back. ?>
+                        <div class="field mb-0">
+                            <label class="text-xs">Place profile slug</label>
+                            <input type="text" name="place_slug" value="<?= esc((string) ($ven['place_slug'] ?? ''), 'attr') ?>" class="w-40" placeholder="none">
+                        </div>
                         <div class="field mb-0">
                             <label class="text-xs">Active</label>
                             <input type="checkbox" name="is_active" value="1" <?= $ven['is_active'] ? 'checked' : '' ?>>

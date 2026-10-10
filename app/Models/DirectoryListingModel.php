@@ -132,6 +132,73 @@ class DirectoryListingModel extends Model
      * before the dropdown that is not in this list stays valid while unchanged
      * — see validate().
      */
+    /**
+     * Profile types, key => form label. The one list: signup, owner edit, admin
+     * intake and the model rule all read it (the rule spells the keys out
+     * because a property default cannot call a function; a test pins the two
+     * together). The ENUM column holds the same keys, so adding one needs a
+     * migration as well. The last five are not businesses, and the profile
+     * says so with listing_type_label().
+     */
+    public const TYPES = [
+        'person'     => 'Individual or Sole Trader',
+        'practice'   => 'Business or Practice',
+        'facility'   => 'Facility or Branch',
+        'ngo'        => 'NGO or Nonprofit',
+        'community'  => 'Community Organisation',
+        'foundation' => 'Foundation or Trust',
+        'project'    => 'Project or Scheme',
+        'place'      => 'Place or Venue',
+    ];
+
+    /**
+     * The shortlist each profile type loads in the category picker, shown as
+     * "Suggested for {type}" ahead of every main category. Not a restriction:
+     * the full list stays one choice away, and the server accepts any category.
+     *
+     * Entries are category slugs, or 'group:' plus a seeder group name for a
+     * whole group, in the order they should appear. A type with no entry (the
+     * two business types) gets the normal picker: the whole taxonomy is theirs.
+     * ProfileTypesAndPlacesTest checks every slug and group here is seeded.
+     */
+    public const TYPE_SUGGESTIONS = [
+        'facility' => [
+            'hospital', 'medical-clinic', 'pharmacy', 'pathology-laboratory', 'radiology-practice',
+            'gym-fitness-centre', 'indoor-sports-centre', 'wellness-centre',
+            'preschool-daycare', 'training-college',
+        ],
+        'ngo' => ['group:Community & Nonprofit', 'faith-organisation'],
+        'community' => [
+            'community-organisation', 'residents-association', 'community-hall-centre',
+            'community-project', 'charity-welfare', 'sports-club', 'sport-development',
+            'group:Faith & Worship',
+        ],
+        // A foundation is a trust, an NPC or a voluntary association in law, so
+        // what it funds is the useful category: the causes come straight after.
+        'foundation' => [
+            'foundation-trust', 'education-bursaries', 'children-youth', 'health-hiv-support',
+            'feeding-scheme-food-security', 'environment-conservation', 'arts-culture',
+            'skills-job-creation', 'sport-development', 'elderly-care', 'disability-support',
+            'women-family-support', 'shelter-housing', 'animal-welfare', 'charity-welfare',
+        ],
+        'project' => [
+            'community-project', 'scheme-programme', 'feeding-scheme-food-security',
+            'skills-job-creation', 'education-bursaries', 'children-youth',
+            'environment-conservation', 'shelter-housing', 'sport-development', 'arts-culture',
+        ],
+        'place' => [
+            'group:Places & Venues', 'sports-club', 'golf-club-driving-range',
+            'indoor-sports-centre', 'venue-hire', 'church', 'mosque', 'hindu-temple',
+            'synagogue', 'buddhist-temple', 'place-of-worship',
+        ],
+    ];
+
+    /** A posted type when it is a known one, otherwise $fallback. */
+    public static function normaliseType(mixed $type, string $fallback = 'person'): string
+    {
+        return is_string($type) && isset(self::TYPES[$type]) ? $type : $fallback;
+    }
+
     public const TITLES = ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Adv'];
 
     /** The contact person's role, for the "Position" dropdown. Same terms as TITLES. */
@@ -154,7 +221,7 @@ class DirectoryListingModel extends Model
         // pathological reaching a TEXT column.
         'description'      => 'permit_empty|max_length[50000]',
         'description_text' => 'permit_empty|max_length[5000]',
-        'type'             => 'permit_empty|in_list[person,practice,facility]',
+        'type'             => 'permit_empty|in_list[person,practice,facility,ngo,community,foundation,project,place]',
         'email'            => 'permit_empty|valid_email|max_length[190]',
         'website'          => 'permit_empty|max_length[255]',
         'slug'             => 'required|alpha_dash|max_length[190]|is_unique[xs_directory_listings.slug,id,{id}]',

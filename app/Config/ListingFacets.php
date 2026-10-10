@@ -328,6 +328,76 @@ class ListingFacets extends BaseConfig
                 'card'   => false,
             ],
         ],
+
+        // Places of worship. The language a service is held in is the first
+        // thing a newcomer to a town filters on ("Afrikaans church Pretoria").
+        'worship' => [
+            'worship_language' => [
+                'label'   => 'Services held in',
+                'type'    => 'multi',
+                'options' => [
+                    'english'    => 'English',
+                    'afrikaans'  => 'Afrikaans',
+                    'isizulu'    => 'isiZulu',
+                    'isixhosa'   => 'isiXhosa',
+                    'sesotho'    => 'Sesotho',
+                    'setswana'   => 'Setswana',
+                    'sepedi'     => 'Sepedi',
+                    'portuguese' => 'Portuguese',
+                    'arabic'     => 'Arabic',
+                    'hebrew'     => 'Hebrew',
+                    'gujarati'   => 'Gujarati',
+                    'hindi'      => 'Hindi',
+                    'tamil'      => 'Tamil',
+                    'other'      => 'Other',
+                ],
+                'filter' => true,
+                'card'   => true,
+            ],
+        ],
+
+        // Clubs, courts and sports centres. A place like the Wanderers Club is
+        // one profile with a dozen of these, and the person searching wants
+        // "padel near me", not the club's name. 'access' is the first thing a
+        // non-member needs to know: can I book a court without joining.
+        'sport' => [
+            'facilities' => [
+                'label'   => 'Facilities',
+                'type'    => 'multi',
+                'options' => [
+                    'padel-courts'     => 'Padel courts',
+                    'tennis-courts'    => 'Tennis courts',
+                    'squash-courts'    => 'Squash courts',
+                    'cricket-fields'   => 'Cricket fields',
+                    'cricket-nets'     => 'Cricket nets',
+                    'indoor-hall'      => 'Indoor sports hall',
+                    'swimming-pool'    => 'Swimming pool',
+                    'gym'              => 'Gym',
+                    'martial-arts'     => 'Martial arts dojo',
+                    'golf-course'      => 'Golf course',
+                    'driving-range'    => 'Driving range',
+                    'bowls-green'      => 'Bowls green',
+                    'football-fields'  => 'Football fields',
+                    'rugby-fields'     => 'Rugby fields',
+                    'hockey-fields'    => 'Hockey fields',
+                    'restaurant-bar'   => 'Restaurant or bar',
+                    'kids-play-area'   => 'Kids play area',
+                ],
+                'filter' => true,
+                'card'   => true,
+            ],
+            'access' => [
+                'label'   => 'Who can use it',
+                'type'    => 'one',
+                'options' => [
+                    'members-only' => 'Members only',
+                    'public'       => 'Open to the public',
+                    'both'         => 'Members and public bookings',
+                ],
+                'filter' => true,
+                'card'   => false,
+            ],
+        ],
     ];
 
     /**
@@ -343,6 +413,8 @@ class ListingFacets extends BaseConfig
      */
     public array $byGroup = [
         'Restaurants & Food' => ['use' => ['dining']],
+        'Fitness & Sport'    => ['use' => ['sport']],
+        'Faith & Worship'    => ['use' => ['worship']],
     ];
 
     /**

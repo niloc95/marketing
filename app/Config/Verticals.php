@@ -235,6 +235,53 @@ class Verticals extends BaseConfig
             'cta'   => 'Book an appointment',
             'order' => ['services', 'ataglance', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations', 'reviews'],
         ],
+        // Not businesses, so no prices and no "book": what they run, who runs
+        // it, and how to get involved.
+        'Community & Nonprofit' => [
+            'noun'       => 'organisation',
+            'nounPlural' => 'organisations',
+            'headings'   => [
+                'services'    => 'Programmes & projects',
+                'credentials' => 'Registrations',
+                'hours'       => 'Office hours',
+                'team'        => 'Our people',
+                'tags'        => 'Causes',
+                'locations'   => 'Other sites',
+            ],
+            'cta'   => 'Get involved',
+            'order' => ['description', 'services', 'ataglance', 'features', 'team', 'credentials', 'tags', 'venue', 'locations', 'reviews'],
+        ],
+        // Visited, not hired: service times rather than office hours.
+        'Faith & Worship' => [
+            'noun'       => 'place of worship',
+            'nounPlural' => 'places of worship',
+            'headings'   => [
+                'services'    => 'Services & ministries',
+                'credentials' => 'Registrations',
+                'hours'       => 'Service times',
+                'team'        => 'Our leaders',
+                'tags'        => 'Ministries',
+                'locations'   => 'Other sites',
+            ],
+            'cta'   => 'Plan a visit',
+            'order' => ['description', 'ataglance', 'services', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
+        ],
+        // Malls, stadiums, halls, parks. "What's inside" is the venue panel,
+        // so it sits high: for a mall it is the reason the page exists.
+        'Places & Venues' => [
+            'noun'       => 'venue',
+            'nounPlural' => 'venues',
+            'headings'   => [
+                'services'    => 'Facilities & hire',
+                'credentials' => 'Accreditation',
+                'hours'       => 'Opening hours',
+                'team'        => 'Management',
+                'tags'        => 'What you will find',
+                'locations'   => 'Other venues',
+            ],
+            'cta'   => 'Plan a visit',
+            'order' => ['description', 'venue', 'ataglance', 'features', 'services', 'tags', 'team', 'credentials', 'locations', 'reviews'],
+        ],
         'Everyday Services' => [
             'noun'       => 'service',
             'nounPlural' => 'services',

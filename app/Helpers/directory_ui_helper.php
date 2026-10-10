@@ -269,6 +269,77 @@ if (! function_exists('header_quick_categories')) {
     }
 }
 
+if (! function_exists('type_suggestion_ids')) {
+    /**
+     * DirectoryListingModel::TYPE_SUGGESTIONS resolved against the categories
+     * the form renders: type => category ids, in the shortlist's order. An
+     * entry naming an inactive or missing category is skipped, so a retired
+     * category never breaks the picker.
+     *
+     * @param list<array<string,mixed>> $categories
+     * @return array<string,list<int>>
+     */
+    function type_suggestion_ids(array $categories): array
+    {
+        $bySlug  = [];
+        $byGroup = [];
+        foreach ($categories as $c) {
+            $bySlug[(string) ($c['slug'] ?? '')]          = (int) $c['id'];
+            $byGroup[(string) ($c['group_name'] ?? '')][] = (int) $c['id'];
+        }
+
+        $out = [];
+        foreach (\App\Models\DirectoryListingModel::TYPE_SUGGESTIONS as $type => $entries) {
+            $ids = [];
+            foreach ($entries as $entry) {
+                if (str_starts_with($entry, 'group:')) {
+                    array_push($ids, ...($byGroup[substr($entry, 6)] ?? []));
+                } elseif (isset($bySlug[$entry])) {
+                    $ids[] = $bySlug[$entry];
+                }
+            }
+            $out[$type] = array_values(array_unique($ids));
+        }
+
+        return $out;
+    }
+}
+
+if (! function_exists('listing_type_label')) {
+    /**
+     * The public word for a profile that is not a business: "Nonprofit",
+     * "Place"… Null for the three business types, which show nothing, so
+     * every existing profile and card renders exactly as before. Shorter than
+     * DirectoryListingModel::TYPES, which are form labels.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_type_label(array $listing): ?string
+    {
+        return [
+            'ngo'        => 'Nonprofit',
+            'community'  => 'Community Organisation',
+            'foundation' => 'Foundation',
+            'project'    => 'Project',
+            'place'      => 'Place',
+        ][(string) ($listing['type'] ?? '')] ?? null;
+    }
+}
+
+if (! function_exists('listing_type_badge')) {
+    /** @param array<string,mixed> $listing */
+    function listing_type_badge(array $listing): string
+    {
+        $label = listing_type_label($listing);
+        if ($label === null) {
+            return '';
+        }
+        $icon = ($listing['type'] ?? '') === 'place' ? 'building-2' : 'heart-handshake';
+
+        return '<span class="badge badge-type gap-1">' . lucide($icon, 'h-3.5 w-3.5 shrink-0') . esc($label) . '</span>';
+    }
+}
+
 if (! function_exists('category_group_style')) {
     /**
      * How a category group is drawn: its icon and its colour.
@@ -316,6 +387,12 @@ if (! function_exists('category_group_style')) {
             'Home Industry & Handmade' => ['cake-slice',   'cat-tint-lime'],
             // Fuchsia came free when Hair folded into Beauty & Wellness.
             'Alternative & Traditional Medicine' => ['leaf', 'cat-tint-fuchsia'],
+            'Community & Nonprofit' => ['heart-handshake', 'cat-tint-green'],
+            // Every hue is taken by now, so these two share: stone is warm
+            // enough not to read as the slate fallback, and indigo is far from
+            // Legal & Financial on any page where both appear.
+            'Places & Venues'       => ['landmark',        'cat-tint-stone'],
+            'Faith & Worship'       => ['bird',            'cat-tint-indigo'],
         ];
 
         // Grey for an unmapped group, deliberately: it should look like nothing
@@ -416,6 +493,9 @@ if (! function_exists('category_photo')) {
             'Retail & Other'           => [['group-retail-other', 'Sam Lion', 5709656]],
             'Home Industry & Handmade' => [['group-home-industry-handmade', 'Gustavo Fring', 7447297]],
             'Alternative & Traditional Medicine' => [['group-alternative-traditional-medicine', 'AS Photography', 105028]],
+            'Community & Nonprofit'    => [['group-community-nonprofit', 'RDNE Stock project', 6647178]],
+            'Places & Venues'          => [['group-places-venues', 'Lywin', 14230221]],
+            'Faith & Worship'          => [['group-faith-worship', 'Bingqian Li', 30036851]],
         ];
 
         $photo = static fn (string $name, string $credit, int $id): array => [

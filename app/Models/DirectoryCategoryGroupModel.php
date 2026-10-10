@@ -47,6 +47,9 @@ class DirectoryCategoryGroupModel extends Model
         'Pets & Animals',
         'Everyday Services',
         'Home Industry & Handmade',
+        'Places & Venues',
+        'Community & Nonprofit',
+        'Faith & Worship',
         'Retail & Other',
         'Alternative & Traditional Medicine',
     ];

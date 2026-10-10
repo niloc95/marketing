@@ -86,9 +86,16 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Videographer', 'Printing Services', 'Recruitment Agency',
                 'Business Consultant', 'Translation Services',
             ],
+            // The courts and clubs are places people book or join, not
+            // coaching: a padel court hire and a squash ladder are searched for
+            // by the sport. Sports Club is the Wanderers kind of place, and its
+            // own facilities are the 'facilities' facet in Config\ListingFacets.
             'Fitness & Sport' => [
                 'Gym & Fitness Centre', 'Personal Trainer', 'Yoga Studio',
                 'Pilates Studio', 'Martial Arts', 'Dance Studio', 'Sports Coaching',
+                'Sports Club', 'Indoor Sports Centre', 'Padel Courts', 'Tennis Courts',
+                'Squash Courts', 'Cricket Academy', 'Swimming School',
+                'Golf Club & Driving Range',
             ],
             // Ordered as the school ladder, then everything taught outside it.
             // "Training College" is the TVET / private college a school leaver
@@ -167,6 +174,37 @@ class DirectoryCategoriesSeeder extends Seeder
             'Home Industry & Handmade' => [
                 'Home Baker', 'Cake Artist', 'Preserves & Jams', 'Crafts & Handmade',
                 'Sewing & Crochet', 'Farm Produce & Farm Stall', 'Home Decor',
+            ],
+            // Not businesses. Filed by cause, the way Google asks a nonprofit to
+            // choose its most specific category ("Food bank", not "Non-profit
+            // organization"): a foundation is a trust, an NPC or a voluntary
+            // association in law, and none of those says what it does. The
+            // general rows stay first for a body with no single cause.
+            'Community & Nonprofit' => [
+                'NGO & Nonprofit', 'Community Organisation', 'Foundation & Trust',
+                'Community Project', 'Scheme & Programme', 'Charity & Welfare',
+                'Residents Association',
+                'Children & Youth', 'Education & Bursaries', 'Feeding Scheme & Food Security',
+                'Health & HIV Support', 'Elderly Care', 'Disability Support',
+                'Women & Family Support', 'Skills & Job Creation', 'Shelter & Housing',
+                'Animal Welfare', 'Environment & Conservation', 'Arts & Culture',
+                'Sport Development',
+            ],
+            // Yelp's "Religious Organizations": the buildings people go to on a
+            // Sunday or a Friday. Faith Organisation is the faith based ministry
+            // or NGO that is not a congregation. Place of Worship catches the rest.
+            'Faith & Worship' => [
+                'Church', 'Mosque', 'Hindu Temple', 'Synagogue', 'Buddhist Temple',
+                'Place of Worship', 'Faith Organisation',
+            ],
+            // Somewhere people go that holds other things: Yelp's Shopping
+            // Centers, Stadiums & Arenas, Community Centers and Landmarks. The
+            // profile type Place or Venue suggests these first, and a Place can
+            // be linked to the businesses inside it (see directory_venues).
+            'Places & Venues' => [
+                'Shopping Centre & Mall', 'Stadium & Arena', 'Community Hall & Centre',
+                'Market & Flea Market', 'Office & Business Park', 'Theatre & Arts Venue',
+                'Museum & Gallery', 'Heritage Site & Landmark', 'Park & Recreation Area',
             ],
             // Complementary and traditional practice, kept apart from Health &
             // Medical so a search for a GP does not surface a healer and the

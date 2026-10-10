@@ -18,7 +18,7 @@ class DirectoryVenueModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'name', 'slug', 'address_line', 'suburb', 'city', 'province', 'postal_code',
-        'latitude', 'longitude', 'description', 'is_active',
+        'latitude', 'longitude', 'description', 'is_active', 'listing_id',
     ];
 
     protected $validationRules = [

@@ -83,7 +83,7 @@ over `display_name`/`description`/`credentials`.
 - **`is_verified` and `verified_until` are unrelated.** `is_verified` (bool) means the
   signup email was confirmed — `verify()` sets it alongside `status = published`.
   `verified_until` (date) is the paid Verified Business badge. Neither implies the other.
-- Other tables: `directory_categories` (seeded taxonomy, 182 categories / 16 groups, ordered by `directory_category_groups`),
+- Other tables: `directory_categories` (seeded taxonomy, 226 categories / 19 groups, ordered by `directory_category_groups`),
   `directory_practice_locations` (extra locations per listing), `directory_tags` +
   `directory_listing_tags` (filterable areas of focus), `directory_listing_team` (team
   members), `directory_listing_services` + `directory_listing_attributes` ("Services &
@@ -200,6 +200,39 @@ compulsory and stored for everyone. Only what the public sees changes.
   [--dry-run] [--set-venue-point]`. `--set-venue-point` copies the shops' shared
   coordinate onto the venue and refuses when they disagree. `--limit 20`, never
   `--limit=20` (the CLI quirk `GeocodeListings` documents).
+
+## Profile types and Places (added 10 Oct 2026)
+
+- **`DirectoryListingModel::TYPES` is the one list** (person, practice, facility, ngo,
+  community, foundation, project, place). Signup, owner edit, admin intake and the form all
+  read it through `normaliseType()`; the model's `in_list` rule spells the keys out and
+  `ProfileTypesAndPlacesTest` pins the two together. The column is an ENUM, so a new type
+  also needs a migration. `TYPE_SUGGESTIONS` gives every type but the two business ones a
+  category shortlist (slugs, or `group:Name` for a whole group). `type_suggestion_ids()` turns it
+  into ids on each type option's `data-suggest`, and `directory.js` shows it as a
+  "Suggested for {type}" main category made of cloned options, opened when the type changes.
+  The full taxonomy stays below it, and the server accepts any category. A category already
+  picked survives a type change where it can. The test checks every entry is seeded.
+- The last five are not businesses: `listing_type_badge()` shows "Nonprofit", "Place"… on
+  the profile and cards (nothing for the three business types), and `schema_business_type()`
+  takes the type as a third argument. ngo/community/foundation/project, and anything in the
+  **Community & Nonprofit** group, publish as `["LocalBusiness","NGO"]`.
+- **A Place is a profile that is also a venue.** `directory_venues.listing_id` (unique,
+  `ON DELETE SET NULL`) names the venue's own profile. Only admin links it:
+  "Create venue from this place" on the admin edit page (`venueFromPlace()`), or the
+  "Place profile slug" field on `/admin/venues`. Either way the place's own `venue_id` is set
+  to the venue. The place's profile then renders "Inside {name}" (`insidePlace()`, through
+  `browse()` so hidden address listings stay out) in the `venue` panel slot, a business
+  inside links to the place, and the venue page links to it. Owners still cannot set
+  `venue_id`.
+- **Faith & Worship** (Yelp's Religious Organizations) and **Places & Venues** (malls,
+  stadiums, halls, markets, museums, parks) are their own main categories. Community &
+  Nonprofit is filed by cause (Children & Youth, Feeding Scheme…), as Google advises.
+  Worship and the civic places publish their exact schema.org type paired with LocalBusiness
+  (checked before the NGO rule); Faith & Worship says "Service times" and carries the
+  `worship_language` facet.
+- Fitness & Sport has the `sport` facet set (`facilities`, `access`) in `Config\ListingFacets`,
+  which is how "padel courts" finds a club.
 
 ## Geocoding provider: Mapbox for lookup, Nominatim as fallback
 

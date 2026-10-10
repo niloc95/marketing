@@ -73,6 +73,7 @@ if (isset($l['distance_m'])) {
         <?php // Verified before Featured: one says we checked this business, the
               // other says we are promoting it. The stronger claim reads first. ?>
         <?php if (listing_is_verified_business($l)): ?><?= verified_badge_pill() ?><?php endif; ?>
+        <?= listing_type_badge($l) ?>
         <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
         <?php // The complex this shop sits in. Only present on the queries that
               // join the venue (browse/featured/recent/related), so nothing else

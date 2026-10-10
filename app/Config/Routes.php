@@ -186,6 +186,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('new', 'Admin::store');
     $routes->get('edit/(:num)', 'Admin::edit/$1');
     $routes->post('edit/(:num)', 'Admin::update/$1');
+    $routes->post('edit/(:num)/make-venue', 'Admin::venueFromPlace/$1');
 
     // Moderation
     $routes->post('feature/(:num)', 'Admin::feature/$1');

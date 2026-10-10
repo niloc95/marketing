@@ -880,6 +880,14 @@ class Admin extends BaseController
         ]);
     }
 
+    /** A Place profile becomes a venue; see DirectoryAdminService::venueFromPlace(). */
+    public function venueFromPlace(int $id)
+    {
+        $result = (new DirectoryAdminService())->venueFromPlace($id);
+
+        return $this->backTo('admin/edit/' . $id, $result);
+    }
+
     public function storeVenue()
     {
         $result = (new DirectoryAdminService())->saveVenue(null, $this->request->getPost());

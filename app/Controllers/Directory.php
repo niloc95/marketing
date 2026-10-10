@@ -521,6 +521,7 @@ class Directory extends BaseController
             'q'          => $q,
             'categories' => $svc->categoryCountsForVenue((int) $venue['id']),
             'total'      => $svc->venueListingCount((int) $venue['id']),
+            'placeProfile' => $svc->placeProfileFor($venue),
         ]);
     }
 
