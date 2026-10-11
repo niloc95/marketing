@@ -2187,7 +2187,9 @@
   .form-card-narrow { @apply mx-auto max-w-lg; }
   .form-row  { @apply grid gap-4 sm:grid-cols-2; }
   .field     { @apply mb-4; }
-  .field label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+  /* Semibold and near black, so a label reads as the heading of its box and
+     not as one more line of grey next to the placeholder inside it. */
+  .field label { @apply mb-1.5 block text-sm font-semibold text-slate-900; }
   .field input[type="text"],
   .field input[type="email"],
   .field input[type="password"],
@@ -2202,7 +2204,7 @@
   .field select,
   .field textarea {
     @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm
-           focus:border-primary-500 focus:ring-primary-500;
+           placeholder:text-slate-400 focus:border-primary-500 focus:ring-primary-500;
   }
   /* The corner standard (tailwind.tokens.cjs): every one-line control is a
      44px pill, padded 16px a side. A select keeps room on the right for its
@@ -2231,10 +2233,10 @@
      choices. `.field label` is block and margin-bottom by default, which would
      stack the radio above its own words — hence the flex override here. */
   .consent-choice        { @apply m-0 border-0 p-0; }
-  .consent-choice legend { @apply mb-1.5 p-0 text-sm font-medium text-slate-700; }
+  .consent-choice legend { @apply mb-1.5 p-0 text-sm font-semibold text-slate-900; }
   .consent-choice label  { @apply mb-0 flex items-center gap-2 py-0.5 text-sm font-normal text-slate-600; }
   .consent-choice input  { @apply m-0 shrink-0; }
-  .dark .consent-choice legend { @apply text-slate-200; }
+  .dark .consent-choice legend { @apply text-white; }
   .dark .consent-choice label  { @apply text-slate-300; }
 
   /* "Where do customers meet you?" — the consent-choice radios, plus a
@@ -2242,8 +2244,8 @@
      again, not a choice. [hidden] needs forcing: the label rules above set a
      display that would otherwise outrank it. */
   .service-area-choice .field          { @apply mb-0; }
-  .service-area-choice label[for]      { @apply mb-1.5 block text-sm font-medium text-slate-700; }
-  .dark .service-area-choice label[for] { @apply text-slate-200; }
+  .service-area-choice label[for]      { @apply mb-1.5 block text-sm font-semibold text-slate-900; }
+  .dark .service-area-choice label[for] { @apply text-white; }
   .service-area-choice [hidden]        { @apply !hidden; }
 
   /* Fields kept for administration only — see _form_fields.php. */
@@ -2257,7 +2259,7 @@
   .dark .form-private legend { @apply text-slate-200; }
   .dark .form-private-note   { @apply text-slate-400; }
   .dark .form-card   { @apply border-slate-800 bg-[#1a202c]; }
-  .dark .field label { @apply text-slate-200; }
+  .dark .field label { @apply text-white; }
   .dark .field input[type="text"],
   .dark .field input[type="email"],
   .dark .field input[type="password"],
@@ -2267,7 +2269,7 @@
   .dark .field input[type="date"],
   .dark .field select,
   .dark .field textarea {
-    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-500
            focus:border-primary-300 focus:ring-primary-300;
   }
   /* A file input is not a text box and cannot be styled as one. It used to sit
@@ -2789,7 +2791,7 @@
      group points at nothing, so this stays a <legend> — but it must not read as
      a different kind of heading from the same question on the listing form,
      which is what the old small-caps treatment did. */
-  .facet-field legend { @apply mb-1.5 p-0 text-sm font-medium text-slate-700; }
+  .facet-field legend { @apply mb-1.5 p-0 text-sm font-semibold text-slate-900; }
   /* The number boxes sit in a fieldset, not a .field, so the shared input rule
      above does not reach them. */
   .facet-field input[type="number"] {
@@ -2798,15 +2800,18 @@
   }
   .results-filter-actions { @apply mt-5 flex items-center gap-2; }
 
-  .dark .facet-field legend { @apply text-slate-200; }
+  .dark .facet-field legend { @apply text-white; }
   .dark .facet-field input[type="number"] {
     @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-400
            focus:border-primary-300 focus:ring-primary-300;
   }
 
-  /* The divider between the essentials and the optional sections. */
+  /* The heads that walk an owner down the listing form, one per step, each
+     with a one line hint under it. The first sits at the top of the card, so
+     it drops the divider and the space above. */
   .form-section-head    { @apply mb-3 mt-8 border-t border-slate-200 pt-6; }
   .form-section-head h3 { @apply m-0 text-lg font-bold text-slate-900; }
+  .form-section-head-first { @apply mt-0 border-t-0 pt-0; }
   .dark .form-section-head    { @apply border-slate-800; }
   .dark .form-section-head h3 { @apply text-white; }
 
@@ -3094,9 +3099,31 @@
   .dark .rt-count      { @apply text-slate-400; }
 
   /* "Help me write this" and the category hints under the description. */
-  .describe-help              { @apply mt-2; }
+  .describe-help              { @apply mt-3; }
+  .describe-help-lead         { @apply flex flex-wrap items-center gap-x-3 gap-y-2; }
+  .describe-help-lead p       { @apply m-0 text-sm text-slate-600; }
+  .dark .describe-help-lead p { @apply text-slate-300; }
+  /* The questions roll down under "Write it with ChatGPT". Animating
+     grid-template-rows from 0fr to 1fr slides to the content's own height
+     without measuring it; the inner div clips while it is shorter. */
+  .describe-panel             { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+  .describe-panel.is-open     { grid-template-rows: 1fr; }
+  .describe-panel-inner       { @apply min-h-0 overflow-hidden; }
+  .describe-panel.is-open .describe-panel-inner { @apply pt-3; }
+  @media (prefers-reduced-motion: reduce) {
+    .describe-panel { transition: none; }
+  }
+  /* The four optional questions that feed "Write it with ChatGPT". Inside
+     .field, so the labels and inputs already look like the rest of the form;
+     this only frames them as one quiet aside and tightens the spacing. */
+  .describe-questions         { @apply mb-3 rounded-inner border border-slate-200 p-4; }
+  .describe-questions legend  { @apply px-1 text-sm font-semibold text-slate-700; }
+  .describe-questions label   { @apply mt-3 mb-1 text-xs font-medium text-slate-700; }
+  .dark .describe-questions label { @apply text-slate-200; }
+  .describe-questions label:first-of-type { @apply mt-1; }
+  .dark .describe-questions        { @apply border-slate-700; }
+  .dark .describe-questions legend { @apply text-slate-200; }
   .describe-help-row          { @apply flex flex-wrap items-center gap-x-3 gap-y-1; }
-  .describe-help-status       { @apply mt-0; }
   .describe-hints             { @apply mt-3; }
   .describe-hints-list        { @apply mt-1.5 flex flex-wrap gap-2; }
   .describe-hints-list .chip  { @apply h-7 px-3 text-xs; }

@@ -10,7 +10,6 @@ use App\Libraries\DomainChecker;
 use App\Libraries\MauticClient;
 use App\Services\Description\DescriptionDraftService;
 use App\Services\Description\DescriptionWriter;
-use App\Services\Description\WorkersAiWriter;
 use App\Services\DirectoryService;
 use App\Services\Search\QueryInterpreter;
 use App\Services\Search\RuleBasedInterpreter;
@@ -77,9 +76,10 @@ class Services extends BaseService
     }
 
     /**
-     * Whatever drafts a description for "Help me write this": Cloudflare
-     * Workers AI over the templates when its credentials are set, the
-     * templates alone otherwise. See DescriptionWriter.
+     * Whatever drafts a description in the page: the templates, with no
+     * button on the form today ("Write it with ChatGPT" replaced it, see
+     * DescriptionPrompt). Kept as the fallback for a Claude Haiku writer
+     * later. See DescriptionWriter.
      */
     public static function descriptionWriter(bool $getShared = true): DescriptionWriter
     {
@@ -87,13 +87,7 @@ class Services extends BaseService
             return static::getSharedInstance('descriptionWriter');
         }
 
-        $config = config('Directory');
-        $ai     = $config->workersAi();
-        if ($ai['token'] === '') {
-            return new DescriptionDraftService();
-        }
-
-        return new WorkersAiWriter($ai['account'], $ai['token'], $config->workersAiModel, $config->aiDraftsPerDay);
+        return new DescriptionDraftService();
     }
 
     /**

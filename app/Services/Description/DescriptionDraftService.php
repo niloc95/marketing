@@ -6,9 +6,13 @@ use App\Libraries\RichText;
 use Config\DescriptionTemplates;
 
 /**
- * "Help me write this": a first draft of the business description, written
- * from templates (Config\DescriptionTemplates) and the owner's own answers
- * elsewhere on the form. No model, no network, no cost.
+ * A first draft of the business description, written from templates
+ * (Config\DescriptionTemplates) and the owner's own answers elsewhere on the
+ * form. No model, no network, no cost.
+ *
+ * Not on the form today: "Write it with ChatGPT" replaced the button that
+ * used it (11 Oct 2026). Kept, with its tests, as the fallback for a Claude
+ * Haiku writer behind Services::descriptionWriter().
  *
  * The draft only ever says what the owner told us: their category and town,
  * the services and areas of focus they typed, the places they travel to, the

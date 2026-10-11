@@ -40,12 +40,14 @@ final class RichText
      * public/assets/directory.js reads this from the form's data-rich-text-max,
      * so there is nothing to keep in step.
      *
-     * Down from 5000. A short description plus the structured "Services &
-     * prices" and "Features & amenities" sections reads better than an essay,
-     * and the long box was the part of signup people stalled on. Profiles saved
-     * under the old cap keep their text — see exceedsCap().
+     * Was 5000, came down to 1000 because the long box was the part of signup
+     * people stalled on, and is now 3000: 1000 left no room for a practice
+     * with several people or a real story to tell. The hint and the ChatGPT
+     * target (DescriptionPrompt::TARGET_CHARS) still ask for short, so most
+     * owners never come near it. Profiles saved under the old 5000 cap keep
+     * their text — see exceedsCap().
      */
-    public const MAX_PLAIN_LENGTH = 1000;
+    public const MAX_PLAIN_LENGTH = 3000;
 
     /**
      * Every element permitted in stored HTML.

@@ -101,6 +101,13 @@ helper('directory_hours');
           // rendered is not reliably used as the default. ?>
     <button type="submit" class="form-default-submit" tabindex="-1" aria-hidden="true">Save</button>
 <?php endif; ?>
+<?php // The essentials, split into short steps so an owner can see where they
+      // are. Same .form-section-head as "Make your profile stand out" below,
+      // so every step down the form looks alike. ?>
+<div class="form-section-head form-section-head-first">
+    <h3>What you do</h3>
+    <p class="hint">Choose the kind of profile and the category customers would search for.</p>
+</div>
 <div class="form-row">
     <div class="field">
         <label>Profile type</label>
@@ -152,6 +159,10 @@ helper('directory_hours');
     <?= view('directory/_team_fields', ['rows' => $vTeam, 'err' => $err]) ?>
 <?php endif; ?>
 
+<div class="form-section-head">
+    <h3>How customers reach you</h3>
+    <p class="hint">Your name and contact details, shown on your profile so people can call, message or visit your website.</p>
+</div>
 <div class="form-row">
     <div class="field">
         <label>Business or trading name *</label>
@@ -208,6 +219,10 @@ helper('directory_hours');
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
+<div class="form-section-head">
+    <h3>Tell people about you</h3>
+    <p class="hint">A few honest sentences about what you do. Stuck? Let ChatGPT write a first draft from your answers.</p>
+</div>
 <div class="field" data-rich-text data-rich-text-max="<?= \App\Libraries\RichText::MAX_PLAIN_LENGTH ?>">
     <label for="description">Business description<?= $privateDetailsRequired ? ' *' : '' ?></label>
     <?php /*
@@ -233,16 +248,44 @@ helper('directory_hours');
         <div data-rich-text-for="description"></div>
     </div>
     <div class="rt-count" data-rich-text-count data-rich-text-goal="<?= \App\Services\ListingQualityService::DESCRIPTION_FULL_CHARS ?>" hidden></div>
-    <?php // "Help me write this": directory.js reveals it, drafts from the form
-          // as filled in so far (DescriptionHelper::draft) and shows hints from
-          // the chosen category (::insights). Templates, not a model, and
-          // nothing is saved until the form is. Hidden without the script. ?>
+    <?php // "Write it with ChatGPT": directory.js reveals this. The button
+          // rolls the four questions down; the link inside them is what opens
+          // ChatGPT, kept pointing there with the form's details and the
+          // answers (DescriptionHelper::prompt). The hints come from the
+          // chosen category (::insights). ChatGPT refuses to load in a frame
+          // and we never call OpenAI ourselves, so it opens in a new tab and
+          // the owner pastes the answer back. Hidden without the script. ?>
     <div class="describe-help" data-describe-help hidden
-         data-draft-url="<?= base_url('description/draft') ?>"
-         data-insights-url="<?= base_url('description/insights') ?>">
-        <div class="describe-help-row">
-            <button type="button" class="btn-ghost btn-xs" data-describe-draft>Help me write this</button>
-            <span class="hint describe-help-status" data-describe-status role="status" aria-live="polite">Writes a first draft from your category, town, services and features. Nothing is saved until you save the form.</span>
+         data-insights-url="<?= base_url('description/insights') ?>"
+         data-prompt-url="<?= base_url('description/prompt') ?>">
+        <div class="describe-help-lead">
+            <p>Not sure what to write?</p>
+            <button type="button" class="btn-primary btn-xs" data-describe-open aria-expanded="false" aria-controls="describe-panel">Write it with ChatGPT</button>
+        </div>
+        <div class="describe-panel" id="describe-panel" data-describe-panel>
+            <div class="describe-panel-inner">
+                <?php // The four questions only feed the prompt. No name attribute,
+                      // so the form never posts or saves them; directory.js reads
+                      // them by data-describe-q. ?>
+                <fieldset class="describe-questions">
+                    <legend>Answer any of these, then open ChatGPT</legend>
+                    <label for="describe-q-approach">What do you believe in, or how do you work?</label>
+                    <textarea id="describe-q-approach" rows="2" maxlength="400" data-describe-q="approach" placeholder="e.g. We believe beauty starts with feeling confident"></textarea>
+                    <label for="describe-q-people">Who will customers see, and what are their qualifications?</label>
+                    <textarea id="describe-q-people" rows="2" maxlength="400" data-describe-q="people" placeholder="e.g. Dr Thandi Mokoena, dermatologist, and Lynn, a registered nurse"></textarea>
+                    <label for="describe-q-years">How long have you been doing this?</label>
+                    <input type="text" id="describe-q-years" maxlength="400" data-describe-q="years" placeholder="e.g. 12 years">
+                    <label for="describe-q-different">What makes you different, or what do customers love?</label>
+                    <textarea id="describe-q-different" rows="2" maxlength="400" data-describe-q="different" placeholder="e.g. Calm, private treatment rooms and no rushed appointments"></textarea>
+                </fieldset>
+                <?php // A real link, kept up to date by directory.js. A link click
+                      // is never a blocked pop up; a window opened after a fetch
+                      // was, in Safari. ?>
+                <div class="describe-help-row">
+                    <a class="btn-primary btn-xs" href="https://chatgpt.com/" target="_blank" rel="noopener" data-describe-chatgpt>Open ChatGPT with my answers</a>
+                </div>
+                <div class="hint" data-describe-status role="status" aria-live="polite">Opens ChatGPT in a new tab with your details and answers. Copy what it writes, come back and paste it into the box above. Nothing is saved until you save the form.</div>
+            </div>
         </div>
         <div class="describe-hints" data-describe-hints hidden>
             <div class="hint" data-describe-hints-label></div>
@@ -257,6 +300,10 @@ helper('directory_hours');
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 
+<div class="form-section-head">
+    <h3>Where you are</h3>
+    <p class="hint">Your address puts you on the map and in local searches. You choose below whether it shows on your profile.</p>
+</div>
 <?php // id: the profile-strength panel links here for the address, city and
       // province steps. The ids for those three inputs cannot live in
       // _address_inputs.php itself — branch rows render the same partial, so

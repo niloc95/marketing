@@ -89,11 +89,11 @@ $routes->get('address-suggest', 'AddressSuggest::index');
 $routes->get('address-locate', 'AddressSuggest::locate');
 $routes->get('address-reverse', 'AddressSuggest::reverse');
 
-// "Help me write this" on the description field of the same three forms: a
-// template draft from the form as filled in so far, and hints mined from the
-// category. Read-only GETs, so no CSRF token to thread through.
-$routes->get('description/draft', 'DescriptionHelper::draft');
+// The description field of the same three forms: hints mined from the
+// category, and the prompt for "Write it with ChatGPT". Read-only GETs, so no
+// CSRF token to thread through.
 $routes->get('description/insights', 'DescriptionHelper::insights');
+$routes->get('description/prompt', 'DescriptionHelper::prompt');
 
 // Owner self-service (passwordless: emailed single-use magic link).
 // The literal segments MUST precede the {token} catch-all.

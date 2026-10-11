@@ -40,11 +40,6 @@ final class CategoryInsightsTest extends CIUnitTestCase
     {
         parent::setUp();
         cache()->clean();
-        // Templates only: a developer's .env may hold real Workers AI
-        // credentials, and a test must never call Cloudflare.
-        $_ENV['directory.workersAiAccountId'] = '';
-        $_ENV['directory.workersAiToken']     = '';
-        \Config\Services::resetSingle('descriptionWriter');
         $this->listings = new DirectoryListingModel();
 
         foreach ([
@@ -56,13 +51,6 @@ final class CategoryInsightsTest extends CIUnitTestCase
                 'name' => $name, 'slug' => $slug, 'group_name' => $group, 'is_active' => 1,
             ], true);
         }
-    }
-
-    protected function tearDown(): void
-    {
-        unset($_ENV['directory.workersAiAccountId'], $_ENV['directory.workersAiToken']);
-        \Config\Services::resetSingle('descriptionWriter');
-        parent::tearDown();
     }
 
     public function testServicesSharedByThreeListingsBecomeHints(): void
@@ -174,44 +162,71 @@ final class CategoryInsightsTest extends CIUnitTestCase
         $this->assertContains('Teeth whitening', $json['hints']);
     }
 
-    public function testTheDraftEndpoint(): void
+    public function testThePromptEndpointCarriesTheFactsAndTheRules(): void
     {
         $query = http_build_query([
-            'type'              => 'practice',
-            'category_id'       => $this->categories['dentist'],
-            'display_name'      => 'Sandton Smiles',
-            'city'              => 'Johannesburg',
-            'suburb'            => 'Sandton',
-            'customer_location' => 'visit',
-            'services'          => ['Fillings', ''],
-            'tags'              => 'Braces, Nervous patients',
-            'features'          => ['parking', 'accepts_card_payments', 'not_a_feature'],
+            'type'              => 'person',
+            'category_id'       => $this->categories['plumber'],
+            'display_name'      => 'Thabo Plumbing',
+            'city'              => 'Randburg',
+            'customer_location' => 'travel',
+            'service_areas'     => "Fourways\nSandton",
+            'services'          => ['Burst geysers'],
+            'features'          => ['not_a_feature'],
         ]);
 
-        $json = json_decode($this->get('description/draft?' . $query)->getJSON(), true);
+        $json = json_decode($this->get('description/prompt?' . $query)->getJSON(), true);
 
-        $this->assertStringContainsString('Sandton Smiles is a dentist', $json['html']);
-        $this->assertStringContainsString('fillings', $json['html']);
-        $this->assertStringContainsString('braces and nervous patients', $json['html']);
-        $this->assertStringContainsString('parking available and card payments accepted', $json['html']);
-        $this->assertStringNotContainsString('not_a_feature', $json['html']);
+        $this->assertStringContainsString('Business name: Thabo Plumbing', $json['prompt']);
+        $this->assertStringContainsString('Category: Plumber', $json['prompt']);
+        $this->assertStringContainsString('We travel to customers in: Fourways, Sandton', $json['prompt']);
+        $this->assertStringContainsString('Do not use dashes', $json['prompt']);
+        $this->assertStringNotContainsString('not_a_feature', $json['prompt']);
     }
 
-    public function testTheDraftEndpointAsksForWhatIsMissing(): void
+    public function testThePromptCarriesTheOwnersAnswersAndCredentials(): void
     {
-        $json = json_decode($this->get('description/draft?display_name=Sandton+Smiles')->getJSON(), true);
+        $query = http_build_query([
+            'category_id'  => $this->categories['dentist'],
+            'display_name' => 'Sandton Smiles',
+            'credentials'  => 'BDS (Wits)',
+            'q_approach'   => 'Gentle care, no rushing',
+            'q_people'     => 'Dr Thandi Mokoena, dentist',
+            'q_years'      => '12 years',
+            'q_different'  => '',
+            'features'     => ['parking', 'accepts_card_payments'],
+        ]);
 
-        $this->assertSame('', $json['html']);
-        $this->assertStringContainsString('category', $json['message']);
+        $prompt = json_decode($this->get('description/prompt?' . $query)->getJSON(), true)['prompt'];
+
+        $this->assertStringContainsString('Credentials: BDS (Wits)', $prompt);
+        $this->assertStringContainsString('What we believe, or how we work: Gentle care, no rushing', $prompt);
+        $this->assertStringContainsString('and their qualifications: Dr Thandi Mokoena, dentist', $prompt);
+        $this->assertStringContainsString('How long we have been doing this: 12 years', $prompt);
+        $this->assertStringContainsString('Features: Parking available, Card payments accepted', $prompt);
+        // An unanswered question is left out, not sent blank.
+        $this->assertStringNotContainsString('What makes us different', $prompt);
     }
 
     public function testNoAnswerOnWhereCustomersMeetYouMeansTheyVisit(): void
     {
-        $query = http_build_query(['category_id' => $this->categories['dentist'], 'display_name' => 'Sandton Smiles', 'services' => ['Fillings']]);
+        $query = http_build_query([
+            'category_id'   => $this->categories['plumber'],
+            'display_name'  => 'Thabo Plumbing',
+            'service_areas' => 'Fourways',
+        ]);
 
-        $json = json_decode($this->get('description/draft?' . $query)->getJSON(), true);
+        $prompt = json_decode($this->get('description/prompt?' . $query)->getJSON(), true)['prompt'];
 
-        $this->assertStringNotContainsString('travel', $json['message']);
+        $this->assertStringNotContainsString('Fourways', $prompt);
+    }
+
+    public function testThePromptEndpointAsksForTheBasicsFirst(): void
+    {
+        $json = json_decode($this->get('description/prompt?display_name=Thabo')->getJSON(), true);
+
+        $this->assertSame('', $json['prompt']);
+        $this->assertStringContainsString('category', $json['message']);
     }
 
     /** @param list<string> $services */

@@ -34,11 +34,6 @@
   var setDescriptionHtml = null;
   var movePinTo = null;
 
-  // And one for the description helper: put a draft into the editor as an
-  // edit the owner can undo. Set by the description editor; while it is null
-  // the helper writes into the plain textarea instead.
-  var replaceDescription = null;
-
   // -------------------------------------------------------- theme toggle
   // The .dark class is already on <html> — the blocking guard in the layout's
   // <head> set it before first paint. This only flips it and persists the
@@ -2792,12 +2787,39 @@
     // Capture phase on the shell, not on quill.root: listeners on the element
     // that is itself the target fire in registration order, and Quill got there
     // first. An ancestor's capture listener always runs before both.
+    //
+    // The same handler takes dashes out, because customer copy has none and
+    // a ChatGPT answer ("Write it with ChatGPT") is full of them. Em and en
+    // dashes become commas; a hyphen between two lower case letters becomes a
+    // space ("walk-in" reads "walk in"). A hyphen next to a capital is left,
+    // so proper names such as KwaZulu-Natal and Bela-Bela keep theirs. Only
+    // text is touched, never markup, so a link's address survives.
+    var DASHED = /[\u2013\u2014]|[a-z\u00df-\u00ff][\u2010\u2011-][a-z\u00df-\u00ff]/;
+
+    function undashText(text) {
+      return text
+        .replace(/\s*[\u2013\u2014]+\s*/g, ', ')
+        .replace(/([a-z\u00df-\u00ff])[\u2010\u2011-](?=[a-z\u00df-\u00ff])/g, '$1 ');
+    }
+
+    function undashHtml(html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+      for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+        node.nodeValue = undashText(node.nodeValue);
+      }
+      return doc.body.innerHTML;
+    }
+
     shell.addEventListener('paste', function (e) {
       var data = e.clipboardData;
       if (!data) return;
 
       var html = data.getData('text/html');
-      if (!html || html.indexOf('style') === -1) return;
+      var text = data.getData('text/plain');
+      var styled = !!html && html.indexOf('style') !== -1;
+      var dashed = DASHED.test(html || text || '');
+      if (!styled && !dashed) return;
 
       e.preventDefault();
       e.stopPropagation();
@@ -2806,11 +2828,15 @@
       if (!range) return;
       if (range.length) quill.deleteText(range.index, range.length, 'user');
 
-      quill.clipboard.dangerouslyPasteHTML(
-        range.index,
-        html.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ''),
-        'user'
-      );
+      if (html) {
+        // Styles out first, as a string, so they never become DOM (see above).
+        var clean = html.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+        quill.clipboard.dangerouslyPasteHTML(range.index, dashed ? undashHtml(clean) : clean, 'user');
+      } else {
+        var plain = undashText(text);
+        quill.insertText(range.index, plain, 'user');
+        quill.setSelection(range.index + plain.length, 0, 'silent');
+      }
     }, true);
 
     function plainLength() {
@@ -2867,33 +2893,22 @@
       render();
     };
 
-    // Unlike setDescriptionHtml, a 'user' change: it lands in the undo
-    // history, and the text-change handler syncs the textarea for the draft
-    // backup like any typed edit.
-    replaceDescription = function (html) {
-      quill.setText('', 'user');
-      quill.clipboard.dangerouslyPasteHTML(0, html, 'user');
-      quill.setSelection(quill.getLength(), 0, 'silent');
-      quill.focus();
-    };
-
     form.addEventListener('submit', syncTextarea);
   })();
 
   // ------------------------------------------------- description helper
-  // "Help me write this" under the description, and the hints from the chosen
-  // category. Both answers come from DescriptionHelper: a template draft built
-  // from the form as filled in so far, and services, areas of focus and word
-  // pairs that at least three published listings in the category share. No
-  // model behind either. A hint is never put in the description directly; a
-  // click adds it to Areas of focus, and the next draft uses it from there, so
-  // the draft only ever says what the owner said.
+  // "Write it with ChatGPT" under the description, and the hints from the
+  // chosen category. The prompt and the hints both come from
+  // DescriptionHelper: the prompt from the form as filled in so far plus the
+  // four questions, the hints from services, areas of focus and word pairs
+  // that at least three published listings in the category share. A hint is
+  // never put in the description directly; a click adds it to Areas of focus,
+  // and the prompt picks it up from there.
   (function () {
     var box = document.querySelector('[data-describe-help]');
     if (!box || !window.fetch || !window.URLSearchParams) return;
 
     var form      = box.closest('form');
-    var button    = box.querySelector('[data-describe-draft]');
     var status    = box.querySelector('[data-describe-status]');
     var hints     = box.querySelector('[data-describe-hints]');
     var hintLabel = box.querySelector('[data-describe-hints-label]');
@@ -2901,7 +2916,7 @@
     var textarea  = form && form.querySelector('textarea[name="description"]');
     var tags      = form && form.querySelector('#field-tags');
     var category  = form && form.querySelector('select[name="category_id"]');
-    if (!form || !button || !textarea) return;
+    if (!form || !textarea) return;
 
     var MAX_TAGS = 20;
     box.hidden = false;
@@ -2935,6 +2950,10 @@
         var el = form.querySelector('input[name="' + n + '"]');
         if (el && el.checked) p.append('features[]', n);
       });
+      p.append('credentials', value('credentials'));
+      box.querySelectorAll('[data-describe-q]').forEach(function (el) {
+        p.append('q_' + el.getAttribute('data-describe-q'), el.value);
+      });
       return p;
     }
 
@@ -2943,45 +2962,104 @@
         .then(function (r) { return r.json(); });
     }
 
-    function currentLength() {
-      // The editor's own text when it is mounted, the textarea's otherwise.
-      var editor = form.querySelector('.rt-editor .ql-editor');
-      var text = editor && !editor.closest('[hidden]') ? editor.textContent : textarea.value;
-      return text.trim().length;
+    // ---- the questions roll down
+    // "Write it with ChatGPT" only opens the questions; the link at their foot
+    // is what goes to ChatGPT. Closed, the panel is inert so Tab skips the
+    // inputs the owner cannot see.
+    var opener = box.querySelector('[data-describe-open]');
+    var panel  = box.querySelector('[data-describe-panel]');
+    if (opener && panel) {
+      var setOpen = function (open, focus) {
+        panel.classList.toggle('is-open', open);
+        if (!open) panel.setAttribute('inert', ''); else panel.removeAttribute('inert');
+        opener.setAttribute('aria-expanded', open ? 'true' : 'false');
+        opener.textContent = open ? 'Hide questions' : 'Write it with ChatGPT';
+        if (open && focus) {
+          var first = panel.querySelector('[data-describe-q]');
+          if (first) first.focus({ preventScroll: true });
+        }
+      };
+      // A browser that put typed answers back after a reload shows them.
+      var answered = Array.prototype.some.call(box.querySelectorAll('[data-describe-q]'),
+        function (el) { return el.value.trim() !== ''; });
+      setOpen(answered, false);
+      opener.addEventListener('click', function () {
+        setOpen(!panel.classList.contains('is-open'), true);
+      });
     }
 
-    function useDraft(html) {
-      if (replaceDescription) {
-        replaceDescription(html);
-        return;
-      }
-      // No editor: the plain textarea posts text, and the server turns blank
-      // lines into paragraphs. DOMParser rather than innerHTML, so nothing in
-      // the answer can run.
-      var doc = new DOMParser().parseFromString(html, 'text/html');
-      textarea.value = Array.prototype.map.call(doc.querySelectorAll('p'), function (p) {
-        return p.textContent;
-      }).join('\n\n');
-    }
+    // ---- Write it with ChatGPT
+    // ChatGPT will not load in a frame (it sends X-Frame-Options), so it opens
+    // in a new tab with the details in the address (?q=). The button is a real
+    // link that this keeps up to date as the form changes, because a browser
+    // treats a window opened after a fetch as a pop up and Safari blocks it,
+    // while a link click always goes through. The click also copies the
+    // details, in case ChatGPT ever stops reading ?q=.
+    var chatGpt = box.querySelector('[data-describe-chatgpt]');
+    var awayAtChatGpt = false;
+    var prompt = '';
+    var promptMessage = '';
+    var promptTimer = null;
+    var promptRequest = 0;
 
-    button.addEventListener('click', function () {
-      if (currentLength() > 0 &&
-          !window.confirm('Replace what you have written with a new draft? You can undo it afterwards.')) {
-        return;
-      }
-      button.disabled = true;
-      say('Writing a draft\u2026');
-      getJson(box.getAttribute('data-draft-url') + '?' + params().toString())
-        .then(function (data) {
-          if (data && data.html) useDraft(data.html);
-          say((data && data.message) || '');
-          button.disabled = false;
+    // Only the fields params() sends. Anything else (the phone number, the
+    // description itself) changes nothing in the prompt, and asking anyway
+    // would spend the endpoint's per minute allowance on keystrokes.
+    var PROMPT_FIELDS = /^(type|category_id|display_name|city|suburb|service_areas|customer_location|specializations|credentials|attributes\[\]|accepts_card_payments|offers_delivery|offers_online_booking|services\[\d+\]\[(name|_remove)\])$/;
+
+    function refreshPrompt() {
+      var mine = ++promptRequest;
+      fetch(box.getAttribute('data-prompt-url') + '?' + params().toString(),
+        { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status); // throttled: keep the last good link
+          return r.json();
         })
-        .catch(function () {
-          say('We could not write a draft just now. Please try again in a moment.');
-          button.disabled = false;
-        });
-    });
+        .then(function (data) {
+          if (mine !== promptRequest) return; // a newer edit has asked since
+          prompt = (data && data.prompt) || '';
+          promptMessage = (data && data.message) || '';
+          chatGpt.href = prompt ? 'https://chatgpt.com/?q=' + encodeURIComponent(prompt) : 'https://chatgpt.com/';
+        })
+        .catch(function () { /* keep the last good link */ });
+    }
+
+    function schedulePrompt(e) {
+      if (e && e.target && !PROMPT_FIELDS.test(e.target.name || '') &&
+          !(e.target.hasAttribute && e.target.hasAttribute('data-describe-q'))) return;
+      clearTimeout(promptTimer);
+      promptTimer = setTimeout(refreshPrompt, 400);
+    }
+
+    if (chatGpt) {
+      form.addEventListener('input', schedulePrompt);
+      form.addEventListener('change', schedulePrompt);
+      refreshPrompt();
+
+      chatGpt.addEventListener('click', function (e) {
+        if (!prompt) {
+          e.preventDefault();
+          say(promptMessage || 'Choose your category and type your business name first, then try again.');
+          return;
+        }
+        // Inside the click, so the browser allows the copy.
+        var copied = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          copied = true;
+          navigator.clipboard.writeText(prompt).catch(function () { /* the link carries it anyway */ });
+        }
+        awayAtChatGpt = true;
+        say('ChatGPT is opening in a new tab' +
+          (copied ? ', and your details are copied in case they do not show up there' : '') +
+          '. When it has written your description, copy it, come back and paste it into the box above.');
+      });
+
+      window.addEventListener('focus', function () {
+        if (!awayAtChatGpt) return;
+        awayAtChatGpt = false;
+        say('Paste ChatGPT\u2019s answer into the box above, then read it through: make sure it only says what is true about your business before you save.');
+      });
+    }
 
     // ---- hints
     function tagList() {
@@ -3011,7 +3089,7 @@
       var more = tags.closest('details');
       if (more) more.open = true;
       chip.setAttribute('aria-pressed', 'true');
-      say('Added "' + text + '" to Areas of focus. Press Help me write this to use it in a draft.');
+      say('Added "' + text + '" to Areas of focus. Write it with ChatGPT will include it.');
     }
 
     function labelFor(data) {

@@ -4,20 +4,32 @@ namespace App\Controllers;
 
 use App\Models\DirectoryCategoryModel;
 use App\Services\Description\CategoryInsightsService;
+use App\Services\Description\DescriptionPrompt;
 
 /**
- * AJAX backend for "Help me write this" on the description field of the
- * signup, owner and admin listing forms. Public and unauthenticated like
- * AddressSuggest (signup comes before any session), so throttled per IP.
+ * AJAX backend for the description field of the signup, owner and admin
+ * listing forms: the category hints, and the prompt for "Write it with
+ * ChatGPT". Public and unauthenticated like AddressSuggest (signup comes
+ * before any session), so throttled per IP.
  *
- * Both actions only read. draft() writes text from the form values it is
- * sent and stores nothing; the owner decides whether to keep it. Nothing here
- * costs money per call, so the throttle is only there to stop the insights
- * query being used as a load test.
+ * Both actions only read and store nothing. Nothing here costs money per
+ * call, so the throttle is only there to stop the insights query being used
+ * as a load test.
  */
 class DescriptionHelper extends BaseController
 {
     private const MAX_PER_MINUTE = 30;
+
+    private const NEED_BASICS = 'Choose your category and type your business name first, then try again.';
+
+    /**
+     * The four questions under the description (see _form_fields.php), by
+     * the name directory.js sends each answer under. Used for the prompt only:
+     * the inputs have no name of their own, so the form never saves them.
+     */
+    private const ANSWERS = ['approach', 'people', 'years', 'different'];
+
+    private const ANSWER_MAX = 400;
 
     /** The three listing columns the form shows beside the ticked features. */
     private const FLAG_FEATURES = [
@@ -26,19 +38,38 @@ class DescriptionHelper extends BaseController
         'offers_online_booking' => 'Online booking',
     ];
 
-    public function draft()
+    /**
+     * The prompt for "Write it with ChatGPT": the owner's facts and our
+     * writing rules as plain text. The browser opens ChatGPT with it in a new
+     * tab (ChatGPT will not load in a frame) and copies it to the clipboard.
+     * We never call OpenAI ourselves; the owner sends it, from their account.
+     */
+    public function prompt()
     {
-        if (! $this->allow('description-draft')) {
-            return $this->response->setStatusCode(429)->setJSON(['html' => '', 'message' => 'Too many drafts in a row. Try again in a minute.']);
+        if (! $this->allow('description-prompt')) {
+            return $this->response->setStatusCode(429)->setJSON(['prompt' => '', 'message' => 'Too many tries in a row. Try again in a minute.']);
         }
 
+        $facts = $this->facts();
+
+        return $this->response->setJSON($facts === null
+            ? ['prompt' => '', 'message' => self::NEED_BASICS]
+            : ['prompt' => DescriptionPrompt::build($facts), 'message' => '']);
+    }
+
+    /**
+     * The form as sent, cleaned up into the facts DescriptionPrompt reads
+     * (the same shape DescriptionWriter takes, plus credentials and the four
+     * answers). Null without an active category and a business name.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function facts(): ?array
+    {
         $category = (new DirectoryCategoryModel())->where('is_active', 1)->find((int) $this->request->getGet('category_id'));
         $name     = trim((string) $this->request->getGet('display_name'));
         if (! is_array($category) || $name === '') {
-            return $this->response->setJSON([
-                'html'    => '',
-                'message' => 'Choose your category and type your business name first, then try again.',
-            ]);
+            return null;
         }
 
         $services = array_values(array_filter(array_map(
@@ -58,7 +89,13 @@ class DescriptionHelper extends BaseController
 
         $location = (string) $this->request->getGet('customer_location');
         $location = in_array($location, ['visit', 'travel', 'both'], true) ? $location : 'visit';
-        $facts    = [
+
+        $answers = [];
+        foreach (self::ANSWERS as $key) {
+            $answers[$key] = $this->text('q_' . $key, self::ANSWER_MAX);
+        }
+
+        return $answers + [
             'type'              => (string) $this->request->getGet('type'),
             'name'              => mb_substr($name, 0, 200),
             'category'          => (string) $category['name'],
@@ -70,26 +107,14 @@ class DescriptionHelper extends BaseController
             'services'          => array_slice($services, 0, 20),
             'tags'              => array_slice($tags, 0, 20),
             'features'          => $features,
+            'credentials'       => $this->text('credentials', 500),
         ];
+    }
 
-        // What would make the next draft better, in the order the form asks.
-        $missing = [];
-        if ($services === [] && $tags === []) {
-            $missing[] = 'your services or areas of focus';
-        }
-        if ($location !== 'visit' && $areas === []) {
-            $missing[] = 'the places you travel to';
-        }
-        if ($features === []) {
-            $missing[] = 'your features';
-        }
-
-        return $this->response->setJSON([
-            'html'    => service('descriptionWriter')->draft($facts),
-            'message' => $missing === []
-                ? 'Here is a draft. Make it yours: add what makes you different, then save.'
-                : 'Here is a draft. Add ' . $this->sentenceList($missing) . ' further down the form, then press the button again for a fuller one.',
-        ]);
+    /** One free text field, single spaced and cut to $max characters. */
+    private function text(string $key, int $max): string
+    {
+        return mb_substr(trim((string) preg_replace('/\s+/u', ' ', (string) $this->request->getGet($key))), 0, $max);
     }
 
     public function insights()
@@ -111,14 +136,6 @@ class DescriptionHelper extends BaseController
     private function list(string $text, string $separator): array
     {
         return array_values(array_filter(array_map('trim', explode($separator, str_replace("\r", '', $text)))));
-    }
-
-    /** @param list<string> $items */
-    private function sentenceList(array $items): string
-    {
-        $last = array_pop($items);
-
-        return $items === [] ? (string) $last : implode(', ', $items) . ' and ' . $last;
     }
 
     /** Per-IP, per-action rate limit. False means "over the limit". */
