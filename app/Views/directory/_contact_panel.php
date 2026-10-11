@@ -65,7 +65,7 @@ $whatsappUrl = $showWeb ? whatsapp_chat_url($row['whatsapp'] ?? '', (string) ($r
 
 // safe_external_url() at render time as well as normaliseUrl() on save: a row
 // written before either check existed must still never reach an href unvetted.
-$websiteUrl = $showWeb ? safe_external_url($row['website'] ?? '') : '';
+$websiteUrl = $showWeb ? listing_website_url($row['website'] ?? '') : '';
 $bookingUrl = $showWeb ? safe_external_url($row['booking_url'] ?? '') : '';
 
 // "https://www.example.co.za/" reads as "example.co.za" — what a person would

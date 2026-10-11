@@ -312,7 +312,7 @@ class DirectoryListingMutationService
             'phone'          => $this->clean($input['phone'] ?? ''),
             'whatsapp'       => (string) $this->normaliseWhatsapp($input['whatsapp'] ?? ''),
             'email'          => trim((string) $input['email']),
-            'website'        => (string) $this->normaliseUrl($input['website'] ?? ''),
+            'website'        => $this->normaliseWebsite($input['website'] ?? ''),
             'social_facebook'  => (string) $this->normaliseSocial('social_facebook', $input['social_facebook'] ?? ''),
             'social_instagram' => (string) $this->normaliseSocial('social_instagram', $input['social_instagram'] ?? ''),
             'social_linkedin'  => (string) $this->normaliseSocial('social_linkedin', $input['social_linkedin'] ?? ''),
@@ -634,7 +634,9 @@ class DirectoryListingMutationService
                 } elseif (in_array($field, ['website', 'booking_url'], true)) {
                     // validate() has already rejected anything normaliseUrl
                     // can't make safe, so the ?? '' here is belt-and-braces.
-                    $data[$field] = $this->normaliseUrl($input[$field]) ?? '';
+                    $data[$field] = $field === 'website'
+                        ? $this->normaliseWebsite($input[$field])
+                        : $this->normaliseUrl($input[$field]) ?? '';
                 } elseif (str_starts_with($field, 'social_')) {
                     // Same belt-and-braces: validate() has refused a link that
                     // is not to this network.
@@ -973,7 +975,7 @@ class DirectoryListingMutationService
         // list gets a smaller allowance than one that does not — for characters
         // the owner never typed and cannot see.
         //
-        // Only when the text changed. The cap came down from 5000 to 1000, and
+        // Only when the text changed. The cap came down from 5000 (now 3000), and
         // a profile written under the old one must not block its owner from
         // fixing a phone number — they are asked to shorten it the first time
         // they actually edit it. See RichText::exceedsCap().
@@ -1321,6 +1323,19 @@ class DirectoryListingMutationService
 
         // Lower-case the host only; paths can be case-sensitive.
         return (string) preg_replace('#^https://[^/?\#]+#', 'https://' . $host . (isset($parts['port']) ? ':' . $parts['port'] : ''), $url);
+    }
+
+    /**
+     * normaliseUrl() for the website, which also drops a link to this site
+     * itself (is_own_site_url()). Dropped rather than refused: "no website,
+     * your profile is your website" is what the form promises, so blank is
+     * exactly what the owner meant.
+     */
+    private function normaliseWebsite($value): string
+    {
+        $url = (string) $this->normaliseUrl($value);
+
+        return is_own_site_url($url) ? '' : $url;
     }
 
     /**

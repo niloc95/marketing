@@ -738,7 +738,7 @@ if (! function_exists('schema_local_business')) {
         foreach (array_keys(listing_social_networks()) as $field) {
             $sameAs[] = (string) social_profile_url($field, $l[$field] ?? '');
         }
-        $sameAs[] = safe_external_url($l['website'] ?? '');
+        $sameAs[] = listing_website_url($l['website'] ?? '');
         $sameAs   = array_values(array_filter($sameAs));
 
         $hours = schema_opening_hours($l['trading_hours'] ?? null);

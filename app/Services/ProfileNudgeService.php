@@ -115,7 +115,7 @@ class ProfileNudgeService
             'target'     => $target,
             'steps'      => $strength['next'],
             'profileUrl' => base_url('directory/' . $listing['slug']),
-            'hasWebsite' => trim((string) ($listing['website'] ?? '')) !== '',
+            'hasWebsite' => listing_website_url($listing['website'] ?? '') !== '',
             'manageLink' => $this->manageLink($id),
             'unsubscribe' => (new MarketingConsentService())->unsubscribeUrl($id),
         ]);

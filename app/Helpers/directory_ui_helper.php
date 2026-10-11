@@ -619,6 +619,47 @@ if (! function_exists('safe_external_url')) {
     }
 }
 
+if (! function_exists('is_own_site_url')) {
+    /**
+     * Whether a URL points at WebScheduler Local itself: this install's own
+     * host, or local./listing. on webscheduler.co.za (listing. is the old name
+     * and still 301s here).
+     *
+     * A business's website is never one of ours. The profile already is its
+     * page on this site, and its address changes with the name. One got in
+     * anyway: cpt-dental saved .../add-profile, most likely the browser
+     * filling the box (it is autocomplete="url") or an owner pasting the
+     * address the manage page suggests for other sites' forms.
+     */
+    function is_own_site_url(?string $url): bool
+    {
+        $host = strtolower((string) parse_url(trim((string) $url), PHP_URL_HOST));
+        if ($host === '') {
+            return false;
+        }
+        $host = (string) preg_replace('/^www\./', '', $host);
+        $own  = ['local.webscheduler.co.za', 'listing.webscheduler.co.za',
+                 strtolower((string) parse_url(base_url(), PHP_URL_HOST))];
+
+        return in_array($host, $own, true);
+    }
+}
+
+if (! function_exists('listing_website_url')) {
+    /**
+     * A listing's website as a link: safe_external_url(), and '' for one of our
+     * own addresses (see is_own_site_url()), which a row saved before that rule
+     * may still hold. Everything that shows or counts the website reads it
+     * through here.
+     */
+    function listing_website_url(?string $url): string
+    {
+        $url = safe_external_url($url);
+
+        return $url !== '' && is_own_site_url($url) ? '' : $url;
+    }
+}
+
 if (! function_exists('listing_is_indexable')) {
     /**
      * Whether a published profile is offered to search engines: robots meta on

@@ -63,7 +63,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                             &middot; <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug'])) ?>" target="_blank">View public page</a>
                         <?php endif; ?>
                     </p>
-                    <?php if ($listing['status'] === 'published' && trim((string) ($listing['website'] ?? '')) === ''): ?>
+                    <?php if ($listing['status'] === 'published' && listing_website_url($listing['website'] ?? '') === ''): ?>
                         <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
                             No website? Use <strong class="text-slate-700 dark:text-slate-200"><?= esc(preg_replace('#^https?://#i', '', base_url('directory/' . $listing['slug']))) ?></strong>
                             wherever a form asks for one: Google Business Profile, Facebook, your email signature, business cards.

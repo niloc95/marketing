@@ -619,7 +619,12 @@ class ListingQualityService
      */
     private function hasOnlinePresence(array $listing): bool
     {
-        foreach (['website', 'whatsapp', ...array_keys(listing_social_networks())] as $field) {
+        // The website through listing_website_url(), so a link back to this
+        // site does not count as one.
+        if (listing_website_url($listing['website'] ?? '') !== '') {
+            return true;
+        }
+        foreach (['whatsapp', ...array_keys(listing_social_networks())] as $field) {
             if ($this->filled($listing, $field)) {
                 return true;
             }
