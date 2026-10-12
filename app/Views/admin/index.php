@@ -94,91 +94,96 @@ $quality = new \App\Services\ListingQualityService();
         <?php if (empty($result['items'])): ?>
             <div class="empty">No profiles in this view.</div>
         <?php else: ?>
+        <?php // Six columns, not eleven. The table used to need a sideways scroll on
+              // anything but a wide monitor, so related facts now share a cell:
+              // category under the name, pin under the place, score beside the
+              // status, and the three yes/no facts as chips. Row actions are icon
+              // buttons with a tooltip and an aria-label each; a dropdown would be
+              // clipped by .tablewrap, which has to scroll on a phone. ?>
         <div class="tablewrap">
-            <table class="table">
+            <table class="table admin-list">
                 <thead>
-                    <?php // "Email" and "Badge", not one column called "Verified". Two
-                          // different things wear that word here: is_verified means the
-                          // owner clicked their confirmation link, verified_until means
-                          // they pay for the Verified Business badge. One header covering
-                          // both is how someone ends up refunding the wrong person. ?>
-                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Score</th><th>Created</th><th>Email</th><th>Badge</th><th>Analytics</th><th>Actions</th></tr>
+                    <tr><th>Profile</th><th>Location</th><th>Status &middot; Score</th><th>Created</th><th>Checks</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
+                    <?php
+                    // How good is this listing's map pin? Anything below
+                    // exact/manual is a centroid that can sit hundreds of
+                    // metres out, so these are the rows worth chasing an
+                    // owner about (or fixing with the picker on the edit form).
+                    $pin      = $l['geocode_precision'] ?? null;
+                    $pinLabel = $pin ?: (($l['latitude'] ?? null) === null ? 'no pin' : 'unknown');
+                    $pinGood  = in_array($pin, ['manual', 'exact'], true);
+                    $place    = trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''));
+                    $id       = (int) $l['id'];
+                    ?>
                     <tr>
-                        <td>
-                            <strong><?= esc($l['display_name']) ?></strong>
-                            <?php if (! empty($l['is_featured'])): ?> <span class="pill badge-featured" title="Featured"><?= lucide('star', 'h-3.5 w-3.5') ?></span><?php endif; ?>
-                            <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($l['email'] ?? '') ?></div>
+                        <td class="admin-list-profile">
+                            <a class="admin-list-name" href="<?= base_url('admin/edit/' . $id) ?>"><?= esc($l['display_name']) ?></a>
+                            <?php if (! empty($l['is_featured'])): ?><span class="pill badge-featured ml-1 align-middle" title="Featured"><?= lucide('star', 'h-3.5 w-3.5') ?></span><?php endif; ?>
+                            <div class="admin-list-sub"><?= esc($l['category_name'] ?? 'No category') ?></div>
+                            <?php if (! empty($l['email'])): ?><div class="admin-list-sub"><?= esc($l['email']) ?></div><?php endif; ?>
                         </td>
-                        <td><?= esc($l['category_name'] ?? 'n/a') ?></td>
-                        <td><?= esc(trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''))) ?: 'n/a' ?></td>
-                        <?php
-                        // How good is this listing's map pin? Anything below
-                        // exact/manual is a centroid that can sit hundreds of
-                        // metres out, so these are the rows worth chasing an
-                        // owner about (or fixing with the picker on the edit form).
-                        $pin      = $l['geocode_precision'] ?? null;
-                        $pinLabel = $pin ?: (($l['latitude'] ?? null) === null ? 'none' : 'unknown');
-                        $pinGood  = in_array($pin, ['manual', 'exact'], true);
-                        ?>
                         <td>
-                            <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate: worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
+                            <div><?= $place !== '' ? esc($place) : 'n/a' ?></div>
+                            <span class="pill mt-1 <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate: worth confirming on the edit form' ?>"><?= lucide('map-pin', 'h-3 w-3') ?><?= esc($pinLabel) ?></span>
                         </td>
-                        <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
-                        <?php // Profile strength (ListingQualityService), the same number the
-                              // owner sees on /manage/edit. Open the profile for the checklist. ?>
-                        <td>
+                        <td class="whitespace-nowrap">
+                            <span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span>
+                            <?php // Profile strength (ListingQualityService), the same number the
+                                  // owner sees on /manage/edit. Open the profile for the checklist. ?>
                             <?php if (($l['quality_score'] ?? null) === null): ?>
                                 <span class="pill pill-unpublished" title="Not scored yet">n/a</span>
                             <?php else: ?>
                                 <?php $qs = (int) $l['quality_score']; ?>
-                                <span class="pill <?= ['high' => 'pill-published', 'mid' => 'pill-score-mid', 'low' => 'pill-pending'][strength_tone($qs)] ?>" title="<?= esc($quality->bandFor($qs), 'attr') ?>"><?= $qs ?></span>
+                                <span class="pill <?= ['high' => 'pill-published', 'mid' => 'pill-score-mid', 'low' => 'pill-pending'][strength_tone($qs)] ?>" title="Profile strength: <?= esc($quality->bandFor($qs), 'attr') ?>"><?= $qs ?></span>
                             <?php endif; ?>
                         </td>
                         <td class="whitespace-nowrap text-xs"><?= esc(local_datetime($l['created_at'] ?? null)) ?></td>
-                        <td><?= ! empty($l['is_verified']) ? lucide('check', 'h-4 w-4 text-emerald-600 dark:text-emerald-400') : 'n/a' ?></td>
+                        <?php // "Email" and "Badge", never one chip called "Verified". Two
+                              // different things wear that word here: is_verified means the
+                              // owner clicked their confirmation link, verified_until means
+                              // they pay for the Verified Business badge. One label covering
+                              // both is how someone ends up refunding the wrong person.
+                              // "Reports" is the monthly analytics opt-in, read-only here. ?>
                         <td>
-                            <?php if (listing_is_verified_business($l)): ?>
-                                <span class="pill pill-published" title="Paid through <?= esc($l['verified_until'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
-                            <?php elseif (! empty($l['verified_until'])): ?>
-                                <span class="pill pill-unpublished" title="Lapsed <?= esc($l['verified_until'], 'attr') ?>">lapsed</span>
-                            <?php else: ?>
-                                No
-                            <?php endif; ?>
-                        </td>
-                        <?php // Wants the monthly analytics report. Read-only here — see admin/edit.php. ?>
-                        <td>
-                            <?php if (! empty($l['marketing_opt_in'])): ?>
-                                <span class="pill pill-published" title="Analytics report on <?= esc((string) $l['marketing_consent_at'], 'attr') ?>"><?= lucide('check', 'h-3.5 w-3.5') ?></span>
-                            <?php else: ?>
-                                No
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <div class="actions">
-                                <?php if ($isTrash): ?>
-                                    <form method="post" action="<?= base_url('admin/restore/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-primary btn-xs">Restore</button></form>
-                                    <form method="post" action="<?= base_url('admin/purge/' . $l['id']) ?>" data-confirm="Permanently delete this profile? This cannot be undone."><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete forever</button></form>
+                            <div class="admin-chips">
+                                <span class="admin-chip <?= ! empty($l['is_verified']) ? 'is-on' : '' ?>" title="<?= ! empty($l['is_verified']) ? 'Email confirmed' : 'Email not confirmed' ?>">Email</span>
+                                <?php if (listing_is_verified_business($l)): ?>
+                                    <span class="admin-chip is-on" title="Badge paid through <?= esc($l['verified_until'], 'attr') ?>">Badge</span>
+                                <?php elseif (! empty($l['verified_until'])): ?>
+                                    <span class="admin-chip is-warn" title="Badge lapsed <?= esc($l['verified_until'], 'attr') ?>">Lapsed</span>
                                 <?php else: ?>
-                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/edit/' . $l['id']) ?>">Edit</a>
+                                    <span class="admin-chip" title="No Verified Business badge">Badge</span>
+                                <?php endif; ?>
+                                <span class="admin-chip <?= ! empty($l['marketing_opt_in']) ? 'is-on' : '' ?>" title="<?= ! empty($l['marketing_opt_in']) ? 'Analytics reports on since ' . esc((string) $l['marketing_consent_at'], 'attr') : 'No analytics reports' ?>">Reports</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="actions admin-actions">
+                                <?php if ($isTrash): ?>
+                                    <form method="post" action="<?= base_url('admin/restore/' . $id) ?>"><?= csrf_field() ?><button class="icon-act" title="Restore" aria-label="Restore <?= esc($l['display_name'], 'attr') ?>"><?= lucide('rotate-ccw', 'h-4 w-4') ?></button></form>
+                                    <form method="post" action="<?= base_url('admin/purge/' . $id) ?>" data-confirm="Permanently delete this profile? This cannot be undone."><?= csrf_field() ?><button class="icon-act is-danger" title="Delete forever" aria-label="Delete <?= esc($l['display_name'], 'attr') ?> forever"><?= lucide('trash-2', 'h-4 w-4') ?></button></form>
+                                <?php else: ?>
+                                    <a class="icon-act" href="<?= base_url('admin/edit/' . $id) ?>" title="Edit" aria-label="Edit <?= esc($l['display_name'], 'attr') ?>"><?= lucide('square-pen', 'h-4 w-4') ?></a>
+                                    <a class="icon-act" href="<?= esc(base_url('directory/' . $l['slug'])) ?>" target="_blank" rel="noopener" title="View profile" aria-label="View <?= esc($l['display_name'], 'attr') ?>"><?= lucide('external-link', 'h-4 w-4') ?></a>
                                     <?php if ($l['status'] !== 'published'): ?>
-                                        <form method="post" action="<?= base_url('admin/publish/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-primary btn-xs">Publish</button></form>
+                                        <form method="post" action="<?= base_url('admin/publish/' . $id) ?>"><?= csrf_field() ?><button class="icon-act is-primary" title="Publish" aria-label="Publish <?= esc($l['display_name'], 'attr') ?>"><?= lucide('eye', 'h-4 w-4') ?></button></form>
                                     <?php else: ?>
-                                        <form method="post" action="<?= base_url('admin/unpublish/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-xs">Unpublish</button></form>
+                                        <form method="post" action="<?= base_url('admin/unpublish/' . $id) ?>"><?= csrf_field() ?><button class="icon-act" title="Unpublish" aria-label="Unpublish <?= esc($l['display_name'], 'attr') ?>"><?= lucide('eye-off', 'h-4 w-4') ?></button></form>
                                     <?php endif; ?>
                                     <?php // Only where a verify link still means something — resendVerification() refuses any other status anyway. ?>
                                     <?php if ($l['status'] === 'pending'): ?>
-                                        <form method="post" action="<?= base_url('admin/resend-verify/' . $l['id']) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-xs">Resend verify</button></form>
+                                        <form method="post" action="<?= base_url('admin/resend-verify/' . $id) ?>"><?= csrf_field() ?><button class="icon-act" title="Resend verify email" aria-label="Resend verify email to <?= esc($l['display_name'], 'attr') ?>"><?= lucide('send', 'h-4 w-4') ?></button></form>
                                     <?php endif; ?>
-                                    <form method="post" action="<?= base_url('admin/feature/' . $l['id']) ?>">
+                                    <form method="post" action="<?= base_url('admin/feature/' . $id) ?>">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="on" value="<?= empty($l['is_featured']) ? '1' : '0' ?>">
-                                        <button class="btn btn-ghost btn-xs"><?= empty($l['is_featured']) ? 'Feature' : 'Unfeature' ?></button>
+                                        <?php $featureLabel = empty($l['is_featured']) ? 'Feature' : 'Unfeature'; ?>
+                                        <button class="icon-act" title="<?= $featureLabel ?>" aria-label="<?= $featureLabel ?> <?= esc($l['display_name'], 'attr') ?>"><?= lucide(empty($l['is_featured']) ? 'star' : 'star-off', 'h-4 w-4') ?></button>
                                     </form>
-                                    <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('directory/' . $l['slug'])) ?>" target="_blank">View</a>
-                                    <form method="post" action="<?= base_url('admin/delete/' . $l['id']) ?>" data-confirm="Move this profile to trash?"><?= csrf_field() ?><button class="btn btn-ghost btn-xs text-brand-crimson">Delete</button></form>
+                                    <form method="post" action="<?= base_url('admin/delete/' . $id) ?>" data-confirm="Move this profile to trash?"><?= csrf_field() ?><button class="icon-act is-danger" title="Move to trash" aria-label="Move <?= esc($l['display_name'], 'attr') ?> to trash"><?= lucide('trash-2', 'h-4 w-4') ?></button></form>
                                 <?php endif; ?>
                             </div>
                         </td>

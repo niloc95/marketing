@@ -64,6 +64,10 @@ const ICONS = [
   'dumbbell', 'graduation-cap', 'party-popper', 'plane', 'paw-print',
   'washing-machine', 'shopping-bag', 'cake-slice', 'utensils', 'leaf', 'folder',
   'heart-handshake', 'landmark', 'bird',
+  // Admin profile list row actions (admin/index.php): show, hide, feature,
+  // unfeature, resend verify, trash, restore. Edit and view reuse
+  // square-pen and external-link above.
+  'eye', 'eye-off', 'star-off', 'send', 'trash-2', 'rotate-ccw',
 ];
 
 /**

@@ -3077,6 +3077,36 @@
   .table th  { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
   .table td  { @apply border-t border-slate-100 px-4 py-3 align-top; }
   .actions   { @apply flex flex-wrap items-center gap-1.5; }
+
+  /* The admin profile list (admin/index.php). Six columns and icon actions so
+     it fits a laptop screen without the sideways scroll the eleven column
+     version needed. .tablewrap still scrolls on a phone. */
+  .admin-list td            { @apply px-3 py-3; }
+  .admin-list th            { @apply px-3; }
+  .admin-list th:last-child { @apply text-right; }
+  .admin-list-profile       { @apply min-w-[14rem] max-w-[22rem]; }
+  .admin-list-name          { @apply font-semibold text-slate-900 no-underline hover:text-primary-600 hover:underline; }
+  .admin-list-sub           { @apply mt-0.5 break-words text-xs text-slate-500; }
+  .admin-list .pill         { @apply inline-flex items-center gap-1; }
+  .admin-chips              { @apply flex flex-wrap gap-1; }
+  .admin-chip               { @apply inline-flex items-center rounded-control border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-400 line-through decoration-slate-300; }
+  .admin-chip.is-on         { @apply border-emerald-200 bg-emerald-50 text-emerald-700 no-underline; }
+  .admin-chip.is-warn       { @apply border-amber-200 bg-amber-50 text-amber-800 no-underline; }
+  .admin-actions            { @apply flex-nowrap justify-end gap-1; }
+  .icon-act {
+    @apply inline-grid h-8 w-8 cursor-pointer place-items-center rounded-control border border-slate-200 bg-white
+           text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300;
+  }
+  .icon-act.is-primary      { @apply border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100; }
+  .icon-act.is-danger       { @apply text-brand-crimson hover:border-red-200 hover:bg-red-50; }
+  .dark .admin-list-name    { @apply text-white hover:text-primary-300; }
+  .dark .admin-list-sub     { @apply text-slate-400; }
+  .dark .admin-chip         { @apply border-slate-700 text-slate-500 decoration-slate-600; }
+  .dark .admin-chip.is-on   { @apply border-emerald-500/30 bg-emerald-500/15 text-emerald-300; }
+  .dark .admin-chip.is-warn { @apply border-amber-500/30 bg-amber-500/15 text-amber-300; }
+  .dark .icon-act           { @apply border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white; }
+  .dark .icon-act.is-primary { @apply border-primary-500/40 bg-primary-500/15 text-primary-300; }
   .dark .tablewrap { @apply border-slate-800 bg-[#1a202c]; }
   .dark .table th  { @apply bg-slate-800/60 text-slate-400; }
   .dark .table td  { @apply border-slate-800; }
