@@ -666,18 +666,33 @@ if (! function_exists('listing_is_indexable')) {
      * its page, and its place in the sitemap (DirectoryService::sitemapUrls()
      * applies the same rule in SQL — change one, change both).
      *
-     * Fails open on a listing we have never scored, for the reason recent()
-     * gives: our own sweep running late must not hide anybody.
+     * Two bars, both required: a description of at least
+     * Config\Directory::$indexMinDescription characters, and a score of at
+     * least $indexMinQuality. The score fails open on a listing we have never
+     * scored, for the reason recent() gives: our own sweep running late must
+     * not hide anybody. The description bar does not, because it reads the row
+     * itself and has no sweep to wait for.
+     *
+     * Reads description_text, the plain-text column every save path writes
+     * (backfilled by AddDescriptionTextToListings), because the SQL copy can
+     * read nothing else.
      *
      * @param array<string,mixed> $listing
      */
     function listing_is_indexable(array $listing): bool
     {
+        $config  = config('Directory');
+        $minText = (int) $config->indexMinDescription;
+
+        if ($minText > 0 && mb_strlen(trim((string) ($listing['description_text'] ?? ''))) < $minText) {
+            return false;
+        }
+
         if (($listing['quality_scored_at'] ?? null) === null) {
             return true;
         }
 
-        return (int) ($listing['quality_score'] ?? 0) >= (int) config('Directory')->indexMinQuality;
+        return (int) ($listing['quality_score'] ?? 0) >= (int) $config->indexMinQuality;
     }
 }
 
@@ -1313,5 +1328,68 @@ if (! function_exists('strength_tone')) {
     function strength_tone(int $score): string
     {
         return $score >= 80 ? 'high' : ($score >= 40 ? 'mid' : 'low');
+    }
+}
+
+if (! function_exists('category_plural')) {
+    /**
+     * A category name as a heading for many businesses: "Dentist" becomes
+     * "Dentists", "Bakery" becomes "Bakeries", "Place of Worship" becomes
+     * "Places of Worship". Used by the category landing page title and the
+     * "More … in …" strip on a profile.
+     *
+     * Replaces rtrim($name, 's') . 's', which put "Jewellerys", "Bakerys",
+     * "Churchs" and "Crafts & Handmades" into page titles Google indexes.
+     *
+     * Left as it is: a name joined with "&" or carrying brackets ("Crafts &
+     * Handmade", "Pharmacy (Retail)"), where no single word is the one to
+     * change; a name already ending in s or "ing" ("Cleaning Services",
+     * "Roofing"); and a name whose last word is a trade or a thing rather than
+     * a kind of business ("Jewellery", "Auto Repair", "Pest Control"), which
+     * reads correctly unchanged: "Jewellery in Gauteng".
+     */
+    function category_plural(string $name): string
+    {
+        $name = trim($name);
+        if ($name === '' || str_contains($name, '&') || str_contains($name, '(')) {
+            return $name;
+        }
+
+        // "Place of Worship": the head noun is the first word.
+        if (preg_match('/^(\S+)( of .+)$/i', $name, $m) === 1) {
+            return category_plural($m[1]) . $m[2];
+        }
+
+        $words = explode(' ', $name);
+        $last  = (string) array_pop($words);
+        $lower = strtolower($last);
+
+        static $unchanged = [
+            'jewellery', 'repair', 'removal', 'design', 'furniture', 'control',
+            'development', 'hire', 'welfare', 'rental', 'support', 'decor',
+            'care', 'pizza', 'produce', 'paving', 'roofing', 'tiling',
+        ];
+
+        if (in_array($lower, $unchanged, true)
+            || str_ends_with($lower, 's')
+            || str_ends_with($lower, 'ing')) {
+            return $name;
+        }
+
+        if (str_ends_with($lower, 'man')) {
+            $plural = substr($last, 0, -3) . 'men';
+        } elseif (str_ends_with($lower, 'wife')) {
+            $plural = substr($last, 0, -2) . 'ves';
+        } elseif (preg_match('/[^aeiou]y$/i', $last) === 1) {
+            $plural = substr($last, 0, -1) . 'ies';
+        } elseif (preg_match('/(ch|sh|x|z)$/i', $last) === 1) {
+            $plural = $last . 'es';
+        } else {
+            $plural = $last . 's';
+        }
+
+        $words[] = $plural;
+
+        return implode(' ', $words);
     }
 }

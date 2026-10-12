@@ -1972,7 +1972,8 @@ class DirectoryService
      */
     public function sitemapUrls(): array
     {
-        $rows = $this->listings
+        $config  = config('Directory');
+        $builder = $this->listings
             ->select('slug, updated_at')
             ->where('status', 'published')
             // listing_is_indexable() in SQL: a page that says noindex has no
@@ -1980,10 +1981,17 @@ class DirectoryService
             // status filter, and unscored rows pass for the reason recent() gives.
             ->groupStart()
                 ->where('quality_scored_at', null)
-                ->orWhere('quality_score >=', (int) config('Directory')->indexMinQuality)
-            ->groupEnd()
-            ->orderBy('updated_at', 'DESC')
-            ->findAll();
+                ->orWhere('quality_score >=', (int) $config->indexMinQuality)
+            ->groupEnd();
+
+        // The description bar, which applies to unscored rows too. CHAR_LENGTH,
+        // not LENGTH: the helper counts characters, and LENGTH counts bytes.
+        $minText = (int) $config->indexMinDescription;
+        if ($minText > 0) {
+            $builder->where('CHAR_LENGTH(TRIM(COALESCE(description_text, \'\'))) >=', $minText, false);
+        }
+
+        $rows = $builder->orderBy('updated_at', 'DESC')->findAll();
 
         $out = [];
         foreach ($rows as $r) {

@@ -183,6 +183,30 @@ class Directory extends BaseConfig
     public int $indexMinQuality = 40;
 
     /**
+     * Minimum description length, in plain-text characters, before a profile
+     * page is offered to search engines. Checked alongside $indexMinQuality,
+     * not instead of it.
+     *
+     * Added 2026-10-12 after Search Console showed 253 pages "Discovered,
+     * currently not indexed" with indexing flat for a week. 190 of the 256
+     * sitemap URLs were Oriental Plaza shops from the bulk import: name, the
+     * shared address and hours, no description. They still scored 42
+     * (category, address, city, province, pin, phone, hours), so the score
+     * alone let them through, and a sitemap that is three quarters identical
+     * stubs teaches Google the whole site is thin.
+     *
+     * 50 is ListingText::DESCRIPTION_MIN, the signup minimum, so any profile
+     * that came through the form passes and only imports without a
+     * description are held back. A stub stays live and linked from its venue
+     * page, and is offered to Google again the moment it gets a description.
+     * Unlike the score this applies to unscored listings too: it needs no
+     * sweep, so there is nothing to fail open for.
+     *
+     * Overridable as directory.indexMinDescription. 0 switches it off.
+     */
+    public int $indexMinDescription = 50;
+
+    /**
      * The score owners are told to aim for: the manage page's strength panel
      * names it, and the one-off nudge email (directory:quality:nudge) goes to
      * profiles still under it a few days after going live. Keep it at or above
