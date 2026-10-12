@@ -236,7 +236,7 @@ final class ServiceMenuTest extends CIUnitTestCase
             // Fitness is the saved category, so the salon group's features are off.
             // The space may come out literal or as &#x20;, depending on the escaper path.
             $this->assertMatchesRegularExpression('/data-attr-group="Beauty(?: |&#x20;)&amp;(?: |&#x20;)Wellness"\s+hidden disabled/', $html);
-            $this->assertStringContainsString('data-rich-text-max="1000"', $html);
+            $this->assertStringContainsString('data-rich-text-max="' . \App\Libraries\RichText::MAX_PLAIN_LENGTH . '"', $html);
         }
     }
 

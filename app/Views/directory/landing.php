@@ -5,7 +5,7 @@ helper('slug');
 $siteName = config('Directory')->siteName();
 $catName  = (string) $category['name'];
 $catSlug  = (string) $category['slug'];
-$plural   = rtrim($catName, 's') . 's';           // "Hair Salon" -> "Hair Salons"
+$plural   = category_plural($catName);            // "Hair Salon" -> "Hair Salons"
 $where    = $province !== null ? ' in ' . $province : ' in South Africa';
 $heading  = $plural . $where;
 $canonical = base_url('directory/' . $catSlug . ($province !== null ? '/' . slugify($province) : ''));

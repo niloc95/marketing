@@ -16,6 +16,9 @@ use CodeIgniter\Test\FeatureTestTrait;
  *  - a scored profile under Config\Directory::$indexMinQuality is noindex and
  *    out of the sitemap, one at or above it is in both, and an unscored one is
  *    let through (the fail-open rule recent() uses);
+ *  - a profile without a description of $indexMinDescription characters is
+ *    noindex and out of the sitemap whatever its score, scored or not: the
+ *    bulk imported shop stubs that scored 42 with no description;
  *  - the page itself still renders for a thin profile — publishing is never
  *    gated on score;
  *  - the nudge selects only the day window, under target, opted in, never sent;
@@ -34,6 +37,9 @@ final class ProfileVisibilityTest extends CIUnitTestCase
     protected $migrate     = true;
     protected $migrateOnce = false;
     protected $refresh     = true;
+
+    /** Comfortably over Config\Directory::$indexMinDescription. */
+    private const DESCRIPTION = 'A small yoga studio in the city centre, with classes for beginners every weekday evening.';
 
     private DirectoryListingModel $listings;
     private int $categoryId;
@@ -54,11 +60,39 @@ final class ProfileVisibilityTest extends CIUnitTestCase
 
     public function testTheIndexRuleFailsOpenOnlyForUnscoredProfiles(): void
     {
-        $min = (int) config('Directory')->indexMinQuality;
+        $min  = (int) config('Directory')->indexMinQuality;
+        $text = ['description_text' => self::DESCRIPTION];
 
-        $this->assertTrue(listing_is_indexable(['quality_scored_at' => null, 'quality_score' => 0]));
-        $this->assertFalse(listing_is_indexable(['quality_scored_at' => '2026-10-08 03:15:00', 'quality_score' => $min - 1]));
-        $this->assertTrue(listing_is_indexable(['quality_scored_at' => '2026-10-08 03:15:00', 'quality_score' => $min]));
+        $this->assertTrue(listing_is_indexable($text + ['quality_scored_at' => null, 'quality_score' => 0]));
+        $this->assertFalse(listing_is_indexable($text + ['quality_scored_at' => '2026-10-08 03:15:00', 'quality_score' => $min - 1]));
+        $this->assertTrue(listing_is_indexable($text + ['quality_scored_at' => '2026-10-08 03:15:00', 'quality_score' => $min]));
+    }
+
+    public function testTheIndexRuleWantsADescriptionWhateverTheScore(): void
+    {
+        $min = (int) config('Directory')->indexMinDescription;
+
+        $this->assertFalse(listing_is_indexable(['description_text' => '', 'quality_scored_at' => '2026-10-08 03:15:00', 'quality_score' => 90]));
+        $this->assertFalse(listing_is_indexable(['description_text' => str_repeat('a', $min - 1), 'quality_scored_at' => null]));
+        // Characters, not bytes: accented text is not penalised for its encoding.
+        $this->assertTrue(listing_is_indexable(['description_text' => str_repeat('é', $min), 'quality_scored_at' => null]));
+    }
+
+    public function testTheSitemapLeavesOutProfilesWithoutADescription(): void
+    {
+        $this->listing('stub', 42, ['description' => '', 'description_text' => '']);
+        $this->listing('unscored-stub', null, ['description' => '', 'description_text' => '']);
+        $this->listing('described', 42);
+
+        $locs = array_column((new DirectoryService())->sitemapUrls(), 'loc');
+
+        $this->assertNotContains(base_url('directory/stub'), $locs);
+        $this->assertNotContains(base_url('directory/unscored-stub'), $locs);
+        $this->assertContains(base_url('directory/described'), $locs);
+
+        $page = $this->get('directory/stub');
+        $page->assertStatus(200);
+        $this->assertStringContainsString('<meta name="robots" content="noindex, follow">', $page->getBody());
     }
 
     public function testTheSitemapLeavesOutThinProfiles(): void
@@ -156,6 +190,8 @@ final class ProfileVisibilityTest extends CIUnitTestCase
             'is_verified'      => 1,
             'marketing_opt_in' => 1,
             'published_at'     => date('Y-m-d H:i:s'),
+            'description'      => '<p>' . self::DESCRIPTION . '</p>',
+            'description_text' => self::DESCRIPTION,
         ], $overrides), true);
 
         $this->listings->db->table('xs_directory_listings')->where('id', $id)->update([

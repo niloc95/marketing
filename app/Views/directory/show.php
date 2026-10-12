@@ -6,7 +6,8 @@ helper(['slug', 'directory_hours']); // slugify() for breadcrumbs; hours_* for t
 // sees the public copy — no street, suburb, postal code, pin or venue — so no
 // panel, meta tag or JSON-LD node below can render what the owner hid.
 $l = listing_public_view($l);
-// Below Config\Directory::$indexMinQuality the page is noindex (and out of the
+// Below Config\Directory::$indexMinQuality, or without a description of
+// $indexMinDescription characters, the page is noindex (and out of the
 // sitemap) until the owner fills it in — live and shareable, just not offered
 // to Google yet. listing_is_indexable() has the rule.
 $indexable = listing_is_indexable($l);
@@ -307,7 +308,7 @@ $metaDesc = listing_meta_description($l);
                 <div class="mb-6 flex flex-wrap items-end justify-between gap-2">
                     <h2 class="home-statement">
                         <?php // Category names are singular ("Hair Salon"); pluralise for the heading. ?>
-                        More <?= esc(strtolower(rtrim($prof, 's') . 's')) ?><?= $province !== '' ? ' in ' . esc($province) : '' ?>
+                        More <?= esc(strtolower(category_plural($prof))) ?><?= $province !== '' ? ' in ' . esc($province) : '' ?>
                     </h2>
                     <?php if ($catSlug !== ''): ?>
                         <a class="home-link"
