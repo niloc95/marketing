@@ -194,6 +194,60 @@ class ListingQualityService
     }
 
     /**
+     * strength() for a profile that does not exist yet: the live score on
+     * /add-profile, recomputed from the unsaved form as the visitor types.
+     *
+     * The columns come from DirectoryListingMutationService::draftColumns(),
+     * the code the real signup writes the row with, and the counts from the
+     * same services that write the child rows. So the number shown while
+     * typing is the number the saved profile gets, and nothing here is a
+     * second copy of the rubric. Files cannot sensibly ride along on every
+     * keystroke pause, so the browser reports how many it has picked instead.
+     *
+     * The map pin counts only once the form has coordinates (an address
+     * picked from the suggestions, or the pin dragged). The save may still
+     * geocode a typed address, but promising that here would be a guess.
+     *
+     * @param array<string,mixed>                       $input the posted form
+     * @param array{logo?:mixed,photos?:mixed,menu?:mixed} $files counts from the browser
+     *
+     * @return array{score:int,max:int,band:string,percent:int,items:list<array<string,mixed>>,next:list<array<string,mixed>>}
+     */
+    public function strengthForDraft(array $input, array $files = [], int $steps = PHP_INT_MAX): array
+    {
+        $mutation   = new DirectoryListingMutationService();
+        $listing    = $mutation->draftColumns($input);
+        $categoryId = $listing['category_id'] ?? null;
+
+        $coord = static fn (mixed $v): ?string => is_scalar($v) && is_numeric(trim((string) $v)) ? trim((string) $v) : null;
+        $listing['latitude']  = $coord($input['latitude'] ?? null);
+        $listing['longitude'] = $coord($input['longitude'] ?? null);
+
+        // Any non-empty marker will do: the rubric asks only whether there is one.
+        if ($this->fileCount($files['logo'] ?? 0) > 0) {
+            $listing['logo_path'] = 'draft-logo';
+        }
+
+        $menuService = new ServiceMenuService();
+        $facets      = (new ListingFacetService())->groupedFromInput($categoryId, $input['facets'] ?? null);
+
+        return $this->strength($listing, [
+            'photos'     => $this->fileCount($files['photos'] ?? 0),
+            'services'   => $menuService->countNamedServices($input['services'] ?? null),
+            'attributes' => count($menuService->allowedKeys($categoryId, $input['attributes'] ?? null)),
+            'tags'       => $mutation->draftTagCount($input),
+            'facets'     => array_sum(array_map('count', $facets)),
+            'menu'       => $this->fileCount($files['menu'] ?? 0),
+        ], $steps);
+    }
+
+    /** A file count the browser reported, clamped to something sane. */
+    private function fileCount(mixed $raw): int
+    {
+        return is_scalar($raw) ? max(0, min(50, (int) $raw)) : 0;
+    }
+
+    /**
      * Recompute one listing from the database and persist the result.
      *
      * Returns the new score, or 0 for a listing that no longer exists.
@@ -691,6 +745,15 @@ class ListingQualityService
         }
 
         return $configured >= self::HOURS_MIN_DAYS && $openDays >= 1;
+    }
+
+    /**
+     * The band label for a stored score, for screens that list many rows and
+     * only have quality_score to hand (the admin profile list).
+     */
+    public function bandFor(int $score): string
+    {
+        return $this->band($score);
     }
 
     private function band(int $score): string

@@ -21,6 +21,7 @@ $link = function (array $overrides = []) use ($status, $filters) {
     return base_url('admin') . ($q ? '?' . http_build_query($q) : '');
 };
 $isTrash = $status === 'trashed';
+$quality = new \App\Services\ListingQualityService();
 ?>
 <?= view('admin/_bar') ?>
 
@@ -69,9 +70,17 @@ $isTrash = $status === 'trashed';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <div class="field mb-0">
+                <label class="text-xs">Sort</label>
+                <select name="sort" class="w-40">
+                    <option value="">Newest</option>
+                    <option value="score_asc" <?= $filters['sort'] === 'score_asc' ? 'selected' : '' ?>>Lowest score</option>
+                    <option value="score_desc" <?= $filters['sort'] === 'score_desc' ? 'selected' : '' ?>>Highest score</option>
+                </select>
+            </div>
             <button class="btn btn-primary btn-xs">Filter</button>
-            <?php if ($filters['q'] || $filters['category'] || $filters['province']): ?>
-                <a class="btn btn-ghost btn-xs" href="<?= esc($link(['q' => '', 'category' => '', 'province' => ''])) ?>">Clear</a>
+            <?php if ($filters['q'] || $filters['category'] || $filters['province'] || $filters['sort']): ?>
+                <a class="btn btn-ghost btn-xs" href="<?= esc($link(['q' => '', 'category' => '', 'province' => '', 'sort' => ''])) ?>">Clear</a>
             <?php endif; ?>
         </form>
 
@@ -93,7 +102,7 @@ $isTrash = $status === 'trashed';
                           // owner clicked their confirmation link, verified_until means
                           // they pay for the Verified Business badge. One header covering
                           // both is how someone ends up refunding the wrong person. ?>
-                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Created</th><th>Email</th><th>Badge</th><th>Analytics</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Category</th><th>Location</th><th>Pin</th><th>Status</th><th>Score</th><th>Created</th><th>Email</th><th>Badge</th><th>Analytics</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($result['items'] as $l): ?>
@@ -118,6 +127,16 @@ $isTrash = $status === 'trashed';
                             <span class="pill <?= $pinGood ? 'pill-published' : 'pill-pending' ?>" title="<?= $pinGood ? 'Pinpointed' : 'Approximate: worth confirming on the edit form' ?>"><?= esc($pinLabel) ?></span>
                         </td>
                         <td><span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span></td>
+                        <?php // Profile strength (ListingQualityService), the same number the
+                              // owner sees on /manage/edit. Open the profile for the checklist. ?>
+                        <td>
+                            <?php if (($l['quality_score'] ?? null) === null): ?>
+                                <span class="pill pill-unpublished" title="Not scored yet">n/a</span>
+                            <?php else: ?>
+                                <?php $qs = (int) $l['quality_score']; ?>
+                                <span class="pill <?= ['high' => 'pill-published', 'mid' => 'pill-score-mid', 'low' => 'pill-pending'][strength_tone($qs)] ?>" title="<?= esc($quality->bandFor($qs), 'attr') ?>"><?= $qs ?></span>
+                            <?php endif; ?>
+                        </td>
                         <td class="whitespace-nowrap text-xs"><?= esc(local_datetime($l['created_at'] ?? null)) ?></td>
                         <td><?= ! empty($l['is_verified']) ? lucide('check', 'h-4 w-4 text-emerald-600 dark:text-emerald-400') : 'n/a' ?></td>
                         <td>

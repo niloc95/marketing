@@ -143,6 +143,49 @@ class Listing extends BaseController
             // show alone, so every mode is the plain free form.
             'verifiedOnly' => $offered && $verifiedOnly,
             'invite' => ctype_xdigit($invite) && strlen($invite) === 64 ? $invite : '',
+            // The live score bar's first paint, so it is right after a failed
+            // submit and still says something with scripts off. Files are not
+            // carried back after a failed submit, so none count here.
+            'strength'       => (new ListingQualityService())->strengthForDraft($old),
+            'strengthTarget' => (int) config('Directory')->qualityTarget,
+        ]);
+    }
+
+    /**
+     * POST add-profile/score — the live profile strength for the unsaved form.
+     *
+     * Read only: it scores the posted fields and returns the panel already
+     * rendered, so _strength_panel.php stays the one place that draws it and
+     * the browser holds no copy of the rubric. Nothing is written, mailed or
+     * looked up remotely, which is why it may skip CSRF (Config\Filters): with
+     * the token regenerated on every POST, a background call would otherwise
+     * rotate it out from under the form the visitor is about to submit.
+     */
+    public function score()
+    {
+        $ipKey = 'signup-score-' . md5((string) $this->request->getIPAddress());
+        if (service('throttler')->check($ipKey, 120, MINUTE) === false) {
+            return $this->response->setStatusCode(429)->setJSON(['error' => 'slow_down']);
+        }
+
+        $post  = $this->request->getPost();
+        $files = is_array($post['files'] ?? null) ? $post['files'] : [];
+        unset($post['files']);
+
+        $strength = (new ListingQualityService())->strengthForDraft($post, $files);
+        $target   = (int) config('Directory')->qualityTarget;
+
+        return $this->response->setJSON([
+            'score'   => (int) $strength['score'],
+            'max'     => (int) $strength['max'],
+            'band'    => (string) $strength['band'],
+            'percent' => (int) $strength['percent'],
+            'target'  => $target,
+            'html'    => view('directory/_strength_panel', [
+                'strength' => $strength,
+                'target'   => $target,
+                'audience' => 'signup',
+            ], ['saveData' => false]),
         ]);
     }
 

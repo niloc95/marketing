@@ -39,6 +39,43 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                 <p class="-mt-4 mb-6 text-xs text-slate-500 dark:text-slate-400">Signed up via: <strong><?= esc($listing['signup_source']) ?></strong></p>
             <?php endif; ?>
 
+            <?php // The owner's profile strength meter, so an admin can see what is
+                  // missing and pass it on. Outside the form: the email button is a
+                  // form of its own, and forms cannot nest. ?>
+            <?php if (! $isNew && $strength !== null): ?>
+                <?= view('directory/_strength_panel', [
+                    'strength' => $strength,
+                    'floor'    => $strengthFloor,
+                    'target'   => $strengthTarget,
+                    'audience' => 'admin',
+                ]) ?>
+                <?php
+                $optedIn  = ! empty($listing['marketing_opt_in']);
+                $hasEmail = trim((string) ($listing['email'] ?? '')) !== '';
+                ?>
+                <?php if ($strength['next'] !== []): ?>
+                    <div class="panel -mt-2 mb-6 flex flex-wrap items-center justify-between gap-3">
+                        <div class="text-sm text-slate-600 dark:text-slate-300">
+                            <strong>Email suggestions to the owner.</strong>
+                            Sends the top <?= \App\Services\ProfileNudgeService::STEPS ?> steps with a link straight into their manage page.
+                            <?php if (! empty($listing['quality_nudge_sent_at'])): ?>
+                                <br><span class="text-xs text-slate-500 dark:text-slate-400">Last emailed <?= esc(local_datetime($listing['quality_nudge_sent_at'])) ?>.</span>
+                            <?php endif; ?>
+                            <?php if (! $optedIn): ?>
+                                <br><span class="text-xs text-slate-500 dark:text-slate-400">The owner has not opted in to profile emails, or has unsubscribed, so this cannot be sent. Phone them instead.</span>
+                            <?php elseif (! $hasEmail): ?>
+                                <br><span class="text-xs text-slate-500 dark:text-slate-400">No email address on this profile.</span>
+                            <?php endif; ?>
+                        </div>
+                        <form method="post" action="<?= base_url('admin/edit/' . (int) $listing['id'] . '/nudge') ?>"
+                              data-confirm="Email the owner the top steps to improve their profile?">
+                            <?= csrf_field() ?>
+                            <button class="btn btn-primary btn-xs" <?= $optedIn && $hasEmail ? '' : 'disabled' ?>>Email suggestions</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+
             <?php // Unsaved-draft backup — see manage_edit.php. ?>
             <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
             <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data"

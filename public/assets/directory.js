@@ -3806,4 +3806,116 @@
     // After layout settles (map, editor), not before.
     window.requestAnimationFrame(function () { go(marked[0], false); });
   })();
+  // ---------------------------------------------------------------------
+  // Live profile strength on /add-profile ([data-score-bar], form.php).
+  //
+  // The browser never scores anything. It posts the unsaved form to
+  // add-profile/score (Listing::score()) and shows what comes back: the panel
+  // already rendered by _strength_panel.php, plus the number for the bar. So
+  // the rubric lives in ListingQualityService alone, as it does for owners.
+  //
+  // Files are never sent. The server only needs to know how many there are,
+  // so each file input becomes a count under files[...].
+  // ---------------------------------------------------------------------
+  (function () {
+    var bar = document.querySelector('[data-score-bar]');
+    if (!bar || !window.fetch || !window.FormData) return;
+    var form = bar.closest('form');
+    if (!form) return;
+
+    var url    = bar.getAttribute('data-score-url');
+    var sheet  = bar.querySelector('[data-score-sheet]');
+    var panel  = bar.querySelector('[data-score-panel]');
+    var toggle = bar.querySelector('[data-score-toggle]');
+    var num    = bar.querySelector('[data-score-num]');
+    var band   = bar.querySelector('[data-score-band]');
+    var meter  = bar.querySelector('[data-score-meter]');
+    var fill   = bar.querySelector('[data-score-fill]');
+    var toWrap = bar.querySelector('[data-score-to]');
+    var toGo   = bar.querySelector('[data-score-togo]');
+    var target = parseInt((toWrap && toWrap.getAttribute('data-target')) || '0', 10) || 0;
+
+    // Sticky and collapsed only now that the script can update it and open it.
+    bar.classList.add('is-live');
+    sheet.hidden = true;
+    toggle.hidden = false;
+
+    function setOpen(open) {
+      sheet.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.textContent = open ? 'Hide' : 'See what to add';
+    }
+    toggle.addEventListener('click', function () { setOpen(sheet.hidden); });
+
+    // A step jumps to its field; the sheet folds away so it does not cover it.
+    panel.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+      if (link) setOpen(false);
+    });
+
+    function fileCount(selector) {
+      var input = form.querySelector(selector);
+      return input && input.files ? input.files.length : 0;
+    }
+
+    function payload() {
+      var data = new FormData(form);
+      var drop = [];
+      data.forEach(function (value, key) {
+        if (typeof File !== 'undefined' && value instanceof File) drop.push(key);
+      });
+      drop.forEach(function (key) { data.delete(key); });
+      data.set('files[logo]', String(fileCount('#logo-input')));
+      data.set('files[photos]', String(fileCount('#gallery-input')));
+      data.set('files[menu]', String(fileCount('#menu-input')));
+      return data;
+    }
+
+    function render(json) {
+      if (!json || typeof json.score !== 'number') return;
+      // Our own server's rendering of _strength_panel.php, escaped there.
+      panel.innerHTML = json.html;
+      num.textContent = String(json.score);
+      band.textContent = json.band;
+      meter.setAttribute('aria-label', 'Profile strength: ' + json.score + ' out of ' + json.max);
+      // Mirror the panel's own fill, so the colour and width steps stay
+      // defined in one place (strength_tone() and the view), not here too.
+      var src = panel.querySelector('.strength-bar-fill');
+      if (src) fill.className = src.className;
+      var left = Math.max(0, (json.target || target) - json.score);
+      if (toGo) toGo.textContent = String(left);
+      if (toWrap) toWrap.hidden = left === 0;
+    }
+
+    var timer = null;
+    var inflight = null;
+    function rescore() {
+      if (inflight && inflight.abort) inflight.abort();
+      inflight = window.AbortController ? new AbortController() : null;
+      fetch(url, {
+        method: 'POST',
+        body: payload(),
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+        signal: inflight ? inflight.signal : undefined
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(render)
+        .catch(function () { /* the last good score stays; the next pause retries */ });
+    }
+    function schedule() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(rescore, 600);
+    }
+
+    // input and change cover typing, selects, ticks and file pickers. click
+    // catches what changes without either: a picked address suggestion
+    // filling the pin, a removed photo or service row.
+    ['input', 'change', 'click'].forEach(function (type) {
+      form.addEventListener(type, function (e) {
+        if (bar.contains(e.target)) return;
+        schedule();
+      });
+    });
+  })();
 })();

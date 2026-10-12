@@ -16,8 +16,16 @@
  * @var bool   $hasWebsite
  * @var string $manageLink
  * @var string $unsubscribe
+ * @var bool   $fromTeam  true when an admin sent it from /admin/edit
+ *                        (ProfileNudgeService::sendNow()) rather than the
+ *                        nightly once ever run, so it cannot say "once" or
+ *                        assume the profile has been live for days
+ * @var bool   $isLive    whether the profile is published; a pending one
+ *                        has no public page to link to yet
  */
 $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
+$fromTeam     = ! empty($fromTeam);
+$isLive       = ! isset($isLive) || $isLive;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,8 +35,15 @@ $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
         <p style="font-size:15px;line-height:1.6">Hi <?= esc($name) ?>,</p>
 
         <p style="font-size:15px;line-height:1.6">
-            Your profile has been live for a few days at
-            <a href="<?= esc($profileUrl) ?>" style="color:#003049;font-weight:600"><?= esc($profileLabel) ?></a>.
+            <?php if ($fromTeam && $isLive): ?>
+                We had a look at your profile at
+                <a href="<?= esc($profileUrl) ?>" style="color:#003049;font-weight:600"><?= esc($profileLabel) ?></a>.
+            <?php elseif ($fromTeam): ?>
+                We had a look at your profile on <?= esc($site) ?>.
+            <?php else: ?>
+                Your profile has been live for a few days at
+                <a href="<?= esc($profileUrl) ?>" style="color:#003049;font-weight:600"><?= esc($profileLabel) ?></a>.
+            <?php endif; ?>
             It scores <strong><?= $score ?> out of <?= $max ?></strong> for completeness right now.
         </p>
         <p style="font-size:15px;line-height:1.6">
@@ -58,7 +73,7 @@ $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
             Nothing on this list costs money.
         </p>
 
-        <?php if (! $hasWebsite): ?>
+        <?php if (! $hasWebsite && $isLive): ?>
             <p style="font-size:15px;line-height:1.6;background:#f1f5f9;border-radius:8px;padding:12px 16px">
                 <strong>No website? You don't need one.</strong> Your profile address works as your
                 website. Put <?= esc($profileLabel) ?> on your Google Business Profile, Facebook page,
@@ -67,7 +82,11 @@ $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
         <?php endif; ?>
 
         <p style="font-size:13px;color:#64748b">
-            You're getting this once, because your business has a profile on <?= esc($site) ?>.
+            <?php if ($fromTeam): ?>
+                You're getting this because your business has a profile on <?= esc($site) ?> and our team thought these would help.
+            <?php else: ?>
+                You're getting this once, because your business has a profile on <?= esc($site) ?>.
+            <?php endif; ?>
             <a href="<?= esc($unsubscribe) ?>" style="color:#64748b">Stop emails about my profile</a>.
         </p>
     </div>

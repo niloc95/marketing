@@ -200,6 +200,49 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     </div>
                 <?php endif; ?>
 
+                <?php // Live profile strength. The rubric stays on the server: directory.js
+                      // posts the unsaved form to add-profile/score as the visitor types and
+                      // swaps in the panel it gets back (Listing::score()). Last in the form
+                      // so position:sticky with bottom:0 holds it at the foot of the screen
+                      // the whole way down, clear of the fixed header, and lets it settle
+                      // here above the button at the end. Not sticky and fully open until
+                      // the script marks it .is-live, so with scripts off it is simply the
+                      // panel, scored from the last submit. ?>
+                <?php
+                $sScore  = (int) $strength['score'];
+                $sMax    = (int) $strength['max'];
+                $sToGo   = max(0, (int) $strengthTarget - $sScore);
+                $sTone   = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amber-500'][strength_tone($sScore)];
+                $sWidth  = (int) (round(max(0, min(100, (int) $strength['percent'])) / 5) * 5);
+                ?>
+                <div class="score-bar" data-score-bar data-score-url="<?= esc(base_url('add-profile/score'), 'attr') ?>">
+                    <div class="score-bar-sheet" id="score-bar-sheet" data-score-sheet>
+                        <div data-score-panel>
+                            <?= view('directory/_strength_panel', [
+                                'strength' => $strength,
+                                'target'   => $strengthTarget,
+                                'audience' => 'signup',
+                            ]) ?>
+                        </div>
+                    </div>
+                    <div class="score-bar-row" aria-live="polite">
+                        <p class="score-bar-summary">
+                            <span class="score-bar-label">Profile strength</span>
+                            <span data-score-band><?= esc($strength['band']) ?></span>
+                            <span class="score-bar-num">&middot; <span data-score-num><?= $sScore ?></span> of <?= $sMax ?></span>
+                        </p>
+                        <div class="strength-bar score-bar-meter" role="img" data-score-meter
+                             aria-label="Profile strength: <?= $sScore ?> out of <?= $sMax ?>">
+                            <span class="strength-bar-fill <?= esc($sTone, 'attr') ?> strength-w-<?= $sWidth ?>" data-score-fill></span>
+                        </div>
+                        <p class="score-bar-to" data-score-to data-target="<?= (int) $strengthTarget ?>"<?= $sToGo === 0 ? ' hidden' : '' ?>>
+                            <span data-score-togo><?= $sToGo ?></span> to go for <?= (int) $strengthTarget ?>
+                        </p>
+                        <button type="button" class="btn btn-ghost btn-xs score-bar-toggle" hidden
+                                aria-expanded="false" aria-controls="score-bar-sheet" data-score-toggle>See what to add</button>
+                    </div>
+                </div>
+
                 <?php // No "verify" here. It used to read "Submit & verify by email",
                       // meaning confirm the email address, and sitting under the
                       // Verified panel it read as signing up for the paid badge. One

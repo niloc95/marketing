@@ -175,6 +175,18 @@ class ServiceMenuService
         )));
     }
 
+    /**
+     * How many services a submission would store: the rows sync() keeps,
+     * counted without writing anything. The live score on /add-profile uses it.
+     */
+    public function countNamedServices(mixed $raw): int
+    {
+        return count(array_filter(
+            $this->serviceRows($raw),
+            static fn (array $row): bool => $row['name'] !== ''
+        ));
+    }
+
     // ---------------------------------------------------------------- helpers
 
     /**

@@ -117,7 +117,13 @@ class Filters extends BaseFilters
             // the mail provider, not a browser, so there is no token to send.
             // The 64-hex token in the path stands in, and the only thing the
             // endpoint can do is opt a listing out of marketing email.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'unsubscribe/*']],
+            //
+            // add-profile/score has one too: it changes nothing. It scores the
+            // posted fields and returns the result, so a forged POST learns
+            // only what its own fields score. It is exempt because the token is
+            // regenerated on every POST, and the background call would rotate
+            // it under the signup form. Listing::score() throttles it per IP.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'unsubscribe/*', 'add-profile/score']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

@@ -47,7 +47,7 @@ class DirectoryAdminService
      * `status` doubles as the tab: '' = all, a real status, or 'trashed' for
      * soft-deleted rows.
      *
-     * @param array{q?:string,category?:string,province?:string} $filters
+     * @param array{q?:string,category?:string,province?:string,sort?:string} $filters
      * @return array{items:array,total:int,page:int,perPage:int,totalPages:int,counts:array<string,int>}
      */
     public function list(string $status = '', int $page = 1, int $perPage = 20, array $filters = []): array
@@ -83,6 +83,14 @@ class DirectoryAdminService
         }
 
         $total = $builder->countAllResults(false);
+        // Score sorts let an admin work through the thinnest profiles first.
+        // Unscored rows (NULL) sort as 0 so they lead the "lowest" view rather
+        // than hiding at the end of it.
+        $sort = (string) ($filters['sort'] ?? '');
+        if ($sort === 'score_asc' || $sort === 'score_desc') {
+            $builder->orderBy('COALESCE(xs_directory_listings.quality_score, 0)', $sort === 'score_asc' ? 'ASC' : 'DESC', false);
+        }
+
         $items = $builder->orderBy('xs_directory_listings.created_at', 'DESC')
             ->limit($perPage, ($page - 1) * $perPage)
             ->findAll();

@@ -42,16 +42,25 @@
  * @var int $floor Config\Directory::$recentMinQuality — the homepage cut-off
  * @var int $target Config\Directory::$qualityTarget — the score owners are told
  *                  to aim for; at or above both floors, so the line is true
+ * @var string $audience 'owner' (default, /manage/edit), 'admin' (/admin/edit,
+ *                  speaks about the profile rather than to it) or 'signup'
+ *                  (/add-profile, live; nothing is published yet, so the
+ *                  "Recently added" note is left out). Wording only: every
+ *                  audience renders the same steps from the same service.
  */
 $score   = (int) $strength['score'];
 $percent = max(0, min(100, (int) $strength['percent']));
 $next    = $strength['next'] ?? [];
 $floor   = (int) ($floor ?? 0);
 $target  = (int) ($target ?? 0);
+$audience = in_array($audience ?? 'owner', ['owner', 'admin', 'signup'], true) ? ($audience ?? 'owner') : 'owner';
+$you      = $audience === 'admin' ? 'It is' : 'You are';
 
 // Three steps, matching the three the service bands on. Colour is a hint, not
 // the message — the band label says it in words for anyone who cannot see it.
-$tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg-amber-500');
+// strength_tone() is the one copy of the steps; the class names are written
+// out in full so the Tailwind build keeps them.
+$tone = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amber-500'][strength_tone($score)];
 ?>
 <div class="panel strength-panel">
     <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -76,13 +85,25 @@ $tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg
 
     <?php if ($next === []): ?>
         <p class="strength-panel-lead">
-            Your profile is as complete as it gets. Nothing left to fill in. Thank you for
-            taking the time.
+            <?php if ($audience === 'admin'): ?>
+                This profile is as complete as it gets. Nothing left to suggest.
+            <?php else: ?>
+                Your profile is as complete as it gets. Nothing left to fill in. Thank you for
+                taking the time.
+            <?php endif; ?>
         </p>
     <?php else: ?>
         <p class="strength-panel-lead">
-            A fuller profile appears higher in the search results, and gives someone more reason to
-            call you. <strong>Nothing here costs money.</strong>
+            <?php if ($audience === 'admin'): ?>
+                Everything still missing, biggest win first. These are the steps the owner sees,
+                and the email below sends them the top few.
+            <?php elseif ($audience === 'signup'): ?>
+                The more you fill in now, the higher you appear in search, and the more reason
+                someone has to call you. <strong>Nothing here costs money.</strong>
+            <?php else: ?>
+                A fuller profile appears higher in the search results, and gives someone more reason to
+                call you. <strong>Nothing here costs money.</strong>
+            <?php endif; ?>
         </p>
 
         <ul class="strength-list">
@@ -101,12 +122,12 @@ $tone = $score >= 80 ? 'bg-emerald-500' : ($score >= 40 ? 'bg-primary-500' : 'bg
         <?php if ($target > 0 && $score < $target): ?>
             <p class="strength-panel-note">
                 <strong>Aim for <?= $target ?>.</strong> Profiles at <?= $target ?> or more appear higher
-                in search, can be featured on the home page and are shown to Google. You are
+                in search, can be featured on the home page and are shown to Google. <?= $you ?>
                 <?= $target - $score ?> point<?= $target - $score === 1 ? '' : 's' ?> away.
             </p>
         <?php endif; ?>
 
-        <?php if ($floor > 0 && $score < $floor): ?>
+        <?php if ($audience !== 'signup' && $floor > 0 && $score < $floor): ?>
             <p class="strength-panel-note">
                 Profiles scoring under <?= $floor ?> are left out of &ldquo;Recently added&rdquo; on
                 the home page.

@@ -13,6 +13,9 @@ $routes->get('add-profile', 'Listing::create');
 // A GET only: it posts to add-profile below, because it IS that form — the paid
 // path differs in what it shows, never in what it saves.
 $routes->get('add-profile/verified', 'Listing::createVerified');
+// Live profile strength for the unsaved signup form. Before the plain
+// add-profile POST only for readability; literal segments do not collide.
+$routes->post('add-profile/score', 'Listing::score');
 $routes->post('add-profile', 'Listing::store');
 // Renamed from /add-listing on 6 Oct 2026 ("business profile", never "listing").
 // The old address is on referral emails already sent (?invite=), outreach mail,
@@ -193,6 +196,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('edit/(:num)', 'Admin::edit/$1');
     $routes->post('edit/(:num)', 'Admin::update/$1');
     $routes->post('edit/(:num)/make-venue', 'Admin::venueFromPlace/$1');
+    // Emails the owner their top profile strength steps. Admin only, so the
+    // app can only be made to mail an owner by someone already signed in here.
+    $routes->post('edit/(:num)/nudge', 'Admin::nudgeOwner/$1');
 
     // Moderation
     $routes->post('feature/(:num)', 'Admin::feature/$1');

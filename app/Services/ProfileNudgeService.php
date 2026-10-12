@@ -106,6 +106,73 @@ class ProfileNudgeService
             return 'improved';
         }
 
+        if (! $this->send($listing, $strength, $target, false)) {
+            return 'failed';
+        }
+
+        $this->markNudged($id);
+
+        return 'sent';
+    }
+
+    /**
+     * Email an owner their top steps now, because an admin pressed the button
+     * on /admin/edit.
+     *
+     * Same email and the same fresh numbers as nudge(), without its gates:
+     * no publish window, no once ever, any status. Two gates stay. An owner
+     * who never opted in, or has unsubscribed, is never mailed, whoever asks; and a profile with
+     * nothing left to suggest is not emailed a list with nothing on it. It
+     * stamps quality_nudge_sent_at as well, so the nightly run never sends the
+     * same owner the same list a second time.
+     *
+     * Returns 'sent', 'unsubscribed', 'no_email', 'complete' or 'failed'.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function sendNow(array $listing, int $target): string
+    {
+        $id = (int) ($listing['id'] ?? 0);
+
+        if (empty($listing['marketing_opt_in'])) {
+            return 'unsubscribed';
+        }
+        if (trim((string) ($listing['email'] ?? '')) === '') {
+            return 'no_email';
+        }
+
+        $this->quality->recalculate($id);
+        $listing = $this->listings->find($id);
+        if (! is_array($listing)) {
+            return 'failed';
+        }
+
+        $strength = $this->quality->strength($listing, null, self::STEPS);
+        if ($strength['next'] === []) {
+            return 'complete';
+        }
+
+        if (! $this->send($listing, $strength, $target, true)) {
+            return 'failed';
+        }
+
+        $this->markNudged($id);
+
+        return 'sent';
+    }
+
+    /**
+     * Render and send the profile strength email. One body for both paths, so
+     * the admin's email can never drift from the nightly one.
+     *
+     * @param array<string,mixed> $listing
+     * @param array<string,mixed> $strength ListingQualityService::strength()
+     */
+    private function send(array $listing, array $strength, int $target, bool $fromTeam): bool
+    {
+        $id     = (int) $listing['id'];
+        $isLive = ($listing['status'] ?? '') === 'published';
+
         $config  = config('Directory');
         $body    = view('emails/profile-strength', [
             'site'       => $config->siteName(),
@@ -118,21 +185,15 @@ class ProfileNudgeService
             'hasWebsite' => listing_website_url($listing['website'] ?? '') !== '',
             'manageLink' => $this->manageLink($id),
             'unsubscribe' => (new MarketingConsentService())->unsubscribeUrl($id),
-        ]);
+            'fromTeam'   => $fromTeam,
+            'isLive'     => $isLive,
+        ], ['saveData' => false]);
 
-        $sent = (new Mailer())->send(
-            (string) $listing['email'],
-            'Your profile is live. A few minutes will help more people find it',
-            $body
-        );
+        $subject = $fromTeam
+            ? 'A few quick ways to help more people find your business'
+            : 'Your profile is live. A few minutes will help more people find it';
 
-        if (! $sent) {
-            return 'failed';
-        }
-
-        $this->markNudged($id);
-
-        return 'sent';
+        return (new Mailer())->send((string) $listing['email'], $subject, $body);
     }
 
     private function markNudged(int $id): void

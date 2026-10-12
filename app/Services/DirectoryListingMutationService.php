@@ -296,8 +296,7 @@ class DirectoryListingMutationService
      */
     private function buildListingData(array $input, ?int $existingId = null): array
     {
-        $description = $this->ownerDescription($input['description'] ?? '');
-        $name        = ListingText::tidyName((string) $input['display_name']);
+        $name = ListingText::tidyName((string) $input['display_name']);
 
         return [
             'type'           => DirectoryListingModel::normaliseType($input['type'] ?? ''),
@@ -305,13 +304,42 @@ class DirectoryListingMutationService
             'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'title'          => $this->clean($input['title'] ?? ''),
             'position'       => $this->clean($input['position'] ?? '') ?: null,
+            'email'          => trim((string) $input['email']),
+        ] + $this->draftColumns($input) + ServiceArea::columns($input) + [
+            'slug'           => ensure_unique_slug($this->listings, 'slug', $name, $existingId, listing_reserved_slugs()),
+            'status'         => 'pending',
+            'is_verified'    => 0,
+            // Public signup is the only intake route. The source/source_url
+            // columns remain for provenance on future imports.
+            'source'         => 'public_form',
+            'source_url'     => '',
+            // Only the literal value the checkbox posts counts, so a crafted
+            // POST of marketing_opt_in=yes cannot opt anybody in.
+        ] + MarketingConsentService::signupColumns((string) ($input['marketing_opt_in'] ?? '') === '1');
+    }
+
+    /**
+     * The listing columns a signup form submission would write, apart from
+     * identity, slug, status and consent. Pure: no queries, no slug, no
+     * geocoding, so the live score on /add-profile can run it on every
+     * keystroke pause (ListingQualityService::strengthForDraft()). Being the
+     * same code buildListingData() uses is what keeps that live number equal to
+     * the score the saved profile gets.
+     *
+     * @param array<string,mixed> $input
+     * @return array<string,mixed>
+     */
+    public function draftColumns(array $input): array
+    {
+        $description = $this->ownerDescription($input['description'] ?? '');
+
+        return [
             'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
             'credentials' => $this->clean($input['credentials'] ?? ''),
             'description'      => $description,
             'description_text' => RichText::toPlainText($description),
             'phone'          => $this->clean($input['phone'] ?? ''),
             'whatsapp'       => (string) $this->normaliseWhatsapp($input['whatsapp'] ?? ''),
-            'email'          => trim((string) $input['email']),
             'website'        => $this->normaliseWebsite($input['website'] ?? ''),
             'social_facebook'  => (string) $this->normaliseSocial('social_facebook', $input['social_facebook'] ?? ''),
             'social_instagram' => (string) $this->normaliseSocial('social_instagram', $input['social_instagram'] ?? ''),
@@ -335,17 +363,17 @@ class DirectoryListingMutationService
             // Book online button beside a listing that says it books offline.
             'offers_online_booking'  => empty($input['offers_online_booking']) && (string) $this->normaliseUrl($input['booking_url'] ?? '') === '' ? 0 : 1,
             'booking_url'            => (string) $this->normaliseUrl($input['booking_url'] ?? ''),
-        ] + ServiceArea::columns($input) + [
-            'slug'           => ensure_unique_slug($this->listings, 'slug', $name, $existingId, listing_reserved_slugs()),
-            'status'         => 'pending',
-            'is_verified'    => 0,
-            // Public signup is the only intake route. The source/source_url
-            // columns remain for provenance on future imports.
-            'source'         => 'public_form',
-            'source_url'     => '',
-            // Only the literal value the checkbox posts counts, so a crafted
-            // POST of marketing_opt_in=yes cannot opt anybody in.
-        ] + MarketingConsentService::signupColumns((string) ($input['marketing_opt_in'] ?? '') === '1');
+        ];
+    }
+
+    /**
+     * How many tags a submission would store. See draftColumns().
+     *
+     * @param array<string,mixed> $input
+     */
+    public function draftTagCount(array $input): int
+    {
+        return count($this->tagNames($input['specializations'] ?? null));
     }
 
     /**

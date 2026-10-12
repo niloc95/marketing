@@ -1297,3 +1297,21 @@ if (! function_exists('local_datetime')) {
         }
     }
 }
+
+if (! function_exists('strength_tone')) {
+    /**
+     * The colour step for a profile strength score: three steps, matching the
+     * bands ListingQualityService names. One definition for every place that
+     * draws the meter (the strength panel, the live bar on /add-profile and
+     * the admin list's pill), so they can never disagree about a score.
+     *
+     * Colour is a hint, never the message; each caller also says the band in
+     * words.
+     *
+     * @return 'high'|'mid'|'low'
+     */
+    function strength_tone(int $score): string
+    {
+        return $score >= 80 ? 'high' : ($score >= 40 ? 'mid' : 'low');
+    }
+}

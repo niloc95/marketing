@@ -32,6 +32,7 @@ use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PartnerService;
 use App\Services\PracticeLocationService;
+use App\Services\ProfileNudgeService;
 use App\Services\ReferralService;
 use App\Services\ReviewService;
 use App\Services\SystemStatusService;
@@ -111,6 +112,7 @@ class Admin extends BaseController
             'q'        => trim((string) $this->request->getGet('q')),
             'category' => trim((string) $this->request->getGet('category')),
             'province' => trim((string) $this->request->getGet('province')),
+            'sort'     => in_array($sort = (string) $this->request->getGet('sort'), ['score_asc', 'score_desc'], true) ? $sort : '',
         ];
 
         $dir = new DirectoryService();
@@ -158,8 +160,32 @@ class Admin extends BaseController
     private function form(?array $listing)
     {
         $dir = new DirectoryService();
+        $id  = $listing ? (int) $listing['id'] : 0;
+
+        $tags       = $listing ? $dir->tagsForListing($id) : [];
+        $services   = $listing ? (new ServiceMenuService())->servicesFor($id) : [];
+        $attributes = $listing ? (new ServiceMenuService())->attributeKeysFor($id) : [];
+        $facets     = $listing ? (new ListingFacetService())->storedFor($id) : [];
+        $photos     = $listing ? (new DirectoryListingPhotoModel())->forListing($id) : [];
+        $menuFiles  = $listing ? (new ListingMenuService())->forListing($id) : [];
+
+        // The owner's meter, built the same way Manage::edit() builds it, off the
+        // rows already loaded for the form. Every outstanding step rather than
+        // the owner's top four: this is the list an admin works from when they
+        // tell an owner what to do next.
+        $strength = $listing ? (new ListingQualityService())->strength($listing, [
+            'photos'     => count($photos),
+            'services'   => count($services),
+            'attributes' => count($attributes),
+            'tags'       => count($tags),
+            'facets'     => array_sum(array_map('count', $facets)),
+            'menu'       => count($menuFiles),
+        ], PHP_INT_MAX) : null;
 
         return view('admin/edit', [
+            'strength'       => $strength,
+            'strengthFloor'  => (int) config('Directory')->recentMinQuality,
+            'strengthTarget' => (int) config('Directory')->qualityTarget,
             'listing'    => $listing,
             'old'        => session()->getFlashdata('old') ?? [],
             'errors'     => session()->getFlashdata('errors') ?? [],
@@ -167,16 +193,12 @@ class Admin extends BaseController
             'provinces'  => $dir->provinces(),
             'countries'  => config('Countries')->grouped(),
             'venues'     => (new DirectoryAdminService())->allVenues(),
-            'tags'       => $listing ? $dir->tagsForListing((int) $listing['id']) : [],
-            'services'   => $listing ? (new ServiceMenuService())->servicesFor((int) $listing['id']) : [],
-            'attributes' => $listing ? (new ServiceMenuService())->attributeKeysFor((int) $listing['id']) : [],
-            'facets'     => $listing ? (new ListingFacetService())->storedFor((int) $listing['id']) : [],
-            'photos'     => $listing
-                ? (new DirectoryListingPhotoModel())->forListing((int) $listing['id'])
-                : [],
-            'menuFiles'  => $listing
-                ? (new ListingMenuService())->forListing((int) $listing['id'])
-                : [],
+            'tags'       => $tags,
+            'services'   => $services,
+            'attributes' => $attributes,
+            'facets'     => $facets,
+            'photos'     => $photos,
+            'menuFiles'  => $menuFiles,
             'slots'      => $this->gallerySlots($listing ? (int) $listing['id'] : null),
             'galleryMax' => self::GALLERY_MAX,
             // Same badge rule as the owner form, deliberately. The admin session
@@ -273,6 +295,28 @@ class Admin extends BaseController
         return $ajax
             ? $this->photoDeleteJson(true, 'Photo removed.', 200, $listingId)
             : redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Photo removed.');
+    }
+
+    /**
+     * Email the owner their top profile strength steps (ProfileNudgeService::sendNow()).
+     */
+    public function nudgeOwner(int $id)
+    {
+        $listing = (new DirectoryAdminService())->find($id);
+        if ($listing === null) {
+            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+        }
+
+        $result = (new ProfileNudgeService())->sendNow($listing, (int) config('Directory')->qualityTarget);
+        $back   = redirect()->to(base_url('admin/edit/' . $id));
+
+        return match ($result) {
+            'sent'         => $back->with('success', 'Suggestions emailed to ' . $listing['email'] . '.'),
+            'complete'     => $back->with('success', 'Nothing left to suggest, so no email was sent.'),
+            'unsubscribed' => $back->with('error', 'The owner has not opted in to profile emails, or has unsubscribed. Nothing was sent.'),
+            'no_email'     => $back->with('error', 'This profile has no email address.'),
+            default        => $back->with('error', 'The email could not be sent. Check the mail log and try again.'),
+        };
     }
 
     // ------------------------------------------------------------------ actions
