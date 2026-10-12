@@ -2462,7 +2462,16 @@
      is the plain panel. The sheet opens upward from the bar and scrolls on its
      own, so a long checklist never pushes the bar off a phone screen. */
   .score-bar          { @apply mb-6; }
-  .score-bar.is-live  { @apply sticky bottom-0 z-30 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur; }
+  /* rounded-surface like every other card and panel on the page. Floats 1rem
+     (1.5rem from sm) above the bottom edge, plus the iPhone home indicator
+     inset, so it reads as a card riding along rather than a strip glued on. */
+  .score-bar.is-live  {
+    @apply sticky z-30 rounded-surface border border-slate-200 bg-white/95 px-5 py-3.5 shadow-lg backdrop-blur sm:px-6;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 640px) {
+    .score-bar.is-live { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
+  }
   .score-bar-sheet    { @apply mb-3; }
   .score-bar.is-live .score-bar-sheet { @apply max-h-[42vh] overflow-y-auto sm:max-h-[60vh] border-b border-slate-200 pb-1; }
   .score-bar.is-live .strength-panel  { @apply mb-0 border-0 bg-transparent p-0 shadow-none; }
