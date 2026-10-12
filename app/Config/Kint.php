@@ -25,9 +25,29 @@ class Kint
     */
 
     /**
+     * Kint's own default parser plugins, minus ColorPlugin.
+     *
+     * ColorPlugin treats any string that is a CSS colour name as a colour and
+     * draws a swatch with an inline style="background:…" attribute. The debug
+     * toolbar dumps view data through Kint, and the signup and manage forms
+     * carry the country list, so "Peru" (the colour #CD853F) and friends drew
+     * swatches that our CSP's style-src-attr 'self' blocks: five console
+     * errors and five /csp-report posts on every local page load of
+     * /add-profile, which hid real violations. Development only; the toolbar
+     * never runs in production. Read from Kint::$plugins so a Kint upgrade
+     * keeps its new defaults.
+     *
      * @var list<class-string<ConstructablePluginInterface>|ConstructablePluginInterface>|null
      */
     public $plugins;
+
+    public function __construct()
+    {
+        $this->plugins = array_values(array_filter(
+            \Kint\Kint::$plugins,
+            static fn ($plugin): bool => $plugin !== \Kint\Parser\ColorPlugin::class
+        ));
+    }
 
     public int $maxDepth           = 6;
     public bool $displayCalledFrom = true;
