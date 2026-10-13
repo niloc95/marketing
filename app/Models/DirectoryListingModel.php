@@ -32,6 +32,8 @@ class DirectoryListingModel extends Model
         'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
         // Lead alerts. Service-written only (JobBoardService), never OWNER_EDITABLE.
         'job_alerts', 'job_alerts_token',
+        // Owner's reviews switch. Service-written only (ReviewService::setEnabled), never OWNER_EDITABLE.
+        'reviews_enabled',
         // Set once at signup by DirectoryListingMutationService::submitPublic().
         'signup_source',
     ];

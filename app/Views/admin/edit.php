@@ -142,6 +142,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($base[
                     <div class="field">
                         <label class="font-medium"><input type="checkbox" name="is_featured" value="1" <?= $v('is_featured') ? 'checked' : '' ?>> Featured</label>
                     </div>
+                    <?php // Read only: the owner's switch. Published reviews stay up
+                          // either way; take one down at /admin/reviews. ?>
+                    <?php if (! $isNew && ! \App\Services\ReviewService::acceptsReviews($listing)): ?>
+                        <p class="hint">New reviews: off (switched off by the owner). Reviews already published stay on the profile.</p>
+                    <?php endif; ?>
                     <?php // Admin-only, deliberately: a venue is a claim about a
                           // shared building, so it is not on the owner form and not
                           // in OWNER_EDITABLE. Manage the list at /admin/venues. ?>

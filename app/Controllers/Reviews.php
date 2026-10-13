@@ -54,6 +54,10 @@ class Reviews extends BaseController
                 ->with('error', 'This page was open for a long time. Please check your review and send it again.');
         }
 
+        if (! ReviewService::acceptsReviews($listing)) {
+            return redirect()->to($back)->with('error', 'This business is not taking new reviews.');
+        }
+
         $ip        = (string) $this->request->getIPAddress();
         $email     = strtolower(trim((string) $this->request->getPost('reviewer_email')));
         $throttler = service('throttler');
@@ -110,6 +114,39 @@ class Reviews extends BaseController
     }
 
     // ---------------------------------------------------------------- owner
+
+    /**
+     * The owner's on/off switch for new reviews on their whole profile.
+     *
+     * The dashboard's script posts it in place and gets JSON, so the page
+     * neither reloads nor jumps; a plain form post (no JavaScript) still gets
+     * the redirect. The JSON carries the fresh CSRF token, because the token
+     * regenerates on every POST and the page's other forms would go stale.
+     */
+    public function ownerToggle()
+    {
+        $ajax    = $this->request->isAJAX();
+        $listing = $this->ownerListing();
+        if ($listing === null) {
+            return $ajax
+                ? $this->switchJson(false, 'Your session has ended. Please request a new link to manage your profile.', 401)
+                : redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
+        }
+
+        // The marker is what lets an unticked box mean "off": an unticked
+        // checkbox posts nothing at all.
+        if ($this->request->getPost('reviews_present') === null) {
+            return $ajax ? $this->switchJson(false, 'Nothing was changed.', 400) : redirect()->to(base_url('manage/edit') . '#reviews');
+        }
+
+        $on = $this->request->getPost('reviews_enabled') === '1';
+        (new ReviewService())->setEnabled((int) $listing['id'], $on);
+        $message = $on ? 'Customers can review your business again.' : 'New reviews are off. Reviews already on your profile stay up.';
+
+        return $ajax
+            ? $this->switchJson(true, $message, 200, $on)
+            : redirect()->to(base_url('manage/edit') . '#reviews')->with('success', $message);
+    }
 
     public function ownerReply(int $id)
     {
@@ -176,6 +213,16 @@ class Reviews extends BaseController
         }
 
         return $age > self::MAX_FORM_SECONDS ? 'stale' : 'ok';
+    }
+
+    private function switchJson(bool $ok, string $message, int $status, ?bool $on = null)
+    {
+        return $this->response->setStatusCode($status)->setJSON([
+            'ok'      => $ok,
+            'on'      => $on,
+            'message' => $message,
+            'csrf'    => ['name' => csrf_token(), 'hash' => csrf_hash()],
+        ]);
     }
 
     private function ownerListing(): ?array

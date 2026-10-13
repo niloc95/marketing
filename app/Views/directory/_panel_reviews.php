@@ -7,7 +7,11 @@
  * Unlike most panels this one draws on a profile with no reviews too,
  * because the form is how the first one arrives. It returns early only when
  * there is no listing at all (VerticalProfileTest renders every panel with
- * an empty $l).
+ * an empty $l), or when the owner switched new reviews off and none are
+ * published, so there is nothing to show and no form to offer.
+ *
+ * Switched off with reviews already published, the reviews, replies and
+ * report links stay exactly as they are; only the form goes.
  *
  * $l['reviews'] comes from DirectoryService::getProfile(), the same copy the
  * JSON-LD reads, so the markup always matches what is on the page.
@@ -21,8 +25,14 @@
  * @var array $v
  */
 use App\Controllers\Reviews;
+use App\Services\ReviewService;
 
 if (empty($l['id']) || ! isset($l['reviews'])) {
+    return;
+}
+
+$enabled = ReviewService::acceptsReviews($l);
+if (! $enabled && $l['reviews']['items'] === []) {
     return;
 }
 
@@ -82,6 +92,9 @@ $date   = static function (?string $d): string {
         <?php endif; ?>
     <?php endif; ?>
 
+    <?php if (! $enabled): ?>
+        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">This business is not taking new reviews.</p>
+    <?php else: ?>
     <details class="disclosure mb-0 mt-4" id="write-review" <?= $open ? 'open' : '' ?>>
         <summary class="disclosure-summary">Write a review</summary>
         <form method="post" action="<?= base_url('reviews/' . $l['slug']) ?>" class="disclosure-body" novalidate>
@@ -133,4 +146,5 @@ $date   = static function (?string $d): string {
             <button type="submit" class="btn btn-accent">Send review</button>
         </form>
     </details>
+    <?php endif; ?>
 </div>

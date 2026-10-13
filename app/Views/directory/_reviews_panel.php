@@ -10,12 +10,18 @@
  * A review sent back to the queue by reports stays listed with a note, so it
  * never silently vanishes from the owner's view.
  *
+ * The switch turns new reviews off for the whole profile. reviews_enabled is
+ * deliberately outside OWNER_EDITABLE, so it posts to its own route; the
+ * marker is what lets an unticked box mean "off". There is no way here to
+ * remove a review: once published, only an admin can take it down.
+ *
  * @var array<string,mixed>       $listing
  * @var list<array<string,mixed>> $reviews
  */
 use App\Models\DirectoryReviewModel;
 use App\Services\ReviewService;
 
+$enabled  = ReviewService::acceptsReviews($listing);
 $replyMax = (int) config('Reviews')->replyMax;
 $date     = static function (?string $d): string {
     $ts = $d ? strtotime($d) : false;
@@ -23,7 +29,7 @@ $date     = static function (?string $d): string {
     return $ts === false ? '' : date('j F Y', $ts);
 };
 ?>
-<div class="panel mt-6" id="reviews">
+<div class="panel mt-6" id="reviews" data-switch-scope>
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-lg font-bold text-slate-900 dark:text-white">Customer reviews</h2>
         <?= rating_summary($listing) ?>
@@ -33,8 +39,23 @@ $date     = static function (?string $d): string {
         Your reply appears under the review straight away. A short, polite reply helps the next customer, whatever the rating.
     </p>
 
+    <form method="post" action="<?= base_url('manage/reviews/switch') ?>" class="mt-4" data-autosubmit>
+        <?= csrf_field() ?>
+        <input type="hidden" name="reviews_present" value="1">
+        <div class="flex flex-wrap items-center gap-3">
+            <label class="switch">
+                <input type="checkbox" role="switch" name="reviews_enabled" value="1" <?= $enabled ? 'checked' : '' ?>>
+                <span>Let customers review my business</span>
+            </label>
+            <button type="submit" class="btn btn-ghost btn-xs switch-save">Save</button>
+        </div>
+        <p class="hint" data-switch-status role="status" aria-live="polite" hidden></p>
+        <div class="hint">If you switch reviews off, customers can no longer write new ones. Reviews already on your profile stay up, and you can still reply to them. Only we can take a review down, and only if it breaks our terms.</div>
+    </form>
+
     <?php if ($reviews === []): ?>
-        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400" data-switch-show="off" <?= $enabled ? 'hidden' : '' ?>>Reviews are switched off.</p>
+        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400" data-switch-show="on" <?= $enabled ? '' : 'hidden' ?>>
             No reviews yet. Share your profile link with happy customers:
             <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug']) . '#write-review') ?>"><?= esc(base_url('directory/' . $listing['slug'])) ?></a>
         </p>

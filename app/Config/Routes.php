@@ -115,8 +115,10 @@ $routes->get('manage/jobs/(:num)/edit', 'Jobs::ownerEdit/$1');
 $routes->post('manage/jobs/(:num)/edit', 'Jobs::ownerUpdate/$1');
 $routes->post('manage/jobs/(:num)/close', 'Jobs::ownerClose/$1');
 $routes->post('manage/jobs/(:num)/renew', 'Jobs::ownerRenew/$1');
-// The owner's public reply to a review, and their report of one. Handled by
+// The owner's switch for new reviews, their public reply to a review, and
+// their report of one. Handled by
 // Reviews; under manage/ because the manage session is the credential.
+$routes->post('manage/reviews/switch', 'Reviews::ownerToggle');
 $routes->post('manage/reviews/(:num)/reply', 'Reviews::ownerReply/$1');
 $routes->post('manage/reviews/(:num)/report', 'Reviews::ownerReport/$1');
 // Verified Business: apply, pay, and where PayFast returns the browser to.

@@ -2211,6 +2211,33 @@
      arrow; a textarea is many lines, so it takes the inner radius and grows. */
   .field select   { @apply pr-10; }
   .field textarea { @apply h-auto rounded-inner py-3; }
+  /* On/off switch: a checkbox with role="switch", drawn as a pill and knob.
+     Still a real checkbox, so the label, keyboard and form post all work as
+     one. A form marked data-autosubmit saves on change (directory.js), and its
+     .switch-save button is only there for when scripting is off. */
+  .switch { @apply inline-flex cursor-pointer items-center gap-3 text-sm font-medium; }
+  .switch input {
+    @apply relative h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full border-0
+           bg-slate-300 transition-colors focus:outline-none focus:ring-0
+           focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
+  }
+  .switch input::before {
+    content: '';
+    @apply absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform;
+  }
+  /* @tailwindcss/forms paints a tick and a border colour on a checked box;
+     the knob is the only mark a switch needs. */
+  .switch input,
+  .switch input:checked,
+  .switch input:checked:hover,
+  .switch input:checked:focus { background-image: none; }
+  .switch input:checked,
+  .switch input:checked:hover,
+  .switch input:checked:focus { @apply bg-primary-500; }
+  .switch input:checked::before { @apply translate-x-5; }
+  /* .btn sets display:inline-flex, which outranks the [hidden] attribute
+     directory.js puts on the fallback Save button. */
+  .switch-save[hidden] { @apply !hidden; }
   .hint { @apply mt-1 text-xs text-slate-500; }
   .err  { @apply mt-1 text-sm font-medium text-brand-crimson; }
   /* Set by "failed-save errors" in directory.js on the field each message is for. */
@@ -2315,6 +2342,8 @@
   }
   .dark input[type="checkbox"] { @apply focus:ring-offset-[#1a202c]; }
   .dark .hint { @apply text-slate-400; }
+  .dark .switch input { @apply bg-slate-600 focus-visible:ring-offset-slate-900; }
+  .dark .switch input:checked { @apply bg-primary-300; }
 
   /* ------------------------------------------------------- plan comparison */
 

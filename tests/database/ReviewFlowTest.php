@@ -27,6 +27,9 @@ use CodeIgniter\Test\FeatureTestTrait;
  * 7. **Ratings never change the order of search results.**
  * 8. **Retention**: unconfirmed reviews are deleted; declined ones lose the
  *    reviewer's name and email.
+ * 9. **The owner's switch only stops new reviews.** Published reviews stay up
+ *    with their totals, the queue still runs, replies still work, and the
+ *    form goes (with the whole panel when there is nothing published).
  *
  * Requires the `tests` database group — see the Tests section of README.md.
  *
@@ -253,6 +256,91 @@ final class ReviewFlowTest extends CIUnitTestCase
 
         $items = (new DirectoryService())->browse(['category' => 'plumber'])['items'];
         $this->assertSame([(int) $first['id'], (int) $second['id']], array_map(static fn ($l) => (int) $l['id'], $items));
+    }
+
+    // ------------------------------------------------------- owner's switch
+
+    public function testTheOwnerSwitchesNewReviewsOffAndBackOn(): void
+    {
+        $listing = $this->listing();
+        $session = [Manage::SESSION_KEY => (int) $listing['id']];
+
+        $this->withSession($session)->post('manage/reviews/switch', ['reviews_present' => '1'] + $this->csrf())
+            ->assertRedirect();
+        $this->assertSame(0, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
+
+        $this->withSession($session)->post('manage/reviews/switch', ['reviews_present' => '1', 'reviews_enabled' => '1'] + $this->csrf());
+        $this->assertSame(1, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
+
+        // No marker: nothing changes.
+        $this->withSession($session)->post('manage/reviews/switch', $this->csrf());
+        $this->assertSame(1, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
+    }
+
+    public function testTheDashboardScriptSavesTheSwitchInPlace(): void
+    {
+        $listing = $this->listing();
+        $ajax    = ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'];
+
+        $result = $this->withSession([Manage::SESSION_KEY => (int) $listing['id']])->withHeaders($ajax)
+            ->post('manage/reviews/switch', ['reviews_present' => '1'] + $this->csrf());
+        $result->assertStatus(200);
+        $data = json_decode($result->getJSON(), true);
+        $this->assertTrue($data['ok']);
+        $this->assertFalse($data['on']);
+        $this->assertNotEmpty($data['csrf']['hash'], 'a fresh token for the page');
+        $this->assertSame(0, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
+
+        $this->withSession([])->withHeaders($ajax)
+            ->post('manage/reviews/switch', ['reviews_present' => '1', 'reviews_enabled' => '1'] + $this->csrf())
+            ->assertStatus(401);
+        $this->assertSame(0, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
+    }
+
+    public function testSwitchedOffRefusesNewReviewsOverHttpAndInTheService(): void
+    {
+        $listing = $this->listing(['reviews_enabled' => 0]);
+
+        $result = $this->svc->submit($listing, $this->input(), '10.0.0.1');
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('listing', $result['errors']);
+
+        $stamp = Reviews::formStamp((int) $listing['id'], time() - 10);
+        $this->post('reviews/' . $listing['slug'], $this->input(['review_form' => $stamp]) + $this->csrf())
+            ->assertRedirect();
+        $this->assertSame(0, $this->reviews->where('listing_id', $listing['id'])->countAllResults());
+    }
+
+    public function testSwitchingOffKeepsPublishedReviewsTheQueueAndReplies(): void
+    {
+        $listing = $this->listing();
+        $live    = $this->publishedReview($listing, ['rating' => 2, 'body' => 'Late twice and the leak came back within a week.']);
+        $waiting = $this->pendingReview($listing, ['rating' => 4]);
+        $this->svc->recalculate((int) $listing['id']);
+
+        $this->svc->setEnabled((int) $listing['id'], false);
+        $this->assertTotals($listing, 1, '2.0');
+
+        $this->assertTrue($this->svc->approve($waiting), 'a review already waiting still goes through');
+        $this->assertTotals($listing, 2, '3.0');
+
+        $fresh = (new DirectoryListingModel())->find((int) $listing['id']);
+        $this->assertSame('ok', $this->svc->reply($fresh, $live, 'Sorry about that, we have come back and fixed it.'));
+
+        $html = $this->profileHtml($listing);
+        $this->assertStringContainsString('the leak came back', $html, 'locked, still public');
+        $this->assertStringContainsString('aggregateRating', $html);
+        $this->assertStringContainsString('not taking new reviews', $html);
+        $this->assertStringNotContainsString('id="write-review"', $html);
+    }
+
+    public function testSwitchedOffWithNothingPublishedDrawsNoPanel(): void
+    {
+        $listing = $this->listing(['reviews_enabled' => 0]);
+        $html    = $this->profileHtml($listing);
+
+        $this->assertStringNotContainsString('id="reviews"', $html);
+        $this->assertStringNotContainsString('id="write-review"', $html);
     }
 
     // ------------------------------------------------------------ retention
