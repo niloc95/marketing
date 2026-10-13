@@ -20,14 +20,22 @@ use CodeIgniter\Config\BaseConfig;
  *    - Google, individual practitioners get their own profile:
  *      https://support.google.com/business/answer/3038177
  *    - Google Local Services Ads countries (not South Africa) and the
- *      Screened / Guaranteed badges:
- *      https://support.google.com/localservices/answer/6224841
+ *      Google Verified badge, which replaced Screened / Guaranteed. Rechecked
+ *      13 Oct 2026: https://support.google.com/localservices/answer/6224841
+ *    - LinkedIn Page verification (data accuracy, admin activity, paid
+ *      products; no documents). Checked 13 Oct 2026:
+ *      https://www.linkedin.com/help/linkedin/answer/a6275638
  *    - LinkedIn Pages, multiple locations:
  *      https://www.linkedin.com/help/linkedin/answer/111872
- *    - LinkedIn Service Pages (members, not company Pages): requests for
- *      proposals and reviews: https://www.linkedin.com/help/lms/answer/a7125941
- *    - Snupit, pay-per-lead quote requests:
- *      https://pressoffice.mg.co.za/snupit/content/wbrpO7gYWbpqDLZn
+ *    - LinkedIn Service Pages, run by a member or by a company Page (up to 10
+ *      services, location, optional hourly price; Pages with 500 staff or
+ *      fewer), requests for proposals and reviews. Rechecked 13 Oct 2026:
+ *      https://www.linkedin.com/help/linkedin/answer/a550345 and
+ *      https://louisebrogan.com/how-to-add-a-services-page-to-your-linkedin-company-page/
+ *    - Snupit, quote requests answered by pros: https://www.snupit.co.za/
+ *      (its pay per lead model is only documented in a 2017 release,
+ *      https://pressoffice.mg.co.za/snupit/content/wbrpO7gYWbpqDLZn, so the
+ *      cell no longer claims it)
  *    - Cylex, free profile with hours, photos, services and reviews; premium
  *      placement paid: https://cylex-international.com/products
  *    - Medpages: free search and a free basic listing; qualifications, a
@@ -99,7 +107,7 @@ class Comparison extends BaseConfig
             'cells' => [
                 'local'    => ['status' => 'free', 'note' => ''],
                 'google'   => ['status' => 'yes', 'note' => ''],
-                'linkedin' => ['status' => 'partial', 'note' => 'Service Pages belong to individual members, not company Pages'],
+                'linkedin' => ['status' => 'yes', 'note' => 'A company Page can list up to 10 services, with an optional hourly price'],
                 'sa'       => ['status' => 'varies', 'note' => 'Cylex lists services on a free profile'],
             ],
         ],
@@ -189,8 +197,8 @@ class Comparison extends BaseConfig
             'cells' => [
                 'local'    => ['status' => 'free_verified', 'note' => 'Anyone can post a request free; replying needs Verified Business'],
                 'google'   => ['status' => 'no', 'note' => 'Local Services Ads take paid leads in some countries, not in South Africa'],
-                'linkedin' => ['status' => 'partial', 'note' => 'Members can request proposals from people with a Service Page'],
-                'sa'       => ['status' => 'varies', 'note' => 'Snupit: yes, and businesses pay per lead to respond'],
+                'linkedin' => ['status' => 'partial', 'note' => 'Members can request proposals through a person\'s or a company\'s Service Page'],
+                'sa'       => ['status' => 'varies', 'note' => 'Snupit: customers post a request and get quotes from pros'],
             ],
         ],
         [
@@ -198,8 +206,8 @@ class Comparison extends BaseConfig
             'label' => 'Document checked verification',
             'cells' => [
                 'local'    => ['status' => 'verified', 'note' => 'Company registration and the owner\'s ID, checked by a person'],
-                'google'   => ['status' => 'partial', 'note' => 'Standard verification proves you control the business. Paid "Google Screened" and "Google Guaranteed" badges, with licence or background checks, exist in some countries, not South Africa'],
-                'linkedin' => ['status' => 'partial', 'note' => 'Identity and workplace checks for members; no public check of business documents'],
+                'google'   => ['status' => 'partial', 'note' => 'Standard verification proves you control the business. The "Google Verified" badge, with extra screening, comes with Local Services Ads, which are not offered in South Africa'],
+                'linkedin' => ['status' => 'partial', 'note' => 'Members can verify their ID and workplace. A Page badge checks details like the website and location, mainly for paying Pages, not business documents'],
                 'sa'       => ['status' => 'varies', 'note' => ''],
             ],
         ],
@@ -219,7 +227,7 @@ class Comparison extends BaseConfig
             'cells' => [
                 'local'    => ['status' => 'free', 'note' => 'Email confirmed, read by us before they go up, and you can reply'],
                 'google'   => ['status' => 'yes', 'note' => ''],
-                'linkedin' => ['status' => 'partial', 'note' => 'On members\' Service Pages'],
+                'linkedin' => ['status' => 'partial', 'note' => 'On Service Pages, when the provider invites the client'],
                 'sa'       => ['status' => 'varies', 'note' => 'Cylex and Snupit have reviews'],
             ],
         ],
