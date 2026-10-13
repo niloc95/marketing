@@ -190,7 +190,15 @@ $contact   = config('Directory')->adminEmail();
                 <li>When someone opens a partner link, we set a cookie holding only the partner's code (see our <a href="<?= base_url('cookie-policy') ?>">cookie policy</a>) and add one to a daily click count. We do not record who clicked.</li>
             </ul>
 
-            <h2>11. Information collected automatically</h2>
+            <h2 id="careers">11. Applying for a job with us</h2>
+            <p>If you apply for a role at <?= esc($siteName) ?> through our <a href="<?= base_url('careers') ?>">careers page</a>, we receive your name, email address, CV and message, and optionally your phone number and a link to your LinkedIn profile or portfolio. We use them only to consider you for that role and, for the period below, for other roles with us.</p>
+            <ul>
+                <li>Your CV is stored privately on our own server. It is not published, and only the people hiring can open it.</li>
+                <li>We email the people hiring a notice of your application, with your contact details and message but not your CV.</li>
+                <li>We do not share your application with anyone outside <?= esc($siteName) ?>.</li>
+            </ul>
+
+            <h2>12. Information collected automatically</h2>
             <p>When you use <?= esc($siteName) ?>, certain information may be processed automatically.</p>
 
             <h3>IP addresses</h3>
@@ -206,7 +214,7 @@ $contact   = config('Directory')->adminEmail();
             <p>You can refuse this request.</p>
             <p>Where you allow access, the location information is used to help sort search results by distance for that search. We do not intentionally store your location for the purpose of building a personal location profile.</p>
 
-            <h2>12. Why we process personal information</h2>
+            <h2>13. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">
                 <thead><tr><th>Purpose</th><th>Basis for processing</th></tr></thead>
@@ -229,7 +237,7 @@ $contact   = config('Directory')->adminEmail();
             </table>
             <p>We do not sell personal information.</p>
 
-            <h2>13. Who we share information with</h2>
+            <h2>14. Who we share information with</h2>
             <p>We do not sell personal information or share personal information with third parties for their own advertising purposes.</p>
             <p>Information may be disclosed or made available in the following circumstances:</p>
 
@@ -262,13 +270,13 @@ $contact   = config('Directory')->adminEmail();
             <h3>Legal requirements</h3>
             <p>We may disclose information where required or permitted by applicable law, including in response to a valid court order, legal process or lawful request from an authorised authority.</p>
 
-            <h2>14. Cross border transfers</h2>
+            <h2>15. Cross border transfers</h2>
             <p>Because our application infrastructure is currently hosted in the AWS Asia Pacific (Mumbai) Region, personal information processed through that infrastructure may be transferred to and processed outside South Africa.</p>
             <p>Some third party service providers used by <?= esc($siteName) ?> may also process information outside South Africa.</p>
             <p>Where personal information is transferred across borders, we take reasonable steps to ensure that the transfer is undertaken in accordance with applicable requirements of POPIA, including the requirements applicable to cross border transfers under section 72.</p>
             <p>Depending on the service involved, this may include reliance on contractual protections, data processing terms, applicable regulatory safeguards and other appropriate measures provided by our service providers.</p>
 
-            <h2>15. How long we keep personal information</h2>
+            <h2>16. How long we keep personal information</h2>
             <p>We retain personal information only for as long as reasonably necessary for the purposes for which it was collected, to provide the relevant service, to comply with legal obligations, resolve disputes, enforce agreements and protect the security of our services.</p>
 
             <h3>Business profiles</h3>
@@ -313,6 +321,9 @@ $contact   = config('Directory')->adminEmail();
                 <li>A partner's details and commission records are kept while the partnership lasts and for <strong>five years</strong> after the last payment to them, as a record of payments made. Bank details are deleted on request once nothing is owed.</li>
             </ul>
 
+            <h3>Job applications to us</h3>
+            <p>An application made through our careers page, with its CV, is deleted <strong>12 months</strong> after we receive it. You may ask us to delete it sooner by <a href="<?= base_url('contact') ?>">contacting us</a>.</p>
+
             <h3>Verified Business documents</h3>
             <p>Verification documents are retained while the Verified Business badge remains active or paused, where reasonably necessary to support the verification status.</p>
             <p>Where a Verified Business subscription lapses or an application is rejected, the associated verification documents are retained for up to <strong>12 months</strong> from that point and are then deleted automatically. This period allows us to answer a billing or verification query raised after the fact.</p>
@@ -320,7 +331,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Verification documents are deleted in full when the associated business profile is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>
 
-            <h2>16. Your rights under POPIA</h2>
+            <h2>17. Your rights under POPIA</h2>
             <p>Subject to applicable legal requirements and limitations, you may have the right to:</p>
             <ul>
                 <li>Request confirmation of whether we hold personal information about you;</li>
@@ -335,27 +346,27 @@ $contact   = config('Directory')->adminEmail();
             <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your profile needs, such as profile management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy related request.</p>
 
-            <h2>17. Complaints</h2>
+            <h2>18. Complaints</h2>
             <p>If you believe that your personal information has been processed unlawfully or that your privacy rights have not been adequately addressed, you may contact us first so that we can investigate and attempt to resolve the matter.</p>
             <p>You may also lodge a complaint with the <strong>Information Regulator of South Africa</strong> through its official channels: <a href="https://inforegulator.org.za/" rel="noopener">inforegulator.org.za</a>.</p>
 
-            <h2>18. Security</h2>
+            <h2>19. Security</h2>
             <p>We use reasonable technical and organisational measures designed to protect personal information against unauthorised access, disclosure, loss, alteration, misuse or destruction.</p>
             <p>The <?= esc($siteName) ?> website is served using HTTPS/TLS.</p>
             <p>Where available, profile management access may use single use, time limited emailed links rather than a traditional stored password.</p>
             <p>However, no internet based service can be guaranteed to be completely secure. We therefore cannot guarantee absolute security of information transmitted to or stored by the service.</p>
 
-            <h2>19. Children</h2>
+            <h2>20. Children</h2>
             <p><?= esc($siteName) ?> is intended for businesses, professionals and service providers and is not directed at children.</p>
             <p>We do not knowingly seek to collect personal information from children under the age of 18 through WebScheduler Local.</p>
             <p>If you believe that a child has provided personal information to us, please <a href="<?= base_url('contact') ?>">contact us</a> so that we can investigate and take appropriate action.</p>
 
-            <h2>20. Changes to this Privacy Policy</h2>
+            <h2>21. Changes to this Privacy Policy</h2>
             <p>We may update this Privacy Policy from time to time to reflect changes to our services, technology, legal requirements or information processing practices.</p>
             <p>When we make changes, we will update the <strong>Last updated</strong> date displayed at the beginning of this policy.</p>
             <p>Where we make a material change that affects how we process personal information already provided to us, we may provide additional notice where appropriate, including by email to affected profile owners.</p>
 
-            <h2>21. Contact us</h2>
+            <h2>22. Contact us</h2>
             <p>If you have questions about this Privacy Policy, want to exercise a privacy right, or have a concern about how your personal information is being processed, please contact us:</p>
             <ul>
                 <li><strong>WebScheduler (Pty) Ltd</strong></li>

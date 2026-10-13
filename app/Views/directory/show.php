@@ -162,32 +162,11 @@ $metaDesc = listing_meta_description($l);
                 <?php endif; ?>
                 <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured mt-2 gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
             </div>
-            <?php
-            $shareText = $name . ($prof ? ', ' . $prof : '');
-            $shareLinks = [
-                'whatsapp' => 'https://wa.me/?text=' . rawurlencode($shareText . ' ' . $canonical),
-                'facebook' => 'https://www.facebook.com/sharer/sharer.php?u=' . rawurlencode($canonical),
-                'x'        => 'https://twitter.com/intent/tweet?text=' . rawurlencode($shareText) . '&url=' . rawurlencode($canonical),
-            ];
-            ?>
-            <div class="share-row" data-share data-share-title="<?= esc($shareText, 'attr') ?>" data-share-url="<?= esc($canonical) ?>">
-                <button type="button" class="share-icon" data-share-native hidden aria-label="Share" title="Share">
-                    <?= lucide('share') ?>
-                </button>
-                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['whatsapp']) ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
-                    <?= brand_icon('whatsapp') ?>
-                </a>
-                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['facebook']) ?>" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Share on Facebook">
-                    <?= brand_icon('facebook') ?>
-                </a>
-                <a class="share-icon" data-share-fallback href="<?= esc($shareLinks['x']) ?>" target="_blank" rel="noopener" aria-label="Share on X" title="Share on X">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7.2 8.2L23 22h-6.6l-5.2-6.8L5.2 22H2l7.7-8.8L1.5 2h6.8l4.7 6.2L18.9 2Zm-1.2 18h1.8L7.4 4H5.5l12.2 16Z"/></svg>
-                </a>
-                <button type="button" class="share-icon" data-share-copy aria-label="Copy link" title="Copy link">
-                    <?= lucide('link', 'icon-link') ?>
-                    <?= lucide('check', 'icon-check') ?>
-                </button>
-            </div>
+            <?= view('partials/_share', [
+                'title'    => $name . ($prof ? ', ' . $prof : ''),
+                'url'      => $canonical,
+                'networks' => ['whatsapp', 'facebook', 'x'],
+            ], ['saveData' => false]) ?>
         </div>
 
         <?php // Below the header: the category and the name are what tell a visitor

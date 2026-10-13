@@ -739,6 +739,7 @@ class Directory extends BaseController
                     ['loc' => base_url('verified'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('compare'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('partners'), 'lastmod' => date('Y-m-d')],
+                    ['loc' => base_url('careers'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('jobs'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('contact'), 'lastmod' => date('Y-m-d')],
                     ['loc' => base_url('privacy'), 'lastmod' => date('Y-m-d')],
@@ -750,7 +751,9 @@ class Directory extends BaseController
                 $svc->sitemapVenueUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapUrls(),
                 // Live vacancies only; service requests are noindex.
-                (new JobBoardService())->sitemapUrls()
+                (new JobBoardService())->sitemapUrls(),
+                // Our own open roles; drafts and closed roles are left out.
+                (new \App\Services\CareersService())->sitemapUrls()
             );
 
             $xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

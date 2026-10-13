@@ -34,6 +34,10 @@ $referralsPending = (new App\Models\DirectoryReferralModel())
 $partnersPending = (new App\Models\DirectoryPartnerModel())
     ->where('status', App\Models\DirectoryPartnerModel::STATUS_APPLIED)
     ->countAllResults();
+$careersNew = (new App\Models\CareerApplicationModel())
+    ->where('status', App\Models\CareerApplicationModel::STATUS_NEW)
+    ->where('purged_at', null)
+    ->countAllResults();
 
 // [label, path, waiting count, path prefixes that make it the current page]
 $queues = [
@@ -43,6 +47,7 @@ $queues = [
     ['Reviews', 'admin/reviews', $reviewsPending, []],
     ['Referrals', 'admin/referrals', $referralsPending, []],
     ['Partners', 'admin/partners', $partnersPending, []],
+    ['Careers', 'admin/careers', $careersNew, []],
 ];
 
 $more = [

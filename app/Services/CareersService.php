@@ -1,0 +1,655 @@
+<?php
+
+namespace App\Services;
+
+use App\Libraries\Mailer;
+use App\Libraries\PostingSections;
+use App\Libraries\VerificationDocumentProcessor;
+use App\Models\CareerApplicationModel;
+use App\Models\CareerRoleModel;
+use CodeIgniter\HTTP\Files\UploadedFile;
+use Config\Careers as CareersConfig;
+use Config\Directory as DirectoryConfig;
+
+/**
+ * Careers at WebScheduler Local: our own roles on /careers and the
+ * applications people send for them.
+ *
+ * Roles are written from /admin/careers and only ever shown while open and
+ * inside their closing date. Applications are stored, with the CV kept
+ * privately, and the admin inbox is emailed a notice that links back to the
+ * record. The applicant is never emailed: the form takes any address, so a
+ * confirmation would let a stranger make us mail someone else.
+ *
+ * Formatting (pay, place, employment type) is JobBoardService's, because a
+ * role row uses the same column names as a board post.
+ */
+class CareersService
+{
+    public const MAX_SUMMARY = 300;
+
+    public const MAX_DESCRIPTION = 8000;
+
+    public const MAX_MESSAGE = 3000;
+
+    public const MIN_MESSAGE = 20;
+
+    /** @see PostingSections::MAX_SECTION */
+    public const MAX_SECTION = PostingSections::MAX_SECTION;
+
+    /** @see PostingSections::SECTIONS */
+    public const SECTIONS = PostingSections::SECTIONS;
+
+    /**
+     * Same reply whatever happened to a valid application, including a bot
+     * caught by the honeypot.
+     */
+    public const APPLIED_MESSAGE = 'Thanks for applying. We read every application and will be in touch if there is a fit.';
+
+    private CareerRoleModel $roles;
+    private CareerApplicationModel $applications;
+    private CareersConfig $config;
+    private DirectoryConfig $site;
+    private JobBoardService $board;
+
+    public function __construct(?CareersConfig $config = null)
+    {
+        $this->roles        = new CareerRoleModel();
+        $this->applications = new CareerApplicationModel();
+        $this->config       = $config ?? config('Careers');
+        $this->site         = config('Directory');
+        $this->board        = new JobBoardService();
+    }
+
+    public function config(): CareersConfig
+    {
+        return $this->config;
+    }
+
+    // ------------------------------------------------------------------ read
+
+    /** @return list<array<string,mixed>> */
+    public function openRoles(): array
+    {
+        return $this->roles->open();
+    }
+
+    /**
+     * Open roles narrowed by the /careers search form. The whole list is a
+     * handful of rows, so this filters in PHP rather than in SQL.
+     *
+     * @param array{q?:string,team?:string,location?:string} $filters
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function filterOpen(array $filters): array
+    {
+        $q        = mb_strtolower(trim((string) ($filters['q'] ?? '')));
+        $team     = (string) ($filters['team'] ?? '');
+        $location = (string) ($filters['location'] ?? '');
+
+        return array_values(array_filter($this->roles->open(), function (array $r) use ($q, $team, $location): bool {
+            if ($team !== '' && $r['team'] !== $team) {
+                return false;
+            }
+            if ($location !== '' && ! in_array($location, $this->locationsOf($r), true)) {
+                return false;
+            }
+
+            return $q === '' || str_contains(mb_strtolower($r['title'] . ' ' . $r['summary']), $q);
+        }));
+    }
+
+    /**
+     * What the Team and Location selects offer: only values some open role
+     * has, so no choice ever leads to an empty list.
+     *
+     * @return array{teams:array<string,string>,locations:list<string>}
+     */
+    public function filterOptions(): array
+    {
+        $teams     = [];
+        $locations = [];
+        foreach ($this->roles->open() as $r) {
+            $teams[(string) $r['team']] = $this->teamLabel($r);
+            foreach ($this->locationsOf($r) as $l) {
+                $locations[$l] = true;
+            }
+        }
+
+        // Config order for teams, alphabetical for places with Remote last.
+        $ordered = array_intersect_key($this->config->teams, $teams) + $teams;
+        $places  = array_keys($locations);
+        sort($places);
+        usort($places, static fn ($a, $b) => ($a === 'Remote') <=> ($b === 'Remote'));
+
+        return ['teams' => $ordered, 'locations' => $places];
+    }
+
+    /** "Durban, KwaZulu-Natal" and/or "Remote": the places a role can be worked from. */
+    public function locationsOf(array $role): array
+    {
+        $place = trim(implode(', ', array_filter([(string) ($role['city'] ?? ''), (string) ($role['province'] ?? '')])));
+
+        return array_values(array_filter([$place, ! empty($role['is_remote']) ? 'Remote' : '']));
+    }
+
+    /**
+     * The role's sections in page order, empty ones left out. The page and
+     * jobPostingSchema() both read this, so the markup always matches what
+     * the page shows.
+     *
+     * @return list<array{key:string,heading:string,type:string,items:list<string|array{label:string,value:string}>}>
+     */
+    public function sections(array $role): array
+    {
+        return PostingSections::sections($role);
+    }
+
+    /** @return list<string> */
+    public function lines(string $text): array
+    {
+        return PostingSections::lines($text);
+    }
+
+    /** A role the public may see, or null. Drafts and closed roles are null. */
+    public function findOpen(string $slug): ?array
+    {
+        $role = $this->roles->findBySlug($slug);
+
+        return $role !== null && $this->isOpen($role) ? $role : null;
+    }
+
+    public function isOpen(array $role): bool
+    {
+        return ($role['status'] ?? '') === CareerRoleModel::STATUS_OPEN
+            && (empty($role['valid_through']) || (string) $role['valid_through'] >= date('Y-m-d'));
+    }
+
+    public function url(array $role): string
+    {
+        return base_url('careers/' . $role['slug']);
+    }
+
+    public function teamLabel(array $role): string
+    {
+        return $this->config->teams[$role['team'] ?? ''] ?? 'Other';
+    }
+
+    public function salaryText(array $role): string
+    {
+        return $this->board->salaryText($this->numeric($role));
+    }
+
+    public function employmentLabel(array $role): string
+    {
+        return $this->board->employmentLabel($role);
+    }
+
+    public function placeText(array $role): string
+    {
+        return $this->board->placeText($role);
+    }
+
+    /** @return list<array{loc:string,lastmod:string}> */
+    public function sitemapUrls(): array
+    {
+        return array_map(fn ($r) => [
+            'loc'     => $this->url($r),
+            'lastmod' => substr((string) ($r['updated_at'] ?? date('Y-m-d')), 0, 10),
+        ], $this->roles->open());
+    }
+
+    /**
+     * JobPosting JSON-LD for an open role, or [] for anything else.
+     *
+     * Mirrors JobBoardService::jobPostingSchema(), with us as the
+     * hiringOrganization. Only what the role page shows goes in: Google
+     * issues manual actions for markup that disagrees with the visible text.
+     *
+     * @return array<string,mixed>
+     */
+    public function jobPostingSchema(array $role): array
+    {
+        if (! $this->isOpen($role)) {
+            return [];
+        }
+
+        $role = $this->numeric($role);
+        $org  = schema_organization();
+
+        $schema = [
+            '@context'           => 'https://schema.org',
+            '@type'              => 'JobPosting',
+            'title'              => (string) $role['title'],
+            'description'        => $this->descriptionHtml($role),
+            'datePosted'         => date('c', strtotime((string) ($role['published_at'] ?? 'now'))),
+            'hiringOrganization' => array_filter([
+                '@type'  => 'Organization',
+                'name'   => $org['name'],
+                'sameAs' => $org['url'],
+                'logo'   => $org['logo']['url'] ?? null,
+            ]),
+            'directApply' => true,
+            'identifier'  => [
+                '@type' => 'PropertyValue',
+                'name'  => $this->site->siteName(),
+                'value' => 'career-' . (int) $role['id'],
+            ],
+        ];
+
+        if (! empty($role['valid_through'])) {
+            $schema['validThrough'] = date('c', strtotime((string) $role['valid_through'] . ' 23:59:59'));
+        }
+
+        $type = config('JobBoard')->employmentTypes[$role['employment_type'] ?? '']['schema'] ?? null;
+        if ($type !== null) {
+            $schema['employmentType'] = $type;
+        }
+
+        if (! empty($role['is_remote'])) {
+            $schema['jobLocationType']               = 'TELECOMMUTE';
+            $schema['applicantLocationRequirements'] = ['@type' => 'Country', 'name' => 'South Africa'];
+        }
+        if (! empty($role['province']) || ! empty($role['city'])) {
+            $schema['jobLocation'] = [
+                '@type'   => 'Place',
+                'address' => array_filter([
+                    '@type'           => 'PostalAddress',
+                    'addressLocality' => (string) ($role['city'] ?? ''),
+                    'addressRegion'   => (string) ($role['province'] ?? ''),
+                    'addressCountry'  => 'ZA',
+                ]),
+            ];
+        }
+
+        $unit = config('JobBoard')->salaryPeriods[$role['salary_period'] ?? '']['schema'] ?? null;
+        if ($unit !== null && ($role['salary_min'] !== null || $role['salary_max'] !== null)) {
+            $value = ['@type' => 'QuantitativeValue', 'unitText' => $unit];
+            if ($role['salary_min'] !== null && $role['salary_max'] !== null && $role['salary_min'] !== $role['salary_max']) {
+                $value['minValue'] = $role['salary_min'];
+                $value['maxValue'] = $role['salary_max'];
+            } else {
+                $value['value'] = $role['salary_min'] ?? $role['salary_max'];
+            }
+            $schema['baseSalary'] = ['@type' => 'MonetaryAmount', 'currency' => 'ZAR', 'value' => $value];
+        }
+
+        return $schema;
+    }
+
+    /** The JobPosting description: every section, closed by About WebScheduler Local. */
+    public function descriptionHtml(array $role): string
+    {
+        return PostingSections::descriptionHtml($role, [
+            'heading'    => 'About ' . $this->site->siteName(),
+            'paragraphs' => $this->config->about,
+        ]);
+    }
+
+    // ------------------------------------------------------------- roles (admin)
+
+    /**
+     * Create or update a role from the admin form.
+     *
+     * @param array<string,mixed> $in
+     *
+     * @return array{ok:bool,message:string,errors:array<string,string>,id:int|null}
+     */
+    public function saveRole(?int $id, array $in): array
+    {
+        $existing = $id !== null ? $this->roles->find($id) : null;
+        if ($id !== null && ! is_array($existing)) {
+            return ['ok' => false, 'message' => 'That role no longer exists.', 'errors' => [], 'id' => null];
+        }
+
+        $jobs = config('JobBoard');
+        $d    = [
+            'title'           => $this->clean($in['title'] ?? '', 120),
+            'team'            => (string) ($in['team'] ?? ''),
+            'summary'         => $this->clean($in['summary'] ?? '', self::MAX_SUMMARY),
+            'description'     => $this->cleanText($in['description'] ?? '', self::MAX_DESCRIPTION),
+            'good_fit'          => $this->cleanText($in['good_fit'] ?? '', self::MAX_SECTION),
+            'strong_candidates' => $this->cleanText($in['strong_candidates'] ?? '', self::MAX_SECTION),
+            'projects'          => $this->cleanText($in['projects'] ?? '', self::MAX_SECTION),
+            'logistics'         => $this->cleanText($in['logistics'] ?? '', self::MAX_SECTION),
+            'employment_type' => (string) ($in['employment_type'] ?? ''),
+            'city'            => $this->clean($in['city'] ?? '', 100),
+            'province'        => (string) ($in['province'] ?? ''),
+            'is_remote'       => empty($in['is_remote']) ? 0 : 1,
+            'salary_min'      => $this->money($in['salary_min'] ?? ''),
+            'salary_max'      => $this->money($in['salary_max'] ?? ''),
+            'salary_period'   => (string) ($in['salary_period'] ?? ''),
+            'valid_through'   => trim((string) ($in['valid_through'] ?? '')),
+            'sort_order'      => (int) ($in['sort_order'] ?? 0),
+        ];
+
+        $errors = [];
+        if ($d['title'] === '') {
+            $errors['title'] = 'Give the role a title.';
+        }
+        if (! isset($this->config->teams[$d['team']])) {
+            $errors['team'] = 'Choose a team.';
+        }
+        if ($d['summary'] === '') {
+            $errors['summary'] = 'Write a one line summary for the list.';
+        }
+        if (mb_strlen($d['description']) < 50) {
+            $errors['description'] = 'Describe the role in at least 50 characters.';
+        }
+        if (count($this->lines($d['good_fit'])) < PostingSections::MIN_GOOD_FIT) {
+            $errors['good_fit'] = 'List at least two points, one per line.';
+        }
+        if ($d['employment_type'] !== '' && ! isset($jobs->employmentTypes[$d['employment_type']])) {
+            $errors['employment_type'] = 'Choose an employment type.';
+        }
+        if ($d['province'] !== '' && ! in_array($d['province'], (new DirectoryService())->provinces(), true)) {
+            $errors['province'] = 'Choose a province.';
+        }
+        if ($d['salary_min'] === false || $d['salary_max'] === false) {
+            $errors['salary_min'] = 'Pay must be a whole number of rand.';
+        } elseif ($d['salary_min'] !== null && $d['salary_max'] !== null && $d['salary_min'] > $d['salary_max']) {
+            $errors['salary_min'] = 'The lower figure is above the upper one.';
+        } elseif (($d['salary_min'] !== null || $d['salary_max'] !== null) && ! isset($jobs->salaryPeriods[$d['salary_period']])) {
+            $errors['salary_period'] = 'Say whether the pay is per hour, month and so on.';
+        }
+        if ($d['valid_through'] !== '') {
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $d['valid_through']);
+            if ($date === false || $date->format('Y-m-d') !== $d['valid_through']) {
+                $errors['valid_through'] = 'That closing date is not a real date.';
+            }
+        }
+
+        if ($errors !== []) {
+            return ['ok' => false, 'message' => 'Please correct the highlighted fields.', 'errors' => $errors, 'id' => $id];
+        }
+
+        foreach (['employment_type', 'city', 'province', 'salary_period', 'valid_through', 'strong_candidates', 'projects', 'logistics'] as $nullable) {
+            if ($d[$nullable] === '') {
+                $d[$nullable] = null;
+            }
+        }
+        if ($d['salary_min'] === null && $d['salary_max'] === null) {
+            $d['salary_period'] = null;
+        }
+
+        if ($existing === null) {
+            $d['slug']   = $this->uniqueSlug($d['title']);
+            $d['status'] = CareerRoleModel::STATUS_DRAFT;
+            $id          = (int) $this->roles->insert($d);
+            $message     = 'Role saved as a draft. Open it when it is ready to show.';
+        } else {
+            $this->roles->update($id, $d);
+            $message = 'Role saved.';
+        }
+
+        $this->forgetSitemap();
+
+        return ['ok' => true, 'message' => $message, 'errors' => [], 'id' => $id];
+    }
+
+    /** @return array{ok:bool,message:string} */
+    public function setRoleStatus(int $id, string $status): array
+    {
+        $role = $this->roles->find($id);
+        if (! is_array($role) || ! in_array($status, CareerRoleModel::STATUSES, true)) {
+            return ['ok' => false, 'message' => 'Could not change that role.'];
+        }
+
+        $data = ['status' => $status];
+        if ($status === CareerRoleModel::STATUS_OPEN && empty($role['published_at'])) {
+            $data['published_at'] = date('Y-m-d H:i:s');
+        }
+        $this->roles->update($id, $data);
+        $this->forgetSitemap();
+
+        return ['ok' => true, 'message' => match ($status) {
+            CareerRoleModel::STATUS_OPEN   => '“' . $role['title'] . '” is open and on /careers.',
+            CareerRoleModel::STATUS_CLOSED => '“' . $role['title'] . '” is closed and off /careers.',
+            default                        => '“' . $role['title'] . '” is back to draft.',
+        }];
+    }
+
+    // ------------------------------------------------------------ applying
+
+    /**
+     * Store an application from the public form and email the inbox.
+     *
+     * The text is checked before the CV is touched, so a form sent back for a
+     * missing name never leaves a file behind. A CV is required.
+     *
+     * @param array<string,mixed> $in
+     *
+     * @return array{ok:bool,errors:array<string,string>}
+     */
+    public function apply(array $in, ?UploadedFile $cv): array
+    {
+        $roleId = (int) ($in['role_id'] ?? 0);
+        $role   = null;
+        if ($roleId > 0) {
+            $role = $this->roles->find($roleId);
+            if (! is_array($role) || ! $this->isOpen($role)) {
+                return ['ok' => false, 'errors' => ['role_id' => 'Sorry, that role has just closed. You can still send a general application.']];
+            }
+        }
+
+        $d = [
+            'name'         => $this->clean($in['name'] ?? '', 120),
+            'email'        => strtolower($this->clean($in['email'] ?? '', 190)),
+            'phone'        => $this->clean($in['phone'] ?? '', 40),
+            'linkedin_url' => $this->clean($in['linkedin_url'] ?? '', 255),
+            'message'      => $this->cleanText($in['message'] ?? '', self::MAX_MESSAGE),
+        ];
+
+        $errors = [];
+        if ($d['name'] === '') {
+            $errors['name'] = 'Please tell us your name.';
+        }
+        if (! filter_var($d['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = $d['email'] === '' ? 'We need your email to reply.' : 'That email address does not look right.';
+        }
+        if ($d['linkedin_url'] !== '') {
+            $url = (new DirectoryListingMutationService())->normaliseUrl($d['linkedin_url']);
+            if ($url === null || safe_external_url($url) === '') {
+                $errors['linkedin_url'] = 'That link does not look right.';
+            } else {
+                $d['linkedin_url'] = $url;
+            }
+        }
+        if (mb_strlen($d['message']) < self::MIN_MESSAGE) {
+            $errors['message'] = 'Tell us a little about yourself and why this role suits you.';
+        }
+        if (empty($in['consent'])) {
+            $errors['consent'] = 'Please agree to us keeping your application.';
+        }
+        if ($cv === null || $cv->getError() === UPLOAD_ERR_NO_FILE) {
+            $errors['cv'] = 'Please attach your CV.';
+        }
+
+        if ($errors !== []) {
+            return ['ok' => false, 'errors' => $errors];
+        }
+
+        $dir    = date('Y/m');
+        $stored = (new VerificationDocumentProcessor())->process($cv, CareerApplicationModel::storageRoot() . '/' . $dir);
+        if (! $stored['ok']) {
+            return ['ok' => false, 'errors' => ['cv' => $stored['error']]];
+        }
+
+        $row = $d + [
+            'role_id'    => $role !== null ? (int) $role['id'] : null,
+            'cv_path'    => $dir . '/' . $stored['name'],
+            'cv_name'    => mb_substr($cv->getClientName(), 0, 255),
+            'cv_mime'    => $stored['mime'],
+            'cv_sha256'  => $stored['sha256'],
+            'consent_at' => date('Y-m-d H:i:s'),
+            'status'     => CareerApplicationModel::STATUS_NEW,
+        ];
+        foreach (['phone', 'linkedin_url'] as $nullable) {
+            if ($row[$nullable] === '') {
+                $row[$nullable] = null;
+            }
+        }
+
+        try {
+            $id = (int) $this->applications->insert($row);
+        } catch (\Throwable $e) {
+            @unlink(CareerApplicationModel::storageRoot() . '/' . $row['cv_path']);
+
+            throw $e;
+        }
+
+        $this->notifyInbox($id, $row, $role);
+
+        return ['ok' => true, 'errors' => []];
+    }
+
+    /** @return array{ok:bool,message:string} */
+    public function updateApplication(int $id, string $status, string $notes): array
+    {
+        $app = $this->applications->find($id);
+        if (! is_array($app) || ! array_key_exists($status, CareerApplicationModel::STATUSES)) {
+            return ['ok' => false, 'message' => 'Could not update that application.'];
+        }
+        if (! empty($app['purged_at'])) {
+            return ['ok' => false, 'message' => 'That application has been deleted under the retention rule.'];
+        }
+
+        $this->applications->update($id, [
+            'status'      => $status,
+            'admin_notes' => $this->cleanText($notes, 2000) ?: null,
+        ]);
+
+        return ['ok' => true, 'message' => 'Application updated.'];
+    }
+
+    /**
+     * Wipe the applicant's details and CV from applications older than the
+     * retention period. The row stays, emptied, so the counts per role remain.
+     *
+     * @return int how many were purged
+     */
+    public function purge(?\DateTimeImmutable $now = null): int
+    {
+        $now    = $now ?? new \DateTimeImmutable();
+        $cutoff = $now->modify('-' . max(1, $this->config->retentionMonths) . ' months')->format('Y-m-d H:i:s');
+        $rows   = $this->applications->where('purged_at', null)->where('created_at <', $cutoff)->findAll();
+
+        foreach ($rows as $row) {
+            $file = $this->applications->resolvePath((string) ($row['cv_path'] ?? ''));
+            if ($file !== null) {
+                @unlink($file);
+            }
+
+            $this->applications->update((int) $row['id'], [
+                'name'         => null,
+                'email'        => null,
+                'phone'        => null,
+                'linkedin_url' => null,
+                'message'      => null,
+                'cv_path'      => null,
+                'cv_name'      => null,
+                'cv_mime'      => null,
+                'cv_sha256'    => null,
+                'admin_notes'  => null,
+                'purged_at'    => $now->format('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return count($rows);
+    }
+
+    // ------------------------------------------------------------- helpers
+
+    private function notifyInbox(int $id, array $app, ?array $role): void
+    {
+        $to = $this->config->inbox !== '' ? $this->config->inbox : $this->site->adminEmail();
+        if ($to === '') {
+            return;
+        }
+
+        $roleTitle = $role !== null ? (string) $role['title'] : 'General application';
+
+        // The shared notice template, with saveData off and every optional key
+        // defaulted, as in PartnerService::notice(). The CV is not attached:
+        // it stays on our server and opens from the admin page.
+        $body = view('emails/job-notice', [
+            'site'           => $this->site->siteName(),
+            'eyebrow'        => 'Careers',
+            'heading'        => 'New application: ' . $roleTitle,
+            'paragraphs'     => array_values(array_filter([
+                $app['name'],
+                $app['email'] . ($app['phone'] ? ' · ' . $app['phone'] : ''),
+                (string) ($app['linkedin_url'] ?? ''),
+                $app['message'],
+            ])),
+            'button'         => ['Open in admin', base_url('admin/careers/applications') . '#application-' . $id],
+            'footnote'       => 'Reply to this email to answer ' . strtok($app['name'], ' ') . ' directly. The CV opens from the admin page.',
+            'footnoteLink'   => null,
+            'bullets'        => null,
+            'bulletsHeading' => null,
+            'extras'         => null,
+            'extrasHeading'  => null,
+            'highlight'      => null,
+            'closing'        => null,
+        ], ['saveData' => false]);
+
+        (new Mailer())->send($to, 'Careers: ' . $roleTitle . ', ' . $app['name'], $body, $app['email']);
+    }
+
+    private function uniqueSlug(string $title): string
+    {
+        helper('slug');
+        $base = slugify($title) ?: 'role';
+        $slug = $base;
+        for ($n = 2; $this->roles->findBySlug($slug) !== null; $n++) {
+            $slug = $base . '-' . $n;
+        }
+
+        return $slug;
+    }
+
+    /** The two pay columns as int|null, since the database hands back strings. */
+    private function numeric(array $role): array
+    {
+        foreach (['salary_min', 'salary_max'] as $k) {
+            $role[$k] = isset($role[$k]) && $role[$k] !== '' ? (int) $role[$k] : null;
+        }
+
+        return $role;
+    }
+
+    /** @return int|null|false null for blank, false for not a whole number */
+    private function money($v): int|null|false
+    {
+        $v = str_replace([' ', ',', 'R', 'r'], '', trim((string) (is_scalar($v) ? $v : '')));
+        if ($v === '') {
+            return null;
+        }
+
+        return ctype_digit($v) && strlen($v) <= 9 ? (int) $v : false;
+    }
+
+    private function forgetSitemap(): void
+    {
+        cache()->delete('directory_sitemap_xml');
+    }
+
+    private function clean($v, int $max): string
+    {
+        if (! is_scalar($v)) {
+            return '';
+        }
+
+        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
+    }
+
+    private function cleanText($v, int $max): string
+    {
+        if (! is_scalar($v)) {
+            return '';
+        }
+
+        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
+    }
+}

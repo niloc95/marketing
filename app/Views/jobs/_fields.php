@@ -68,11 +68,33 @@ $error = static fn (string $f) => $err($f) !== '' ? '<div class="err">' . esc($e
     <?= $error('title') ?>
 </div>
 <div class="field">
-    <label for="f-description"><?= $isJob ? 'Description' : 'Details' ?></label>
-    <textarea id="f-description" name="description" rows="8" required maxlength="5000"
-              placeholder="<?= $isJob ? 'What the work involves, the experience or qualifications needed, hours, and how to apply.' : 'What needs doing, the size of the job, and any access or timing details.' ?>"><?= esc($v('description')) ?></textarea>
+    <label for="f-description"><?= $isJob ? 'About the role' : 'Details' ?></label>
+    <textarea id="f-description" name="description" rows="<?= $isJob ? 6 : 8 ?>" required maxlength="5000"
+              placeholder="<?= $isJob ? 'What the work involves and why it matters, in a few sentences. Leave a blank line between paragraphs.' : 'What needs doing, the size of the job, and any access or timing details.' ?>"><?= esc($v('description')) ?></textarea>
     <?= $error('description') ?>
 </div>
+<?php if ($isJob): ?>
+    <?php
+    // The structured sections every vacancy is posted with, as on /careers
+    // (App\Libraries\PostingSections). Labelled with the heading the public
+    // sees. Only "good fit" is required.
+    $sectionFields = [
+        'good_fit'          => ['One point per line, at least two.', 'Have a valid electrical wiring certificate' . "\n" . 'Are reliable and arrive on time'],
+        'strong_candidates' => ['Optional. One point per line.', 'Solar installations' . "\n" . 'Commercial wiring'],
+        'projects'          => ['Optional. Examples of the real work, one per line.', 'Rewire a three bedroom house' . "\n" . 'Fault finding on a restaurant\'s kitchen circuits'],
+        'logistics'         => ['Optional. One per line. Write "Label: value" for a bold label.', 'Hours: Monday to Friday, 07:30 to 16:30' . "\n" . 'Transport: Own transport needed'],
+    ];
+    ?>
+    <?php foreach ($sectionFields as $key => [$hint, $example]): ?>
+        <div class="field">
+            <label for="f-<?= $key ?>"><?= esc(App\Libraries\PostingSections::SECTIONS[$key][0]) ?><?= $key === 'good_fit' ? '' : ' <span class="text-slate-400">(optional)</span>' ?></label>
+            <textarea id="f-<?= $key ?>" name="<?= $key ?>" rows="4" maxlength="<?= App\Libraries\PostingSections::MAX_SECTION ?>"<?= $key === 'good_fit' ? ' required' : '' ?>
+                      placeholder="<?= esc($example, 'attr') ?>"><?= esc($v($key)) ?></textarea>
+            <div class="hint"><?= esc($hint) ?></div>
+            <?= $error($key) ?>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
 <div class="field">
     <label for="f-category">Category <span class="text-slate-400">(optional)</span></label>
     <select id="f-category" name="category_id" data-category-picker>

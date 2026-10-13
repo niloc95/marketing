@@ -158,6 +158,93 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('registration fee', (string) $this->posts->find($result['id'])['flagged_reason']);
     }
 
+    // ------------------------------------------------- structured sections
+
+    public function testAVacancyNeedsTwoGoodFitPointsButAServiceRequestNone(): void
+    {
+        $job = $this->svc->validate($this->jobInput(['good_fit' => 'Only one point']), true);
+        $this->assertArrayHasKey('good_fit', $job['errors']);
+
+        $service = $this->svc->validate($this->serviceInput() + ['good_fit' => ''], true);
+        $this->assertArrayNotHasKey('good_fit', $service['errors']);
+        $this->assertArrayNotHasKey('good_fit', $service['data'], 'a service request stores none of it');
+    }
+
+    public function testAScamPhraseInLogisticsSendsThePostForReview(): void
+    {
+        $result = $this->svc->submitForListing($this->listing(), $this->jobInput([
+            'logistics' => "Hours: Monday to Friday\nStart: Pay a registration fee first",
+        ]));
+
+        $this->assertSame(JobPostModel::STATUS_PENDING, $result['status']);
+        $this->assertStringContainsString('registration fee', (string) $this->posts->find($result['id'])['flagged_reason']);
+    }
+
+    public function testAVacancyShowsItsSectionsInOrderAndAboutTheEmployer(): void
+    {
+        $listing = $this->listing(['description' => '<p>We have wired Durban homes since 1998.</p><p>Family owned.</p>']);
+        $id      = $this->svc->submitForListing($listing, $this->jobInput([
+            'strong_candidates' => "* Solar installations",
+            'logistics'         => "Hours: 07:30 to 16:30\nOwn transport needed",
+        ]))['id'];
+        $post = $this->svc->find($id);
+
+        $html  = html_entity_decode((string) $this->get('jobs/' . $id . '-' . $post['slug'])->response()->getBody(), ENT_QUOTES);
+        $order = ['<h2>About the role</h2>', '<h2>You may be a good fit if you:</h2>', '<h2>Strong candidates may also have experience with:</h2>',
+            '<h2>Logistics:</h2>', '<h2>About ' . $listing['display_name'] . '</h2>'];
+        $last = 0;
+        foreach ($order as $heading) {
+            $at = strpos($html, $heading);
+            $this->assertNotFalse($at, $heading);
+            $this->assertGreaterThan($last, $at, $heading . ' is in order');
+            $last = $at;
+        }
+        $this->assertStringNotContainsString('Representative projects:', $html, 'an empty section is left out');
+        $this->assertStringContainsString('<li>Solar installations</li>', $html);
+        $this->assertStringContainsString('<li><strong>Hours:</strong> 07:30 to 16:30</li>', $html);
+        $this->assertStringContainsString('We have wired Durban homes since 1998.', $html);
+
+        $schema = $this->svc->jobPostingSchema($post);
+        $this->assertStringContainsString('<h3>You may be a good fit if you:</h3><ul><li>Hold a wiring certificate</li>', $schema['description']);
+        $this->assertStringContainsString('<h3>About ' . esc($listing['display_name']) . '</h3><p>We have wired Durban homes since 1998.</p><p>Family owned.</p>', $schema['description']);
+    }
+
+    public function testALegacyPostWithOnlyADescriptionStillRenders(): void
+    {
+        $id   = $this->livePost(['good_fit' => null, 'description' => "First paragraph.\n\nSecond paragraph."]);
+        $post = $this->svc->find($id);
+
+        $html = (string) $this->get('jobs/' . $id . '-' . $post['slug'])->response()->getBody();
+        $this->assertStringContainsString('<h2>About the role</h2>', $html);
+        $this->assertStringNotContainsString('You may be a good fit', $html);
+        $this->assertStringNotContainsString('<h2>About Sparks', $html, 'no About block for an unlisted post');
+
+        $this->assertSame('<p>First paragraph.</p><p>Second paragraph.</p>', $this->svc->jobPostingSchema($post)['description']);
+    }
+
+    public function testAPostCanBeSharedAndOnlyAVacancyOffersLinkedIn(): void
+    {
+        $job     = $this->svc->find($this->livePost());
+        $service = $this->svc->find($this->livePost(['kind' => 'service', 'employment_type' => null, 'good_fit' => null]));
+
+        $jobHtml = html_entity_decode((string) $this->get('jobs/' . $job['id'] . '-' . $job['slug'])->response()->getBody(), ENT_QUOTES);
+        $this->assertStringContainsString('data-share-url="' . $this->svc->url($job) . '"', $jobHtml);
+        $this->assertStringContainsString('Share on LinkedIn', $jobHtml);
+
+        $serviceHtml = html_entity_decode((string) $this->get('jobs/' . $service['id'] . '-' . $service['slug'])->response()->getBody(), ENT_QUOTES);
+        $this->assertStringContainsString('data-share-url=', $serviceHtml);
+        $this->assertStringNotContainsString('Share on LinkedIn', $serviceHtml);
+    }
+
+    public function testTheListShowsPlainRows(): void
+    {
+        $this->livePost(['title' => 'Row electrician']);
+
+        $html = (string) $this->get('jobs')->response()->getBody();
+        $this->assertStringContainsString('<ul class="posting-list">', $html);
+        $this->assertMatchesRegularExpression('#class="posting-row-title posting-row-link[^"]*" href="[^"]+">Row electrician</a>#', $html);
+    }
+
     public function testAnUnpublishedListingCannotPost(): void
     {
         $result = $this->svc->submitForListing($this->listing(['status' => 'pending']), $this->jobInput());
@@ -605,6 +692,7 @@ final class JobBoardFlowTest extends CIUnitTestCase
             'city'            => 'Durban',
             'category_id'     => $this->categoryId,
             'employment_type' => 'full_time',
+            'good_fit'        => "Hold a wiring certificate\nAre reliable",
             'salary_min'      => '15 000',
             'salary_max'      => '18000',
             'salary_period'   => 'month',
@@ -666,6 +754,7 @@ final class JobBoardFlowTest extends CIUnitTestCase
             'province'        => 'KwaZulu-Natal',
             'city'            => 'Durban',
             'employment_type' => 'full_time',
+            'good_fit'        => "Hold a wiring certificate\nAre reliable",
             'apply_email'     => 'jobs@example.test',
             'poster_email'    => 'poster@example.test',
             'status'          => JobPostModel::STATUS_PUBLISHED,

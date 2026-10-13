@@ -75,6 +75,12 @@ $routes->get('partners/signout', 'Partners::signout');
 $routes->get('partners/login/(:segment)', 'Partners::redeem/$1');
 $routes->get('p/(:segment)', 'Partners::track/$1');
 
+// Careers at WebScheduler Local itself (not the Jobs board). Open roles are
+// managed at admin/careers; drafts and closed roles 404.
+$routes->get('careers', 'Careers::index');
+$routes->post('careers/apply', 'Careers::apply');
+$routes->get('careers/(:segment)', 'Careers::show/$1');
+
 // Legal. Top-level, so they never meet the directory/{segment} catch-all.
 $routes->get('privacy', 'Legal::privacy');
 $routes->get('terms', 'Legal::terms');
@@ -278,6 +284,19 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('partners/(:num)/suspend', 'Admin::suspendPartner/$1');
     $routes->post('partners/(:num)/rate', 'Admin::partnerRate/$1');
     $routes->post('partners/(:num)/credit', 'Admin::creditPartnerListing/$1');
+
+    // Careers: our own roles and the applications for them. The CV is served
+    // by application id only, never by path. The literal segments MUST
+    // precede careers/{id}.
+    $routes->get('careers', 'AdminCareers::index');
+    $routes->get('careers/new', 'AdminCareers::create');
+    $routes->post('careers/new', 'AdminCareers::store');
+    $routes->get('careers/applications', 'AdminCareers::applications');
+    $routes->post('careers/applications/(:num)', 'AdminCareers::updateApplication/$1');
+    $routes->get('careers/applications/(:num)/cv', 'AdminCareers::cv/$1');
+    $routes->get('careers/(:num)', 'AdminCareers::edit/$1');
+    $routes->post('careers/(:num)', 'AdminCareers::update/$1');
+    $routes->post('careers/(:num)/status', 'AdminCareers::status/$1');
 
     // The home page hero rotation. Content, not configuration — which photo
     // represents which category is an editorial call, so it lives here rather

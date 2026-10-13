@@ -333,12 +333,13 @@
   }
 
   // ------------------------------------------------------------------ share
-  var shareRow = document.querySelector('[data-share]');
-  if (shareRow) {
+  // Every [data-share] row on the page (partials/_share.php): a profile, a
+  // Jobs board post or a careers role.
+  document.querySelectorAll('[data-share]').forEach(function (shareRow) {
     var nativeBtn = shareRow.querySelector('[data-share-native]');
     var fallbackLinks = shareRow.querySelectorAll('[data-share-fallback]');
 
-    if (navigator.share) {
+    if (navigator.share && nativeBtn) {
       nativeBtn.hidden = false;
       fallbackLinks.forEach(function (a) { a.hidden = true; });
       nativeBtn.addEventListener('click', function () {
@@ -366,7 +367,7 @@
         });
       });
     }
-  }
+  });
 
   // ---------------------------------------------------------- admin More menu
   // A <details>, so it opens without this. This only closes it the way a menu
