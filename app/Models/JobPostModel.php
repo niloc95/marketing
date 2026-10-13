@@ -18,7 +18,7 @@ class JobPostModel extends Model
     protected $allowedFields  = [
         'kind', 'slug', 'listing_id',
         'poster_name', 'poster_email', 'poster_phone', 'company_name',
-        'title', 'description', 'category_id', 'province', 'city', 'is_remote',
+        'title', 'description', 'good_fit', 'strong_candidates', 'projects', 'logistics', 'category_id', 'province', 'city', 'is_remote',
         'employment_type', 'salary_min', 'salary_max', 'salary_period', 'apply_url', 'apply_email',
         'budget_text', 'needed_by',
         'status', 'reject_reason', 'flagged_reason',

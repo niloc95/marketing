@@ -90,6 +90,10 @@ Vagrantfile
 /writable/menus/*
 !/writable/menus/index.html
 
+# CVs sent to /careers. PII, never in the repo; see CareerApplicationModel.
+/writable/careers/*
+!/writable/careers/index.html
+
 php_errors.log
 
 #-------------------------

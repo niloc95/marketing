@@ -116,11 +116,11 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
                 <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs/post') ?>">Be the first to post</a>.
             </div>
         <?php else: ?>
-            <div class="card-grid">
+            <ul class="posting-list">
                 <?php foreach ($items as $p): ?>
-                    <?= view('jobs/_card', ['p' => $p, 'svc' => $svc], ['saveData' => false]) ?>
+                    <?= view('jobs/_row', ['p' => $p, 'svc' => $svc], ['saveData' => false]) ?>
                 <?php endforeach; ?>
-            </div>
+            </ul>
             <?php if ($pager->getPageCount() > 1): ?>
                 <div class="mt-6"><?= $pager->links() ?></div>
             <?php endif; ?>

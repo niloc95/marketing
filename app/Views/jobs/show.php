@@ -26,6 +26,7 @@ $err       = static fn (string $f) => $errors[$f] ?? '';
 $applyUrl  = $isJob ? safe_external_url($post['apply_url'] ?? '') : '';
 $full      = ! $isJob && (int) $post['response_count'] >= $maxResponses;
 $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $responder['id'];
+$about     = $svc->aboutEmployer($post);
 ?>
 
 <?= $this->section('head') ?>
@@ -43,56 +44,89 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
-        <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="<?= base_url('jobs') ?>">Jobs &amp; services</a>
-            <span class="crumbs-sep">/</span>
-            <a href="<?= base_url('jobs?kind=' . $post['kind']) ?>"><?= $isJob ? 'Vacancies' : 'Services needed' ?></a>
-        </nav>
+        <a class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-300" href="<?= base_url('jobs?kind=' . $post['kind']) ?>">
+            <?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?><?= $isJob ? 'All jobs' : 'All services needed' ?>
+        </a>
 
         <?php if (! $isLive && $isAdmin): ?>
-            <div class="alert alert-warning mb-4">Admin preview. This post is <strong><?= esc($post['status']) ?></strong> and not public.</div>
+            <div class="alert alert-warning mb-4 mt-4">Admin preview. This post is <strong><?= esc($post['status']) ?></strong> and not public.</div>
         <?php endif; ?>
 
-        <div class="form-card">
-            <span class="badge badge-category mb-2 gap-1 <?= $isJob ? 'cat-tint-blue' : 'cat-tint-amber' ?>">
+        <?php // Same layout as a /careers role (after openai.com/careers): a large
+              // title, a sticky facts column, and the posting in its sections. ?>
+        <div class="mt-6">
+            <span class="badge badge-category gap-1 <?= $isJob ? 'cat-tint-blue' : 'cat-tint-amber' ?>">
                 <?= lucide($isJob ? 'briefcase' : 'wrench', 'h-3 w-3 shrink-0') ?><?= $isJob ? 'Job' : 'Service needed' ?>
             </span>
-            <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc($post['title']) ?></h1>
+        </div>
+        <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl"><?= esc($post['title']) ?></h1>
 
-            <p class="mt-1 text-slate-600 dark:text-slate-300">
-                <?php if (! empty($post['listing_slug'])): ?>
-                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $post['listing_slug'])) ?>"><?= esc($employer) ?></a>
-                <?php elseif ($isJob || ! empty($post['company_name'])): ?>
-                    <?= esc($employer) ?>
-                <?php endif; ?>
-                <?php if ($verified): ?>
-                    <?= verified_badge_pill() ?>
-                <?php endif; ?>
-            </p>
+        <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">
+            <?php if (! empty($post['listing_slug'])): ?>
+                <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $post['listing_slug'])) ?>"><?= esc($employer) ?></a>
+            <?php elseif ($isJob || ! empty($post['company_name'])): ?>
+                <?= esc($employer) ?>
+            <?php endif; ?>
+            <?php if ($verified): ?>
+                <?= verified_badge_pill() ?>
+            <?php endif; ?>
+        </p>
 
-            <?php
-            $facts = array_filter([
-                'Where'     => $place,
-                'Type'      => $type,
-                'Pay'       => $salary,
-                'Budget'    => $isJob ? '' : (string) ($post['budget_text'] ?? ''),
-                'Needed by' => ! $isJob && ! empty($post['needed_by']) ? date('j F Y', strtotime((string) $post['needed_by'])) : '',
-                'Category'  => (string) ($post['category_name'] ?? ''),
-                'Posted'    => ! empty($post['published_at']) ? date('j F Y', strtotime((string) $post['published_at'])) : '',
-                'Closes'    => date('j F Y', strtotime((string) $post['valid_through'])),
-            ], static fn ($v) => $v !== '');
-            ?>
-            <div class="mt-4 max-w-xl">
-                <?php foreach ($facts as $label => $value): ?>
-                    <div class="kv"><span class="k"><?= esc($label) ?></span><span><?= esc($value) ?></span></div>
-                <?php endforeach; ?>
+        <?php
+        $facts = array_filter([
+            'Where'     => $place,
+            'Type'      => $type,
+            'Pay'       => $salary,
+            'Budget'    => $isJob ? '' : (string) ($post['budget_text'] ?? ''),
+            'Needed by' => ! $isJob && ! empty($post['needed_by']) ? date('j F Y', strtotime((string) $post['needed_by'])) : '',
+            'Category'  => (string) ($post['category_name'] ?? ''),
+            'Posted'    => ! empty($post['published_at']) ? date('j F Y', strtotime((string) $post['published_at'])) : '',
+            'Closes'    => date('j F Y', strtotime((string) $post['valid_through'])),
+        ], static fn ($v) => $v !== '');
+        ?>
+        <div class="posting-layout mt-10">
+            <aside class="posting-aside">
+                <div class="posting-aside-inner">
+                    <dl>
+                        <?php foreach ($facts as $label => $value): ?>
+                            <div class="kv"><dt class="k"><?= esc($label) ?></dt><dd><?= esc($value) ?></dd></div>
+                        <?php endforeach; ?>
+                    </dl>
+                    <a class="btn btn-accent btn-block mt-6" href="<?= $isJob ? '#apply' : '#respond' ?>"><?= $isJob ? 'Apply now' : 'Reply to this request' ?></a>
+                    <p class="posting-share-label"><?= $isJob ? 'Share this job' : 'Share this request' ?></p>
+                    <?= view('partials/_share', [
+                        'title'    => $post['title'] . ($isJob ? ', ' . $employer : ''),
+                        'url'      => $canonical,
+                        'networks' => $isJob ? ['whatsapp', 'linkedin', 'facebook', 'x'] : ['whatsapp', 'facebook', 'x'],
+                    ], ['saveData' => false]) ?>
+                </div>
+            </aside>
+
+            <div class="posting-body">
+                <?php if ($isJob): ?>
+                    <?= view('partials/_posting_sections', ['sections' => App\Libraries\PostingSections::sections($post)], ['saveData' => false]) ?>
+                    <?php if ($about !== null): ?>
+                        <section class="posting-section">
+                            <h2><?= esc($about['heading']) ?></h2>
+                            <?php foreach ($about['paragraphs'] as $p): ?>
+                                <p><?= esc($p) ?></p>
+                            <?php endforeach; ?>
+                            <p><a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $post['listing_slug'])) ?>">View their profile</a></p>
+                        </section>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <section class="posting-section">
+                        <h2>What is needed</h2>
+                        <?php foreach (App\Libraries\PostingSections::paragraphs((string) $post['description']) as $p): ?>
+                            <p><?= nl2br(esc($p)) ?></p>
+                        <?php endforeach; ?>
+                    </section>
+                <?php endif; ?>
             </div>
-
-            <div class="listing-prose mt-5 max-w-prose"><?= nl2br(esc((string) $post['description'])) ?></div>
         </div>
 
         <?php if ($isJob): ?>
-            <div class="form-card mt-6" id="apply">
+            <div class="form-card mt-10" id="apply">
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Apply</h2>
                 <?php if ($applyUrl !== ''): ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">This employer takes applications on their own site.</p>
@@ -143,7 +177,7 @@ $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $
                 <?php endif; ?>
             </div>
         <?php else: ?>
-            <div class="form-card mt-6" id="respond">
+            <div class="form-card mt-10" id="respond">
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Can you do this job?</h2>
                 <?php if ($ownPost): ?>
                     <p class="text-sm text-slate-500 dark:text-slate-400">This is your own request.</p>

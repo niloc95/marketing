@@ -222,6 +222,7 @@
             <a href="<?= base_url('verified') ?>">Verified businesses</a>
             <a href="<?= base_url('manage') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
+            <a href="<?= base_url('careers') ?>">Careers</a>
             <a href="<?= base_url('contact') ?>">Contact</a>
             <?php // Second [data-theme-toggle] on the page, and that needs no JS change:
                   // applyTheme() writes aria-pressed to every one of them and the click
@@ -357,6 +358,7 @@
                 <h3>Company</h3>
                 <ul>
                     <li><a href="<?= base_url('company') ?>">Company</a></li>
+                    <li><a href="<?= base_url('careers') ?>">Careers</a></li>
                     <?php // Our own pages, not the marketing site's — that one is a
                           // "Book a demo" form for the scheduling product, which is
                           // not what someone here is asking for. ?>

@@ -344,6 +344,7 @@ final class JobBoardHttpTest extends CIUnitTestCase
             'city'            => 'Durban',
             'category_id'     => (string) $this->categoryId,
             'employment_type' => 'full_time',
+            'good_fit'        => "Hold a wiring certificate\nAre reliable",
             'genuine'         => '1',
         ];
     }
@@ -398,6 +399,7 @@ final class JobBoardHttpTest extends CIUnitTestCase
             'province'        => 'KwaZulu-Natal',
             'city'            => 'Durban',
             'employment_type' => 'full_time',
+            'good_fit'        => "Hold a wiring certificate\nAre reliable",
             'apply_email'     => 'jobs@example.test',
             'poster_name'     => 'Poster',
             'poster_email'    => 'poster@example.test',

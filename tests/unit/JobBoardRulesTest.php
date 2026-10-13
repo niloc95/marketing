@@ -112,6 +112,7 @@ final class JobBoardRulesTest extends CIUnitTestCase
             'city'            => 'Durban',
             'is_remote'       => 0,
             'employment_type' => 'full_time',
+            'good_fit'        => "Hold a wiring certificate\nAre reliable",
             'salary_min'      => 15000,
             'salary_max'      => 18000,
             'salary_period'   => 'month',

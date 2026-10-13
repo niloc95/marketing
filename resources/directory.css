@@ -2168,6 +2168,10 @@
            hover:border-primary-500 hover:text-primary-500;
   }
   .share-icon svg { @apply h-4 w-4; }
+  /* display:grid above outranks the [hidden] attribute directory.js toggles,
+     which left the system Share button showing in browsers without
+     navigator.share and the network links showing beside it in those with it. */
+  .share-icon[hidden] { @apply !hidden; }
   .dark .share-icon {
     @apply border-slate-700 bg-slate-800 text-slate-400
            hover:border-primary-300 hover:text-primary-300;
@@ -2299,6 +2303,72 @@
     @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-500
            focus:border-primary-300 focus:ring-primary-300;
   }
+
+  /* ------------------------------------------------------------- postings */
+  /* /careers and /jobs, after openai.com/careers: plain rows with dividers
+     rather than cards, and a posting page with a sticky facts column. */
+  .posting-filter { @apply grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]; }
+  .posting-filter-search { @apply relative; }
+  .posting-filter-icon { @apply pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400; }
+  .posting-filter input[type="search"],
+  .posting-filter select {
+    @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm
+           placeholder:text-slate-400 focus:border-primary-500 focus:ring-primary-500;
+  }
+  .posting-filter input[type="search"] { @apply pl-10; }
+  .posting-filter select { @apply pr-10 sm:w-48; }
+  .dark .posting-filter input[type="search"],
+  .dark .posting-filter select {
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-500
+           focus:border-primary-300 focus:ring-primary-300;
+  }
+
+  .posting-list { @apply border-t border-slate-200; }
+  .posting-list > li { @apply border-b border-slate-200; }
+  .posting-row { @apply relative flex items-center gap-4 py-5 transition-colors sm:gap-8; }
+  /* A row that holds another link (the Verified pill on /jobs) cannot itself
+     be an <a>; its title link covers the row instead. */
+  .posting-row-link::after { content: ''; @apply absolute inset-0; }
+  .posting-row-main { @apply min-w-0 flex-1; }
+  .posting-row-title { @apply block text-lg font-semibold text-slate-900; }
+  .posting-row-summary { @apply mt-0.5 block text-sm text-slate-500; }
+  /* On a phone the team and place stack under the title, as one grey line. */
+  .posting-row-meta { @apply hidden shrink-0 text-right text-sm text-slate-600 sm:block sm:w-56; }
+  .posting-row-meta > span { @apply block; }
+  .posting-row-sub { @apply mt-1 block text-xs text-slate-500 sm:hidden; }
+  .dark .posting-row-sub { @apply text-slate-400; }
+  .posting-row-arrow { @apply text-slate-400 transition-transform; }
+  .posting-row:hover .posting-row-title { @apply text-primary-500; }
+  .posting-row:hover .posting-row-arrow { @apply translate-x-1 text-primary-500; }
+  .posting-empty { @apply border-y border-slate-200 py-8 text-sm text-slate-600; }
+  .dark .posting-list,
+  .dark .posting-list > li,
+  .dark .posting-empty { @apply border-slate-800; }
+  .dark .posting-row-title { @apply text-white; }
+  .dark .posting-row-summary { @apply text-slate-400; }
+  .dark .posting-row-meta,
+  .dark .posting-empty { @apply text-slate-300; }
+  .dark .posting-row:hover .posting-row-title,
+  .dark .posting-row:hover .posting-row-arrow { @apply text-primary-300; }
+
+  .posting-layout { @apply grid gap-8 lg:grid-cols-3 lg:gap-16; }
+  .posting-aside { @apply lg:col-span-1; }
+  .posting-aside-inner { @apply lg:sticky lg:top-28; }
+  .posting-share-label { @apply mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .dark .posting-share-label { @apply text-slate-400; }
+  .posting-body { @apply min-w-0 lg:col-span-2; }
+  .posting-section { @apply border-t border-slate-200 py-8 first:border-t-0 first:pt-0; }
+  .posting-section h2 { @apply mb-3 text-lg font-bold text-slate-900; }
+  .posting-section p { @apply my-3 leading-relaxed text-slate-700; }
+  .posting-section ul { @apply list-disc space-y-2 pl-5 leading-relaxed text-slate-700 marker:text-slate-400; }
+  .posting-section strong { @apply font-semibold text-slate-900; }
+  .posting-note { @apply italic text-slate-500; }
+  .dark .posting-section { @apply border-slate-800; }
+  .dark .posting-section h2,
+  .dark .posting-section strong { @apply text-white; }
+  .dark .posting-section p,
+  .dark .posting-section ul { @apply text-slate-300; }
+  .dark .posting-note { @apply text-slate-400; }
   /* A file input is not a text box and cannot be styled as one. It used to sit
      in the rule above and take rounded-xl with the rest, which does not round
      the control — it *clips* it: the browser paints the native "Choose file"

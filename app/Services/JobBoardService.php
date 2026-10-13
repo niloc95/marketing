@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Libraries\Mailer;
+use App\Libraries\PostingSections;
+use App\Libraries\RichText;
 use App\Libraries\TokenHash;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -114,7 +116,7 @@ class JobBoardService
             ->select($t . '.*, c.name AS category_name, c.slug AS category_slug,'
                 . ' l.display_name AS listing_name, l.slug AS listing_slug, l.logo_path AS listing_logo,'
                 . ' l.verified_until AS listing_verified_until, l.status AS listing_status,'
-                . ' l.email AS listing_email')
+                . ' l.email AS listing_email, l.description AS listing_description')
             ->join('xs_directory_categories AS c', 'c.id = ' . $t . '.category_id', 'left')
             ->join('xs_directory_listings AS l', 'l.id = ' . $t . '.listing_id', 'left')
             ->where($t . '.id', $id)
@@ -331,6 +333,16 @@ class JobBoardService
             'apply_url'       => $this->clean($in['apply_url'] ?? '', 500),
             'apply_email'     => strtolower($this->clean($in['apply_email'] ?? '', 190)),
         ];
+        // The structured sections (PostingSections), as on /careers. Only
+        // "good fit" is required; a vacancy saved before these existed is
+        // only held to it when its owner next edits it.
+        foreach (PostingSections::LIST_FIELDS as $field) {
+            $text      = $this->cleanText($in[$field] ?? '', PostingSections::MAX_SECTION);
+            $d[$field] = $text !== '' ? $text : null;
+        }
+        if (count(PostingSections::lines((string) $d['good_fit'])) < PostingSections::MIN_GOOD_FIT) {
+            $errors['good_fit'] = 'List at least two points, one per line, about who would suit this job.';
+        }
 
         if (! isset($this->cfg->employmentTypes[$d['employment_type']])) {
             $errors['employment_type'] = 'Choose the type of job.';
@@ -1166,7 +1178,7 @@ class JobBoardService
             '@context'           => 'https://schema.org',
             '@type'              => 'JobPosting',
             'title'              => (string) $post['title'],
-            'description'        => nl2br(esc((string) $post['description'])),
+            'description'        => PostingSections::descriptionHtml($post, $this->aboutEmployer($post)),
             'datePosted'         => date('c', strtotime((string) ($post['published_at'] ?? 'now'))),
             // End of the closing day, in the app's own timezone like datePosted.
             'validThrough'       => date('c', strtotime((string) $post['valid_through'] . ' 23:59:59')),
@@ -1212,6 +1224,37 @@ class JobBoardService
         }
 
         return $schema;
+    }
+
+    /**
+     * "About {employer}" for a vacancy from a listed business: its profile
+     * description as plain text, cut at a sentence near 600 characters. Null
+     * for an unlisted post, a service request, or a profile with no text. The
+     * job page and the JobPosting description both use this, so they match.
+     *
+     * @return array{heading:string,paragraphs:list<string>}|null
+     */
+    public function aboutEmployer(array $post): ?array
+    {
+        if (($post['kind'] ?? '') !== JobPostModel::KIND_JOB || empty($post['listing_slug'])) {
+            return null;
+        }
+
+        $text = trim(RichText::toPlainText((string) ($post['listing_description'] ?? '')));
+        if ($text === '') {
+            return null;
+        }
+        if (mb_strlen($text) > 600) {
+            $cut  = mb_substr($text, 0, 600);
+            $stop = max((int) mb_strrpos($cut, '. '), (int) mb_strrpos($cut, "\n"));
+            $text = $stop > 200 ? mb_substr($cut, 0, $stop + 1) : rtrim($cut) . '…';
+        }
+
+        // toPlainText() ends each editor paragraph with one newline, so each
+        // line is a paragraph here.
+        $paragraphs = array_values(array_filter(array_map('trim', explode("\n", $text)), static fn ($p) => $p !== ''));
+
+        return ['heading' => 'About ' . $this->hiringName($post), 'paragraphs' => $paragraphs];
     }
 
     /** "R15 000 – R18 000 per month", or '' when no salary was given. */
@@ -1347,7 +1390,13 @@ class JobBoardService
     /** @param array<string,mixed> $d */
     private function flagReason(array $d): ?string
     {
-        $hits = $this->scamFlags(($d['title'] ?? '') . "\n" . ($d['description'] ?? '') . "\n" . ($d['budget_text'] ?? ''));
+        // Every field the public sees, the sections included: "pay a
+        // registration fee" in Logistics is as much a scam as in the description.
+        $text = [$d['title'] ?? '', $d['description'] ?? '', $d['budget_text'] ?? ''];
+        foreach (PostingSections::LIST_FIELDS as $field) {
+            $text[] = $d[$field] ?? '';
+        }
+        $hits = $this->scamFlags(implode("\n", $text));
 
         return $hits === [] ? null : 'Matched: ' . implode(', ', $hits);
     }
