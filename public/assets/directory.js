@@ -1379,6 +1379,77 @@
     });
   });
 
+  // ------------------------------------------------------ switches save now
+  // A form marked data-autosubmit holds one on/off switch (.switch in
+  // directory.css). Flipping it saves in place, so the page neither reloads
+  // nor jumps; the answer shows in the form's [data-switch-status]. Its Save
+  // button is there for when scripting is off, so it is hidden here.
+  //
+  // Elements in the same [data-switch-scope] marked data-switch-show="on" or
+  // "off" follow the switch, so text about the setting never goes stale.
+  document.querySelectorAll('form[data-autosubmit]').forEach(function (form) {
+    form.querySelectorAll('.switch-save').forEach(function (b) { b.hidden = true; });
+    var status = form.querySelector('[data-switch-status]');
+    var scope  = form.closest('[data-switch-scope]') || form;
+
+    function show(on) {
+      scope.querySelectorAll('[data-switch-show]').forEach(function (el) {
+        el.hidden = el.getAttribute('data-switch-show') !== (on ? 'on' : 'off');
+      });
+    }
+    function say(text, isError) {
+      if (!status) return;
+      status.textContent = text || '';
+      status.classList.toggle('err', !!isError);
+      status.hidden = !text;
+    }
+
+    form.addEventListener('change', function (e) {
+      var box = e.target;
+      if (!box || box.type !== 'checkbox') return;
+      if (!window.fetch || !window.FormData) {
+        if (form.requestSubmit) form.requestSubmit(); else form.submit();
+        return;
+      }
+      box.disabled = true;
+      say('Saving…', false);
+
+      // A disabled box is left out of FormData, so add its state by hand.
+      var body = new FormData(form);
+      body.delete(box.name);
+      if (box.checked) body.append(box.name, box.value);
+
+      fetch(form.action, {
+        method: 'POST',
+        body: body,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+      })
+        .then(function (res) { return res.json().catch(function () { return null; }); })
+        .then(function (data) {
+          // The token regenerates on every POST; refresh every copy on the page.
+          if (data && data.csrf && data.csrf.name) {
+            document.querySelectorAll('input[name="' + data.csrf.name + '"]').forEach(function (input) {
+              input.value = data.csrf.hash;
+            });
+          }
+          box.disabled = false;
+          if (!data || !data.ok) {
+            box.checked = !box.checked;
+            say((data && data.message) || 'That did not save. Please reload the page and try again.', true);
+            return;
+          }
+          show(!!data.on);
+          say(data.message, false);
+        })
+        .catch(function () {
+          box.disabled = false;
+          box.checked = !box.checked;
+          say('That did not save. Check your connection and try again.', true);
+        });
+    });
+  });
+
   // ------------------------------------------------ rotating search examples
   // The home search's placeholder cycles through real example searches
   // (DirectoryService::searchExamples) so the box shows what it can be asked.

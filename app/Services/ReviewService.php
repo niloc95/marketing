@@ -22,7 +22,9 @@ use Config\Reviews;
  *      a named business, so a person reads every one before it goes up.
  *
  * Every profile can receive reviews and every owner can reply; neither is a
- * Verified Business feature. A rating never changes where a business appears
+ * Verified Business feature. An owner may switch new reviews off for their
+ * whole profile (setEnabled()), but never per review: what is published
+ * stays published, the queue still runs, and only an admin takes one down. A rating never changes where a business appears
  * in search: only is_featured does (see DirectoryService::browse()).
  *
  * This class is the only writer of xs_directory_reviews, of the report
@@ -81,6 +83,27 @@ class ReviewService
             'avg'   => (float) ($listing['rating_avg'] ?? 0),
             'items' => $items,
         ];
+    }
+
+    /**
+     * Whether the profile takes new reviews. A row from before the column
+     * existed counts as on.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public static function acceptsReviews(array $listing): bool
+    {
+        return (int) ($listing['reviews_enabled'] ?? 1) === 1;
+    }
+
+    /**
+     * The owner's switch. Touches the listing only: published reviews stay
+     * up and pending ones stay in the queue, so switching off can never be
+     * used to bury a review.
+     */
+    public function setEnabled(int $listingId, bool $on): void
+    {
+        (new DirectoryListingModel())->update($listingId, ['reviews_enabled' => $on ? 1 : 0]);
     }
 
     /**
@@ -198,6 +221,8 @@ class ReviewService
 
         if (($listing['status'] ?? '') !== 'published') {
             $errors['listing'] = 'This business is not taking reviews.';
+        } elseif (! self::acceptsReviews($listing)) {
+            $errors['listing'] = 'This business is not taking new reviews.';
         }
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'data' => $d];
