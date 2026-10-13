@@ -69,6 +69,7 @@ sudo cp -a /home/deploy/src/dist/listing/docroot/.            /var/www/listing/p
 sudo chown -R deploy:www-data /var/www/listing /var/www/marketing
 sudo chmod -R 2775 /var/www/listing/directory-app/writable
 sudo chmod 2770 /var/www/listing/directory-app/writable/verification
+sudo chmod 2770 /var/www/listing/directory-app/writable/careers   # CVs, like verification
 sudo find /var/www/listing/public_html/assets/listings -type d -exec chmod 2775 {} +
 sudo chmod 640 /var/www/listing/directory-app/.env
 sudo chmod 755 /var/www/listing/directory-app/spark

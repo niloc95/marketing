@@ -54,8 +54,9 @@ const APP_FILES = ['composer.json', 'composer.lock', 'preload.php', 'spark'];
  * parent writable/ is not writable by the PHP user. Shipping the directory in
  * the bundle means a fresh install has it before the first upload rather than
  * discovering the permission problem as a failed document submission.
- * `menus` (restaurants' PDF menus, ListingMenuService) is the same case. */
-const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification', 'menus'];
+ * `menus` (restaurants' PDF menus, ListingMenuService) and `careers` (CVs sent
+ * to /careers, CareersService) are the same case. */
+const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification', 'menus', 'careers'];
 
 /** The line in public/index.php that resolves the app root. */
 const PATHS_REQUIRE_FROM = "require FCPATH . '../app/Config/Paths.php';";
