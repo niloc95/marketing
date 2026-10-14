@@ -100,7 +100,8 @@ class AdminCareers extends BaseController
         $result = (new CareersService())->updateApplication(
             $id,
             (string) $this->request->getPost('status'),
-            (string) $this->request->getPost('admin_notes')
+            (string) $this->request->getPost('admin_notes'),
+            ! empty($this->request->getPost('notify'))
         );
 
         // Back to the list the admin was on, which is always an admin URL.

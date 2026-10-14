@@ -99,6 +99,8 @@ $link = static fn (array $q) => base_url('admin/careers/applications') . '?' . h
                                             <?php endforeach; ?>
                                         </select>
                                         <textarea name="admin_notes" rows="2" maxlength="2000" placeholder="Notes for us" class="input-xs mb-1 w-full"><?= esc((string) ($a['admin_notes'] ?? '')) ?></textarea>
+                                        <?php // CareersService::statusEmail(): only a status change sends, never the notes. ?>
+                                        <label class="mb-1 block text-xs"><input type="checkbox" name="notify" value="1" checked> Email the applicant if the status changes</label>
                                         <button class="btn btn-primary btn-xs">Save</button>
                                     </form>
                                 </td>

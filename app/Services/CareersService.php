@@ -512,8 +512,14 @@ class CareersService
         return ['ok' => true, 'errors' => []];
     }
 
-    /** @return array{ok:bool,message:string} */
-    public function updateApplication(int $id, string $status, string $notes): array
+    /**
+     * Save an application's status and notes from /admin/careers. When the
+     * status changes and $notify is set, the applicant is emailed where they
+     * stand (statusEmail()). Notes are ours and never leave the admin page.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    public function updateApplication(int $id, string $status, string $notes, bool $notify = false): array
     {
         $app = $this->applications->find($id);
         if (! is_array($app) || ! array_key_exists($status, CareerApplicationModel::STATUSES)) {
@@ -528,7 +534,106 @@ class CareersService
             'admin_notes' => $this->cleanText($notes, 2000) ?: null,
         ]);
 
-        return ['ok' => true, 'message' => 'Application updated.'];
+        if (! $notify || $status === $app['status'] || $this->statusEmail($status, null) === null) {
+            return ['ok' => true, 'message' => 'Application updated.'];
+        }
+
+        $role = $app['role_id'] !== null ? $this->roles->find((int) $app['role_id']) : null;
+        $sent = $this->sendStatusEmail($app, $status, is_array($role) ? $role : null);
+
+        return ['ok' => true, 'message' => $sent
+            ? 'Application updated. ' . $app['name'] . ' was emailed.'
+            : 'Application updated, but the email to ' . $app['name'] . ' could not be sent.'];
+    }
+
+    /**
+     * The email an applicant gets when their application moves to $status, or
+     * null for a status that sends none (new: they already had the receipt).
+     * Customer copy, so no dashes and no hyphenated words.
+     *
+     * @return array{subject:string,heading:string,paragraphs:list<string>}|null
+     */
+    public function statusEmail(string $status, ?array $role): ?array
+    {
+        $site    = $this->site->siteName();
+        $forRole = $role !== null ? 'the ' . $role['title'] . ' role' : 'a role at ' . $site;
+
+        return match ($status) {
+            CareerApplicationModel::STATUS_REVIEWING => [
+                'subject'    => 'Your application is being reviewed',
+                'heading'    => 'Your application is being reviewed',
+                'paragraphs' => [
+                    'Your application for ' . $forRole . ' is now being reviewed by the people hiring.',
+                    'We will let you know as soon as there is news, and we aim to get back to you within '
+                        . self::REPLY_WITHIN . ' of applying.',
+                ],
+            ],
+            CareerApplicationModel::STATUS_SHORTLISTED => [
+                'subject'    => 'You have been shortlisted',
+                'heading'    => 'You have been shortlisted',
+                'paragraphs' => [
+                    'Good news: you have been shortlisted for ' . $forRole . '.',
+                    'We will be in touch soon by email or phone to arrange a short call. '
+                        . 'If you have any questions in the meantime, simply reply to this email.',
+                ],
+            ],
+            CareerApplicationModel::STATUS_REJECTED => [
+                'subject'    => 'An update on your application',
+                'heading'    => 'An update on your application',
+                'paragraphs' => [
+                    'Thank you for applying for ' . $forRole . ' and for the time you put into your application.',
+                    'After careful consideration, we will not be taking your application further for this role.',
+                    'As you agreed, we will keep your application on file for ' . (int) $this->config->retentionMonths
+                        . ' months and may contact you if a role that suits you opens. We wish you all the best.',
+                ],
+            ],
+            CareerApplicationModel::STATUS_HIRED => [
+                'subject'    => 'Congratulations, you have been successful',
+                'heading'    => 'Congratulations',
+                'paragraphs' => [
+                    'We are delighted to let you know that you have been successful in your application for ' . $forRole . '.',
+                    'We will be in touch shortly with the next steps.',
+                ],
+            ],
+            default => null,
+        };
+    }
+
+    private function sendStatusEmail(array $app, string $status, ?array $role): bool
+    {
+        $content = $this->statusEmail($status, $role);
+        if ($content === null || empty($app['email'])) {
+            return false;
+        }
+
+        $body = view('emails/job-notice', [
+            'site'           => $this->site->siteName(),
+            'eyebrow'        => $this->site->siteName() . ' Careers',
+            'heading'        => $content['heading'],
+            'paragraphs'     => array_merge([$this->greeting((string) $app['name'])], $content['paragraphs']),
+            'button'         => null,
+            'footnote'       => 'Reply to this email if you have any questions about your application.',
+            'footnoteLink'   => null,
+            'bullets'        => null,
+            'bulletsHeading' => null,
+            'extras'         => null,
+            'extrasHeading'  => null,
+            'highlight'      => null,
+            'closing'        => null,
+        ], ['saveData' => false]);
+
+        // Replies go to the careers inbox, not the no reply sender.
+        $inbox = $this->config->inbox !== '' ? $this->config->inbox : $this->site->adminEmail();
+
+        return (new Mailer())->send((string) $app['email'], $content['subject'], $body, $inbox);
+    }
+
+    /** "Hi Sipho," when the first name is plainly a name, otherwise "Hello,". */
+    private function greeting(string $name): string
+    {
+        $first = (string) strtok($name, ' ');
+
+        return preg_match('/^\p{L}[\p{L}\']{0,29}$/u', $first) === 1 ? 'Hi ' . $first . ',' : 'Hello,';
     }
 
     /**
@@ -612,8 +717,7 @@ class CareersService
      */
     private function confirmToApplicant(array $app, ?array $role): void
     {
-        $first    = (string) strtok((string) $app['name'], ' ');
-        $greeting = preg_match('/^\p{L}[\p{L}\']{0,29}$/u', $first) === 1 ? 'Hi ' . $first . ',' : 'Hello,';
+        $greeting = $this->greeting((string) $app['name']);
         $applied  = $role !== null ? 'for the ' . $role['title'] . ' role' : 'to ' . $this->site->siteName();
 
         $body = view('emails/job-notice', [

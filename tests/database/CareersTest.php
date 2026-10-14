@@ -448,6 +448,60 @@ final class CareersTest extends CIUnitTestCase
         $this->assertSame(0, $this->apps->countAllResults());
     }
 
+    public function testEachStatusChangeEmailsTheApplicantWhereTheyStand(): void
+    {
+        $role = $this->openRole();
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => $role['id']]), $this->cv())['ok']);
+        $id = (int) $this->apps->first()['id'];
+
+        $expect = [
+            CareerApplicationModel::STATUS_REVIEWING   => 'being reviewed',
+            CareerApplicationModel::STATUS_SHORTLISTED => 'shortlisted',
+            CareerApplicationModel::STATUS_REJECTED    => 'not be taking your application further',
+            CareerApplicationModel::STATUS_HIRED       => 'Congratulations',
+        ];
+        foreach ($expect as $status => $phrase) {
+            $this->sent = [];
+            $result     = $this->svc->updateApplication($id, $status, 'Private note: strong on sales', true);
+
+            $this->assertTrue($result['ok']);
+            $this->assertStringContainsString('was emailed', $result['message']);
+            $this->assertCount(1, $this->sent, $status);
+            $this->assertContains('sipho@example.test', (array) $this->sent[0]['recipients']);
+            $body = html_entity_decode((string) $this->sent[0]['body']);
+            $this->assertStringContainsString($phrase, $body, $status);
+            $this->assertStringContainsString((string) $role['title'], $body);
+            $this->assertStringNotContainsString('Private note', $body, 'notes never leave the admin page');
+        }
+    }
+
+    public function testNoStatusEmailWithoutAChangeOrWithTheBoxUnticked(): void
+    {
+        $this->assertTrue($this->svc->apply($this->application(), $this->cv())['ok']);
+        $id = (int) $this->apps->first()['id'];
+        $this->sent = [];
+
+        $this->svc->updateApplication($id, CareerApplicationModel::STATUS_NEW, 'just a note', true);
+        $this->svc->updateApplication($id, CareerApplicationModel::STATUS_SHORTLISTED, '', false);
+        $this->svc->updateApplication($id, CareerApplicationModel::STATUS_SHORTLISTED, 'note changed', true);
+
+        $this->assertSame([], $this->sent);
+        $this->assertSame(CareerApplicationModel::STATUS_SHORTLISTED, $this->apps->find($id)['status']);
+    }
+
+    public function testTheAdminFormSendsTheStatusEmailWhenTicked(): void
+    {
+        $this->assertTrue($this->svc->apply($this->application(), $this->cv())['ok']);
+        $id = (int) $this->apps->first()['id'];
+        $this->sent = [];
+
+        $this->asAdmin()->post('admin/careers/applications/' . $id, [
+            'status' => CareerApplicationModel::STATUS_REVIEWING, 'admin_notes' => '', 'notify' => '1',
+        ] + [csrf_token() => csrf_hash()])->assertRedirect();
+
+        $this->assertContains('sipho@example.test', $this->recipients());
+    }
+
     public function testTheConfirmationReplacesTheFormWhereTheRedirectLands(): void
     {
         $html = (string) $this->withSession([
