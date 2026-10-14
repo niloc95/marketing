@@ -119,6 +119,13 @@ class Contact extends BaseController
                 'pages'       => 13,
                 'tag'         => 'Forecast',
             ],
+            [
+                'title'       => 'Hiring guide',
+                'summary'     => 'Hire well, hire safely: how to write a job post people answer, choose fairly between applicants, check who they are with consent, and make an offer that keeps you on the right side of the law.',
+                'file'        => 'assets/documents/webscheduler-local-hiring-guide.pdf',
+                'pages'       => 15,
+                'tag'         => 'Guide',
+            ],
         ] as $doc) {
             $path = FCPATH . $doc['file'];
             if (! is_file($path)) {
