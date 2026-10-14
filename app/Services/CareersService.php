@@ -227,7 +227,7 @@ class CareersService
         $schema = [
             '@context'           => 'https://schema.org',
             '@type'              => 'JobPosting',
-            'title'              => (string) $role['title'],
+            'title'              => $this->schemaTitle($role),
             'description'        => $this->descriptionHtml($role),
             'datePosted'         => date('c', strtotime((string) ($role['published_at'] ?? 'now'))),
             'hiringOrganization' => array_filter([
@@ -282,6 +282,25 @@ class CareersService
         }
 
         return $schema;
+    }
+
+    /**
+     * The job title alone, for JobPosting. Google's guidance is "only include
+     * the job title", no addresses: the city goes in jobLocation. Roles here
+     * are titled "Field Sales Representative, Bloemfontein" so each city's
+     * page reads well, so a trailing ", <city>" or " (<city>)" is dropped.
+     */
+    public function schemaTitle(array $role): string
+    {
+        $title = trim((string) $role['title']);
+        $city  = trim((string) ($role['city'] ?? ''));
+        if ($city === '') {
+            return $title;
+        }
+
+        $bare = preg_replace('/\s*(?:,\s*' . preg_quote($city, '/') . '|\(\s*' . preg_quote($city, '/') . '\s*\))\s*$/iu', '', $title);
+
+        return ($bare !== null && $bare !== '') ? $bare : $title;
     }
 
     /** The JobPosting description: every section, closed by About WebScheduler Local. */
