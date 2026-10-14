@@ -50,6 +50,8 @@ $routes->get('verified', 'Contact::verified');
 // WebScheduler Local next to Google, LinkedIn and the SA directories. The
 // table is edited at /admin/comparison, so it changes without a deploy.
 $routes->get('compare', 'Contact::compare');
+// Guides and reports: the playbook, the Verified brochure and the outlook.
+$routes->get('resources', 'Contact::resources');
 
 // "Recommend a business". Top-level for the same reason as contact. The form
 // only queues a referral for /admin/referrals; the business is emailed from

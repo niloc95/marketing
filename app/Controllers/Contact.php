@@ -87,6 +87,50 @@ class Contact extends BaseController
         ]);
     }
 
+    /**
+     * Guides and reports: the PDFs we publish for business owners, in one
+     * place instead of one footer link each. The files sit in public/, so they
+     * ship with the deploy bundle like any other asset; each entry's size is
+     * read from disk so the page can't advertise a stale one. A file that is
+     * missing is left off rather than linked to a 404.
+     */
+    public function resources()
+    {
+        $documents = [];
+        foreach ([
+            [
+                'title'       => 'Local visibility playbook',
+                'summary'     => 'How customers find local businesses today, and the practical steps that make a business easier to find, on search, on maps and in AI assistants.',
+                'file'        => 'assets/playbook/webscheduler-local-visibility-playbook.pdf',
+                'pages'       => 12,
+                'tag'         => 'Guide',
+            ],
+            [
+                'title'       => 'Verified Business brochure',
+                'summary'     => 'Paying for visibility, or building a presence people can find? What a Verified profile adds, what we check, and every source behind the numbers.',
+                'file'        => 'assets/documents/webscheduler-local-verified-business.pdf',
+                'pages'       => 9,
+                'tag'         => 'Brochure',
+            ],
+            [
+                'title'       => '2027 local visibility outlook',
+                'summary'     => 'Projected benchmarks for beauty and wellness, home services, health and professional practices, and fitness, and what a complete profile is likely to be worth. A forecast, labelled as one.',
+                'file'        => 'assets/documents/webscheduler-local-2027-outlook.pdf',
+                'pages'       => 13,
+                'tag'         => 'Forecast',
+            ],
+        ] as $doc) {
+            $path = FCPATH . $doc['file'];
+            if (! is_file($path)) {
+                continue;
+            }
+            $doc['size'] = number_format(filesize($path) / 1048576, 1) . ' MB';
+            $documents[] = $doc;
+        }
+
+        return view('directory/resources', ['documents' => $documents]);
+    }
+
     public function index()
     {
         // Stamped here, checked in submit() — see the timing floor below.

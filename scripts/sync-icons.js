@@ -48,6 +48,8 @@ const ICONS = [
   'map-pin', 'star', 'badge-check', 'share', 'link', 'check', 'building-2',
   // Profile contact card: website row and the Suggest an edit link.
   'external-link', 'square-pen',
+  // Guides and reports: each PDF's Download button (directory/resources.php).
+  'download',
   // The International Listing panel on the owner dashboard
   // (directory/_hosting_panel.php) — a listing whose address is outside
   // South Africa and which publishes only while its subscription is paid.
