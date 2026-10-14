@@ -125,6 +125,9 @@ class Contact extends BaseController
                 continue;
             }
             $doc['size'] = number_format(filesize($path) / 1048576, 1) . ' MB';
+            // Same ?v=<filemtime> buster as the layout's CSS: a PDF replaced at
+            // the same path gets a new URL, so Cloudflare needs no purge.
+            $doc['version'] = filemtime($path);
             $documents[] = $doc;
         }
 

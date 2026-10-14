@@ -51,7 +51,7 @@ $canonical = base_url('resources');
                                 <p><?= esc($doc['summary']) ?></p>
                                 <p class="resource-meta">PDF · <?= (int) $doc['pages'] ?> pages · <?= esc($doc['size']) ?></p>
                             </div>
-                            <a class="btn btn-ghost shrink-0" href="<?= base_url($doc['file']) ?>" target="_blank" rel="noopener">
+                            <a class="btn btn-ghost shrink-0" href="<?= base_url($doc['file']) ?>?v=<?= (int) $doc['version'] ?>" target="_blank" rel="noopener">
                                 <?= lucide('download', 'h-4 w-4 shrink-0') ?>Download<span class="sr-only"> <?= esc($doc['title']) ?> (PDF)</span>
                             </a>
                         </div>
