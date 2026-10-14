@@ -365,15 +365,10 @@
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
                     <li><a href="<?= base_url('verified') ?>">Verified businesses</a></li>
                     <li><a href="<?= base_url('compare') ?>">How we compare</a></li>
-                    <?php // The free local visibility playbook. Generated from
-                          // marketing-site/outreach/playbook/ and published here by
-                          // `build_playbook.py --publish`, which always copies the WEB
-                          // build: the print one carries crop marks and a 3mm bleed.
-                          // public/ ships wholesale in the deploy bundle, so the file
-                          // needs no separate upload. New tab because leaving the site
-                          // to open a PDF loses whatever the visitor was doing. ?>
-                    <li><a href="<?= base_url('assets/playbook/webscheduler-local-visibility-playbook.pdf') ?>"
-                           target="_blank" rel="noopener">Local visibility playbook (PDF)</a></li>
+                    <?php // The playbook, the Verified brochure and the outlook, listed
+                          // with sizes on one page (Contact::resources) rather than a
+                          // footer link per PDF. ?>
+                    <li><a href="<?= base_url('resources') ?>">Guides and reports</a></li>
                     <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                 </ul>
             </div>

@@ -524,6 +524,13 @@
   .dark .company-steps    { @apply divide-slate-800 border-slate-800; }
   .dark .company-steps a  { @apply text-primary-300 hover:text-primary-200; }
 
+  /* /resources: the company page's numbered rows, each with a download button. */
+  .resource-row          { @apply flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-8; }
+  .resource-list h2      { @apply mt-1 text-lg font-bold text-slate-900; }
+  .resource-tag          { @apply text-xs font-semibold uppercase tracking-[0.2em] text-brand-orange; }
+  .resource-meta         { @apply text-sm text-slate-500; }
+  .dark .resource-list h2 { @apply text-white; }
+
   /* ----------------------------------------------------- home: media band */
   /* The photographs or the video, as one moment below the opening search
      rather than a backdrop behind it. Held to the same width as .container's

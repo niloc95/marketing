@@ -35,7 +35,8 @@ python3 build_playbook.py --only pdf --profile web --publish
 
 Copies the **web** build to `public/assets/playbook/`, which the listing app
 serves at `/assets/playbook/webscheduler-local-visibility-playbook.pdf` and
-links from the footer's Company column (`app/Views/layouts/public.php`).
+lists on the `/resources` page (`Contact::resources()`), which the footer's
+Company column links as "Guides and reports".
 `scripts/build-listing-app.js` copies `public/` wholesale into the deploy
 bundle, so the file ships with the next release — no separate upload.
 
