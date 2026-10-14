@@ -15,7 +15,16 @@ $v        = static fn (string $f) => (string) ($old[$f] ?? '');
 $err      = static fn (string $f) => $errors[$f] ?? '';
 $months   = (int) $svc->config()->retentionMonths;
 $picked   = $v('role_id');
+// Set by Careers::apply on success. Shown here, in place of the form, because
+// the redirect lands on #apply and a top of page alert would be off screen.
+$applied  = session()->getFlashdata('applied');
 ?>
+<?php if ($applied): ?>
+<div class="alert alert-success" role="status" tabindex="-1" id="apply-done">
+    <p class="font-semibold">Application submitted</p>
+    <p class="mt-1"><?= esc($applied) ?></p>
+</div>
+<?php return; endif; ?>
 <form method="post" action="<?= base_url('careers/apply') ?>" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <!-- honeypot -->
