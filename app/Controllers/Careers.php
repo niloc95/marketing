@@ -63,11 +63,12 @@ class Careers extends BaseController
         $back = $this->returnUrl($svc);
 
         // Honeypot and timing floor, as on /partners. Reported as success so a
-        // bot learns nothing.
+        // bot learns nothing. 'applied', not 'success': the form section shows
+        // it where the #apply redirect lands, not the layout's top of page.
         $renderedAt = (int) session(self::SESSION_KEY);
         if (trim((string) $this->request->getPost('company_website_hp')) !== ''
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
-            return redirect()->to($back)->with('success', CareersService::APPLIED_MESSAGE);
+            return redirect()->to($back)->with('applied', CareersService::APPLIED_MESSAGE);
         }
 
         $email     = strtolower(trim((string) $this->request->getPost('email')));
@@ -88,7 +89,7 @@ class Careers extends BaseController
 
         session()->remove(self::SESSION_KEY);
 
-        return redirect()->to($back)->with('success', CareersService::APPLIED_MESSAGE);
+        return redirect()->to($back)->with('applied', CareersService::APPLIED_MESSAGE);
     }
 
     /**

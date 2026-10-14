@@ -18,8 +18,10 @@ use Config\Directory as DirectoryConfig;
  * Roles are written from /admin/careers and only ever shown while open and
  * inside their closing date. Applications are stored, with the CV kept
  * privately, and the admin inbox is emailed a notice that links back to the
- * record. The applicant is never emailed: the form takes any address, so a
- * confirmation would let a stranger make us mail someone else.
+ * record. The applicant gets a short receipt. The form takes any address, so
+ * the receipt carries none of the form's text (only our role title and a
+ * first name that is plainly a name), and the controller's per address
+ * throttle caps how often a stranger could make us mail someone.
  *
  * Formatting (pay, place, employment type) is JobBoardService's, because a
  * role row uses the same column names as a board post.
@@ -44,7 +46,11 @@ class CareersService
      * Same reply whatever happened to a valid application, including a bot
      * caught by the honeypot.
      */
-    public const APPLIED_MESSAGE = 'Thanks for applying. We read every application and will be in touch if there is a fit.';
+    public const APPLIED_MESSAGE = 'Thank you, your application has been submitted. We have received your application and CV, '
+        . 'and they are now under review. We will get back to you within two weeks. A confirmation is on its way to your email.';
+
+    /** Days the receipt and the page promise a reply within. */
+    public const REPLY_WITHIN = 'two weeks';
 
     private CareerRoleModel $roles;
     private CareerApplicationModel $applications;
@@ -413,7 +419,8 @@ class CareersService
     // ------------------------------------------------------------ applying
 
     /**
-     * Store an application from the public form and email the inbox.
+     * Store an application from the public form, email the inbox and send
+     * the applicant a receipt.
      *
      * The text is checked before the CV is touched, so a form sent back for a
      * missing name never leaves a file behind. A CV is required.
@@ -500,6 +507,7 @@ class CareersService
         }
 
         $this->notifyInbox($id, $row, $role);
+        $this->confirmToApplicant($row, $role);
 
         return ['ok' => true, 'errors' => []];
     }
@@ -595,6 +603,41 @@ class CareersService
         ], ['saveData' => false]);
 
         (new Mailer())->send($to, 'Careers: ' . $roleTitle . ', ' . $app['name'], $body, $app['email']);
+    }
+
+    /**
+     * The applicant's receipt. Fixed wording: nothing typed into the form is
+     * echoed back except a first name that is only letters, so the address
+     * field cannot be used to send someone a message of a stranger's choosing.
+     */
+    private function confirmToApplicant(array $app, ?array $role): void
+    {
+        $first    = (string) strtok((string) $app['name'], ' ');
+        $greeting = preg_match('/^\p{L}[\p{L}\']{0,29}$/u', $first) === 1 ? 'Hi ' . $first . ',' : 'Hello,';
+        $applied  = $role !== null ? 'for the ' . $role['title'] . ' role' : 'to ' . $this->site->siteName();
+
+        $body = view('emails/job-notice', [
+            'site'           => $this->site->siteName(),
+            'eyebrow'        => $this->site->siteName() . ' Careers',
+            'heading'        => 'We have received your application',
+            'paragraphs'     => [
+                $greeting,
+                'Thank you for applying ' . $applied . '. We have successfully received your application and CV.',
+                'Your application is now under review, and we will get back to you within ' . self::REPLY_WITHIN . '.',
+            ],
+            'button'         => null,
+            'footnote'       => 'You are receiving this because this address was used to apply on our careers page. '
+                . 'If that was not you, you can ignore this email.',
+            'footnoteLink'   => ['Privacy policy', base_url('privacy') . '#careers'],
+            'bullets'        => null,
+            'bulletsHeading' => null,
+            'extras'         => null,
+            'extrasHeading'  => null,
+            'highlight'      => null,
+            'closing'        => null,
+        ], ['saveData' => false]);
+
+        (new Mailer())->send((string) $app['email'], 'We have received your application', $body);
     }
 
     private function uniqueSlug(string $title): string

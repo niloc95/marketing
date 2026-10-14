@@ -367,7 +367,7 @@ final class CareersTest extends CIUnitTestCase
 
     // ------------------------------------------------------------- applying
 
-    public function testApplyingStoresTheApplicationAndCvAndEmailsOnlyTheInbox(): void
+    public function testApplyingStoresTheApplicationAndCvAndEmailsTheInboxAndTheApplicant(): void
     {
         $role   = $this->openRole();
         $result = $this->svc->apply($this->application(['role_id' => $role['id']]), $this->cv());
@@ -380,8 +380,26 @@ final class CareersTest extends CIUnitTestCase
         $this->assertNotNull($this->apps->resolvePath((string) $app['cv_path']), 'the CV is on disk');
         $this->assertNotNull($app['consent_at']);
 
-        $this->assertNotContains('sipho@example.test', $this->recipients(), 'the applicant is never emailed');
         $this->assertContains(strtolower(config('Directory')->adminEmail()), $this->recipients());
+        $this->assertContains('sipho@example.test', $this->recipients(), 'the applicant gets a receipt');
+    }
+
+    public function testTheReceiptEchoesNothingTypedIntoTheForm(): void
+    {
+        $this->assertTrue($this->svc->apply($this->application([
+            'name'    => 'Visit http://scam.test now',
+            'message' => 'Click http://scam.test to claim your prize today.',
+        ]), $this->cv())['ok']);
+
+        $receipt = '';
+        foreach ($this->sent as $mail) {
+            if (in_array('sipho@example.test', array_map('strtolower', (array) ($mail['recipients'] ?? [])), true)) {
+                $receipt .= json_encode($mail);
+            }
+        }
+        $this->assertNotSame('', $receipt, 'the applicant was emailed');
+        $this->assertStringContainsString('two weeks', $receipt);
+        $this->assertStringNotContainsString('scam.test', $receipt);
     }
 
     public function testAGeneralApplicationHasNoRole(): void
@@ -426,8 +444,20 @@ final class CareersTest extends CIUnitTestCase
             ->post('careers/apply', $this->application(['company_website_hp' => 'spam']) + [csrf_token() => csrf_hash()]);
 
         $result->assertRedirectTo(base_url('careers') . '#apply');
-        $result->assertSessionHas('success', CareersService::APPLIED_MESSAGE);
+        $result->assertSessionHas('applied', CareersService::APPLIED_MESSAGE);
         $this->assertSame(0, $this->apps->countAllResults());
+    }
+
+    public function testTheConfirmationReplacesTheFormWhereTheRedirectLands(): void
+    {
+        $html = (string) $this->withSession([
+            'applied'   => CareersService::APPLIED_MESSAGE,
+            '__ci_vars' => ['applied' => 'new'],
+        ])->get('careers')->response()->getBody();
+
+        $this->assertStringContainsString('Application submitted', $html);
+        $this->assertStringContainsString('within two weeks', $html);
+        $this->assertStringNotContainsString('Send my application', $html, 'the form is replaced, not shown again');
     }
 
     public function testAPostWithNoCvComesBackWithTheError(): void

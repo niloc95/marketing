@@ -34,7 +34,7 @@ $faqs = [
     ],
     [
         'q' => 'What happens after I apply?',
-        'a' => 'We read every application. If there is a fit, we contact you to set up a short call, then a conversation with the team. If not, we keep your application on file for future roles for the period you agreed to.',
+        'a' => 'You get an email straight away to confirm we have your application and CV. We read every application and get back to you within two weeks. If there is a fit, we contact you to set up a short call, then a conversation with the team. If not, we keep your application on file for future roles for the period you agreed to.',
     ],
     [
         'q' => 'There is no role for me. Can I still apply?',
