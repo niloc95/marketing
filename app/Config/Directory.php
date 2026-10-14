@@ -272,6 +272,17 @@ class Directory extends BaseConfig
     public string $healthToken = '';
 
     /**
+     * Cloudflare Access in front of /admin*. Both set = every admin request
+     * must carry a valid Access token (App\Libraries\CloudflareAccess). Either
+     * empty = the check is off (local, tests). The team domain is
+     * {team}.cloudflareaccess.com; the AUD is the Access application's
+     * "Application Audience (AUD) Tag" in Zero Trust → Access → Applications.
+     */
+    public string $accessTeamDomain = '';
+
+    public string $accessAud = '';
+
+    /**
      * Whether businesses can apply for the Verified Business badge at all.
      *
      * Deliberately separate from the PayFast settings below. Collecting
@@ -533,6 +544,20 @@ class Directory extends BaseConfig
     {
         $env = env('directory.healthToken');
         return is_string($env) ? trim($env) : $this->healthToken;
+    }
+
+    public function accessTeamDomain(): string
+    {
+        $env = env('directory.accessTeamDomain');
+
+        return strtolower(trim(is_string($env) ? $env : $this->accessTeamDomain));
+    }
+
+    public function accessAud(): string
+    {
+        $env = env('directory.accessAud');
+
+        return trim(is_string($env) ? $env : $this->accessAud);
     }
 
     /**

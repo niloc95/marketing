@@ -45,6 +45,18 @@ class Admin extends BaseController
     use HandlesListingUploads;
     use LocksDownDocumentCsp;
 
+    /**
+     * Failed logins site-wide, on top of the per-IP throttle. Five tries per IP
+     * every 15 minutes does not bound guessing spread over many addresses.
+     * Each failure pushes the hour back, so the lock lasts while the guessing
+     * does. That locks the owner out too, which is the trade: with Cloudflare
+     * Access enforced (CloudflareAccessFilter) no stranger reaches this form.
+     * `php spark cache:clear` lifts it.
+     */
+    private const LOGIN_FAILURES_KEY = 'admin_login_failures';
+
+    private const LOGIN_FAILURES_MAX = 30;
+
     public function login()
     {
         if (session()->get('dir_admin')) {
@@ -68,7 +80,8 @@ class Admin extends BaseController
         // prompt is a standing invitation to brute force.
         $throttler = service('throttler');
         $key       = 'admin-login-' . md5((string) $this->request->getIPAddress());
-        if ($throttler->check($key, 5, MINUTE * 15) === false) {
+        if ($throttler->check($key, 5, MINUTE * 15) === false
+            || (int) cache(self::LOGIN_FAILURES_KEY) >= self::LOGIN_FAILURES_MAX) {
             return redirect()->to(base_url('admin/login'))
                 ->with('error', 'Too many attempts. Please wait a few minutes.');
         }
@@ -90,6 +103,7 @@ class Admin extends BaseController
         // The IP only — never the attempted password, which is often a typo of
         // the real one. A burst of these in the log is a brute-force attempt.
         log_message('notice', 'Admin login failed from {ip}', ['ip' => $this->request->getIPAddress()]);
+        cache()->save(self::LOGIN_FAILURES_KEY, (int) cache(self::LOGIN_FAILURES_KEY) + 1, HOUR);
 
         return redirect()->to(base_url('admin/login'))->with('error', 'Incorrect password.');
     }

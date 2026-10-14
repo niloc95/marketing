@@ -6,6 +6,7 @@ use App\Libraries\Geocoding\FallbackGeocoder;
 use App\Libraries\Geocoding\GeocoderInterface;
 use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
+use App\Libraries\CloudflareAccess;
 use App\Libraries\DomainChecker;
 use App\Libraries\MauticClient;
 use App\Services\Description\DescriptionDraftService;
@@ -88,6 +89,19 @@ class Services extends BaseService
         }
 
         return new DescriptionDraftService();
+    }
+
+    /**
+     * The Cloudflare Access token check on /admin*. A service so tests can
+     * inject one that holds a test key instead of fetching Cloudflare's.
+     */
+    public static function cloudflareAccess(bool $getShared = true): CloudflareAccess
+    {
+        if ($getShared) {
+            return static::getSharedInstance('cloudflareAccess');
+        }
+
+        return CloudflareAccess::fromConfig();
     }
 
     /**

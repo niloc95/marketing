@@ -696,9 +696,10 @@ curl -k "${R[@]}" -s -o /dev/null -w '%{http_code}\n' -X POST \
 curl -k "${R[@]}" -s https://local.webscheduler.co.za/sitemap.xml | head -5
 ```
 
-If `/directory` returns 404 but `/index.php/directory` returns 200, `.htaccess`
-is missing or `AllowOverride` is not `All` — rewriting is off and **nothing else
-is wrong**.
+If `/directory` returns Apache's plain "Not Found" page rather than the site's
+own 404, `.htaccess` is missing or `AllowOverride` is not `All` — rewriting is
+off and **nothing else is wrong**. (`/index.php/directory` used to be the check;
+the app now 404s that form on purpose, see `App\Filters\FrontControllerPath`.)
 
 ### In a browser
 

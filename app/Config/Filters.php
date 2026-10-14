@@ -40,6 +40,8 @@ class Filters extends BaseFilters
         'headrequest'   => \App\Filters\HeadRequest::class,
         'signupchannel' => \App\Filters\SignupChannel::class,
         'partnerref'    => \App\Filters\PartnerRef::class,
+        'frontcontrollerpath' => \App\Filters\FrontControllerPath::class,
+        'cfaccess'      => \App\Filters\CloudflareAccessFilter::class,
     ];
 
     /**
@@ -90,6 +92,10 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            // /index.php/{path} is a second address for every route, and path
+            // rules (Cloudflare Access on admin*) never saw it. First, so
+            // nothing else runs for one. See the class.
+            'frontcontrollerpath',
             // Rejects any POST that filled the hidden field 'honeypot' (below)
             // injects. Deliberately App\Filters\BotTrap rather than the
             // framework's own honeypot filter — same check, but a 403 instead
@@ -179,5 +185,10 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        // Cloudflare Access enforced by the app, not only by the dashboard's
+        // path list. Off until directory.accessTeamDomain and accessAud are
+        // set. 'admin' covers the dashboard, 'admin/*' login, logout and the rest.
+        'cfaccess' => ['before' => ['admin', 'admin/*']],
+    ];
 }

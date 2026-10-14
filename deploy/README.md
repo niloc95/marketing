@@ -162,8 +162,10 @@ curl -sI https://local.webscheduler.co.za/directory        # 200, NOT 404
 curl -sI https://local.webscheduler.co.za/about/           # 301, slash stripped
 curl -sI https://www.webscheduler.co.za/                   # 301 → https:// (never http://)
 ```
-If `/directory` 404s while `/index.php/directory` returns 200, rewriting is off
-and nothing else is wrong.
+If `/directory` 404s with Apache's plain "Not Found" page rather than the site's
+own 404, rewriting is off and nothing else is wrong. (`/index.php/directory` is
+no longer a check: the app 404s that form on purpose, see
+`App\Filters\FrontControllerPath`.)
 
 **App behaviour:**
 ```bash
@@ -303,6 +305,31 @@ curl -sk --max-time 10 --resolve local.webscheduler.co.za:443:<static-ip> \
 ```
 Also sign in once in a private window. You should get the PIN email, then the
 app's password prompt.
+
+**4. Make the app enforce it (since 14 Oct 2026).** The path rows above only
+cover URLs that literally start `admin`. On 14 Oct 2026
+`/index.php/admin/login` answered 200 straight past Access. Two app changes
+close that class of hole. `App\Filters\FrontControllerPath` 404s every
+`/index.php/…` URL. `App\Filters\CloudflareAccessFilter` refuses any `/admin*`
+request (whatever URL reached it) without a valid `Cf-Access-Jwt-Assertion`
+token signed by the team's keys. The token check is off until both keys are in
+the server `.env`:
+```
+directory.accessTeamDomain = webscheduler.cloudflareaccess.com
+directory.accessAud        = <the app's "Application Audience (AUD) Tag">
+```
+The AUD is on the Access application's *Overview* tab. It is also the `kid=`
+value in the Access login redirect URL. Then:
+```bash
+# Expect 404: the front-controller form is refused
+curl -s -o /dev/null -w '%{http_code}\n' https://local.webscheduler.co.za/index.php/admin/login
+# Expect 302 to cloudflareaccess.com, as in step 3
+curl -sI https://local.webscheduler.co.za/admin/login | grep -i '^location'
+```
+Then sign in through Access as usual. A 403 "Forbidden" after the PIN means the
+token was refused. Check `writable/logs/` for "Cloudflare Access", and look for a
+wrong AUD first. To turn the check off, blank either key and run
+`php spark cache:clear`.
 
 **Rollback:** delete the Access application, and set 80/443 back to *Any IPv4 /
 Any IPv6*. Both take effect within a minute.

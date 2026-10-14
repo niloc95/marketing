@@ -201,7 +201,7 @@ loses it. To undo a bad migration, write a new one that reverses it.
 
 | Symptom | Cause |
 |---|---|
-| `/` loads, every other URL 404s, `/index.php/directory` works | `AllowOverride All` missing — `.htaccess` is being read and ignored |
+| `/` loads, every other URL gets Apache's plain "Not Found" (not the branded 404) | `AllowOverride All` missing — `.htaccess` is being read and ignored. `/index.php/directory` is no check: the app 404s it on purpose (`FrontControllerPath`) |
 | Deploy green, site unchanged | Cloudflare cache not purged (filenames are not content-hashed) |
 | `/health` 503 but `/` fine | a `writable/` path is not writable by `www-data`, or the DB/mailer is down |
 | Logo uploads silently produce nothing | `ext-gd` without WebP — `imagewebp()` is `function_exists`-guarded |
