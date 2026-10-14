@@ -61,7 +61,7 @@ class DirectoryListingMutationService
      * verification link.
      *
      * @param array<string,mixed> $input
-     * @return array{ok:bool,errors:array<string,string>,id?:int,slug?:string,message:string}
+     * @return array{ok:bool,errors:array<string,string>,id?:int,slug?:string,duplicate?:bool,message:string}
      */
     public function submitPublic(array $input): array
     {
@@ -108,12 +108,20 @@ class DirectoryListingMutationService
                 $this->issueManageLink($existing);
             }
 
+            // 'duplicate' tells the controller this id is SOMEONE ELSE'S
+            // listing as far as this request can prove: anyone can type a known
+            // address. Listing::store() must not attach this visitor's photos,
+            // menu or verification documents to it. The owner gets them on
+            // through the emailed link instead. Never set on the rejected
+            // branch above, which rewrites the row as this submission's own
+            // and leaves it unpublished until the owner's verify link is used.
             return [
-                'ok'      => true,
-                'errors'  => [],
-                'id'      => (int) $existing['id'],
-                'slug'    => (string) $existing['slug'],
-                'message' => self::SIGNUP_MESSAGE,
+                'ok'        => true,
+                'duplicate' => true,
+                'errors'    => [],
+                'id'        => (int) $existing['id'],
+                'slug'      => (string) $existing['slug'],
+                'message'   => self::SIGNUP_MESSAGE,
             ];
         }
 

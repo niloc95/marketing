@@ -253,6 +253,19 @@ class Listing extends BaseController
             );
         }
 
+        // A known email answered with that listing's id. Nothing in this
+        // request proves the visitor owns it, so nothing from it is attached:
+        // no photos, menu, documents, referral or partner credit. Until 14 Oct
+        // 2026 this path appended a stranger's photos to a live profile and
+        // could replace a lapsed owner's verification documents. The owner was
+        // just emailed a link, and their own dashboard takes all of these.
+        // Same success message, so the form still says nothing about the address.
+        if (! empty($result['duplicate'])) {
+            $this->discardLogo($logo['path']);
+
+            return redirect()->to(base_url('/'))->with('success', $this->signupMessage($result['message']));
+        }
+
         // No listing id exists before the save, so the gallery cap here is the
         // full 8 — a brand-new listing has no photos to count against it.
         $gallery = $this->resolveGalleryPhotos();
@@ -306,6 +319,19 @@ class Listing extends BaseController
                 . 'manage your profile.';
         }
 
+        return $this->withUploadErrors(
+            redirect()->to(base_url('/'))->with('success', $this->signupMessage($message)),
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $verified['errors']))
+        );
+    }
+
+    /**
+     * The success line plus the notes that depend only on what this visitor
+     * typed, never on what is stored, so a duplicate and a fresh signup read
+     * the same.
+     */
+    private function signupMessage(string $message): string
+    {
         // Branches on what this visitor just typed, like the country check
         // below, so it says nothing about what is already stored.
         if (trim((string) $this->request->getPost('website')) === '') {
@@ -331,10 +357,7 @@ class Listing extends BaseController
                 . 'We will take you to it once your email is confirmed.';
         }
 
-        return $this->withUploadErrors(
-            redirect()->to(base_url('/'))->with('success', $message),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $verified['errors']))
-        );
+        return $message;
     }
 
     /**
