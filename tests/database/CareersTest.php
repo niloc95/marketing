@@ -246,6 +246,15 @@ final class CareersTest extends CIUnitTestCase
         $this->assertSame([], $this->svc->jobPostingSchema($this->roles->find($role['id'])));
     }
 
+    public function testTheJobPostingTitleLeavesTheCityToJobLocation(): void
+    {
+        $this->assertSame('Field Sales Representative', $this->svc->schemaTitle(['title' => 'Field Sales Representative, Bloemfontein', 'city' => 'Bloemfontein']));
+        $this->assertSame('Field Sales Representative', $this->svc->schemaTitle(['title' => 'Field Sales Representative (Durban)', 'city' => 'durban']));
+        $this->assertSame('PHP Developer', $this->svc->schemaTitle(['title' => 'PHP Developer', 'city' => '']));
+        $this->assertSame('Durban', $this->svc->schemaTitle(['title' => 'Durban', 'city' => 'Durban']), 'never an empty title');
+        $this->assertSame('Sales, Cape Town office', $this->svc->schemaTitle(['title' => 'Sales, Cape Town office', 'city' => 'Cape Town']), 'only a trailing city');
+    }
+
     public function testARolePageCanBeShared(): void
     {
         $role = $this->openRole();
