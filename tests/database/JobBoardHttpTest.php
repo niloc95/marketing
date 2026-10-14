@@ -124,7 +124,8 @@ final class JobBoardHttpTest extends CIUnitTestCase
 
         $result->assertRedirect();
         $this->assertStringEndsWith('jobs/' . $id . '-electrician#apply', $result->getRedirectUrl());
-        $this->assertCount(1, $this->sent);
+        $result->assertSessionHas('applied', JobBoardService::APPLIED_MESSAGE);
+        $this->assertCount(2, $this->sent, 'the employer, then the applicant receipt');
 
         $mail = $this->sent[0];
         $this->assertContains('hiring@example.test', (array) $mail['recipients']);
@@ -132,6 +133,26 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $body = html_entity_decode((string) $mail['body']);
         $this->assertStringContainsString('Five years of domestic and commercial wiring', $body);
         $this->assertStringContainsString('https://drive.example.test/cv.pdf', $body);
+
+        $receipt = $this->sent[1];
+        $this->assertContains('sipho@example.test', (array) $receipt['recipients']);
+        $receiptBody = html_entity_decode((string) $receipt['body']);
+        $this->assertStringContainsString('Hi Sipho,', $receiptBody);
+        $this->assertStringContainsString('Never pay to apply', $receiptBody);
+        $this->assertStringNotContainsString('Five years of domestic', $receiptBody, 'nothing typed is echoed back');
+        $this->assertStringNotContainsString('drive.example.test', $receiptBody);
+    }
+
+    public function testTheConfirmationReplacesTheFormWhereTheRedirectLands(): void
+    {
+        $id   = $this->livePost(['apply_email' => 'hiring@example.test', 'slug' => 'done']);
+        $html = (string) $this->withSession([
+            'applied'   => JobBoardService::APPLIED_MESSAGE,
+            '__ci_vars' => ['applied' => 'new'],
+        ])->get('jobs/' . $id . '-done')->response()->getBody();
+
+        $this->assertStringContainsString('Application submitted', $html);
+        $this->assertStringNotContainsString('name="consent"', $html, 'the form is replaced, not shown again');
     }
 
     public function testAnApplicationWithoutConsentSendsNothing(): void
@@ -154,11 +175,11 @@ final class JobBoardHttpTest extends CIUnitTestCase
 
         // Posted the instant the page loaded.
         $this->withSession(['job_page_rendered_at' => time()])->post('jobs/' . $id . '/apply', $form + $this->csrf())
-            ->assertSessionHas('success');
+            ->assertSessionHas('applied');
         // Or with the hidden field filled in.
         $this->withSession(['job_page_rendered_at' => time() - 30])
             ->post('jobs/' . $id . '/apply', $form + ['company_website_hp' => 'x'] + $this->csrf())
-            ->assertSessionHas('success');
+            ->assertSessionHas('applied');
 
         $this->assertSame([], $this->sent);
     }

@@ -128,7 +128,14 @@ $about     = $svc->aboutEmployer($post);
         <?php if ($isJob): ?>
             <div class="form-card mt-10" id="apply">
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Apply</h2>
-                <?php if ($applyUrl !== ''): ?>
+                <?php // Set by Jobs::apply. Shown here, in place of the form, because
+                      // the redirect lands on #apply and a top of page alert would be off screen. ?>
+                <?php if ($applied = session()->getFlashdata('applied')): ?>
+                    <div class="alert alert-success" role="status">
+                        <p class="font-semibold">Application submitted</p>
+                        <p class="mt-1"><?= esc($applied) ?></p>
+                    </div>
+                <?php elseif ($applyUrl !== ''): ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">This employer takes applications on their own site.</p>
                     <a class="btn btn-accent" href="<?= esc($applyUrl) ?>" target="_blank" rel="noopener nofollow"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Apply on the employer's site</a>
                 <?php elseif (! empty($post['apply_email'])): ?>

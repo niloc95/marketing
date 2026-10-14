@@ -836,9 +836,13 @@ class JobBoardService
         return 'ok';
     }
 
+    /** What the page says once an application is relayed (and to a bot). */
+    public const APPLIED_MESSAGE = 'Thank you, your application has been submitted. We have sent it to the employer, '
+        . 'who will reply to you directly by email. A confirmation is on its way to your inbox.';
+
     /**
      * A job seeker applies by message. Relayed to the post's apply address
-     * and not stored.
+     * and not stored. The applicant then gets a receipt.
      *
      * @param array{name:string,email:string,phone:string,message:string,cv_link:string} $applicant
      */
@@ -862,12 +866,45 @@ class JobBoardService
             'footnote' => 'We do not keep a copy of this application. The applicant shared their details for this vacancy only; please handle them in line with POPIA.',
         ], ['saveData' => false]);
 
-        return (new Mailer())->send(
+        $sent = (new Mailer())->send(
             (string) $post['apply_email'],
             'Application: ' . $this->headerSafe($post['title']),
             $body,
             $applicant['email']
         );
+        if ($sent) {
+            $this->confirmToApplicant($post, $applicant);
+        }
+
+        return $sent;
+    }
+
+    /**
+     * The applicant's receipt. Fixed wording plus the post's own (moderated)
+     * title and employer: nothing typed into the form is echoed back except a
+     * first name that is only letters, so the address field cannot be used to
+     * send someone a message of a stranger's choosing.
+     *
+     * @param array{name:string,email:string} $applicant
+     */
+    private function confirmToApplicant(array $post, array $applicant): void
+    {
+        $first = (string) strtok($applicant['name'], ' ');
+
+        $this->notice($applicant['email'], 'We have sent your application', [
+            'eyebrow'    => $this->site->siteName() . ' Jobs',
+            'heading'    => 'Your application has been sent',
+            'paragraphs' => [
+                preg_match('/^\p{L}[\p{L}\']{0,29}$/u', $first) === 1 ? 'Hi ' . $first . ',' : 'Hello,',
+                'Thank you for applying for ' . $post['title'] . ' at ' . $this->hiringName($post) . '. '
+                    . 'We have sent your application to the employer.',
+                'The employer reads applications and replies directly by email if they would like to take it further.',
+            ],
+            'highlight'  => 'Never pay to apply. No genuine employer asks for a registration, training, uniform or placement fee.',
+            'button'     => ['View the vacancy', $this->url($post)],
+            'footnote'   => 'You are receiving this because this address was used to apply on our Jobs board. '
+                . 'If that was not you, you can ignore this email.',
+        ]);
     }
 
     /**

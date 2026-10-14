@@ -421,7 +421,7 @@ class Jobs extends BaseController
         $back = $svc->url($post) . '#apply';
 
         if ($this->looksLikeABot('job_page_rendered_at')) {
-            return redirect()->to($back)->with('success', 'Your application has been sent.');
+            return redirect()->to($back)->with('applied', JobBoardService::APPLIED_MESSAGE);
         }
 
         $in = [
@@ -454,7 +454,10 @@ class Jobs extends BaseController
         }
 
         $throttler = service('throttler');
-        if ($throttler->check('jobapply-ip-' . md5((string) $this->request->getIPAddress()), 5, HOUR) === false) {
+        // The per address cap also limits how often a stranger could make us
+        // send someone the applicant receipt.
+        if ($throttler->check('jobapply-ip-' . md5((string) $this->request->getIPAddress()), 5, HOUR) === false
+            || $throttler->check('jobapply-to-' . md5($in['email']), 5, DAY) === false) {
             return redirect()->to($back)->with('old', $in)
                 ->with('error', 'Too many applications. Please wait a little while and try again.');
         }
@@ -464,7 +467,9 @@ class Jobs extends BaseController
                 ->with('error', 'Sorry, we could not send your application just now. Please try again in a few minutes.');
         }
 
-        return redirect()->to($back)->with('success', 'Your application has been sent. The employer will reply to you by email.');
+        // 'applied', not 'success': the #apply section shows it where the
+        // redirect lands, in place of the form.
+        return redirect()->to($back)->with('applied', JobBoardService::APPLIED_MESSAGE);
     }
 
     public function respond(int $id)
