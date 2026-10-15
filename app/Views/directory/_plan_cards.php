@@ -81,6 +81,8 @@ $rows = [
     ['label' => '<strong>All your locations</strong>: up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
     ['label' => '<strong>Your people</strong>: up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
     ['label' => '<strong>More searches find you</strong>: a search for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
+    // ListingVideoService::canManage(). Keep in step with _verification_pitch.php.
+    ['label' => '<strong>A video</strong>: one YouTube or Vimeo video, first in your photos and playing right on your profile', 'free' => false, 'paid' => true],
     // A Verified Business feature: JobBoardService::canUseJobsFeatures() gates
     // posting vacancies and replying to requests. Requesting a service stays open
     // to everyone, which is why this row says vacancies, not "the Jobs board".

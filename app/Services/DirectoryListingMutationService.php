@@ -757,12 +757,19 @@ class DirectoryListingMutationService
         // edit re-syncs tags, and syncListingTags() deletes the pivot rows
         // before re-inserting them, so a failure between those two steps would
         // silently wipe the areas of focus the owner had already set.
+        // Before the transaction, like the geocoder above: the video check is a
+        // network call, and this is the last point a validation error can
+        // still stop the save without a rollback.
+        $videoSvc = service('listingVideo');
+        $video    = $videoSvc->prepare($listing, $input);
+
         $db = db_connect();
         $db->transBegin();
 
         try {
             if (! $this->listings->update($id, $data)) {
                 $db->transRollback();
+                $videoSvc->deleteFile($video['new_file'] ?? null);
 
                 return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save your changes.'];
             }
@@ -805,7 +812,7 @@ class DirectoryListingMutationService
             // posted one. The form hides both sections without a live badge, but
             // the form is not the control — a crafted POST from a free listing
             // reaches this line, and this is where it stops.
-            $sync = $this->syncChildRows($id, $listing, $input);
+            $sync = $this->syncChildRows($id, $listing, $input, $video);
             if ($sync['errors'] !== []) {
                 $db->transRollback();
                 $this->discardOrphans($sync['orphans']);
@@ -817,6 +824,7 @@ class DirectoryListingMutationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
+            $videoSvc->deleteFile($video['new_file'] ?? null);
             log_message('error', 'Owner edit failed and was rolled back: ' . $this->oneLine($e->getMessage()));
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save your changes. Please try again.'];
@@ -1547,13 +1555,20 @@ class DirectoryListingMutationService
      * inside the caller's transaction; the orphaned file paths it returns must
      * be unlinked only after that transaction commits.
      *
+     * The profile video rides along: its network work was done before the
+     * transaction by ListingVideoService::prepare(), which also applied the
+     * badge check, so here it is only written. Its thumbnail joins the
+     * orphans on the same terms as a headshot: the old file when the save
+     * goes through, the new one when anything in it fails.
+     *
      * @param array<string,mixed> $listing the STORED row — the badge check must
      *                                     not read a posted value
      * @param array<string,mixed> $input
+     * @param array<string,mixed>|null $video ListingVideoService::prepare()'s result
      *
      * @return array{errors:array<string,string>,orphans:array<int,string>}
      */
-    public function syncChildRows(int $id, array $listing, array $input): array
+    public function syncChildRows(int $id, array $listing, array $input, ?array $video = null): array
     {
         $team      = new TeamMemberService();
         $locations = new PracticeLocationService();
@@ -1570,6 +1585,18 @@ class DirectoryListingMutationService
         if (array_key_exists('locations', $input) && $locations->canManage($listing)) {
             $result = $locations->syncFromForm($id, $input['locations']);
             $errors = array_merge($errors, $result['errors']);
+        }
+
+        if ($video !== null) {
+            $errors = array_merge($errors, $video['errors']);
+            if ($errors === []) {
+                service('listingVideo')->apply($id, $video);
+                if ($video['old_file'] !== null && $video['old_file'] !== $video['new_file']) {
+                    $orphans[] = $video['old_file'];
+                }
+            } elseif ($video['new_file'] !== null) {
+                $orphans[] = $video['new_file'];
+            }
         }
 
         return ['errors' => $errors, 'orphans' => $orphans];

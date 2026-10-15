@@ -23,6 +23,11 @@ class DirectoryListingModel extends Model
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'verified_until', 'hosting_paid_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        // The profile video. Written by ListingVideoService only, behind the
+        // badge gate, never OWNER_EDITABLE: the form posts video_url, which no
+        // column is called.
+        'video_provider', 'video_id', 'video_hash', 'video_title', 'video_thumb_path',
+        'video_autoplay', 'video_sound',
         'venue_id',
         'customer_location', 'show_address', 'service_areas',
         'quality_score', 'quality_scored_at',

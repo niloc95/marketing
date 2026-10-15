@@ -412,6 +412,12 @@ class DirectoryAdminService
         // Listing + pin + tags are one unit of work — same reasoning as
         // DirectoryListingMutationService::submitPublic(). The geocode above is
         // outside it deliberately; it is a slow network call.
+        //
+        // So is the profile video's check, for the same reason. Badge-gated on
+        // the stored row inside prepare(), so a new listing never gets one.
+        $videoSvc = service('listingVideo');
+        $video    = $old !== null ? $videoSvc->prepare($old, $input) : null;
+
         $db = db_connect();
         $db->transBegin();
 
@@ -430,6 +436,7 @@ class DirectoryAdminService
                 // $allowedFields, so it is stripped before the UPDATE is built.
                 if (! $this->listings->update($id, $data + ['id' => $id])) {
                     $db->transRollback();
+                    $videoSvc->deleteFile($video['new_file'] ?? null);
 
                     return ['ok' => false, 'errors' => $this->listings->errors(), 'message' => 'Could not save the profile.'];
                 }
@@ -462,7 +469,7 @@ class DirectoryAdminService
             // operator who wants to populate a team first activates the badge.
             $mutations = new DirectoryListingMutationService();
             $stored    = $this->listings->find($id) ?? [];
-            $sync      = $mutations->syncChildRows($id, $stored, $input);
+            $sync      = $mutations->syncChildRows($id, $stored, $input, $video);
             if ($sync['errors'] !== []) {
                 $db->transRollback();
                 $mutations->discardOrphans($sync['orphans']);
@@ -474,6 +481,7 @@ class DirectoryAdminService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
+            $videoSvc->deleteFile($video['new_file'] ?? null);
             log_message('error', 'Admin listing save failed and was rolled back: ' . $e->getMessage());
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];

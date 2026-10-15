@@ -75,6 +75,7 @@ $analyticsId = config('Directory')->analyticsId();
             <ul>
                 <li><strong>CARTO</strong> serves the map tiles on profile and search pages: <a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>.</li>
                 <li><strong>OpenStreetMap</strong> handles address lookup when you type an address into the business form: <a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>.</li>
+                <li><strong>YouTube</strong> (Google) or <strong>Vimeo</strong> plays a video on a business's profile. Most only load once you press play; a business can choose to have its video play silently as its profile opens, which is skipped if your device is set to reduce motion or save data. YouTube's privacy enhanced player is used, and Vimeo is asked not to track you: <a href="https://policies.google.com/privacy" rel="noopener">YouTube privacy policy</a>, <a href="https://vimeo.com/privacy" rel="noopener">Vimeo privacy policy</a>.</li>
                 <?php if (! empty($youtubeHero)): ?>
                     <li><strong>YouTube</strong> (Google) plays the background video on the home page, through its privacy enhanced player. It is not loaded at all if your device is set to reduce motion: <a href="https://policies.google.com/privacy" rel="noopener">privacy policy</a>.</li>
                 <?php endif; ?>

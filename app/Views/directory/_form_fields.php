@@ -654,6 +654,32 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
     </div>
     <div class="hint" data-gallery-full <?= $gallerySlots > 0 ? 'hidden' : '' ?>>This profile already has the maximum number of photos. Delete one above to add another.</div>
 </div>
+<?php // The profile video: a Verified Business perk, so drawn on $showExtras like
+      // the team and branches. Not drawing it is what keeps it out of the POST;
+      // ListingVideoService::prepare() re-checks the badge on the stored row. ?>
+<?php if ($showExtras): ?>
+    <div class="field">
+        <label for="video_url">Your video</label>
+        <?php $videoThumb = $v('video_thumb_path'); ?>
+        <?php if ($v('video_url') !== '' && ! $err('video_url')): ?>
+            <div class="video-field-current">
+                <?php if ($videoThumb !== ''): ?><img src="<?= esc(base_url($videoThumb), 'attr') ?>" alt="" width="160" height="90"><?php endif; ?>
+                <span class="hint"><?= $v('video_title') !== '' ? esc($v('video_title')) : 'Your current video' ?>. Clear the box to remove it.</span>
+            </div>
+        <?php endif; ?>
+        <input type="text" id="video_url" name="video_url" value="<?= esc($v('video_url'), 'attr') ?>" maxlength="500" placeholder="https://www.youtube.com/watch?v=…" inputmode="url">
+        <div class="hint">A YouTube or Vimeo link. It shows first in your photos, and plays right on your profile.</div>
+        <?php if ($err('video_url')): ?><div class="err"><?= esc($err('video_url')) ?></div><?php endif; ?>
+        <?php // The marker tells ListingVideoService an unticked box from a form
+              // that never showed the boxes, as marketing_present does. ?>
+        <input type="hidden" name="video_settings" value="1">
+        <div class="attr-grid mt-2">
+            <label class="attr-option"><input type="checkbox" name="video_autoplay" value="1" <?= $v('video_autoplay') ? 'checked' : '' ?>> Play automatically</label>
+            <label class="attr-option"><input type="checkbox" name="video_sound" value="1" <?= $v('video_sound') ? 'checked' : '' ?>> Start with sound</label>
+        </div>
+        <div class="hint">Playing automatically, your video runs silently in its photo tile as your profile opens. Browsers only allow sound once a visitor taps, so sound starts when they open the video.</div>
+    </div>
+<?php endif; ?>
 <?= view('directory/_menu_fields', [
     'v'          => $v,
     'categories' => $categories,

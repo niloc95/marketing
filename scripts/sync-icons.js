@@ -72,6 +72,9 @@ const ICONS = [
   'eye', 'eye-off', 'star-off', 'send', 'trash-2', 'rotate-ccw',
   // Today's hours under the profile header's badges (directory/show.php).
   'clock',
+  // The profile video: the tile's play button, and our own pause and sound
+  // controls, which stand in for the players' hidden ones (directory/show.php).
+  'play', 'pause', 'volume-2', 'volume-x',
 ];
 
 /**

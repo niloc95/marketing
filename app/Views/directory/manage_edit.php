@@ -12,6 +12,9 @@
 // The shared partial reads "specializations" via $v(); seed it from the stored
 // tag names so the field arrives prefilled. Must happen before $v is bound.
 $listing['specializations'] = implode(', ', $tags);
+// The video field shows the link as a clean page address, rebuilt from the
+// parsed columns: there is no video_url column to read it from.
+$listing['video_url'] = \App\Services\ListingVideoService::formValue($listing);
 
 // Flashed input wins (so a failed save keeps what was typed), then the stored
 // listing, then the default.

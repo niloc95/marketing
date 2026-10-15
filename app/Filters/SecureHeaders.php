@@ -52,8 +52,13 @@ class SecureHeaders extends FrameworkSecureHeaders
         // autoplay=() forbids outright, and the YouTube player asks for both.
         // An empty allowlist everywhere else means a future XSS can't reach for
         // them either.
-        'Permissions-Policy' => 'accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), camera=(), display-capture=(), '
-            . 'encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), '
+        //
+        // Vimeo's player joins YouTube's for the Verified Business profile
+        // video, which plays in the lightbox on a click; both players get
+        // fullscreen too, since a viewer pressing play may want it.
+        'Permissions-Policy' => 'accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), camera=(), display-capture=(), '
+            . 'encrypted-media=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), '
+            . 'fullscreen=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), geolocation=(), gyroscope=(), magnetometer=(), '
             . 'microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), '
             . 'screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()',
     ];

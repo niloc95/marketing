@@ -1965,6 +1965,48 @@
   .gallery:has(> .gallery-item:nth-child(5)) > .gallery-item:first-child { @apply col-span-2 row-span-2; }
   .gallery-item img { @apply h-full w-full object-cover transition-opacity hover:opacity-90; }
 
+  /* The profile video's tile: the thumbnail with a play button over it, or,
+     when no thumbnail could be copied, the video's title on the brand colour.
+     Its own aspect stays square like its neighbours; object-cover crops the
+     16:9 thumbnail to fit. */
+  .gallery-video       { @apply relative cursor-default; }
+  .gallery-video-link  { @apply block h-full w-full cursor-pointer; }
+  .gallery-video-blank {
+    @apply flex h-full w-full items-end bg-primary-500 p-4 text-left text-sm font-semibold text-white;
+  }
+  /* The autoplay player, over the still and under the buttons. It ignores the
+     pointer, so a tap falls through to the link beneath. Hidden until the
+     player reports it is playing (directory.js sets .is-live). The frame is
+     16:9 and the tile square, so it is sized to the tile's height and centred,
+     cropping the sides the way object-cover crops the still. */
+  .gallery-video-live {
+    @apply pointer-events-none absolute inset-0 overflow-hidden opacity-0 transition-opacity duration-500;
+  }
+  .gallery-video.is-live .gallery-video-live { @apply opacity-100; }
+  .gallery-video-live iframe {
+    @apply absolute left-1/2 top-0 h-full -translate-x-1/2 border-0;
+    aspect-ratio: 16 / 9;
+    min-width: 100%;
+  }
+  .gallery-video-toggle {
+    @apply absolute bottom-3 right-3 grid h-9 w-9 cursor-pointer place-items-center rounded-full border-0
+           bg-slate-900/70 text-white hover:bg-slate-900/85;
+  }
+  .gallery-video-toggle[hidden] { @apply hidden; }
+  .gallery-video-toggle svg { @apply fill-current; }
+  .gallery-video-play {
+    @apply pointer-events-none absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2
+           place-items-center rounded-full bg-slate-900/70 text-white shadow-lg transition-transform;
+  }
+  .gallery-video:hover .gallery-video-play,
+  .gallery-video:focus-within .gallery-video-play { @apply scale-110 bg-slate-900/85; }
+  .gallery-video-play svg { @apply ml-0.5 fill-current; }
+  /* Playing in the tile, the big play button would read as "paused": it
+     steps back, and only comes forward on hover as "open this". */
+  .gallery-video.is-live .gallery-video-play { @apply opacity-0; }
+  .gallery-video.is-live:hover .gallery-video-play,
+  .gallery-video.is-live:focus-within .gallery-video-play { @apply opacity-100; }
+
   /* z-[1000], not z-50: Leaflet ships its own z-index scale (panes 400,
      controls 800, control corners 1000) and .map-view sits on the same profile
      page as the gallery. The map is isolated below so those values can no
@@ -1982,6 +2024,27 @@
   .lightbox-close { @apply right-4 top-4; }
   .lightbox-prev  { @apply left-4 top-1/2 -translate-y-1/2; }
   .lightbox-next  { @apply right-4 top-1/2 -translate-y-1/2; }
+  /* The buttons' `grid` beats the hidden attribute, and video mode hides the
+     arrows. */
+  .lightbox-prev[hidden],
+  .lightbox-next[hidden] { @apply hidden; }
+  /* The video player: 16:9, as wide as the screen allows without the frame
+     running past the top or bottom. */
+  .lightbox-video-wrap         { @apply w-full max-w-5xl; }
+  .lightbox-video-wrap[hidden] { @apply hidden; }
+  .lightbox-video         { @apply aspect-video w-full overflow-hidden rounded-surface bg-black; }
+  .lightbox-video iframe  { @apply h-full w-full border-0; }
+  @media (min-aspect-ratio: 16/9) {
+    .lightbox-video-wrap { @apply w-auto; }
+    .lightbox-video      { @apply h-[75vh] w-auto; }
+  }
+  /* Our own buttons, standing in for the players' hidden controls. */
+  .lightbox-video-controls { @apply mt-3 flex justify-center gap-3; }
+  .lightbox-video-btn {
+    @apply grid h-11 w-11 cursor-pointer place-items-center rounded-control border-0 bg-white/10 text-white hover:bg-white/20;
+  }
+  .lightbox-video-btn [data-icon-pause] svg,
+  .lightbox-video-btn [data-icon-play] svg { @apply fill-current; }
 
   /* ------------------------------------------------------------------ pills */
   .pillrow         { @apply mt-3 flex flex-wrap gap-1.5; }
@@ -2039,6 +2102,10 @@
   .dark .hours-glance-closed  { @apply text-red-400; }
   .dark .hours-glance-unknown { @apply text-slate-200; }
   .dark .hours-glance a       { @apply text-primary-300; }
+
+  /* The current video, above the box on the edit form. */
+  .video-field-current     { @apply mb-2 flex items-center gap-3; }
+  .video-field-current img { @apply h-[90px] w-40 rounded-inner object-cover; }
 
   /* -------------------------------------------------------------------- map */
   /* An interactive Leaflet map over raster OpenStreetMap tiles. The tiles stay

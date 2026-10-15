@@ -72,6 +72,12 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         up your business too.
     </li>
     <li>
+        <?php // ListingVideoService::canManage(). ?>
+        <strong>A video.</strong> Show one YouTube or Vimeo video first in your photos,
+        playing right on your profile, so customers can see you and your work before they
+        get in touch.
+    </li>
+    <li>
         <?php // JobBoardService::canUseJobsFeatures() gates both halves of this. ?>
         <strong>Post jobs.</strong> Advertise your vacancies on our Jobs board, set up so
         eligible vacancies can appear in Google's job search, and reply to customers who post

@@ -288,6 +288,133 @@
   });
 
   // ------------------------------------------------------- gallery lightbox
+  // ------------------------------------------------- profile video players
+  // The profile video's players run with their own controls switched off
+  // (video_embed_url()); these drive them instead, through the postMessage
+  // APIs both players offer, so no YouTube or Vimeo script ever loads here.
+  // Each player's state comes back the same way, so our buttons follow what
+  // the player is really doing, including an autoplay the browser refused.
+  var VIDEO_ORIGINS = { youtube: 'https://www.youtube-nocookie.com', vimeo: 'https://player.vimeo.com' };
+  var videoPlayers = [];
+
+  var makeVideoPlayer = function (frame, provider, onChange) {
+    var player = { frame: frame, provider: provider, playing: false, muted: true, onChange: onChange };
+    var post = function (msg) {
+      if (frame.contentWindow) frame.contentWindow.postMessage(JSON.stringify(msg), VIDEO_ORIGINS[provider]);
+    };
+    player.command = function (cmd) {
+      if (provider === 'youtube') {
+        post({ event: 'command', func: { play: 'playVideo', pause: 'pauseVideo', mute: 'mute', unmute: 'unMute' }[cmd], args: [] });
+      } else if (cmd === 'mute' || cmd === 'unmute') {
+        post({ method: 'setMuted', value: cmd === 'mute' });
+        if (cmd === 'unmute') post({ method: 'setVolume', value: 1 });
+      } else {
+        post({ method: cmd });
+      }
+      // Optimistic, then corrected by the player's own report.
+      if (cmd === 'play' || cmd === 'pause') player.playing = cmd === 'play';
+      else player.muted = cmd === 'mute';
+      if (player.onChange) player.onChange(player);
+    };
+    player.listen = function () {
+      if (provider === 'youtube') {
+        post({ event: 'listening', id: 'profile-video', channel: 'widget' });
+      } else {
+        ['play', 'pause', 'ended', 'volumechange'].forEach(function (name) {
+          post({ method: 'addEventListener', value: name });
+        });
+      }
+    };
+    frame.addEventListener('load', function () { player.listen(); });
+    videoPlayers.push(player);
+    return player;
+  };
+
+  var dropVideoPlayer = function (player) {
+    videoPlayers = videoPlayers.filter(function (p) { return p !== player; });
+  };
+
+  window.addEventListener('message', function (e) {
+    var player = videoPlayers.filter(function (p) { return p.frame.contentWindow === e.source; })[0];
+    if (!player || e.origin !== VIDEO_ORIGINS[player.provider]) return;
+    var data;
+    try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (err) { return; }
+    if (!data) return;
+    if (player.provider === 'youtube') {
+      var info = data.info || {};
+      if (data.event === 'onStateChange' && typeof info === 'number') info = { playerState: info };
+      if (typeof info.playerState === 'number') player.playing = info.playerState === 1 || info.playerState === 3;
+      if (typeof info.muted === 'boolean') player.muted = info.muted;
+    } else {
+      // Vimeo says "ready" once it will take listeners; until then they drop.
+      if (data.event === 'ready') { player.listen(); return; }
+      if (data.event === 'play') player.playing = true;
+      if (data.event === 'pause' || data.event === 'ended') player.playing = false;
+      if (data.event === 'volumechange' && data.data) {
+        player.muted = data.data.muted === true || data.data.volume === 0;
+      }
+    }
+    if (player.onChange) player.onChange(player);
+  });
+
+  // Swap a button's icon and label between two states.
+  var setVideoButton = function (btn, on, labels, icons) {
+    if (!btn) return;
+    btn.setAttribute('aria-label', on ? labels[0] : labels[1]);
+    var a = btn.querySelector(icons[0]);
+    var b = btn.querySelector(icons[1]);
+    if (a) a.hidden = !on;
+    if (b) b.hidden = on;
+  };
+
+  // The tile's own silent, looping player, when the owner chose autoplay.
+  // Not for a visitor who asked their device for less motion or less data:
+  // they keep the still thumbnail, and the video one tap away.
+  var tilePlayer = null;
+  var tileUserPaused = false;
+  var liveLayer = document.querySelector('[data-video-live]');
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var saveData = navigator.connection && navigator.connection.saveData;
+  if (liveLayer && !calm && !saveData) {
+    var tile = liveLayer.closest('[data-gallery-video-tile]');
+    var tileToggle = tile.querySelector('[data-video-tile-toggle]');
+    var startTile = function () {
+      var src = liveLayer.getAttribute('data-video-src') || '';
+      var provider = liveLayer.getAttribute('data-video-provider');
+      if (!VIDEO_ORIGINS[provider] || src.indexOf(VIDEO_ORIGINS[provider] + '/') !== 0) return;
+      var frame = document.createElement('iframe');
+      frame.src = src;
+      frame.title = 'Video preview';
+      frame.tabIndex = -1;
+      frame.allow = 'autoplay; encrypted-media';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      liveLayer.appendChild(frame);
+      tilePlayer = makeVideoPlayer(frame, provider, function (p) {
+        // The still stays until the player really plays, so a refused
+        // autoplay or a slow network never leaves a black square.
+        if (p.playing) tile.classList.add('is-live');
+        tileToggle.hidden = !tile.classList.contains('is-live');
+        setVideoButton(tileToggle, p.playing, ['Pause video', 'Play video'], ['[data-icon-pause]', '[data-icon-play]']);
+      });
+      tilePlayer.muted = true;
+    };
+    tileToggle.addEventListener('click', function () {
+      if (!tilePlayer) return;
+      tileUserPaused = tilePlayer.playing;
+      tilePlayer.command(tilePlayer.playing ? 'pause' : 'play');
+    });
+    // Load when the tile is on screen, not before: a profile opened and
+    // scrolled straight past costs nothing.
+    if ('IntersectionObserver' in window) {
+      var seen = new IntersectionObserver(function (entries) {
+        if (entries.some(function (en) { return en.isIntersecting; })) { seen.disconnect(); startTile(); }
+      });
+      seen.observe(tile);
+    } else {
+      startTile();
+    }
+  }
+
   var lightbox = document.querySelector('[data-lightbox]');
   if (lightbox) {
     var items = Array.prototype.map.call(
@@ -295,7 +422,15 @@
       function (img) { return { src: img.currentSrc || img.src, alt: img.alt }; }
     );
     var lightboxImg = lightbox.querySelector('[data-lightbox-img]');
+    var videoWrap = lightbox.querySelector('[data-lightbox-video-wrap]');
+    var lightboxVideo = lightbox.querySelector('[data-lightbox-video]');
+    var videoToggle = lightbox.querySelector('[data-video-toggle]');
+    var videoSound = lightbox.querySelector('[data-video-mute]');
+    var lightboxNav = lightbox.querySelectorAll('[data-lightbox-prev], [data-lightbox-next]');
     var current = 0;
+    var videoMode = false;
+    var boxPlayer = null;
+    var returnFocus = null;
 
     var show = function (index) {
       if (!items.length) return;
@@ -307,12 +442,71 @@
       show(index);
       lightbox.hidden = false;
     };
+
+    var syncBoxButtons = function (p) {
+      setVideoButton(videoToggle, p.playing, ['Pause video', 'Play video'], ['[data-icon-pause]', '[data-icon-play]']);
+      setVideoButton(videoSound, !p.muted, ['Turn sound off', 'Turn sound on'], ['[data-icon-sound-on]', '[data-icon-sound-off]']);
+    };
+
+    // The profile video (show.php's [data-gallery-video] link). The player is
+    // built on the tap, so it may start with sound when the owner chose that;
+    // closing removes it, which is what stops the sound. The link goes to the
+    // video's own page, so with scripting off it still works.
+    var openVideo = function (link) {
+      var src = link.getAttribute('data-video-embed') || '';
+      var provider = link.getAttribute('data-video-provider');
+      if (!videoWrap || !VIDEO_ORIGINS[provider] || src.indexOf(VIDEO_ORIGINS[provider] + '/') !== 0) return false;
+      if (tilePlayer && tilePlayer.playing) tilePlayer.command('pause');
+      var frame = document.createElement('iframe');
+      frame.src = src;
+      frame.title = link.getAttribute('data-video-title') || 'Video';
+      frame.allow = 'autoplay; encrypted-media; fullscreen';
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      lightboxVideo.replaceChildren(frame);
+      boxPlayer = makeVideoPlayer(frame, provider, syncBoxButtons);
+      boxPlayer.playing = true;
+      boxPlayer.muted = link.getAttribute('data-video-sound') !== '1';
+      syncBoxButtons(boxPlayer);
+      videoWrap.hidden = false;
+      lightboxImg.hidden = true;
+      lightboxNav.forEach(function (b) { b.hidden = true; });
+      videoMode = true;
+      returnFocus = link;
+      lightbox.hidden = false;
+      if (videoToggle) videoToggle.focus();
+      return true;
+    };
+    if (videoToggle) videoToggle.addEventListener('click', function () {
+      if (boxPlayer) boxPlayer.command(boxPlayer.playing ? 'pause' : 'play');
+    });
+    if (videoSound) videoSound.addEventListener('click', function () {
+      if (boxPlayer) boxPlayer.command(boxPlayer.muted ? 'unmute' : 'mute');
+    });
+
     var close = function () {
       lightbox.hidden = true;
       lightboxImg.src = '';
+      if (videoMode) {
+        if (boxPlayer) dropVideoPlayer(boxPlayer);
+        boxPlayer = null;
+        lightboxVideo.replaceChildren();
+        videoWrap.hidden = true;
+        lightboxImg.hidden = false;
+        lightboxNav.forEach(function (b) { b.hidden = false; });
+        videoMode = false;
+        if (tilePlayer && !tileUserPaused) tilePlayer.command('play');
+        if (returnFocus) returnFocus.focus();
+        returnFocus = null;
+      }
     };
 
     document.addEventListener('click', function (e) {
+      var videoLink = e.target.closest('[data-gallery-video]');
+      if (videoLink) {
+        if (openVideo(videoLink)) e.preventDefault();
+        return;
+      }
       var opener = e.target.closest('[data-gallery-open]');
       if (opener) {
         open(parseInt(opener.getAttribute('data-index'), 10) || 0);
@@ -327,6 +521,7 @@
     document.addEventListener('keydown', function (e) {
       if (lightbox.hidden) return;
       if (e.key === 'Escape') close();
+      if (videoMode) return;
       if (e.key === 'ArrowLeft') show(current - 1);
       if (e.key === 'ArrowRight') show(current + 1);
     });

@@ -207,11 +207,14 @@ final class HeroBackgroundTest extends CIUnitTestCase
 
     public function testTheCookiePageNamesYouTubeOnlyWhileItIsTheBackground(): void
     {
-        $this->assertStringNotContainsString('<strong>YouTube</strong>', $this->get('cookie-policy')->getBody());
+        // YouTube is always named now, for the Verified Business profile video;
+        // what tracks the hero is its own line about the home page.
+        $heroLine = 'plays the background video on the home page';
+        $this->assertStringNotContainsString($heroLine, $this->get('cookie-policy')->getBody());
 
         (new HeroImageService())->saveBackground(['hero_media' => 'youtube', 'youtube_url' => 'dQw4w9WgXcQ'], 'admin@test');
 
-        $this->assertStringContainsString('<strong>YouTube</strong>', $this->get('cookie-policy')->getBody());
+        $this->assertStringContainsString($heroLine, $this->get('cookie-policy')->getBody());
     }
 
     // -------------------------------------------------------------- headers
@@ -220,10 +223,13 @@ final class HeroBackgroundTest extends CIUnitTestCase
     {
         // The CSP header itself is finalised outside the feature-test response,
         // so the policy is checked at its source.
-        $this->assertSame(['https://www.youtube-nocookie.com'], (array) config('ContentSecurityPolicy')->frameSrc);
+        // Vimeo's player joined for the profile video (ListingVideoService).
+        // Ordinary www.youtube.com must never be admitted.
+        $this->assertSame(['https://www.youtube-nocookie.com', 'https://player.vimeo.com'], (array) config('ContentSecurityPolicy')->frameSrc);
 
         $perms = $this->get('/')->response()->getHeaderLine('Permissions-Policy');
-        $this->assertStringContainsString('autoplay=(self "https://www.youtube-nocookie.com")', $perms);
+        $this->assertStringContainsString('autoplay=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com")', $perms);
+        $this->assertStringNotContainsString('https://www.youtube.com', $perms);
         $this->assertStringContainsString('camera=()', $perms);
     }
 

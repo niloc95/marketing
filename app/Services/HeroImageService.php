@@ -502,37 +502,9 @@ class HeroImageService
      */
     public static function youtubeId(string $input): ?string
     {
-        $input = trim($input);
-        // The "Share > Embed" code YouTube offers: take the player URL out of
-        // its src and read that like any other link.
-        if (stripos($input, '<iframe') !== false) {
-            if (preg_match('/\ssrc\s*=\s*["\']([^"\']+)["\']/i', $input, $m) !== 1) {
-                return null;
-            }
-            $input = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5);
-        }
-        if (preg_match('/^[A-Za-z0-9_-]{11}$/', $input) === 1) {
-            return $input;
-        }
+        helper('video');
 
-        $parts = parse_url(preg_match('#^[a-z]+://#i', $input) ? $input : 'https://' . $input);
-        $host  = strtolower((string) ($parts['host'] ?? ''));
-        $host  = preg_replace('/^(www\.|m\.|music\.)/', '', $host);
-        $path  = (string) ($parts['path'] ?? '');
-
-        $candidate = null;
-        if ($host === 'youtu.be') {
-            $candidate = explode('/', trim($path, '/'))[0] ?? null;
-        } elseif (in_array($host, ['youtube.com', 'youtube-nocookie.com'], true)) {
-            if (preg_match('#^/(?:embed|shorts|live|v)/([^/?]+)#', $path, $m) === 1) {
-                $candidate = $m[1];
-            } else {
-                parse_str((string) ($parts['query'] ?? ''), $query);
-                $candidate = is_string($query['v'] ?? null) ? $query['v'] : null;
-            }
-        }
-
-        return $candidate !== null && preg_match('/^[A-Za-z0-9_-]{11}$/', $candidate) === 1 ? $candidate : null;
+        return video_youtube_id($input);
     }
 
     /**

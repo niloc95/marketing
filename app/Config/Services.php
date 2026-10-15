@@ -12,6 +12,7 @@ use App\Libraries\MauticClient;
 use App\Services\Description\DescriptionDraftService;
 use App\Services\Description\DescriptionWriter;
 use App\Services\DirectoryService;
+use App\Services\ListingVideoService;
 use App\Services\Search\QueryInterpreter;
 use App\Services\Search\RuleBasedInterpreter;
 use CodeIgniter\Config\BaseService;
@@ -138,5 +139,22 @@ class Services extends BaseService
         }
 
         return new DomainChecker();
+    }
+
+    /**
+     * The Verified Business profile video. Under the testing environment its
+     * oEmbed and thumbnail requests all "fail", which saves the link without
+     * a title or thumbnail, so the suite never makes a network call; a test
+     * that wants a provider's answer injects its own fetch.
+     */
+    public static function listingVideo(bool $getShared = true): ListingVideoService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('listingVideo');
+        }
+
+        return ENVIRONMENT === 'testing'
+            ? new ListingVideoService(static fn (string $url): ?array => null)
+            : new ListingVideoService();
     }
 }

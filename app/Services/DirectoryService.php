@@ -1328,6 +1328,10 @@ class DirectoryService
             ? $this->team->forListing((int) $listing['id'])
             : [];
 
+        // The profile video, on the team's terms: paid, so gated here at load,
+        // and a lapsed badge hides it without touching the stored columns.
+        $listing['video'] = service('listingVideo')->forProfile($listing);
+
         // Free for every listing. Published reviews only, and no query at all
         // for a listing whose stored review_count is 0. The panel and the
         // JSON-LD both read this one copy, so the markup matches the page.

@@ -195,6 +195,10 @@ class ContentSecurityPolicy extends BaseConfig
         // privacy-enhanced host only: it is the one directory.js embeds, and
         // naming www.youtube.com too would admit ordinary tracking embeds.
         'https://www.youtube-nocookie.com',
+        // The Verified Business profile video (ListingVideoService), built by
+        // directory.js only when someone presses play. Vimeo's player host, run
+        // with dnt=1.
+        'https://player.vimeo.com',
     ];
 
     /**

@@ -196,9 +196,52 @@ $metaDesc = listing_meta_description($l);
         <?php // Below the header: the category and the name are what tell a visitor
               // they landed on the right business, so they come first and the
               // photos follow — above the fold on a desktop either way. ?>
-        <?php if (! empty($l['photos'])): ?>
+        <?php // The profile video, a Verified Business perk, leads the strip.
+              // DirectoryService::getProfile() already applied the badge gate.
+              // It is a link to the video's own page, upgraded by directory.js
+              // to play in the lightbox, and it carries no data-gallery-open:
+              // the lightbox's photo list and its indexes stay photos only.
+              // The thumbnail is our own copy, so nothing is fetched from
+              // YouTube or Vimeo until someone presses play, unless the owner
+              // chose autoplay: then the tile's live layer loads a silent,
+              // looping player (directory.js, which skips it for reduced
+              // motion and data saving). ?>
+        <?php $video = $l['video'] ?? null; ?>
+        <?php if (! empty($l['photos']) || $video !== null): ?>
             <div class="gallery" data-gallery>
-                <?php foreach ($l['photos'] as $i => $p): ?>
+                <?php if ($video !== null): ?>
+                    <?php $videoLabel = 'Play video' . ($video['title'] !== '' ? ': ' . $video['title'] : ', ' . $name); ?>
+                    <?php // A wrapper, not the link itself: with autoplay on, the tile also
+                          // holds a live player and its pause button, and neither may sit
+                          // inside an <a>. The live layer ignores the pointer, so a tap
+                          // anywhere but the button still reaches the link and opens the
+                          // video with sound in the lightbox. ?>
+                    <div class="gallery-item gallery-video" data-gallery-video-tile>
+                        <a class="gallery-video-link" href="<?= esc($video['watch'], 'attr') ?>" target="_blank" rel="noopener"
+                           data-gallery-video data-video-embed="<?= esc($video['embed'], 'attr') ?>"
+                           data-video-provider="<?= esc($video['provider'], 'attr') ?>"
+                           data-video-sound="<?= $video['sound'] ? '1' : '0' ?>"
+                           data-video-title="<?= esc($video['title'] !== '' ? $video['title'] : $name, 'attr') ?>"
+                           aria-label="<?= esc($videoLabel, 'attr') ?>">
+                            <?php if ($video['thumb'] !== ''): ?>
+                                <img src="<?= esc(base_url($video['thumb'])) ?>" alt="" loading="eager">
+                            <?php else: ?>
+                                <span class="gallery-video-blank" aria-hidden="true"><?= esc($video['title'] !== '' ? $video['title'] : 'Watch our video') ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <?php if ($video['tile'] !== ''): ?>
+                            <div class="gallery-video-live" data-video-live
+                                 data-video-src="<?= esc($video['tile'], 'attr') ?>"
+                                 data-video-provider="<?= esc($video['provider'], 'attr') ?>" aria-hidden="true"></div>
+                            <button type="button" class="gallery-video-toggle" data-video-tile-toggle hidden aria-label="Pause video">
+                                <span data-icon-pause><?= lucide('pause', 'h-4 w-4') ?></span>
+                                <span data-icon-play hidden><?= lucide('play', 'h-4 w-4') ?></span>
+                            </button>
+                        <?php endif; ?>
+                        <span class="gallery-video-play" aria-hidden="true"><?= lucide('play', 'h-6 w-6') ?></span>
+                    </div>
+                <?php endif; ?>
+                <?php foreach (($l['photos'] ?? []) as $i => $p): ?>
                     <button type="button" class="gallery-item" data-gallery-open data-index="<?= $i ?>">
                         <img src="<?= esc(base_url($p['path'])) ?>"
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
@@ -214,6 +257,22 @@ $metaDesc = listing_meta_description($l);
             <button type="button" class="lightbox-close" data-lightbox-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
             <button type="button" class="lightbox-prev" data-lightbox-prev aria-label="Previous photo"><?= lucide('chevron-left', 'h-5 w-5') ?></button>
             <img src="" alt="" data-lightbox-img>
+            <?php // The video's player, with our own buttons under it: the players'
+                  // controls are switched off (video_embed_url()), and directory.js
+                  // drives them through their postMessage APIs. ?>
+            <div class="lightbox-video-wrap" data-lightbox-video-wrap hidden>
+                <div class="lightbox-video" data-lightbox-video></div>
+                <div class="lightbox-video-controls">
+                    <button type="button" class="lightbox-video-btn" data-video-toggle aria-label="Pause video">
+                        <span data-icon-pause><?= lucide('pause', 'h-5 w-5') ?></span>
+                        <span data-icon-play hidden><?= lucide('play', 'h-5 w-5') ?></span>
+                    </button>
+                    <button type="button" class="lightbox-video-btn" data-video-mute aria-label="Turn sound on">
+                        <span data-icon-sound-on hidden><?= lucide('volume-2', 'h-5 w-5') ?></span>
+                        <span data-icon-sound-off><?= lucide('volume-x', 'h-5 w-5') ?></span>
+                    </button>
+                </div>
+            </div>
             <button type="button" class="lightbox-next" data-lightbox-next aria-label="Next photo"><?= lucide('chevron-right', 'h-5 w-5') ?></button>
         </div>
 

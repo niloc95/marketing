@@ -11,6 +11,7 @@ $isNew = $listing === null;
 $base  = $listing ?? [];
 if (! $isNew) {
     $base['specializations'] = implode(', ', $tags);
+    $base['video_url']       = \App\Services\ListingVideoService::formValue($base);
 }
 $v = function (string $f, string $default = '') use ($old, $base) {
     if (array_key_exists($f, $old)) return form_old_value($old[$f]);
