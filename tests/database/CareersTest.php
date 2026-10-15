@@ -436,6 +436,48 @@ final class CareersTest extends CIUnitTestCase
         $this->assertSame(0, $this->apps->countAllResults());
     }
 
+    public function testAWordCvIsTakenButAPhotoIsNot(): void
+    {
+        $docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        $this->assertTrue($this->svc->apply($this->application(), $this->cv('cv.docx', "PK\x03\x04" . str_repeat("\0", 64), $docx))['ok']);
+        $this->assertSame($docx, $this->apps->first()['cv_mime']);
+
+        $photo = $this->svc->apply($this->application(['email' => 'other@example.test']), $this->cv('cv.png', "\x89PNG\r\n\x1A\n" . str_repeat("\0", 64), 'image/png'));
+        $this->assertFalse($photo['ok']);
+        $this->assertStringContainsString('PDF or Word', $photo['errors']['cv']);
+    }
+
+    public function testAWordCvDownloadsForTheAdmin(): void
+    {
+        $this->svc->apply($this->application(), $this->cv('cv.docx', "PK\x03\x04" . str_repeat("\0", 64), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
+        $id = (int) $this->apps->first()['id'];
+
+        $result = $this->asAdmin()->get('admin/careers/applications/' . $id . '/cv');
+        $result->assertStatus(200);
+        $this->assertStringStartsWith('attachment;', $result->response()->getHeaderLine('Content-Disposition'));
+    }
+
+    public function testAPhoneNumberIsRequired(): void
+    {
+        $none = $this->svc->apply($this->application(['phone' => '']), $this->cv());
+        $this->assertArrayHasKey('phone', $none['errors']);
+
+        $short = $this->svc->apply($this->application(['phone' => '0821']), $this->cv());
+        $this->assertArrayHasKey('phone', $short['errors']);
+        $this->assertSame(0, $this->apps->countAllResults());
+    }
+
+    public function testTheFormMarksTheRequiredFields(): void
+    {
+        $role = $this->screenedRole();
+        $html = (string) $this->get('careers/' . $role['slug'])->response()->getBody();
+
+        $this->assertStringContainsString('are required', $html);
+        $this->assertSame(5, preg_match_all('/<(input|textarea)[^>]*\sdata-screening-needs/', $html), 'name, email, phone, CV and message');
+        $this->assertStringContainsString('accept=".pdf,.doc,.docx', $html);
+        $this->assertStringContainsString('Complete the fields marked * above to start the questions.', $html);
+    }
+
     public function testAClosedRoleTakesNoApplications(): void
     {
         $role = $this->openRole();
@@ -715,6 +757,17 @@ final class CareersTest extends CIUnitTestCase
         $top = $this->asAdmin()->get('admin/careers/applications?min_score=3');
         $top->assertSee('Sipho Ndlovu');
         $top->assertDontSee('Lerato Mokoena');
+
+        $list = $this->asAdmin()->get('admin/careers');
+        $list->assertSee('Questions');
+        $list->assertSee('Basic (Grade 7 to 8)');
+        $list->assertSee('3 questions, 3:45');
+        $list->assertSee('Opened');
+        $list->assertSee(date('j M Y')); // opened today
+        $list->assertSee('No closing date');
+
+        $this->roles->update($role['id'], ['valid_through' => '2026-12-31']);
+        $this->asAdmin()->get('admin/careers')->assertSee('31 Dec 2026');
 
         $edit = $this->asAdmin()->get('admin/careers/' . $role['id']);
         $edit->assertSee('See examples');

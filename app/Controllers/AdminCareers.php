@@ -140,11 +140,15 @@ class AdminCareers extends BaseController
 
         $this->lockDownCspForDocument();
 
+        // A PDF or old image CV opens in the browser tab; a Word CV downloads,
+        // so Word opens it (in Protected View) rather than anything here.
+        $disposition = in_array(strtolower($ext), ['doc', 'docx'], true) ? 'attachment' : 'inline';
+
         return $this->response
             ->setStatusCode(200)
             ->setHeader('Content-Type', (string) $app['cv_mime'])
             ->setHeader('Content-Length', (string) strlen($contents))
-            ->setHeader('Content-Disposition', 'inline; filename="' . trim(mb_substr($base, 0, 60)) . '.' . $ext . '"')
+            ->setHeader('Content-Disposition', $disposition . '; filename="' . trim(mb_substr($base, 0, 60)) . '.' . $ext . '"')
             ->setHeader('X-Content-Type-Options', 'nosniff')
             ->setHeader('Cache-Control', 'no-store, private, max-age=0')
             ->setHeader('Pragma', 'no-cache')

@@ -2854,6 +2854,8 @@
     var items   = step.querySelector('[data-screening-items]');
     var saveBtn = step.querySelector('[data-screening-save]');
     var status  = step.querySelector('[data-screening-status]');
+    var waitEl  = step.querySelector('[data-screening-wait]');
+    var needs   = form ? form.querySelectorAll('[data-screening-needs]') : [];
     var group   = 'screening-' + step.getAttribute('data-screening-role') + '-';
     var attempt = null;
     var deadline = 0;
@@ -2966,12 +2968,36 @@
       timer = window.setInterval(tick, 1000);
     }
 
+    // Start waits for the details marked required (data-screening-needs), so
+    // the clock never runs while someone is still typing their name or
+    // looking for their CV. A guide, not a rule: the server checks every field
+    // again when the application is sent.
+    function complete(el) {
+      if (el.type === 'file') return !!(el.files && el.files.length);
+      var min = parseInt(el.getAttribute('minlength'), 10) || 1;
+      return el.value.trim().length >= min && el.checkValidity();
+    }
+
+    function gate() {
+      if (attempt) return;
+      var ready = Array.prototype.every.call(needs, complete);
+      goBtn.disabled = !ready;
+      if (waitEl) waitEl.hidden = ready;
+    }
+
+    form.addEventListener('input', gate);
+    form.addEventListener('change', gate);
+
     goBtn.addEventListener('click', function () {
+      if (Array.prototype.some.call(needs, function (el) { return !complete(el); })) {
+        gate();
+        return;
+      }
       goBtn.disabled = true;
       say('Loading the questions…', false);
       post(step.getAttribute('data-start-url'), { role_id: step.getAttribute('data-screening-role') }).then(function (data) {
         if (!data.ok) {
-          goBtn.disabled = false;
+          gate();
           say(data.message, true);
           return;
         }
@@ -3030,6 +3056,7 @@
     if (step.hasAttribute('data-attempt')) {
       try { render(JSON.parse(step.getAttribute('data-attempt'))); } catch (e) { /* start afresh */ }
     }
+    gate();
   });
 
   // The /careers general form: each open role that asks questions has its
