@@ -91,5 +91,27 @@ $applied  = session()->getFlashdata('applied');
         <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
     </div>
 
+    <?php
+    // Screening questions (App\Libraries\Screening), last so the clock is
+    // not running while the details are typed. On a role page, that role's
+    // step. On /careers, a step for every open role that asks questions, each
+    // hidden and disabled until the picker chooses its role (directory.js),
+    // so only that role's token posts.
+    $screened = array_values(array_filter($role !== null ? [$role] : $roles, [$svc, 'screens']));
+    ?>
+    <?php foreach ($screened as $r): ?>
+        <?= view('partials/_screening_questions', [
+            'roleId'    => (int) $r['id'],
+            'level'     => (string) $r['screening_level'],
+            'attempt'   => $svc->screeningView($r),
+            'error'     => $err('screening'),
+            'off'       => $role === null && $picked !== (string) $r['id'],
+            'who'       => 'us',
+            'startUrl'  => base_url('careers/screening/start'),
+            'answerUrl' => base_url('careers/screening/answer'),
+            'screening' => $svc->screening(),
+        ]) ?>
+    <?php endforeach; ?>
+
     <button type="submit" class="btn btn-accent btn-block">Send my application</button>
 </form>

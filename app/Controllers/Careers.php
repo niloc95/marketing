@@ -93,6 +93,46 @@ class Careers extends BaseController
     }
 
     /**
+     * Start (or resume) the screening questions for a role: the applicant
+     * pressed "Start the questions". JSON for directory.js, with the fresh
+     * CSRF token, because the token regenerates on every POST and the page
+     * still has the application itself to send.
+     */
+    public function screeningStart()
+    {
+        $throttler = service('throttler');
+        if ($throttler->check('careers-q-' . md5((string) $this->request->getIPAddress()), 20, HOUR) === false) {
+            return $this->screeningJson(['ok' => false, 'message' => 'Too many tries. Please wait a little while and try again.'], 429);
+        }
+
+        $view = (new CareersService())->startScreening((int) $this->request->getPost('role_id'));
+        if ($view === null) {
+            return $this->screeningJson(['ok' => false, 'message' => 'This role has no questions to answer, or it has just closed.'], 404);
+        }
+
+        return $this->screeningJson(['ok' => true] + $view);
+    }
+
+    /** Lock the applicant's answers (Screening::answer()). */
+    public function screeningAnswer()
+    {
+        $result = (new CareersService())->screening()->answer(
+            (string) $this->request->getPost('screening_token'),
+            $this->request->getPost('screening'),
+            $this->request->getPost('leaves')
+        );
+
+        return $this->screeningJson($result, $result['ok'] ? 200 : 422);
+    }
+
+    private function screeningJson(array $data, int $status = 200)
+    {
+        return $this->response->setStatusCode($status)->setJSON($data + [
+            'csrf' => ['name' => csrf_token(), 'hash' => csrf_hash()],
+        ]);
+    }
+
+    /**
      * Back to the form the application came from: the role page while the
      * role is open, /careers otherwise. Built from the posted id, never from
      * the Referer, so the redirect cannot be pointed off site.

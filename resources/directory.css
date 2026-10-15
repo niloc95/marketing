@@ -2358,6 +2358,19 @@
   .dark .consent-choice legend { @apply text-white; }
   .dark .consent-choice label  { @apply text-slate-300; }
 
+  /* The timed screening questions on an apply form (partials/_screening_questions.php).
+     No text selection on the questions, as a speed bump against pasting them into a
+     search; directory.js also cancels copy and the context menu there. The real
+     protection is that every applicant gets their own numbers. */
+  .screening-run              { @apply mb-2 select-none rounded-surface border border-slate-200 p-4; -webkit-user-select: none; }
+  .dark .screening-run        { @apply border-slate-700; }
+  .screening-passage          { @apply mb-2 rounded-surface bg-slate-50 p-3 text-sm leading-relaxed text-slate-700; }
+  .dark .screening-passage    { @apply bg-slate-800 text-slate-200; }
+  .screening-clock            { @apply mb-3 text-sm font-semibold tabular-nums text-slate-900; }
+  .dark .screening-clock      { @apply text-white; }
+  .screening-clock.is-late    { @apply text-amber-700; }
+  .dark .screening-clock.is-late { @apply text-amber-300; }
+
   /* "Where do customers meet you?" — the consent-choice radios, plus a
      checkbox and a textarea below them. The textarea's label is a field label
      again, not a choice. [hidden] needs forcing: the label rules above set a

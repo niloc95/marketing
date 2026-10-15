@@ -534,6 +534,202 @@ final class CareersTest extends CIUnitTestCase
         $this->assertSame(0, $this->apps->countAllResults());
     }
 
+    // ------------------------------------------------------------- screening
+
+    private function screenedRole(string $level = 'basic'): array
+    {
+        return $this->openRole(['screening_level' => $level]);
+    }
+
+    /**
+     * Start and save an attempt at $role's questions in this session, with
+     * $right of the three answered correctly, started $ago seconds back.
+     */
+    private function answered(array $role, int $right = 3, int $ago = 60, int $leaves = 0): string
+    {
+        $screening = $this->svc->screening();
+        $attempt   = $screening->start($this->svc->screeningContext($role), (string) $role['screening_level'], time() - $ago);
+        $answers   = [];
+        foreach ($attempt['items'] as $i => $item) {
+            $answers[] = (string) ($i < $right ? $item['answer'] : ($item['answer'] + 1) % 4);
+        }
+        $this->assertTrue($screening->answer($attempt['token'], $answers, $leaves)['ok']);
+
+        return $attempt['token'];
+    }
+
+    public function testARoleKeepsItsLevel(): void
+    {
+        $role = $this->screenedRole('intermediate');
+        $this->assertSame('intermediate', $role['screening_level']);
+
+        $this->assertTrue($this->svc->saveRole((int) $role['id'], array_merge($role, ['screening_level' => '']))['ok']);
+        $this->assertNull($this->roles->find($role['id'])['screening_level'], 'No screening clears it');
+
+        $bad = $this->svc->saveRole((int) $role['id'], array_merge($role, ['screening_level' => 'expert']));
+        $this->assertFalse($bad['ok']);
+        $this->assertArrayHasKey('screening_level', $bad['errors']);
+    }
+
+    public function testTheRolePageOffersTheStepButNotTheQuestions(): void
+    {
+        $role = $this->screenedRole();
+        $html = html_entity_decode((string) $this->get('careers/' . $role['slug'])->response()->getBody());
+
+        $this->assertStringContainsString('A few quick questions', $html);
+        $this->assertStringContainsString('Start the questions', $html);
+        $this->assertStringContainsString('about 4 minutes', $html);
+        $this->assertStringContainsString('leaving this page while the clock runs is noted', $html);
+        $this->assertStringNotContainsString('data-attempt', $html, 'nothing is drawn until Start');
+        $this->assertStringNotContainsString('—', strip_tags($html));
+    }
+
+    public function testStartReturnsTheQuestionsWithoutTheAnswersAndAFreshToken(): void
+    {
+        $role   = $this->screenedRole();
+        $result = $this->post('careers/screening/start', ['role_id' => $role['id'], csrf_token() => csrf_hash()]);
+
+        $result->assertStatus(200);
+        $data = json_decode((string) $result->response()->getBody(), true);
+        $this->assertTrue($data['ok']);
+        $this->assertCount(3, $data['questions']);
+        $this->assertSame(225, $data['seconds_left']);
+        $this->assertNotNull($data['questions'][0]['passage'], 'a reading passage comes first');
+        $this->assertStringNotContainsString('"answer"', (string) $result->response()->getBody());
+        $this->assertSame(csrf_token(), $data['csrf']['name']);
+
+        $plain = $this->openRole(['title' => 'Support Agent', 'team' => 'support']);
+        $this->post('careers/screening/start', ['role_id' => $plain['id'], csrf_token() => csrf_hash()])->assertStatus(404);
+    }
+
+    public function testApplyingWithoutSavedAnswersIsSentBack(): void
+    {
+        $role = $this->screenedRole();
+
+        $result = $this->svc->apply($this->application(['role_id' => $role['id']]), $this->cv());
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('screening', $result['errors']);
+
+        // Started but not saved is no better.
+        $attempt = $this->svc->screening()->start($this->svc->screeningContext($role), 'basic');
+        $result  = $this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $attempt['token']]), $this->cv());
+        $this->assertArrayHasKey('screening', $result['errors']);
+        $this->assertSame(0, $this->apps->countAllResults());
+    }
+
+    public function testAnotherRolesAnswersDoNotCount(): void
+    {
+        $role  = $this->screenedRole();
+        $other = $this->screenedRole();
+        $token = $this->answered($other);
+
+        $result = $this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $token]), $this->cv());
+        $this->assertArrayHasKey('screening', $result['errors']);
+    }
+
+    public function testTheResultIsStoredAndSentToTheInboxButNotTheApplicant(): void
+    {
+        $role   = $this->screenedRole();
+        $token  = $this->answered($role, 2, 134, 1);
+        $result = $this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $token]), $this->cv());
+        $this->assertTrue($result['ok'], json_encode($result['errors']));
+
+        $app = $this->apps->first();
+        $this->assertSame(2, (int) $app['screening_score']);
+        $this->assertSame(3, (int) $app['screening_total']);
+        $marked = $this->svc->screeningResult($app);
+        $this->assertSame([true, true, false], array_column($marked['items'], 'correct'));
+        $this->assertGreaterThanOrEqual(134, $marked['time_s']);
+        $this->assertSame(1, $marked['leaves']);
+
+        $inbox = $receipt = '';
+        foreach ($this->sent as $mail) {
+            $to   = array_map('strtolower', (array) ($mail['recipients'] ?? []));
+            $body = html_entity_decode((string) $mail['body']) . ' ' . ($mail['subject'] ?? '');
+            in_array('sipho@example.test', $to, true) ? $receipt .= $body : $inbox .= $body;
+        }
+        $this->assertStringContainsString('Screening: 2 of 3 correct in 2:1', $inbox);
+        $this->assertStringContainsString('left the page once', $inbox);
+        $this->assertStringContainsString('Correct: ' . $marked['items'][2]['answer'], $inbox);
+        $this->assertNotSame('', $receipt);
+        $this->assertStringNotContainsString('Screening', $receipt, 'the applicant never sees the score');
+        $this->assertStringNotContainsString($marked['items'][0]['prompt'], $receipt, 'or the questions');
+
+        $this->assertNull($this->svc->screening()->current($this->svc->screeningContext($role)), 'the attempt is spent');
+    }
+
+    public function testLateAnswersAreSentAndFlagged(): void
+    {
+        $role  = $this->screenedRole();
+        $token = $this->answered($role, 3, 500);
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $token]), $this->cv())['ok']);
+
+        $this->assertTrue($this->svc->screeningResult($this->apps->first())['over_time']);
+        $subjects = implode(' ', array_map(static fn ($m) => (string) ($m['subject'] ?? ''), $this->sent));
+        $this->assertStringContainsString('(3/3, over time)', $subjects);
+    }
+
+    public function testAReloadResumesTheSameAttempt(): void
+    {
+        $role    = $this->screenedRole();
+        $attempt = $this->svc->screening()->start($this->svc->screeningContext($role), 'basic');
+
+        // The page request gets the same session the attempt was started in.
+        $html = html_entity_decode((string) $this->withSession([
+            App\Libraries\Screening::SESSION_KEY => session(App\Libraries\Screening::SESSION_KEY),
+        ])->get('careers/' . $role['slug'])->response()->getBody(), ENT_QUOTES);
+        $this->assertStringContainsString($attempt['token'], $html);
+        $this->assertStringContainsString($attempt['items'][0]['prompt'], $html);
+        $this->assertStringNotContainsString('"answer"', $html);
+    }
+
+    public function testAGeneralApplicationAnswersNothing(): void
+    {
+        $this->screenedRole();
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => '0']), $this->cv())['ok']);
+        $this->assertNull($this->apps->first()['screening_score']);
+    }
+
+    public function testTheGeneralFormHoldsEachRolesStepUntilPicked(): void
+    {
+        $role = $this->screenedRole();
+        $html = (string) $this->get('careers')->response()->getBody();
+
+        $this->assertMatchesRegularExpression('/data-screening-role="' . (int) $role['id'] . '"[^>]*\shidden disabled>/s', $html);
+    }
+
+    public function testAdminSeesTheScoreAndTimeAndCanFilter(): void
+    {
+        $role = $this->screenedRole();
+        $this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $this->answered($role, 3)]), $this->cv());
+        $this->svc->apply($this->application([
+            'role_id' => $role['id'], 'name' => 'Lerato Mokoena', 'email' => 'lerato@example.test',
+            'screening_token' => $this->answered($role, 0),
+        ]), $this->cv());
+
+        $all = $this->asAdmin()->get('admin/careers/applications');
+        $all->assertSee('3/3');
+        $all->assertSee('0/3');
+        $all->assertSee('of 3:45');
+
+        $top = $this->asAdmin()->get('admin/careers/applications?min_score=3');
+        $top->assertSee('Sipho Ndlovu');
+        $top->assertDontSee('Lerato Mokoena');
+
+        $edit = $this->asAdmin()->get('admin/careers/' . $role['id']);
+        $edit->assertSee('See examples');
+        $edit->assertSee('Answer: ');
+    }
+
+    public function testPurgeWipesTheAnswers(): void
+    {
+        $role = $this->screenedRole();
+        $this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $this->answered($role)]), $this->cv());
+
+        $this->svc->purge(new DateTimeImmutable('+13 months'));
+        $this->assertNull($this->apps->first()['screening_result']);
+    }
+
     // ------------------------------------------------------------- admin
 
     public function testTheCvOpensOnlyForAnAdmin(): void

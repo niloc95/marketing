@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\Mailer;
 use App\Libraries\PostingSections;
+use App\Libraries\Screening;
 use App\Libraries\VerificationDocumentProcessor;
 use App\Models\CareerApplicationModel;
 use App\Models\CareerRoleModel;
@@ -22,6 +23,12 @@ use Config\Directory as DirectoryConfig;
  * the receipt carries none of the form's text (only our role title and a
  * first name that is plainly a name), and the controller's per address
  * throttle caps how often a stranger could make us mail someone.
+ *
+ * A role may set a screening level (App\Libraries\Screening): each applicant
+ * then answers three timed questions with their own numbers before sending.
+ * The application keeps the marked answers, time and page leaves for the
+ * admin queue and the inbox notice; the applicant is never told the score
+ * or the right answers.
  *
  * Formatting (pay, place, employment type) is JobBoardService's, because a
  * role row uses the same column names as a board post.
@@ -57,6 +64,7 @@ class CareersService
     private CareersConfig $config;
     private DirectoryConfig $site;
     private JobBoardService $board;
+    private Screening $screening;
 
     public function __construct(?CareersConfig $config = null)
     {
@@ -65,11 +73,59 @@ class CareersService
         $this->config       = $config ?? config('Careers');
         $this->site         = config('Directory');
         $this->board        = new JobBoardService();
+        $this->screening    = new Screening();
     }
 
     public function config(): CareersConfig
     {
         return $this->config;
+    }
+
+    public function screening(): Screening
+    {
+        return $this->screening;
+    }
+
+    /** Whether applicants for $role answer screening questions. */
+    public function screens(array $role): bool
+    {
+        return $this->screening->isLevel($role['screening_level'] ?? null);
+    }
+
+    /** The key a role's screening attempt is kept under in the session. */
+    public function screeningContext(array $role): string
+    {
+        return 'career:' . (int) $role['id'];
+    }
+
+    /**
+     * The applicant's attempt at $role's questions as the page may see it,
+     * or null when they have not started. Lets a reload, or a form sent back
+     * for a missing CV, carry on with the same questions and the same clock.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function screeningView(array $role): ?array
+    {
+        $attempt = $this->screening->current($this->screeningContext($role));
+
+        return $attempt !== null ? $this->screening->view($attempt) : null;
+    }
+
+    /**
+     * Start (or resume) the applicant's questions for an open role that asks
+     * them. Null when the role is closed, gone or asks nothing.
+     *
+     * @return array<string,mixed>|null Screening::view() of the attempt
+     */
+    public function startScreening(int $roleId): ?array
+    {
+        $role = $this->roles->find($roleId);
+        if (! is_array($role) || ! $this->isOpen($role) || ! $this->screens($role)) {
+            return null;
+        }
+
+        return $this->screening->view($this->screening->start($this->screeningContext($role), (string) $role['screening_level']));
     }
 
     // ------------------------------------------------------------------ read
@@ -384,6 +440,11 @@ class CareersService
                 $errors['valid_through'] = 'That closing date is not a real date.';
             }
         }
+        $screen = $this->screening->selection($in['screening_level'] ?? '');
+        if ($screen['error'] !== null) {
+            $errors['screening_level'] = $screen['error'];
+        }
+        $d['screening_level'] = $screen['level'];
 
         if ($errors !== []) {
             return ['ok' => false, 'message' => 'Please correct the highlighted fields.', 'errors' => $errors, 'id' => $id];
@@ -491,6 +552,13 @@ class CareersService
         if ($cv === null || $cv->getError() === UPLOAD_ERR_NO_FILE) {
             $errors['cv'] = 'Please attach your CV.';
         }
+        // The answers were locked when they were saved (Screening::answer());
+        // here the application only has to point at them.
+        $token   = is_string($in['screening_token'] ?? null) ? $in['screening_token'] : '';
+        $screens = $role !== null && $this->screens($role);
+        if ($screens && $this->screening->answeredFor($token, $this->screeningContext($role)) === null) {
+            $errors['screening'] = 'Please answer the ' . Screening::COUNT . ' questions for this role and save your answers.';
+        }
 
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors];
@@ -511,6 +579,12 @@ class CareersService
             'consent_at' => date('Y-m-d H:i:s'),
             'status'     => CareerApplicationModel::STATUS_NEW,
         ];
+        $marked = $screens ? $this->screening->consume($token, $this->screeningContext($role)) : null;
+        if ($marked !== null) {
+            $row['screening_result'] = json_encode($marked, JSON_UNESCAPED_UNICODE);
+            $row['screening_score']  = $marked['score'];
+            $row['screening_total']  = $marked['total'];
+        }
         foreach (['phone', 'linkedin_url'] as $nullable) {
             if ($row[$nullable] === '') {
                 $row[$nullable] = null;
@@ -674,17 +748,18 @@ class CareersService
             }
 
             $this->applications->update((int) $row['id'], [
-                'name'         => null,
-                'email'        => null,
-                'phone'        => null,
-                'linkedin_url' => null,
-                'message'      => null,
-                'cv_path'      => null,
-                'cv_name'      => null,
-                'cv_mime'      => null,
-                'cv_sha256'    => null,
-                'admin_notes'  => null,
-                'purged_at'    => $now->format('Y-m-d H:i:s'),
+                'name'             => null,
+                'email'            => null,
+                'phone'            => null,
+                'linkedin_url'     => null,
+                'message'          => null,
+                'screening_result' => null,
+                'cv_path'          => null,
+                'cv_name'          => null,
+                'cv_mime'          => null,
+                'cv_sha256'        => null,
+                'admin_notes'      => null,
+                'purged_at'        => $now->format('Y-m-d H:i:s'),
             ]);
         }
 
@@ -701,6 +776,7 @@ class CareersService
         }
 
         $roleTitle = $role !== null ? (string) $role['title'] : 'General application';
+        $marked    = $this->screeningResult($app);
 
         // The shared notice template, with saveData off and every optional key
         // defaulted, as in PartnerService::notice(). The CV is not attached:
@@ -718,15 +794,19 @@ class CareersService
             'button'         => ['Open in admin', base_url('admin/careers/applications') . '#application-' . $id],
             'footnote'       => 'Reply to this email to answer ' . strtok($app['name'], ' ') . ' directly. The CV opens from the admin page.',
             'footnoteLink'   => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
+            'bullets'        => $marked !== null ? $this->screening->lines($marked) : null,
+            'bulletsHeading' => $marked !== null ? 'Screening: ' . $this->screening->summary($marked) : null,
             'extras'         => null,
             'extrasHeading'  => null,
             'highlight'      => null,
             'closing'        => null,
         ], ['saveData' => false]);
 
-        (new Mailer())->send($to, 'Careers: ' . $roleTitle . ', ' . $app['name'], $body, $app['email']);
+        $score = $marked !== null
+            ? ' (' . $marked['score'] . '/' . $marked['total'] . (! empty($marked['over_time']) ? ', over time' : '') . ')'
+            : '';
+
+        (new Mailer())->send($to, 'Careers: ' . $roleTitle . ', ' . $app['name'] . $score, $body, $app['email']);
     }
 
     /**
@@ -761,6 +841,19 @@ class CareersService
         ], ['saveData' => false]);
 
         (new Mailer())->send((string) $app['email'], 'We have received your application', $body);
+    }
+
+    /**
+     * An application's marked screening answers, or null when it answered
+     * none (a general application, or a role that asks nothing).
+     *
+     * @return array{level:string,score:int,total:int,items:list<array{id:string,prompt:string,given:string,answer:string,correct:bool}>}|null
+     */
+    public function screeningResult(array $app): ?array
+    {
+        $result = json_decode((string) ($app['screening_result'] ?? ''), true);
+
+        return is_array($result) && isset($result['items'], $result['score'], $result['total']) ? $result : null;
     }
 
     private function uniqueSlug(string $title): string

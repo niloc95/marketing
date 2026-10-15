@@ -19,9 +19,11 @@ use App\Models\CareerApplicationModel;
  * @var list<array<string,mixed>>  $rows
  * @var array<string,int>          $counts
  * @var list<array<string,mixed>>  $roles
+ * @var int|null                   $minScore null for all
+ * @var App\Services\CareersService $svc
  */
 $link = static fn (array $q) => base_url('admin/careers/applications') . '?' . http_build_query(array_filter(
-    $q + ['status' => $status, 'role' => $roleId],
+    $q + ['status' => $status, 'role' => $roleId, 'min_score' => $minScore],
     static fn ($v) => $v !== null && $v !== ''
 ));
 ?>
@@ -53,6 +55,15 @@ $link = static fn (array $q) => base_url('admin/careers/applications') . '?' . h
                     <?php foreach ($roles as $r): ?>
                         <option value="<?= (int) $r['id'] ?>" <?= $roleId === (int) $r['id'] ? 'selected' : '' ?>><?= esc($r['title']) ?><?= $r['status'] !== 'open' ? ' (' . esc($r['status']) . ')' : '' ?></option>
                     <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="field mb-0">
+                <label for="f-score">Screening</label>
+                <select id="f-score" name="min_score">
+                    <option value="">Any score</option>
+                    <?php for ($n = App\Libraries\Screening::COUNT; $n >= 1; $n--): ?>
+                        <option value="<?= $n ?>" <?= $minScore === $n ? 'selected' : '' ?>><?= $n ?> or more right</option>
+                    <?php endfor; ?>
                 </select>
             </div>
             <button class="btn btn-ghost btn-xs">Filter</button>
@@ -88,7 +99,27 @@ $link = static fn (array $q) => base_url('admin/careers/applications') . '?' . h
                                         <a class="btn btn-ghost btn-xs mt-1" href="<?= base_url('admin/careers/applications/' . (int) $a['id'] . '/cv') ?>" target="_blank" rel="noopener">Open CV</a>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-sm"><?= nl2br(esc((string) $a['message'])) ?></td>
+                                <td class="text-sm">
+                                    <?php $marked = $svc->screeningResult($a); ?>
+                                    <?php if ($marked !== null): ?>
+                                        <?php $tone = $marked['score'] === $marked['total'] ? 'pill-published' : ($marked['score'] * 2 >= $marked['total'] ? 'pill-score-mid' : 'pill-pending'); ?>
+                                        <details class="disclosure mb-2">
+                                            <summary class="disclosure-summary"><span class="pill <?= $tone ?>"><?= (int) $marked['score'] ?>/<?= (int) $marked['total'] ?></span> <?= esc(ucfirst($svc->screening()->summary($marked))) ?></summary>
+                                            <ul class="disclosure-body text-sm">
+                                                <?php foreach ($marked['items'] as $item): ?>
+                                                    <li class="mb-1">
+                                                        <?php if (! empty($item['passage'])): ?><div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($item['passage']) ?></div><?php endif; ?>
+                                                        <?= $item['correct'] ? '✓' : '✗' ?> <?= esc($item['prompt']) ?>
+                                                        <div class="text-xs text-slate-500 dark:text-slate-400">
+                                                            Answered: <?= esc($item['given'] !== '' ? $item['given'] : 'nothing') ?><?= $item['correct'] ? '' : '. Correct: ' . esc($item['answer']) ?>
+                                                        </div>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </details>
+                                    <?php endif; ?>
+                                    <?= nl2br(esc((string) $a['message'])) ?>
+                                </td>
                                 <td><?= esc(date('j M Y', strtotime((string) $a['created_at']))) ?></td>
                                 <td>
                                     <form method="post" action="<?= base_url('admin/careers/applications/' . (int) $a['id']) ?>">

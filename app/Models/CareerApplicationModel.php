@@ -31,6 +31,7 @@ class CareerApplicationModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'role_id', 'name', 'email', 'phone', 'linkedin_url', 'message',
+        'screening_result', 'screening_score', 'screening_total',
         'cv_path', 'cv_name', 'cv_mime', 'cv_sha256', 'consent_at',
         'status', 'admin_notes', 'purged_at',
     ];
@@ -68,10 +69,12 @@ class CareerApplicationModel extends Model
 
     /**
      * One page of the admin list, newest first, joined to the role title.
+     * $minScore keeps only applications that answered screening questions
+     * and got at least that many right.
      *
      * @return array{rows:list<array<string,mixed>>,pager:\CodeIgniter\Pager\Pager}
      */
-    public function queue(string $status, ?int $roleId, int $page = 1, int $perPage = 25): array
+    public function queue(string $status, ?int $roleId, int $page = 1, int $perPage = 25, ?int $minScore = null): array
     {
         $this->select('xs_directory_career_applications.*, r.title AS role_title')
             ->join('xs_directory_career_roles r', 'r.id = xs_directory_career_applications.role_id', 'left');
@@ -83,6 +86,10 @@ class CareerApplicationModel extends Model
             $roleId === 0
                 ? $this->where('xs_directory_career_applications.role_id', null)
                 : $this->where('xs_directory_career_applications.role_id', $roleId);
+        }
+
+        if ($minScore !== null) {
+            $this->where('xs_directory_career_applications.screening_score >=', $minScore);
         }
 
         $rows = $this->orderBy('xs_directory_career_applications.created_at', 'DESC')

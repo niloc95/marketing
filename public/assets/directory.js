@@ -2821,6 +2821,237 @@
     apply();
   })();
 
+  // ------------------------------------------------------ screening questions
+  // The level select on the role form (partials/_screening_picker.php): only
+  // the chosen level's "See examples" stays on show.
+  document.querySelectorAll('[data-screening-picker]').forEach(function (wrap) {
+    var level = wrap.querySelector('[data-screening-level]');
+    if (!level) return;
+
+    function apply() {
+      wrap.querySelectorAll('[data-screening-set]').forEach(function (set) {
+        set.hidden = set.getAttribute('data-screening-set') !== level.value;
+      });
+    }
+
+    level.addEventListener('change', apply);
+    apply();
+  });
+
+  // The timed step on an apply form (partials/_screening_questions.php).
+  // Start asks the server for the questions, which starts the clock there;
+  // Save posts the answers, which locks them there with the server's time.
+  // Everything here is presentation: the countdown, the lock, the page leave
+  // count (reported, and labelled as reported for the reviewer) and the
+  // copy block. Answers are never marked in the page; it never has them.
+  document.querySelectorAll('[data-screening]').forEach(function (step) {
+    var form    = step.closest('form');
+    var token   = step.querySelector('[data-screening-token]');
+    var startEl = step.querySelector('[data-screening-start]');
+    var goBtn   = step.querySelector('[data-screening-go]');
+    var run     = step.querySelector('[data-screening-run]');
+    var clock   = step.querySelector('[data-screening-clock]');
+    var items   = step.querySelector('[data-screening-items]');
+    var saveBtn = step.querySelector('[data-screening-save]');
+    var status  = step.querySelector('[data-screening-status]');
+    var group   = 'screening-' + step.getAttribute('data-screening-role') + '-';
+    var attempt = null;
+    var deadline = 0;
+    var timer   = null;
+    var leaves  = 0;
+
+    if (!form || !window.fetch || !window.FormData) return;
+
+    function say(text, isError) {
+      status.textContent = text;
+      status.classList.toggle('err', !!isError);
+    }
+
+    // The leave count survives a reload of the same attempt.
+    function leavesKey() { return 'screening-leaves-' + attempt.token; }
+    function loadLeaves() {
+      try { leaves = parseInt(window.sessionStorage.getItem(leavesKey()) || '0', 10) || 0; } catch (e) { leaves = 0; }
+    }
+    function storeLeaves() {
+      try { window.sessionStorage.setItem(leavesKey(), String(leaves)); } catch (e) { /* private mode */ }
+    }
+
+    function post(url, fields) {
+      var name = step.getAttribute('data-csrf-name');
+      var csrf = form.querySelector('input[name="' + name + '"]');
+      var body = new FormData();
+      if (csrf) body.append(name, csrf.value);
+      Object.keys(fields).forEach(function (k) { body.append(k, fields[k]); });
+
+      return fetch(url, {
+        method: 'POST',
+        body: body,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+      })
+        .then(function (res) { return res.json().catch(function () { return null; }); })
+        .then(function (data) {
+          // The token regenerates on every POST; refresh every copy on the page.
+          if (data && data.csrf && data.csrf.name) {
+            document.querySelectorAll('input[name="' + data.csrf.name + '"]').forEach(function (input) {
+              input.value = data.csrf.hash;
+            });
+          }
+          return data || { ok: false, message: 'That did not work. Please reload the page and try again.' };
+        });
+    }
+
+    function tick() {
+      var left = Math.ceil((deadline - Date.now()) / 1000);
+      if (left > 0) {
+        clock.textContent = 'Time left: ' + Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2);
+        clock.classList.remove('is-late');
+      } else {
+        clock.textContent = 'Time is up. You can still save your answers; they will be marked as over time.';
+        clock.classList.add('is-late');
+        window.clearInterval(timer);
+      }
+    }
+
+    function lock(message) {
+      window.clearInterval(timer);
+      token.value = attempt.token;
+      clock.textContent = '';
+      saveBtn.hidden = true;
+      items.querySelectorAll('input').forEach(function (input) { input.disabled = true; });
+      say(message, false);
+    }
+
+    function render(view) {
+      attempt = view;
+      loadLeaves();
+      startEl.hidden = true;
+      run.hidden = false;
+      items.textContent = '';
+
+      view.questions.forEach(function (q, i) {
+        var box = document.createElement('div');
+        box.className = 'consent-choice mb-3';
+        // A reading question comes with its passage, shown above the question.
+        if (q.passage) {
+          var passage = document.createElement('p');
+          passage.className = 'screening-passage';
+          passage.textContent = q.passage;
+          box.appendChild(passage);
+        }
+        var p = document.createElement('p');
+        p.className = 'mb-1 text-sm font-semibold';
+        p.textContent = (i + 1) + '. ' + q.prompt;
+        box.appendChild(p);
+        q.options.forEach(function (text, k) {
+          var label = document.createElement('label');
+          var radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = group + i;
+          radio.value = String(k);
+          radio.checked = view.given && view.given[i] === k;
+          label.appendChild(radio);
+          label.appendChild(document.createTextNode(' ' + text));
+          box.appendChild(label);
+        });
+        items.appendChild(box);
+      });
+
+      if (view.state === 'answered') {
+        lock('Answers saved ✓ You can send your application now.');
+        return;
+      }
+      deadline = Date.now() + view.seconds_left * 1000;
+      tick();
+      timer = window.setInterval(tick, 1000);
+    }
+
+    goBtn.addEventListener('click', function () {
+      goBtn.disabled = true;
+      say('Loading the questions…', false);
+      post(step.getAttribute('data-start-url'), { role_id: step.getAttribute('data-screening-role') }).then(function (data) {
+        if (!data.ok) {
+          goBtn.disabled = false;
+          say(data.message, true);
+          return;
+        }
+        say('', false);
+        render(data);
+      });
+    });
+
+    saveBtn.addEventListener('click', function () {
+      var fields = { screening_token: attempt.token, leaves: String(leaves) };
+      var missing = false;
+      attempt.questions.forEach(function (q, i) {
+        var picked = items.querySelector('input[name="' + group + i + '"]:checked');
+        if (picked) fields['screening[' + i + ']'] = picked.value; else missing = true;
+      });
+      if (missing) {
+        say('Please answer all ' + attempt.questions.length + ' questions.', true);
+        return;
+      }
+
+      saveBtn.disabled = true;
+      post(step.getAttribute('data-answer-url'), fields).then(function (data) {
+        saveBtn.disabled = false;
+        if (!data.ok) {
+          say(data.message, true);
+          return;
+        }
+        attempt.state = 'answered';
+        lock('Answers saved ✓ You can send your application now.');
+      });
+    });
+
+    // Leaving the page while the clock runs is counted, as the step says.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden && attempt && attempt.state === 'running') {
+        leaves += 1;
+        storeLeaves();
+      }
+    });
+
+    // A speed bump against pasting the questions into a search: no select,
+    // copy, cut, drag or context menu on them. The numbers change per
+    // applicant, which is the real reason a search does not help.
+    ['copy', 'cut', 'contextmenu', 'dragstart', 'selectstart'].forEach(function (type) {
+      run.addEventListener(type, function (e) { e.preventDefault(); });
+    });
+
+    // Sending without saved answers would only come back with an error.
+    form.addEventListener('submit', function (e) {
+      if (step.disabled || token.value) return;
+      e.preventDefault();
+      say('Please answer the questions and save your answers before you send.', true);
+      step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    if (step.hasAttribute('data-attempt')) {
+      try { render(JSON.parse(step.getAttribute('data-attempt'))); } catch (e) { /* start afresh */ }
+    }
+  });
+
+  // The /careers general form: each open role that asks questions has its
+  // step in the page, hidden and disabled. Picking the role shows and
+  // enables its step, so only that role's token posts.
+  (function () {
+    var picker = document.getElementById('c-role');
+    var steps  = document.querySelectorAll('[data-screening]');
+    if (!picker || !steps.length) return;
+
+    function apply() {
+      steps.forEach(function (step) {
+        var on        = step.getAttribute('data-screening-role') === picker.value;
+        step.hidden   = !on;
+        step.disabled = !on;
+      });
+    }
+
+    picker.addEventListener('change', apply);
+    apply();
+  })();
+
   // ------------------------------------------------------- stand-out sections
   // Most owners never opened the collapsed "Make your profile stand out"
   // sections, so their profiles went live with no hours, photos or services.

@@ -83,15 +83,19 @@ class AdminCareers extends BaseController
         $role   = $this->request->getGet('role');
         $roleId = $role === null || $role === '' ? null : (int) $role;
         $page   = max(1, (int) ($this->request->getGet('page') ?? 1));
-        $result = $model->queue($status, $roleId, $page);
+        $min    = (int) $this->request->getGet('min_score');
+        $min    = $min >= 1 && $min <= \App\Libraries\Screening::COUNT ? $min : null;
+        $result = $model->queue($status, $roleId, $page, 25, $min);
 
         return view('admin/career_applications', [
-            'status' => $status,
-            'roleId' => $roleId,
-            'rows'   => $result['rows'],
-            'pager'  => $result['pager'],
-            'counts' => $model->counts(),
-            'roles'  => (new CareerRoleModel())->select('id, title, status')->orderBy('title', 'ASC')->findAll(),
+            'status'   => $status,
+            'roleId'   => $roleId,
+            'minScore' => $min,
+            'rows'     => $result['rows'],
+            'pager'    => $result['pager'],
+            'counts'   => $model->counts(),
+            'roles'    => (new CareerRoleModel())->select('id, title, status')->orderBy('title', 'ASC')->findAll(),
+            'svc'      => new CareersService(),
         ]);
     }
 
