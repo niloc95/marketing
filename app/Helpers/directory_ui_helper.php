@@ -1393,3 +1393,42 @@ if (! function_exists('category_plural')) {
         return implode(' ', $words);
     }
 }
+
+if (! function_exists('listing_image_alt')) {
+    /**
+     * Alt text for a business's own photos: who, what and where.
+     *
+     * Built at render time from the profile, never stored, so every photo
+     * already uploaded gets it and it follows a rename or a change of category.
+     * Pass the PUBLIC view of the listing (listing_public_view()): a business
+     * that travels to its customers and hides its address has no suburb there,
+     * so its photos say no more about where it is than its page does.
+     *
+     * Only the lead photo carries the full line. Google's image guidance warns
+     * against keyword stuffing, and ten photos all repeating the category would
+     * be exactly that, so the rest are short and numbered.
+     *
+     * @param int $index zero-based position in the gallery
+     * @param int $total photos in the gallery; 0 when not counted
+     */
+    function listing_image_alt(array $listing, int $index = 0, int $total = 0): string
+    {
+        $name     = trim((string) ($listing['display_name'] ?? ''));
+        $category = trim((string) ($listing['category']['name'] ?? ($listing['category_name'] ?? '')));
+        $city     = trim((string) ($listing['city'] ?? ''));
+        $region   = trim((string) (($listing['province'] ?? '') ?: ($listing['region'] ?? '')));
+        $suburb   = trim((string) ($listing['suburb'] ?? ''));
+
+        if ($index === 0) {
+            // "Sandton, Johannesburg", or the town alone, or the province when
+            // there is no town; a suburb that repeats the city is dropped.
+            $place = implode(', ', array_values(array_unique(array_filter([$suburb, $city !== '' ? $city : $region]))));
+            $alt   = $name . ($category !== '' ? ', ' . $category : '') . ($place !== '' ? ' in ' . $place : '');
+        } else {
+            $town = $city !== '' ? $city : $region;
+            $alt  = $name . ($town !== '' ? ' in ' . $town : '');
+        }
+
+        return $alt . ($index > 0 ? ', photo ' . ($index + 1) . ($total > 1 ? ' of ' . $total : '') : '');
+    }
+}

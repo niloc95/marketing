@@ -47,7 +47,7 @@ $size  = $bytes <= 0 ? '' : ($bytes >= 1_048_576
                       // flicked through, so it opens at full resolution. ?>
                 <a class="menu-page" href="<?= esc(base_url($page['path'])) ?>" target="_blank" rel="noopener">
                     <img src="<?= esc(base_url($page['path'])) ?>" loading="lazy"
-                         alt="Menu page <?= $i + 1 ?> of <?= count($pages) ?>"
+                         alt="<?= esc(($l['display_name'] ?? '') !== '' ? $l['display_name'] . ', menu page ' : 'Menu page ', 'attr') ?><?= $i + 1 ?> of <?= count($pages) ?>"
                          <?= ! empty($page['width']) ? 'width="' . (int) $page['width'] . '" height="' . (int) $page['height'] . '"' : '' ?>>
                 </a>
             <?php endforeach; ?>

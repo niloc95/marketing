@@ -20,6 +20,7 @@ use App\Services\TeamMemberService;
  *
  * @var array  $members     rows from DirectoryListingTeamModel::forListing()
  * @var string $teamHeading panel heading; the vertical's word for these people
+ * @var string $business    the business's name, for the headshots' alt text
  */
 $teamHeading = $teamHeading ?? 'Our team';
 ?>
@@ -32,7 +33,7 @@ $teamHeading = $teamHeading ?? 'Our team';
             <div class="team-member"<?php if (($anchor = team_member_anchor($m)) !== ''): ?> id="<?= esc($anchor, 'attr') ?>"<?php endif; ?>>
                 <?php if (! empty($m['photo_path'])): ?>
                     <img src="<?= esc(base_url($m['photo_path'])) ?>"
-                         alt="<?= esc($m['name'], 'attr') ?>" width="72" height="72"
+                         alt="<?= esc(trim($m['name'] . (trim((string) ($m['role'] ?? '')) !== '' ? ', ' . trim((string) $m['role']) : '') . (($business ?? '') !== '' ? ' at ' . $business : '')), 'attr') ?>" width="72" height="72"
                          class="team-avatar" loading="lazy">
                 <?php else: ?>
                     <?php // An initial rather than a stock silhouette: a placeholder

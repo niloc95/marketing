@@ -74,7 +74,9 @@ $metaDesc = listing_meta_description($l);
     'title'       => trim($name . ($prof ? ' · ' . $prof : '') . ($city !== '' ? ' in ' . $city : '')) . ' | ' . $siteName,
     'description' => $metaDesc,
     'canonical'   => $canonical,
-    'image'       => $logoUrl,
+    // The logo, else the first gallery photo: a profile without a logo used to
+    // share with the generic site image even when it had photos of its own.
+    'image'       => $logoUrl !== '' ? $logoUrl : listing_image_url($l['photos'][0]['path'] ?? null),
     'type'        => 'profile',
     'schema'      => $schema,
     'robots'      => $indexable,
@@ -246,7 +248,7 @@ $metaDesc = listing_meta_description($l);
                         <img src="<?= esc(base_url($p['path'])) ?>"
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
-                             alt="<?= esc($name) ?>, photo <?= $i + 1 ?>"
+                             alt="<?= esc(listing_image_alt($l, $i, count($l['photos'])), 'attr') ?>"
                              loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
                     </button>
                 <?php endforeach; ?>

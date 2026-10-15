@@ -17,4 +17,4 @@ if (empty($l['team'])) {
     return;
 }
 ?>
-<?= view('directory/_team_panel', ['members' => $l['team'], 'teamHeading' => $v['headings']['team']], ['saveData' => false]) ?>
+<?= view('directory/_team_panel', ['members' => $l['team'], 'teamHeading' => $v['headings']['team'], 'business' => (string) ($l['display_name'] ?? '')], ['saveData' => false]) ?>
