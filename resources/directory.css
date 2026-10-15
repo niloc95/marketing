@@ -2358,6 +2358,10 @@
   .dark .consent-choice legend { @apply text-white; }
   .dark .consent-choice label  { @apply text-slate-300; }
 
+  /* The required field mark on the careers apply form. */
+  .req       { @apply font-semibold text-red-600; }
+  .dark .req { @apply text-red-400; }
+
   /* The timed screening questions on an apply form (partials/_screening_questions.php).
      No text selection on the questions, as a speed bump against pasting them into a
      search; directory.js also cancels copy and the context menu there. The real

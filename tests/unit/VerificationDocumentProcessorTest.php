@@ -213,6 +213,32 @@ final class VerificationDocumentProcessorTest extends CIUnitTestCase
     }
 
     /**
+     * CVs (VerificationDocumentProcessor::CV_EXT) take PDF and Word and
+     * nothing else, with the same MIME and signature checks; the evidence
+     * list above is untouched by it.
+     */
+    public function testACvMayBePdfOrWordOnly(): void
+    {
+        $cv = new VerificationDocumentProcessor(VerificationDocumentProcessor::CV_EXT);
+
+        $docx = $cv->process($this->upload('cv.docx', "PK\x03\x04" . str_repeat("\0", 64), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'), $this->dest);
+        $this->assertTrue($docx['ok'], $docx['error']);
+        $this->assertStringEndsWith('.docx', $docx['name']);
+
+        $doc = $cv->process($this->upload('cv.doc', "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" . str_repeat("\0", 64), 'application/msword'), $this->dest);
+        $this->assertTrue($doc['ok'], $doc['error']);
+
+        $this->assertTrue($cv->process($this->upload('cv.pdf', $this->pdfBytes(), 'application/pdf'), $this->dest)['ok']);
+
+        $photo = $cv->process($this->upload('cv.png', $this->pngBytes(), 'image/png'), $this->dest);
+        $this->assertFalse($photo['ok'], 'a photo is not a CV');
+        $this->assertStringContainsString('a PDF or Word document', $photo['error']);
+
+        $fake = $cv->process($this->upload('cv.docx', $this->pdfBytes(), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'), $this->dest);
+        $this->assertFalse($fake['ok'], 'named Word, bytes say otherwise');
+    }
+
+    /**
      * The check finfo cannot make for us. A file whose extension and declared
      * MIME both say PDF, but whose bytes are something else, is exactly the
      * shape of an upload designed to be mis-rendered later.

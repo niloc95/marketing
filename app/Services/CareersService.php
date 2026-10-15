@@ -535,6 +535,9 @@ class CareersService
         if (! filter_var($d['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = $d['email'] === '' ? 'We need your email to reply.' : 'That email address does not look right.';
         }
+        if (preg_match_all('/\d/', $d['phone']) < 9) {
+            $errors['phone'] = $d['phone'] === '' ? 'Please give us a phone number to reach you on.' : 'That phone number looks too short.';
+        }
         if ($d['linkedin_url'] !== '') {
             $url = (new DirectoryListingMutationService())->normaliseUrl($d['linkedin_url']);
             if ($url === null || safe_external_url($url) === '') {
@@ -565,7 +568,7 @@ class CareersService
         }
 
         $dir    = date('Y/m');
-        $stored = (new VerificationDocumentProcessor())->process($cv, CareerApplicationModel::storageRoot() . '/' . $dir);
+        $stored = (new VerificationDocumentProcessor(VerificationDocumentProcessor::CV_EXT))->process($cv, CareerApplicationModel::storageRoot() . '/' . $dir);
         if (! $stored['ok']) {
             return ['ok' => false, 'errors' => ['cv' => $stored['error']]];
         }
@@ -585,7 +588,7 @@ class CareersService
             $row['screening_score']  = $marked['score'];
             $row['screening_total']  = $marked['total'];
         }
-        foreach (['phone', 'linkedin_url'] as $nullable) {
+        foreach (['linkedin_url'] as $nullable) {
             if ($row[$nullable] === '') {
                 $row[$nullable] = null;
             }

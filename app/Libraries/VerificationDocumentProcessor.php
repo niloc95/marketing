@@ -47,6 +47,15 @@ class VerificationDocumentProcessor
      */
     public const ALLOWED_EXT = ['pdf', 'jpg', 'jpeg', 'png'];
 
+    /**
+     * What a CV may be (CareersService): PDF or Word, nothing else. Word is
+     * here only because people write CVs in it; the formats above stay the
+     * only ones for verification evidence. A CV is stored, never opened on the
+     * server, and AdminCareers::cv() hands Word files over as a download, so
+     * Word's own Protected View is what opens them.
+     */
+    public const CV_EXT = ['pdf', 'doc', 'docx'];
+
     /** Same ceiling as listing images — a scanned certificate fits easily. */
     public const MAX_UPLOAD_BYTES = 10_485_760; // 10 MiB
 
@@ -61,6 +70,11 @@ class VerificationDocumentProcessor
         'jpg'  => ['image/jpeg', 'image/pjpeg'],
         'jpeg' => ['image/jpeg', 'image/pjpeg'],
         'png'  => ['image/png'],
+        // Word, for CVs only (CV_EXT). libmagic names a legacy .doc either by
+        // its Word stream or by its OLE container, and a .docx made outside
+        // Word sometimes only as the zip it is.
+        'doc'  => ['application/msword', 'application/x-ole-storage', 'application/cdfv2', 'application/vnd.ms-office'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
     ];
 
     /**
@@ -78,7 +92,21 @@ class VerificationDocumentProcessor
         'jpg'  => ["\xFF\xD8\xFF"],
         'jpeg' => ["\xFF\xD8\xFF"],
         'png'  => ["\x89PNG\r\n\x1A\n"],
+        'doc'  => ["\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"],
+        'docx' => ["PK\x03\x04"],
     ];
+
+    /** @var list<string> */
+    private array $allowedExt;
+
+    /**
+     * @param list<string> $allowedExt which of the known formats this upload
+     *                                 takes; the evidence formats by default
+     */
+    public function __construct(array $allowedExt = self::ALLOWED_EXT)
+    {
+        $this->allowedExt = array_values(array_intersect($allowedExt, array_keys(self::ALLOWED_MIME)));
+    }
 
     /**
      * Validate and store one document.
@@ -107,10 +135,11 @@ class VerificationDocumentProcessor
         // being trusted.
         $ext = strtolower($file->getClientExtension() ?: '');
 
-        if (! in_array($ext, self::ALLOWED_EXT, true)) {
+        if (! in_array($ext, $this->allowedExt, true)) {
             return $this->fail(sprintf(
-                '“%s” is not a supported document. Use PDF, JPEG or PNG.',
-                $name
+                '“%s” is not a supported document. Use %s.',
+                $name,
+                $this->allowedExt === self::CV_EXT ? 'a PDF or Word document' : 'PDF, JPEG or PNG'
             ));
         }
 

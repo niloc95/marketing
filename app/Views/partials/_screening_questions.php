@@ -45,6 +45,7 @@ $minutes = (int) ceil($limit / 60);
 
     <div data-screening-start <?= $attempt !== null ? 'hidden' : '' ?>>
         <button type="button" class="btn btn-primary" data-screening-go>Start the questions</button>
+        <p class="hint mt-2" data-screening-wait hidden>Complete the fields marked * above to start the questions.</p>
     </div>
 
     <div class="screening-run" data-screening-run hidden>

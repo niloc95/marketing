@@ -48,7 +48,7 @@ $chip = [
             <div class="tablewrap">
                 <table class="table">
                     <thead>
-                        <tr><th>Role</th><th>Status</th><th>Applications</th><th>Actions</th></tr>
+                        <tr><th>Role</th><th>Status</th><th>Opened</th><th>Closes</th><th>Questions</th><th>Applications</th><th>Actions</th></tr>
                     </thead>
                     <tbody>
                     <?php foreach ($roles as $r): ?>
@@ -63,6 +63,28 @@ $chip = [
                                 <span class="<?= $chip[$r['status']] ?? 'badge' ?>"><?= esc(ucfirst((string) $r['status'])) ?></span>
                                 <?php if ($r['status'] === CareerRoleModel::STATUS_OPEN && ! $live): ?>
                                     <div class="text-xs text-slate-500 dark:text-slate-400">Past its closing date, so hidden</div>
+                                <?php endif; ?>
+                            </td>
+                            <?php // Opened: first went live (set once, by CareersService::setRoleStatus()). Closes: valid_through, after which the role hides itself. ?>
+                            <td class="whitespace-nowrap text-sm">
+                                <?= ! empty($r['published_at']) ? esc(date('j M Y', strtotime((string) $r['published_at']))) : '<span class="text-slate-500 dark:text-slate-400">Not yet</span>' ?>
+                            </td>
+                            <td class="whitespace-nowrap text-sm">
+                                <?php if (! empty($r['valid_through'])): ?>
+                                    <?= esc(date('j M Y', strtotime((string) $r['valid_through']))) ?>
+                                <?php else: ?>
+                                    <span class="text-slate-500 dark:text-slate-400">No closing date</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php // Screening questions: the level and its time limit, or None. ?>
+                                <?php if ($svc->screens($r)): ?>
+                                    <?php $level = (string) $r['screening_level']; ?>
+                                    <span class="badge"><?= esc($svc->screening()->levelLabel($level)) ?></span>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400"><?= App\Libraries\Screening::COUNT ?> questions, <?= esc($svc->screening()->clock($svc->screening()->limitFor($level))) ?></div>
+                                <?php else: ?>
+                                    <span class="text-sm text-slate-500 dark:text-slate-400">None</span>
+                                    <div class="text-xs"><a href="<?= base_url('admin/careers/' . $r['id']) ?>#s-level">Add questions</a></div>
                                 <?php endif; ?>
                             </td>
                             <td><a href="<?= base_url('admin/careers/applications') . '?role=' . (int) $r['id'] ?>"><?= (int) ($perRole[(int) $r['id']] ?? 0) ?></a></td>
