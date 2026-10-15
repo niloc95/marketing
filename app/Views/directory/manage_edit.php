@@ -110,6 +110,8 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 'target'   => $strengthTarget ?? 0,
             ]) ?>
 
+            <?= view('directory/_profile_setup_offer') ?>
+
             <?php // data-draft: directory.js keeps a browser-side copy of unsaved edits
                   // and puts them back after any reload. The version is what tells a
                   // draft apart from one made before the listing was saved elsewhere. ?>

@@ -34,6 +34,9 @@ $referralsPending = (new App\Models\DirectoryReferralModel())
 $partnersPending = (new App\Models\DirectoryPartnerModel())
     ->where('status', App\Models\DirectoryPartnerModel::STATUS_APPLIED)
     ->countAllResults();
+$setupPaid = (new App\Models\ProfileSetupOrderModel())
+    ->where('status', App\Models\ProfileSetupOrderModel::STATUS_PAID)
+    ->countAllResults();
 $careersNew = (new App\Models\CareerApplicationModel())
     ->where('status', App\Models\CareerApplicationModel::STATUS_NEW)
     ->where('purged_at', null)
@@ -48,6 +51,7 @@ $queues = [
     ['Referrals', 'admin/referrals', $referralsPending, []],
     ['Partners', 'admin/partners', $partnersPending, []],
     ['Careers', 'admin/careers', $careersNew, []],
+    ['Setup orders', 'admin/profile-setup', $setupPaid, []],
 ];
 
 $more = [

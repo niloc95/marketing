@@ -314,6 +314,19 @@ class Directory extends BaseConfig
     public string $verifiedMonthlyAmount = '29.99';
 
     /**
+     * The once-off price of the profile setup service at /profile-setup,
+     * where we complete a business profile for the owner. A string for the
+     * same reason as $verifiedMonthlyAmount: it is signed, sent to PayFast
+     * and compared against what PayFast reports back. Each order stores the
+     * amount it was sold at, so changing this affects new orders only.
+     * Override with directory.profileSetupAmount in .env.
+     */
+    public string $profileSetupAmount = '250.00';
+
+    /** Business days we promise to finish a paid profile setup in. */
+    public int $profileSetupDays = 3;
+
+    /**
      * Is the International Listing plan on offer?
      *
      * When false, a listing outside South Africa is neither charged nor
@@ -505,6 +518,14 @@ class Directory extends BaseConfig
     {
         $env = env('directory.ogImage');
         return is_string($env) && trim($env) !== '' ? trim($env) : $this->ogImage;
+    }
+
+    /** The profile setup price, normalised for PayFast ("250.00"). */
+    public function profileSetupAmount(): string
+    {
+        $env = env('directory.profileSetupAmount');
+
+        return $this->normaliseAmount(is_string($env) && trim($env) !== '' ? $env : $this->profileSetupAmount);
     }
 
     public function adminEmail(): string
