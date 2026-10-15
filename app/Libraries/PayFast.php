@@ -152,6 +152,49 @@ class PayFast
     }
 
     /**
+     * The signed field set for a once-off payment: the profile setup service
+     * (ProfileSetupService). Same rules as subscriptionFields(): the view
+     * emits this array in order, and the signature covers that order. No
+     * subscription fields, so PayFast charges once and never again.
+     *
+     * The notification goes to its own endpoint, payfast/setup-notify, so a
+     * once-off order can never be mistaken for a subscription payment.
+     *
+     * @param array<string,mixed> $order a ProfileSetupOrderModel row
+     *
+     * @return array<string,string>
+     */
+    public function onceOffFields(array $order): array
+    {
+        $first = (string) strtok(trim((string) ($order['name'] ?? '')), ' ');
+
+        $fields = [
+            'merchant_id'  => $this->config->payfastMerchantId(),
+            'merchant_key' => $this->config->payfastMerchantKey(),
+            'return_url'   => base_url('profile-setup/thanks'),
+            'cancel_url'   => base_url('profile-setup/checkout'),
+            'notify_url'   => base_url('payfast/setup-notify'),
+
+            'name_first'    => mb_substr($first, 0, 100),
+            'email_address' => (string) ($order['email'] ?? ''),
+
+            'm_payment_id'     => (string) $order['reference'],
+            'amount'           => number_format((float) $order['amount'], 2, '.', ''),
+            'item_name'        => 'Profile setup service',
+            'item_description' => mb_substr('We complete the business profile for ' . (string) ($order['business_name'] ?? ''), 0, 200),
+
+            // The order id, as custom_str2 carries the verification id on a
+            // subscription: a fallback for a notification that matches no
+            // reference.
+            'custom_str1' => (string) $order['id'],
+        ];
+
+        $fields['signature'] = $this->signature($fields);
+
+        return $fields;
+    }
+
+    /**
      * MD5 over `key=value` pairs joined by `&`, in the given order, with empty
      * values skipped and the passphrase appended last.
      *

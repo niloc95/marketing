@@ -198,7 +198,15 @@ $contact   = config('Directory')->adminEmail();
                 <li>We do not share your application with anyone outside <?= esc($siteName) ?>.</li>
             </ul>
 
-            <h2>12. Information collected automatically</h2>
+            <h2 id="profile-setup">12. Our profile setup service</h2>
+            <p>If you order our <a href="<?= base_url('profile-setup') ?>">profile setup service</a>, we receive your name, business name, email address and phone number, and optionally a link to your existing profile and a note. We use them to take your payment, to contact you for the details, logo and photos we need, and to complete your profile.</p>
+            <ul>
+                <li>Payment is taken by PayFast. We do not see or store your card details.</li>
+                <li>The logo, photos and details you send us are used on your business profile, as described in section 5.</li>
+                <li>We keep the order record, including when you accepted the terms of the service, as proof of the purchase.</li>
+            </ul>
+
+            <h2>13. Information collected automatically</h2>
             <p>When you use <?= esc($siteName) ?>, certain information may be processed automatically.</p>
 
             <h3>IP addresses</h3>
@@ -214,7 +222,7 @@ $contact   = config('Directory')->adminEmail();
             <p>You can refuse this request.</p>
             <p>Where you allow access, the location information is used to help sort search results by distance for that search. We do not intentionally store your location for the purpose of building a personal location profile.</p>
 
-            <h2>13. Why we process personal information</h2>
+            <h2>14. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">
                 <thead><tr><th>Purpose</th><th>Basis for processing</th></tr></thead>
@@ -237,7 +245,7 @@ $contact   = config('Directory')->adminEmail();
             </table>
             <p>We do not sell personal information.</p>
 
-            <h2>14. Who we share information with</h2>
+            <h2>15. Who we share information with</h2>
             <p>We do not sell personal information or share personal information with third parties for their own advertising purposes.</p>
             <p>Information may be disclosed or made available in the following circumstances:</p>
 
@@ -263,20 +271,20 @@ $contact   = config('Directory')->adminEmail();
             <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to businesses with a profile; the requester's contact details are not included.</p>
 
             <h3>Payment processing</h3>
-            <p>If you purchase a Verified Business badge, payment processing is handled by <strong>PayFast</strong>. See <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
+            <p>If you purchase a Verified Business badge or our profile setup service, payment processing is handled by <strong>PayFast</strong>. See <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
             <p>Payment information is processed through PayFast's payment environment. We do not store your full card details on our servers.</p>
             <p>Verification documents, including identity and company registration documents, are not provided to PayFast for payment processing.</p>
 
             <h3>Legal requirements</h3>
             <p>We may disclose information where required or permitted by applicable law, including in response to a valid court order, legal process or lawful request from an authorised authority.</p>
 
-            <h2>15. Cross border transfers</h2>
+            <h2>16. Cross border transfers</h2>
             <p>Because our application infrastructure is currently hosted in the AWS Asia Pacific (Mumbai) Region, personal information processed through that infrastructure may be transferred to and processed outside South Africa.</p>
             <p>Some third party service providers used by <?= esc($siteName) ?> may also process information outside South Africa.</p>
             <p>Where personal information is transferred across borders, we take reasonable steps to ensure that the transfer is undertaken in accordance with applicable requirements of POPIA, including the requirements applicable to cross border transfers under section 72.</p>
             <p>Depending on the service involved, this may include reliance on contractual protections, data processing terms, applicable regulatory safeguards and other appropriate measures provided by our service providers.</p>
 
-            <h2>16. How long we keep personal information</h2>
+            <h2>17. How long we keep personal information</h2>
             <p>We retain personal information only for as long as reasonably necessary for the purposes for which it was collected, to provide the relevant service, to comply with legal obligations, resolve disputes, enforce agreements and protect the security of our services.</p>
 
             <h3>Business profiles</h3>
@@ -331,7 +339,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Verification documents are deleted in full when the associated business profile is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>
 
-            <h2>17. Your rights under POPIA</h2>
+            <h2>18. Your rights under POPIA</h2>
             <p>Subject to applicable legal requirements and limitations, you may have the right to:</p>
             <ul>
                 <li>Request confirmation of whether we hold personal information about you;</li>
@@ -346,27 +354,27 @@ $contact   = config('Directory')->adminEmail();
             <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your profile needs, such as profile management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy related request.</p>
 
-            <h2>18. Complaints</h2>
+            <h2>19. Complaints</h2>
             <p>If you believe that your personal information has been processed unlawfully or that your privacy rights have not been adequately addressed, you may contact us first so that we can investigate and attempt to resolve the matter.</p>
             <p>You may also lodge a complaint with the <strong>Information Regulator of South Africa</strong> through its official channels: <a href="https://inforegulator.org.za/" rel="noopener">inforegulator.org.za</a>.</p>
 
-            <h2>19. Security</h2>
+            <h2>20. Security</h2>
             <p>We use reasonable technical and organisational measures designed to protect personal information against unauthorised access, disclosure, loss, alteration, misuse or destruction.</p>
             <p>The <?= esc($siteName) ?> website is served using HTTPS/TLS.</p>
             <p>Where available, profile management access may use single use, time limited emailed links rather than a traditional stored password.</p>
             <p>However, no internet based service can be guaranteed to be completely secure. We therefore cannot guarantee absolute security of information transmitted to or stored by the service.</p>
 
-            <h2>20. Children</h2>
+            <h2>21. Children</h2>
             <p><?= esc($siteName) ?> is intended for businesses, professionals and service providers and is not directed at children.</p>
             <p>We do not knowingly seek to collect personal information from children under the age of 18 through WebScheduler Local.</p>
             <p>If you believe that a child has provided personal information to us, please <a href="<?= base_url('contact') ?>">contact us</a> so that we can investigate and take appropriate action.</p>
 
-            <h2>21. Changes to this Privacy Policy</h2>
+            <h2>22. Changes to this Privacy Policy</h2>
             <p>We may update this Privacy Policy from time to time to reflect changes to our services, technology, legal requirements or information processing practices.</p>
             <p>When we make changes, we will update the <strong>Last updated</strong> date displayed at the beginning of this policy.</p>
             <p>Where we make a material change that affects how we process personal information already provided to us, we may provide additional notice where appropriate, including by email to affected profile owners.</p>
 
-            <h2>22. Contact us</h2>
+            <h2>23. Contact us</h2>
             <p>If you have questions about this Privacy Policy, want to exercise a privacy right, or have a concern about how your personal information is being processed, please contact us:</p>
             <ul>
                 <li><strong>WebScheduler (Pty) Ltd</strong></li>

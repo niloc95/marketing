@@ -52,6 +52,12 @@ $routes->get('verified', 'Contact::verified');
 $routes->get('compare', 'Contact::compare');
 // Guides and reports: the playbook, Verified brochure, outlook and hiring guide.
 $routes->get('resources', 'Contact::resources');
+// Profile setup service: we complete a profile for a once-off PayFast fee.
+// checkout is also PayFast's cancel_url; payfast/setup-notify is its ITN.
+$routes->get('profile-setup', 'ProfileSetup::index');
+$routes->post('profile-setup', 'ProfileSetup::order');
+$routes->get('profile-setup/checkout', 'ProfileSetup::checkout');
+$routes->get('profile-setup/thanks', 'ProfileSetup::thanks');
 
 // "Recommend a business". Top-level for the same reason as contact. The form
 // only queues a referral for /admin/referrals; the business is emailed from
@@ -191,6 +197,7 @@ $routes->get('health', 'Health::index');
 // honeypot in Config\Filters — there is no browser here to carry a token. The
 // controller's four validation checks are what stands in their place.
 $routes->post('payfast/notify', 'PayFastNotify::index');
+$routes->post('payfast/setup-notify', 'ProfileSetupNotify::index');
 
 // Admin oversight
 $routes->get('admin/login', 'Admin::login');
@@ -290,6 +297,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Careers: our own roles and the applications for them. The CV is served
     // by application id only, never by path. The literal segments MUST
     // precede careers/{id}.
+    // Profile setup orders (the paid /profile-setup service).
+    $routes->get('profile-setup', 'AdminProfileSetup::index');
+    $routes->post('profile-setup/(:num)', 'AdminProfileSetup::update/$1');
     $routes->get('careers', 'AdminCareers::index');
     $routes->get('careers/new', 'AdminCareers::create');
     $routes->post('careers/new', 'AdminCareers::store');
