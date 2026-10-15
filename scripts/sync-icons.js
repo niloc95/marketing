@@ -70,6 +70,8 @@ const ICONS = [
   // unfeature, resend verify, trash, restore. Edit and view reuse
   // square-pen and external-link above.
   'eye', 'eye-off', 'star-off', 'send', 'trash-2', 'rotate-ccw',
+  // Today's hours under the profile header's badges (directory/show.php).
+  'clock',
 ];
 
 /**

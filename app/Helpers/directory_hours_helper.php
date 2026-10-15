@@ -82,6 +82,21 @@ if (! function_exists('hours_decode')) {
     }
 }
 
+if (! function_exists('hours_now')) {
+    /**
+     * The current time on South African clocks.
+     *
+     * The app runs in UTC (Config\App::$appTimezone, see local_datetime()), but
+     * trading hours are typed as wall clock times in South Africa. A bare date()
+     * put "Today" on the wrong row from 22:00 to midnight and said "Open now"
+     * two hours late.
+     */
+    function hours_now(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('now', new DateTimeZone('Africa/Johannesburg'));
+    }
+}
+
 if (! function_exists('hours_today_key')) {
     /**
      * Today's day key (mon..sun), computed server-side so it's correct with
@@ -90,7 +105,7 @@ if (! function_exists('hours_today_key')) {
     function hours_today_key(): string
     {
         $keys = array_keys(hours_days());
-        return $keys[((int) date('N')) - 1];
+        return $keys[((int) hours_now()->format('N')) - 1];
     }
 }
 
@@ -112,8 +127,8 @@ if (! function_exists('hours_is_open_now')) {
      * evening. Yesterday's overnight span is checked too, so 01:00 still counts
      * as open.
      *
-     * Times are naive local values in the app's timezone — a single-country
-     * directory, so there is no per-listing timezone to reconcile.
+     * Times are naive South African wall clock values (see hours_now()): a
+     * single-country directory, so there is no per-listing timezone to reconcile.
      *
      * @param array<string,array{closed:bool,open:string,close:string,note:string}>|null $hours
      *   as returned by hours_decode()
@@ -133,7 +148,7 @@ if (! function_exists('hours_is_open_now')) {
             return null;
         }
 
-        $now     = $now ?? date('H:i');
+        $now     = $now ?? hours_now()->format('H:i');
         $minutes = static function (string $time): ?int {
             if (preg_match('/^(\d{1,2}):(\d{2})/', trim($time), $m) !== 1) {
                 return null;
@@ -177,5 +192,56 @@ if (! function_exists('hours_is_open_now')) {
 
         // Closing before opening means the span runs past midnight.
         return $to < $from ? $at >= $from : ($at >= $from && $at < $to);
+    }
+}
+
+if (! function_exists('hours_today_summary')) {
+    /**
+     * Today's hours as one line for the profile header, under the badges.
+     *
+     * Returns ['state' => 'open'|'closed'|null, 'label' => ..., 'detail' => ...]
+     * or null when there is nothing honest to say. The open/closed state comes
+     * from hours_is_open_now(), so the header and the map popup cannot disagree,
+     * and it inherits that function's rule: a day left blank is "we don't
+     * know", never "Closed".
+     *
+     * @param array<string,array{closed:bool,open:string,close:string,note:string}>|null $hours
+     *   as returned by hours_decode()
+     * @param string|null $now 'HH:MM' override, for testing
+     * @param string|null $today day key override, for testing
+     *
+     * @return array{state:?string,label:string,detail:string}|null
+     */
+    function hours_today_summary(?array $hours, bool $byAppointment = false, ?string $now = null, ?string $today = null): ?array
+    {
+        $today = $today ?? hours_today_key();
+        $now   = $now ?? hours_now()->format('H:i');
+        $open  = hours_is_open_now($hours, $now, $today);
+
+        if ($open === null) {
+            return $byAppointment ? ['state' => null, 'label' => 'By appointment only', 'detail' => ''] : null;
+        }
+
+        $row = $hours[$today] ?? [];
+        if ($open === false && ! empty($row['closed'])) {
+            return ['state' => 'closed', 'label' => 'Closed today', 'detail' => ''];
+        }
+
+        // Open on the tail of last night's overnight span: today's own row says
+        // nothing about that, so give the closing time instead.
+        $keys      = array_keys(hours_days());
+        $yesterday = $hours[$keys[(array_search($today, $keys, true) + 6) % 7]] ?? [];
+        if ($open && empty($yesterday['closed']) && ($yesterday['close'] ?? '') !== ''
+            && $yesterday['close'] < ($yesterday['open'] ?? '') && $now < $yesterday['close']) {
+            return ['state' => 'open', 'label' => 'Open now', 'detail' => 'until ' . $yesterday['close']];
+        }
+
+        return [
+            'state'  => $open ? 'open' : 'closed',
+            'label'  => $open ? 'Open now' : 'Closed now',
+            'detail' => empty($row['closed']) && ($row['open'] ?? '') !== '' && ($row['close'] ?? '') !== ''
+                ? $row['open'] . '–' . $row['close'] . ' today'
+                : '',
+        ];
     }
 }

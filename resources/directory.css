@@ -2026,6 +2026,20 @@
   .dark .hours-today     { @apply bg-primary-500/15; }
   .dark .hours-note-text { @apply text-slate-400; }
 
+  /* Today's hours in the profile header, under the badges. Green and red
+     carry the state, but the words do too: colour is never the only signal. */
+  .hours-glance          { @apply mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600; }
+  .hours-glance svg      { @apply text-slate-400; }
+  .hours-glance-open     { @apply font-semibold text-emerald-700; }
+  .hours-glance-closed   { @apply font-semibold text-red-700; }
+  .hours-glance-unknown  { @apply font-semibold text-slate-700; }
+  .hours-glance a        { @apply font-semibold text-primary-500 hover:underline; }
+  .dark .hours-glance         { @apply text-slate-300; }
+  .dark .hours-glance-open    { @apply text-emerald-400; }
+  .dark .hours-glance-closed  { @apply text-red-400; }
+  .dark .hours-glance-unknown { @apply text-slate-200; }
+  .dark .hours-glance a       { @apply text-primary-300; }
+
   /* -------------------------------------------------------------------- map */
   /* An interactive Leaflet map over raster OpenStreetMap tiles. The tiles stay
      light in dark mode — deliberately. A CSS filter would wreck label

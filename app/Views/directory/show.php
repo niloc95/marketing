@@ -160,7 +160,31 @@ $metaDesc = listing_meta_description($l);
                         </span>
                     </div>
                 <?php endif; ?>
-                <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured mt-2 gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
+                <?php // The same pair as the search card, in the same order: Verified
+                      // (we checked them) before Featured (we promote them). The seal
+                      // above is the visual; this pill is what says it in words. ?>
+                <?php $headVerified = listing_is_verified_business($l); ?>
+                <?php if ($headVerified || ! empty($l['is_featured'])): ?>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <?php if ($headVerified): ?><?= verified_badge_pill() ?><?php endif; ?>
+                        <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                <?php // Today's hours at a glance; the full week stays in the panel
+                      // below, and "See hours" jumps to it. Nothing at all when
+                      // today is blank: see hours_today_summary(). ?>
+                <?php $todayHours = hours_today_summary($l['trading_hours'] ?? null, ! empty($l['by_appointment'])); ?>
+                <?php if ($todayHours !== null): ?>
+                    <p class="hours-glance">
+                        <?= lucide('clock', 'h-4 w-4 shrink-0') ?>
+                        <?php // Full class names, not built from the state: Tailwind keeps
+                              // only the ones it can find spelled out in a template. ?>
+                        <?php $glanceClass = ['open' => 'hours-glance-open', 'closed' => 'hours-glance-closed'][$todayHours['state'] ?? ''] ?? 'hours-glance-unknown'; ?>
+                        <span class="<?= $glanceClass ?>"><?= esc($todayHours['label']) ?></span>
+                        <?php if ($todayHours['detail'] !== ''): ?><span><?= esc($todayHours['detail']) ?></span><?php endif; ?>
+                        <a href="#hours">See hours</a>
+                    </p>
+                <?php endif; ?>
             </div>
             <?= view('partials/_share', [
                 'title'    => $name . ($prof ? ', ' . $prof : ''),
@@ -252,7 +276,8 @@ $metaDesc = listing_meta_description($l);
                     'byAppointment' => ! empty($l['by_appointment']),
                     'heading' => $v['headings']['hours'],
                     'class'   => 'mt-5',
-                ]) ?>
+                    'id'      => 'hours',
+                ], ['saveData' => false]) ?>
 
                 <?php // The business's live vacancies from the Jobs board. Fetched
                       // here, like header_quick_categories() in the layout, so the

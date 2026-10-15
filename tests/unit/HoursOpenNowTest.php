@@ -138,4 +138,63 @@ final class HoursOpenNowTest extends CIUnitTestCase
 
         $this->assertNull(hours_is_open_now($hours, '12:00', 'wed'));
     }
+
+    // ---------------------------------------------- hours_today_summary()
+
+    public function testSummaryOpenShowsTodaysSpan(): void
+    {
+        $hours = $this->hours(['wed' => ['open' => '08:00', 'close' => '17:00']]);
+
+        $this->assertSame(
+            ['state' => 'open', 'label' => 'Open now', 'detail' => '08:00–17:00 today'],
+            hours_today_summary($hours, false, '12:00', 'wed'),
+        );
+    }
+
+    public function testSummaryClosedNowStillShowsTodaysSpan(): void
+    {
+        $hours = $this->hours(['wed' => ['open' => '08:00', 'close' => '17:00']]);
+
+        $this->assertSame(
+            ['state' => 'closed', 'label' => 'Closed now', 'detail' => '08:00–17:00 today'],
+            hours_today_summary($hours, false, '07:00', 'wed'),
+        );
+    }
+
+    public function testSummaryDayMarkedClosed(): void
+    {
+        $hours = $this->hours(['sun' => ['closed' => true]]);
+
+        $this->assertSame(
+            ['state' => 'closed', 'label' => 'Closed today', 'detail' => ''],
+            hours_today_summary($hours, false, '12:00', 'sun'),
+        );
+    }
+
+    public function testSummaryOnLastNightsOvernightSpanGivesClosingTime(): void
+    {
+        $hours = $this->hours([
+            'fri' => ['open' => '18:00', 'close' => '02:00'],
+            'sat' => ['closed' => true],
+        ]);
+
+        $this->assertSame(
+            ['state' => 'open', 'label' => 'Open now', 'detail' => 'until 02:00'],
+            hours_today_summary($hours, false, '01:00', 'sat'),
+        );
+    }
+
+    public function testSummaryBlankDaySaysNothing(): void
+    {
+        $this->assertNull(hours_today_summary($this->hours([]), false, '12:00', 'wed'));
+        $this->assertNull(hours_today_summary(null, false, '12:00', 'wed'));
+    }
+
+    public function testSummaryByAppointmentWithoutTimes(): void
+    {
+        $this->assertSame(
+            ['state' => null, 'label' => 'By appointment only', 'detail' => ''],
+            hours_today_summary(null, true, '12:00', 'wed'),
+        );
+    }
 }

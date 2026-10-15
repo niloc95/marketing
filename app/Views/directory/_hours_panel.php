@@ -10,6 +10,9 @@
  * @var array|null $hours   decoded hours, keyed mon..sun
  * @var string     $heading panel heading
  * @var string     $class   extra classes for the panel wrapper
+ * @var string     $id      anchor id, for the listing's own panel only: the
+ *                         header's "See hours" link jumps here, and a branch
+ *                         panel reusing this view must not repeat the id
  * @var bool       $byAppointment the listing trades by appointment only; the
  *                         panel says so, and shows the grid only if some
  *                         times were given as well
@@ -25,9 +28,10 @@ helper('directory_hours');
 
 $heading  = $heading ?? 'Trading hours';
 $class    = $class ?? '';
+$id       = $id ?? '';
 $todayKey = hours_today_key();
 ?>
-<div class="panel <?= esc($class, 'attr') ?>">
+<div class="panel <?= esc($class, 'attr') ?>"<?= $id !== '' ? ' id="' . esc($id, 'attr') . '"' : '' ?>>
     <h3><?= esc($heading) ?></h3>
     <?php if ($byAppointment): ?>
         <p class="hours-appointment">By appointment only</p>
