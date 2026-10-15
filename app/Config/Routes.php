@@ -87,6 +87,8 @@ $routes->get('p/(:segment)', 'Partners::track/$1');
 // managed at admin/careers; drafts and closed roles 404.
 $routes->get('careers', 'Careers::index');
 $routes->post('careers/apply', 'Careers::apply');
+$routes->post('careers/screening/start', 'Careers::screeningStart');
+$routes->post('careers/screening/answer', 'Careers::screeningAnswer');
 $routes->get('careers/(:segment)', 'Careers::show/$1');
 
 // Legal. Top-level, so they never meet the directory/{segment} catch-all.

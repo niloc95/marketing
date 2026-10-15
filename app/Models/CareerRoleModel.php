@@ -22,7 +22,7 @@ class CareerRoleModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'slug', 'title', 'team', 'summary', 'description',
-        'good_fit', 'strong_candidates', 'projects', 'logistics', 'employment_type',
+        'good_fit', 'strong_candidates', 'projects', 'logistics', 'screening_level', 'employment_type',
         'city', 'province', 'is_remote', 'salary_min', 'salary_max', 'salary_period',
         'status', 'published_at', 'valid_through', 'sort_order',
     ];

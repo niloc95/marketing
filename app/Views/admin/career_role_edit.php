@@ -163,6 +163,12 @@ $action = base_url($role === null ? 'admin/careers/new' : 'admin/careers/' . $ro
                 </div>
                 <div class="hint mb-4">Pay shown on the page goes into the Google for Jobs markup too. For commission roles, describe the commission in the description instead.</div>
 
+                <?= view('partials/_screening_picker', [
+                    'screening' => $svc->screening(),
+                    'level'     => $v('screening_level'),
+                    'error'     => (string) ($errors['screening_level'] ?? ''),
+                ]) ?>
+
                 <div class="field">
                     <label for="r-sort">Order on the page</label>
                     <input type="number" id="r-sort" name="sort_order" value="<?= esc($v('sort_order') ?: '0', 'attr') ?>">
