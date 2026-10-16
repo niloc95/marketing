@@ -2366,6 +2366,9 @@
      No text selection on the questions, as a speed bump against pasting them into a
      search; directory.js also cancels copy and the context menu there. The real
      protection is that every applicant gets their own numbers. */
+  /* Start looks inactive until the required fields are done, but stays
+     clickable so pressing it can say what is missing (directory.js). */
+  [data-screening-go][aria-disabled="true"] { @apply opacity-60; }
   .screening-run              { @apply mb-2 select-none rounded-surface border border-slate-200 p-4; -webkit-user-select: none; }
   .dark .screening-run        { @apply border-slate-700; }
   .screening-passage          { @apply mb-2 rounded-surface bg-slate-50 p-3 text-sm leading-relaxed text-slate-700; }
