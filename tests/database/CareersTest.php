@@ -475,7 +475,9 @@ final class CareersTest extends CIUnitTestCase
         $this->assertStringContainsString('are required', $html);
         $this->assertSame(5, preg_match_all('/<(input|textarea)[^>]*\sdata-screening-needs/', $html), 'name, email, phone, CV and message');
         $this->assertStringContainsString('accept=".pdf,.doc,.docx', $html);
-        $this->assertStringContainsString('Complete the fields marked * above to start the questions.', $html);
+        $this->assertStringContainsString('Complete the fields marked * above, then start the questions.', $html);
+        $this->assertStringContainsString('data-screening-needs="Please enter your name."', $html, 'each field carries its own message');
+        $this->assertStringContainsString('data-screening-needs="Please attach your CV as a PDF or Word document."', $html);
     }
 
     public function testAClosedRoleTakesNoApplications(): void

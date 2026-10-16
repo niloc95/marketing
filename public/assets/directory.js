@@ -2867,6 +2867,8 @@
     function say(text, isError) {
       status.textContent = text;
       status.classList.toggle('err', !!isError);
+      // An error is announced at once; progress ("Loading…") politely.
+      status.setAttribute('role', isError ? 'alert' : 'status');
     }
 
     // The leave count survives a reload of the same attempt.
@@ -2968,35 +2970,87 @@
       timer = window.setInterval(tick, 1000);
     }
 
-    // Start waits for the details marked required (data-screening-needs), so
-    // the clock never runs while someone is still typing their name or
-    // looking for their CV. A guide, not a rule: the server checks every field
+    // Start checks the details marked required (data-screening-needs) first,
+    // so the clock never runs while someone is still typing their name or
+    // looking for their CV. The button stays clickable: pressing it with a
+    // field missing says what is missing, marks each field the way the
+    // profile forms do (.err under it, .is-invalid, aria-invalid) and moves
+    // focus to the first. A guide, not a rule: the server checks every field
     // again when the application is sent.
-    function complete(el) {
-      if (el.type === 'file') return !!(el.files && el.files.length);
+    function problem(el) {
+      var missing = el.getAttribute('data-screening-needs');
+      var value   = (el.value || '').trim();
+      if (el.type === 'file') {
+        if (!el.files || !el.files.length) return missing;
+        return /\.(pdf|docx?)$/i.test(el.files[0].name) ? '' : 'Your CV must be a PDF or Word document.';
+      }
+      if (value === '') return missing;
+      if (el.type === 'email' && !el.checkValidity()) return 'Please enter a valid email address.';
+      if (el.type === 'tel') return (value.match(/\d/g) || []).length >= 9 ? '' : missing;
       var min = parseInt(el.getAttribute('minlength'), 10) || 1;
-      return el.value.trim().length >= min && el.checkValidity();
+      return value.length >= min ? '' : missing;
+    }
+
+    function labelOf(el) {
+      var label = el.id ? form.querySelector('label[for="' + el.id + '"]') : null;
+      return label ? label.textContent.replace('*', '').trim() : el.name;
+    }
+
+    function mark(el, message) {
+      var wrap = el.closest('.field') || el.parentElement;
+      var err  = wrap.querySelector('[data-screening-err]');
+      if (!err) {
+        err = document.createElement('div');
+        err.className = 'err';
+        err.id = 'screening-err-' + el.name;
+        err.setAttribute('data-screening-err', '');
+        el.insertAdjacentElement('afterend', err);
+      }
+      err.textContent = message;
+      el.classList.add('is-invalid');
+      el.setAttribute('aria-invalid', 'true');
+      el.setAttribute('aria-describedby', err.id);
+    }
+
+    function unmark(el) {
+      var wrap = el.closest('.field') || el.parentElement;
+      var err  = wrap.querySelector('[data-screening-err]');
+      if (err) err.remove();
+      el.classList.remove('is-invalid');
+      el.removeAttribute('aria-invalid');
+      el.removeAttribute('aria-describedby');
     }
 
     function gate() {
       if (attempt) return;
-      var ready = Array.prototype.every.call(needs, complete);
-      goBtn.disabled = !ready;
+      var ready = Array.prototype.every.call(needs, function (el) { return problem(el) === ''; });
+      goBtn.setAttribute('aria-disabled', ready ? 'false' : 'true');
       if (waitEl) waitEl.hidden = ready;
+      // A field put right loses its error as soon as it is.
+      Array.prototype.forEach.call(needs, function (el) {
+        if (el.hasAttribute('aria-invalid') && problem(el) === '') unmark(el);
+      });
+      if (ready && status.classList.contains('err')) say('', false);
     }
 
     form.addEventListener('input', gate);
     form.addEventListener('change', gate);
 
     goBtn.addEventListener('click', function () {
-      if (Array.prototype.some.call(needs, function (el) { return !complete(el); })) {
-        gate();
+      var wrong = Array.prototype.filter.call(needs, function (el) { return problem(el) !== ''; });
+      if (wrong.length) {
+        wrong.forEach(function (el) { mark(el, problem(el)); });
+        say('Please complete the fields marked * before you start the questions: ' + wrong.map(labelOf).join(', ') + '.', true);
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        wrong[0].scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        wrong[0].focus({ preventScroll: true });
         return;
       }
       goBtn.disabled = true;
       say('Loading the questions…', false);
       post(step.getAttribute('data-start-url'), { role_id: step.getAttribute('data-screening-role') }).then(function (data) {
         if (!data.ok) {
+          goBtn.disabled = false;
           gate();
           say(data.message, true);
           return;

@@ -45,18 +45,19 @@ $applied  = session()->getFlashdata('applied');
     <?php endif; ?>
     <?php if ($err('role_id')): ?><div class="err mb-3"><?= esc($err('role_id')) ?></div><?php endif; ?>
 
-    <?php // data-screening-needs: the fields the screening step waits for before Start (directory.js). ?>
+    <?php // data-screening-needs: the fields the screening step checks before Start, each with the
+          // message shown under it when it is missing (directory.js). ?>
     <p class="hint mb-3">Fields marked <span class="req" aria-hidden="true">*</span> are required.</p>
 
     <div class="form-row">
         <div class="field">
             <label for="c-name">Your name <span class="req" aria-hidden="true">*</span></label>
-            <input type="text" id="c-name" name="name" data-screening-needs required maxlength="120" autocomplete="name" value="<?= esc($v('name'), 'attr') ?>">
+            <input type="text" id="c-name" name="name" data-screening-needs="Please enter your name." required maxlength="120" autocomplete="name" value="<?= esc($v('name'), 'attr') ?>">
             <?php if ($err('name')): ?><div class="err"><?= esc($err('name')) ?></div><?php endif; ?>
         </div>
         <div class="field">
             <label for="c-email">Email <span class="req" aria-hidden="true">*</span></label>
-            <input type="email" id="c-email" name="email" data-screening-needs required maxlength="190" autocomplete="email" value="<?= esc($v('email'), 'attr') ?>">
+            <input type="email" id="c-email" name="email" data-screening-needs="Please enter your email address." required maxlength="190" autocomplete="email" value="<?= esc($v('email'), 'attr') ?>">
             <?php if ($err('email')): ?><div class="err"><?= esc($err('email')) ?></div><?php endif; ?>
         </div>
     </div>
@@ -64,7 +65,7 @@ $applied  = session()->getFlashdata('applied');
     <div class="form-row">
         <div class="field">
             <label for="c-phone">Phone <span class="req" aria-hidden="true">*</span></label>
-            <input type="tel" id="c-phone" name="phone" data-screening-needs required minlength="9" maxlength="40" autocomplete="tel" value="<?= esc($v('phone'), 'attr') ?>">
+            <input type="tel" id="c-phone" name="phone" data-screening-needs="Please enter a phone number of at least 9 digits." required minlength="9" maxlength="40" autocomplete="tel" value="<?= esc($v('phone'), 'attr') ?>">
             <?php if ($err('phone')): ?><div class="err"><?= esc($err('phone')) ?></div><?php endif; ?>
         </div>
         <div class="field">
@@ -76,14 +77,14 @@ $applied  = session()->getFlashdata('applied');
 
     <div class="field">
         <label for="c-cv">Your CV <span class="req" aria-hidden="true">*</span></label>
-        <input type="file" id="c-cv" name="cv" data-screening-needs required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <input type="file" id="c-cv" name="cv" data-screening-needs="Please attach your CV as a PDF or Word document." required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
         <div class="hint">PDF or Word format only, up to 10 MB.</div>
         <?php if ($err('cv')): ?><div class="err"><?= esc($err('cv')) ?></div><?php endif; ?>
     </div>
 
     <div class="field">
         <label for="c-message">Tell us about yourself <span class="req" aria-hidden="true">*</span></label>
-        <textarea id="c-message" name="message" rows="6" data-screening-needs required minlength="<?= App\Services\CareersService::MIN_MESSAGE ?>" maxlength="<?= App\Services\CareersService::MAX_MESSAGE ?>" placeholder="What you have done before, and why this role suits you."><?= esc($v('message')) ?></textarea>
+        <textarea id="c-message" name="message" rows="6" data-screening-needs="Please tell us about yourself in at least <?= App\Services\CareersService::MIN_MESSAGE ?> characters." required minlength="<?= App\Services\CareersService::MIN_MESSAGE ?>" maxlength="<?= App\Services\CareersService::MAX_MESSAGE ?>" placeholder="What you have done before, and why this role suits you."><?= esc($v('message')) ?></textarea>
         <?php if ($err('message')): ?><div class="err"><?= esc($err('message')) ?></div><?php endif; ?>
     </div>
 
