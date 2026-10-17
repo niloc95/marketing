@@ -1,0 +1,27 @@
+# /etc/logrotate.d/apache2, as installed on the Lightsail box.
+#
+# The Ubuntu package default keeps 14 days. Raised to 35 on 17 Oct 2026 so a
+# 30-day question (Search Console crawl stats, a Googlebot 404 sweep) can be
+# answered from the access logs. About 0.5 MB a day per host, so disk use is
+# negligible. This is a package conffile: an apache2 upgrade may offer to
+# replace it, keep this version.
+/var/log/apache2/*.log {
+	daily
+	missingok
+	rotate 35
+	compress
+	delaycompress
+	notifempty
+	create 640 root adm
+	sharedscripts
+	prerotate
+		if [ -d /etc/logrotate.d/httpd-prerotate ]; then
+			run-parts /etc/logrotate.d/httpd-prerotate
+		fi
+	endscript
+	postrotate
+		if pgrep -f ^/usr/sbin/apache2 > /dev/null; then
+			invoke-rc.d apache2 reload 2>&1 | logger -t apache2.logrotate
+		fi
+	endscript
+}
