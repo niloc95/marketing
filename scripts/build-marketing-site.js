@@ -57,6 +57,13 @@ const PAGES = [
 const PHP_FILES = ['contact.php'];
 
 /**
+ * Files served from the site root as they are. favicon.ico is the logo.svg mark at
+ * 16, 32 and 48 px: browsers and Googlebot request /favicon.ico whatever the
+ * pages' <link rel="icon"> says, and it was a 404.
+ */
+const ROOT_FILES = ['favicon.ico'];
+
+/**
  * PHPMailer, from composer. Only the three classes an authenticated SMTP send
  * actually needs — POP3, the OAuth providers and the language pack are dead
  * weight over FTP.
@@ -93,6 +100,14 @@ for (const page of PAGES) {
 for (const file of PHP_FILES) {
   const from = path.join(srcDir, file);
   if (!fs.existsSync(from)) fail(`Missing PHP file: ${file}`);
+  fs.copyFileSync(from, path.join(outDir, file));
+  console.log('  • ' + file);
+}
+
+// 2a2) Copy root files.
+for (const file of ROOT_FILES) {
+  const from = path.join(srcDir, file);
+  if (!fs.existsSync(from)) fail(`Missing root file: ${file}`);
   fs.copyFileSync(from, path.join(outDir, file));
   console.log('  • ' + file);
 }
