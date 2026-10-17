@@ -20,8 +20,8 @@ markup: **all 262 imported profiles (87% of the directory) are `noindex`**, beca
 under 50 characters. Google is offered 34 profiles and a handful of landing pages. Two landing pages (Home Decor
 and Clothing & Apparel) and the Gauteng page are indexable while almost every profile they list is not, because
 the 3-profile minimum counts profiles that are themselves `noindex`. On performance, CLS is near zero and LCP is
-good on most pages, but the cookie banner becomes the LCP element on the province page (5.0 s), and the home and
-profile pages spend about 0.6 s more on the server than the province page does.
+good on most pages, but the cookie banner becomes the LCP element on the province page (5.0 s), and first (cold) hits
+take about 1 s against a 0.33 to 0.36 s warm median.
 
 ## 2. Page type matrix
 
@@ -84,7 +84,7 @@ no image fall back to the site's social image.
 | SEO-01 | **High** | imported profiles; `listing_is_indexable()` in `app/Helpers/directory_ui_helper.php:682-696` | Production: 262 imported profiles, 0 indexable, 262 with a description under 50 characters, 197 also scoring under 40. Of the 37 public signups, 34 are indexable | A whole page type (87% of profiles) is invisible to search, and those are the profiles that make the directory look established | Don't lower the bar. Give the imported profiles real descriptions: through the claim flow (Audit 1, C-03), through the R250 setup service, or by admin writing one line per shop with the existing ChatGPT helper. Each one becomes indexable as it clears the rule | M (process) |
 | SEO-02 | Medium | `Directory.php:481-482` (province) and the same rule in `renderLanding()` and `sitemapLandingUrls()` | `landingMinListings = 3` counts every published profile. `/directory/home-decor` (52) and `/directory/clothing-apparel` (43) are indexable and in the sitemap although every profile they list is `noindex`, and the Gauteng page lists 287 profiles of which 23 are indexable (92% `noindex`) | Google is shown list pages whose items it's told not to index, the classic thin-listing pattern | Count only indexable profiles toward `landingMinListings`, in the page check and the sitemap together | S |
 | SEO-03 | Medium | `public/assets/consent.js` (`.wsc-text`) | Lab LCP on `/directory/province/gauteng` is **4.97 s**, and the LCP element is the cookie banner paragraph (`P.wsc-text`), injected after load. On the home page the H1 is larger, so LCP stays at 1.48 s | Field LCP (CrUX) is driven by first-time visitors, who all see the banner, so pages with a small hero can be rated poor | Render the banner in the server HTML (hidden by a class the script removes) so it paints with the page, or keep its text block smaller than the page's hero. Re-measure after | S |
-| SEO-04 | Medium | origin; Lightsail `ap-south-1` | Unthrottled TTFB from South Africa: `/` 0.95 s, a profile 0.93 s, the province page 0.35 s. Every HTML response is `no-store` and starts a session | About 0.6 s of server time on the two most important templates, on top of the round trip to Mumbai | Profile the home and profile controllers (CI4 timer or debug toolbar locally); cache their expensive parts; don't start sessions on anonymous GETs (also Audit 3, S-05). Longer term, the Cape Town region (`af-south-1`) halves the round trip | M |
+| SEO-04 | Low | origin; Lightsail `ap-south-1` | **Corrected 17 Oct (7 samples per page):** median TTFB is 325 to 359 ms on the home page, 5 profiles, 3 categories and 2 job pages; p95 is about 0.9 to 1.0 s, from the first (cold) hit after a quiet spell. The first version of this row read 0.95 s from a single cold sample each and overstated it. Every HTML response is `no-store` and starts a session | Cold first hits about 1 s; warm pages fine | Keep the PHP opcache and app cache warm (a 5-minute keep-alive of `/` is enough), and don't start sessions on anonymous GETs (Audit 3, S-05). The Cape Town region (`af-south-1`) would cut the round trip | S |
 | SEO-05 | Medium | category and province pagination | Page 2 onwards is `noindex, follow` with `canonical` → page 1 | Today every indexable profile is within 3 clicks, so impact is low, but as categories grow past 24 profiles the deeper ones depend on the sitemap alone, and long-term `noindex, follow` is treated as `nofollow` | Self-canonical on each page with `index, follow` (Google's guidance for pagination), keeping the 3-profile rule for page 1 | S |
 | SEO-06 | Medium | landing page titles, e.g. "Home Decor in South Africa" | Production: Johannesburg holds 273 of 299 profiles; the home decor and clothing categories are entirely Oriental Plaza. City filters exist only as `?city=` (noindexed) | Titles and pages target "South Africa" while the content answers "Johannesburg" or "Fordsburg" searches | When a city reaches the indexable minimum, give it a path landing page (`/directory/{category}/{province}/{city}` or similar) with the same thin content rule | M |
 | SEO-07 | Low | `/assets/*.css`, `*.js`, listing images | `cache-control: max-age=14400` (4 hours) on assets whose URLs already change with `?v=` | Repeat visitors and crawlers refetch unchanged files | `max-age=31536000, immutable` for versioned assets; a long max-age for uploaded images, whose names never change | S |
@@ -128,8 +128,8 @@ Gauteng (23 indexable of 287) and Western Cape (8 of 8, all public signups) stay
    Google only `noindex` items.
 3. **SEO-03: stop the cookie banner becoming the LCP element.** Every first visit is affected, and that's what
    field data measures.
-4. **SEO-04: cut the extra 0.6 s of server time on home and profile pages.** These are the two templates people
-   land on most.
+4. **SEO-04: keep the first hit warm.** Warm TTFB is about 0.35 s; only cold first hits reach 1 s (corrected
+   from the first version of this report).
 5. **SEO-05: self-canonical pagination.** It keeps deeper profiles discoverable by links as categories grow
    toward 2,500 profiles.
 
