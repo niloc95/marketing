@@ -19,6 +19,9 @@ use App\Services\TeamMemberService;
  * too, and both partials already read the caps from the service constants, so
  * the numbers at least cannot drift on their own.
  *
+ * _pricing_compare.php, the home page's Free vs Verified section, is the third
+ * surface and has to be kept in step by hand in the same way.
+ *
  * Two rules for anything added here.
  *
  * The first is that every line must be something the code actually does. The

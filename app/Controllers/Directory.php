@@ -8,6 +8,7 @@ use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
+use App\Services\DirectorySettings;
 use App\Services\JobBoardService;
 use App\Services\HeroImageService;
 use App\Services\Search\SearchIntent;
@@ -33,6 +34,20 @@ class Directory extends BaseController
             $provinceCities[$province] = array_keys($svc->cityCountsForProvince($province, 3));
         }
 
+        // The Free vs Verified section. DirectorySettings rather than
+        // VerificationService, which builds a PayFast client this never needs;
+        // same answers as monthlyAmount() and isEnabled(). A settings read that
+        // fails costs the section, not the home page (as in signup_cta()).
+        try {
+            $settings       = new DirectorySettings();
+            $pricingOffered = $settings->badgeEnabled();
+            $pricingAmount  = $settings->badgePrice();
+        } catch (\Throwable $e) {
+            log_message('warning', 'Could not read badge settings for the home pricing section: ' . $e->getMessage());
+            $pricingOffered = false;
+            $pricingAmount  = '';
+        }
+
         return view('directory/home', [
             'featured'       => $svc->featured(8),
             'topCategories'  => $svc->topCategories(8),
@@ -46,6 +61,8 @@ class Directory extends BaseController
             'slides'         => (new HeroImageService())->slides(),
             // Null for the photo rotation, and on any read failure.
             'heroBackground' => (new HeroImageService())->background(),
+            'pricingOffered' => $pricingOffered,
+            'pricingAmount'  => $pricingAmount,
         ]);
     }
 
