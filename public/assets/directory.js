@@ -268,6 +268,19 @@
     }
   });
 
+  // ------------------------------------------------------------- click events
+  // GA4 events for links carrying data-track (the home pricing CTAs): the event
+  // name is data-track, the label goes in as `cta`. Only when the layout loaded
+  // gtag; Consent Mode decides what is stored, so this adds no cookies. Never
+  // holds up the navigation: GA4 sends by beacon.
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest ? e.target.closest('[data-track]') : null;
+    if (!link || typeof window.gtag !== 'function') return;
+    window.gtag('event', link.getAttribute('data-track') + '_click', {
+      cta: link.getAttribute('data-track-label') || '',
+    });
+  });
+
   // ------------------------------------------------------------- reveal
   // Phone/email are stored reversed in data-reveal-value so they never
   // appear as plain text/tel:/mailto: in the HTML a scraper reads. On

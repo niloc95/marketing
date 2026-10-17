@@ -1007,11 +1007,48 @@
   .dark .preview-rows li { @apply text-slate-300; }
   .dark .preview-photos span { @apply from-slate-800 to-slate-700; }
 
-  /* ---- the Verified interruption */
-  .home-interlude .container { @apply max-w-4xl text-center; }
-  .home-interlude-text { @apply mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600; }
-  .home-interlude .home-link { @apply mt-8; }
-  .dark .home-interlude-text { @apply text-slate-400; }
+  /* ---- pricing: Free vs Verified (_pricing_compare.php)
+     The cards reuse .plan-card and its rows from the signup form, so a price
+     and a tick look the same on both pages. Free sits first; Verified carries
+     the weight through the badge's emerald, not through size or a ribbon. */
+  .home-pricing { padding-top: clamp(6rem, 14vw, 12rem); }
+  .home-pricing-head { @apply mt-16 max-w-3xl sm:mt-24; }
+  .home-pricing-lede { @apply mt-6 max-w-2xl text-lg leading-relaxed text-slate-600; }
+  /* Each card keeps its own height: stretching Free to match the longer
+     Verified card would leave it looking emptier than it is. */
+  .pricing-grid { @apply mt-12 grid items-start gap-6 md:grid-cols-2 lg:gap-8; }
+  .pricing-card { @apply p-6 sm:p-8; }
+  .pricing-card-top { @apply flex items-start justify-between gap-4; }
+  .pricing-seal { @apply w-14 shrink-0 sm:w-16; }
+  .pricing-yearly { @apply mt-1 text-sm text-slate-500; }
+  ul.pricing-benefits { @apply my-5 grow list-none space-y-5 pl-0; }
+  .pricing-benefit { @apply flex list-none gap-4; }
+  .pricing-benefit-icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700;
+  }
+  .pricing-benefit-title { @apply block text-base font-bold text-slate-900; }
+  .pricing-benefit-text  { @apply mt-1 block text-sm leading-relaxed text-slate-600; }
+  .pricing-also { @apply mb-4 text-sm text-slate-600; }
+  .pricing-existing {
+    @apply mt-6 flex items-center gap-4 rounded-surface border border-slate-200 bg-white px-5 py-4
+           text-sm text-slate-600 no-underline shadow-brand hover:border-brand-orange;
+  }
+  .pricing-existing-icon {
+    @apply grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-50 text-brand-orange;
+  }
+  .pricing-existing-text { @apply grow; }
+  .pricing-existing-text strong { @apply block text-base font-bold text-slate-900; }
+  .pricing-existing > svg:last-child { @apply text-brand-orange; }
+  .pricing-foot { @apply mt-8 flex flex-col gap-3 sm:flex-row sm:gap-8; }
+  .dark .home-pricing-lede,
+  .dark .pricing-yearly { @apply text-slate-400; }
+  .dark .pricing-benefit-icon { @apply bg-emerald-500/15 text-emerald-300; }
+  .dark .pricing-benefit-title,
+  .dark .pricing-existing-text strong { @apply text-white; }
+  .dark .pricing-benefit-text,
+  .dark .pricing-also { @apply text-slate-300; }
+  .dark .pricing-existing { @apply border-slate-800 bg-slate-900/40 text-slate-300; }
+  .dark .pricing-existing-icon { @apply bg-brand-orange/15; }
 
   /* ---- discover */
   .home-discover-title { @apply mt-16 max-w-4xl sm:mt-24; }

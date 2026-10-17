@@ -19,6 +19,8 @@ use App\Services\TeamMemberService;
  * dashboard; this is it written as a matrix for the signup form. They are
  * deliberately separate and therefore have to be changed together — its docblock
  * says the same thing pointing back this way.
+ * _pricing_compare.php (the home page's Free vs Verified section) is the third
+ * surface, grouping the same features into four benefits; keep it in step too.
  *
  * 1. Every line must be something the code actually does. Keep this partial and
  *    _verification_pitch.php saying the same things; they are the two places the

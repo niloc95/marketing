@@ -66,8 +66,8 @@ $schema = schema_page(array_values($homeLists), $canonical, 'WebPage', $siteName
 <?= $this->section('content') ?>
 <?php
 // One continuous canvas: statement, whitespace, statement, visual. There are no
-// section bands and no card grids on this page. Type and spacing do the
-// separating (see "home canvas" in resources/directory.css).
+// section bands, and the only cards are the two pricing cards. Type and spacing
+// do the separating (see "home canvas" in resources/directory.css).
 //
 // The photographs or video are one moment below the opening search,
 // not a backdrop behind it. Everything about them is conditional: with none, the
@@ -87,7 +87,8 @@ $hasMedia  = $hasSlides || $heroBg !== null;
 // The five things a profile brings together. The last three are Verified
 // Business features (PracticeLocationService / TeamMemberService /
 // JobBoardService::canUseJobsFeatures), so they carry the tag while the badge is
-// on sale: this page must never read as "all of this is free".
+// on sale: this page must never read as "all of this is free". The pricing
+// section after the moments (_pricing_compare.php) says what each side costs.
 $badgeOn = signup_cta()['verified'];
 $moments = [
     'business' => [
@@ -328,24 +329,17 @@ $moments = [
                     </div>
                 </div>
             </article>
-
-            <?php // The Verified proposition as an interruption in the story, not a
-                  // pricing block: it lands right after the first Verified feature. ?>
-            <?php if ($kind === 'locations' && $badgeOn): ?>
-                <aside class="home-interlude">
-                    <div class="container" data-scroll-reveal>
-                        <p class="home-statement">People want to know who they are dealing with.</p>
-                        <p class="home-interlude-text">
-                            Put your people and their expertise in front of potential customers. With a Verified
-                            Business profile, your team appears on your page, and a search for one of your people
-                            can find your business.
-                        </p>
-                        <a class="home-link home-link-accent" href="<?= base_url('verified') ?>">Get Verified<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
-                    </div>
-                </aside>
-            <?php endif; ?>
         <?php endforeach; ?>
     </div>
+
+    <?php // -------------------------------------------------------- pricing ?>
+    <?php // Free vs Verified, after the story has shown what a profile holds. It
+          // replaced the "People want to know..." interlude, whose message is now
+          // the People benefit. Renders nothing while the badge is switched off. ?>
+    <?= view('directory/_pricing_compare', [
+        'amount'  => $pricingAmount ?? '',
+        'offered' => $pricingOffered ?? false,
+    ], ['saveData' => false]) ?>
 
     <?php // ------------------------------------------------------- discover ?>
     <?php if ($featured !== [] || $topCategories !== [] || $provinceCounts !== []): ?>
