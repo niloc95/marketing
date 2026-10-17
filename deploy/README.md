@@ -414,6 +414,15 @@ and must never be removed, nor its DNS record:
   `notify_url` per subscription, so every Verified subscription created before
   the move keeps sending its monthly ITN to the old host. A redirected
   server-to-server POST is lost.
+- Since 17 Oct 2026, three more exceptions:
+  - `/robots.txt` is **served** (200, `Allow: /`) from `/var/www/listing-legacy/`
+    (source `apache/listing-legacy/robots.txt`). Google has to read the old host's
+    robots.txt to keep crawling old URLs and seeing their 301s.
+  - `/sitemap.xml` is **410**. A sitemap here would list `local.` URLs, which is a
+    cross-host sitemap.
+  - `/add-listing[/verified]` and `/list-your-practice` go straight to `/add-profile`.
+    Without that it would take two hops, because `local.` has its own legacy
+    redirect for them.
 
 The exception tests `THE_REQUEST`, not `REQUEST_URI`. `.htaccess` internally
 rewrites the path to `/index.php/payfast/notify`, and a `REQUEST_URI` test then
