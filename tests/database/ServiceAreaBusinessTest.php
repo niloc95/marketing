@@ -237,9 +237,16 @@ final class ServiceAreaBusinessTest extends CIUnitTestCase
 
     // ------------------------------------------------------------ helpers
 
+    /**
+     * The page without CI4's development "DEBUG-VIEW START 2188" comments: the
+     * view counter reaches any number in a long suite run, and on 19 Oct 2026
+     * it reached the postcode this file checks never leaks.
+     */
     private function profile(): string
     {
-        return (string) $this->get('directory/the-home-crew')->response()->getBody();
+        $html = (string) $this->get('directory/the-home-crew')->response()->getBody();
+
+        return (string) preg_replace('/<!-- DEBUG-VIEW (START|ENDED) \d+ [^>]*-->/', '', $html);
     }
 
     /** @param array<string,mixed> $overrides */
