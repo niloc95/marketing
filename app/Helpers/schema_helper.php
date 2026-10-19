@@ -552,6 +552,46 @@ if (! function_exists('schema_opening_hours')) {
     }
 }
 
+if (! function_exists('schema_holiday_hours')) {
+    /**
+     * Special hours for the public holidays in the next $days days, as Google
+     * reads them: an OpeningHoursSpecification with validFrom and
+     * validThrough on the one date, and 00:00 to 00:00 for closed all day.
+     * Only holidays the owner has answered; an unanswered one is left out
+     * rather than guessed, and Google then falls back to the weekday.
+     *
+     * @param array<string,mixed>|null $hours decoded days (hours_decode())
+     * @param array<string,mixed>|null $rule  hours_holiday_rule()
+     *
+     * @return list<array<string,mixed>>
+     */
+    function schema_holiday_hours(?array $hours, ?array $rule, int $days = 60, ?string $from = null, ?\App\Libraries\PublicHolidays $calendar = null): array
+    {
+        if ($rule === null) {
+            return [];
+        }
+        helper('directory_hours');
+
+        $from ??= hours_now()->format('Y-m-d');
+        $out    = [];
+        foreach (($calendar ?? hours_calendar())->between($from, date('Y-m-d', strtotime($from . ' +' . $days . ' days'))) as $day) {
+            $answer = hours_holiday_answer($rule, $day['key'], hours_weekday_row($hours, $day['date']));
+            if ($answer === null || ($answer['state'] === 'open' && ($answer['open'] === '' || $answer['close'] === ''))) {
+                continue;
+            }
+            $out[] = [
+                '@type'        => 'OpeningHoursSpecification',
+                'opens'        => $answer['state'] === 'closed' ? '00:00' : $answer['open'],
+                'closes'       => $answer['state'] === 'closed' ? '00:00' : $answer['close'],
+                'validFrom'    => $day['date'],
+                'validThrough' => $day['date'],
+            ];
+        }
+
+        return $out;
+    }
+}
+
 if (! function_exists('schema_plain_description')) {
     /**
      * A listing's description as plain text, for structured data.
@@ -741,7 +781,10 @@ if (! function_exists('schema_local_business')) {
         $sameAs[] = listing_website_url($l['website'] ?? '');
         $sameAs   = array_values(array_filter($sameAs));
 
-        $hours = schema_opening_hours($l['trading_hours'] ?? null);
+        $hours = array_merge(
+            schema_opening_hours($l['trading_hours'] ?? null),
+            schema_holiday_hours($l['trading_hours'] ?? null, $l['holiday_rule'] ?? null)
+        );
 
         // The owner's own booking page, as the action a search result can offer.
         $bookingUrl = safe_external_url($l['booking_url'] ?? '');
@@ -852,7 +895,10 @@ if (! function_exists('schema_local_business')) {
         foreach (array_values($l['locations'] ?? []) as $i => $loc) {
             $branchName = trim((string) ($loc['name'] ?? ''));
             $city       = trim((string) ($loc['city'] ?? ''));
-            $hoursSpec  = schema_opening_hours($loc['trading_hours'] ?? null);
+            $hoursSpec  = array_merge(
+                schema_opening_hours($loc['trading_hours'] ?? null),
+                schema_holiday_hours($loc['trading_hours'] ?? null, $loc['holiday_rule'] ?? null)
+            );
 
             $branches[] = array_filter([
                 '@type'                     => $type,

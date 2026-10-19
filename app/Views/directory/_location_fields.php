@@ -139,7 +139,7 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
         <?php // And the same seven-row hours grid. ?>
         <?= view('directory/_hours_inputs', [
             'n'     => $n,
-            'hours' => is_array($loc['hours'] ?? null) ? $loc['hours'] : (hours_decode($loc['trading_hours'] ?? null) ?? []),
+            'hours' => is_array($loc['hours'] ?? null) ? $loc['hours'] : (hours_decode($loc['trading_hours'] ?? null) ?? []) + ['holidays' => hours_holiday_rule($loc['trading_hours'] ?? null)],
             'copy'  => false,
             'label' => 'Trading hours at this branch',
         ]) ?>

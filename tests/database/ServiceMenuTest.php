@@ -285,6 +285,7 @@ final class ServiceMenuTest extends CIUnitTestCase
         $this->assertGreaterThan($band, $h1, 'The name should sit inside the band.');
         $this->assertGreaterThan($h1, $gallery, 'The name should come before the photos in the source.');
         $this->assertStringContainsString('See all 2 photos', $html);
+        $this->assertSame(1, substr_count($html, 'fetchpriority="high"'), 'only the first photo jumps the queue');
         $this->assertStringNotContainsString('class="profile-head"', $html);
         $this->assertSame(1, substr_count($html, '<h1'));
     }

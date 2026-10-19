@@ -86,8 +86,10 @@
     <?php elseif ($piece === 'hours'): ?>
         <?php // Today's hours at a glance; the full week stays in the panel
               // below, and "See hours" jumps to it. Nothing at all when
-              // today is blank: see hours_today_summary(). ?>
-        <?php $todayHours = hours_today_summary($l['trading_hours'] ?? null, ! empty($l['by_appointment'])); ?>
+              // today is blank: see hours_today_summary(). On a public
+              // holiday it follows the owner's holiday answer, and without
+              // one says hours may differ: see hours_today_line(). ?>
+        <?php $todayHours = hours_today_line($l['trading_hours'] ?? null, $l['holiday_rule'] ?? null, ! empty($l['by_appointment'])); ?>
         <?php if ($todayHours !== null): ?>
             <p class="hours-glance">
                 <?= lucide('clock', 'h-4 w-4 shrink-0') ?>

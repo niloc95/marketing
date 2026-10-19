@@ -67,4 +67,75 @@ $label = $label ?? 'Trading hours';
         <?php endforeach; ?>
     </div>
     <div class="hint">Leave a day's times blank and tick "Closed" for days you don't trade.</div>
+
+    <?php // Public holidays (hours_holiday_encode()): one answer for every
+          // holiday, then single holidays that differ. Plain selects and time
+          // boxes, no script: the times are simply ignored unless "Open, these
+          // hours" is chosen. Each holiday shows its next date, because
+          // "Family Day" means little without one. ?>
+    <?php
+    $hol      = is_array($hours['holidays'] ?? null) ? $hours['holidays'] : [];
+    $holMode  = (string) ($hol['mode'] ?? '');
+    $holName  = $n('hours') . '[holidays]';
+    $calendar = hours_calendar();
+    $today    = hours_now()->format('Y-m-d');
+    $choices  = [
+        'closed' => 'Closed',
+        'open'   => 'Open, these hours',
+        'usual'  => 'Open, our usual hours for that weekday',
+    ];
+    $exceptOpen = array_filter((array) ($hol['except'] ?? []), static fn ($e): bool => is_array($e) && ($e['mode'] ?? '') !== '') !== [];
+    ?>
+    <div class="hours-holidays" data-holidays>
+        <p class="hours-holidays-title">Public holidays</p>
+        <div class="hours-holiday-row">
+            <label class="hours-holiday-mode">
+                <span class="sr-only">On public holidays</span>
+                <select name="<?= $holName ?>[mode]">
+                    <option value="">Not set yet</option>
+                    <?php foreach ($choices as $value => $text): ?>
+                        <option value="<?= $value ?>" <?= $holMode === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span class="sr-only">Opens on public holidays</span><input type="time" name="<?= $holName ?>[open]" value="<?= esc($hol['open'] ?? '', 'attr') ?>"></label>
+            <span>&ndash;</span>
+            <label><span class="sr-only">Closes on public holidays</span><input type="time" name="<?= $holName ?>[close]" value="<?= esc($hol['close'] ?? '', 'attr') ?>"></label>
+            <input type="text" class="hours-note" name="<?= $holName ?>[note]" value="<?= esc($hol['note'] ?? '', 'attr') ?>" maxlength="<?= HOURS_NOTE_MAX ?>" placeholder="Optional note, e.g. Closed over Easter weekend" aria-label="Public holiday note">
+        </div>
+        <div class="hint">Customers check this before they travel. On a public holiday your profile shows this answer instead of the weekday's hours.</div>
+
+        <details class="disclosure mt-2" <?= $exceptOpen ? 'open' : '' ?>>
+            <summary class="disclosure-summary">Different on some holidays? <span class="hint">For example, closed on Christmas Day</span></summary>
+            <div class="disclosure-body hours-grid">
+                <?php foreach (App\Libraries\PublicHolidays::NATIONAL as $key => $holidayName): ?>
+                    <?php
+                    $ex   = is_array($hol['except'][$key] ?? null) ? $hol['except'][$key] : [];
+                    $next = null;
+                    foreach ($calendar->between($today, date('Y-m-d', strtotime($today . ' +1 year'))) as $day) {
+                        if ($day['key'] === $key && ! $day['observed']) {
+                            $next = $day['date'];
+                            break;
+                        }
+                    }
+                    ?>
+                    <div class="hours-holiday-row is-except">
+                        <span class="hours-day"><?= esc($holidayName) ?><?php if ($next !== null): ?> <span class="hours-holiday-date"><?= esc(date('D j M', strtotime($next))) ?></span><?php endif; ?></span>
+                        <label class="hours-holiday-mode">
+                            <span class="sr-only"><?= esc($holidayName) ?></span>
+                            <select name="<?= $holName ?>[except][<?= $key ?>][mode]">
+                                <option value="">Same as other holidays</option>
+                                <?php foreach ($choices as $value => $text): ?>
+                                    <option value="<?= $value ?>" <?= ($ex['mode'] ?? '') === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <label><span class="sr-only">Opens on <?= esc($holidayName) ?></span><input type="time" name="<?= $holName ?>[except][<?= $key ?>][open]" value="<?= esc($ex['open'] ?? '', 'attr') ?>"></label>
+                        <span>&ndash;</span>
+                        <label><span class="sr-only">Closes on <?= esc($holidayName) ?></span><input type="time" name="<?= $holName ?>[except][<?= $key ?>][close]" value="<?= esc($ex['close'] ?? '', 'attr') ?>"></label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </details>
+    </div>
 </div>

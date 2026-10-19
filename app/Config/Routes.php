@@ -332,6 +332,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Deliberately no secrets here — see the settings migration.
     $routes->get('settings', 'Admin::settings');
     $routes->post('settings', 'Admin::saveSettings');
+    $routes->post('settings/holidays', 'Admin::saveHolidays');
 
     // The /compare table. Reset goes back to the defaults in Config\Comparison.
     $routes->get('comparison', 'Admin::comparison');

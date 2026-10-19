@@ -3442,6 +3442,36 @@
            focus:border-primary-300 focus:ring-primary-300;
   }
   .hours-note   { @apply col-span-3 sm:col-span-1; }
+  /* Public holidays under the week (_hours_inputs.php). The answer is a select,
+     which needs more room than the weekday row's "Closed" box, so the row has
+     its own tracks: the select takes a whole line on a phone, the times share
+     the next with the dash between them, as on a weekday. The exceptions add
+     the holiday's name as a first track. */
+  .hours-holidays       { @apply mt-4 border-t border-slate-100 pt-4; }
+  .hours-holidays-title { @apply mb-2 text-sm font-semibold text-slate-700; }
+  /* From sm up, fixed tracks so the two times sit beside each other with the
+     dash between, as on a weekday, rather than spread across the row. The
+     general row is answer, opens, dash, closes, note; an exception row puts
+     the holiday's name first and has no note. */
+  .hours-holiday-row {
+    @apply grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-inner border border-slate-100 p-2 text-sm
+           sm:grid-cols-[16rem_8rem_auto_8rem_minmax(0,1fr)];
+  }
+  .hours-holiday-row.is-except { @apply sm:grid-cols-[11rem_16rem_8rem_auto_8rem_minmax(0,1fr)]; }
+  .hours-holiday-row > .hours-day,
+  .hours-holiday-row > .hours-holiday-mode { @apply col-span-3 sm:col-span-1; }
+  .hours-holiday-row .hours-holiday-mode select { @apply h-11 w-full rounded-control border-slate-200 text-sm; }
+  .hours-holiday-row input[type="time"],
+  .hours-holiday-row input.hours-note { @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm; }
+  .hours-holiday-date { @apply block text-xs font-normal text-slate-500; }
+  .dark .hours-holidays       { @apply border-slate-800; }
+  .dark .hours-holidays-title { @apply text-slate-200; }
+  .dark .hours-holiday-row    { @apply border-slate-800; }
+  .dark .hours-holiday-date   { @apply text-slate-400; }
+  .dark .hours-holiday-row select,
+  .dark .hours-holiday-row input[type="time"] {
+    @apply border-slate-700 bg-slate-800 text-white [color-scheme:dark];
+  }
   /* The copy button and its status message, sitting between the label and the
      grid. items-center rather than baseline because the message wraps to two
      lines on a phone and a baseline would peg it to the button's first line. */

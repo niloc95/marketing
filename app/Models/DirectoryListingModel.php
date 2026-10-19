@@ -41,7 +41,13 @@ class DirectoryListingModel extends Model
         'reviews_enabled',
         // Set once at signup by DirectoryListingMutationService::submitPublic().
         'signup_source',
+        // Derived from trading_hours by deriveHolidayColumns() below, and the
+        // reminder stamp written by HolidayHoursService. Never OWNER_EDITABLE.
+        'holiday_hours', 'holiday_open_dates', 'holiday_reminded_at',
     ];
+
+    protected $beforeInsert = ['deriveHolidayColumns'];
+    protected $beforeUpdate = ['deriveHolidayColumns'];
 
     /**
      * Fields an OWNER may write through the self-service edit form.
@@ -238,6 +244,30 @@ class DirectoryListingModel extends Model
     /**
      * Base query for publicly visible listings.
      */
+    /**
+     * Keep the public holiday search columns in step with trading_hours, on
+     * every write path at once (signup, owner edit, admin, imports): whenever
+     * a write carries trading_hours, holiday_hours and holiday_open_dates are
+     * recomputed from it. See AddHolidayHoursToListings.
+     *
+     * @param array{data:array<string,mixed>} $event
+     *
+     * @return array{data:array<string,mixed>}
+     */
+    protected function deriveHolidayColumns(array $event): array
+    {
+        if (! array_key_exists('trading_hours', $event['data'] ?? [])) {
+            return $event;
+        }
+        helper('directory_hours');
+        $json = is_string($event['data']['trading_hours']) ? $event['data']['trading_hours'] : null;
+
+        $event['data']['holiday_hours']      = hours_holiday_rule($json)['mode'] ?? null;
+        $event['data']['holiday_open_dates'] = hours_holiday_open_dates($json, hours_now()->format('Y-m-d'));
+
+        return $event;
+    }
+
     public function published(): self
     {
         return $this->where('status', 'published');

@@ -45,6 +45,13 @@ class DirectorySettingModel extends Model
      */
     public const COMPARISON = 'comparison_table';
 
+    /**
+     * Public holidays the President declares for one year only (election
+     * days and the like), one per line as "2026-11-01 Local government
+     * elections". Read by App\Libraries\PublicHolidays.
+     */
+    public const EXTRA_HOLIDAYS = 'extra_public_holidays';
+
     public const KNOWN = [
         self::BADGE_PRICE,
         self::BADGE_ENABLED,
@@ -55,6 +62,7 @@ class DirectorySettingModel extends Model
         self::HERO_YOUTUBE_ID,
         self::HERO_YOUTUBE_START,
         self::COMPARISON,
+        self::EXTRA_HOLIDAYS,
     ];
 
     /**

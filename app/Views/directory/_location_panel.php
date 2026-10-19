@@ -70,6 +70,7 @@ $hoursHeading   = $hoursHeading ?? 'Trading hours';
 
             <?= view('directory/_hours_panel', [
                 'hours'   => $loc['trading_hours'] ?? null,
+                'holidays' => $loc['holiday_rule'] ?? null,
                 // Explicit: CI4 view data outlives a render, so without this a
                 // branch inherits the listing's own by-appointment flag.
                 'byAppointment' => false,

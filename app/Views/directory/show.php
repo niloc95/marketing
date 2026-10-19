@@ -198,7 +198,9 @@ $metaDesc = listing_meta_description($l);
                            data-video-title="<?= esc($video['title'] !== '' ? $video['title'] : $name, 'attr') ?>"
                            aria-label="<?= esc($videoLabel, 'attr') ?>">
                             <?php if ($video['thumb'] !== ''): ?>
-                                <img src="<?= esc(base_url($video['thumb'])) ?>" alt="" loading="eager">
+                                <?php // The band's first picture is usually the largest thing on
+                                      // screen, so it is fetched first (Largest Contentful Paint). ?>
+                                <img src="<?= esc(base_url($video['thumb'])) ?>" alt="" loading="eager" fetchpriority="high">
                             <?php else: ?>
                                 <span class="gallery-video-blank" aria-hidden="true"><?= esc($video['title'] !== '' ? $video['title'] : 'Watch our video') ?></span>
                             <?php endif; ?>
@@ -221,7 +223,7 @@ $metaDesc = listing_meta_description($l);
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
                              alt="<?= esc(listing_image_alt($l, $i, $photoCount), 'attr') ?>"
-                             loading="<?= $i < 3 ? 'eager' : 'lazy' ?>">
+                             loading="<?= $i < 3 ? 'eager' : 'lazy' ?>"<?= $i === 0 && $video === null ? ' fetchpriority="high"' : '' ?>>
                     </button>
                 <?php endforeach; ?>
             </div>
@@ -335,6 +337,7 @@ $metaDesc = listing_meta_description($l);
 
                 <?= view('directory/_hours_panel', [
                     'hours'   => $l['trading_hours'] ?? null,
+                    'holidays' => $l['holiday_rule'] ?? null,
                     'byAppointment' => ! empty($l['by_appointment']),
                     'heading' => $v['headings']['hours'],
                     'class'   => 'mt-5',

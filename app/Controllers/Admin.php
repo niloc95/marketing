@@ -1106,9 +1106,18 @@ class Admin extends BaseController
             'intlEnabledSource' => $settings->internationalEnabledSource(),
             'lastIntlPrice'     => $settings->lastChange(DirectorySettingModel::INTERNATIONAL_PRICE),
             'lastIntlEnabled'   => $settings->lastChange(DirectorySettingModel::INTERNATIONAL_ENABLED),
+            'extraHolidays' => $settings->extraHolidaysText(),
             'errors'        => session()->getFlashdata('errors') ?? [],
             'old'           => session()->getFlashdata('old') ?? [],
         ]);
+    }
+
+    /** Declared one off public holidays (App\Libraries\PublicHolidays). */
+    public function saveHolidays()
+    {
+        $result = (new DirectorySettings())->putExtraHolidays((string) $this->request->getPost('extra_holidays'), $this->adminActor());
+
+        return redirect()->to(base_url('admin/settings'))->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
     public function saveSettings()

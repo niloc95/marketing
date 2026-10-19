@@ -77,6 +77,8 @@ const ICONS = [
   'play', 'pause', 'volume-2', 'volume-x',
   // "See all N photos" on the profile's photo band (directory/show.php).
   'images',
+  // "Open on public holidays" on the results page (directory/_holiday_toggle.php).
+  'calendar',
 ];
 
 /**

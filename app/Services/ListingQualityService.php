@@ -587,13 +587,17 @@ class ListingQualityService
             // true about you", both are owner-asserted and unverifiable, and a
             // preschool that has stated its ages and curriculum has told a
             // visitor at least as much as one that ticked three tick-boxes.
+            //
+            // A public holiday answer (directory_hours_helper) counts as one
+            // more detail, for the same reason: a line of its own would take
+            // points from somewhere and lower scores already earned.
             $this->countable(
                 'features',
                 'Features and details',
-                $counts['attributes'] + ($counts['facets'] ?? 0),
+                $counts['attributes'] + ($counts['facets'] ?? 0) + ($this->holidaysAnswered($listing) ? 1 : 0),
                 self::CAP_ATTRIBUTES,
                 self::PTS_ATTRIBUTE,
-                'Parking, wheelchair access, ages taken, curriculum, whatever applies.',
+                'Parking, wheelchair access, public holiday hours, ages taken, whatever applies.',
                 'field-features'
             ),
             $this->countable(
@@ -719,6 +723,14 @@ class ListingQualityService
      * or has both times, and at least one day has to be genuinely open, so a
      * business marked shut all week does not score for it.
      */
+    /** Whether the owner has said what they do on public holidays. */
+    private function holidaysAnswered(array $listing): bool
+    {
+        $stored = $listing['trading_hours'] ?? null;
+
+        return is_string($stored) && hours_holiday_rule($stored) !== null;
+    }
+
     private function hoursUsable(mixed $stored): bool
     {
         $hours = hours_decode(is_string($stored) ? $stored : null);

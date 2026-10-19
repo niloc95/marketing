@@ -137,6 +137,9 @@ class DirectoryService
         if (! empty($filters['place'])) {
             $this->applyPlace($builder, (string) $filters['place']);
         }
+        if (! empty($filters['holidays'])) {
+            $this->applyHolidays($builder, $filters['today'] ?? null);
+        }
         // where(), never orWhere() — see the comment above applySearch(). The
         // venue page asks for one building, and an orWhere here would hand it
         // every listing in the country instead.
@@ -672,6 +675,9 @@ class DirectoryService
         if (! empty($filters['place'])) {
             $this->applyPlace($builder, (string) $filters['place']);
         }
+        if (! empty($filters['holidays'])) {
+            $this->applyHolidays($builder, $filters['today'] ?? null);
+        }
         if ($near !== null) {
             $this->applyNear($builder, $near);
         }
@@ -1093,6 +1099,26 @@ class DirectoryService
     }
 
     /**
+     * "Open on public holidays", from the columns the model derives from
+     * trading_hours (DirectoryListingModel::deriveHolidayColumns()). On a
+     * holiday it means open today, exceptions and usual hours weekdays
+     * included; otherwise, a general answer of open or usual hours.
+     * Unanswered listings never match: we never claim they are open.
+     *
+     * $today is for tests; Directory::searchFilters() never sets it.
+     */
+    private function applyHolidays(BaseBuilder|Model $builder, ?string $today = null): void
+    {
+        helper('directory_hours');
+        $today ??= hours_now()->format('Y-m-d');
+        if (hours_calendar()->on($today) !== null) {
+            $builder->where('FIND_IN_SET(' . db_connect()->escape($today) . ', xs_directory_listings.holiday_open_dates) >', 0, false);
+        } else {
+            $builder->whereIn('xs_directory_listings.holiday_hours', ['open', 'usual']);
+        }
+    }
+
+    /**
      * Restrict to one place: a town, a visible suburb, or a service area.
      *
      * The suburb clause carries the same hidden-address guard as applySearch():
@@ -1289,6 +1315,7 @@ class DirectoryService
         $listing['locations'] = listing_is_verified_business($listing)
             ? array_map(
                 static function (array $loc): array {
+                    $loc['holiday_rule']  = hours_holiday_rule($loc['trading_hours'] ?? null);
                     $loc['trading_hours'] = hours_decode($loc['trading_hours'] ?? null);
 
                     return $loc;
@@ -1321,6 +1348,9 @@ class DirectoryService
         $menu                   = new ServiceMenuService();
         $listing['services']    = $menu->servicesFor((int) $listing['id']);
         $listing['attributes']  = $menu->attributeLabelsFor((int) $listing['id']);
+        // The public holiday answer is read from the same JSON before the
+        // days are decoded out of it (directory_hours_helper).
+        $listing['holiday_rule']   = hours_holiday_rule($listing['trading_hours'] ?? null);
         $listing['trading_hours']  = hours_decode($listing['trading_hours'] ?? null);
 
         // Also free, and resolved against the listing's *current* category, so

@@ -50,6 +50,14 @@ if (! function_exists('hours_encode')) {
             ];
         }
 
+        // Public holidays (hours_holiday_encode()), stored beside the days
+        // under their own key. hours_decode() returns the seven days only, so
+        // every caller that walks the days never meets it.
+        $holidays = hours_holiday_encode(is_array($raw['holidays'] ?? null) ? $raw['holidays'] : []);
+        if ($holidays !== null) {
+            $out['holidays'] = $holidays;
+        }
+
         return json_encode($out) ?: null;
     }
 }
@@ -243,5 +251,265 @@ if (! function_exists('hours_today_summary')) {
                 ? $row['open'] . '–' . $row['close'] . ' today'
                 : '',
         ];
+    }
+}
+
+// ─── Public holidays ──────────────────────────────────────────────────────
+//
+// The owner gives one answer for every public holiday, plus exceptions for
+// single holidays ("open most holidays, but closed on Christmas Day"):
+//
+//   holidays: {mode, open, close, note, except: {christmas: {mode, open, close}}}
+//
+// mode is 'closed', 'open' (with times, or none given) or 'usual' (the day's
+// normal hours). No mode means the owner has not said, and then nothing ever
+// claims open or closed on a holiday: see hours_today_line().
+// App\Libraries\PublicHolidays says which days are holidays.
+
+defined('HOURS_HOLIDAY_MODES') || define('HOURS_HOLIDAY_MODES', ['closed', 'open', 'usual']);
+
+if (! function_exists('hours_holiday_encode')) {
+    /**
+     * The posted holidays row as stored, or null when the owner left it unanswered.
+     *
+     * @param array<string,mixed> $raw hours[holidays][...]
+     *
+     * @return array{mode:string,open:string,close:string,note:string,except:array<string,array{mode:string,open:string,close:string}>}|null
+     */
+    function hours_holiday_encode(array $raw): ?array
+    {
+        $time = static fn ($v): string => preg_match('/^\d{2}:\d{2}$/', (string) $v) ? (string) $v : '';
+        $mode = in_array($raw['mode'] ?? '', HOURS_HOLIDAY_MODES, true) ? (string) $raw['mode'] : '';
+        if ($mode === '') {
+            return null;
+        }
+
+        $except = [];
+        foreach (\App\Libraries\PublicHolidays::NATIONAL as $key => $name) {
+            $row  = is_array($raw['except'][$key] ?? null) ? $raw['except'][$key] : [];
+            $eMode = in_array($row['mode'] ?? '', HOURS_HOLIDAY_MODES, true) ? (string) $row['mode'] : '';
+            // "Same as other holidays" is the absence of an exception.
+            if ($eMode === '' || ($eMode === $mode && $eMode !== 'open')) {
+                continue;
+            }
+            $except[$key] = [
+                'mode'  => $eMode,
+                'open'  => $eMode === 'open' ? $time($row['open'] ?? '') : '',
+                'close' => $eMode === 'open' ? $time($row['close'] ?? '') : '',
+            ];
+            if ($eMode === 'open' && $mode === 'open' && $except[$key]['open'] === $time($raw['open'] ?? '')
+                && $except[$key]['close'] === $time($raw['close'] ?? '')) {
+                unset($except[$key]);
+            }
+        }
+
+        return [
+            'mode'   => $mode,
+            'open'   => $mode === 'open' ? $time($raw['open'] ?? '') : '',
+            'close'  => $mode === 'open' ? $time($raw['close'] ?? '') : '',
+            'note'   => mb_substr(trim((string) ($raw['note'] ?? '')), 0, HOURS_NOTE_MAX),
+            'except' => $except,
+        ];
+    }
+}
+
+if (! function_exists('hours_holiday_rule')) {
+    /**
+     * The owner's public holiday answer from the stored JSON, or null when
+     * there is none.
+     *
+     * @return array{mode:string,open:string,close:string,note:string,except:array<string,array{mode:string,open:string,close:string}>}|null
+     */
+    function hours_holiday_rule(?string $json): ?array
+    {
+        if ($json === null || trim($json) === '') {
+            return null;
+        }
+        $data = json_decode($json, true);
+
+        return is_array($data) && is_array($data['holidays'] ?? null)
+            ? hours_holiday_encode($data['holidays'])
+            : null;
+    }
+}
+
+if (! function_exists('hours_holiday_answer')) {
+    /**
+     * What the business does on one holiday, from its rule and its normal
+     * hours for that weekday. Null when we cannot honestly say: no answer at
+     * all, or "usual hours" on a weekday left blank.
+     *
+     * @param array<string,mixed>|null $rule    hours_holiday_rule()
+     * @param string                   $key     PublicHolidays key ('extra' for a declared day)
+     * @param array<string,mixed>|null $weekday the hours_decode() row for that weekday
+     *
+     * @return array{state:string,open:string,close:string}|null state 'open' or 'closed'
+     */
+    function hours_holiday_answer(?array $rule, string $key, ?array $weekday): ?array
+    {
+        if ($rule === null) {
+            return null;
+        }
+        $use = $rule['except'][$key] ?? $rule;
+
+        switch ($use['mode']) {
+            case 'closed':
+                return ['state' => 'closed', 'open' => '', 'close' => ''];
+
+            case 'open':
+                return ['state' => 'open', 'open' => (string) $use['open'], 'close' => (string) $use['close']];
+
+            case 'usual':
+                if (! is_array($weekday)) {
+                    return null;
+                }
+                if (! empty($weekday['closed'])) {
+                    return ['state' => 'closed', 'open' => '', 'close' => ''];
+                }
+                if (($weekday['open'] ?? '') === '' || ($weekday['close'] ?? '') === '') {
+                    return null;
+                }
+
+                return ['state' => 'open', 'open' => (string) $weekday['open'], 'close' => (string) $weekday['close']];
+        }
+
+        return null;
+    }
+}
+
+if (! function_exists('hours_holiday_text')) {
+    /** "Closed", "09:00–13:00", "Open" or "Usual hours": one answer in words. */
+    function hours_holiday_text(array $answer): string
+    {
+        return match ($answer['mode'] ?? $answer['state'] ?? '') {
+            'closed' => 'Closed',
+            'usual'  => 'Usual hours',
+            default  => ($answer['open'] ?? '') !== '' && ($answer['close'] ?? '') !== ''
+                ? $answer['open'] . '–' . $answer['close']
+                : 'Open',
+        };
+    }
+}
+
+if (! function_exists('hours_weekday_row')) {
+    /** The decoded hours row for the weekday a Y-m-d date falls on. */
+    function hours_weekday_row(?array $hours, string $date): ?array
+    {
+        $keys = array_keys(hours_days());
+        $row  = $hours[$keys[((int) (new DateTimeImmutable($date))->format('N')) - 1]] ?? null;
+
+        return is_array($row) ? $row : null;
+    }
+}
+
+if (! function_exists('hours_today_line')) {
+    /**
+     * hours_today_summary(), knowing about public holidays. The one place the
+     * profile header and the map popup ask "open now?", so they cannot
+     * disagree on a holiday either.
+     *
+     * On a holiday the weekday's normal hours are not trusted: Heritage Day
+     * on a Wednesday is not a Wednesday. With the owner's answer the line
+     * says what it says; without one it says hours may differ and claims
+     * neither open nor closed.
+     *
+     * @param string|null $now  'HH:MM' override, for testing
+     * @param string|null $date 'Y-m-d' override, for testing
+     *
+     * @return array{state:?string,label:string,detail:string,holiday:?array}|null
+     */
+    function hours_today_line(?array $hours, ?array $rule, bool $byAppointment = false, ?string $now = null, ?string $date = null, ?\App\Libraries\PublicHolidays $calendar = null): ?array
+    {
+        $date    ??= hours_now()->format('Y-m-d');
+        $now     ??= hours_now()->format('H:i');
+        $holiday = ($calendar ?? hours_calendar())->on($date);
+
+        if ($holiday === null) {
+            $keys    = array_keys(hours_days());
+            $summary = hours_today_summary($hours, $byAppointment, $now, $keys[((int) (new DateTimeImmutable($date))->format('N')) - 1]);
+
+            return $summary === null ? null : $summary + ['holiday' => null];
+        }
+
+        $name   = \App\Libraries\PublicHolidays::label($holiday);
+        $answer = hours_holiday_answer($rule, $holiday['key'], hours_weekday_row($hours, $date));
+        if ($answer === null) {
+            return ['state' => null, 'label' => 'Public holiday: hours may differ', 'detail' => $name . '. Call ahead', 'holiday' => $holiday];
+        }
+        if ($answer['state'] === 'closed') {
+            return ['state' => 'closed', 'label' => 'Closed today', 'detail' => $name, 'holiday' => $holiday];
+        }
+        if ($answer['open'] === '' || $answer['close'] === '') {
+            return ['state' => null, 'label' => 'Open today', 'detail' => $name, 'holiday' => $holiday];
+        }
+
+        $open = $answer['close'] < $answer['open']
+            ? $now >= $answer['open']
+            : ($now >= $answer['open'] && $now < $answer['close']);
+
+        return [
+            'state'   => $open ? 'open' : 'closed',
+            'label'   => $open ? 'Open now' : 'Closed now',
+            'detail'  => $name . ' hours ' . $answer['open'] . '–' . $answer['close'],
+            'holiday' => $holiday,
+        ];
+    }
+}
+
+if (! function_exists('hours_open_now_line')) {
+    /**
+     * hours_is_open_now(), knowing about public holidays: true, false, or null
+     * when we cannot say (always null on a holiday the owner has not answered).
+     */
+    function hours_open_now_line(?array $hours, ?array $rule, ?string $now = null, ?string $date = null, ?\App\Libraries\PublicHolidays $calendar = null): ?bool
+    {
+        $date ??= hours_now()->format('Y-m-d');
+        if (($calendar ?? hours_calendar())->on($date) === null) {
+            $keys = array_keys(hours_days());
+
+            return hours_is_open_now($hours, $now, $keys[((int) (new DateTimeImmutable($date))->format('N')) - 1]);
+        }
+        $line = hours_today_line($hours, $rule, false, $now, $date, $calendar);
+
+        return match ($line['state'] ?? null) {
+            'open'   => true,
+            'closed' => false,
+            default  => null,
+        };
+    }
+}
+
+if (! function_exists('hours_calendar')) {
+    /** One PublicHolidays per request: it reads the settings once. */
+    function hours_calendar(): \App\Libraries\PublicHolidays
+    {
+        static $calendar = null;
+
+        return $calendar ??= new \App\Libraries\PublicHolidays();
+    }
+}
+
+if (! function_exists('hours_holiday_open_dates')) {
+    /**
+     * The holiday dates from $from to a year on when the business is open,
+     * by its answers: what the search filter matches on a holiday
+     * (xs_directory_listings.holiday_open_dates). Comma separated, for FIND_IN_SET().
+     */
+    function hours_holiday_open_dates(?string $json, string $from, ?\App\Libraries\PublicHolidays $calendar = null): ?string
+    {
+        $rule = hours_holiday_rule($json);
+        if ($rule === null) {
+            return null;
+        }
+        $hours = hours_decode($json);
+        $dates = [];
+        foreach (($calendar ?? hours_calendar())->between($from, date('Y-m-d', strtotime($from . ' +1 year'))) as $day) {
+            $answer = hours_holiday_answer($rule, $day['key'], hours_weekday_row($hours, $day['date']));
+            if (($answer['state'] ?? null) === 'open') {
+                $dates[] = $day['date'];
+            }
+        }
+
+        return implode(',', $dates);
     }
 }

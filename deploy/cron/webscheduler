@@ -44,6 +44,14 @@ MAILTO=""
 # Not load-bearing — a missed run is caught the next day (fortnight window).
 0 7 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:quality:nudge --quiet
 
+# --- Public holiday hours -----------------------------------------------------
+# Rolls each profile's holiday open dates forward (the "open today" search
+# filter on a holiday), then, in the ten days before a public holiday, emails
+# opted-in owners who have not said what they do on holidays. At most once
+# every 90 days per owner. Morning, like the nudge, so it is read. A missed run
+# costs one day of reminders and nothing else.
+5 7 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:holidays:remind --quiet
+
 # --- Jobs board housekeeping --------------------------------------------------
 # Renew reminders, expiry, deleting posts never confirmed, and wiping poster
 # contact details 12 months after a post ends (POPIA retention). Like the badge

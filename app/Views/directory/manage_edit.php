@@ -27,6 +27,11 @@ $err = fn (string $f) => $errors[$f] ?? '';
 
 helper('directory_hours');
 $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listing['trading_hours'] ?? null) ?? []);
+// The public holiday answer travels with the days as hours[holidays], the
+// shape the form posts; the stored copy is decoded separately.
+if (! is_array($old['hours'] ?? null)) {
+    $vHours['holidays'] = hours_holiday_rule($listing['trading_hours'] ?? null);
+}
 
 // Same precedence as every other field: what was typed into a rejected save
 // wins over what is stored, so nobody retypes a team after one bad row.

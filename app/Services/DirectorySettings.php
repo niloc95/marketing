@@ -325,6 +325,49 @@ class DirectorySettings
         return $ok;
     }
 
+    /**
+     * The admin's declared one off public holidays (PublicHolidays::parseExtra()).
+     * Unreadable lines were refused on save, so they are skipped here.
+     *
+     * @return list<array{date:string,name:string}>
+     */
+    public function extraHolidays(): array
+    {
+        return \App\Libraries\PublicHolidays::parseExtra((string) $this->stored(DirectorySettingModel::EXTRA_HOLIDAYS))['days'];
+    }
+
+    /** The list as typed, for the admin's textarea. */
+    public function extraHolidaysText(): string
+    {
+        return (string) $this->stored(DirectorySettingModel::EXTRA_HOLIDAYS);
+    }
+
+    /**
+     * Store the declared days. Every line must read, or nothing is saved.
+     *
+     * @return array{ok:bool,message:string}
+     */
+    public function putExtraHolidays(string $text, string $by): array
+    {
+        $parsed = \App\Libraries\PublicHolidays::parseExtra($text);
+        if ($parsed['errors'] !== []) {
+            return ['ok' => false, 'message' => implode(' ', $parsed['errors'])];
+        }
+        $clean = implode("\n", array_map(static fn (array $d): string => $d['date'] . ' ' . $d['name'], $parsed['days']));
+
+        try {
+            $ok = $this->model->put(DirectorySettingModel::EXTRA_HOLIDAYS, $clean, $by);
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not save the extra public holidays: ' . $e->getMessage());
+            $ok = false;
+        }
+        $this->forget();
+
+        return $ok
+            ? ['ok' => true, 'message' => 'Public holidays saved. Profiles pick them up tonight, or now with php spark directory:holidays:remind --refresh-only.']
+            : ['ok' => false, 'message' => 'Could not save the public holidays.'];
+    }
+
     /** Drop the cached map. Called on every write, and by tests. */
     public function forget(): void
     {

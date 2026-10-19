@@ -39,7 +39,9 @@ $isSorted  = ($filters['sort'] ?? '') !== '';
 // A main-category filter has no landing page of its own to canonicalise to,
 // so indexing it would be a duplicate of /directory under another title.
 $hasGroup  = $group !== null;
-$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && ! $hasGroup && $page === 1 && ! $unknownFilter;
+// "Open on public holidays" is a filtered view, and changes with the date.
+$isHolidays = ($filters['holidays'] ?? '') !== '';
+$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && ! $isHolidays && ! $hasGroup && $page === 1 && ! $unknownFilter;
 
 // Every link on this page rebuilds the query string from scratch, and facets
 // travel as ?f[key][]=value while the filter array calls them 'facets'. Without
@@ -239,6 +241,15 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                     <p class="text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
                     <?php // Not offered on a near-me search: that list is ordered by
                           // distance, which browse() keeps above any sort. ?>
+                    <?php // Shown with no results too, once on: it is how a visitor
+                          // turns it back off. ?>
+                    <?php if ($result['total'] > 0 || $isHolidays): ?>
+                        <?= view('directory/_holiday_toggle', [
+                            'base'  => base_url('directory'),
+                            'query' => $urlFilters,
+                            'on'    => $isHolidays,
+                        ], ['saveData' => false]) ?>
+                    <?php endif; ?>
                     <?php if (($filters['lat'] ?? '') === '' && $result['total'] > 1): ?>
                         <?= view('directory/_sort_toggle', [
                             'base'  => base_url('directory'),

@@ -1344,6 +1344,11 @@ class JobBoardService
             // End of the closing day, in the app's own timezone like datePosted.
             'validThrough'       => date('c', strtotime((string) $post['valid_through'] . ' 23:59:59')),
             'hiringOrganization' => $org,
+            // True when the page's own form takes the application (an apply
+            // email, relayed by us); false when it sends people to the
+            // employer's site. Google for Jobs shows direct apply posts with a
+            // badge, and CareersService says the same of /careers.
+            'directApply'        => empty($post['apply_url']) && ! empty($post['apply_email']),
             'identifier'         => [
                 '@type' => 'PropertyValue',
                 'name'  => $this->site->siteName(),

@@ -205,6 +205,8 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('We have wired Durban homes since 1998.', $html);
 
         $schema = $this->svc->jobPostingSchema($post);
+        $this->assertTrue($schema['directApply'], 'applied for through our form');
+        $this->assertFalse($this->svc->jobPostingSchema(['apply_url' => 'https://careers.example.test/apply'] + $post)['directApply'], 'sent to the employer\'s site');
         $this->assertStringContainsString('<h3>You may be a good fit if you:</h3><ul><li>Hold a wiring certificate</li>', $schema['description']);
         $this->assertStringContainsString('<h3>About ' . esc($listing['display_name']) . '</h3><p>We have wired Durban homes since 1998.</p><p>Family owned.</p>', $schema['description']);
     }

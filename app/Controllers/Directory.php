@@ -222,7 +222,9 @@ class Directory extends BaseController
                 'phone'    => (string) ($l['phone'] ?? ''),
                 'url'      => base_url('directory/' . $l['slug']),
                 'logo'     => listing_image_url($l['logo_path'] ?? null),
-                'openNow'  => hours_is_open_now($hours),
+                // Holiday aware: on a public holiday this follows the owner's
+                // holiday answer, and is null (no badge) without one.
+                'openNow'  => hours_open_now_line($hours, hours_holiday_rule($l['trading_hours'] ?? null)),
                 // The link itself, not the flag: a Book button needs somewhere to
                 // go, and the flag alone used to send people to a #book anchor
                 // no profile rendered.
@@ -307,6 +309,9 @@ class Directory extends BaseController
             // crafted query string making the sanitiser walk a huge array.
             'facets'   => $this->facetParams(),
             'sort'     => $this->sortParam(),
+            // ?holidays=1: open on public holidays (DirectoryService::browse()).
+            // A string for the same pager reason as exact below.
+            'holidays' => $this->request->getGet('holidays') === '1' ? '1' : '',
             // ?exact=1: search the words as typed, uninterpreted. A string,
             // not a bool, because the pager rebuilds the URL from this array
             // and http_build_query() would write a false as "exact=0".

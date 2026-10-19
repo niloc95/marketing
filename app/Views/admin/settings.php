@@ -143,6 +143,22 @@ $changeNote = static function (?array $change): string {
 
                 <button type="submit" class="btn btn-accent">Save settings</button>
             </form>
+
+            <?php // Its own form: a typo in a date must not stop the badge price saving. ?>
+            <form method="post" action="<?= base_url('admin/settings/holidays') ?>" class="mt-10 border-t border-slate-100 pt-8 dark:border-slate-800">
+                <?= csrf_field() ?>
+                <h2 class="mb-1.5 text-base font-bold text-slate-900 dark:text-white">Declared public holidays</h2>
+                <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                    The twelve national holidays, Easter and the Sunday rule are worked out automatically.
+                    Add only days the President declares for one year, such as election days. One per line.
+                </p>
+                <div class="field">
+                    <label for="extra-holidays">Days</label>
+                    <textarea id="extra-holidays" name="extra_holidays" rows="4" placeholder="2026-11-04 Local government elections"><?= esc($extraHolidays) ?></textarea>
+                    <div class="hint">Profiles treat these like any public holiday, using each business&rsquo;s general holiday answer.</div>
+                </div>
+                <button type="submit" class="btn btn-ghost">Save holidays</button>
+            </form>
         </div>
     </div>
 </section>
