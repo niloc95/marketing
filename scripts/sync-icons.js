@@ -75,6 +75,8 @@ const ICONS = [
   // The profile video: the tile's play button, and our own pause and sound
   // controls, which stand in for the players' hidden ones (directory/show.php).
   'play', 'pause', 'volume-2', 'volume-x',
+  // "See all N photos" on the profile's photo band (directory/show.php).
+  'images',
 ];
 
 /**

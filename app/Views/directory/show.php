@@ -90,8 +90,27 @@ $metaDesc = listing_meta_description($l);
           // .vertical-scope .panel h3 reads them, so every panel heading below —
           // the listing's own and each branch's — arrives in the group's hue with
           // no per-panel plumbing. An unmapped group resolves to cat-tint-slate
-          // and every consumer falls back to navy on its own. ?>
-    <div class="container vertical-scope <?= $style['tint'] ?>">
+          // and every consumer falls back to navy on its own.
+          //
+          // On a wrapper rather than the .container: the photo band runs the full
+          // width of the screen, outside any container, and sits inside it too. ?>
+    <div class="vertical-scope <?= $style['tint'] ?>">
+    <?php $video = $l['video'] ?? null; ?>
+    <?php $photoCount = count($l['photos'] ?? []); ?>
+    <?php $hasBand = $photoCount > 0 || $video !== null; ?>
+    <?php $headVars = compact('l', 'name', 'prof', 'catSlug', 'province', 'place'); ?>
+    <?php $share = view('partials/_share', [
+        'title'    => $name . ($prof ? ', ' . $prof : ''),
+        'url'      => $canonical,
+        'networks' => ['whatsapp', 'facebook', 'x'],
+    ], ['saveData' => false]); ?>
+    <?php // avatar-logo only when there is a logo: it swaps the square crop for
+          // a contained fit that shows a wide lockup whole. Without an image the
+          // box stays square for the initials. ?>
+    <?php $avatar = '<div class="avatar' . ($logoUrl !== '' ? ' avatar-logo' : '') . '">'
+        . ($logoUrl !== '' ? '<img src="' . esc($logoUrl) . '" alt="">' : esc($initials))
+        . '</div>'; ?>
+    <div class="container">
         <nav class="crumbs" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>
                 <?php if ($i > 0): ?><span class="crumbs-sep">/</span><?php endif; ?>
@@ -103,114 +122,67 @@ $metaDesc = listing_meta_description($l);
             <?php endforeach; ?>
         </nav>
 
-        <div class="profile-head">
-            <?php // avatar-logo only when there is a logo: it swaps the square crop for
-                  // a contained fit that shows a wide lockup whole. Without an image the
-                  // box stays square for the initials. ?>
-            <div class="avatar<?= $logoUrl !== '' ? ' avatar-logo' : '' ?>">
-                <?php if ($logoUrl !== ''): ?><img src="<?= esc($logoUrl) ?>" alt=""><?php else: ?><?= esc($initials) ?><?php endif; ?>
+        <?php if (! $hasBand): ?>
+            <?php // No photos and no video: the light header, as it always was. ?>
+            <div class="profile-head">
+                <?= $avatar ?>
+                <div class="min-w-0 flex-1">
+                    <?= view('directory/_profile_head_parts', $headVars + [
+                        'pieces' => ['seal', 'category', 'name', 'rating', 'address', 'pills', 'hours'],
+                    ], ['saveData' => false]) ?>
+                </div>
+                <?= $share ?>
             </div>
-            <div class="min-w-0 flex-1">
-                <?php // The seal here, not the pill: this is the page a customer is on when
-                      // they decide whether to call, and it is the one public surface with
-                      // room for the mark itself. The pill still carries the same claim on
-                      // search cards, where 14px is all there is.
-                      //
-                      // Floated, and first in the column on purpose: a float only clears
-                      // content that comes after it, so placed lower it sat on its own row
-                      // and pushed the header taller. Up here the name and address wrap
-                      // beside it and the header keeps its height.
-                      //
-                      // Still a link, and the label still says what was actually checked.
-                      // "Verified" with no referent is the kind of badge that erodes trust
-                      // rather than building it, and the page it links to spells it out.
-                      // The seal stays aria-hidden so the link is named once, by the
-                      // anchor, rather than twice. ?>
-                <?php if (listing_is_verified_business($l)): ?>
-                    <a class="float-right ml-3 block" href="<?= base_url('verified') ?>"
-                       title="<?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"
-                       aria-label="Verified Business, <?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
-                <?php endif; ?>
-                <?php // Category and province link to their landing pages: this is what
-                      // stops those pages being orphans and gives them internal authority. ?>
-                <?php if ($prof): ?>
-                    <?php if ($catSlug !== ''): ?>
-                        <a class="text-sm font-bold text-brand-orange hover:underline" href="<?= esc(base_url('directory/' . $catSlug)) ?>"><?= esc($prof) ?></a>
-                    <?php else: ?>
-                        <span class="text-sm font-bold text-brand-orange"><?= esc($prof) ?></span>
-                    <?php endif; ?>
-                <?php endif; ?>
-                <?php if (($typeBadge = listing_type_badge($l)) !== ''): ?><span class="ml-1 align-middle"><?= $typeBadge ?></span><?php endif; ?>
-                <h1 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl"><?= esc($name) ?></h1>
-                <?php $headRating = rating_summary($l); ?>
-                <?php if ($headRating !== ''): ?>
-                    <a class="mt-1 inline-block hover:underline" href="#reviews"><?= $headRating ?></a>
-                <?php endif; ?>
-                <?php if ($place): ?>
-                    <?php // items-start, and the address wrapped in one <span>: the address
-                          // is inline text with a link spliced into it, and as bare flex
-                          // children the comma before the province would become its own
-                          // item and take a gap on each side. ?>
-                    <div class="mt-1 flex items-start gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-                        <?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0') ?>
-                        <span>
-                        <?php if ($catSlug !== '' && $province !== ''): ?>
-                            <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province))) ?>"><?= esc($province) ?></a>
-                        <?php else: ?>
-                            <?= esc($place) ?>
-                        <?php endif; ?>
-                        </span>
-                    </div>
-                <?php endif; ?>
-                <?php // The same pair as the search card, in the same order: Verified
-                      // (we checked them) before Featured (we promote them). The seal
-                      // above is the visual; this pill is what says it in words. ?>
-                <?php $headVerified = listing_is_verified_business($l); ?>
-                <?php if ($headVerified || ! empty($l['is_featured'])): ?>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                        <?php if ($headVerified): ?><?= verified_badge_pill() ?><?php endif; ?>
-                        <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
-                    </div>
-                <?php endif; ?>
-                <?php // Today's hours at a glance; the full week stays in the panel
-                      // below, and "See hours" jumps to it. Nothing at all when
-                      // today is blank: see hours_today_summary(). ?>
-                <?php $todayHours = hours_today_summary($l['trading_hours'] ?? null, ! empty($l['by_appointment'])); ?>
-                <?php if ($todayHours !== null): ?>
-                    <p class="hours-glance">
-                        <?= lucide('clock', 'h-4 w-4 shrink-0') ?>
-                        <?php // Full class names, not built from the state: Tailwind keeps
-                              // only the ones it can find spelled out in a template. ?>
-                        <?php $glanceClass = ['open' => 'hours-glance-open', 'closed' => 'hours-glance-closed'][$todayHours['state'] ?? ''] ?? 'hours-glance-unknown'; ?>
-                        <span class="<?= $glanceClass ?>"><?= esc($todayHours['label']) ?></span>
-                        <?php if ($todayHours['detail'] !== ''): ?><span><?= esc($todayHours['detail']) ?></span><?php endif; ?>
-                        <a href="#hours">See hours</a>
-                    </p>
-                <?php endif; ?>
-            </div>
-            <?= view('partials/_share', [
-                'title'    => $name . ($prof ? ', ' . $prof : ''),
-                'url'      => $canonical,
-                'networks' => ['whatsapp', 'facebook', 'x'],
-            ], ['saveData' => false]) ?>
-        </div>
+        <?php endif; ?>
+    </div>
 
-        <?php // Below the header: the category and the name are what tell a visitor
-              // they landed on the right business, so they come first and the
-              // photos follow — above the fold on a desktop either way. ?>
-        <?php // The profile video, a Verified Business perk, leads the strip.
-              // DirectoryService::getProfile() already applied the badge gate.
-              // It is a link to the video's own page, upgraded by directory.js
-              // to play in the lightbox, and it carries no data-gallery-open:
-              // the lightbox's photo list and its indexes stay photos only.
-              // The thumbnail is our own copy, so nothing is fetched from
-              // YouTube or Vimeo until someone presses play, unless the owner
-              // chose autoplay: then the tile's live layer loads a silent,
-              // looping player (directory.js, which skips it for reduced
-              // motion and data saving). ?>
-        <?php $video = $l['video'] ?? null; ?>
-        <?php if (! empty($l['photos']) || $video !== null): ?>
-            <div class="gallery" data-gallery>
+    <?php if ($hasBand): ?>
+        <?php // The photo band, after Yelp's business page: the photos side by side
+              // in one tall strip across the whole screen, and the business's name
+              // laid over the bottom of it on a dark scrim. The photos are the first
+              // thing a visitor sees and the page below moves up by a header's height.
+              //
+              // The overlay comes first in the source, so the name is still read
+              // before the photos; CSS stacks both in one grid cell. It ignores the
+              // pointer except on its own links, so a tap on bare photo behind the
+              // type still opens the lightbox.
+              //
+              // The strip scrolls sideways (swipe, trackpad, arrow keys once it has
+              // focus) and the round buttons are the home carousel's controller
+              // (directory.js, "showcase"): hidden while every photo fits, a page at
+              // a time otherwise. ?>
+        <div class="profile-band" data-showcase data-showcase-step="page">
+            <div class="profile-band-head">
+                <div class="container">
+                    <div class="profile-band-id">
+                        <?= $avatar ?>
+                        <div class="min-w-0">
+                            <?= view('directory/_profile_head_parts', $headVars + [
+                                'pieces' => ['category', 'name', 'rating', 'hours'],
+                            ], ['saveData' => false]) ?>
+                        </div>
+                        <?= view('directory/_profile_head_parts', $headVars + [
+                            'pieces' => ['seal'],
+                        ], ['saveData' => false]) ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php // The profile video, a Verified Business perk, leads the strip.
+                  // DirectoryService::getProfile() already applied the badge gate.
+                  // It is a link to the video's own page, upgraded by directory.js
+                  // to play in the lightbox, and it carries no data-gallery-open:
+                  // the lightbox's photo list and its indexes stay photos only.
+                  // The thumbnail is our own copy, so nothing is fetched from
+                  // YouTube or Vimeo until someone presses play, unless the owner
+                  // chose autoplay: then the tile's live layer loads a silent,
+                  // looping player (directory.js, which skips it for reduced
+                  // motion and data saving).
+                  //
+                  // data-gallery stays the last attribute: a test finds the strip
+                  // by "data-gallery>". ?>
+            <div class="gallery" id="profile-photos" data-showcase-track tabindex="0"
+                 aria-label="<?= esc('Photos of ' . $name, 'attr') ?>" data-gallery>
                 <?php if ($video !== null): ?>
                     <?php $videoLabel = 'Play video' . ($video['title'] !== '' ? ': ' . $video['title'] : ', ' . $name); ?>
                     <?php // A wrapper, not the link itself: with autoplay on, the tile also
@@ -248,12 +220,41 @@ $metaDesc = listing_meta_description($l);
                         <img src="<?= esc(base_url($p['path'])) ?>"
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
-                             alt="<?= esc(listing_image_alt($l, $i, count($l['photos'])), 'attr') ?>"
-                             loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
+                             alt="<?= esc(listing_image_alt($l, $i, $photoCount), 'attr') ?>"
+                             loading="<?= $i < 3 ? 'eager' : 'lazy' ?>">
                     </button>
                 <?php endforeach; ?>
             </div>
-        <?php endif; ?>
+
+            <div class="profile-band-controls" data-showcase-controls hidden>
+                <button type="button" class="profile-band-btn profile-band-prev" data-showcase-prev aria-controls="profile-photos" aria-label="Previous photos"><?= lucide('chevron-left', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
+                <button type="button" class="profile-band-btn profile-band-next" data-showcase-next aria-controls="profile-photos" aria-label="Next photos"><?= lucide('chevron-right', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
+            </div>
+
+            <?php // Opens the lightbox on the first photo. No <img> inside: the
+                  // lightbox builds its list from every [data-gallery-open] img. ?>
+            <?php if ($photoCount > 1): ?>
+                <button type="button" class="profile-band-all" data-gallery-open data-index="0">
+                    <?= lucide('images', 'h-4 w-4 shrink-0', ['aria-hidden' => 'true']) ?>See all <?= $photoCount ?> photos
+                </button>
+            <?php endif; ?>
+        </div>
+
+        <?php // What the overlay leaves out, so the type over the photos stays
+              // short: where the business is, the badges in words, and sharing. ?>
+        <div class="container">
+            <div class="profile-head-meta">
+                <div class="min-w-0">
+                    <?= view('directory/_profile_head_parts', $headVars + [
+                        'pieces' => ['address', 'pills'],
+                    ], ['saveData' => false]) ?>
+                </div>
+                <?= $share ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="container">
 
         <div class="lightbox" data-lightbox hidden>
             <button type="button" class="lightbox-close" data-lightbox-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
@@ -387,6 +388,7 @@ $metaDesc = listing_meta_description($l);
                 </div>
             </div>
         <?php endif; ?>
+    </div>
     </div>
 </section>
 <?= $this->endSection() ?>

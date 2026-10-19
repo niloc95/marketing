@@ -270,6 +270,36 @@ final class ServiceMenuTest extends CIUnitTestCase
         $this->assertStringContainsString('"amenityFeature"', $html);
     }
 
+    public function testProfileWithPhotosLaysTheNameOverThePhotoBand(): void
+    {
+        $id = $this->publishedListing();
+        (new DirectoryListingPhotoModel())->insert(['listing_id' => $id, 'path' => 'assets/listings/test.jpg', 'sort_order' => 0]);
+        (new DirectoryListingPhotoModel())->insert(['listing_id' => $id, 'path' => 'assets/listings/test2.jpg', 'sort_order' => 1]);
+
+        $html = $this->get('directory/flow-yoga')->getBody();
+
+        $band    = strpos($html, 'class="profile-band"');
+        $h1      = strpos($html, '<h1');
+        $gallery = strpos($html, 'data-gallery>');
+        $this->assertNotFalse($band, 'A profile with photos should get the photo band.');
+        $this->assertGreaterThan($band, $h1, 'The name should sit inside the band.');
+        $this->assertGreaterThan($h1, $gallery, 'The name should come before the photos in the source.');
+        $this->assertStringContainsString('See all 2 photos', $html);
+        $this->assertStringNotContainsString('class="profile-head"', $html);
+        $this->assertSame(1, substr_count($html, '<h1'));
+    }
+
+    public function testProfileWithoutPhotosKeepsTheLightHeader(): void
+    {
+        $this->publishedListing();
+
+        $html = $this->get('directory/flow-yoga')->getBody();
+
+        $this->assertStringContainsString('class="profile-head"', $html);
+        $this->assertStringNotContainsString('class="profile-band"', $html);
+        $this->assertStringNotContainsString('data-gallery>', $html);
+    }
+
     public function testProfileWithoutServicesOrFeaturesRendersNeitherPanel(): void
     {
         $this->publishedListing();

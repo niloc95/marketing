@@ -1588,8 +1588,13 @@
 
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // One card and the gap after it: what a press moves.
+    // One card and the gap after it: what a press moves. The profile's photo
+    // band (show.php) asks for most of a screen instead, because its photos
+    // are each as wide as their own shape and the first says nothing about
+    // the rest.
+    var byPage = root.getAttribute('data-showcase-step') === 'page';
     var step = function () {
+      if (byPage) return track.clientWidth * 0.8;
       var first = track.querySelector('li');
       if (!first) return track.clientWidth;
       var gap = parseFloat(getComputedStyle(track).columnGap) || 0;

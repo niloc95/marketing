@@ -1991,21 +1991,124 @@
   .dark .contact-suggest     { @apply text-slate-400 hover:text-primary-300; }
 
   /* ---------------------------------------------------------------- gallery */
-  /* Already dark by design (slate-900/90 scrim, white controls) — no override. */
-  /* Sits between .profile-head and .profile-grid, which brings its own mt-6 —
-     so only a top margin here, or the gap below doubles. */
-  .gallery      { @apply mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4; }
-  .gallery-item { @apply block aspect-square cursor-pointer overflow-hidden rounded-surface border-0 p-0; }
-  /* The first photo leads, at four times the size: an editorial spread rather
-     than a contact sheet. Only once there are enough photos to fill the rows
-     around it. */
-  .gallery:has(> .gallery-item:nth-child(5)) > .gallery-item:first-child { @apply col-span-2 row-span-2; }
+  /* The photo band, after Yelp's business page (show.php): the photos side by
+     side in one tall strip across the whole screen, with the business's name
+     over the bottom of it. The overlay and the strip share one grid cell, the
+     overlay first in the source and on top. Dark by design in both themes,
+     like the lightbox: the type over it is always white. */
+  .profile-band {
+    @apply relative isolate grid h-[22rem] overflow-hidden bg-slate-900 sm:h-[26rem] lg:h-[30rem];
+    grid-template: 100% / 100%;
+  }
+  .profile-band > .profile-band-head,
+  .profile-band > .gallery { grid-area: 1 / 1; }
+
+  /* Darken the lower part only, where the type sits; the top of each
+     photograph stays as it is. As strong as the home carousel's scrim, which
+     was tuned for white type on the bright, white-walled photos owners upload.
+     It ignores the pointer, so a tap still lands on the photo under it. */
+  .profile-band::after {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-3/4;
+    z-index: 1;
+    background: linear-gradient(to top,
+      rgb(2 6 23 / 0.88) 0%, rgb(2 6 23 / 0.6) 35%, rgb(2 6 23 / 0.2) 70%, transparent 100%);
+  }
+
+  /* The overlay ignores the pointer except on its own links, so bare photo
+     behind the name still opens the lightbox. */
+  .profile-band-head { @apply pointer-events-none relative self-end pb-5 sm:pb-8; z-index: 2; }
+  .profile-band-head :is(a, button) { @apply pointer-events-auto; }
+  .profile-band-id { @apply flex items-end gap-4 text-white; }
+  /* Room on the right for "See all N photos", which sits on the same line. */
+  @media (min-width: 640px) { .profile-band-id { max-width: calc(100% - 11rem); } }
+  /* The seal sits at the end of the row, beside the name, not floated to the
+     far edge of the column where it hung in the middle of a photo. */
+  /* A wide logo lockup gets a little less room on a phone, where the name
+     needs the width. */
+  .profile-band-head .avatar-logo   { @apply max-w-16 sm:max-w-24; }
+  .profile-band-head .profile-seal  { @apply float-none ml-0 shrink-0; }
+  .profile-band-head .verified-seal { @apply w-12 sm:w-20; }
+  .profile-band-head h1 {
+    @apply text-white;
+    font-size: clamp(1.75rem, 4.5vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    text-shadow: 0 1px 12px rgb(2 6 23 / 0.35);
+  }
+  .profile-band-head .profile-category { @apply text-orange-300; }
+  .profile-band-head .rating-line  { @apply text-white; }
+  .profile-band-head .stars .on    { @apply text-amber-400; }
+  .profile-band-head .stars .off   { @apply text-white/40; }
+  /* .profile-band in front of each: the .dark .hours-glance rules come later
+     in this file and would otherwise win in dark mode. */
+  .profile-band .profile-band-head .hours-glance         { @apply text-slate-100; }
+  .profile-band .profile-band-head .hours-glance svg     { @apply text-slate-300; }
+  .profile-band .profile-band-head .hours-glance-open    { @apply text-emerald-400; }
+  .profile-band .profile-band-head .hours-glance-closed  { @apply text-red-400; }
+  .profile-band .profile-band-head .hours-glance-unknown { @apply text-white; }
+  .profile-band .profile-band-head .hours-glance a       { @apply text-white underline-offset-4; }
+
+  /* The strip: a sideways scroll container with no visible scrollbar, the
+     home carousel's treatment. On a phone one photo fills the band and a swipe
+     snaps to the next. */
+  .gallery {
+    @apply flex h-full gap-1 overflow-x-auto focus:outline-none
+           focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .gallery::-webkit-scrollbar { display: none; }
+  .gallery-item {
+    @apply relative block h-full w-full shrink-0 cursor-pointer snap-start overflow-hidden border-0 bg-slate-800 p-0;
+  }
   .gallery-item img { @apply h-full w-full object-cover transition-opacity hover:opacity-90; }
+  /* From sm up the photos stand side by side at the band's height, each as
+     wide as its own shape: the img's width comes from its stored width and
+     height attributes (no inline styles, the CSP forbids them). A panorama is
+     capped so it cannot swallow the strip, and with only one or two photos
+     they grow to fill the width rather than leave a dark gap. */
+  @media (min-width: 640px) {
+    .gallery-item { @apply w-auto min-w-[12rem]; flex: 1 0 auto; }
+    .gallery-item img { @apply w-auto min-w-full max-w-[60vw]; }
+    .gallery-video { @apply aspect-video; }
+  }
+
+  /* Previous / next, one each side of the strip, hidden on a phone (a swipe
+     does it there) and by directory.js while every photo fits. At an end the
+     button fades out rather than sitting there disabled. */
+  .profile-band-controls { @apply pointer-events-none absolute inset-0 hidden sm:block; z-index: 3; }
+  .profile-band-controls[hidden] { display: none; }
+  .profile-band-btn {
+    @apply pointer-events-auto absolute top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center
+           rounded-full border-0 bg-white/90 text-slate-900 shadow-lg transition-opacity hover:bg-white
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2
+           focus-visible:ring-offset-slate-900;
+  }
+  .profile-band-btn:disabled { @apply pointer-events-none opacity-0; }
+  .profile-band-prev { @apply left-4 sm:left-6; }
+  .profile-band-next { @apply right-4 sm:right-6; }
+
+  /* "See all N photos": opens the lightbox on the first. Top right on a phone,
+     where the name needs the full width at the bottom; bottom right, on the
+     name's line, from sm up. */
+  .profile-band-all {
+    @apply absolute right-4 top-4 inline-flex cursor-pointer items-center gap-2 rounded-control border-0
+           bg-slate-900/70 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm hover:bg-slate-900/85
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-white
+           sm:bottom-8 sm:right-6 sm:top-auto;
+    z-index: 3;
+  }
+
+  /* Under the band: where the business is, the badges in words, and sharing. */
+  .profile-head-meta { @apply mt-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3; }
 
   /* The profile video's tile: the thumbnail with a play button over it, or,
      when no thumbnail could be copied, the video's title on the brand colour.
-     Its own aspect stays square like its neighbours; object-cover crops the
-     16:9 thumbnail to fit. */
+     From sm up the tile is 16:9 at the band's height; on a phone it fills the
+     band like a photo and object-cover crops the thumbnail to fit. */
   .gallery-video       { @apply relative cursor-default; }
   .gallery-video-link  { @apply block h-full w-full cursor-pointer; }
   .gallery-video-blank {
