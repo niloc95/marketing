@@ -10,8 +10,14 @@
  * @var array<string,string> $fields  label => value; values that look like
  *                                    links are linked, everything is escaped
  * @var string               $message
+ * @var array{heading:string,level:string,lines:list<string>}|null $screeningResult
+ *                                    a job application's marked screening
+ *                                    answers (JobBoardService::relayApplication());
+ *                                    every caller passes it, null for none,
+ *                                    because CI4 keeps view data between renders
  * @var string               $footnote
  */
+$screeningResult = $screeningResult ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,6 +46,16 @@
         <div style="margin:22px 0;padding:16px;background:#f8fafc;border-radius:10px;font-size:15px;line-height:1.6">
             <?= nl2br(esc($message)) ?>
         </div>
+
+        <?php if ($screeningResult !== null): ?>
+            <h2 style="color:#003049;font-size:16px;margin:0 0 4px"><?= esc($screeningResult['heading']) ?></h2>
+            <p style="font-size:13px;color:#64748b;margin:0 0 10px"><?= esc($screeningResult['level']) ?>. Each applicant gets their own numbers and names, so answers cannot be shared. Nobody was turned away on their score; it is a guide for you.</p>
+            <ul style="font-size:14px;line-height:1.6;margin:0 0 22px;padding-left:18px">
+                <?php foreach ($screeningResult['lines'] as $line): ?>
+                    <li style="margin-bottom:6px"><?= esc($line) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
 
         <p style="font-size:13px;color:#64748b"><?= esc($footnote) ?></p>
     </div>

@@ -27,6 +27,11 @@ $applyUrl  = $isJob ? safe_external_url($post['apply_url'] ?? '') : '';
 $full      = ! $isJob && (int) $post['response_count'] >= $maxResponses;
 $ownPost   = $responder !== null && (int) ($post['listing_id'] ?? 0) === (int) $responder['id'];
 $about     = $svc->aboutEmployer($post);
+// Screening questions (App\Libraries\Screening): when on, Start checks the
+// fields carrying data-screening-needs before drawing the questions.
+$screens   = $isJob && $isLive && $svc->screens($post);
+$needs     = static fn (string $msg) => $screens ? ' data-screening-needs="' . esc($msg, 'attr') . '"' : '';
+$star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
 ?>
 
 <?= $this->section('head') ?>
@@ -155,20 +160,20 @@ $about     = $svc->aboutEmployer($post);
                         <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
                         <div class="form-row">
                             <div class="field">
-                                <label for="apply-name">Your name</label>
-                                <input type="text" id="apply-name" name="name" required value="<?= esc($v('name'), 'attr') ?>">
+                                <label for="apply-name">Your name<?= $star ?></label>
+                                <input type="text" id="apply-name" name="name"<?= $needs('Please enter your name.') ?> required value="<?= esc($v('name'), 'attr') ?>">
                                 <?php if ($err('name')): ?><div class="err"><?= esc($err('name')) ?></div><?php endif; ?>
                             </div>
                             <div class="field">
-                                <label for="apply-email">Email address</label>
-                                <input type="email" id="apply-email" name="email" required value="<?= esc($v('email'), 'attr') ?>">
+                                <label for="apply-email">Email address<?= $star ?></label>
+                                <input type="email" id="apply-email" name="email"<?= $needs('Please enter your email address.') ?> required value="<?= esc($v('email'), 'attr') ?>">
                                 <?php if ($err('email')): ?><div class="err"><?= esc($err('email')) ?></div><?php endif; ?>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="field">
-                                <label for="apply-phone">Phone</label>
-                                <input type="tel" id="apply-phone" name="phone" required minlength="9" maxlength="40" autocomplete="tel" value="<?= esc($v('phone'), 'attr') ?>">
+                                <label for="apply-phone">Phone<?= $star ?></label>
+                                <input type="tel" id="apply-phone" name="phone"<?= $needs('Please enter a phone number of at least 9 digits.') ?> required minlength="9" maxlength="40" autocomplete="tel" value="<?= esc($v('phone'), 'attr') ?>">
                                 <?php if ($err('phone')): ?><div class="err"><?= esc($err('phone')) ?></div><?php endif; ?>
                             </div>
                             <div class="field">
@@ -179,14 +184,27 @@ $about     = $svc->aboutEmployer($post);
                             </div>
                         </div>
                         <div class="field">
-                            <label for="apply-message">Message to the employer</label>
-                            <textarea id="apply-message" name="message" rows="6" required placeholder="Your experience, and why you are a good fit."><?= esc($v('message')) ?></textarea>
+                            <label for="apply-message">Message to the employer<?= $star ?></label>
+                            <textarea id="apply-message" name="message" rows="6"<?= $needs('Please tell the employer about yourself in at least 20 characters.') ?> required minlength="20" placeholder="Your experience, and why you are a good fit."><?= esc($v('message')) ?></textarea>
                             <?php if ($err('message')): ?><div class="err"><?= esc($err('message')) ?></div><?php endif; ?>
                         </div>
                         <div class="field">
-                            <label class="font-medium"><input type="checkbox" name="consent" value="1" required> I agree to <?= esc($siteName) ?> passing my name, contact details and message to <?= esc($employer) ?> for this vacancy. See our <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>" target="_blank" rel="noopener">Privacy policy</a>.</label>
+                            <label class="font-medium"><input type="checkbox" name="consent" value="1" required> I agree to <?= esc($siteName) ?> passing my name, contact details<?= $screens ? ', message and answers to the questions below' : ' and message' ?> to <?= esc($employer) ?> for this vacancy. See our <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>" target="_blank" rel="noopener">Privacy policy</a>.</label>
                             <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
                         </div>
+                        <?php if ($screens): ?>
+                            <?php // Last, so the clock starts once the details are in. ?>
+                            <?= view('partials/_screening_questions', [
+                                'roleId'    => (int) $post['id'],
+                                'level'     => (string) $post['screening_level'],
+                                'attempt'   => $svc->screeningView($post),
+                                'error'     => $err('screening'),
+                                'who'       => $employer,
+                                'startUrl'  => base_url('jobs/screening/start'),
+                                'answerUrl' => base_url('jobs/screening/answer'),
+                                'screening' => $svc->screening(),
+                            ], ['saveData' => false]) ?>
+                        <?php endif; ?>
                         <button type="submit" class="btn btn-accent"><?= lucide('mail', 'h-4 w-4 shrink-0') ?>Send application</button>
                     </form>
                 <?php endif; ?>
