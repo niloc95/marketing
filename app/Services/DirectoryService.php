@@ -1030,6 +1030,11 @@ class DirectoryService
         // a business on the strength of a panel the visitor cannot see.
         $builder->orWhere($this->teamExists($q), null, false);
 
+        // The brands a business carries ("nike" finds the shoe shops). Free
+        // for every profile, so no badge clause. Prefix only, on the phrase and
+        // each word, so the name index does the work.
+        $builder->orWhere($this->brandExists($q, $this->likeTerms($terms)), null, false);
+
         $builder->groupEnd();
     }
 
@@ -1226,6 +1231,20 @@ class DirectoryService
             . ' OR tm.specializations LIKE ' . $like . " ESCAPE '!'))";
     }
 
+    /** @param list<string> $terms */
+    private function brandExists(string $phrase, array $terms): string
+    {
+        $db       = $this->listings->db;
+        $patterns = array_map(
+            static fn (string $t): string => 'b.name LIKE ' . $db->escape($db->escapeLikeString($t) . '%') . " ESCAPE '!'",
+            array_values(array_unique(array_merge([$phrase], $terms)))
+        );
+
+        return 'EXISTS (SELECT 1 FROM xs_directory_listing_brands b'
+            . ' WHERE b.listing_id = xs_directory_listings.id'
+            . ' AND (' . implode(' OR ', $patterns) . '))';
+    }
+
     /**
      * "(col LIKE '%phrase%' OR col LIKE '%word%' …)", or null for nothing to
      * match.
@@ -1296,6 +1315,7 @@ class DirectoryService
             $listing['venue']['place'] = $this->placeProfileFor($listing['venue']);
         }
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
+        $listing['brands']         = (new ListingBrandService())->forListing((int) $listing['id']);
 
         // Free for every listing — see ServiceMenuService.
         $menu                   = new ServiceMenuService();

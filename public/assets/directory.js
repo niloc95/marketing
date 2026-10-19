@@ -824,6 +824,30 @@
     }
   });
 
+  // ------------------------------------------------------- brand logo strip
+  // The scrolling "Brands we carry" strip on a profile (_panel_brands.php).
+  // The speed follows the count so every strip moves at about the same pace,
+  // set here because CSP refuses a style="" attribute. The pause button is for
+  // touch screens, which cannot hover; it stays hidden under reduced motion,
+  // where the strip does not move at all.
+  document.querySelectorAll('[data-logo-strip].is-marquee').forEach(function (strip) {
+    var count = parseInt(strip.getAttribute('data-count'), 10) || 8;
+    strip.style.setProperty('--logo-duration', Math.max(20, count * 4) + 's');
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var panel  = strip.closest('.panel');
+    var toggle = panel && panel.querySelector('[data-logo-toggle]');
+    if (!toggle || reduce) return;
+
+    toggle.hidden = false;
+    toggle.addEventListener('click', function () {
+      var paused = strip.classList.toggle('is-paused');
+      toggle.setAttribute('aria-label', paused ? 'Play the brand logos' : 'Pause the brand logos');
+      toggle.querySelector('[data-icon-pause]').hidden = paused;
+      toggle.querySelector('[data-icon-play]').hidden = !paused;
+    });
+  });
+
   // ------------------------------------------------------------ photo delete
   // Deletes a gallery photo on the edit pages without leaving the page.
   //
@@ -837,21 +861,25 @@
   // button sent it. The confirm handler above is registered first, so a
   // cancelled confirm arrives here already defaultPrevented.
   document.addEventListener('click', function (e) {
-    var btn = e.target.closest ? e.target.closest('button[data-photo-delete]') : null;
+    // Brand logos (_brand_fields.php) delete the same way, with their own
+    // panel, item and error hooks and their own counter afterwards.
+    var btn = e.target.closest ? e.target.closest('button[data-photo-delete], button[data-brand-delete]') : null;
     if (!btn || e.defaultPrevented || !window.fetch || !window.FormData) return;
+    var isBrand = btn.hasAttribute('data-brand-delete');
     e.preventDefault();
 
     // Only the CSRF token goes along — the rest of the listing form is not the
     // delete endpoint's business, and posting the picked uploads would send
     // megabytes for nothing.
-    var panel = btn.closest('[data-photo-manage]');
+    var panel = btn.closest(isBrand ? '[data-brand-manage]' : '[data-photo-manage]');
     var body  = new FormData();
     var name  = panel && panel.getAttribute('data-csrf-name');
     var token = name && btn.form ? btn.form.querySelector('input[name="' + name + '"]') : null;
     if (token) body.append(name, token.value);
 
-    var item  = btn.closest('[data-photo-item]');
-    var errEl = panel && panel.querySelector('[data-photo-error]');
+    var item  = btn.closest(isBrand ? '[data-brand-item]' : '[data-photo-item]');
+    var errEl = panel && panel.querySelector(isBrand ? '[data-brand-error]' : '[data-photo-error]');
+    var noun  = isBrand ? 'brand' : 'photo';
     btn.disabled = true;
     if (errEl) errEl.hidden = true;
 
@@ -879,23 +907,44 @@
         if (!data || !data.ok) {
           if (btn) btn.disabled = false;
           if (errEl) {
-            errEl.textContent = (data && data.message) || 'That photo could not be deleted. Please reload the page and try again.';
+            errEl.textContent = (data && data.message) || 'That ' + noun + ' could not be deleted. Please reload the page and try again.';
             errEl.hidden = false;
           }
           return;
         }
 
         if (item) item.remove();
-        syncGalleryCounts(panel, data.remaining, data.slots);
+        if (isBrand) {
+          syncBrandSlots(panel, data.slots);
+        } else {
+          syncGalleryCounts(panel, data.remaining, data.slots);
+        }
       })
       .catch(function () {
         if (btn) btn.disabled = false;
         if (errEl) {
-          errEl.textContent = 'That photo could not be deleted. Check your connection and try again.';
+          errEl.textContent = 'That ' + noun + ' could not be deleted. Check your connection and try again.';
           errEl.hidden = false;
         }
       });
   });
+
+  // A freed brand slot can be filled before saving: raise the add-row cap and
+  // show the rows again if the profile was full.
+  function syncBrandSlots(panel, slots) {
+    if (panel && !panel.querySelector('[data-brand-item]')) panel.remove();
+    var upload = document.querySelector('[data-brand-upload]');
+    if (!upload || typeof slots !== 'number') return;
+    var open = upload.querySelector('[data-brand-open]');
+    var full = upload.querySelector('[data-brand-full]');
+    var add  = upload.querySelector('[data-repeat-add]');
+    if (add) {
+      add.setAttribute('data-repeat-max', String(slots));
+      add.disabled = upload.querySelectorAll('[data-repeat-item]').length >= slots;
+    }
+    if (open) open.hidden = slots <= 0;
+    if (full) full.hidden = slots > 0;
+  }
 
   // Keep the "N of 8 used" line and the upload field's cap in step with what
   // the server says is left, so a freed slot can be filled before saving.
@@ -2439,7 +2488,10 @@
     var addBtn   = section.querySelector('[data-repeat-add]');
     if (!list || !template || !addBtn) return;
 
-    var max = parseInt(addBtn.getAttribute('data-repeat-max') || '0', 10);
+    // Read on every check, not once: a brand deleted in place raises it.
+    function maxRows() {
+      return parseInt(addBtn.getAttribute('data-repeat-max') || '0', 10);
+    }
 
     function rows() {
       return list.querySelectorAll('[data-repeat-item]');
@@ -2457,6 +2509,7 @@
     }
 
     function syncAddState() {
+      var max  = maxRows();
       var full = max > 0 && liveRows() >= max;
       addBtn.disabled = full;
       addBtn.title    = full ? (addBtn.getAttribute('data-repeat-full') || '') : '';

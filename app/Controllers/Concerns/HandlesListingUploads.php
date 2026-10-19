@@ -6,6 +6,7 @@ use App\Libraries\ListingImageProcessor;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
+use App\Services\ListingBrandService;
 use App\Services\ListingMenuService;
 use App\Services\TeamMemberService;
 
@@ -258,6 +259,38 @@ trait HandlesListingUploads
         }
 
         return ['team' => $team, 'errors' => $errors];
+    }
+
+    /**
+     * Add the brands posted as brand_name[i] + brand_logo[i].
+     *
+     * After the save, like the gallery: it needs the id, and a logo that fails
+     * to process must never cost anyone their listing.
+     *
+     * @return list<string> problems to flash; the rest of the save stands
+     */
+    protected function resolveBrands(int $listingId): array
+    {
+        return (new ListingBrandService())->addFromForm(
+            $listingId,
+            $this->request->getPost('brand_name'),
+            $this->request->getFileMultiple('brand_logo') ?? []
+        );
+    }
+
+    /**
+     * The answer to a brand delete sent by the edit page's script, for the
+     * reason photoDeleteJson() gives (a reload would lose unsaved edits, and
+     * the CSRF token must be handed back).
+     */
+    protected function brandDeleteJson(bool $ok, string $message, int $status, ?int $listingId = null): \CodeIgniter\HTTP\ResponseInterface
+    {
+        return $this->response->setStatusCode($status)->setJSON([
+            'ok'      => $ok,
+            'message' => $message,
+            'slots'   => $listingId === null ? null : (new ListingBrandService())->slots($listingId),
+            'csrf'    => ['name' => csrf_token(), 'hash' => csrf_hash()],
+        ]);
     }
 
     /**

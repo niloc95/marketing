@@ -30,6 +30,8 @@
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
  * @var array    $menuFiles   stored menu files (edit pages only), rendered by _menu_fields.php
  * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
+ * @var array    $brands      stored brand logos (edit pages only), rendered by _brand_fields.php
+ * @var string   $brandDeleteBase  where a brand's delete button posts, e.g. base_url('manage/brand-delete')
  * @var bool     $addressRequired  insist on a full address (public signup only)
  * @var bool     $privateDetailsRequired  insist on a title and a contact person (not admin intake)
  * @var array    $countries  Config\Countries::grouped()
@@ -61,6 +63,8 @@ $vAttributes = $vAttributes ?? [];
 $photos      = $photos      ?? [];
 $menuFiles   = $menuFiles   ?? [];
 $deleteBase  = $deleteBase  ?? '';
+$brands          = $brands          ?? [];
+$brandDeleteBase = $brandDeleteBase ?? '';
 // The owner's own public address, passed by manage_edit.php only, so the
 // "no website?" hint can name it. Signup has no slug yet and admin does not
 // need telling, so both fall back to the generic wording.
@@ -93,7 +97,7 @@ $countries   = $countries   ?? [];
 $lockCountry = $lockCountry ?? false;
 helper('directory_hours');
 ?>
-<?php if ($photos !== [] && $deleteBase !== ''): ?>
+<?php if (($photos !== [] && $deleteBase !== '') || ($brands !== [] && $brandDeleteBase !== '')): ?>
     <?php // Pressing Enter in a text field submits the form through its *first*
           // submit button in tree order. The photo delete buttons further down are
           // submit buttons, so without this one Enter would ask to delete a photo
@@ -654,6 +658,10 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
     </div>
     <div class="hint" data-gallery-full <?= $gallerySlots > 0 ? 'hidden' : '' ?>>This profile already has the maximum number of photos. Delete one above to add another.</div>
 </div>
+<?= view('directory/_brand_fields', [
+    'brands'     => $brands,
+    'deleteBase' => $brandDeleteBase,
+], ['saveData' => false]) ?>
 <?php // The profile video: a Verified Business perk, so drawn on $showExtras like
       // the team and branches. Not drawing it is what keeps it out of the POST;
       // ListingVideoService::prepare() re-checks the badge on the stored row. ?>

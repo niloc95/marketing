@@ -272,7 +272,8 @@ class Listing extends BaseController
         if ($gallery['photos'] !== []) {
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
-        $menuErrors = $this->applyMenuUpload((int) $result['id']);
+        $menuErrors  = $this->applyMenuUpload((int) $result['id']);
+        $brandErrors = $this->resolveBrands((int) $result['id']);
 
         // Close the referral this signup was invited from. After the save, and
         // it swallows its own failures: it must never cost anyone their listing.
@@ -321,7 +322,7 @@ class Listing extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('/'))->with('success', $this->signupMessage($message)),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $verified['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $verified['errors']))
         );
     }
 

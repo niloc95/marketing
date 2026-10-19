@@ -133,6 +133,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h2>10. Your content</h2>
             <p>You keep ownership of everything you submit. You grant us a nonexclusive, royalty free licence to host, reproduce, resize and display it for the purpose of operating and promoting the site. That licence ends when the profile is removed, save for backups and any copies already cached by search engines, which are outside our control.</p>
+            <p><strong>Brand logos.</strong> Show only the brands you genuinely sell, stock or service. A logo on your profile does not mean the brand endorses you or appointed you as a dealer, and you must not suggest that it does unless it is true. Trademarks belong to their owners, and we remove a logo when its owner asks.</p>
 
             <h2>11. Managing and removing your profile</h2>
             <p>Use <a href="<?= base_url('manage') ?>">Manage your profile</a> to edit or delete a profile at any time. Access is by a short lived, single use link sent to the verified email address. Keep that address current and do not forward those links.</p>

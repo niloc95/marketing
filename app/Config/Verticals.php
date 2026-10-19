@@ -56,6 +56,7 @@ class Verticals extends BaseConfig
         'nounPlural' => 'businesses',
         'headings'   => [
             'description' => 'Business description',
+            'brands'      => 'Brands we carry',
             'services'    => 'Services',
             'features'    => 'Features & amenities',
             'credentials' => 'Credentials',
@@ -67,7 +68,7 @@ class Verticals extends BaseConfig
             'ataglance'   => 'At a glance',
         ],
         'cta'   => 'Get in touch',
-        'order' => ['ataglance', 'description', 'services', 'features', 'credentials', 'venue', 'tags', 'team', 'locations', 'reviews'],
+        'order' => ['ataglance', 'description', 'brands', 'services', 'features', 'credentials', 'venue', 'tags', 'team', 'locations', 'reviews'],
     ];
 
     /**
@@ -91,7 +92,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other rooms & practices',
             ],
             'cta'   => 'Book an appointment',
-            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['credentials', 'ataglance', 'description', 'brands', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         'Beauty & Wellness' => [
             'noun'       => 'salon',
@@ -103,19 +104,20 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Book a treatment',
-            'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
         ],
         'Motoring' => [
             'noun'       => 'workshop',
             'nounPlural' => 'workshops',
             'headings'   => [
+                'brands'      => 'Brands we work with',
                 'services'    => 'Work we do & rates',
                 'credentials' => 'Approvals & accreditation',
                 'tags'        => 'Makes & specialities',
                 'locations'   => 'Other workshops',
             ],
             'cta'   => 'Request a quote',
-            'order' => ['services', 'ataglance', 'description', 'features', 'credentials', 'tags', 'venue', 'team', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'features', 'credentials', 'tags', 'venue', 'team', 'locations', 'reviews'],
         ],
         'Legal & Financial' => [
             'noun'       => 'firm',
@@ -129,19 +131,20 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other offices',
             ],
             'cta'   => 'Request a consultation',
-            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['credentials', 'ataglance', 'description', 'brands', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         'Home & Trades' => [
             'noun'       => 'tradesperson',
             'nounPlural' => 'tradespeople',
             'headings'   => [
+                'brands'      => 'Brands we work with',
                 'services'    => 'Work we do & rates',
                 'credentials' => 'Certifications & registrations',
                 'tags'        => 'Specialities',
                 'locations'   => 'Other depots',
             ],
             'cta'   => 'Request a quote',
-            'order' => ['services', 'ataglance', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'credentials', 'features', 'tags', 'venue', 'team', 'locations', 'reviews'],
         ],
         'Professional Services' => [
             'noun'       => 'practice',
@@ -154,7 +157,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other offices',
             ],
             'cta'   => 'Request a quote',
-            'order' => ['ataglance', 'description', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['ataglance', 'description', 'brands', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         'Fitness & Sport' => [
             'noun'       => 'studio',
@@ -167,7 +170,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Book a session',
-            'order' => ['services', 'ataglance', 'description', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
         ],
         'Education & Training' => [
             'noun'       => 'provider',
@@ -180,7 +183,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other campuses',
             ],
             'cta'   => 'Enquire about enrolment',
-            'order' => ['ataglance', 'description', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['ataglance', 'description', 'brands', 'services', 'credentials', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         'Events & Hospitality' => [
             'noun'       => 'venue',
@@ -192,7 +195,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other locations',
             ],
             'cta'   => 'Check availability',
-            'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'team', 'credentials', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'features', 'tags', 'venue', 'team', 'credentials', 'locations', 'reviews'],
         ],
         // The menu leads: it is the first thing anyone opens a restaurant page
         // for, ahead of the blurb. At a glance (open now, takeaway, delivery)
@@ -208,7 +211,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other branches',
             ],
             'cta'   => 'Reserve a table',
-            'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'team', 'credentials', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'features', 'tags', 'venue', 'team', 'credentials', 'locations', 'reviews'],
         ],
         'Travel & Tourism' => [
             'noun'       => 'operator',
@@ -220,7 +223,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other properties',
             ],
             'cta'   => 'Check availability',
-            'order' => ['ataglance', 'description', 'services', 'features', 'tags', 'venue', 'team', 'credentials', 'locations', 'reviews'],
+            'order' => ['ataglance', 'description', 'brands', 'services', 'features', 'tags', 'venue', 'team', 'credentials', 'locations', 'reviews'],
         ],
         'Pets & Animals' => [
             'noun'       => 'practice',
@@ -233,7 +236,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other branches',
             ],
             'cta'   => 'Book an appointment',
-            'order' => ['services', 'ataglance', 'description', 'credentials', 'features', 'tags', 'venue', 'team', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'credentials', 'features', 'tags', 'venue', 'team', 'locations', 'reviews'],
         ],
         // Not businesses, so no prices and no "book": what they run, who runs
         // it, and how to get involved.
@@ -249,7 +252,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other sites',
             ],
             'cta'   => 'Get involved',
-            'order' => ['description', 'services', 'ataglance', 'features', 'team', 'credentials', 'tags', 'venue', 'locations', 'reviews'],
+            'order' => ['description', 'brands', 'services', 'ataglance', 'features', 'team', 'credentials', 'tags', 'venue', 'locations', 'reviews'],
         ],
         // Visited, not hired: service times rather than office hours.
         'Faith & Worship' => [
@@ -264,7 +267,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other sites',
             ],
             'cta'   => 'Plan a visit',
-            'order' => ['description', 'ataglance', 'services', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
+            'order' => ['description', 'brands', 'ataglance', 'services', 'features', 'team', 'tags', 'venue', 'credentials', 'locations', 'reviews'],
         ],
         // Malls, stadiums, halls, parks. "What's inside" is the venue panel,
         // so it sits high: for a mall it is the reason the page exists.
@@ -280,7 +283,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other venues',
             ],
             'cta'   => 'Plan a visit',
-            'order' => ['description', 'venue', 'ataglance', 'features', 'services', 'tags', 'team', 'credentials', 'locations', 'reviews'],
+            'order' => ['description', 'brands', 'venue', 'ataglance', 'features', 'services', 'tags', 'team', 'credentials', 'locations', 'reviews'],
         ],
         'Everyday Services' => [
             'noun'       => 'service',
@@ -291,7 +294,7 @@ class Verticals extends BaseConfig
                 'tags'     => 'Specialities',
             ],
             'cta'   => 'Get in touch',
-            'order' => ['services', 'ataglance', 'description', 'features', 'tags', 'venue', 'credentials', 'team', 'locations', 'reviews'],
+            'order' => ['services', 'ataglance', 'description', 'brands', 'features', 'tags', 'venue', 'credentials', 'team', 'locations', 'reviews'],
         ],
         'Retail & Other' => [
             'noun'       => 'shop',
@@ -303,7 +306,7 @@ class Verticals extends BaseConfig
                 'locations' => 'Other stores',
             ],
             'cta'   => 'Visit the shop',
-            'order' => ['ataglance', 'description', 'services', 'features', 'venue', 'tags', 'team', 'credentials', 'locations', 'reviews'],
+            'order' => ['ataglance', 'description', 'brands', 'services', 'features', 'venue', 'tags', 'team', 'credentials', 'locations', 'reviews'],
         ],
         // A maker rather than a shop: most of these trade from home, so "shop"
         // and "opening hours" both overclaim. Tags carry more weight here than
@@ -317,7 +320,7 @@ class Verticals extends BaseConfig
                 'tags'     => 'What we are known for',
             ],
             'cta'   => 'Place an order',
-            'order' => ['ataglance', 'description', 'services', 'tags', 'features', 'venue', 'credentials', 'team', 'locations', 'reviews'],
+            'order' => ['ataglance', 'description', 'brands', 'services', 'tags', 'features', 'venue', 'credentials', 'team', 'locations', 'reviews'],
         ],
         // A person rather than a premises, and a session rather than a
         // consultation. Credentials stay high for the same reason as Health &
@@ -333,7 +336,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other practice rooms',
             ],
             'cta'   => 'Book a session',
-            'order' => ['ataglance', 'credentials', 'description', 'services', 'features', 'team', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['ataglance', 'credentials', 'description', 'brands', 'services', 'features', 'team', 'venue', 'tags', 'locations', 'reviews'],
         ],
     ];
 
@@ -539,7 +542,7 @@ class Verticals extends BaseConfig
                 'tags'        => 'Support we offer',
             ],
             'cta'   => 'Arrange a visit',
-            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['credentials', 'ataglance', 'description', 'brands', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         'remedial-school' => [
             'noun'       => 'school',
@@ -552,7 +555,7 @@ class Verticals extends BaseConfig
                 'tags'        => 'Support we offer',
             ],
             'cta'   => 'Arrange a visit',
-            'order' => ['credentials', 'ataglance', 'description', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['credentials', 'ataglance', 'description', 'brands', 'services', 'team', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         // No "Other campuses" and no trading hours worth the name: the whole
         // point is that there is nowhere to go and no bell.

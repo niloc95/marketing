@@ -28,6 +28,7 @@ use App\Services\FunnelService;
 use App\Services\HeroImageService;
 use App\Services\JobBoardService;
 use App\Services\ListingFacetService;
+use App\Services\ListingBrandService;
 use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PartnerService;
@@ -212,6 +213,7 @@ class Admin extends BaseController
             'attributes' => $attributes,
             'facets'     => $facets,
             'photos'     => $photos,
+            'brands'     => $listing ? (new ListingBrandService())->forListing($id) : [],
             'menuFiles'  => $menuFiles,
             'slots'      => $this->gallerySlots($listing ? (int) $listing['id'] : null),
             'galleryMax' => self::GALLERY_MAX,
@@ -272,6 +274,7 @@ class Admin extends BaseController
             (new DirectoryListingPhotoModel())->appendPhotos((int) $result['id'], $gallery['photos']);
         }
         $menuErrors = $this->applyMenuUpload((int) $result['id']);
+        $brandErrors = $this->resolveBrands((int) $result['id']);
 
         // After the gallery, for the reason Listing::store() gives. An admin
         // edit changes the same scored fields an owner edit does, so the score
@@ -280,8 +283,25 @@ class Admin extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('admin/edit/' . $result['id']))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $headshots['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $headshots['errors']))
         );
+    }
+
+    /** Remove one brand logo. Admin authority is unrestricted by listing. */
+    public function deleteBrand(int $brandId)
+    {
+        $ajax      = $this->request->isAJAX();
+        $listingId = (new ListingBrandService())->delete($brandId, null);
+
+        if ($listingId === null) {
+            return $ajax
+                ? $this->brandDeleteJson(false, 'That brand could not be found.', 404)
+                : redirect()->to(base_url('admin'))->with('error', 'That brand could not be found.');
+        }
+
+        return $ajax
+            ? $this->brandDeleteJson(true, 'Brand removed.', 200, $listingId)
+            : redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Brand removed.');
     }
 
     /** Remove one gallery photo. Admin authority is unrestricted by listing. */

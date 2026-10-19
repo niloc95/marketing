@@ -122,6 +122,7 @@ $routes->get('manage/edit', 'Manage::edit');
 $routes->post('manage/edit', 'Manage::update');
 $routes->get('manage/signout', 'Manage::signout');
 $routes->post('manage/photo-delete/(:num)', 'Manage::deletePhoto/$1');
+$routes->post('manage/brand-delete/(:num)', 'Manage::deleteBrand/$1');
 // A listed business posting to the Jobs board. Handled by Jobs, which owns
 // the board, but under manage/ because the manage session is the credential.
 $routes->get('manage/jobs/new', 'Jobs::ownerCreate');
@@ -226,6 +227,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('delete/(:num)', 'Admin::remove/$1');
     $routes->post('restore/(:num)', 'Admin::restore/$1');
     $routes->post('photo-delete/(:num)', 'Admin::deletePhoto/$1');
+    $routes->post('brand-delete/(:num)', 'Admin::deleteBrand/$1');
     $routes->post('purge/(:num)', 'Admin::purge/$1');
     // For an owner whose verify link expired or never arrived. Inside this
     // filter group, so the only way to make the app mail an arbitrary listing

@@ -12,6 +12,7 @@ use App\Models\JobPostModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\ListingFacetService;
+use App\Services\ListingBrandService;
 use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
@@ -170,6 +171,7 @@ class Manage extends BaseController
             'attributes' => $attributes,
             'facets'     => $facets,
             'photos'     => $photos,
+            'brands'     => (new ListingBrandService())->forListing((int) $listing['id']),
             'menuFiles'  => $menuFiles,
 
             // The five collections above are exactly what the rubric counts, so
@@ -259,7 +261,8 @@ class Manage extends BaseController
         if ($gallery['photos'] !== []) {
             (new DirectoryListingPhotoModel())->appendPhotos((int) $listing['id'], $gallery['photos']);
         }
-        $menuErrors = $this->applyMenuUpload((int) $listing['id']);
+        $menuErrors  = $this->applyMenuUpload((int) $listing['id']);
+        $brandErrors = $this->resolveBrands((int) $listing['id']);
 
         // After the gallery, for the reason Listing::store() gives — photos are
         // appended outside updateOwn()'s transaction and are worth ten points.
@@ -269,7 +272,7 @@ class Manage extends BaseController
 
         return $this->withUploadErrors(
             redirect()->to(base_url('manage/edit'))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $headshots['errors']))
+            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $headshots['errors']))
         );
     }
 
@@ -312,6 +315,32 @@ class Manage extends BaseController
         return $ajax
             ? $this->photoDeleteJson(true, 'Photo removed.', 200, (int) $listing['id'])
             : redirect()->to(base_url('manage/edit'))->with('success', 'Photo removed.');
+    }
+
+    /**
+     * Remove one brand logo. Same ownership rule as deletePhoto(): the id in the
+     * URL is attacker-controlled, so a brand on any other listing is refused.
+     */
+    public function deleteBrand(int $brandId)
+    {
+        $ajax = $this->request->isAJAX();
+
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return $ajax
+                ? $this->brandDeleteJson(false, 'Your session has ended. Please request a new link to manage your profile.', 401)
+                : redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
+        }
+
+        if ((new ListingBrandService())->delete($brandId, (int) $listing['id']) === null) {
+            return $ajax
+                ? $this->brandDeleteJson(false, 'That brand could not be found.', 404)
+                : redirect()->to(base_url('manage/edit'))->with('error', 'That brand could not be found.');
+        }
+
+        return $ajax
+            ? $this->brandDeleteJson(true, 'Brand removed.', 200, (int) $listing['id'])
+            : redirect()->to(base_url('manage/edit'))->with('success', 'Brand removed.');
     }
 
     /**
