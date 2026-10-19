@@ -17,6 +17,8 @@
  * @var array<string,array>         $periods
  * @var int                         $defaultDays
  * @var int                         $maxDays
+ * @var App\Libraries\Screening     $screening
+ * @var bool                        $canScreen  show the screening level select
  */
 $isJob = $kind === 'job';
 $v     = static fn (string $f) => form_old_value($old[$f] ?? '');
@@ -186,6 +188,16 @@ $error = static fn (string $f) => $err($f) !== '' ? '<div class="err">' . esc($e
             <?= $error('apply_url') ?>
         </div>
     </div>
+    <?php if (! empty($canScreen)): ?>
+        <?php // A Verified Business only (JobBoardService::screeningLevel()), and only
+              // with applications coming through us: a website link above is refused. ?>
+        <?= view('partials/_screening_picker', [
+            'screening' => $screening,
+            'level'     => $v('screening_level'),
+            'error'     => $err('screening_level'),
+        ], ['saveData' => false]) ?>
+        <p class="hint mb-4">Screening questions only work when people apply here, so leave the website link empty to use them.</p>
+    <?php endif; ?>
 <?php else: ?>
     <div class="form-row">
         <div class="field">

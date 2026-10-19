@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Libraries\Mailer;
 use App\Libraries\PostingSections;
 use App\Libraries\RichText;
+use App\Libraries\Screening;
 use App\Libraries\TokenHash;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -51,6 +52,7 @@ class JobBoardService
     private JobPostModel $posts;
     private JobBoard $cfg;
     private DirectoryConfig $site;
+    private ?Screening $screening = null;
 
     public function __construct(?JobBoard $cfg = null)
     {
@@ -146,6 +148,91 @@ class JobBoardService
         }
 
         return ! (new DirectorySettings())->badgeEnabled() || listing_is_verified_business($listing);
+    }
+
+    // ------------------------------------------------------------ screening
+
+    public function screening(): Screening
+    {
+        return $this->screening ??= new Screening();
+    }
+
+    /**
+     * Whether applicants for $post answer screening questions: a vacancy with
+     * a level that takes applications through our form. A post with an apply
+     * link sends people elsewhere, where we cannot ask anything, so a level
+     * on one (left from before the link was added) asks nothing.
+     */
+    public function screens(array $post): bool
+    {
+        return ($post['kind'] ?? '') === JobPostModel::KIND_JOB
+            && empty($post['apply_url'])
+            && ! empty($post['apply_email'])
+            && $this->screening()->isLevel($post['screening_level'] ?? null);
+    }
+
+    /** The key a post's screening attempt is kept under in the session. */
+    public function screeningContext(array $post): string
+    {
+        return 'job:' . (int) $post['id'];
+    }
+
+    /**
+     * The applicant's attempt at $post's questions as the page may see it,
+     * or null before Start, so a reload or a form sent back keeps the clock.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function screeningView(array $post): ?array
+    {
+        $attempt = $this->screening()->current($this->screeningContext($post));
+
+        return $attempt !== null ? $this->screening()->view($attempt) : null;
+    }
+
+    /**
+     * Start (or resume) the questions for a live vacancy that asks them.
+     *
+     * @return array<string,mixed>|null Screening::view(), or null when the post asks nothing or has closed
+     */
+    public function startScreening(int $postId): ?array
+    {
+        $post = $this->find($postId);
+        if ($post === null || ! $this->isLive($post) || ! $this->screens($post)) {
+            return null;
+        }
+
+        return $this->screening()->view($this->screening()->start($this->screeningContext($post), (string) $post['screening_level']));
+    }
+
+    /**
+     * Read the level select on a listed business's vacancy form.
+     *
+     * Screening is a Verified Business feature, like the vacancy itself:
+     * `$mayAdd` is canUseJobsFeatures(). A lapsed badge may keep the level a
+     * live post already has, or remove it, but not set a new one. A level and
+     * an apply link together are refused, because applicants who go to the
+     * link never see the questions.
+     *
+     * @param array<string,mixed> $in
+     *
+     * @return array{level:string|null,error:string|null}
+     */
+    private function screeningLevel(array $in, ?string $applyUrl, ?string $stored, bool $mayAdd): array
+    {
+        $screen = $this->screening()->selection($in['screening_level'] ?? '');
+        if ($screen['error'] !== null || $screen['level'] === null) {
+            return $screen;
+        }
+        if (! $mayAdd && $screen['level'] !== $stored) {
+            return ['level' => $stored, 'error' => 'Screening questions are part of the Verified Business badge.'];
+        }
+        if ($applyUrl !== null) {
+            return ['level' => $screen['level'], 'error' => 'Screening questions only work when people apply here. '
+                . 'Remove the website link above, or choose No screening questions.'];
+        }
+
+        return $screen;
     }
 
     public function isLive(array $post): bool
@@ -456,6 +543,13 @@ class JobBoardService
             $errors['listing'] = 'Posting job vacancies is part of the Verified Business badge. '
                 . 'You can still request a service.';
         }
+        if ($d['kind'] === JobPostModel::KIND_JOB) {
+            $screen = $this->screeningLevel($in, $d['apply_url'], null, true);
+            if ($screen['error'] !== null) {
+                $errors['screening_level'] = $screen['error'];
+            }
+            $d['screening_level'] = $screen['level'];
+        }
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'data' => $d];
         }
@@ -706,6 +800,17 @@ class JobBoardService
         }
 
         ['data' => $d, 'errors' => $errors] = $this->validate($in, false);
+        // Only a listed business's vacancy form has the level select. The
+        // unlisted poster's edit, or a form without the select, leaves the
+        // column alone, whatever is posted.
+        if ($listing !== null && $post['kind'] === JobPostModel::KIND_JOB && array_key_exists('screening_level', $in)) {
+            $stored = $this->screening()->isLevel($post['screening_level'] ?? null) ? (string) $post['screening_level'] : null;
+            $screen = $this->screeningLevel($in, $d['apply_url'], $stored, $this->canUseJobsFeatures($listing));
+            if ($screen['error'] !== null) {
+                $errors['screening_level'] = $screen['error'];
+            }
+            $d['screening_level'] = $screen['level'];
+        }
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'data' => $d];
         }
@@ -814,17 +919,18 @@ class JobBoardService
 
         $profile = base_url('directory/' . $listing['slug']);
         $body    = view('emails/job-relay', [
-            'site'     => $this->site->siteName(),
-            'heading'  => $listing['display_name'] . ' replied to your request',
-            'intro'    => 'A business on ' . $this->site->siteName() . ' has replied to "' . $post['title'] . '". Reply to this email to answer them directly.',
-            'fields'   => array_filter([
+            'site'            => $this->site->siteName(),
+            'heading'         => $listing['display_name'] . ' replied to your request',
+            'intro'           => 'A business on ' . $this->site->siteName() . ' has replied to "' . $post['title'] . '". Reply to this email to answer them directly.',
+            'fields'          => array_filter([
                 'Business' => (string) $listing['display_name'],
                 'Profile'  => $profile,
                 'Phone'    => (string) ($listing['phone'] ?? ''),
                 'Email'    => (string) $listing['email'],
             ]),
-            'message'  => $message,
-            'footnote' => sprintf('Your request takes up to %d replies. We never share your email address with businesses; they only see it if you reply.', $this->cfg->maxResponses),
+            'message'         => $message,
+            'screeningResult' => null,
+            'footnote'        => sprintf('Your request takes up to %d replies. We never share your email address with businesses; they only see it if you reply.', $this->cfg->maxResponses),
         ], ['saveData' => false]);
         (new Mailer())->send(
             $this->contactEmail($post),
@@ -848,26 +954,37 @@ class JobBoardService
      * A job seeker applies by message. Relayed to the post's apply address
      * and not stored. The applicant then gets a receipt.
      *
+     * `$marked` is Screening::mark() of the applicant's answers when the post
+     * asks screening questions. It goes in the employer's email only, and,
+     * like the rest of the application, is not kept. The receipt never shows
+     * the score or the answers.
+     *
      * @param array{name:string,email:string,phone:string,message:string,cv_link:string} $applicant
+     * @param array<string,mixed>|null                                                 $marked
      */
-    public function relayApplication(array $post, array $applicant): bool
+    public function relayApplication(array $post, array $applicant, ?array $marked = null): bool
     {
         if (! $this->isLive($post) || $post['kind'] !== JobPostModel::KIND_JOB || empty($post['apply_email'])) {
             return false;
         }
 
         $body = view('emails/job-relay', [
-            'site'     => $this->site->siteName(),
-            'heading'  => 'New application: ' . $post['title'],
-            'intro'    => $applicant['name'] . ' applied for "' . $post['title'] . '" on ' . $this->site->siteName() . '. Reply to this email to answer them directly.',
-            'fields'   => array_filter([
+            'site'            => $this->site->siteName(),
+            'heading'         => 'New application: ' . $post['title'],
+            'intro'           => $applicant['name'] . ' applied for "' . $post['title'] . '" on ' . $this->site->siteName() . '. Reply to this email to answer them directly.',
+            'fields'          => array_filter([
                 'Name'    => $applicant['name'],
                 'Email'   => $applicant['email'],
                 'Phone'   => $applicant['phone'],
                 'CV link' => $applicant['cv_link'],
             ]),
-            'message'  => $applicant['message'],
-            'footnote' => 'We do not keep a copy of this application. The applicant shared their details for this vacancy only; please handle them in line with POPIA.',
+            'message'         => $applicant['message'],
+            'screeningResult' => $marked !== null ? [
+                'heading' => 'Screening questions: ' . $this->screening()->summary($marked),
+                'level'   => $this->screening()->levelLabel((string) $marked['level']),
+                'lines'   => $this->screening()->lines($marked),
+            ] : null,
+            'footnote'        => 'We do not keep a copy of this application. The applicant shared their details for this vacancy only; please handle them in line with POPIA.',
         ], ['saveData' => false]);
 
         $sent = (new Mailer())->send(

@@ -163,6 +163,8 @@ $routes->post('jobs/manage', 'Jobs::manageUpdate');
 $routes->post('jobs/manage/close', 'Jobs::manageClose');
 $routes->post('jobs/manage/renew', 'Jobs::manageRenew');
 $routes->get('jobs/manage/(:segment)', 'Jobs::manageRedeem/$1');
+$routes->post('jobs/screening/start', 'Jobs::screeningStart');
+$routes->post('jobs/screening/answer', 'Jobs::screeningAnswer');
 $routes->post('jobs/(:num)/apply', 'Jobs::apply/$1');
 $routes->post('jobs/(:num)/respond', 'Jobs::respond/$1');
 $routes->post('jobs/(:num)/report', 'Jobs::report/$1');

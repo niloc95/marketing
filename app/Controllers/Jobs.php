@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\Screening;
 use App\Models\DirectoryListingModel;
 use App\Models\JobPostModel;
 use App\Models\JobResponseModel;
@@ -454,6 +455,18 @@ class Jobs extends BaseController
         if (empty($this->request->getPost('consent'))) {
             $errors['consent'] = 'Please agree to us passing your details to this employer.';
         }
+        // The answers were locked when they were saved (Screening::answer());
+        // the application only points at them. Marked here, consumed only once
+        // the email has gone, so a failed send keeps the attempt for a retry.
+        $marked = null;
+        if ($svc->screens($post)) {
+            $attempt = $svc->screening()->answeredFor((string) $this->request->getPost('screening_token'), $svc->screeningContext($post));
+            if ($attempt === null) {
+                $errors['screening'] = 'Please answer the ' . Screening::COUNT . ' questions for this job and save your answers.';
+            } else {
+                $marked = $svc->screening()->mark($attempt);
+            }
+        }
         if ($errors !== []) {
             return redirect()->to($back)->with('old', $in)->with('errors', $errors)
                 ->with('error', 'Please correct the highlighted fields.');
@@ -476,16 +489,59 @@ class Jobs extends BaseController
             return redirect()->to($back)->with('already_applied', JobBoardService::ALREADY_APPLIED_MESSAGE);
         }
 
-        if (! $svc->relayApplication($post, $in)) {
+        if (! $svc->relayApplication($post, $in, $marked)) {
             $once->release(ApplicationOnceService::SCOPE_JOB, (int) $post['id'], $in['email'], $in['phone']);
 
             return redirect()->to($back)->with('old', $in)
                 ->with('error', 'Sorry, we could not send your application just now. Please try again in a few minutes.');
         }
+        if ($marked !== null) {
+            $svc->screening()->consume((string) $this->request->getPost('screening_token'), $svc->screeningContext($post));
+        }
 
         // 'applied', not 'success': the #apply section shows it where the
         // redirect lands, in place of the form.
         return redirect()->to($back)->with('applied', JobBoardService::APPLIED_MESSAGE);
+    }
+
+    /**
+     * Start (or resume) a vacancy's screening questions: the applicant
+     * pressed "Start the questions". JSON for directory.js, with the fresh
+     * CSRF token, as Careers::screeningStart(). The script posts the post id
+     * as `role_id`, the name the shared partial uses.
+     */
+    public function screeningStart()
+    {
+        $throttler = service('throttler');
+        if ($throttler->check('jobs-q-' . md5((string) $this->request->getIPAddress()), 20, HOUR) === false) {
+            return $this->screeningJson(['ok' => false, 'message' => 'Too many tries. Please wait a little while and try again.'], 429);
+        }
+
+        $view = (new JobBoardService())->startScreening((int) $this->request->getPost('role_id'));
+        if ($view === null) {
+            return $this->screeningJson(['ok' => false, 'message' => 'This job has no questions to answer, or it has just closed.'], 404);
+        }
+
+        return $this->screeningJson(['ok' => true] + $view);
+    }
+
+    /** Lock the applicant's answers (Screening::answer()). */
+    public function screeningAnswer()
+    {
+        $result = (new JobBoardService())->screening()->answer(
+            (string) $this->request->getPost('screening_token'),
+            $this->request->getPost('screening'),
+            $this->request->getPost('leaves')
+        );
+
+        return $this->screeningJson($result, $result['ok'] ? 200 : 422);
+    }
+
+    private function screeningJson(array $data, int $status = 200)
+    {
+        return $this->response->setStatusCode($status)->setJSON($data + [
+            'csrf' => ['name' => csrf_token(), 'hash' => csrf_hash()],
+        ]);
     }
 
     public function respond(int $id)
@@ -567,6 +623,7 @@ class Jobs extends BaseController
         }
 
         $dir = new DirectoryService();
+        $svc = new JobBoardService();
 
         return [
             'mode'       => $mode,
@@ -581,6 +638,12 @@ class Jobs extends BaseController
             'periods'    => config('JobBoard')->salaryPeriods,
             'defaultDays' => config('JobBoard')->defaultDays,
             'maxDays'    => config('JobBoard')->maxDays,
+            'screening'  => $svc->screening(),
+            // The level select: a listed business that may post vacancies, or
+            // one editing a post that already asks questions (a lapsed badge
+            // may keep or remove them, JobBoardService::screeningLevel()).
+            'canScreen'  => $listing !== null && $kind === JobPostModel::KIND_JOB
+                && ($svc->canUseJobsFeatures($listing) || $svc->screening()->isLevel($post['screening_level'] ?? null)),
         ];
     }
 

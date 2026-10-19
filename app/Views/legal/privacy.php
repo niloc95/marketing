@@ -162,6 +162,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>If you apply for a job</h3>
             <p>The name, email address, phone number, optional CV link and message you enter are sent by email to the address the employer gave for applications, with your email address set as the reply address. <strong>We do not store the application.</strong> You are asked to agree to this before it is sent. Once the employer receives it, the employer decides how it is used and is responsible for it under POPIA.</p>
+            <p>Some vacancies posted by Verified Businesses ask three short timed questions before you apply. Your answers, whether each is right, how long you took and how often you left the page while the clock ran are sent to the employer with your application. Until you send it, they are held only in your session on our server, for about two hours. We do not store them with the application.</p>
             <p>So that each person applies only once for a vacancy, we keep a scrambled fingerprint of your email address and phone number with that vacancy. It cannot be turned back into your details, and it is deleted 30 days after the vacancy closes.</p>
 
             <h3>If your business replies to a request</h3>
