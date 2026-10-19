@@ -135,6 +135,13 @@ $about     = $svc->aboutEmployer($post);
                         <p class="font-semibold">Application submitted</p>
                         <p class="mt-1"><?= esc($applied) ?></p>
                     </div>
+                <?php elseif ($already = session()->getFlashdata('already_applied')): ?>
+                    <?php // Jobs::apply, for a second application from the same email or
+                          // phone (ApplicationOnceService). In place of the form, like 'applied'. ?>
+                    <div class="alert alert-info" role="status">
+                        <p class="font-semibold">Already applied</p>
+                        <p class="mt-1"><?= esc($already) ?></p>
+                    </div>
                 <?php elseif ($applyUrl !== ''): ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">This employer takes applications on their own site.</p>
                     <a class="btn btn-accent" href="<?= esc($applyUrl) ?>" target="_blank" rel="noopener nofollow"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Apply on the employer's site</a>
@@ -143,7 +150,7 @@ $about     = $svc->aboutEmployer($post);
                         Your message goes straight to the employer by email, and they reply to you directly.
                         We do not keep a copy.
                     </p>
-                    <form method="post" action="<?= base_url('jobs/' . (int) $post['id'] . '/apply') ?>">
+                    <form method="post" action="<?= base_url('jobs/' . (int) $post['id'] . '/apply') ?>" data-submit-once>
                         <?= csrf_field() ?>
                         <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
                         <div class="form-row">
@@ -160,8 +167,9 @@ $about     = $svc->aboutEmployer($post);
                         </div>
                         <div class="form-row">
                             <div class="field">
-                                <label for="apply-phone">Phone <span class="text-slate-400">(optional)</span></label>
-                                <input type="tel" id="apply-phone" name="phone" value="<?= esc($v('phone'), 'attr') ?>">
+                                <label for="apply-phone">Phone</label>
+                                <input type="tel" id="apply-phone" name="phone" required minlength="9" maxlength="40" autocomplete="tel" value="<?= esc($v('phone'), 'attr') ?>">
+                                <?php if ($err('phone')): ?><div class="err"><?= esc($err('phone')) ?></div><?php endif; ?>
                             </div>
                             <div class="field">
                                 <label for="apply-cv">Link to your CV <span class="text-slate-400">(optional)</span></label>

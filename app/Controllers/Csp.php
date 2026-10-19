@@ -24,6 +24,17 @@ class Csp extends BaseController
     /** Longest we will log for any single field. */
     private const MAX_FIELD = 300;
 
+    /** Schemes that mean a browser extension caused the report, not our page. */
+    private const EXTENSION_SCHEMES = ['chrome-extension:', 'moz-extension:', 'safari-web-extension:', 'safari-extension:', 'ms-browser-extension:'];
+
+    /**
+     * Hosts that only ever appear because something in the visitor's browser
+     * injected them. frontend-cdn.perplexity.ai is the Perplexity extension /
+     * Comet browser loading its own font into every page: by Oct 2026 it was
+     * most of this log, burying the reports that mean something.
+     */
+    private const IGNORED_HOSTS = ['frontend-cdn.perplexity.ai'];
+
     public function report()
     {
         // Browsers send a burst on a broken page — one per violating element,
@@ -45,18 +56,77 @@ class Csp extends BaseController
             return $this->response->setStatusCode(204)->setBody('');
         }
 
-        $directive = $this->field($r, 'violated-directive', 'effective-directive');
+        if ($this->causedByTheBrowser($r)) {
+            return $this->response->setStatusCode(204)->setBody('');
+        }
 
+        $directive = $this->field($r, 'violated-directive', 'effective-directive');
+        $source    = $this->field($r, 'source-file');
+        $line      = isset($r['line-number']) && is_numeric($r['line-number']) ? ':' . (int) $r['line-number'] : '';
+
+        // ua and source say whose the violation is. An inline style blocked on
+        // one browser only, from no file of ours, is that browser injecting it
+        // (the Brave visitor on /jobs, 19 Oct 2026), not a bug in the page.
         log_message('warning', sprintf(
-            'CSP violation: directive=%s blocked=%s document=%s enforced=[%s]',
+            'CSP violation: directive=%s blocked=%s document=%s source=%s ua=%s enforced=[%s]',
             $directive,
             $this->field($r, 'blocked-uri'),
             $this->field($r, 'document-uri'),
+            $source === '-' ? '-' : $source . $line,
+            $this->browser(),
             $this->enforcedRule($r, $directive)
         ));
 
         // 204: the browser wants nothing back, and a body would just be traffic.
         return $this->response->setStatusCode(204)->setBody('');
+    }
+
+    /**
+     * A report about something the visitor's browser or an extension put on
+     * the page, which nothing in this codebase can fix.
+     *
+     * @param array<string,mixed> $r
+     */
+    private function causedByTheBrowser(array $r): bool
+    {
+        foreach (['blocked-uri', 'source-file'] as $k) {
+            $v = strtolower(trim((string) (is_scalar($r[$k] ?? null) ? $r[$k] : '')));
+            if ($v === '') {
+                continue;
+            }
+            foreach (self::EXTENSION_SCHEMES as $scheme) {
+                if (str_starts_with($v, $scheme)) {
+                    return true;
+                }
+            }
+            $host = (string) parse_url($v, PHP_URL_HOST);
+            if ($host !== '' && in_array($host, self::IGNORED_HOSTS, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** The browser family, from the User-Agent. Brave before Chrome: it says both. */
+    private function browser(): string
+    {
+        $ua = $this->request->getHeaderLine('User-Agent');
+
+        foreach ([
+            'Brave'   => '/Brave/i',
+            'Edge'    => '/Edg(e|A|iOS)?\//',
+            'Samsung' => '/SamsungBrowser/',
+            'Firefox' => '/Firefox|FxiOS/',
+            'Chrome'  => '/Chrome|CriOS/',
+            'Safari'  => '/Safari/',
+        ] as $name => $pattern) {
+            if (preg_match($pattern, $ua) === 1) {
+                return $name . (preg_match('/Mobile|iPhone|Android/', $ua) === 1 ? ' mobile' : '');
+            }
+        }
+
+        return 'other';
     }
 
     /**

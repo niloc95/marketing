@@ -56,6 +56,10 @@ class CareersService
     public const APPLIED_MESSAGE = 'Thank you, your application has been submitted. We have received your application and CV, '
         . 'and they are now under review. We will get back to you within two weeks. A confirmation is on its way to your email.';
 
+    /** What /careers says to a second application to the same role. */
+    public const ALREADY_APPLIED_MESSAGE = 'We already have your application from this email address or phone number. '
+        . 'It is under review, and we will get back to you by email.';
+
     /** Days the receipt and the page promise a reply within. */
     public const REPLY_WITHIN = 'two weeks';
 
@@ -567,9 +571,20 @@ class CareersService
             return ['ok' => false, 'errors' => $errors];
         }
 
+        // One application per role per person, by email or phone; a general
+        // application is role 0. Claimed before the CV is stored, against a
+        // unique key, so a double tap stores and emails once.
+        $once     = new ApplicationOnceService();
+        $targetId = $role !== null ? (int) $role['id'] : 0;
+        if (! $once->claim(ApplicationOnceService::SCOPE_CAREER, $targetId, $d['email'], $d['phone'])) {
+            return ['ok' => false, 'already' => true, 'errors' => []];
+        }
+
         $dir    = date('Y/m');
         $stored = (new VerificationDocumentProcessor(VerificationDocumentProcessor::CV_EXT))->process($cv, CareerApplicationModel::storageRoot() . '/' . $dir);
         if (! $stored['ok']) {
+            $once->release(ApplicationOnceService::SCOPE_CAREER, $targetId, $d['email'], $d['phone']);
+
             return ['ok' => false, 'errors' => ['cv' => $stored['error']]];
         }
 
@@ -598,6 +613,7 @@ class CareersService
             $id = (int) $this->applications->insert($row);
         } catch (\Throwable $e) {
             @unlink(CareerApplicationModel::storageRoot() . '/' . $row['cv_path']);
+            $once->release(ApplicationOnceService::SCOPE_CAREER, $targetId, $d['email'], $d['phone']);
 
             throw $e;
         }
@@ -765,6 +781,9 @@ class CareersService
                 'purged_at'        => $now->format('Y-m-d H:i:s'),
             ]);
         }
+
+        // The apply once keys go on the same clock as the applications.
+        (new ApplicationOnceService())->pruneCareers($cutoff);
 
         return count($rows);
     }

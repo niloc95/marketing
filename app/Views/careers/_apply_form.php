@@ -18,14 +18,23 @@ $picked   = $v('role_id');
 // Set by Careers::apply on success. Shown here, in place of the form, because
 // the redirect lands on #apply and a top of page alert would be off screen.
 $applied  = session()->getFlashdata('applied');
+// Careers::apply, for a second application to the same role from the same
+// email or phone (ApplicationOnceService). Also in place of the form.
+$already  = session()->getFlashdata('already_applied');
 ?>
+<?php if ($already): ?>
+<div class="alert alert-info" role="status" tabindex="-1" id="apply-done">
+    <p class="font-semibold">Already applied</p>
+    <p class="mt-1"><?= esc($already) ?></p>
+</div>
+<?php return; endif; ?>
 <?php if ($applied): ?>
 <div class="alert alert-success" role="status" tabindex="-1" id="apply-done">
     <p class="font-semibold">Application submitted</p>
     <p class="mt-1"><?= esc($applied) ?></p>
 </div>
 <?php return; endif; ?>
-<form method="post" action="<?= base_url('careers/apply') ?>" enctype="multipart/form-data">
+<form method="post" action="<?= base_url('careers/apply') ?>" enctype="multipart/form-data" data-submit-once>
     <?= csrf_field() ?>
     <!-- honeypot -->
     <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>

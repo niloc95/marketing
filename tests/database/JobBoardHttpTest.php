@@ -184,7 +184,77 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $this->assertSame([], $this->sent);
     }
 
-    public function testThePageShowsTheExternalLinkWhenThereIsOne(): void
+    // ----------------------------------------------- one application per job
+
+    public function testTheSamePersonCannotApplyTwiceForOneJob(): void
+    {
+        $id = $this->livePost(['slug' => 'once']);
+
+        $this->apply($id, ['email' => 'sipho@example.test', 'phone' => '082 123 4567'])
+            ->assertSessionHas('applied', JobBoardService::APPLIED_MESSAGE);
+        $this->assertCount(2, $this->sent, 'employer + receipt');
+
+        // Same email, new phone: refused, nothing sent.
+        $this->apply($id, ['email' => 'Sipho@Example.test', 'phone' => '083 999 0000'])
+            ->assertSessionHas('already_applied', JobBoardService::ALREADY_APPLIED_MESSAGE);
+        // Same phone written another way, new email: refused too.
+        $this->apply($id, ['email' => 'other@example.test', 'phone' => '+27 82 123 4567'])
+            ->assertSessionHas('already_applied');
+
+        $this->assertCount(2, $this->sent, 'still only the first application went out');
+    }
+
+    public function testAnotherJobIsAFreshStart(): void
+    {
+        $first  = $this->livePost(['slug' => 'first']);
+        $second = $this->livePost(['slug' => 'second']);
+
+        $this->apply($first, ['email' => 'sipho@example.test', 'phone' => '0821234567'])->assertSessionHas('applied');
+        $this->apply($second, ['email' => 'sipho@example.test', 'phone' => '0821234567'])->assertSessionHas('applied');
+
+        $this->assertCount(4, $this->sent);
+    }
+
+    public function testAPhoneNumberIsRequired(): void
+    {
+        $id = $this->livePost();
+
+        $this->apply($id, ['phone' => ''])->assertSessionHas('errors');
+        $this->apply($id, ['phone' => '0821'])->assertSessionHas('errors');
+
+        $this->assertSame([], $this->sent);
+    }
+
+    public function testTheAlreadyAppliedNoticeReplacesTheForm(): void
+    {
+        $id   = $this->livePost(['slug' => 'again']);
+        $html = (string) $this->withSession([
+            'already_applied' => JobBoardService::ALREADY_APPLIED_MESSAGE,
+            '__ci_vars'       => ['already_applied' => 'new'],
+        ])->get('jobs/' . $id . '-again')->response()->getBody();
+
+        $this->assertStringContainsString('Already applied', $html);
+        $this->assertStringNotContainsString('name="consent"', $html);
+    }
+
+    public function testJobKeysGoThirtyDaysAfterTheVacancyEnds(): void
+    {
+        $old  = $this->livePost(['slug' => 'old']);
+        $live = $this->livePost(['slug' => 'live']);
+        $once = new \App\Services\ApplicationOnceService();
+        $this->assertTrue($once->claim('job', $old, 'a@example.test', '0821234567'));
+        $this->assertTrue($once->claim('job', $live, 'a@example.test', '0821234567'));
+
+        $this->posts->update($old, ['status' => JobPostModel::STATUS_EXPIRED, 'ended_at' => date('Y-m-d H:i:s', strtotime('-31 days'))]);
+        (new JobBoardService())->expireDue();
+
+        // The ended vacancy's keys are gone, so the same person may apply again;
+        // the live one still refuses them.
+        $this->assertTrue($once->claim('job', $old, 'a@example.test', '0821234567'));
+        $this->assertFalse($once->claim('job', $live, 'a@example.test', '0821234567'));
+    }
+
+        public function testThePageShowsTheExternalLinkWhenThereIsOne(): void
     {
         $id   = $this->livePost(['apply_email' => null, 'apply_url' => 'https://careers.example.test/42', 'slug' => 'ext']);
         $html = (string) $this->get('jobs/' . $id . '-ext')->response()->getBody();
@@ -409,7 +479,19 @@ final class JobBoardHttpTest extends CIUnitTestCase
         return $listings->find($id);
     }
 
-    private function livePost(array $overrides = []): int
+    /** @param array<string,string> $over */
+    private function apply(int $id, array $over = []): \CodeIgniter\Test\TestResponse
+    {
+        return $this->withSession(['job_page_rendered_at' => time() - 30])->post('jobs/' . $id . '/apply', $over + [
+            'name'    => 'Sipho Dlamini',
+            'email'   => 'sipho@example.test',
+            'phone'   => '0821234567',
+            'message' => 'Five years of domestic and commercial wiring, own tools and transport.',
+            'consent' => '1',
+        ] + $this->csrf());
+    }
+
+        private function livePost(array $overrides = []): int
     {
         return (int) $this->posts->insert($overrides + [
             'kind'            => 'job',

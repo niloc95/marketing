@@ -836,6 +836,10 @@ class JobBoardService
         return 'ok';
     }
 
+    /** What the page says to a second application to the same vacancy. */
+    public const ALREADY_APPLIED_MESSAGE = 'You have already applied for this job with this email address or phone number. '
+        . 'The employer has your application and will reply to you directly by email.';
+
     /** What the page says once an application is relayed (and to a bot). */
     public const APPLIED_MESSAGE = 'Thank you, your application has been submitted. We have sent it to the employer, '
         . 'who will reply to you directly by email. A confirmation is on its way to your inbox.';
@@ -963,6 +967,9 @@ class JobBoardService
             (new JobResponseModel())->builder()->whereIn('post_id', $ids)->update(['message' => null]);
             $out['wiped'] = count($ids);
         }
+
+        // The apply once keys outlive a vacancy by 30 days (privacy §8).
+        (new ApplicationOnceService())->pruneJobs();
 
         return $out;
     }

@@ -80,6 +80,11 @@ class Careers extends BaseController
         }
 
         $result = $svc->apply((array) $this->request->getPost(), $this->request->getFile('cv'));
+        if (! empty($result['already'])) {
+            session()->remove(self::SESSION_KEY);
+
+            return redirect()->to($back)->with('already_applied', CareersService::ALREADY_APPLIED_MESSAGE);
+        }
         if (! $result['ok']) {
             return redirect()->to($back)
                 ->with('errors', $result['errors'])

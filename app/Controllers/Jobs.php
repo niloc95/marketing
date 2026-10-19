@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\DirectoryListingModel;
 use App\Models\JobPostModel;
 use App\Models\JobResponseModel;
+use App\Services\ApplicationOnceService;
 use App\Services\DirectoryService;
 use App\Services\JobBoardService;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -439,6 +440,11 @@ class Jobs extends BaseController
         if (! filter_var($in['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'The employer replies to this address, so it must work.';
         }
+        // Required since 19 Oct 2026: with the email, it is how a second
+        // application to the same vacancy is recognised (ApplicationOnceService).
+        if (preg_match_all('/\d/', $in['phone']) < 9) {
+            $errors['phone'] = $in['phone'] === '' ? 'Please give the employer a phone number to reach you on.' : 'That phone number looks too short.';
+        }
         if (mb_strlen($in['message']) < 20) {
             $errors['message'] = 'Tell the employer a little about yourself (at least 20 characters).';
         }
@@ -462,7 +468,17 @@ class Jobs extends BaseController
                 ->with('error', 'Too many applications. Please wait a little while and try again.');
         }
 
+        // One application per vacancy per person, by email or phone. Claimed
+        // before the send, against a unique key, so a phone that submits four
+        // times in a second sends one email, not four.
+        $once = new ApplicationOnceService();
+        if (! $once->claim(ApplicationOnceService::SCOPE_JOB, (int) $post['id'], $in['email'], $in['phone'])) {
+            return redirect()->to($back)->with('already_applied', JobBoardService::ALREADY_APPLIED_MESSAGE);
+        }
+
         if (! $svc->relayApplication($post, $in)) {
+            $once->release(ApplicationOnceService::SCOPE_JOB, (int) $post['id'], $in['email'], $in['phone']);
+
             return redirect()->to($back)->with('old', $in)
                 ->with('error', 'Sorry, we could not send your application just now. Please try again in a few minutes.');
         }

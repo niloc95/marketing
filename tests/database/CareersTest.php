@@ -417,7 +417,55 @@ final class CareersTest extends CIUnitTestCase
         $this->assertNull($this->apps->first()['role_id']);
     }
 
-    public function testAnApplicationNeedsACvAndConsent(): void
+    public function testTheSamePersonAppliesOncePerRole(): void
+    {
+        $role  = $this->openRole();
+        $other = $this->openRole(['title' => 'Another role']);
+
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => $role['id']]), $this->cv())['ok']);
+        $sent = count($this->sent);
+
+        // Same email, or the same phone written another way: refused, nothing
+        // stored, nothing emailed.
+        $again = $this->svc->apply($this->application(['role_id' => $role['id'], 'phone' => '083 111 2222']), $this->cv());
+        $this->assertFalse($again['ok']);
+        $this->assertTrue($again['already']);
+        $byPhone = $this->svc->apply($this->application(['role_id' => $role['id'], 'email' => 'new@example.test', 'phone' => '+27 82 000 0000']), $this->cv());
+        $this->assertTrue($byPhone['already'] ?? false);
+        $this->assertSame(1, $this->apps->countAllResults());
+        $this->assertCount($sent, $this->sent);
+
+        // Another role, and a general application, are fresh starts; a second
+        // general application is not.
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => $other['id']]), $this->cv())['ok']);
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => '0']), $this->cv())['ok']);
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => '0']), $this->cv())['already'] ?? false);
+    }
+
+    public function testCareerKeysGoWithTheApplications(): void
+    {
+        $once = new \App\Services\ApplicationOnceService();
+        $this->assertTrue($once->claim('career', 7, 'a@example.test', '0821234567'));
+
+        $this->svc->purge(new DateTimeImmutable('+1 month'));
+        $this->assertFalse($once->claim('career', 7, 'a@example.test', '0821234567'), 'kept inside the retention period');
+
+        $this->svc->purge(new DateTimeImmutable('+13 months'));
+        $this->assertTrue($once->claim('career', 7, 'a@example.test', '0821234567'), 'gone with the applications');
+    }
+
+        public function testARefusedCvDoesNotCountAsApplied(): void
+    {
+        $role = $this->openRole();
+
+        $bad = $this->svc->apply($this->application(['role_id' => $role['id']]), $this->cv('cv.exe', 'MZ', 'application/octet-stream'));
+        $this->assertFalse($bad['ok']);
+        $this->assertArrayHasKey('cv', $bad['errors']);
+
+        $this->assertTrue($this->svc->apply($this->application(['role_id' => $role['id']]), $this->cv())['ok']);
+    }
+
+        public function testAnApplicationNeedsACvAndConsent(): void
     {
         $result = $this->svc->apply($this->application(['consent' => '']), null);
 
@@ -442,7 +490,7 @@ final class CareersTest extends CIUnitTestCase
         $this->assertTrue($this->svc->apply($this->application(), $this->cv('cv.docx', "PK\x03\x04" . str_repeat("\0", 64), $docx))['ok']);
         $this->assertSame($docx, $this->apps->first()['cv_mime']);
 
-        $photo = $this->svc->apply($this->application(['email' => 'other@example.test']), $this->cv('cv.png', "\x89PNG\r\n\x1A\n" . str_repeat("\0", 64), 'image/png'));
+        $photo = $this->svc->apply($this->application(['email' => 'other@example.test', 'phone' => '083 000 0001']), $this->cv('cv.png', "\x89PNG\r\n\x1A\n" . str_repeat("\0", 64), 'image/png'));
         $this->assertFalse($photo['ok']);
         $this->assertStringContainsString('PDF or Word', $photo['errors']['cv']);
     }
@@ -747,7 +795,7 @@ final class CareersTest extends CIUnitTestCase
         $role = $this->screenedRole();
         $this->svc->apply($this->application(['role_id' => $role['id'], 'screening_token' => $this->answered($role, 3)]), $this->cv());
         $this->svc->apply($this->application([
-            'role_id' => $role['id'], 'name' => 'Lerato Mokoena', 'email' => 'lerato@example.test',
+            'role_id' => $role['id'], 'name' => 'Lerato Mokoena', 'email' => 'lerato@example.test', 'phone' => '083 000 0002',
             'screening_token' => $this->answered($role, 0),
         ]), $this->cv());
 

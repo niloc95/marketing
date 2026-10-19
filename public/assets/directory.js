@@ -4563,4 +4563,43 @@
       });
     });
   })();
+
+  // ------------------------------------------------------------ submit once
+  // Application forms (Jobs board, /careers) lock their Send button on the
+  // first submit. On 19 Oct 2026 one phone sent the same Jobs application
+  // seven times in eight seconds. The server now refuses a repeat
+  // (ApplicationOnceService); this just stops the taps reaching it.
+  //
+  // On document and registered last, so it runs after every form's own
+  // submit handler (the careers questions check cancels a send that has no
+  // saved answers, and a cancelled send must leave the button working).
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || !form.matches || !form.matches('form[data-submit-once]') || e.defaultPrevented) return;
+    if (form.hasAttribute('data-submitting')) {
+      e.preventDefault();
+      return;
+    }
+    form.setAttribute('data-submitting', '');
+    form.querySelectorAll('button[type="submit"], button:not([type])').forEach(function (btn) {
+      btn.setAttribute('data-label', btn.innerHTML);
+      btn.setAttribute('aria-disabled', 'true');
+      btn.classList.add('is-busy');
+      btn.textContent = 'Sending…';
+    });
+  });
+
+  // Back to a page restored from the back/forward cache: the old submit is
+  // long finished, so the form must work again.
+  window.addEventListener('pageshow', function () {
+    document.querySelectorAll('form[data-submit-once][data-submitting]').forEach(function (form) {
+      form.removeAttribute('data-submitting');
+      form.querySelectorAll('button[data-label]').forEach(function (btn) {
+        btn.innerHTML = btn.getAttribute('data-label');
+        btn.removeAttribute('data-label');
+        btn.removeAttribute('aria-disabled');
+        btn.classList.remove('is-busy');
+      });
+    });
+  });
 })();

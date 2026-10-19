@@ -161,7 +161,8 @@ $contact   = config('Directory')->adminEmail();
             <p>If you post from a business with a profile, the post shows the business's name and links to its profile.</p>
 
             <h3>If you apply for a job</h3>
-            <p>The name, email address, optional phone number, optional CV link and message you enter are sent by email to the address the employer gave for applications, with your email address set as the reply address. <strong>We do not store the application.</strong> You are asked to agree to this before it is sent. Once the employer receives it, the employer decides how it is used and is responsible for it under POPIA.</p>
+            <p>The name, email address, phone number, optional CV link and message you enter are sent by email to the address the employer gave for applications, with your email address set as the reply address. <strong>We do not store the application.</strong> You are asked to agree to this before it is sent. Once the employer receives it, the employer decides how it is used and is responsible for it under POPIA.</p>
+            <p>So that each person applies only once for a vacancy, we keep a scrambled fingerprint of your email address and phone number with that vacancy. It cannot be turned back into your details, and it is deleted 30 days after the vacancy closes.</p>
 
             <h3>If your business replies to a request</h3>
             <p>Your message, together with your business name, profile link, phone number and email address, is sent to the person who posted the request. We keep your message and a record that you replied, so that each business replies only once and the reply limit is applied. The requester's own email address is not shown to you unless they reply.</p>
@@ -191,7 +192,7 @@ $contact   = config('Directory')->adminEmail();
             </ul>
 
             <h2 id="careers">11. Applying for a job with us</h2>
-            <p>If you apply for a role at <?= esc($siteName) ?> through our <a href="<?= base_url('careers') ?>">careers page</a>, we receive your name, email address, CV and message, and optionally your phone number and a link to your LinkedIn profile or portfolio. We use them only to consider you for that role and, for the period below, for other roles with us.</p>
+            <p>If you apply for a role at <?= esc($siteName) ?> through our <a href="<?= base_url('careers') ?>">careers page</a>, we receive your name, email address, phone number, CV and message, and optionally a link to your LinkedIn profile or portfolio. We also keep a scrambled fingerprint of your email address and phone number with the role, so that each person applies once per role; it is deleted with your application. We use them only to consider you for that role and, for the period below, for other roles with us.</p>
             <ul>
                 <li>Your CV is stored privately on our own server. It is not published, and only the people hiring can open it.</li>
                 <li>We email the people hiring a notice of your application, with your contact details and message but not your CV.</li>
@@ -310,7 +311,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>A post whose email address is never confirmed is deleted about a week after its confirmation link expires.</li>
                 <li>A poster's name, email address and phone number, and the address applications were sent to, are deleted <strong>12 months</strong> after the post closes, expires or is declined. The published text of the post may be kept as a record.</li>
                 <li>Replies to service requests are kept with the request, and their messages are deleted 12 months after it ends.</li>
-                <li>Job applications are not stored.</li>
+                <li>Job applications are not stored. The scrambled fingerprint of an applicant's email address and phone number that stops a second application to the same vacancy is deleted 30 days after the vacancy closes.</li>
             </ul>
 
             <h3>Customer reviews</h3>

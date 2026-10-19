@@ -3360,6 +3360,8 @@
   .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
   .alert-error   { @apply border-red-200 bg-red-50 text-red-800; }
   .alert-info    { @apply border-sky-200 bg-sky-50 text-sky-800; }
+  /* A form[data-submit-once] that is sending (directory.js). */
+  .btn.is-busy { @apply pointer-events-none cursor-wait opacity-70; }
   /* Upload problems: the save itself succeeded, so this must not read as an
      error next to the success alert directly above it. */
   .alert-warning { @apply border-amber-200 bg-amber-50 text-amber-900; }
