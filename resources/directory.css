@@ -3250,12 +3250,11 @@
      Each section is its own card with its own accent, so someone scrolling
      fast sees where one part ends and the next begins. The accent is a pair of
      custom properties set by the tone class; everything in the card reads
-     them: the band on top, the number badge, the "Add another" buttons and
+     them: the 2px border all round, the number badge, the "Add another" buttons and
      the file pickers. The number, not the colour, identifies a step. */
   .form-step {
     @apply relative mt-6 rounded-surface bg-white p-4 sm:p-6;
     border: 2px solid var(--step);
-    border-top-width: 4px;
     scroll-margin-top: 6rem;
   }
   .form-step[data-form-step="1"] { @apply mt-0; }
