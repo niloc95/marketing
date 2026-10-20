@@ -3253,8 +3253,9 @@
      them: the band on top, the number badge, the "Add another" buttons and
      the file pickers. The number, not the colour, identifies a step. */
   .form-step {
-    @apply relative mt-6 rounded-surface border border-slate-200 bg-white p-4 sm:p-6;
-    border-top: 4px solid var(--step);
+    @apply relative mt-6 rounded-surface bg-white p-4 sm:p-6;
+    border: 2px solid var(--step);
+    border-top-width: 4px;
     scroll-margin-top: 6rem;
   }
   .form-step[data-form-step="1"] { @apply mt-0; }
@@ -3268,7 +3269,7 @@
     background-color: var(--step);
   }
   .form-step .form-section-head h3 { @apply flex items-center; }
-  .dark .form-step { @apply border-slate-800 bg-surface-card; border-top-color: var(--step-dark); }
+  .dark .form-step { @apply bg-surface-card; border-color: var(--step-dark); }
   .dark .form-step-num { background-color: var(--step-dark); @apply text-slate-900; }
 
   /* "+ Add another …" inside a section: a dashed outline in the section's
