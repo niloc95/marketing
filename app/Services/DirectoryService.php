@@ -39,7 +39,7 @@ class DirectoryService
 
     public function __construct()
     {
-        helper(['directory_hours', 'directory_ui']);
+        helper('directory_hours');
         $this->listings    = new DirectoryListingModel();
         $this->categories = new DirectoryCategoryModel();
         $this->groups     = new DirectoryCategoryGroupModel();
@@ -318,7 +318,6 @@ class DirectoryService
         // EXISTS in applySearch(): a member is only offered while the badge
         // that publishes the team panel is live, or the row would land on a
         // profile that does not show them. The link goes to their card.
-        helper('directory_ui');
         $staff = $db->table('xs_directory_listing_team tm')
             ->select('tm.name, tm.slug, tm.role, l.display_name, l.slug AS listing_slug')
             ->join('xs_directory_listings l', 'l.id = tm.listing_id')
@@ -1707,7 +1706,6 @@ class DirectoryService
     /** Match a province slug ("western-cape") back to its canonical name. */
     public function provinceFromSlug(string $slug): ?string
     {
-        helper('slug');
         foreach (self::SA_PROVINCES as $p) {
             if (slugify($p) === $slug) {
                 return $p;
@@ -1806,7 +1804,6 @@ class DirectoryService
      */
     public function sitemapLandingUrls(int $minListings): array
     {
-        helper('slug');
         $today = date('Y-m-d');
         $out   = [];
 
@@ -1964,7 +1961,6 @@ class DirectoryService
      */
     public function sitemapProvinceUrls(int $minListings): array
     {
-        helper('slug');
         $today = date('Y-m-d');
 
         $rows = $this->listings

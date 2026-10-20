@@ -59,10 +59,10 @@ const ICONS = [
   // Map controls.
   'maximize',
   // Marketing site feature and contact rows.
-  'calendar-days', 'users', 'circle-user', 'chart-column', 'mail', 'phone',
+  'calendar-days', 'users', 'circle-user', 'mail', 'phone',
   // Category groups — see category_group_icon() in directory_ui_helper.php.
   // This list must stay in step with that map, including its 'folder' fallback.
-  'stethoscope', 'sparkles', 'scissors', 'car', 'scale', 'wrench', 'briefcase',
+  'stethoscope', 'sparkles', 'car', 'scale', 'wrench', 'briefcase',
   'dumbbell', 'graduation-cap', 'party-popper', 'plane', 'paw-print',
   'washing-machine', 'shopping-bag', 'cake-slice', 'utensils', 'leaf', 'folder',
   'heart-handshake', 'landmark', 'bird',

@@ -114,17 +114,6 @@ class ListingFacetService
         return $this->facets->forListing($listingId);
     }
 
-    /**
-     * The same for a page of results, in one query — for the card line.
-     *
-     * @param list<int> $listingIds
-     * @return array<int,array<string,list<array{value:string,num_low:?int,num_high:?int}>>>
-     */
-    public function storedForMany(array $listingIds): array
-    {
-        return $this->facets->forListings($listingIds);
-    }
-
     // ----------------------------------------------------------------- writes
 
     /**

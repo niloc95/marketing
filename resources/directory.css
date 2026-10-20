@@ -1333,8 +1333,8 @@
   /* ------------------------------------------------------ category tints */
   /* One hue per category group, assigned by category_group_style() in
      app/Helpers/directory_ui_helper.php. Every class is spelled out in full for
-     the same reason .loc-card-1..4 below are: Tailwind scans the views as plain
-     text, so a name built at runtime would be unmatched and tree-shaken out.
+     the usual reason: Tailwind scans the views as plain text, so a name built
+     at runtime would be unmatched and tree-shaken out.
 
      Each one only sets custom properties; the consumers (.cat-tile-icon, .chip,
      .badge-category, the /categories headings, .hero-vertical and the panel
@@ -1567,23 +1567,6 @@
   .vertical-scope .panel h3 { color: var(--tint-fg, theme(colors.primary.600)); }
   .dark .vertical-scope .panel h3 { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
-  /* --------------------------------------------------- browse by location */
-  .loc-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
-
-  .loc-card {
-    @apply flex min-h-[11rem] flex-col justify-end rounded-surface bg-gradient-to-br p-5
-           text-white shadow-brand transition-shadow hover:shadow-brand-xl;
-  }
-  /* Rotated by position in _location_card.php. Spelled out in full because
-     Tailwind cannot see a class name built at runtime. */
-  .loc-card-1 { @apply from-primary-500 to-primary-700; }
-  .loc-card-2 { @apply from-brand-crimson to-primary-700; }
-  .loc-card-3 { @apply from-brand-orange to-brand-crimson; }
-  .loc-card-4 { @apply from-primary-700 to-brand-ocean; }
-  .loc-card-count  { @apply text-xs font-medium text-white/70; }
-  .loc-card-name   { @apply mt-1 text-xl font-extrabold; }
-  .loc-card-cities { @apply mt-1 line-clamp-2 text-sm text-white/70; }
-
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
 
@@ -1592,9 +1575,6 @@
      tone instead of lifting a shadow. */
   .listing-card { @apply border-transparent bg-slate-50 p-5 transition-colors hover:bg-slate-100; }
   .dark .listing-card { @apply border-transparent bg-[#141a21] hover:bg-[#1a202c]; }
-  /* Four-up variant for the homepage rows. .card-grid stays at three columns —
-     index.php and landing.php depend on it. */
-  .card-grid-4 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
 
   .avatar {
     @apply grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-inner
@@ -2185,11 +2165,6 @@
   }
   .lightbox-video-btn [data-icon-pause] svg,
   .lightbox-video-btn [data-icon-play] svg { @apply fill-current; }
-
-  /* ------------------------------------------------------------------ pills */
-  .pillrow         { @apply mt-3 flex flex-wrap gap-1.5; }
-  .pill-capability { @apply bg-emerald-50 text-emerald-700; }
-  .dark .pill-capability { @apply bg-emerald-500/15 text-emerald-300; }
 
   /* ------------------------------------------- services & features (profile) */
   /* Services read like a price list: name left, price right, a rule between. */

@@ -21,7 +21,6 @@
  * @var int    $total      published listings in the venue, ignoring ?category=
  * @var string $q          search term within the venue, or ''
  */
-helper(['slug', 'map', 'directory_ui']);
 $siteName  = config('Directory')->siteName();
 $name      = (string) $venue['name'];
 $canonical = base_url('directory/at/' . $venue['slug']);

@@ -9,7 +9,6 @@ use App\Libraries\LogReader;
 use App\Libraries\MailHealth;
 use App\Libraries\SystemHealth;
 use App\Models\DirectoryListingPhotoModel;
-use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPartnerModel;
 use App\Models\DirectoryReferralModel;
 use App\Models\DirectoryReviewModel;

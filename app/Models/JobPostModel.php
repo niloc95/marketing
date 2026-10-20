@@ -69,15 +69,6 @@ class JobPostModel extends Model
             ->where($this->table . '.valid_through >=', date('Y-m-d'));
     }
 
-    /** @return list<array<string,mixed>> */
-    public function liveForListing(int $listingId, int $limit = 10): array
-    {
-        return $this->live()
-            ->where('listing_id', $listingId)
-            ->orderBy('published_at', 'DESC')
-            ->findAll($limit);
-    }
-
     /** Every post a listing owns, newest first, for the owner dashboard. */
     public function forListing(int $listingId): array
     {

@@ -49,7 +49,7 @@ class DirectoryListingMutationService
 
     public function __construct()
     {
-        helper(['slug', 'directory_hours']);
+        helper('directory_hours');
         $this->listings = new DirectoryListingModel();
         $this->tags     = new DirectoryTagModel();
         $this->config   = config('Directory');

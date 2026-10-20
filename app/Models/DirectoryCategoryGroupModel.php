@@ -94,7 +94,6 @@ class DirectoryCategoryGroupModel extends Model
             return;
         }
 
-        helper('slug');
         $this->insert([
             'name'       => $name,
             'slug'       => ensure_unique_slug($this, 'slug', $name, null, [], 120),

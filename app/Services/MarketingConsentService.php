@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Controllers\Legal;
 use App\Models\DirectoryListingModel;
-use CodeIgniter\Database\BaseBuilder;
 
 /**
  * The listing owner's email record: terms acceptance, and whether they want the

@@ -49,7 +49,7 @@ class ListingVideoService
      */
     public function __construct(?callable $fetch = null)
     {
-        helper(['video', 'directory_ui']);
+        helper('video');
         $this->fetch = $fetch ?? static function (string $url): ?array {
             try {
                 $response = service('curlrequest', [

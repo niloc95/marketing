@@ -32,7 +32,7 @@ class DirectoryAdminService
 
     public function __construct()
     {
-        helper(['slug', 'directory_hours']);
+        helper('directory_hours');
         $this->listings   = new DirectoryListingModel();
         $this->categories = new DirectoryCategoryModel();
         $this->groups     = new DirectoryCategoryGroupModel();
@@ -783,8 +783,6 @@ class DirectoryAdminService
      */
     public function saveVenue(?int $id, array $input): array
     {
-        helper('slug');
-
         $name = $this->clean($input['name'] ?? '');
         if ($name === '') {
             return ['ok' => false, 'message' => 'A venue name is required.'];
@@ -854,8 +852,6 @@ class DirectoryAdminService
      */
     public function venueFromPlace(int $listingId): array
     {
-        helper('slug');
-
         $listing = $this->listings->find($listingId);
         if ($listing === null || ($listing['type'] ?? '') !== 'place') {
             return ['ok' => false, 'message' => 'Only a profile of type Place can become a venue.'];

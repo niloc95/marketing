@@ -53,7 +53,6 @@ class TeamMemberService
 
     public function __construct()
     {
-        helper(['directory_ui', 'slug']);
         $this->members = new DirectoryListingTeamModel();
         $this->files   = new DirectoryListingPhotoModel();
     }

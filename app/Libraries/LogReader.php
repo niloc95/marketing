@@ -198,10 +198,4 @@ class LogReader
 
         return $data;
     }
-
-    /** Level names at or above a severity, for building a filter UI. */
-    public static function levelsAtOrAbove(int $minLevel): array
-    {
-        return array_keys(array_filter(self::SEVERITY, static fn ($v) => $v <= $minLevel));
-    }
 }

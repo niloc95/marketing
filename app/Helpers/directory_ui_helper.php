@@ -566,8 +566,7 @@ if (! function_exists('category_group_tint')) {
     /**
      * The colour class for a category group, e.g. 'cat-tint-red'.
      *
-     * Returned as a whole literal class name and never concatenated, for the
-     * same reason _location_card.php spells out its four gradients: Tailwind
+     * Returned as a whole literal class name and never concatenated: Tailwind
      * scans these files as plain text, so a name assembled at runtime is
      * unmatched and tree-shaken out of the built stylesheet.
      */
@@ -967,24 +966,6 @@ if (! function_exists('team_member_anchor')) {
         $slug = trim((string) ($member['slug'] ?? ''));
 
         return $slug === '' ? '' : 'team-' . $slug;
-    }
-}
-
-if (! function_exists('listing_is_international')) {
-    /**
-     * Is this listing's address outside South Africa?
-     *
-     * The render-time half of the International Listing plan. Asks only about
-     * geography, not about money — VerificationService::requiresSubscription()
-     * adds the "and the plan is switched on" clause, and that is the one a
-     * publish decision must use. This is for views that want to say where a
-     * business is.
-     *
-     * @param array<string,mixed> $listing
-     */
-    function listing_is_international(array $listing): bool
-    {
-        return ! config('Countries')->isLocal((string) ($listing['country'] ?? ''));
     }
 }
 

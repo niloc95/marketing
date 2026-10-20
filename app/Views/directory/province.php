@@ -1,7 +1,6 @@
 <?= $this->extend('layouts/public') ?>
 
 <?php
-helper('slug');
 $siteName  = config('Directory')->siteName();
 $heading   = 'Local services in ' . $province;
 $canonical = base_url('directory/province/' . slugify($province));

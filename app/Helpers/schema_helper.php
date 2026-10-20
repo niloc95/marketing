@@ -145,7 +145,6 @@ if (! function_exists('schema_listing_item')) {
      */
     function schema_listing_item(array $row): array
     {
-        helper('directory_ui');
         $row = listing_public_view($row);
         $url = base_url('directory/' . ($row['slug'] ?? ''));
 
@@ -661,7 +660,6 @@ if (! function_exists('schema_phone')) {
      */
     function schema_phone(string $phone): string
     {
-        helper('directory_ui');
         $phone  = trim($phone);
         $digits = whatsapp_digits($phone);
 
@@ -717,8 +715,6 @@ if (! function_exists('schema_local_business')) {
      */
     function schema_local_business(array $l, string $canonical): array
     {
-        helper('directory_ui');
-
         // A hidden address stays hidden here too, whatever the caller passed:
         // PostalAddress falls back to town and province, and there is no geo.
         $l = listing_public_view($l);

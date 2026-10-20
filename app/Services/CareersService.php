@@ -880,7 +880,6 @@ class CareersService
 
     private function uniqueSlug(string $title): string
     {
-        helper('slug');
         $base = slugify($title) ?: 'role';
         $slug = $base;
         for ($n = 2; $this->roles->findBySlug($slug) !== null; $n++) {
