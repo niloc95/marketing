@@ -1386,7 +1386,11 @@ class DirectoryListingMutationService
      */
     private function hoursComplete(mixed $raw): bool
     {
-        $hours = json_decode((string) hours_encode(is_array($raw) ? $raw : []), true);
+        // hours_decode(), not json_decode(): the stored JSON also carries the
+        // public holiday answer under 'holidays', which is not a day. Walked
+        // as one, "Closed on public holidays" read as a day with no times and
+        // refused the whole save.
+        $hours = hours_decode(hours_encode(is_array($raw) ? $raw : []));
         if (! is_array($hours)) {
             return false;
         }

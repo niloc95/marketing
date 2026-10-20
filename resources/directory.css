@@ -3435,8 +3435,8 @@
      its own tracks: the select takes a whole line on a phone, the times share
      the next with the dash between them, as on a weekday. The exceptions add
      the holiday's name as a first track. */
-  .hours-holidays       { @apply mt-4 border-t border-slate-100 pt-4; }
-  .hours-holidays-title { @apply mb-2 text-sm font-semibold text-slate-700; }
+  /* A .disclosure of its own (collapsed by default), set apart from the week. */
+  .hours-holidays       { @apply mt-4; }
   /* From sm up, fixed tracks so the two times sit beside each other with the
      dash between, as on a weekday, rather than spread across the row. The
      general row is answer, opens, dash, closes, note; an exception row puts
@@ -3445,15 +3445,29 @@
     @apply grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-inner border border-slate-100 p-2 text-sm
            sm:grid-cols-[16rem_8rem_auto_8rem_minmax(0,1fr)];
   }
-  .hours-holiday-row.is-except { @apply sm:grid-cols-[11rem_16rem_8rem_auto_8rem_minmax(0,1fr)]; }
+  /* An exception row (the "Add a holiday" repeater): holiday, answer, times,
+     Remove. Six tracks need more room than the week's rows, so it lays out on
+     one line from md up and stacks below that. */
+  .hours-holiday-row.is-except {
+    @apply sm:grid-cols-[1fr_auto_1fr]
+           md:grid-cols-[minmax(0,15rem)_minmax(0,15rem)_7rem_auto_7rem_minmax(0,1fr)];
+  }
   .hours-holiday-row > .hours-day,
+  .hours-holiday-row > .hours-holiday-pick,
   .hours-holiday-row > .hours-holiday-mode { @apply col-span-3 sm:col-span-1; }
-  .hours-holiday-row .hours-holiday-mode select { @apply h-11 w-full rounded-control border-slate-200 text-sm; }
+  .hours-holiday-row.is-except > .hours-holiday-pick,
+  .hours-holiday-row.is-except > .hours-holiday-mode { @apply sm:col-span-3 md:col-span-1; }
+  .hours-holiday-row.is-except > .repeat-remove { @apply col-span-3 justify-self-end md:col-span-1; }
+  .hours-holiday-row.is-except.is-removed { @apply opacity-50; }
+  .hours-holiday-row .hours-holiday-mode select,
+  .hours-holiday-row .hours-holiday-pick select { @apply h-11 w-full rounded-control border-slate-200 text-sm; }
+  .hours-holiday-except       { @apply mt-4; }
+  .hours-holiday-except-title { @apply mb-2 text-sm font-medium text-slate-700; }
+  .hours-holiday-except [data-repeat-add] { @apply mt-2; }
+  .dark .hours-holiday-except-title { @apply text-slate-200; }
   .hours-holiday-row input[type="time"],
   .hours-holiday-row input.hours-note { @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm; }
   .hours-holiday-date { @apply block text-xs font-normal text-slate-500; }
-  .dark .hours-holidays       { @apply border-slate-800; }
-  .dark .hours-holidays-title { @apply text-slate-200; }
   .dark .hours-holiday-row    { @apply border-slate-800; }
   .dark .hours-holiday-date   { @apply text-slate-400; }
   .dark .hours-holiday-row select,

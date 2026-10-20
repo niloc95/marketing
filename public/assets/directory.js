@@ -2508,10 +2508,40 @@
   // says on save — so a person can still be added, edited and removed, just one
   // per submit.
 
-  document.querySelectorAll('[data-repeat]').forEach(function (section) {
-    var list     = section.querySelector('[data-repeat-list]');
-    var template = section.querySelector('[data-repeat-template]');
-    var addBtn   = section.querySelector('[data-repeat-add]');
+  //
+  // Sections nest: a branch row carries its own hours grid, and every hours grid
+  // carries the public holiday exceptions, which are a repeat section too. So
+  // nothing here may use a bare querySelector: each lookup keeps to elements
+  // whose nearest [data-repeat] is the section itself (repeatOwn, repeatItems),
+  // and a nested section names its own index placeholder
+  // (data-repeat-placeholder, "__h__" for holidays) so that cloning the outer
+  // row leaves the inner template's placeholder alone.
+
+  function repeatOwn(section, selector) {
+    var all = section.querySelectorAll(selector);
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].closest('[data-repeat]') === section) return all[i];
+    }
+    return null;
+  }
+
+  function repeatItems(list) {
+    var section = list.closest('[data-repeat]');
+    return Array.prototype.filter.call(list.querySelectorAll('[data-repeat-item]'), function (row) {
+      return row.closest('[data-repeat]') === section;
+    });
+  }
+
+  function repeatPlaceholder(section) {
+    return section.getAttribute('data-repeat-placeholder') || '__i__';
+  }
+
+  document.querySelectorAll('[data-repeat]').forEach(initRepeat);
+
+  function initRepeat(section) {
+    var list     = repeatOwn(section, '[data-repeat-list]');
+    var template = repeatOwn(section, '[data-repeat-template]');
+    var addBtn   = repeatOwn(section, '[data-repeat-add]');
     if (!list || !template || !addBtn) return;
 
     // Read on every check, not once: a brand deleted in place raises it.
@@ -2520,7 +2550,7 @@
     }
 
     function rows() {
-      return list.querySelectorAll('[data-repeat-item]');
+      return repeatItems(list);
     }
 
     // Rows marked for removal still count against nothing — they are about to
@@ -2562,7 +2592,7 @@
       // Index off the row count, not the live count: two rows may not share an
       // index even when one of them is on its way out, or the server would read
       // the second as an edit of the first.
-      var html = template.innerHTML.replace(/__i__/g, String(rows().length));
+      var html = template.innerHTML.split(repeatPlaceholder(section)).join(String(rows().length));
       var wrap = document.createElement('div');
       wrap.innerHTML = html.trim();
 
@@ -2576,10 +2606,41 @@
       // the "+ Add another location" rows are the only ones with no
       // autocomplete, which is a confusing way for it to fail.
       initAddressAutocomplete(row.querySelector('[data-address-autocomplete]'));
+      // And the sections inside it (a branch's holiday exceptions).
+      row.querySelectorAll('[data-repeat]').forEach(initRepeat);
       syncAddState();
+      section.dispatchEvent(new CustomEvent('repeat:add', { bubbles: true, detail: { row: row } }));
 
-      var first = row.querySelector('input[type="text"]');
+      var first = row.querySelector('select, input[type="text"]');
       if (first) first.focus();
+    });
+  }
+
+  // ------------------------------------------- public holiday exceptions
+  // Each exception row picks one holiday (_hours_inputs.php). A holiday already
+  // picked in another row of the same list is greyed out in the others, so the
+  // same day cannot be given two answers by accident. Rows ticked Remove free
+  // their holiday. The server keeps the last row for a holiday anyway, so this
+  // is a guide, not the rule.
+  function syncHolidayPicks(section) {
+    var picks = Array.prototype.filter.call(section.querySelectorAll('[data-holiday-pick]'), function (sel) {
+      var row = sel.closest('[data-repeat-item]');
+      var box = row && row.querySelector('[data-repeat-remove]');
+      return !box || !box.checked;
+    });
+    var used = picks.map(function (sel) { return sel.value; });
+    section.querySelectorAll('[data-holiday-pick]').forEach(function (sel) {
+      Array.prototype.forEach.call(sel.options, function (opt) {
+        opt.disabled = opt.value !== '' && opt.value !== sel.value && used.indexOf(opt.value) !== -1;
+      });
+    });
+  }
+
+  document.querySelectorAll('[data-holiday-except]').forEach(syncHolidayPicks);
+  ['change', 'repeat:add'].forEach(function (type) {
+    document.addEventListener(type, function (e) {
+      var section = e.target && e.target.closest && e.target.closest('[data-holiday-except]');
+      if (section) syncHolidayPicks(section);
     });
   });
 
@@ -4212,7 +4273,7 @@
     // away the ones a restore added.
     var baseRows = [];
     form.querySelectorAll('[data-repeat-list]').forEach(function (list) {
-      baseRows.push({ list: list, count: list.querySelectorAll('[data-repeat-item]').length });
+      baseRows.push({ list: list, count: repeatItems(list).length });
     });
     var lastJson     = baselineJson;
     var leaving      = false;
@@ -4239,13 +4300,13 @@
     // made by that module's own Add button so they get the same wiring.
     function ensureRows(fields) {
       form.querySelectorAll('[data-repeat]').forEach(function (section) {
-        var template = section.querySelector('[data-repeat-template]');
-        var list     = section.querySelector('[data-repeat-list]');
-        var add      = section.querySelector('[data-repeat-add]');
+        var template = repeatOwn(section, '[data-repeat-template]');
+        var list     = repeatOwn(section, '[data-repeat-list]');
+        var add      = repeatOwn(section, '[data-repeat-add]');
         var named    = template && template.content && template.content.querySelector('[name]');
         if (!list || !add || !named) return;
 
-        var prefix  = named.getAttribute('name').split('[__i__]')[0] + '[';
+        var prefix  = named.getAttribute('name').split('[' + repeatPlaceholder(section) + ']')[0] + '[';
         var highest = -1;
         Object.keys(fields).forEach(function (key) {
           if (key.indexOf(prefix) !== 0) return;
@@ -4255,7 +4316,7 @@
 
         var guard = 50;
         var added = false;
-        while (list.querySelectorAll('[data-repeat-item]').length <= highest && !add.disabled && guard-- > 0) {
+        while (repeatItems(list).length <= highest && !add.disabled && guard-- > 0) {
           add.click();
           added = true;
         }
@@ -4312,9 +4373,10 @@
           // In place rather than a reload: some browsers put typed values back
           // into a reloaded form themselves, which would undo the discard.
           baseRows.forEach(function (entry) {
-            var items = entry.list.querySelectorAll('[data-repeat-item]');
+            if (!entry.list.isConnected) return;
+            var items = repeatItems(entry.list);
             for (var i = items.length - 1; i >= entry.count; i--) items[i].remove();
-            var add = entry.list.parentNode.querySelector('[data-repeat-add]');
+            var add = repeatOwn(entry.list.closest('[data-repeat]'), '[data-repeat-add]');
             var max = add ? parseInt(add.getAttribute('data-repeat-max') || '0', 10) : 0;
             if (add) add.disabled = max > 0 && entry.count >= max;
           });
@@ -4352,6 +4414,9 @@
       } else {
         var x = window.scrollX;
         var y = window.scrollY;
+        ensureRows(draft.fields);
+        // Twice: a branch row added by the first pass brings its own holiday
+        // exceptions section, which the first pass could not see.
         ensureRows(draft.fields);
         apply(draft.fields);
         // The Add button focuses its new row, which would scroll the page away.
