@@ -146,6 +146,28 @@ final class JobBoardFlowTest extends CIUnitTestCase
         // And shows on the business's profile.
         $profile = (string) $this->get('directory/' . $listing['slug'])->response()->getBody();
         $this->assertStringContainsString('Open positions (1)', $profile);
+        // The header says so beside the badges, with one link to the job.
+        $this->assertStringContainsString("We're hiring", $profile);
+        $this->assertStringContainsString('Apply for ' . esc($post['title']), $profile);
+        $this->assertStringContainsString('href="' . esc($this->svc->url($post)) . '"', $profile);
+    }
+
+    public function testTheHiringNoticeLinksToThePanelForSeveralJobs(): void
+    {
+        $listing = $this->listing();
+        $this->svc->submitForListing($listing, $this->jobInput());
+        $this->svc->submitForListing($listing, $this->jobInput(['title' => 'Second opening']));
+
+        $profile = (string) $this->get('directory/' . $listing['slug'])->response()->getBody();
+        $this->assertStringContainsString('href="#open-positions">See 2 open positions', $profile);
+        $this->assertStringContainsString('id="open-positions"', $profile);
+    }
+
+    public function testNoHiringNoticeWithoutALiveVacancy(): void
+    {
+        $listing = $this->listing();
+        $profile = (string) $this->get('directory/' . $listing['slug'])->response()->getBody();
+        $this->assertStringNotContainsString("We're hiring", $profile);
     }
 
     public function testAFlaggedPostFromAListedBusinessWaits(): void

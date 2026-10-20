@@ -13,6 +13,8 @@
  * @var string   $catSlug
  * @var string   $province
  * @var string   $place
+ * @var list<array<string,mixed>>    $openJobs  live vacancies, newest first
+ * @var App\Services\JobBoardService $jobSvc
  */
 ?>
 <?php foreach ($pieces as $piece): ?>
@@ -76,11 +78,28 @@
         <?php // The same pair as the search card, in the same order: Verified
               // (we checked them) before Featured (we promote them). The seal
               // is the visual; this pill is what says it in words. ?>
+        <?php // Then the hiring notice, while the business has a live vacancy:
+              // a pill that says so and one link to act on it. One vacancy
+              // links straight to its job page, where the Apply button is;
+              // more than one jumps to the Open positions panel, which lists
+              // them. Hiring is a fact about the business today, not a claim
+              // we checked, so it gets its own colour, not the emerald. ?>
         <?php $headVerified = listing_is_verified_business($l); ?>
-        <?php if ($headVerified || ! empty($l['is_featured'])): ?>
+        <?php $headJobs = $openJobs ?? []; ?>
+        <?php if ($headVerified || ! empty($l['is_featured']) || $headJobs !== []): ?>
             <div class="mt-2 flex flex-wrap items-center gap-2">
                 <?php if ($headVerified): ?><?= verified_badge_pill() ?><?php endif; ?>
                 <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
+                <?php if ($headJobs !== []): ?>
+                    <span class="profile-hiring">
+                        <span class="badge badge-hiring gap-1"><?= lucide('briefcase', 'h-3.5 w-3.5 shrink-0') ?>We're hiring</span>
+                        <?php if (count($headJobs) === 1): ?>
+                            <a class="profile-hiring-link" href="<?= esc($jobSvc->url($headJobs[0])) ?>">Apply for <?= esc($headJobs[0]['title']) ?><?= lucide('arrow-right', 'h-3.5 w-3.5 shrink-0') ?></a>
+                        <?php else: ?>
+                            <a class="profile-hiring-link" href="#open-positions">See <?= count($headJobs) ?> open positions<?= lucide('arrow-right', 'h-3.5 w-3.5 shrink-0') ?></a>
+                        <?php endif; ?>
+                    </span>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     <?php elseif ($piece === 'hours'): ?>
