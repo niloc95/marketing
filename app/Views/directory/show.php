@@ -139,7 +139,7 @@ $metaDesc = listing_meta_description($l);
                 <?= $avatar ?>
                 <div class="min-w-0 flex-1">
                     <?= view('directory/_profile_head_parts', $headVars + [
-                        'pieces' => ['seal', 'category', 'name', 'rating', 'address', 'pills', 'hours'],
+                        'pieces' => ['seal', 'category', 'name', 'rating', 'address', 'pills', 'hours', 'locations'],
                     ], ['saveData' => false]) ?>
                 </div>
                 <?= $share ?>
@@ -169,7 +169,7 @@ $metaDesc = listing_meta_description($l);
                         <?= $avatar ?>
                         <div class="min-w-0">
                             <?= view('directory/_profile_head_parts', $headVars + [
-                                'pieces' => ['category', 'name', 'rating', 'hours'],
+                                'pieces' => ['category', 'name', 'rating', 'hours', 'locations'],
                             ], ['saveData' => false]) ?>
                         </div>
                         <?= view('directory/_profile_head_parts', $headVars + [
@@ -315,6 +315,8 @@ $metaDesc = listing_meta_description($l);
                       // but eight repeated renders in a loop is exactly the shape
                       // that bug takes. ?>
                 <?php foreach ($v['order'] as $panel): ?>
+                    <?php // Locations live in the right column; see _panel_locations.php. ?>
+                    <?php if ($panel === 'locations') { continue; } ?>
                     <?= view('directory/_panel_' . $panel, ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
                 <?php endforeach; ?>
             </div>
@@ -339,21 +341,31 @@ $metaDesc = listing_meta_description($l);
 
                 <?= view('directory/_service_area_panel', ['l' => $l, 'class' => 'mt-5'], ['saveData' => false]) ?>
 
-                <?= view('directory/_map_panel', [
-                    'row'     => $l,
-                    'name'    => $name,
-                    'heading' => 'Location',
-                    'class'   => 'mt-5',
-                ]) ?>
+                <?php if (! empty($l['locations'])): ?>
+                    <?php // More than one location: the listing's own map and hours
+                          // become location 1 of a list of cards, with every branch
+                          // under it, so a second set of rooms is seen beside the
+                          // first rather than at the foot of the page. ?>
+                    <div class="mt-5">
+                        <?= view('directory/_panel_locations', ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
+                    </div>
+                <?php else: ?>
+                    <?= view('directory/_map_panel', [
+                        'row'     => $l,
+                        'name'    => $name,
+                        'heading' => 'Location',
+                        'class'   => 'mt-5',
+                    ]) ?>
 
-                <?= view('directory/_hours_panel', [
-                    'hours'   => $l['trading_hours'] ?? null,
-                    'holidays' => $l['holiday_rule'] ?? null,
-                    'byAppointment' => ! empty($l['by_appointment']),
-                    'heading' => $v['headings']['hours'],
-                    'class'   => 'mt-5',
-                    'id'      => 'hours',
-                ], ['saveData' => false]) ?>
+                    <?= view('directory/_hours_panel', [
+                        'hours'   => $l['trading_hours'] ?? null,
+                        'holidays' => $l['holiday_rule'] ?? null,
+                        'byAppointment' => ! empty($l['by_appointment']),
+                        'heading' => $v['headings']['hours'],
+                        'class'   => 'mt-5',
+                        'id'      => 'hours',
+                    ], ['saveData' => false]) ?>
+                <?php endif; ?>
 
                 <?php // The vacancies fetched at the top of the page, for the header's
                       // hiring notice too. ?>

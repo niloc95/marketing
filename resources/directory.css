@@ -2199,10 +2199,16 @@
   .dark .feature-check   { @apply text-emerald-400; }
 
   /* ---------------------------------------------------------- trading hours */
-  .hours-day-row     { @apply items-start; }
-  .hours-today       { @apply rounded-inner bg-primary-50 px-2; }
+  /* Every row carries the same side padding, pulled back out with a negative
+     margin, so day names and times line up on the panel's edges whether or
+     not the row is today's; today only adds the tint behind it. Day and badge
+     sit on the left, times and notes are right aligned on the right. */
+  .hours-day-row     { @apply -mx-2 items-start px-2; }
+  .hours-day-row > .k { @apply inline-flex items-center gap-1; }
+  .hours-day-row > span:last-child { @apply text-right; }
+  .hours-today       { @apply rounded-inner bg-primary-50; }
   .hours-today-badge {
-    @apply ml-1 rounded-full bg-primary-500 px-2.5 py-0.5 text-xs font-semibold text-white;
+    @apply rounded-full bg-primary-500 px-2.5 py-0.5 text-xs font-semibold text-white;
   }
   .hours-note-text { @apply text-xs text-slate-500; }
   /* The badge keeps its ocean fill — it reads as a chip in both themes. */
@@ -3378,6 +3384,66 @@
   .branch { @apply mb-5; }
   .branch-name { @apply mb-2 text-sm font-semibold text-primary-600; }
   .dark .branch-name { @apply text-primary-300; }
+
+  /* Every location as one card in the right column (_location_panel.php): a
+     native <details> whose summary says which place it is, with that place's
+     contact, map and hours flattened inside, so no card sits in a card. */
+  .loc-list .branch-section-title { @apply mb-3 text-base font-semibold text-slate-900; }
+  .loc-count { @apply font-normal text-slate-500; }
+  .dark .loc-count { @apply text-slate-400; }
+  .loc { @apply mb-3 border-transparent bg-slate-50 p-0; }
+  .dark .loc { @apply border-transparent bg-surface-tone; }
+  .loc-head {
+    @apply flex cursor-pointer list-none items-start gap-3 rounded-surface p-5 outline-none;
+  }
+  .loc-head::-webkit-details-marker { display: none; }
+  .loc-head:focus-visible { @apply ring-2 ring-primary-500; }
+  .loc-num {
+    @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-500 text-xs font-semibold text-white;
+  }
+  .loc-id { @apply flex min-w-0 flex-1 flex-col gap-1; }
+  .loc-name-row { @apply flex flex-wrap items-center gap-x-2 gap-y-1; }
+  .loc-name { @apply mb-0 text-base font-semibold text-slate-900; }
+  .dark .loc-name { @apply text-white; }
+  .loc-tag {
+    @apply rounded-full border border-slate-300 px-2.5 py-0.5 text-xs font-medium text-slate-600;
+  }
+  .loc-tag-primary { @apply border-primary-500 bg-primary-500 text-white; }
+  .dark .loc-tag { @apply border-slate-600 text-slate-300; }
+  .dark .loc-tag-primary { @apply border-primary-400 bg-primary-500 text-white; }
+  .loc-area   { @apply text-sm text-slate-500; }
+  .loc-status { @apply text-sm text-slate-600; }
+  .dark .loc-area   { @apply text-slate-400; }
+  .dark .loc-status { @apply text-slate-300; }
+  .loc-chevron { @apply mt-1 text-slate-400 transition-transform; }
+  .loc[open] .loc-chevron { @apply rotate-180; }
+  .loc-body { @apply border-t border-slate-200 px-5 pb-5; }
+  .dark .loc-body { @apply border-slate-700; }
+  .loc-body > .panel {
+    @apply rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-5;
+  }
+  .loc-body > .panel:first-child { @apply border-t-0; }
+  .loc-body > .panel:last-child  { @apply pb-0; }
+  .dark .loc-body > .panel { @apply border-slate-700 bg-transparent; }
+  .loc-body > .panel h3 { @apply text-base; }
+
+  /* The header's list of locations, under today's hours. A dot per location
+     for open or closed now; the words are there for screen readers. */
+  .profile-locations {
+    @apply mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600;
+  }
+  .profile-locations a {
+    @apply inline-flex items-center gap-1.5 font-semibold text-primary-500 hover:underline;
+  }
+  .profile-locations-dot { @apply inline-block h-2 w-2 shrink-0 rounded-full; }
+  .profile-locations-dot.is-open   { @apply bg-emerald-500; }
+  .profile-locations-dot.is-closed { @apply bg-red-500; }
+  .dark .profile-locations   { @apply text-slate-300; }
+  .dark .profile-locations a { @apply text-primary-300; }
+  .profile-band .profile-band-head .profile-locations   { @apply text-slate-100; }
+  .profile-band .profile-band-head .profile-locations a { @apply text-white underline-offset-4; }
+  .profile-band .profile-band-head .profile-locations-dot.is-open   { @apply bg-emerald-400; }
+  .profile-band .profile-band-head .profile-locations-dot.is-closed { @apply bg-red-400; }
 
   /* address autocomplete dropdown, in the shared listing form */
   .address-suggest-list {

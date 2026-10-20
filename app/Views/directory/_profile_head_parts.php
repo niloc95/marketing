@@ -7,7 +7,8 @@
  * pieces between the overlay and the row under the band.
  *
  * @var array    $l        the public view of the listing
- * @var string[] $pieces   any of seal, category, name, rating, address, pills, hours
+ * @var string[] $pieces   any of seal, category, name, rating, address, pills, hours,
+ *                          locations
  * @var string   $name
  * @var string   $prof
  * @var string   $catSlug
@@ -118,6 +119,31 @@
                 <span class="<?= $glanceClass ?>"><?= esc($todayHours['label']) ?></span>
                 <?php if ($todayHours['detail'] !== ''): ?><span><?= esc($todayHours['detail']) ?></span><?php endif; ?>
                 <a href="#hours">See hours</a>
+            </p>
+        <?php endif; ?>
+    <?php elseif ($piece === 'locations'): ?>
+        <?php // A business with branches says so up here, where a visitor
+              // looks first: each location by name, with a dot for open or
+              // closed now, linking to its card in the right column (which
+              // directory.js unfolds). The same labels and numbers as the
+              // cards; see _location_panel.php. ?>
+        <?php if (! empty($l['locations'])): ?>
+            <?php $headLocs = array_merge([['row' => $l, 'primary' => true]], array_map(static fn ($r) => ['row' => $r, 'primary' => false], $l['locations'])); ?>
+            <p class="profile-locations">
+                <?= lucide('map-pin', 'h-4 w-4 shrink-0', ['aria-hidden' => 'true']) ?>
+                <span><?= count($headLocs) ?> locations:</span>
+                <?php foreach ($headLocs as $n => $hl): ?>
+                    <?php $hlRow = $hl['row']; ?>
+                    <?php $hlToday = ! empty($hlRow['trading_hours']) ? hours_today_line($hlRow['trading_hours'], $hlRow['holiday_rule'] ?? null) : null; ?>
+                    <?php $hlState = $hlToday['state'] ?? null; ?>
+                    <a href="#location-<?= $n + 1 ?>">
+                        <?php if ($hlState !== null): ?>
+                            <?php // Full class names: Tailwind keeps only what it finds spelled out. ?>
+                            <span class="profile-locations-dot <?= $hlState === 'open' ? 'is-open' : 'is-closed' ?>" aria-hidden="true"></span>
+                        <?php endif; ?>
+                        <?= esc(profile_location_label($hlRow, $hl['primary'], $n + 1)) ?><?php if ($hlState !== null): ?><span class="sr-only"> (<?= esc(strtolower($hlToday['label'])) ?>)</span><?php endif; ?>
+                    </a>
+                <?php endforeach; ?>
             </p>
         <?php endif; ?>
     <?php endif; ?>

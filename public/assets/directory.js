@@ -3286,6 +3286,29 @@
     apply();
   })();
 
+  // ------------------------------------------------- profile location cards
+  // A business's locations are folded <details> cards (_location_panel.php).
+  // The header's location links and "See hours" jump into them, and a jump
+  // into a folded card would land on nothing, so open the card that holds the
+  // target first: on load with a hash, and on every in-page link to one.
+  (function () {
+    if (!document.querySelector('details.loc')) return;
+
+    function reveal(hash) {
+      if (!hash || hash.length < 2) return;
+      var target = document.getElementById(decodeURIComponent(hash.slice(1)));
+      var card = target && target.closest('details.loc');
+      if (card && !card.open) card.open = true;
+    }
+
+    reveal(window.location.hash);
+    window.addEventListener('hashchange', function () { reveal(window.location.hash); });
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest && e.target.closest('a[href^="#"]');
+      if (link) reveal(link.getAttribute('href'));
+    });
+  })();
+
   // ------------------------------------------------------- stand-out sections
   // Most owners never opened the collapsed "Make your profile stand out"
   // sections, so their profiles went live with no hours, photos or services.

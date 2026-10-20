@@ -1425,3 +1425,32 @@ if (! function_exists('listing_form_steps')) {
         ];
     }
 }
+
+if (! function_exists('profile_location_label')) {
+    /**
+     * What a profile calls one of the places a business works from: on the
+     * location cards and in the header's list of locations.
+     *
+     * A branch has its own name ("Netcare Sunninghill Hospital"). The listing's
+     * own address has none, so it is called by its suburb, else its city, which
+     * is what tells two sets of rooms apart. A nameless branch is numbered
+     * instead, because "Location 2" beats an empty heading.
+     *
+     * @param int $number the location's place in the list, the primary being 1
+     */
+    function profile_location_label(array $row, bool $isPrimary, int $number): string
+    {
+        if (! $isPrimary) {
+            $name = trim((string) ($row['name'] ?? ''));
+
+            return $name !== '' ? $name : 'Location ' . $number;
+        }
+        foreach (['suburb', 'city'] as $field) {
+            if (trim((string) ($row[$field] ?? '')) !== '') {
+                return trim((string) $row[$field]);
+            }
+        }
+
+        return 'Main location';
+    }
+}
