@@ -284,9 +284,23 @@ if (! function_exists('hours_holiday_encode')) {
             return null;
         }
 
+        // Exceptions arrive two ways: keyed by holiday, as stored, or as the
+        // form's repeat rows, a list each naming its holiday in 'key' (with
+        // '_remove' when ticked). A holiday given twice keeps the last row.
+        $byKey = [];
+        foreach (is_array($raw['except'] ?? null) ? $raw['except'] : [] as $index => $row) {
+            if (! is_array($row) || ! empty($row['_remove'])) {
+                continue;
+            }
+            $key = is_string($index) && ! ctype_digit($index) ? $index : (string) ($row['key'] ?? '');
+            if (isset(\App\Libraries\PublicHolidays::NATIONAL[$key])) {
+                $byKey[$key] = $row;
+            }
+        }
+
         $except = [];
         foreach (\App\Libraries\PublicHolidays::NATIONAL as $key => $name) {
-            $row  = is_array($raw['except'][$key] ?? null) ? $raw['except'][$key] : [];
+            $row  = $byKey[$key] ?? [];
             $eMode = in_array($row['mode'] ?? '', HOURS_HOLIDAY_MODES, true) ? (string) $row['mode'] : '';
             // "Same as other holidays" is the absence of an exception.
             if ($eMode === '' || ($eMode === $mode && $eMode !== 'open')) {

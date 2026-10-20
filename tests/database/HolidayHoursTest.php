@@ -111,8 +111,33 @@ final class HolidayHoursTest extends CIUnitTestCase
         $html = (string) $this->withSession([App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit')->response()->getBody();
 
         $this->assertMatchesRegularExpression('/<option value="closed" selected>Closed<\/option>/', $html);
-        $this->assertStringContainsString('name="hours[holidays][except][christmas][mode]"', $html);
         $this->assertStringContainsString('Different on some holidays?', $html);
+        $this->assertStringContainsString('+ Add a holiday that&rsquo;s different', $html);
+        $this->assertStringContainsString('name="hours[holidays][except][__h__][key]"', $html, 'the row template');
+        $this->assertSame(0, substr_count(preg_replace('#<(template|noscript)\b.*?</\1>#s', '', $html), 'data-holiday-pick'), 'no exception rows until one is added');
+    }
+
+    public function testExceptionsSaveFromTheRepeatRows(): void
+    {
+        $id = $this->listing();
+        $this->assertTrue($this->owner($id, ['mode' => 'open', 'open' => '09:00', 'close' => '13:00', 'except' => [
+            ['key' => 'christmas', 'mode' => 'closed'],
+            ['key' => 'good-friday', 'mode' => 'closed', '_remove' => '1'],
+            ['key' => '', 'mode' => 'closed'],
+            ['key' => 'heritage', 'mode' => 'open', 'open' => '10:00', 'close' => '12:00'],
+            ['key' => 'heritage', 'mode' => 'usual'],
+        ]])['ok']);
+
+        $rule = hours_holiday_rule($this->listings->find($id)['trading_hours']);
+        $this->assertSame(['heritage', 'christmas'], array_keys($rule['except']), 'removed and blank rows dropped');
+        $this->assertSame('usual', $rule['except']['heritage']['mode'], 'a holiday given twice keeps the last row');
+
+        // The saved exceptions come back as rows.
+        $html = (string) $this->withSession([App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit')->response()->getBody();
+        $rows = preg_replace('#<(template|noscript)\b.*?</\1>#s', '', $html);
+        $this->assertSame(2, substr_count($rows, 'data-holiday-pick'));
+        $this->assertMatchesRegularExpression('/<option value="christmas" selected>Christmas Day, /', $rows);
+        $this->assertStringContainsString('09:00–13:00, with exceptions', $html, 'the closed accordion still says what is set');
     }
 
     // ------------------------------------------------------------- search

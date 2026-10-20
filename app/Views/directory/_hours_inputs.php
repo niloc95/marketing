@@ -72,7 +72,12 @@ $label = $label ?? 'Trading hours';
           // holiday, then single holidays that differ. Plain selects and time
           // boxes, no script: the times are simply ignored unless "Open, these
           // hours" is chosen. Each holiday shows its next date, because
-          // "Family Day" means little without one. ?>
+          // "Family Day" means little without one.
+          //
+          // Collapsed, because open it doubled the length of the hours section.
+          // The summary carries the current answer, so a closed accordion still
+          // says what is set, and it opens by itself when an exception is set,
+          // since those are what an owner would not otherwise see. ?>
     <?php
     $hol      = is_array($hours['holidays'] ?? null) ? $hours['holidays'] : [];
     $holMode  = (string) ($hol['mode'] ?? '');
@@ -84,58 +89,111 @@ $label = $label ?? 'Trading hours';
         'open'   => 'Open, these hours',
         'usual'  => 'Open, our usual hours for that weekday',
     ];
-    $exceptOpen = array_filter((array) ($hol['except'] ?? []), static fn ($e): bool => is_array($e) && ($e['mode'] ?? '') !== '') !== [];
-    ?>
-    <div class="hours-holidays" data-holidays>
-        <p class="hours-holidays-title">Public holidays</p>
-        <div class="hours-holiday-row">
-            <label class="hours-holiday-mode">
-                <span class="sr-only">On public holidays</span>
-                <select name="<?= $holName ?>[mode]">
-                    <option value="">Not set yet</option>
-                    <?php foreach ($choices as $value => $text): ?>
-                        <option value="<?= $value ?>" <?= $holMode === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
+    // The exceptions as repeat rows, from either shape: keyed by holiday as
+    // stored, or the posted list after a failed save. Rows ticked Remove or
+    // with no holiday picked are dropped either way.
+    $exceptRows = [];
+    foreach ((array) ($hol['except'] ?? []) as $index => $row) {
+        if (! is_array($row) || ! empty($row['_remove'])) {
+            continue;
+        }
+        $key = is_string($index) && ! ctype_digit($index) ? $index : (string) ($row['key'] ?? '');
+        if (isset(App\Libraries\PublicHolidays::NATIONAL[$key])) {
+            $exceptRows[] = ['key' => $key] + $row;
+        }
+    }
+    $exceptOpen = $exceptRows !== [];
+
+    // Each holiday with its next date, for the picker: "Family Day" means
+    // little without one.
+    $holidayOptions = [];
+    $year           = $calendar->between($today, date('Y-m-d', strtotime($today . ' +1 year')));
+    foreach (App\Libraries\PublicHolidays::NATIONAL as $key => $holidayName) {
+        $holidayOptions[$key] = $holidayName;
+        foreach ($year as $day) {
+            if ($day['key'] === $key && ! $day['observed']) {
+                $holidayOptions[$key] .= ', ' . date('D j M', strtotime($day['date']));
+                break;
+            }
+        }
+    }
+
+    // One exception row, the Services & prices way (_service_fields.php):
+    // Remove is a real checkbox, and the shared data-repeat module clones the
+    // <template> for "Add". The placeholder is __h__, not __i__, because on a
+    // branch these rows sit inside the branch row's own template.
+    $exceptRow = static function ($i, array $ex = []) use ($holName, $choices, $holidayOptions): string {
+        ob_start(); ?>
+        <div class="hours-holiday-row is-except" data-repeat-item>
+            <label class="hours-holiday-pick">
+                <span class="sr-only">Holiday</span>
+                <select name="<?= $holName ?>[except][<?= $i ?>][key]" data-holiday-pick>
+                    <option value="">Choose a holiday</option>
+                    <?php foreach ($holidayOptions as $value => $text): ?>
+                        <option value="<?= $value ?>" <?= ($ex['key'] ?? '') === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
-            <label><span class="sr-only">Opens on public holidays</span><input type="time" name="<?= $holName ?>[open]" value="<?= esc($hol['open'] ?? '', 'attr') ?>"></label>
+            <label class="hours-holiday-mode">
+                <span class="sr-only">On that holiday</span>
+                <select name="<?= $holName ?>[except][<?= $i ?>][mode]">
+                    <?php foreach ($choices as $value => $text): ?>
+                        <option value="<?= $value ?>" <?= ($ex['mode'] ?? 'closed') === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span class="sr-only">Opens</span><input type="time" name="<?= $holName ?>[except][<?= $i ?>][open]" value="<?= esc($ex['open'] ?? '', 'attr') ?>"></label>
             <span>&ndash;</span>
-            <label><span class="sr-only">Closes on public holidays</span><input type="time" name="<?= $holName ?>[close]" value="<?= esc($hol['close'] ?? '', 'attr') ?>"></label>
-            <input type="text" class="hours-note" name="<?= $holName ?>[note]" value="<?= esc($hol['note'] ?? '', 'attr') ?>" maxlength="<?= HOURS_NOTE_MAX ?>" placeholder="Optional note, e.g. Closed over Easter weekend" aria-label="Public holiday note">
+            <label><span class="sr-only">Closes</span><input type="time" name="<?= $holName ?>[except][<?= $i ?>][close]" value="<?= esc($ex['close'] ?? '', 'attr') ?>"></label>
+            <label class="repeat-remove">
+                <input type="checkbox" name="<?= $holName ?>[except][<?= $i ?>][_remove]" value="1" data-repeat-remove aria-label="Remove this holiday">
+                <span>Remove</span>
+            </label>
         </div>
-        <div class="hint">Customers check this before they travel. On a public holiday your profile shows this answer instead of the weekday's hours.</div>
-
-        <details class="disclosure mt-2" <?= $exceptOpen ? 'open' : '' ?>>
-            <summary class="disclosure-summary">Different on some holidays? <span class="hint">For example, closed on Christmas Day</span></summary>
-            <div class="disclosure-body hours-grid">
-                <?php foreach (App\Libraries\PublicHolidays::NATIONAL as $key => $holidayName): ?>
-                    <?php
-                    $ex   = is_array($hol['except'][$key] ?? null) ? $hol['except'][$key] : [];
-                    $next = null;
-                    foreach ($calendar->between($today, date('Y-m-d', strtotime($today . ' +1 year'))) as $day) {
-                        if ($day['key'] === $key && ! $day['observed']) {
-                            $next = $day['date'];
-                            break;
-                        }
-                    }
-                    ?>
-                    <div class="hours-holiday-row is-except">
-                        <span class="hours-day"><?= esc($holidayName) ?><?php if ($next !== null): ?> <span class="hours-holiday-date"><?= esc(date('D j M', strtotime($next))) ?></span><?php endif; ?></span>
-                        <label class="hours-holiday-mode">
-                            <span class="sr-only"><?= esc($holidayName) ?></span>
-                            <select name="<?= $holName ?>[except][<?= $key ?>][mode]">
-                                <option value="">Same as other holidays</option>
-                                <?php foreach ($choices as $value => $text): ?>
-                                    <option value="<?= $value ?>" <?= ($ex['mode'] ?? '') === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-                        <label><span class="sr-only">Opens on <?= esc($holidayName) ?></span><input type="time" name="<?= $holName ?>[except][<?= $key ?>][open]" value="<?= esc($ex['open'] ?? '', 'attr') ?>"></label>
-                        <span>&ndash;</span>
-                        <label><span class="sr-only">Closes on <?= esc($holidayName) ?></span><input type="time" name="<?= $holName ?>[except][<?= $key ?>][close]" value="<?= esc($ex['close'] ?? '', 'attr') ?>"></label>
-                    </div>
-                <?php endforeach; ?>
+        <?php
+        return (string) ob_get_clean();
+    };
+    ?>
+    <details class="disclosure hours-holidays" data-holidays <?= $exceptOpen ? 'open' : '' ?>>
+        <summary class="disclosure-summary">
+            <span>Public holidays</span>
+            <span class="hint"><?= $holMode !== '' ? esc(hours_holiday_text($hol)) . ($exceptOpen ? ', with exceptions' : '') : 'Not set yet. Are you open on public holidays?' ?></span>
+        </summary>
+        <div class="disclosure-body">
+            <div class="hours-holiday-row">
+                <label class="hours-holiday-mode">
+                    <span class="sr-only">On public holidays</span>
+                    <select name="<?= $holName ?>[mode]">
+                        <option value="">Not set yet</option>
+                        <?php foreach ($choices as $value => $text): ?>
+                            <option value="<?= $value ?>" <?= $holMode === $value ? 'selected' : '' ?>><?= esc($text) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label><span class="sr-only">Opens on public holidays</span><input type="time" name="<?= $holName ?>[open]" value="<?= esc($hol['open'] ?? '', 'attr') ?>"></label>
+                <span>&ndash;</span>
+                <label><span class="sr-only">Closes on public holidays</span><input type="time" name="<?= $holName ?>[close]" value="<?= esc($hol['close'] ?? '', 'attr') ?>"></label>
+                <input type="text" class="hours-note" name="<?= $holName ?>[note]" value="<?= esc($hol['note'] ?? '', 'attr') ?>" maxlength="<?= HOURS_NOTE_MAX ?>" placeholder="Optional note, e.g. Closed over Easter weekend" aria-label="Public holiday note">
             </div>
-        </details>
-    </div>
+            <div class="hint">Customers check this before they travel. On a public holiday your profile shows this answer instead of the weekday's hours.</div>
+
+            <div class="hours-holiday-except" data-repeat data-repeat-placeholder="__h__" data-holiday-except>
+                <p class="hours-holiday-except-title">Different on some holidays? <span class="hint">For example, closed on Christmas Day</span></p>
+                <div class="hours-grid" data-repeat-list>
+                    <?php foreach ($exceptRows as $i => $ex): ?>
+                        <?= $exceptRow($i, $ex) ?>
+                    <?php endforeach; ?>
+                </div>
+                <?php // Without JavaScript "Add" cannot clone, so one blank row is
+                      // offered instead; a row with no holiday picked is ignored. ?>
+                <noscript><?= $exceptRow(count($exceptRows)) ?></noscript>
+                <template data-repeat-template><?= $exceptRow('__h__') ?></template>
+                <button type="button" class="btn btn-ghost btn-xs" data-repeat-add
+                        data-repeat-max="<?= count(App\Libraries\PublicHolidays::NATIONAL) ?>"
+                        data-repeat-full="Every public holiday already has its own answer.">
+                    + Add a holiday that&rsquo;s different
+                </button>
+            </div>
+        </div>
+    </details>
 </div>
