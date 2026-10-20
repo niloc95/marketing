@@ -98,7 +98,18 @@ $metaDesc = listing_meta_description($l);
     <?php $video = $l['video'] ?? null; ?>
     <?php $photoCount = count($l['photos'] ?? []); ?>
     <?php $hasBand = $photoCount > 0 || $video !== null; ?>
-    <?php $headVars = compact('l', 'name', 'prof', 'catSlug', 'province', 'place'); ?>
+    <?php // The business's live vacancies from the Jobs board. Fetched
+          // here, like header_quick_categories() in the layout, so the
+          // profile controller does not need to know the board exists.
+          // Service requests are left out: they are the business asking
+          // for help, not something to advertise on its own profile.
+          // Fetched before the header, which shows a hiring notice beside
+          // the badges, and the Open positions panel lower down lists them. ?>
+    <?php $openJobs = (new App\Models\JobPostModel())->live()
+        ->where('listing_id', (int) $l['id'])->where('kind', 'job')
+        ->orderBy('published_at', 'DESC')->findAll(5); ?>
+    <?php $jobSvc = new App\Services\JobBoardService(); ?>
+    <?php $headVars = compact('l', 'name', 'prof', 'catSlug', 'province', 'place', 'openJobs', 'jobSvc'); ?>
     <?php $share = view('partials/_share', [
         'title'    => $name . ($prof ? ', ' . $prof : ''),
         'url'      => $canonical,
@@ -344,17 +355,10 @@ $metaDesc = listing_meta_description($l);
                     'id'      => 'hours',
                 ], ['saveData' => false]) ?>
 
-                <?php // The business's live vacancies from the Jobs board. Fetched
-                      // here, like header_quick_categories() in the layout, so the
-                      // profile controller does not need to know the board exists.
-                      // Service requests are left out: they are the business asking
-                      // for help, not something to advertise on its own profile. ?>
-                <?php $openJobs = (new App\Models\JobPostModel())->live()
-                    ->where('listing_id', (int) $l['id'])->where('kind', 'job')
-                    ->orderBy('published_at', 'DESC')->findAll(5); ?>
+                <?php // The vacancies fetched at the top of the page, for the header's
+                      // hiring notice too. ?>
                 <?php if ($openJobs !== []): ?>
-                    <?php $jobSvc = new App\Services\JobBoardService(); ?>
-                    <div class="panel mt-5">
+                    <div class="panel mt-5" id="open-positions">
                         <h3>Open positions (<?= count($openJobs) ?>)</h3>
                         <ul class="mt-2 space-y-2 text-sm">
                             <?php foreach ($openJobs as $job): ?>

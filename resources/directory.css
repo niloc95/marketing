@@ -1627,6 +1627,16 @@
      but neither the Verified emerald nor a category tint. */
   .badge-type { @apply bg-green-50 text-green-800; }
   .dark .badge-type { @apply bg-green-500/15 text-green-300; }
+  /* "We're hiring" on a profile with a live vacancy. Sky, not the Verified
+     emerald or the Featured amber: an open job is news, not a judgement. */
+  .badge-hiring { @apply bg-sky-50 text-sky-700; }
+  .dark .badge-hiring { @apply bg-sky-500/15 text-sky-300; }
+  /* The pill and its link stay together when the badge row wraps. */
+  .profile-hiring { @apply inline-flex flex-wrap items-center gap-x-2 gap-y-1; }
+  .profile-hiring-link {
+    @apply inline-flex items-center gap-1 text-sm font-semibold text-primary-500
+           hover:underline dark:text-primary-300;
+  }
   .badge-venue { @apply bg-slate-100 text-slate-600 no-underline hover:bg-slate-200 hover:text-slate-900; }
   .dark .badge          { @apply bg-slate-800 text-slate-300; }
   .dark .badge-featured { @apply bg-brand-golden/20 text-brand-golden; }
