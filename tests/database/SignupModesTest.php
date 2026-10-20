@@ -72,6 +72,27 @@ final class SignupModesTest extends CIUnitTestCase
         $this->assertStringContainsString('A South African business profile is free either way', $html, 'the Terms promise must stay on the page');
     }
 
+    /**
+     * The form in five numbered section cards, in order, with the step
+     * tracker in the sticky score bar linking to each (listing_form_steps()).
+     */
+    public function testTheFormIsFiveNumberedSectionsWithATracker(): void
+    {
+        $html = $this->page('add-profile');
+
+        $at = -1;
+        foreach (listing_form_steps() as $i => $step) {
+            $pos = strpos($html, 'id="form-step-' . $i . '"');
+            $this->assertNotFalse($pos, 'section ' . $i);
+            $this->assertGreaterThan($at, $pos, 'sections in order');
+            $at = $pos;
+            $this->assertStringContainsString('class="form-step ' . $step['class'] . '"', $html);
+            $this->assertStringContainsString('href="#form-step-' . $i . '"', $html, 'the tracker links to it');
+        }
+        $this->assertSame(5, substr_count($html, 'class="form-step-num"'));
+        $this->assertStringContainsString('<span class="sr-only">Step 3 of 5: </span>Tell people about you', $html, 'the step is announced, not only coloured');
+    }
+
     public function testADirectVisitSeesVerifiedFirstAndPicked(): void
     {
         $html = $this->page('add-profile');

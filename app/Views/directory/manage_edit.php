@@ -175,6 +175,17 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     <div class="hint">Optional. Emails about your profile itself (edit links and any badge billing) still arrive either way.</div>
                 </div>
 
+                <?php // The step tracker, in a sticky bar of its own: this page has no
+                      // live score bar for it to ride in (that is /add-profile's).
+                      // Save rides along too, so an owner who fixed one thing
+                      // halfway down need not scroll to the end. Hidden until
+                      // directory.js runs, like the score bar; the button at the
+                      // end is the one that always works. ?>
+                <div class="form-steps-dock" data-form-steps-dock hidden>
+                    <?= view('directory/_form_steps_nav', [], ['saveData' => false]) ?>
+                    <button type="submit" class="btn btn-accent btn-xs">Save changes</button>
+                </div>
+
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>
             </form>
 

@@ -105,11 +105,17 @@ helper('directory_hours');
           // rendered is not reliably used as the default. ?>
     <button type="submit" class="form-default-submit" tabindex="-1" aria-hidden="true">Save</button>
 <?php endif; ?>
-<?php // The essentials, split into short steps so an owner can see where they
-      // are. Same .form-section-head as "Make your profile stand out" below,
-      // so every step down the form looks alike. ?>
+<?php // The form in five numbered sections (listing_form_steps()), each its own
+      // card with its own accent, so someone scrolling fast still sees where one
+      // part ends and the next begins. The sticky step tracker
+      // (_form_steps_nav.php) follows the same five ids, form-step-1..5.
+      // The number is in the heading, so the colour is never the only cue. ?>
+<?php $formSteps = listing_form_steps(); ?>
+<?php $stepOpen = static fn (int $i): string => '<section class="form-step ' . $formSteps[$i]['class'] . '" id="form-step-' . $i . '" data-form-step="' . $i . '">'; ?>
+<?php $stepNum = static fn (int $i): string => '<span class="form-step-num" aria-hidden="true">' . $i . '</span><span class="sr-only">Step ' . $i . ' of ' . count($formSteps) . ': </span>'; ?>
+<?= $stepOpen(1) ?>
 <div class="form-section-head form-section-head-first">
-    <h3>What you do</h3>
+    <h3><?= $stepNum(1) ?>What you do</h3>
     <p class="hint">Choose the kind of profile and the category customers would search for.</p>
 </div>
 <div class="form-row">
@@ -162,9 +168,11 @@ helper('directory_hours');
 <?php if ($showExtras): ?>
     <?= view('directory/_team_fields', ['rows' => $vTeam, 'err' => $err]) ?>
 <?php endif; ?>
+</section>
 
-<div class="form-section-head">
-    <h3>How customers reach you</h3>
+<?= $stepOpen(2) ?>
+<div class="form-section-head form-section-head-first">
+    <h3><?= $stepNum(2) ?>How customers reach you</h3>
     <p class="hint">Your name and contact details, shown on your profile so people can call, message or visit your website.</p>
 </div>
 <div class="form-row">
@@ -223,8 +231,11 @@ helper('directory_hours');
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
-<div class="form-section-head">
-    <h3>Tell people about you</h3>
+</section>
+
+<?= $stepOpen(3) ?>
+<div class="form-section-head form-section-head-first">
+    <h3><?= $stepNum(3) ?>Tell people about you</h3>
     <p class="hint">A few honest sentences about what you do. Stuck? Let ChatGPT write a first draft from your answers.</p>
 </div>
 <div class="field" data-rich-text data-rich-text-max="<?= \App\Libraries\RichText::MAX_PLAIN_LENGTH ?>">
@@ -304,8 +315,11 @@ helper('directory_hours');
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 
-<div class="form-section-head">
-    <h3>Where you are</h3>
+</section>
+
+<?= $stepOpen(4) ?>
+<div class="form-section-head form-section-head-first">
+    <h3><?= $stepNum(4) ?>Where you are</h3>
     <p class="hint">Your address puts you on the map and in local searches. You choose below whether it shows on your profile.</p>
 </div>
 <?php // id: the profile-strength panel links here for the address, city and
@@ -520,13 +534,15 @@ $showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
     </div>
     <div class="hint">For our records, and so we know who to address when we contact you about this profile.</div>
 </fieldset>
+</section>
 
 <?php // data-standout: directory.js opens every section in here once the
       // contact person is filled in, so nobody finishes the form without
       // seeing what is below. It closes after the consent boxes. ?>
 <div data-standout>
-<div class="form-section-head" id="standout-head">
-    <h3>Make your profile stand out</h3>
+<?= $stepOpen(5) ?>
+<div class="form-section-head form-section-head-first" id="standout-head">
+    <h3><?= $stepNum(5) ?>Make your profile stand out</h3>
     <?php if ($sectionsRequired): ?>
         <p class="hint"><strong>Opening hours, a logo or photo, and at least one service are required.</strong> The rest is optional and you can come back to it later. Each section you fill in adds a panel to your public profile.</p>
     <?php else: ?>
@@ -732,6 +748,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 </div>
     </div>
 </details>
+</section>
 
 <?php if ($showConsent): ?>
     <?php // New tab for both links, so reading the terms never costs a half-filled form. ?>
