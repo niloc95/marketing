@@ -82,6 +82,29 @@ final class HolidayHoursTest extends CIUnitTestCase
         $this->assertNull($row['holiday_open_dates']);
     }
 
+    /**
+     * Every answer must save alongside complete weekly hours. "Closed" and
+     * "usual hours" carry no times, and the compulsory hours check once took
+     * the holidays entry for an eighth day and refused them.
+     */
+    public function testEveryAnswerSavesWithCompleteWeeklyHours(): void
+    {
+        $id = $this->listing();
+        foreach ([['mode' => 'closed'], ['mode' => 'usual'], ['mode' => 'open'], ['mode' => 'open', 'open' => '09:00', 'close' => '13:00']] as $answer) {
+            $result = $this->owner($id, $answer);
+            $this->assertTrue($result['ok'] ?? false, $answer['mode'] . ': ' . json_encode($result['errors'] ?? $result));
+            $this->assertSame($answer['mode'], $this->listings->find($id)['holiday_hours']);
+        }
+
+        // And it is still the week that is checked: a blank day is refused.
+        $post          = $this->withRequiredSections();
+        $post['hours'] = ['mon' => ['open' => '08:00', 'close' => ''], 'holidays' => ['mode' => 'closed']] + $post['hours'];
+        $result        = (new DirectoryListingMutationService())->updateOwn($id, $post + [
+            'display_name' => 'Builders Corner', 'category_id' => $this->categoryId, 'contact_person' => 'Test Owner',
+        ]);
+        $this->assertArrayHasKey('hours', $result['errors'] ?? []);
+    }
+
     public function testTheOwnerFormOffersTheAnswer(): void
     {
         $id   = $this->listing(['trading_hours' => hours_encode(['holidays' => ['mode' => 'closed']])]);
