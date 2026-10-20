@@ -11,7 +11,7 @@
  *   ├── DEPLOY.txt            where each folder goes + the remaining manual steps
  *   ├── directory-app/        → upload ABOVE the web root (not web-reachable)
  *   │   ├── app/ vendor/ writable/
- *   │   └── composer.json composer.lock preload.php spark .env.example
+ *   │   └── composer.json composer.lock spark .env.example
  *   └── docroot/              → upload INTO the web root (public_html)
  *       └── index.php .htaccess favicon.ico robots.txt assets/
  *
@@ -43,7 +43,7 @@ const appOut = path.join(outDir, 'directory-app');
 const webOut = path.join(outDir, 'docroot');
 
 /** Files copied verbatim into the app root. */
-const APP_FILES = ['composer.json', 'composer.lock', 'preload.php', 'spark'];
+const APP_FILES = ['composer.json', 'composer.lock', 'spark'];
 
 /** writable/ subdirectories the framework requires at runtime.
  *
