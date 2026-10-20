@@ -20,6 +20,7 @@ use CodeIgniter\CLI\CLI;
  *   php spark directory:geocode --limit=20
  *
  *   php spark directory:geocode --status failed   # retry only what failed
+ *   php spark directory:geocode --status failed,stale --limit 100   # the weekly cron
  *   php spark directory:geocode --id 294          # just this one listing
  *
  * Note the space: CodeIgniter's CLI parser reads `--option value`, not
@@ -48,7 +49,7 @@ class GeocodeListings extends BaseCommand
     protected $options     = [
         '--all'      => 'Re-geocode every listing, not just those missing coordinates.',
         '--id'       => 'Only this listing, whatever its coordinates or status.',
-        '--status'   => 'Only listings with this geocoding_status (pending|ok|failed|manual).',
+        '--status'   => 'Only listings with this geocoding_status (pending|ok|failed|manual|stale), or several comma separated.',
         '--limit'    => 'Stop after N listings.',
         '--dry-run'  => 'Show what would change without writing.',
         '--force'    => 'Also overwrite hand-placed ("manual") pins. Rarely what you want.',
@@ -69,20 +70,25 @@ class GeocodeListings extends BaseCommand
             return EXIT_ERROR;
         }
 
-        if ($status !== '' && ! in_array($status, ['pending', 'ok', 'failed', 'manual'], true)) {
-            CLI::error('Unknown --status. Use one of: pending, ok, failed, manual.');
+        // A comma list so the weekly retry is one cron line: failed rows (an
+        // outage, a token gone bad) and stale ones (a kept pin waiting to be
+        // confirmed) want exactly the same treatment.
+        $statuses = $status === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $status))));
+        $known    = ['pending', 'ok', 'failed', 'manual', ListingGeocoder::STATUS_STALE];
+        if (array_diff($statuses, $known) !== []) {
+            CLI::error('Unknown --status. Use one or more of: ' . implode(', ', $known) . '.');
 
             return EXIT_ERROR;
         }
 
         $model = new DirectoryListingModel();
-        $query = $model->select('id, display_name, address_line, address_line_2, suburb, city, province, postal_code, country, latitude, longitude, geocode_precision')
+        $query = $model->select('id, display_name, address_line, address_line_2, suburb, city, province, postal_code, country, latitude, longitude, geocode_precision, geocoding_status')
             ->orderBy('id', 'ASC');
 
         if ($id !== '') {
             $query->where('id', (int) $id);
-        } elseif ($status !== '') {
-            $query->where('geocoding_status', $status);
+        } elseif ($statuses !== []) {
+            $query->whereIn('geocoding_status', $statuses);
         } elseif (! $all) {
             $query->groupStart()->where('latitude', null)->orWhere('longitude', null)->groupEnd();
         }
@@ -144,6 +150,15 @@ class GeocodeListings extends BaseCommand
             CLI::write('  ' . ($addr !== '' ? $addr : '(no address on file)'), 'dark_gray');
 
             $coords = $geocoder->geocodeParts($listing);
+            $isStale = ($listing['geocoding_status'] ?? null) === ListingGeocoder::STATUS_STALE;
+
+            // A kept pin is only replaced by something at least as precise.
+            // Anything less is the same as no match for it.
+            if ($coords !== null && $isStale
+                && ListingGeocoder::isCoarser((string) $coords['precision'], (string) ($listing['geocode_precision'] ?? ''))) {
+                CLI::write(sprintf('  → only found the %s; keeping the existing pin', $coords['precision']), 'dark_gray');
+                $coords = null;
+            }
 
             if ($coords === null) {
                 $failed++;
@@ -151,10 +166,12 @@ class GeocodeListings extends BaseCommand
 
                 // Record the failure rather than leaving the row looking
                 // untried — that is what makes `--status=failed` a useful
-                // retry set after an outage.
+                // retry set after an outage. A stale row keeps its status: it
+                // still has its pin, and 'failed' would tell the owner's form
+                // there is none.
                 if (! $dryRun) {
                     $model->update($listing['id'], [
-                        'geocoding_status' => 'failed',
+                        'geocoding_status' => $isStale ? ListingGeocoder::STATUS_STALE : 'failed',
                         'geocoded_at'      => date('Y-m-d H:i:s'),
                     ]);
                 }

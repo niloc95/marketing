@@ -477,6 +477,17 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertArrayHasKey('geo', schema_local_business($base + ['latitude' => -26.3, 'longitude' => 27.8], $url));
     }
 
+    public function testLocalBusinessClaimsNoGeoForAnAreaCentre(): void
+    {
+        $base = ['display_name' => 'Acme', 'latitude' => -26.3, 'longitude' => 27.8];
+        $url  = 'https://example.test/directory/acme';
+
+        $this->assertArrayNotHasKey('geo', schema_local_business($base + ['geocode_precision' => 'suburb'], $url));
+        $this->assertArrayNotHasKey('geo', schema_local_business($base + ['geocode_precision' => 'city'], $url));
+        $this->assertArrayHasKey('geo', schema_local_business($base + ['geocode_precision' => 'street'], $url));
+        $this->assertArrayHasKey('geo', schema_local_business($base + ['geocode_precision' => 'manual'], $url));
+    }
+
     public function testLocalBusinessOffersAReserveActionOnlyForASafeBookingUrl(): void
     {
         $url = 'https://example.test/directory/acme';

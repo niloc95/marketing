@@ -34,8 +34,10 @@ use App\Models\DirectoryListingModel;
  *  - Everything badge-gated, per the rule above. is_verified joins them for a
  *    different reason: it is email confirmation, true for every published row,
  *    so scoring it would be a constant.
- *  - Fields required at signup anyway — display_name, email, postal_code,
- *    country, type. A point everybody has is not a point.
+ *  - Fields required at signup anyway — display_name, email, country, type.
+ *    A point everybody has is not a point. postal_code was one of these until
+ *    it became optional; it still scores zero, since a customer finds the door
+ *    by street and suburb, not by code.
  *  - contact_person and title: they sit in the "for our records" fieldset and
  *    are never shown publicly, so they do nothing for a searcher. They are also
  *    compulsory on both write paths now, which puts them in the bracket above

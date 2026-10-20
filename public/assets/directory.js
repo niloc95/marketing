@@ -2135,8 +2135,18 @@
         L.control.scale({ imperial: false }).addTo(map);
         addFullscreenControl(L, map, mapView);
 
-        L.marker([lat, lng]).addTo(map)
-          .bindPopup(mapView.getAttribute('data-label') || '');
+        // Only the middle of the suburb or city is known (map_area_radius()).
+        // A pin there would point at a door we never found, so shade the area
+        // and let the address text do the rest.
+        var areaRadius = parseInt(mapView.getAttribute('data-area-radius'), 10);
+        if (areaRadius > 0) {
+          var area = L.circle([lat, lng], { radius: areaRadius, className: 'map-area' }).addTo(map)
+            .bindPopup(mapView.getAttribute('data-label') || '');
+          map.fitBounds(area.getBounds(), { padding: [16, 16] });
+        } else {
+          L.marker([lat, lng]).addTo(map)
+            .bindPopup(mapView.getAttribute('data-label') || '');
+        }
 
         setTimeout(function () { map.invalidateSize(); }, 0);
       }).catch(function (err) {
@@ -2233,6 +2243,15 @@
       : L.layerGroup();
     map.addLayer(cluster);
 
+    // For listings placed only at the middle of their suburb or city: a
+    // hollow dot reads as "somewhere around here", a pin as "this door".
+    var areaIcon = L.divIcon({
+      className: 'map-area-dot',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -9]
+    });
+
     var fetchSeq = 0;
     var lastKey = '';
     // Markers already on the map, by listing id. Kept so a refetch can add and
@@ -2281,7 +2300,9 @@
           items.forEach(function (item) {
             keep[item.id] = true;
             if (shown[item.id]) return; // already on the map, leave it alone
-            var marker = L.marker([item.lat, item.lng])
+            // An area dot rather than a pin when only the suburb or city is
+            // known. Still an L.marker, so it clusters like the rest.
+            var marker = L.marker([item.lat, item.lng], item.area ? { icon: areaIcon } : {})
               .bindPopup(popupHtml(item), { minWidth: 220 });
             shown[item.id] = marker;
             added.push(marker);

@@ -179,6 +179,127 @@ final class ListingGeocoderTest extends CIUnitTestCase
         $this->assertNotNull($result['geocoded_at'], 'the failed attempt should still be recorded');
     }
 
+    /**
+     * A corrected street name on an address the geocoder only half knows used
+     * to wipe a good pin. Same suburb, city and province: keep it, flag it.
+     */
+    public function testAFailedLookupAfterAStreetOnlyEditKeepsThePinAsStale(): void
+    {
+        $g      = $this->geocoder(null, $calls);
+        $result = $g->resolve(
+            $this->address(['address_line' => '21 Delta Rd', 'postal_code' => '']),
+            $this->existing(['geocode_precision' => 'street', 'geocoded_address' => 'Delta Road, Eltonhill']),
+            []
+        );
+
+        $this->assertSame(1, $calls);
+        $this->assertSame(-26.1294840, $result['latitude']);
+        $this->assertSame(28.0678351, $result['longitude']);
+        $this->assertSame('street', $result['geocode_precision']);
+        $this->assertSame(ListingGeocoder::STATUS_STALE, $result['geocoding_status']);
+        $this->assertSame('Delta Road, Eltonhill', $result['geocoded_address']);
+    }
+
+    public function testAnAreaFieldChangedOnlyInCaseStillCountsAsTheSameArea(): void
+    {
+        $result = $this->geocoder(null)->resolve(
+            $this->address(['address_line' => '21 Delta Rd', 'suburb' => 'ELTONHILL ']),
+            $this->existing(),
+            []
+        );
+
+        $this->assertSame(ListingGeocoder::STATUS_STALE, $result['geocoding_status']);
+    }
+
+    public function testAFailedLookupAfterASuburbChangeStillClearsThePin(): void
+    {
+        $result = $this->geocoder(null)->resolve(
+            $this->address(['suburb' => 'Birnam']),
+            $this->existing(),
+            []
+        );
+
+        $this->assertNull($result['latitude'], 'a pin in the wrong suburb is worse than none');
+        $this->assertSame('failed', $result['geocoding_status']);
+    }
+
+    public function testAFailedLookupWithNoOldPinStaysFailed(): void
+    {
+        $result = $this->geocoder(null)->resolve(
+            $this->address(['address_line' => '21 Delta Rd']),
+            $this->existing(['latitude' => null, 'longitude' => null]),
+            []
+        );
+
+        $this->assertNull($result['latitude']);
+        $this->assertSame('failed', $result['geocoding_status']);
+    }
+
+    /**
+     * "Never overwrite valid coordinates with unreliable results": a street
+     * pin is not traded for a city centre just because the street was edited.
+     */
+    public function testACoarserLookupInTheSameAreaKeepsTheBetterPin(): void
+    {
+        $result = $this->geocoder(['lat' => -26.2041, 'lng' => 28.0473, 'precision' => 'city'])->resolve(
+            $this->address(['address_line' => '21 Delta Rd']),
+            $this->existing(['geocode_precision' => 'street']),
+            []
+        );
+
+        $this->assertSame(-26.1294840, $result['latitude']);
+        $this->assertSame(ListingGeocoder::STATUS_STALE, $result['geocoding_status']);
+    }
+
+    public function testACoarserLookupAfterMovingSuburbIsStillUsed(): void
+    {
+        $result = $this->geocoder(['lat' => -26.1500, 'lng' => 28.0300, 'precision' => 'suburb'])->resolve(
+            $this->address(['suburb' => 'Birnam']),
+            $this->existing(['geocode_precision' => 'street']),
+            []
+        );
+
+        $this->assertSame(-26.1500, $result['latitude'], 'the old pin is in the wrong suburb now');
+        $this->assertSame('ok', $result['geocoding_status']);
+    }
+
+    public function testCoarserRanksPrecisions(): void
+    {
+        $this->assertTrue(ListingGeocoder::isCoarser('city', 'street'));
+        $this->assertTrue(ListingGeocoder::isCoarser('suburb', 'exact'));
+        $this->assertFalse(ListingGeocoder::isCoarser('street', 'street'));
+        $this->assertFalse(ListingGeocoder::isCoarser('exact', 'suburb'));
+        $this->assertFalse(ListingGeocoder::isCoarser('city', ''), 'nothing stored, nothing to protect');
+    }
+
+    /**
+     * The hidden inputs re-post the stored point on every save. That is not
+     * the owner confirming a pin that is waiting to be checked.
+     */
+    public function testAReSavedStalePinIsLeftAlone(): void
+    {
+        $g      = $this->geocoder(self::LOOKUP, $calls);
+        $result = $g->resolve(
+            $this->address(),
+            $this->existing(['geocode_precision' => 'street', 'geocoding_status' => ListingGeocoder::STATUS_STALE]),
+            ['latitude' => '-26.1294840', 'longitude' => '28.0678351', 'geocode_precision' => 'street']
+        );
+
+        $this->assertNull($result, 'stale must not quietly become ok');
+        $this->assertSame(0, $calls);
+    }
+
+    public function testDraggingAStalePinConfirmsIt(): void
+    {
+        $result = $this->geocoder(self::LOOKUP)->resolve(
+            $this->address(),
+            $this->existing(['geocode_precision' => 'street', 'geocoding_status' => ListingGeocoder::STATUS_STALE]),
+            ['latitude' => '-26.1294840', 'longitude' => '28.0678351', 'geocode_precision' => 'manual']
+        );
+
+        $this->assertSame('manual', $result['geocoding_status']);
+    }
+
     public function testManualPinIsAccepted(): void
     {
         $g      = $this->geocoder(self::LOOKUP, $calls);

@@ -43,6 +43,23 @@ final class ListingGeocoder
      */
     private const PRECISIONS = ['manual', 'exact', 'street', 'suburb', 'city'];
 
+    /**
+     * The fields that say which area an address is in, as opposed to where in
+     * that area. A failed lookup after an edit that left all of these alone
+     * (a street name corrected, a number added, a postal code filled in) keeps
+     * the old pin: it is still in the right suburb, and very likely on the
+     * right door. See keepAfterFailedLookup().
+     */
+    private const AREA_FIELDS = ['suburb', 'city', 'province', 'region', 'country'];
+
+    /**
+     * geocoding_status for a pin kept from before an address edit whose new
+     * lookup failed. It is still shown and still sorts in "near me", but the
+     * owner is asked to check it and `directory:geocode --status stale` retries
+     * it. VARCHAR(16), so no migration.
+     */
+    public const STATUS_STALE = 'stale';
+
     private GeocoderInterface $geocoder;
 
     public function __construct(?GeocoderInterface $geocoder = null)
@@ -89,6 +106,18 @@ final class ListingGeocoder
         $isLocal = config('Countries')->isLocal((string) ($address['country'] ?? ''));
 
         $submitted = $this->submittedCoords($input, $isLocal);
+
+        // The form re-posts the stored point on every save. On a row whose pin
+        // is waiting to be checked, that is not the owner confirming it, only
+        // the hidden inputs doing their job, and treating it as a fresh point
+        // would quietly turn 'stale' back into 'ok'. Dragging the marker posts
+        // 'manual', which does count, and an address edit clears the inputs.
+        if ($submitted !== null && $submitted['precision'] !== 'manual'
+            && ($existing['geocoding_status'] ?? null) === self::STATUS_STALE
+            && $this->samePoint($submitted, $existing)) {
+            return null;
+        }
+
         if ($submitted !== null && ! $this->isStale($submitted, $existing, $addressChanged)) {
             return $this->columns(
                 $submitted['lat'],
@@ -113,9 +142,77 @@ final class ListingGeocoder
 
         $coords = $this->geocoder->geocodeParts($address);
 
-        return $coords === null
-            ? $this->columns(null, null, null, null)
-            : $this->columns($coords['lat'], $coords['lng'], $coords['precision'], $coords['label'] ?? null);
+        if ($coords === null) {
+            return $this->keepAfterFailedLookup($address, $existing)
+                ?? $this->columns(null, null, null, null);
+        }
+
+        // A lookup that only got as far as the suburb or city is no reason to
+        // move a pin that was on the street, when the edit never left that
+        // suburb. Same treatment as a miss.
+        if (self::isCoarser((string) $coords['precision'], (string) ($existing['geocode_precision'] ?? ''))) {
+            $kept = $this->keepAfterFailedLookup($address, $existing);
+            if ($kept !== null) {
+                return $kept;
+            }
+        }
+
+        return $this->columns($coords['lat'], $coords['lng'], $coords['precision'], $coords['label'] ?? null);
+    }
+
+    /**
+     * Whether a fresh lookup at $new precision says less about where the door
+     * is than the stored $old one. Unknown values never count as coarser.
+     */
+    public static function isCoarser(string $new, string $old): bool
+    {
+        $rank = ['city' => 1, 'suburb' => 2, 'street' => 3, 'exact' => 4, 'manual' => 5];
+
+        return isset($rank[$new], $rank[$old]) && $rank[$new] < $rank[$old];
+    }
+
+    /**
+     * An owner who fixes a typo in their street name, on an address the
+     * geocoder only half knows, used to lose a perfectly good pin: the new
+     * spelling failed to resolve and the old point was cleared. If the edit
+     * stayed inside the same suburb, city and province, the old pin is almost
+     * certainly still right, so it is kept and flagged for a check instead.
+     * The same goes for a lookup that only found the suburb or city centre
+     * for an address whose pin was already on the street.
+     *
+     * A move to another suburb or city still clears it. A pin in the wrong
+     * suburb is worse than none.
+     *
+     * @param array<string,mixed>      $address
+     * @param array<string,mixed>|null $existing
+     *
+     * @return array<string,mixed>|null
+     */
+    private function keepAfterFailedLookup(array $address, ?array $existing): ?array
+    {
+        if ($existing === null || $existing['latitude'] === null || $existing['longitude'] === null) {
+            return null;
+        }
+
+        // Case and stray spaces are not a move: "ELTONHILL " is Eltonhill.
+        $norm = static fn (array $row, string $field): string => mb_strtolower(trim((string) ($row[$field] ?? '')));
+        foreach (self::AREA_FIELDS as $field) {
+            if ($norm($address, $field) !== $norm($existing, $field)) {
+                return null;
+            }
+        }
+
+        $precision = (string) ($existing['geocode_precision'] ?? '');
+
+        return $this->columns(
+            (float) $existing['latitude'],
+            (float) $existing['longitude'],
+            in_array($precision, self::PRECISIONS, true) ? $precision : null,
+            // The pin has not moved, so what the last lookup called it still
+            // describes it.
+            isset($existing['geocoded_address']) ? (string) $existing['geocoded_address'] : null,
+            self::STATUS_STALE
+        );
     }
 
     /**
@@ -127,8 +224,8 @@ final class ListingGeocoder
      * once they have one.
      *
      * Deleting on null coordinates is the important half: a listing whose
-     * address changed to something unresolvable must drop out of "near me"
-     * results rather than linger at its old position.
+     * address moved to another area and could not be found there must drop
+     * out of "near me" results rather than linger at its old position.
      *
      * @param array<string,mixed> $columns the array columns() returned
      */
@@ -182,7 +279,17 @@ final class ListingGeocoder
         if ($submitted['precision'] === 'manual') {
             return false;
         }
-        if ($existing['latitude'] === null || $existing['longitude'] === null) {
+
+        return $this->samePoint($submitted, $existing);
+    }
+
+    /**
+     * @param array{lat:float,lng:float,precision:string} $submitted
+     * @param array<string,mixed>|null                    $existing
+     */
+    private function samePoint(array $submitted, ?array $existing): bool
+    {
+        if ($existing === null || $existing['latitude'] === null || $existing['longitude'] === null) {
             return false;
         }
 
@@ -195,7 +302,7 @@ final class ListingGeocoder
      * @param bool $isLocal whether the address claims to be in South Africa,
      *                      which is what makes the bounding box applicable
      *
-     * @return array{lat:float,lng:float,precision:string,place_id:string|null}|null
+     * @return array{lat:float,lng:float,precision:string}|null
      */
     private function submittedCoords(array $input, bool $isLocal = true): ?array
     {
@@ -238,21 +345,22 @@ final class ListingGeocoder
      *                              it matched, or null when the point came from
      *                              the browser rather than a lookup
      *
+     * @param string|null $status   set only for a kept pin (STATUS_STALE);
+     *                              otherwise worked out from the point
+     *
      * @return array<string,mixed>
      */
-    private function columns(?float $lat, ?float $lng, ?string $precision, ?string $resolved): array
+    private function columns(?float $lat, ?float $lng, ?string $precision, ?string $resolved, ?string $status = null): array
     {
         // A failed lookup and a hand-placed pin both leave no doubt about what
         // happened, which is the whole point of storing this: a NULL coordinate
         // alone cannot tell you whether it was never attempted, attempted and
         // unmatched, or attempted while the geocoder was down.
-        if ($precision === 'manual') {
-            $status = 'manual';
-        } elseif ($lat === null || $lng === null) {
-            $status = 'failed';
-        } else {
-            $status = 'ok';
-        }
+        $status ??= match (true) {
+            $precision === 'manual'        => 'manual',
+            $lat === null || $lng === null => 'failed',
+            default                        => 'ok',
+        };
 
         return [
             'latitude'          => $lat,

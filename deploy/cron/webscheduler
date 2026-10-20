@@ -83,6 +83,15 @@ MAILTO=""
 # of the day's review reports.
 0 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark reviews:prune --quiet
 
+# --- Map pin retry -------------------------------------------------------------
+# Weekly retry of listings whose address lookup failed at save time (a Mapbox
+# outage or a bad token, like the 401s of Sep 2026) and of 'stale' pins kept
+# from before a street-only edit. A kept pin is only replaced by a result at
+# least as precise, and hand-placed pins are never touched. Capped at 100 rows,
+# so even a bad week stays well inside one block of 1,000 Mapbox lookups. Not
+# load-bearing: a profile with no pin is still listed and searchable by text.
+10 4 * * 0 deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:geocode --status failed,stale --limit 100 > /dev/null
+
 # --- Nightly database dump ----------------------------------------------------
 # Replaces Hostinger's plan backups. Credentials come from /home/deploy/.my.cnf
 # (chmod 600) so no password appears in the process list or in this file.

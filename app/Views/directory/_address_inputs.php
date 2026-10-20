@@ -143,13 +143,13 @@ $autocomplete = config('Directory')->addressAutocompleteEnabled();
             <?php if ($e('city')): ?><div class="err"><?= esc($e('city')) ?></div><?php endif; ?>
         </div>
         <div class="field">
-            <label>Postal code<?= $star ?></label>
+            <label>Postal code <span class="map-picker-optional">optional</span></label>
             <?php // Four numeric digits is the South African shape, and the
                   // script relaxes both attributes for any other country.
                   // Rendered from the server's verdict so no-JS agrees. ?>
             <input type="text" name="<?= $n('postal_code') ?>" value="<?= esc($val('postal_code'), 'attr') ?>"
                    <?= $isLocal ? 'inputmode="numeric" maxlength="4"' : 'maxlength="20"' ?>
-                   data-address-field="postal_code"<?= $req ?>>
+                   data-address-field="postal_code">
             <?php if ($e('postal_code')): ?><div class="err"><?= esc($e('postal_code')) ?></div><?php endif; ?>
         </div>
     </div>

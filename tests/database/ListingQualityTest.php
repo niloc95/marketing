@@ -329,6 +329,38 @@ final class ListingQualityTest extends CIUnitTestCase
         $this->assertSame('near', $items[0]['slug'], 'A better profile 40km away is not a better answer to "near me".');
     }
 
+    /**
+     * With no radius nothing filters out a listing with no pin, and MySQL
+     * sorts a NULL distance first. It used to top the list looking closest.
+     */
+    public function testANearbySearchWithoutARadiusPutsUnpinnedListingsLast(): void
+    {
+        $this->published('unpinned', 100, ['latitude' => null, 'longitude' => null]);
+        $near = $this->published('near', 5, ['latitude' => '-33.9249', 'longitude' => '18.4241']);
+        $far  = $this->published('far', 95, ['latitude' => '-33.9321', 'longitude' => '18.8602']);
+        $this->syncPoints([$near, $far]);
+
+        $slugs = array_column((new DirectoryService())->browse([
+            'lat' => '-33.9249', 'lng' => '18.4241',
+        ])['items'], 'slug');
+
+        $this->assertSame(['near', 'far', 'unpinned'], $slugs);
+    }
+
+    public function testAListingWithNoPinIsLeftOutOfARadiusButNotOutOfSearch(): void
+    {
+        $this->published('unpinned', 100, ['latitude' => null, 'longitude' => null]);
+        $near = $this->published('near', 5, ['latitude' => '-33.9249', 'longitude' => '18.4241']);
+        $this->syncPoints([$near]);
+
+        $svc = new DirectoryService();
+
+        $within = array_column($svc->browse(['lat' => '-33.9249', 'lng' => '18.4241', 'radius' => '10'])['items'], 'slug');
+        $this->assertSame(['near'], $within, 'no pin, no honest claim to be within 10 km');
+
+        $this->assertContains('unpinned', array_column($svc->browse([])['items'], 'slug'));
+    }
+
     public function testRecentExcludesThinProfilesButKeepsNeverScoredOnes(): void
     {
         $svc = new DirectoryService();

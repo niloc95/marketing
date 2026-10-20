@@ -115,6 +115,12 @@ $quality = new \App\Services\ListingQualityService();
                     $pin      = $l['geocode_precision'] ?? null;
                     $pinLabel = $pin ?: (($l['latitude'] ?? null) === null ? 'no pin' : 'unknown');
                     $pinGood  = in_array($pin, ['manual', 'exact'], true);
+                    // Kept from before a street edit whose new lookup failed.
+                    // Whatever its precision, nobody has confirmed it since.
+                    if (($l['geocoding_status'] ?? null) === \App\Libraries\ListingGeocoder::STATUS_STALE) {
+                        $pinLabel = 'check pin';
+                        $pinGood  = false;
+                    }
                     $place    = trim(($l['city'] ?? '') . ' ' . ($l['province'] ?? ''));
                     $id       = (int) $l['id'];
                     ?>

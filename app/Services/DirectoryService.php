@@ -193,10 +193,16 @@ class DirectoryService
         // it is ever sold the promise in _plan_cards.php breaks in a way the
         // score cannot repair.
         if ($near !== null) {
-            // The second key here is not decoration. A suburb-precision geocode
+            // The last key here is not decoration. A suburb-precision geocode
             // gives every listing in that suburb the identical centroid, so
             // distance_m ties exactly and the order used to be arbitrary.
-            $builder->orderBy('distance_m', 'ASC', false)
+            //
+            // The first key keeps listings with no pin below every listing
+            // that has one. With no radius set nothing filters them out, and
+            // MySQL sorts a NULL distance first, which put the unmapped ones
+            // at the top of a "near me" list looking like the closest.
+            $builder->orderBy('distance_m IS NULL', 'ASC', false)
+                ->orderBy('distance_m', 'ASC', false)
                 ->orderBy('xs_directory_listings.quality_score', 'DESC');
         } elseif (($filters['sort'] ?? '') === 'new') {
             // "What opened lately". Distance still wins above: a visitor who

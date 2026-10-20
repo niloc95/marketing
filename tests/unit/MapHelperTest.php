@@ -92,6 +92,23 @@ final class MapHelperTest extends CIUnitTestCase
         $this->assertFalse(map_point($this->listing(['geocode_precision' => null]))['approximate']);
     }
 
+    /**
+     * The middle of a suburb or city is not a door, so those get a shaded
+     * area on the map rather than a pin.
+     */
+    public function testOnlyAreaCentresAreDrawnAsAnArea(): void
+    {
+        $this->assertSame(1500, map_point($this->listing(['geocode_precision' => 'suburb']))['areaRadius']);
+        $this->assertSame(6000, map_point($this->listing(['geocode_precision' => 'city']))['areaRadius']);
+
+        foreach (['street', 'exact', 'manual', null] as $precision) {
+            $this->assertNull(
+                map_point($this->listing(['geocode_precision' => $precision]))['areaRadius'],
+                'a pin for ' . var_export($precision, true)
+            );
+        }
+    }
+
     public function testHandPlacedPinIsNeverCalledApproximate(): void
     {
         $point = map_point($this->listing(['geocode_precision' => 'manual']));

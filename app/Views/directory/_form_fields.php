@@ -363,14 +363,31 @@ helper('directory_hours');
         // get a direct ask rather than the generic invitation.
         $pinPrecision  = $v('geocode_precision');
         $pinIsApprox   = $v('latitude') !== '' && ! in_array($pinPrecision, ['manual', 'exact'], true);
+        // What the last save's lookup said, so an owner whose address could
+        // not be found hears about it here rather than finding no map on their
+        // profile. Never set on signup: there is no last save yet.
+        $pinStatus     = $v('geocoding_status');
+        $pinIsStale    = $pinStatus === \App\Libraries\ListingGeocoder::STATUS_STALE && $v('latitude') !== '';
+        $pinNotFound   = $pinStatus === 'failed' && $v('latitude') === '';
         $approxWording = [
             'street' => 'We could only place you somewhere along your street',
             'suburb' => 'We could only place you in your suburb',
             'city'   => 'We could only place you in your city',
         ][$pinPrecision] ?? 'We could not place you precisely';
         ?>
-        <label>Pin your exact location <span class="map-picker-optional"><?= $pinIsApprox ? 'please check' : 'optional' ?></span></label>
-        <?php if ($pinIsApprox): ?>
+        <label>Pin your exact location <span class="map-picker-optional"><?= $pinIsApprox || $pinIsStale ? 'please check' : 'optional' ?></span></label>
+        <?php if ($pinIsStale): ?>
+            <p class="map-picker-help map-picker-warn">
+                <strong>You changed your street address and we could not confirm the new one on the map.</strong>
+                We kept your previous pin. Please check the marker is on your door, or drag it there.
+            </p>
+        <?php elseif ($pinNotFound): ?>
+            <p class="map-picker-help map-picker-warn">
+                <strong>We could not find your address on the map.</strong>
+                Your address still shows on your profile and you can still be found in search.
+                Drag the marker to your spot if you would like a map too.
+            </p>
+        <?php elseif ($pinIsApprox): ?>
             <p class="map-picker-help map-picker-warn">
                 <strong><?= esc($approxWording) ?>.</strong>
                 Please drag the marker onto your exact spot. Otherwise directions may send

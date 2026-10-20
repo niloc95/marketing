@@ -44,6 +44,7 @@ $wazeUrl = map_waze_url($row);
          data-lat="<?= esc((string) $map['lat'], 'attr') ?>"
          data-lng="<?= esc((string) $map['lng'], 'attr') ?>"
          data-zoom="<?= esc((string) $map['zoom'], 'attr') ?>"
+         <?php if ($map['areaRadius'] !== null): ?>data-area-radius="<?= esc((string) $map['areaRadius'], 'attr') ?>"<?php endif; ?>
          data-label="<?= esc($name . ', ' . $map['label'], 'attr') ?>"
          data-tile-url="<?= esc(config('Directory')->mapTileUrl()) ?>"
          data-tile-attribution="<?= esc(config('Directory')->mapTileAttribution(), 'attr') ?>"
@@ -53,7 +54,9 @@ $wazeUrl = map_waze_url($row);
         <div class="map-view-canvas" data-map-view-canvas role="application"
              aria-label="Map showing the location of <?= esc($name, 'attr') ?>"></div>
     </div>
-    <?php if ($map['approximate']): ?>
+    <?php if ($map['areaRadius'] !== null): ?>
+        <p class="map-approx">Approximate area only. The exact address is shown above.</p>
+    <?php elseif ($map['approximate']): ?>
         <p class="map-approx">Approximate location. Use the address above for exact directions.</p>
     <?php endif; ?>
     <?php if ($dirUrl !== ''): ?>

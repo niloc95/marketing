@@ -898,11 +898,15 @@ class DirectoryListingMutationService
      *
      * province and region are not here: which of the two is compulsory depends
      * on the country, so validate() picks one of them straight after this loop.
+     *
+     * postal_code is not here either. Plenty of owners, rural ones especially,
+     * do not know their code, and a blank one costs nothing: no lookup needs
+     * it and the address still reads correctly without it. A code that IS
+     * typed is still checked below.
      */
     private const REQUIRED_ADDRESS_FIELDS = [
         'address_line' => 'A street address is required, so customers can find you.',
         'city'         => 'Please enter the city or town.',
-        'postal_code'  => 'Please enter the postal code.',
     ];
 
     /** Tag name column is VARCHAR(120) — see CreateDirectoryTags. */
@@ -1139,8 +1143,10 @@ class DirectoryListingMutationService
         // the map and unplaceable by the geocoder — which is how businesses
         // with no connection to South Africa ended up listed at all.
         //
-        // suburb and address_line_2 stay optional on purpose: plenty of real
-        // South African addresses have no suburb, and line 2 is a unit number.
+        // suburb, address_line_2 and postal_code stay optional on purpose:
+        // plenty of real South African addresses have no suburb, line 2 is a
+        // unit number, and an owner who does not know their postal code
+        // should not be turned away for it.
         if ($isNew) {
             foreach (self::REQUIRED_ADDRESS_FIELDS as $field => $message) {
                 if (! isset($errors[$field]) && $this->clean($input[$field] ?? '') === '') {

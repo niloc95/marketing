@@ -684,6 +684,13 @@ if (! function_exists('schema_geo')) {
             return null;
         }
 
+        // The middle of a suburb or city is not where the business is, and
+        // GeoCoordinates on a LocalBusiness says it is. The address says
+        // enough on its own.
+        if (in_array($row['geocode_precision'] ?? null, ['suburb', 'city'], true)) {
+            return null;
+        }
+
         return [
             '@type'     => 'GeoCoordinates',
             'latitude'  => (float) $row['latitude'],

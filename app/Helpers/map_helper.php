@@ -139,6 +139,19 @@ if (! function_exists('map_address_text')) {
     }
 }
 
+if (! function_exists('map_area_radius')) {
+    /**
+     * How far around an area centre to shade, in metres, or null when the
+     * precision is good enough for a pin. Rough on purpose: big enough that
+     * the real address is very likely inside it, small enough to still say
+     * which part of town.
+     */
+    function map_area_radius(?string $precision): ?int
+    {
+        return ['suburb' => 1500, 'city' => 6000][$precision ?? ''] ?? null;
+    }
+}
+
 if (! function_exists('map_point')) {
     /**
      * Everything a Leaflet map needs to show this listing, or null if there is
@@ -156,7 +169,7 @@ if (! function_exists('map_point')) {
      *
      * @param array<string,mixed> $listing
      *
-     * @return array{lat:float,lng:float,zoom:int,approximate:bool,label:string}|null
+     * @return array{lat:float,lng:float,zoom:int,approximate:bool,areaRadius:int|null,label:string}|null
      */
     function map_point(array $listing): ?array
     {
@@ -187,6 +200,10 @@ if (! function_exists('map_point')) {
             // A pin someone placed by hand is the most accurate thing we have —
             // never label it a guess.
             'approximate' => $precision !== null && ! in_array($precision, ['exact', 'manual'], true),
+            // Metres, for a point that is only the middle of a suburb or city.
+            // A pin there would claim a doorstep we never found, so the map
+            // shades the area instead. Null means draw a pin.
+            'areaRadius'  => map_area_radius($precision),
             'label'       => map_address_text($listing),
         ];
     }

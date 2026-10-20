@@ -237,6 +237,9 @@ class Directory extends BaseController
                 // metres off, so any distance measured from it is a rough figure
                 // and must not be shown as though it were surveyed.
                 'approx'   => ! in_array($l['geocode_precision'] ?? null, ['manual', 'exact'], true),
+                // Only the middle of the suburb or city is known, so the map
+                // draws an area dot rather than a pin. See map_area_radius().
+                'area'     => map_area_radius($l['geocode_precision'] ?? null) !== null,
             ];
         }
 

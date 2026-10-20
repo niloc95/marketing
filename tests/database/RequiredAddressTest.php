@@ -72,7 +72,7 @@ final class RequiredAddressTest extends CIUnitTestCase
         // Every empty field is named, not just the first — the visitor gets one
         // round trip, not four.
         $this->assertSame(
-            ['address_line', 'city', 'postal_code', 'province'],
+            ['address_line', 'city', 'province'],
             array_keys(array_intersect_key($result['errors'], array_flip(
                 ['address_line', 'city', 'postal_code', 'province']
             )))
@@ -91,6 +91,17 @@ final class RequiredAddressTest extends CIUnitTestCase
 
         $this->assertFalse($result['ok']);
         $this->assertArrayHasKey('city', $result['errors']);
+    }
+
+    /**
+     * Owners who do not know their postal code used to be stuck at signup.
+     */
+    public function testABlankPostalCodeIsAccepted(): void
+    {
+        $result = $this->svc->submitPublic($this->signup(['postal_code' => '']));
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertSame('', (string) $this->listings->find((int) $result['id'])['postal_code']);
     }
 
     public function testSuburbAndAddressLine2StayOptional(): void
@@ -216,6 +227,7 @@ final class RequiredAddressTest extends CIUnitTestCase
         $signup->assertOK();
         $this->assertStringContainsString('<label>Address *</label>', $signup->getBody());
         $this->assertStringContainsString('<label>City / town *</label>', $signup->getBody());
+        $this->assertStringNotContainsString('<label>Postal code *</label>', $signup->getBody());
 
         // The other half of the rule, and the half a careless "consistency"
         // edit would quietly undo. Both edit forms pass addressRequired
@@ -234,6 +246,42 @@ final class RequiredAddressTest extends CIUnitTestCase
             $this->assertStringNotContainsString('<label>City / town *</label>', $html);
             $this->assertStringNotContainsString('<label>Province *</label>', $html);
         }
+    }
+
+    /**
+     * An owner whose address could not be placed hears about it on the form,
+     * rather than finding no map on their profile.
+     */
+    public function testTheEditFormSaysWhenTheAddressCouldNotBePlaced(): void
+    {
+        $failed = (int) $this->listings->insert([
+            'type'             => 'practice',
+            'display_name'     => 'Unfound Plumbing',
+            'email'            => 'unfound@example.test',
+            'slug'             => 'unfound-plumbing',
+            'status'           => 'published',
+            'category_id'      => $this->categoryId,
+            'geocoding_status' => 'failed',
+        ], true);
+        $stale = (int) $this->listings->insert([
+            'type'              => 'practice',
+            'display_name'      => 'Kept Pin Plumbing',
+            'email'             => 'kept@example.test',
+            'slug'              => 'kept-pin-plumbing',
+            'status'            => 'published',
+            'category_id'       => $this->categoryId,
+            'latitude'          => '-33.9249',
+            'longitude'         => '18.4241',
+            'geocode_precision' => 'street',
+            'geocoding_status'  => \App\Libraries\ListingGeocoder::STATUS_STALE,
+        ], true);
+
+        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $failed])->get('manage/edit')->getBody();
+        $this->assertStringContainsString('We could not find your address on the map.', $html);
+
+        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $stale])->get('manage/edit')->getBody();
+        $this->assertStringContainsString('we could not confirm the new one on the map', $html);
+        $this->assertStringNotContainsString('We could not find your address on the map.', $html);
     }
 
     // -------------------------------------------------------------- fixtures
