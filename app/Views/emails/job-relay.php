@@ -19,10 +19,8 @@
  */
 $screeningResult = $screeningResult ?? null;
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<body style="font-family:Inter,Arial,sans-serif;color:#0f172a;background:#f8fafc;padding:24px">
-    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:28px">
+<?= $this->extend('emails/_layout') ?>
+<?= $this->section('content') ?>
         <p style="font-size:13px;color:#64748b;margin:0 0 6px"><?= esc($site) ?> Jobs</p>
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px"><?= esc($heading) ?></h1>
         <p style="font-size:15px;line-height:1.6"><?= esc($intro) ?></p>
@@ -58,6 +56,4 @@ $screeningResult = $screeningResult ?? null;
         <?php endif; ?>
 
         <p style="font-size:13px;color:#64748b"><?= esc($footnote) ?></p>
-    </div>
-</body>
-</html>
+<?= $this->endSection() ?>

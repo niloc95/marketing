@@ -17,10 +17,8 @@ $amount    = $amount ?? '';
 $reason    = $reason ?? '';
 $paidUntil = $paid_until ?? '';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<body style="font-family:Inter,Arial,sans-serif;color:#0f172a;background:#f8fafc;padding:24px">
-    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:28px">
+<?= $this->extend('emails/_layout') ?>
+<?= $this->section('content') ?>
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px"><?= esc($site) ?></h1>
         <p style="font-size:15px;line-height:1.6">Hi <?= esc($name) ?>,</p>
 
@@ -34,7 +32,7 @@ $paidUntil = $paid_until ?? '';
                 everywhere your business shows up in search results.
             </p>
             <p style="margin:22px 0">
-                <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Activate my badge</a>
+                <?= email_button($manageLink, 'Activate my badge') ?>
             </p>
             <p style="font-size:13px;color:#64748b">
                 That button takes you straight to the payment page: no password, nothing else to fill in.
@@ -53,7 +51,7 @@ $paidUntil = $paid_until ?? '';
                 and your business profile itself is unaffected.
             </p>
             <p style="margin:22px 0">
-                <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Send new documents</a>
+                <?= email_button($manageLink, 'Send new documents') ?>
             </p>
 
         <?php elseif ($event === 'activated'): ?>
@@ -65,7 +63,7 @@ $paidUntil = $paid_until ?? '';
                 badge stays up until the month you've paid for runs out.
             </p>
             <p style="margin:22px 0">
-                <a href="<?= esc($manageLink) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">View my profile</a>
+                <?= email_button($manageLink, 'View my profile') ?>
             </p>
 
         <?php else: /* renewing */ ?>
@@ -83,6 +81,4 @@ $paidUntil = $paid_until ?? '';
         <p style="font-size:13px;color:#64748b">
             You're getting this because your business has a profile on <?= esc($site) ?>.
         </p>
-    </div>
-</body>
-</html>
+<?= $this->endSection() ?>

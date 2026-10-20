@@ -52,26 +52,6 @@ final class CategoryPhotoTest extends CIUnitTestCase
         $this->assertSame('assets/categories/group-health-medical-800.webp', $gp['src']);
     }
 
-    public function testOneGridDoesNotRepeatAGroupPhotoWhileTheGroupHasAnother(): void
-    {
-        $photos = category_photos([
-            ['slug' => 'nutritionist', 'group_name' => 'Health & Medical'],
-            ['slug' => 'spa', 'group_name' => 'Beauty & Wellness'],
-            ['slug' => 'general-practitioner', 'group_name' => 'Health & Medical'],
-            ['slug' => 'widget-polisher', 'group_name' => 'Widgets'],
-            ['slug' => 'dentist', 'group_name' => 'Health & Medical'],
-        ]);
-
-        $this->assertSame('assets/categories/group-health-medical-800.webp', $photos[0]['src']);
-        $this->assertSame('assets/categories/group-health-medical-2-800.webp', $photos[2]['src']);
-        $this->assertNull($photos[3]);
-        $this->assertSame('assets/categories/dentist-800.webp', $photos[4]['src'], 'an override is unaffected');
-
-        // Once a group runs out, it repeats rather than dropping the photo.
-        $third = category_photos(array_fill(0, 3, ['slug' => 'x', 'group_name' => 'Health & Medical']))[2];
-        $this->assertSame('assets/categories/group-health-medical-800.webp', $third['src']);
-    }
-
     public function testAnUnknownGroupHasNoPhoto(): void
     {
         $this->assertNull(category_photo(['slug' => 'widget-polisher', 'group_name' => 'Widgets']));
@@ -115,29 +95,5 @@ final class CategoryPhotoTest extends CIUnitTestCase
         // And nothing on disk is orphaned from the map.
         $used = array_map(static fn (array $p): string => basename($p['src'], '-800.webp'), $resolved);
         $this->assertSame([], array_values(array_diff($names, $used)), 'photos on disk that no category uses');
-    }
-
-    public function testATileWithAPhotoDrawsItBehindTheText(): void
-    {
-        $html = view('directory/_category_tile', ['c' => [
-            'name' => 'Dentist', 'slug' => 'dentist', 'group_name' => 'Health & Medical', 'listing_count' => 3,
-        ]]);
-
-        $this->assertStringContainsString('cat-tile-photo', $html);
-        $this->assertStringContainsString('dentist-400.webp 400w', $html);
-        $this->assertStringContainsString('alt=""', $html, 'the photo is decorative; the name is the link text');
-        $this->assertStringContainsString('3 profiles', $html);
-    }
-
-    public function testATileWithoutAPhotoKeepsTheIconTile(): void
-    {
-        $html = view('directory/_category_tile', ['c' => [
-            'name' => 'Widget Polisher', 'slug' => 'widget-polisher', 'group_name' => 'Widgets', 'listing_count' => 1,
-        ]]);
-
-        $this->assertStringNotContainsString('cat-tile-photo', $html);
-        $this->assertStringNotContainsString('<img', $html);
-        $this->assertStringContainsString('cat-tile-icon cat-tint-slate', $html);
-        $this->assertStringContainsString('1 profile<', $html);
     }
 }

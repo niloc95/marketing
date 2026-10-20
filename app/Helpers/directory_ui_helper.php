@@ -422,8 +422,7 @@ if (! function_exists('category_photo')) {
      * categories on the homepage at once is the ordinary case (Health & Medical
      * alone has 41). $taken is the list of srcs already on the page: a group
      * photo in it is skipped for the group's next one, and only when every one is
-     * taken does a photo repeat. Use category_photos() for a whole grid rather
-     * than threading $taken by hand.
+     * taken does a photo repeat.
      *
      * The files are committed under public/assets/categories/ as <name>-1600.webp,
      * <name>-800.webp and <name>-400.webp, all one 3:2 crop: Pexels photographs, re-encoded, exactly like the hero
@@ -526,31 +525,6 @@ if (! function_exists('category_photo')) {
         }
 
         return $candidates[0];
-    }
-}
-
-if (! function_exists('category_photos')) {
-    /**
-     * category_photo() for every tile of one grid, in order, so that no two tiles
-     * share a group photo while the group has another to give.
-     *
-     * @param list<array> $categories
-     *
-     * @return list<array{src: string, src_sm: string, credit: string, credit_url: string}|null>
-     */
-    function category_photos(array $categories): array
-    {
-        $taken  = [];
-        $photos = [];
-        foreach ($categories as $category) {
-            $photo    = category_photo($category, $taken);
-            $photos[] = $photo;
-            if ($photo !== null) {
-                $taken[] = $photo['src'];
-            }
-        }
-
-        return $photos;
     }
 }
 
@@ -1411,5 +1385,17 @@ if (! function_exists('listing_image_alt')) {
         }
 
         return $alt . ($index > 0 ? ', photo ' . ($index + 1) . ($total > 1 ? ' of ' . $total : '') : '');
+    }
+}
+
+if (! function_exists('email_button')) {
+    /**
+     * The orange call to action in an email, styled inline for mail clients.
+     * $label is plain text and escaped here.
+     */
+    function email_button(string $href, string $label): string
+    {
+        return '<a href="' . esc($href) . '" style="background:#F77F00;color:#fff;text-decoration:none;'
+            . 'font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">' . esc($label) . '</a>';
     }
 }

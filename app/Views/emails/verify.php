@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<body style="font-family:Inter,Arial,sans-serif;color:#0f172a;background:#f8fafc;padding:24px">
-    <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:28px">
+<?= $this->extend('emails/_layout') ?>
+<?= $this->section('content') ?>
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px"><?= esc($site) ?></h1>
         <p style="font-size:15px;line-height:1.6">Hi <?= esc($name) ?>,</p>
         <p style="font-size:15px;line-height:1.6">Thanks for creating your business profile. Click below to verify your email and publish it:</p>
         <p style="margin:22px 0">
-            <a href="<?= esc($link) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Verify &amp; publish my profile</a>
+            <?= email_button($link, 'Verify & publish my profile') ?>
         </p>
         <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($link) ?>" style="color:#003049;word-break:break-all"><?= esc($link) ?></a></p>
         <p style="font-size:13px;color:#64748b">If you didn't request this, you can ignore this email.</p>
@@ -34,6 +32,4 @@
                 </p>
             </div>
         <?php endif; ?>
-    </div>
-</body>
-</html>
+<?= $this->endSection() ?>
