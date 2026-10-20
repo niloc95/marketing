@@ -2812,6 +2812,10 @@
   .score-bar.is-live .strength-panel  { @apply mb-0 border-0 bg-transparent p-0 shadow-none; }
   .score-bar-row      { @apply hidden; }
   .score-bar.is-live .score-bar-row { @apply grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[auto_1fr_auto_auto]; }
+  /* The step tracker rides in the bar too, on a row of its own above the score. */
+  .score-bar-steps { @apply hidden; }
+  .score-bar.is-live .score-bar-steps { @apply mb-2.5 flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5; }
+  .dark .score-bar.is-live .score-bar-steps { @apply border-slate-800; }
   .score-bar-summary  { @apply m-0 text-sm font-semibold text-slate-700; }
   .score-bar-label    { @apply mr-1 font-normal text-slate-500; }
   .score-bar-num      { @apply font-normal text-slate-500; }
@@ -3242,6 +3246,87 @@
   /* The heads that walk an owner down the listing form, one per step, each
      with a one line hint under it. The first sits at the top of the card, so
      it drops the divider and the space above. */
+  /* ── The listing form's five numbered sections (listing_form_steps()) ──
+     Each section is its own card with its own accent, so someone scrolling
+     fast sees where one part ends and the next begins. The accent is a pair of
+     custom properties set by the tone class; everything in the card reads
+     them: the band on top, the number badge, the "Add another" buttons and
+     the file pickers. The number, not the colour, identifies a step. */
+  .form-step {
+    @apply relative mt-6 rounded-surface border border-slate-200 bg-white p-4 sm:p-6;
+    border-top: 4px solid var(--step);
+    scroll-margin-top: 6rem;
+  }
+  .form-step[data-form-step="1"] { @apply mt-0; }
+  .form-step-blue   { --step: theme(colors.blue.600);   --step-soft: theme(colors.blue.50);   --step-dark: theme(colors.blue.300); }
+  .form-step-teal   { --step: theme(colors.teal.600);   --step-soft: theme(colors.teal.50);   --step-dark: theme(colors.teal.300); }
+  .form-step-violet { --step: theme(colors.violet.600); --step-soft: theme(colors.violet.50); --step-dark: theme(colors.violet.300); }
+  .form-step-amber  { --step: theme(colors.amber.600);  --step-soft: theme(colors.amber.50);  --step-dark: theme(colors.amber.300); }
+  .form-step-pink   { --step: theme(colors.pink.600);   --step-soft: theme(colors.pink.50);   --step-dark: theme(colors.pink.300); }
+  .form-step-num {
+    @apply mr-2.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full align-[0.1em] text-sm font-bold text-white;
+    background-color: var(--step);
+  }
+  .form-step .form-section-head h3 { @apply flex items-center; }
+  .dark .form-step { @apply border-slate-800 bg-surface-card; border-top-color: var(--step-dark); }
+  .dark .form-step-num { background-color: var(--step-dark); @apply text-slate-900; }
+
+  /* "+ Add another …" inside a section: a dashed outline in the section's
+     accent, so it reads as a button rather than a line of text. */
+  .form-step [data-repeat-add] {
+    @apply border-2 border-dashed bg-transparent font-semibold;
+    border-color: var(--step);
+    color: var(--step);
+  }
+  .form-step [data-repeat-add]:hover:not(:disabled) { background-color: var(--step-soft); }
+  .dark .form-step [data-repeat-add] { border-color: var(--step-dark); color: var(--step-dark); }
+  .dark .form-step [data-repeat-add]:hover:not(:disabled) { @apply bg-slate-800; }
+
+  /* The browser's grey "Choose File" box, as a button in the section's accent. */
+  .form-step input[type="file"] { @apply text-sm text-slate-500; }
+  .form-step input[type="file"]::file-selector-button {
+    @apply mr-3 cursor-pointer rounded-control border-0 px-4 py-2 text-sm font-semibold;
+    background-color: var(--step-soft);
+    color: var(--step);
+  }
+  .form-step input[type="file"]::file-selector-button:hover { filter: brightness(0.96); }
+  .dark .form-step input[type="file"]::file-selector-button { @apply bg-slate-800; color: var(--step-dark); }
+
+  /* Accordions by state (directory.js, "form section states"): required and
+     not yet done gets an orange edge; done gets a green edge and a tick chip
+     in the summary; optional and empty stays neutral. Without the script the
+     "Required" chip still says which are compulsory. */
+  .form-step .disclosure.is-todo { border-left: 4px solid theme(colors.orange.500); }
+  .form-step .disclosure.is-done { border-left: 4px solid theme(colors.emerald.500); }
+  .disclosure-done {
+    @apply ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700;
+  }
+  .dark .disclosure-done { @apply bg-emerald-500/15 text-emerald-300; }
+  .disclosure.is-done .required-chip { @apply hidden; }
+
+  /* The step tracker (_form_steps_nav.php): five numbered dots in the sticky
+     bar. The current step is filled with its accent; the rest are outlines. */
+  .form-steps-nav  { @apply flex items-center gap-1.5; }
+  .form-steps-dot {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold no-underline transition-colors;
+    border-color: var(--step);
+    color: var(--step);
+  }
+  .form-steps-dot.is-current { @apply text-white; background-color: var(--step); }
+  .form-steps-label { @apply ml-1 hidden truncate text-xs text-slate-500 sm:inline; max-width: 14rem; }
+  .dark .form-steps-dot { border-color: var(--step-dark); color: var(--step-dark); }
+  .dark .form-steps-dot.is-current { @apply text-slate-900; background-color: var(--step-dark); }
+  .dark .form-steps-label { @apply text-slate-400; }
+  /* The tracker's own sticky bar on the owner's edit page, which has no live
+     score bar to ride in. */
+  .form-steps-dock {
+    @apply sticky z-30 mt-6 flex items-center justify-between gap-3 rounded-surface border border-slate-200 bg-white/95 px-4 py-2.5 shadow-lg backdrop-blur;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+  .dark .form-steps-dock { @apply border-slate-700 bg-surface-card/95; }
+  /* The class's display:flex would otherwise beat preflight's [hidden] rule. */
+  .form-steps-dock[hidden] { display: none; }
+
   .form-section-head    { @apply mb-3 mt-8 border-t border-slate-200 pt-6; }
   .form-section-head h3 { @apply m-0 text-lg font-bold text-slate-900; }
   .form-section-head-first { @apply mt-0 border-t-0 pt-0; }

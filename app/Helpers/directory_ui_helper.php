@@ -1399,3 +1399,29 @@ if (! function_exists('email_button')) {
             . 'font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">' . esc($label) . '</a>';
     }
 }
+
+if (! function_exists('listing_form_steps')) {
+    /**
+     * The listing form's five sections, in order: number => [title, accent class].
+     *
+     * One list for the numbered section cards (_form_fields.php) and the step
+     * tracker that follows the visitor down the form (_form_steps_nav.php), so
+     * the two cannot disagree. The class is a .form-step-* accent in
+     * directory.css, written out in full because Tailwind only keeps classes it
+     * can find spelled out (this folder is in its content globs). The number,
+     * not the colour, identifies a step, so nobody depends on telling the
+     * colours apart.
+     *
+     * @return array<int,array{title:string,class:string}>
+     */
+    function listing_form_steps(): array
+    {
+        return [
+            1 => ['title' => 'What you do', 'class' => 'form-step-blue'],
+            2 => ['title' => 'How customers reach you', 'class' => 'form-step-teal'],
+            3 => ['title' => 'Tell people about you', 'class' => 'form-step-violet'],
+            4 => ['title' => 'Where you are', 'class' => 'form-step-amber'],
+            5 => ['title' => 'Make your profile stand out', 'class' => 'form-step-pink'],
+        ];
+    }
+}

@@ -227,6 +227,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                             ]) ?>
                         </div>
                     </div>
+                    <?php // Which of the five sections is on screen, and a jump to each. ?>
+                    <div class="score-bar-steps"><?= view('directory/_form_steps_nav', [], ['saveData' => false]) ?></div>
                     <div class="score-bar-row" aria-live="polite">
                         <p class="score-bar-summary">
                             <span class="score-bar-label">Profile strength</span>

@@ -4543,6 +4543,125 @@
     window.requestAnimationFrame(function () { go(marked[0], false); });
   })();
   // ---------------------------------------------------------------------
+  // ------------------------------------------------------ form step tracker
+  // The listing form's five numbered section cards (listing_form_steps()) and
+  // the dots that follow the visitor down it (_form_steps_nav.php). The step
+  // whose card has crossed the upper part of the screen is current: its dot
+  // fills with its colour and the label beside the dots names it. The dots are
+  // links already; this only says where you are.
+  (function () {
+    var sections = Array.prototype.slice.call(document.querySelectorAll('[data-form-step]'));
+    var navs     = document.querySelectorAll('[data-form-steps]');
+    if (!sections.length || !navs.length) return;
+
+    document.querySelectorAll('[data-form-steps-dock]').forEach(function (dock) { dock.hidden = false; });
+
+    var titles = {};
+    navs[0].querySelectorAll('[data-form-steps-dot]').forEach(function (dot) {
+      titles[dot.getAttribute('data-form-steps-dot')] = dot.getAttribute('title') || '';
+    });
+    var current = null;
+    var queued  = false;
+
+    function update() {
+      queued = false;
+      var line = window.innerHeight * 0.4;
+      var step = sections[0].getAttribute('data-form-step');
+      sections.forEach(function (section) {
+        if (section.getBoundingClientRect().top < line) step = section.getAttribute('data-form-step');
+      });
+      if (step === current) return;
+      current = step;
+      navs.forEach(function (nav) {
+        nav.querySelectorAll('[data-form-steps-dot]').forEach(function (dot) {
+          var on = dot.getAttribute('data-form-steps-dot') === step;
+          dot.classList.toggle('is-current', on);
+          if (on) dot.setAttribute('aria-current', 'step'); else dot.removeAttribute('aria-current');
+        });
+        var label = nav.querySelector('[data-form-steps-label]');
+        if (label) label.textContent = step + ' of ' + sections.length + ' · ' + (titles[step] || '');
+      });
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!queued) { queued = true; window.requestAnimationFrame(update); }
+    }, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  })();
+
+  // ---------------------------------------------------- form section states
+  // Each accordion in the listing form's section cards shows its state as you
+  // fill it in: an orange edge while a required one is still empty, a green
+  // edge and a tick chip once something is in it, nothing for an optional one
+  // left empty. A guide only: the server still checks every required section
+  // on save, and a section with something in it is not necessarily complete.
+  (function () {
+    var form = document.querySelector('[data-form-step]');
+    form = form && form.closest('form');
+    if (!form) return;
+
+    var top = Array.prototype.filter.call(form.querySelectorAll('[data-form-step] details.disclosure'), function (d) {
+      return !d.parentElement.closest('details.disclosure');
+    });
+    if (!top.length) return;
+
+    function filledControl(el) {
+      if (el.disabled || el.type === 'hidden' || el.hasAttribute('data-repeat-remove')) return false;
+      var row = el.closest('[data-repeat-item]');
+      var gone = row && row.querySelector('[data-repeat-remove]');
+      if (gone && gone.checked) return false;
+      // A radio's empty value is its "not stated" option, ticked by default.
+      if (el.type === 'radio') return el.checked && el.value !== '';
+      if (el.type === 'checkbox') return el.checked;
+      if (el.type === 'file') return !!(el.files && el.files.length);
+      return (el.value || '').trim() !== '';
+    }
+
+    function state(details) {
+      var body = details.querySelector('.disclosure-body') || details;
+      // A service counts once it has a name; anything else once any field has
+      // something in it, or an upload is already on the profile.
+      if (details.closest('#field-services')) {
+        var n = Array.prototype.filter.call(body.querySelectorAll('input[name$="[name]"]'), filledControl).length;
+        return n > 0 ? '✓ ' + n + (n === 1 ? ' service' : ' services') : '';
+      }
+      var any = Array.prototype.some.call(body.querySelectorAll('input, select, textarea'), filledControl)
+        || !!body.querySelector('img:not([data-lightbox-img])');
+      if (!any) return '';
+      return details.id === 'field-hours' ? '✓ Done' : '✓ Added';
+    }
+
+    function paint() {
+      top.forEach(function (details) {
+        var summary  = details.querySelector('summary');
+        var required = !!(summary && summary.querySelector('.required-chip'));
+        var done     = state(details);
+        details.classList.toggle('is-done', done !== '');
+        details.classList.toggle('is-todo', done === '' && required);
+        var chip = summary && summary.querySelector('[data-disclosure-done]');
+        if (done && summary) {
+          if (!chip) {
+            chip = document.createElement('span');
+            chip.className = 'disclosure-done';
+            chip.setAttribute('data-disclosure-done', '');
+            (summary.firstElementChild || summary).appendChild(chip);
+          }
+          chip.textContent = done;
+        } else if (chip) {
+          chip.remove();
+        }
+      });
+    }
+
+    var queued = false;
+    function later() {
+      if (!queued) { queued = true; window.setTimeout(function () { queued = false; paint(); }, 150); }
+    }
+    ['input', 'change', 'repeat:add'].forEach(function (type) { form.addEventListener(type, later); });
+    paint();
+  })();
+
   // Live profile strength on /add-profile ([data-score-bar], form.php).
   //
   // The browser never scores anything. It posts the unsaved form to
