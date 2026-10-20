@@ -25,13 +25,7 @@ class ProfileSetupNotify extends Controller
 {
     public function index(): ResponseInterface
     {
-        $raw = (string) file_get_contents('php://input');
-        if (trim($raw) === '') {
-            $post = $this->request->getPost();
-            if (is_array($post) && $post !== []) {
-                $raw = http_build_query($post);
-            }
-        }
+        [$raw] = PayFast::readNotificationBody($this->request);
 
         $outcome = (new ProfileSetupService())->handleNotification(
             $raw,

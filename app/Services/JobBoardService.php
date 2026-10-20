@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\PostingSections;
 use App\Libraries\RichText;
@@ -328,13 +329,13 @@ class JobBoardService
 
         $d = [
             'kind'        => $kind,
-            'title'       => $this->clean($in['title'] ?? '', 150),
-            'description' => $this->cleanText($in['description'] ?? '', self::MAX_DESCRIPTION),
-            'province'    => $this->clean($in['province'] ?? '', 40),
-            'city'        => $this->clean($in['city'] ?? '', 120),
+            'title'       => Input::line($in['title'] ?? '', 150),
+            'description' => Input::text($in['description'] ?? '', self::MAX_DESCRIPTION),
+            'province'    => Input::line($in['province'] ?? '', 40),
+            'city'        => Input::line($in['city'] ?? '', 120),
             'is_remote'   => $isJob && ! empty($in['is_remote']) ? 1 : 0,
             'category_id' => null,
-            'company_name' => $this->clean($in['company_name'] ?? '', 190),
+            'company_name' => Input::line($in['company_name'] ?? '', 190),
         ];
         $errors = [];
 
@@ -364,7 +365,7 @@ class JobBoardService
         if ($isJob) {
             $d += $this->validateJobFields($in, $errors);
         } else {
-            $d['budget_text'] = $this->clean($in['budget_text'] ?? '', 120);
+            $d['budget_text'] = Input::line($in['budget_text'] ?? '', 120);
             $d['needed_by']   = $this->dateOrNull($in['needed_by'] ?? '');
             if ($d['needed_by'] !== null && $d['needed_by'] < date('Y-m-d')) {
                 $errors['needed_by'] = 'That date has already passed.';
@@ -383,9 +384,9 @@ class JobBoardService
         $d['valid_through'] = $closes;
 
         if ($unlisted) {
-            $d['poster_name']  = $this->clean($in['poster_name'] ?? '', 120);
-            $d['poster_email'] = strtolower($this->clean($in['poster_email'] ?? '', 190));
-            $d['poster_phone'] = $this->clean($in['poster_phone'] ?? '', 40);
+            $d['poster_name']  = Input::line($in['poster_name'] ?? '', 120);
+            $d['poster_email'] = strtolower(Input::line($in['poster_email'] ?? '', 190));
+            $d['poster_phone'] = Input::line($in['poster_phone'] ?? '', 40);
 
             if ($d['poster_name'] === '') {
                 $errors['poster_name'] = 'Please tell us your name.';
@@ -417,14 +418,14 @@ class JobBoardService
             'salary_min'      => $this->moneyOrNull($in['salary_min'] ?? ''),
             'salary_max'      => $this->moneyOrNull($in['salary_max'] ?? ''),
             'salary_period'   => (string) ($in['salary_period'] ?? ''),
-            'apply_url'       => $this->clean($in['apply_url'] ?? '', 500),
-            'apply_email'     => strtolower($this->clean($in['apply_email'] ?? '', 190)),
+            'apply_url'       => Input::line($in['apply_url'] ?? '', 500),
+            'apply_email'     => strtolower(Input::line($in['apply_email'] ?? '', 190)),
         ];
         // The structured sections (PostingSections), as on /careers. Only
         // "good fit" is required; a vacancy saved before these existed is
         // only held to it when its owner next edits it.
         foreach (PostingSections::LIST_FIELDS as $field) {
-            $text      = $this->cleanText($in[$field] ?? '', PostingSections::MAX_SECTION);
+            $text      = Input::text($in[$field] ?? '', PostingSections::MAX_SECTION);
             $d[$field] = $text !== '' ? $text : null;
         }
         if (count(PostingSections::lines((string) $d['good_fit'])) < PostingSections::MIN_GOOD_FIT) {
@@ -511,7 +512,7 @@ class JobBoardService
         ];
         $id = (int) $this->posts->insert($d, true);
 
-        $this->notice($d['poster_email'], 'Confirm your post on ' . $this->site->siteName(), [
+        (new Mailer())->notice($d['poster_email'], 'Confirm your post on ' . $this->site->siteName(), [
             'heading'    => 'Confirm your post',
             'paragraphs' => [
                 'Hi ' . $d['poster_name'] . ',',
@@ -656,7 +657,7 @@ class JobBoardService
             $paragraphs[] = 'You can close or renew it from your profile dashboard: ' . base_url('manage');
         }
 
-        $this->notice($this->contactEmail($post), 'Your post is live: ' . $this->headerSafe($post['title']), [
+        (new Mailer())->notice($this->contactEmail($post), 'Your post is live: ' . Input::line($post['title'], 120), [
             'heading'    => 'Your post is live',
             'paragraphs' => $paragraphs,
             'button'     => ['View your post', $this->url($post)],
@@ -682,7 +683,7 @@ class JobBoardService
             'manage_token'  => null,
         ]);
 
-        $this->notice($this->contactEmail($post), 'Your post was not published', [
+        (new Mailer())->notice($this->contactEmail($post), 'Your post was not published', [
             'heading'    => 'Your post was not published',
             'paragraphs' => [
                 'We could not publish "' . $post['title'] . '".',
@@ -850,11 +851,11 @@ class JobBoardService
         }
 
         $reports = new JobReportModel();
-        $ipHash  = hash('sha256', $ip . '|' . config('Encryption')->key);
+        $ipHash  = TokenHash::ip($ip);
         if ($reports->where('post_id', $id)->where('ip_hash', $ipHash)->countAllResults() === 0) {
             $reports->insert([
                 'post_id' => $id,
-                'reason'  => mb_substr($this->clean($reason, 500), 0, 500),
+                'reason'  => mb_substr(Input::line($reason, 500), 0, 500),
                 'ip_hash' => $ipHash,
             ]);
         }
@@ -900,7 +901,7 @@ class JobBoardService
             return 'own';
         }
 
-        $message = $this->cleanText($message, 2000);
+        $message = Input::text($message, 2000);
         if (mb_strlen($message) < 10) {
             return 'empty';
         }
@@ -934,7 +935,7 @@ class JobBoardService
         ], ['saveData' => false]);
         (new Mailer())->send(
             $this->contactEmail($post),
-            'Reply to your request: ' . $this->headerSafe($post['title']),
+            'Reply to your request: ' . Input::line($post['title'], 120),
             $body,
             (string) $listing['email']
         );
@@ -989,7 +990,7 @@ class JobBoardService
 
         $sent = (new Mailer())->send(
             (string) $post['apply_email'],
-            'Application: ' . $this->headerSafe($post['title']),
+            'Application: ' . Input::line($post['title'], 120),
             $body,
             $applicant['email']
         );
@@ -1012,7 +1013,7 @@ class JobBoardService
     {
         $first = (string) strtok($applicant['name'], ' ');
 
-        $this->notice($applicant['email'], 'We have sent your application', [
+        (new Mailer())->notice($applicant['email'], 'We have sent your application', [
             'eyebrow'    => $this->site->siteName() . ' Jobs',
             'heading'    => 'Your application has been sent',
             'paragraphs' => [
@@ -1134,7 +1135,7 @@ class JobBoardService
         }
 
         $count = count($reports);
-        $sent  = $paragraphs === [] || $this->notice($admin, $count . ' new job post report' . ($count === 1 ? '' : 's'), [
+        $sent  = $paragraphs === [] || (new Mailer())->notice($admin, $count . ' new job post report' . ($count === 1 ? '' : 's'), [
             'heading'    => $count . ' new report' . ($count === 1 ? '' : 's') . ' on ' . count($paragraphs) . ' post' . (count($paragraphs) === 1 ? '' : 's'),
             'paragraphs' => $paragraphs,
             'button'     => ['Open the jobs queue', base_url('admin/jobs?status=published')],
@@ -1291,7 +1292,7 @@ class JobBoardService
             $paragraphs[] = 'See the request: ' . $this->url($post);
         }
 
-        $this->notice((string) $listing['email'], 'New request: ' . $this->headerSafe($post['title'] . ' in ' . ($post['city'] ?: $post['province'])), [
+        (new Mailer())->notice((string) $listing['email'], 'New request: ' . Input::line($post['title'] . ' in ' . ($post['city'] ?: $post['province']), 120), [
             // Category names are nouns for the business ("Plumber", "Skin &
             // Aesthetics Clinic"), so they read as a label, not as the object.
             'heading'      => 'New request near you' . ($post['category_name'] ? ': ' . $post['category_name'] : ''),
@@ -1488,7 +1489,7 @@ class JobBoardService
             $link = base_url('manage');
         }
 
-        $this->notice($this->contactEmail($post), 'Your post closes soon: ' . $this->headerSafe($post['title']), [
+        (new Mailer())->notice($this->contactEmail($post), 'Your post closes soon: ' . Input::line($post['title'], 120), [
             'heading'    => 'Your post closes soon',
             'paragraphs' => [
                 '"' . $post['title'] . '" closes on ' . $this->prettyDate((string) $post['valid_through']) . '.',
@@ -1514,38 +1515,11 @@ class JobBoardService
             $paragraphs[] = 'Flagged: ' . $post['flagged_reason'];
         }
 
-        $this->notice($admin, $event . ': ' . $this->headerSafe($post['title']), [
+        (new Mailer())->notice($admin, $event . ': ' . Input::line($post['title'], 120), [
             'heading'    => $event,
             'paragraphs' => $paragraphs,
             'button'     => ['Open the jobs queue', base_url('admin/jobs')],
         ]);
-    }
-
-    /**
-     * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
-     */
-    private function notice(string $to, string $subject, array $content): bool
-    {
-        if ($to === '') {
-            return false;
-        }
-
-        // Every optional key defaulted, and saveData off: CI4's renderer keeps
-        // data between renders, so a notice with no button would otherwise
-        // inherit the previous email's (a lead alert's stop link, say).
-        $body = view('emails/job-notice', $content + [
-            'site'         => $this->site->siteName(),
-            'button'       => null,
-            'footnote'     => null,
-            'footnoteLink' => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
-        return (new Mailer())->send($to, $subject, $body);
     }
 
     /** @param array<string,mixed> $d */
@@ -1599,29 +1573,5 @@ class JobBoardService
         $digits = preg_replace('/[^\d]/', '', (string) $v) ?? '';
 
         return $digits === '' ? null : min((int) $digits, 100_000_000);
-    }
-
-    /** Same defence as Contact::clean(): no newline may reach a mail header. */
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
-    }
-
-    private function headerSafe(string $s): string
-    {
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', $s)), 0, 120);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\PayFast;
 use App\Models\DirectoryVerificationItnRejectionModel;
@@ -61,12 +62,12 @@ class ProfileSetupService
     public function create(array $in): array
     {
         $d = [
-            'name'          => $this->clean($in['name'] ?? '', 120),
-            'business_name' => $this->clean($in['business_name'] ?? '', 150),
-            'email'         => strtolower($this->clean($in['email'] ?? '', 190)),
-            'phone'         => $this->clean($in['phone'] ?? '', 40),
-            'profile_url'   => $this->clean($in['profile_url'] ?? '', 255),
-            'notes'         => $this->cleanText($in['notes'] ?? '', self::MAX_NOTES),
+            'name'          => Input::line($in['name'] ?? '', 120),
+            'business_name' => Input::line($in['business_name'] ?? '', 150),
+            'email'         => strtolower(Input::line($in['email'] ?? '', 190)),
+            'phone'         => Input::line($in['phone'] ?? '', 40),
+            'profile_url'   => Input::line($in['profile_url'] ?? '', 255),
+            'notes'         => Input::text($in['notes'] ?? '', self::MAX_NOTES),
         ];
 
         $errors = [];
@@ -145,19 +146,9 @@ class ProfileSetupService
 
         $fields = $payfast->parseNotification($raw);
 
-        if (! $payfast->verifySignature($fields)) {
-            return $this->reject('bad signature', $fields, $ip);
-        }
-        if (! $payfast->isValidSourceIp($ip)) {
-            return $this->reject('source address is not PayFast', $fields, $ip);
-        }
-        if (! $payfast->validateWithPayFast($raw)) {
-            // As in PayFastNotify: the sandbox answers INVALID for its own
-            // notifications, so only the sandbox may carry on.
-            if (! $payfast->isSandbox()) {
-                return $this->reject('PayFast did not confirm it', $fields, $ip);
-            }
-            log_message('warning', 'Profile setup ITN: sandbox POST-back validation failed; continuing because directory.payfastSandbox is on.');
+        $refused = $payfast->checkNotification($fields, $raw, $ip, 'Profile setup ITN');
+        if ($refused !== null) {
+            return $this->reject($refused, $fields, $ip);
         }
 
         $order = $this->orders->findByReference((string) ($fields['m_payment_id'] ?? ''));
@@ -225,7 +216,7 @@ class ProfileSetupService
             return ['ok' => false, 'message' => 'That order no longer exists.'];
         }
 
-        $data = ['admin_notes' => $this->cleanText($notes, 4000) ?: null];
+        $data = ['admin_notes' => Input::text($notes, 4000) ?: null];
 
         if ($status !== '' && $status !== $order['status']) {
             if (! in_array($status, ProfileSetupOrderModel::ADMIN_SETTABLE, true)) {
@@ -322,23 +313,5 @@ class ProfileSetupService
         ], ['saveData' => false]);
 
         (new Mailer())->send((string) $order['email'], 'Your profile setup payment is confirmed', $body, $admin);
-    }
-
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
     }
 }

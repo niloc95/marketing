@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\TokenHash;
 use App\Models\DirectoryListingModel;
@@ -109,12 +110,12 @@ class PartnerService
     public function apply(array $in): array
     {
         $d = [
-            'name'       => $this->clean($in['name'] ?? '', 120),
-            'email'      => strtolower($this->clean($in['email'] ?? '', 190)),
-            'phone'      => $this->clean($in['phone'] ?? '', 40),
-            'company'    => $this->clean($in['company'] ?? '', 200),
-            'website'    => $this->clean($in['website'] ?? '', 255),
-            'promo_plan' => $this->cleanText($in['promo_plan'] ?? '', self::MAX_PLAN),
+            'name'       => Input::line($in['name'] ?? '', 120),
+            'email'      => strtolower(Input::line($in['email'] ?? '', 190)),
+            'phone'      => Input::line($in['phone'] ?? '', 40),
+            'company'    => Input::line($in['company'] ?? '', 200),
+            'website'    => Input::line($in['website'] ?? '', 255),
+            'promo_plan' => Input::text($in['promo_plan'] ?? '', self::MAX_PLAN),
         ];
 
         $errors = [];
@@ -668,7 +669,7 @@ class PartnerService
      */
     public function markPaid(int $partnerId, string $eftReference, string $by): array
     {
-        $eftReference = $this->clean($eftReference, 120);
+        $eftReference = Input::line($eftReference, 120);
         if ($eftReference === '') {
             return ['ok' => false, 'message' => 'Enter the EFT reference so the payment can be traced.'];
         }
@@ -745,8 +746,8 @@ class PartnerService
     public function saveBankDetails(int $partnerId, array $in): array
     {
         $d = [
-            'holder'         => $this->clean($in['holder'] ?? '', 120),
-            'bank'           => $this->clean($in['bank'] ?? '', 60),
+            'holder'         => Input::line($in['holder'] ?? '', 120),
+            'bank'           => Input::line($in['bank'] ?? '', 60),
             'branch_code'    => preg_replace('/\D+/', '', (string) ($in['branch_code'] ?? '')),
             'account_number' => preg_replace('/\D+/', '', (string) ($in['account_number'] ?? '')),
             'account_type'   => in_array($in['account_type'] ?? '', ['cheque', 'savings', 'business'], true) ? $in['account_type'] : 'cheque',
@@ -888,7 +889,7 @@ class PartnerService
             return;
         }
 
-        $this->notice($admin, 'Partner application: ' . $this->clean((string) $p['name'], 120), [
+        $this->notice($admin, 'Partner application: ' . Input::line((string) $p['name'], 120), [
             'heading'    => 'Someone applied to the Partner Program',
             'paragraphs' => array_values(array_filter([
                 trim($p['name'] . ($p['company'] ? ', ' . $p['company'] : '')),
@@ -901,49 +902,12 @@ class PartnerService
     }
 
     /**
-     * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string} $content
+     * A notice on the shared template, under this feature's eyebrow.
+     *
+     * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
      */
     private function notice(string $to, string $subject, array $content): bool
     {
-        if ($to === '') {
-            return false;
-        }
-
-        // The shared notice template. saveData off and every optional key
-        // defaulted, as in ReferralService: CI4 keeps view data between
-        // renders, so an email with no button would inherit the last one's.
-        $body = view('emails/job-notice', $content + [
-            'site'           => $this->site->siteName(),
-            'eyebrow'        => 'Partner Program',
-            'button'         => null,
-            'footnote'       => null,
-            'footnoteLink'   => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
-
-        return (new Mailer())->send($to, $subject, $body);
-    }
-
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
+        return (new Mailer())->notice($to, $subject, $content + ['eyebrow' => 'Partner Program']);
     }
 }
