@@ -206,7 +206,7 @@ class Directory extends BaseController
         $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
         $items             = $svc->mapPoints($filters, 200);
 
-        helper(['map', 'directory_hours']);
+        helper('directory_hours');
 
         $out = [];
         foreach ($items as $l) {
@@ -591,7 +591,7 @@ class Directory extends BaseController
         ]);
     }
 
-    public function show(string $slug)
+    protected function show(string $slug)
     {
         $svc     = new DirectoryService();
         $listing = $svc->getProfile($slug);

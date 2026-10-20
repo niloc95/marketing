@@ -40,7 +40,7 @@ class PracticeLocationService
 
     public function __construct(?ListingGeocoder $geocoder = null)
     {
-        helper(['directory_ui', 'directory_hours', 'slug']);
+        helper('directory_hours');
         $this->locations = new DirectoryPracticeLocationModel();
         // Injectable so tests can pin the geocoder without reaching Nominatim.
         // The listing's own save resolves its pin through this same class.

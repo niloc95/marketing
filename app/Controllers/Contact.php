@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Models\DirectoryListingModel;
 use App\Services\ComparisonService;
@@ -201,10 +202,10 @@ class Contact extends BaseController
         }
 
         $post = [
-            'name'    => $this->clean($this->request->getPost('name'), 120),
-            'email'   => strtolower($this->clean($this->request->getPost('email'), 190)),
-            'subject' => $this->clean($this->request->getPost('subject'), 150),
-            'message' => $this->cleanText($this->request->getPost('message'), self::MAX_MESSAGE),
+            'name'    => Input::line($this->request->getPost('name'), 120),
+            'email'   => strtolower(Input::line($this->request->getPost('email'), 190)),
+            'subject' => Input::line($this->request->getPost('subject'), 150),
+            'message' => Input::text($this->request->getPost('message'), self::MAX_MESSAGE),
         ];
 
         $errors = $this->validateInput($post);
@@ -296,29 +297,5 @@ class Contact extends BaseController
         }
 
         return $errors;
-    }
-
-    /**
-     * Trim and flatten newlines. The flattening is header-injection defence:
-     * name and email both reach mail headers, and a bare CR/LF there would let
-     * a submitter add a Bcc.
-     */
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    /** Free text: keep the visitor's line breaks, cap the length. */
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
     }
 }

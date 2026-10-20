@@ -17,7 +17,6 @@ class DirectoryTagModel extends Model
      */
     public function resolveId(string $name): int
     {
-        helper('slug');
         $slug = slugify($name);
         if ($slug === '') {
             return 0;

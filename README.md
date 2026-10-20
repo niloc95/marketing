@@ -89,6 +89,11 @@ database.tests.DBPrefix = xs_
 
 The schema is created and dropped by the tests themselves — nothing to migrate by hand.
 
+If a run is killed mid-migration, two runs overlap, or you switch to a branch that lacks a
+migration the test database has already applied ("There is a gap in the migration
+sequence"), every database test errors in setUp. `php scripts/reset-test-db.php` drops and
+recreates the test database; it refuses any database whose name does not end in `_tests`.
+
 ## Local servers (visual testing)
 
 | Command | Serves | URL |
@@ -258,6 +263,23 @@ it every visitor shares a single throttle bucket. See `DEPLOY.txt`.
 `directory.adminPasswordHash`. The older `directory.adminPassword` stores the password in
 cleartext and takes a deprecated code path.
 
+Production is Lightsail on `local.webscheduler.co.za`, released by hand: see the
+`deploy-production` skill and `deploy/README.md`. `DEPLOY.md` is the Hostinger record.
+
+**Scheduled commands** live in `deploy/cron/webscheduler`. These are run by hand:
+
+| Command | When |
+|---|---|
+| `directory:adminhash` | Setting or rotating the admin password |
+| `directory:geocode` | Backfilling map pins for listings without coordinates |
+| `directory:venue-assign` | Linking listings to the venue (mall, complex) they sit in |
+| `directory:audit-text [--all]` | Reporting stored names and descriptions that break the text rules |
+| `mautic:sync` | Recovering owner opt-ins and opt-outs that the live listing sync missed |
+
+`DirectoryHeroImagesSeeder` seeds the starting hero rotation on a fresh install
+(`php spark db:seed DirectoryHeroImagesSeeder`); it is idempotent and never brings back a
+photo deleted in the admin screen.
+
 ## Not yet built
 
 - **Category × location landing pages** (`/directory/hair-salons/cape-town`) — the main SEO
@@ -271,45 +293,3 @@ cleartext and takes a deprecated code path.
 - **`/admin` hardening** — a single shared password, no username, no 2FA. It *is* throttled
   (5 attempts / 15 min per IP) and stored as a bcrypt hash, but consider IP-restricting the
   path as well.
-
-
-> Historical: the original Hostinger setup, from when the app lived on `listing.`. Production is now Lightsail on `local.webscheduler.co.za`; see `deploy/README.md`.
-
-
-1. Create it in hPanel — Domains → Subdomains, name listing.
-
-⚠️ Watch the document root. Hostinger defaults a subdomain's root to public_html/directory, which would make that folder reachable at both listing.webscheduler.co.za and webscheduler.co.za/directory — the exact overlap that confused things last time. Set a custom root outside public_html:
-
-
-/home/uXXXXXXX/domains/listing.webscheduler.co.za/public_html
-2. Issue the SSL certificate — SSL → Manage, for the subdomain. Do this before the first request. With CI_ENVIRONMENT = production, Secure cookies are on, and CodeIgniter throws forInsecureCookie (a 500 on every request) over plain HTTP.
-
-3. Cloudflare — set SSL/TLS to Full (strict). In Flexible mode the origin sees HTTP, so forcehttps redirect-loops and Secure cookies throw. Config\App::$proxyIPs already carries Cloudflare's ranges; no action needed. If Hostinger lets you firewall the origin to those ranges, do — it stops anyone who finds the origin address bypassing Cloudflare's WAF.
-
-4. Upload npm run list:build output — the two halves go to different places:
-
-
-/home/uXXXXXXX/domains/listing.webscheduler.co.za/
-├── directory-app/     ← dist/listing/directory-app/   (ABOVE the web root)
-└── public_html/       ← contents of dist/listing/docroot/
-They must be siblings; docroot/index.php resolves the app via ../directory-app.
-
-5. .env in directory-app/:
-
-
-CI_ENVIRONMENT = production
-app.baseURL = 'https://listing.webscheduler.co.za/'
-
-6. Migrate and seed:
-
-cd ~/domains/listing.webscheduler.co.za/directory-app
-php spark migrate --all                        # 18 migrations as of 2026-08-14
-php spark db:seed DirectoryCategoriesSeeder    # 147 categories
-php spark directory:adminhash                  # then set adminPasswordHash
-
-7. Verify — the checks in dist/listing/DEPLOY.txt, especially:
-
-curl -s -o /dev/null -w '%{http_code}\n' https://listing.webscheduler.co.za/   # 200
-# HEAD works too, as of 21 Sep 2026 — Config/Routes.php mirrors every GET route onto
-# HEAD at the foot of the file. Before that it 404'd from a perfectly healthy app.
-curl -sI https://webscheduler.co.za/directory/          # 404 — old broken copy gone

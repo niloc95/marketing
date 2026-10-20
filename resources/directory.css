@@ -96,7 +96,7 @@
      footer #0b0f14. Inside @layer components a variant can't be @applied, so
      the overrides below are written as `.dark .x` descendant rules — the same
      shape marketing-site/src/styles.css uses. */
-  .dark body { @apply bg-[#0f1419] text-slate-100; }
+  .dark body { @apply bg-surface-page text-slate-100; }
   ::selection { @apply bg-brand-orange/20; }
   a { @apply no-underline; }
 }
@@ -119,7 +119,7 @@
            transition-colors duration-300;
   }
   .site-header.is-solid { @apply border-slate-200 bg-white/90 backdrop-blur; }
-  .dark .site-header.is-solid { @apply border-slate-800 bg-[#0f1419]/90; }
+  .dark .site-header.is-solid { @apply border-slate-800 bg-surface-page/90; }
   /* Deliberately NOT flex-wrap. Wrapping was the old overflow behaviour and it
      dropped the whole nav onto a second row on any phone, which is a taller,
      lopsided header rather than a graceful degradation. The bar is now a fixed
@@ -295,7 +295,7 @@
   .mobile-menu {
     @apply border-t border-slate-200 bg-white px-4 pb-3 sm:px-6;
   }
-  .dark .mobile-menu { @apply border-slate-800 bg-[#0f1419]; }
+  .dark .mobile-menu { @apply border-slate-800 bg-surface-page; }
   /* block + py-3 gives a 48px row — the tap-target floor, and the reason these
      don't inherit .nav a's text-sm. */
   .mobile-menu a {
@@ -326,7 +326,7 @@
   .site-footer {
     @apply mt-12 border-t border-slate-200 bg-white text-sm text-slate-500;
   }
-  .dark .site-footer { @apply border-slate-800 bg-[#0b0f14] text-slate-400; }
+  .dark .site-footer { @apply border-slate-800 bg-surface-footer text-slate-400; }
   .site-footer a       { @apply text-slate-600 hover:text-primary-500; }
   .dark .site-footer a { @apply text-slate-400 hover:text-white; }
   /* The footer's own call to action is a button, not a link: without this the
@@ -437,8 +437,8 @@
   .btn-accent  { @apply btn bg-brand-orange text-white shadow-brand hover:bg-accent-600 focus:ring-brand-orange; }
   .btn-ghost   { @apply btn border border-slate-200 bg-white text-primary-700 hover:bg-slate-50 focus:ring-primary-500; }
   .dark .btn-primary,
-  .dark .btn-accent { @apply ring-offset-[#0f1419]; }
-  .dark .btn-ghost  { @apply border-slate-700 bg-transparent text-slate-200 ring-offset-[#0f1419] hover:bg-slate-800; }
+  .dark .btn-accent { @apply ring-offset-surface-page; }
+  .dark .btn-ghost  { @apply border-slate-700 bg-transparent text-slate-200 ring-offset-surface-page hover:bg-slate-800; }
   .btn-xs      { @apply h-9 px-4 text-xs; }
   .btn-block   { @apply w-full; }
 
@@ -451,7 +451,7 @@
   .panel { @apply rounded-surface border border-slate-200/80 bg-white p-6; }
   .empty { @apply px-4 py-16 text-center text-lg text-slate-500; }
   .dark .card,
-  .dark .panel { @apply border-slate-800 bg-[#141a21]; }
+  .dark .panel { @apply border-slate-800 bg-surface-tone; }
   .dark .empty { @apply text-slate-400; }
 
   /* Tracked caps in orange, the home page's eyebrow, rather than a pill. */
@@ -553,7 +553,7 @@
   /* The rounding has to be on the clipping box too, or the photographs and
      the video paint square corners over it. */
   .hero-home .hero-media { @apply rounded-surface; }
-  .dark .hero-home { @apply from-[#0f1419] to-primary-700; }
+  .dark .hero-home { @apply from-surface-page to-primary-700; }
   /* A video band with reduced motion on is a blank dark slab — the clips are
      never started (see .hero-video below) and there is no photo to fall back
      on — so the page goes straight from the search to the statement. */
@@ -612,7 +612,7 @@
      from is dark and neutral rather than the brand gradient — the gradient
      flashing blue before every video starts reads as a glitch. */
   .hero-home-video,
-  .dark .hero-home-video { @apply bg-none bg-[#0b0f14]; }
+  .dark .hero-home-video { @apply bg-none bg-surface-footer; }
   .hero-video { @apply h-full w-full object-cover; }
   .hero-video.is-playing,
   .hero-youtube.is-playing { @apply opacity-100; }
@@ -841,7 +841,7 @@
   .page-flow .card-grid > .panel { @apply border-transparent bg-slate-50 p-8; }
   .dark .page-flow > .panel { @apply border-slate-800 bg-transparent; }
   .dark .page-flow > .panel > h2 { @apply text-white; }
-  .dark .page-flow .card-grid > .panel { @apply border-transparent bg-[#141a21]; }
+  .dark .page-flow .card-grid > .panel { @apply border-transparent bg-surface-tone; }
 
   /* ------------------------------------------------------------ breadcrumbs */
   .crumbs { @apply mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500; }
@@ -904,7 +904,6 @@
   .home-discover,
   .home-close { padding-top: clamp(6rem, 14vw, 12rem); }
   .home-moments > * + * { margin-top: clamp(6rem, 14vw, 12rem); }
-  .home-close { padding-bottom: clamp(4rem, 8vw, 6rem); }
 
   /* ---- opening */
   .home-open { padding-top: clamp(3.5rem, 11vh, 8rem); padding-bottom: clamp(4rem, 10vh, 7rem); }
@@ -973,7 +972,7 @@
 
   /* The stage the preview sits on: a tone, not a card. */
   .moment-visual { @apply rounded-surface bg-slate-50 px-5 py-10 sm:p-14; }
-  .dark .moment-visual { @apply bg-[#141a21]; }
+  .dark .moment-visual { @apply bg-surface-tone; }
 
   /* ---- profile previews (_moment_preview.php) */
   .preview { @apply mx-auto w-full max-w-md select-none rounded-surface border border-slate-200 bg-white p-6 sm:p-7; }
@@ -996,7 +995,7 @@
   .preview-rows-stacked strong { @apply text-sm font-semibold text-slate-900; }
   .preview-photos { @apply mt-5 grid grid-cols-3 gap-2; }
   .preview-photos span { @apply aspect-[4/3] rounded-inner bg-gradient-to-br from-slate-100 to-slate-200; }
-  .dark .preview { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .preview { @apply border-slate-800 bg-surface-card; }
   .dark .preview-avatar { @apply bg-primary-500/20 text-primary-200; }
   .dark .preview-avatar-lg { @apply bg-primary-500 text-white; }
   .dark .preview-name,
@@ -1131,11 +1130,11 @@
   .showcase-card:hover .showcase-card-btn { @apply bg-slate-700; }
   .showcase-card-photo .showcase-card-btn { @apply bg-white text-slate-900; }
   .showcase-card-photo:hover .showcase-card-btn { @apply bg-slate-100; }
-  .dark .showcase-card { @apply bg-[#141a21]; }
+  .dark .showcase-card { @apply bg-surface-tone; }
   .dark .showcase-card-name { @apply text-white; }
   .dark .showcase-card-meta { @apply text-slate-400; }
   .dark .showcase-card-photo .showcase-card-meta { @apply text-white/90; }
-  .dark .showcase-card-mark { @apply bg-[#1a202c] text-white; }
+  .dark .showcase-card-mark { @apply bg-surface-card text-white; }
   .dark .showcase-card-btn { @apply bg-white text-slate-900; }
 
   /* Previous / next: two 44px round buttons in one quiet pill, under the
@@ -1171,7 +1170,7 @@
   .dark .type-list-note { @apply text-slate-500; }
 
   /* ---- closing */
-  .home-close { @apply text-center; }
+  .home-close { @apply text-center; padding-bottom: clamp(4rem, 8vw, 6rem); }
   .home-close-title { @apply mx-auto mt-16 max-w-[16ch] sm:mt-24; }
   .home-cta { @apply mt-10 h-14 px-8 text-base; }
   .home-fine { @apply mx-auto mt-6 max-w-xl text-sm leading-relaxed text-slate-500; }
@@ -1271,12 +1270,11 @@
   .cat-tile-name  { @apply text-sm font-semibold text-slate-900 sm:text-base; }
   .cat-tile-group { @apply mt-1 line-clamp-1 text-xs text-slate-500; }
   .cat-tile-foot  { @apply mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs; }
-  .cat-tile-count { @apply font-medium text-primary-600; }
   .cat-tile-more  { @apply hidden items-center gap-1 font-medium text-slate-500 sm:inline-flex; }
   .cat-tile-arrow { @apply inline-block transition-transform; }
   .cat-tile:hover .cat-tile-arrow { @apply translate-x-0.5; }
   .cat-tile:hover .cat-tile-more  { @apply text-primary-600; }
-  .dark .cat-tile       { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .cat-tile       { @apply border-slate-800 bg-surface-card; }
   .dark .cat-tile-icon {
     background-color: var(--tint-bg-dark, theme(colors.primary.500 / 15%));
     color: var(--tint-fg-dark, theme(colors.primary.300));
@@ -1284,7 +1282,6 @@
   .dark .cat-tile-name  { @apply text-white; }
   .dark .cat-tile-group { @apply text-slate-400; }
   .dark .cat-tile-foot  { @apply border-slate-800; }
-  .dark .cat-tile-count { @apply text-primary-300; }
   .dark .cat-tile-more  { @apply text-slate-400; }
   .dark .cat-tile:hover .cat-tile-more { @apply text-primary-300; }
 
@@ -1323,8 +1320,6 @@
   .dark .cat-tile-photo .cat-tile-group { @apply text-white/75; }
   .cat-tile-photo .cat-tile-foot,
   .dark .cat-tile-photo .cat-tile-foot  { @apply mt-3 border-white/20 sm:mt-4; }
-  .cat-tile-photo .cat-tile-count,
-  .dark .cat-tile-photo .cat-tile-count { @apply text-white; }
   .cat-tile-photo .cat-tile-more,
   .dark .cat-tile-photo .cat-tile-more,
   .cat-tile-photo:hover .cat-tile-more,
@@ -1333,8 +1328,8 @@
   /* ------------------------------------------------------ category tints */
   /* One hue per category group, assigned by category_group_style() in
      app/Helpers/directory_ui_helper.php. Every class is spelled out in full for
-     the same reason .loc-card-1..4 below are: Tailwind scans the views as plain
-     text, so a name built at runtime would be unmatched and tree-shaken out.
+     the usual reason: Tailwind scans the views as plain text, so a name built
+     at runtime would be unmatched and tree-shaken out.
 
      Each one only sets custom properties; the consumers (.cat-tile-icon, .chip,
      .badge-category, the /categories headings, .hero-vertical and the panel
@@ -1567,23 +1562,6 @@
   .vertical-scope .panel h3 { color: var(--tint-fg, theme(colors.primary.600)); }
   .dark .vertical-scope .panel h3 { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
-  /* --------------------------------------------------- browse by location */
-  .loc-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
-
-  .loc-card {
-    @apply flex min-h-[11rem] flex-col justify-end rounded-surface bg-gradient-to-br p-5
-           text-white shadow-brand transition-shadow hover:shadow-brand-xl;
-  }
-  /* Rotated by position in _location_card.php. Spelled out in full because
-     Tailwind cannot see a class name built at runtime. */
-  .loc-card-1 { @apply from-primary-500 to-primary-700; }
-  .loc-card-2 { @apply from-brand-crimson to-primary-700; }
-  .loc-card-3 { @apply from-brand-orange to-brand-crimson; }
-  .loc-card-4 { @apply from-primary-700 to-brand-ocean; }
-  .loc-card-count  { @apply text-xs font-medium text-white/70; }
-  .loc-card-name   { @apply mt-1 text-xl font-extrabold; }
-  .loc-card-cities { @apply mt-1 line-clamp-2 text-sm text-white/70; }
-
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
 
@@ -1591,10 +1569,7 @@
      home page's featured cards, rather than an outlined box. Hover deepens the
      tone instead of lifting a shadow. */
   .listing-card { @apply border-transparent bg-slate-50 p-5 transition-colors hover:bg-slate-100; }
-  .dark .listing-card { @apply border-transparent bg-[#141a21] hover:bg-[#1a202c]; }
-  /* Four-up variant for the homepage rows. .card-grid stays at three columns —
-     index.php and landing.php depend on it. */
-  .card-grid-4 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
+  .dark .listing-card { @apply border-transparent bg-surface-tone hover:bg-surface-card; }
 
   .avatar {
     @apply grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-inner
@@ -1738,7 +1713,7 @@
   .dark .compare-chip-partial,
   .dark .compare-chip-paid { @apply bg-amber-500/15 text-amber-300; }
   .dark .compare-chip-no   { @apply bg-slate-800 text-slate-400; }
-  .dark .compare-wrap      { @apply border-slate-800 bg-[#141a21] max-md:bg-transparent; }
+  .dark .compare-wrap      { @apply border-slate-800 bg-surface-tone max-md:bg-transparent; }
   .dark .compare-table thead th,
   .dark .compare-table tbody th { @apply border-slate-800 text-white; }
   .dark .compare-table tbody tr + tr > * { @apply border-slate-800; }
@@ -1746,7 +1721,7 @@
   .dark .compare-sub,
   .dark .compare-note { @apply text-slate-400; }
   @media not all and (min-width: theme(screens.md)) {
-    .dark .compare-table tbody tr { @apply border-slate-800 bg-[#141a21]; }
+    .dark .compare-table tbody tr { @apply border-slate-800 bg-surface-tone; }
   }
 
   /* The seal is the same claim as .badge-verified, at the size where the mark
@@ -1953,7 +1928,7 @@
   .profile-related { @apply mt-16 border-t border-slate-200 pt-12 sm:mt-20; }
   .dark .profile-related { @apply border-slate-800; }
   .profile-grid > div:last-child > .panel { @apply border-transparent bg-slate-50; }
-  .dark .profile-grid > div:last-child > .panel { @apply border-transparent bg-[#141a21]; }
+  .dark .profile-grid > div:last-child > .panel { @apply border-transparent bg-surface-tone; }
   /* .kv is one label/value row; panels stack several of them. */
   .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
   .kv .k { @apply shrink-0 font-medium text-slate-500; }
@@ -1976,7 +1951,7 @@
   /* WhatsApp's own green (#25D366) fails contrast under white text, so the
      button uses its darker teal: recognisably WhatsApp, and legible. */
   .btn-whatsapp { @apply btn bg-[#0f7a6c] text-white hover:bg-[#075e54] focus:ring-[#0f7a6c]; }
-  .dark .btn-whatsapp { @apply ring-offset-[#0f1419]; }
+  .dark .btn-whatsapp { @apply ring-offset-surface-page; }
   .contact-socials   { @apply flex flex-wrap items-center gap-3; }
   .contact-row .contact-socials a:not(.reveal-btn) { @apply text-slate-500 hover:text-primary-500 hover:no-underline; }
   .dark .contact-row .contact-socials a:not(.reveal-btn) { @apply text-slate-400 hover:text-primary-300; }
@@ -2186,11 +2161,6 @@
   .lightbox-video-btn [data-icon-pause] svg,
   .lightbox-video-btn [data-icon-play] svg { @apply fill-current; }
 
-  /* ------------------------------------------------------------------ pills */
-  .pillrow         { @apply mt-3 flex flex-wrap gap-1.5; }
-  .pill-capability { @apply bg-emerald-50 text-emerald-700; }
-  .dark .pill-capability { @apply bg-emerald-500/15 text-emerald-300; }
-
   /* ------------------------------------------- services & features (profile) */
   /* Services read like a price list: name left, price right, a rule between. */
   /* The uploaded menu, above the typed list (directory/_panel_services.php).
@@ -2384,7 +2354,7 @@
            hover:bg-slate-50 focus:ring-primary-500;
   }
   .dark .reveal-btn {
-    @apply border-slate-700 bg-transparent text-slate-200 ring-offset-[#0f1419]
+    @apply border-slate-700 bg-transparent text-slate-200 ring-offset-surface-page
            hover:bg-slate-800;
   }
 
@@ -2537,7 +2507,7 @@
   .dark .form-private        { @apply border-slate-700; }
   .dark .form-private legend { @apply text-slate-200; }
   .dark .form-private-note   { @apply text-slate-400; }
-  .dark .form-card   { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .form-card   { @apply border-slate-800 bg-surface-card; }
   .dark .field label { @apply text-white; }
   .dark .field input[type="text"],
   .dark .field input[type="email"],
@@ -2658,7 +2628,7 @@
   .dark input[type="checkbox"]:not(:checked) {
     @apply border-slate-600 bg-slate-800;
   }
-  .dark input[type="checkbox"] { @apply focus:ring-offset-[#1a202c]; }
+  .dark input[type="checkbox"] { @apply focus:ring-offset-surface-card; }
   .dark .hint { @apply text-slate-400; }
   .dark .switch input { @apply bg-slate-600 focus-visible:ring-offset-slate-900; }
   .dark .switch input:checked { @apply bg-primary-300; }
@@ -2726,7 +2696,7 @@
 
   .dark .plan-card          { @apply border-slate-800 bg-slate-900/40; }
   .dark .plan-card-featured { @apply border-emerald-500/40; }
-  .dark .plan-card-picked   { @apply ring-primary-400 ring-offset-[#1a202c]; }
+  .dark .plan-card-picked   { @apply ring-primary-400 ring-offset-surface-card; }
   .dark .plan-name          { @apply text-slate-400; }
   .dark .plan-price         { @apply text-white; }
   .dark .plan-price-unit    { @apply text-slate-400; }
@@ -2830,7 +2800,7 @@
   .score-bar-meter    { @apply col-span-2 sm:col-span-1; }
   .score-bar-to       { @apply m-0 text-xs text-slate-500; }
   .score-bar-toggle   { @apply justify-self-end; }
-  .dark .score-bar.is-live { @apply border-slate-700 bg-[#1a202c]/95; }
+  .dark .score-bar.is-live { @apply border-slate-700 bg-surface-card/95; }
   .dark .score-bar.is-live .score-bar-sheet { @apply border-slate-700; }
   .dark .score-bar.is-live .strength-panel  { @apply bg-transparent; }
   .dark .score-bar-summary { @apply text-slate-200; }
@@ -3317,7 +3287,7 @@
   .address-suggest-list li.is-empty {
     @apply cursor-default text-slate-400 hover:bg-transparent hover:text-slate-400;
   }
-  .dark .address-suggest-list { @apply border-slate-700 bg-[#1a202c]; }
+  .dark .address-suggest-list { @apply border-slate-700 bg-surface-card; }
   .dark .address-suggest-list li { @apply text-slate-300; }
   .dark .address-suggest-list li.is-active,
   .dark .address-suggest-list li:hover { @apply bg-slate-800 text-white; }
@@ -3346,7 +3316,7 @@
   .search-suggest-label { @apply min-w-0 flex-1 truncate font-medium; }
   .search-suggest-sub   { @apply shrink-0 text-xs text-slate-500; }
   .search-suggest-kind  { @apply shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500; }
-  .dark .search-suggest-list { @apply border-slate-700 bg-[#1a202c]; }
+  .dark .search-suggest-list { @apply border-slate-700 bg-surface-card; }
   .dark .search-suggest-list li { @apply text-slate-300; }
   .dark .search-suggest-list li.is-active,
   .dark .search-suggest-list li:hover { @apply bg-slate-800 text-white; }
@@ -3507,11 +3477,11 @@
   /* ------------------------------------------------------------ admin table */
   .tabs   { @apply mb-4 flex flex-wrap gap-1 border-b border-slate-200; }
   .tabs a { @apply inline-flex h-9 items-center rounded-control px-4 text-sm font-medium text-slate-500 hover:text-primary-500; }
-  .tabs a.active { @apply bg-white text-primary-500 shadow-[inset_0_-2px_0_0_#F77F00]; }
+  .tabs a.active { @apply bg-white text-primary-500 shadow-[inset_0_-2px_0_0_theme(colors.brand.orange)]; }
   .dark .tabs   { @apply border-slate-800; }
   .dark .tabs a { @apply text-slate-400 hover:text-white; }
   /* The orange inset underline carries the active state in both themes. */
-  .dark .tabs a.active { @apply bg-[#1a202c] text-white; }
+  .dark .tabs a.active { @apply bg-surface-card text-white; }
 
   .tablewrap { @apply overflow-x-auto rounded-surface border border-slate-200 bg-white shadow-brand; }
   .table     { @apply w-full border-collapse text-sm; }
@@ -3548,7 +3518,7 @@
   .dark .admin-chip.is-warn { @apply border-amber-500/30 bg-amber-500/15 text-amber-300; }
   .dark .icon-act           { @apply border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white; }
   .dark .icon-act.is-primary { @apply border-primary-500/40 bg-primary-500/15 text-primary-300; }
-  .dark .tablewrap { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .tablewrap { @apply border-slate-800 bg-surface-card; }
   .dark .table th  { @apply bg-slate-800/60 text-slate-400; }
   .dark .table td  { @apply border-slate-800; }
 
@@ -3578,7 +3548,7 @@
   .dark .pager a { @apply text-slate-300 hover:bg-slate-800; }
   /* primary-500 is near-black — invisible as a "current page" chip on a dark
      page. primary-300 with dark text is the readable inversion. */
-  .dark .pager .current { @apply bg-primary-300 text-[#0f1419]; }
+  .dark .pager .current { @apply bg-primary-300 text-surface-page; }
 
   /* --------------------------------------------------- description editor */
   /* Quill's Snow theme, fitted to the form and taught about dark mode. It is

@@ -106,7 +106,7 @@ class MauticClient
 
             log_message('error', 'Mautic ' . $this->routeOf($path) . ' for ' . $this->domainOf($emailForLog) . ' returned HTTP ' . $status);
         } catch (\Throwable $e) {
-            log_message('error', 'Mautic ' . $this->routeOf($path) . ' for ' . $this->domainOf($emailForLog) . ' threw: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Mautic ' . $this->routeOf($path) . ' for ' . $this->domainOf($emailForLog) . ' threw: ' . Mailer::oneLine($e->getMessage()));
         }
 
         return null;
@@ -123,10 +123,5 @@ class MauticClient
         $at = strrpos($email, '@');
 
         return $at === false ? '(no address)' : '@' . substr($email, $at + 1);
-    }
-
-    private function oneLine(string $s): string
-    {
-        return trim((string) preg_replace('/\s+/', ' ', $s));
     }
 }

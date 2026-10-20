@@ -111,7 +111,7 @@ class ListingQualityService
     public function __construct()
     {
         $this->listings = new DirectoryListingModel();
-        helper(['directory_hours', 'directory_ui']);
+        helper('directory_hours');
     }
 
     /**

@@ -10,8 +10,6 @@
  * `.ws-contact.env` placed by hand ONE LEVEL ABOVE the docroot (never here —
  * see the secrets guard in step 4d, and DEPLOY.md §6).
  *
- * Mirrors the conventions of scripts/build-docs-site.js.
- *
  * Sources (single source of truth):
  *   - marketing-site/*.html                      (page templates)
  *   - marketing-site/contact.php                 (contact-form endpoint)

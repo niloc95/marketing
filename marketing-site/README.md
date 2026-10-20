@@ -10,12 +10,12 @@ app**.
 This directory is intentionally **excluded from the WebScheduler application build and
 deployment package**:
 
-- `npm run build` (Vite) only bundles the entry points in `vite.config.js`; none of
-  them reference `marketing-site/`.
-- `tailwind.config.js` (the app's) scans `app/Views`, `resources/` and `public/` — not
+- `tailwind.directory.cjs` (the app's) scans `app/Views`, `resources/` and `public/`, not
   `marketing-site/`. The site has its own `marketing-site/tailwind.config.cjs`.
-- `scripts/package.js` copies an explicit allowlist (`app`, `public`, `vendor`,
-  `writable`, …); `marketing-site/` is not in it, so it never ships in the app ZIP.
+- `npm run list:build` (`scripts/build-listing-app.js`) copies an explicit allowlist
+  (`app`, `public`, `vendor`, `writable`, …); `marketing-site/` is not in it.
+- `npm run site:build` (`scripts/build-marketing-site.js`) builds this folder alone into
+  `dist/site/`.
 
 The site is committed to the repo for source control, but it builds and deploys on its
 own track.

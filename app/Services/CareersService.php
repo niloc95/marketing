@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\PostingSections;
 use App\Libraries\Screening;
@@ -390,16 +391,16 @@ class CareersService
 
         $jobs = config('JobBoard');
         $d    = [
-            'title'           => $this->clean($in['title'] ?? '', 120),
+            'title'           => Input::line($in['title'] ?? '', 120),
             'team'            => (string) ($in['team'] ?? ''),
-            'summary'         => $this->clean($in['summary'] ?? '', self::MAX_SUMMARY),
-            'description'     => $this->cleanText($in['description'] ?? '', self::MAX_DESCRIPTION),
-            'good_fit'          => $this->cleanText($in['good_fit'] ?? '', self::MAX_SECTION),
-            'strong_candidates' => $this->cleanText($in['strong_candidates'] ?? '', self::MAX_SECTION),
-            'projects'          => $this->cleanText($in['projects'] ?? '', self::MAX_SECTION),
-            'logistics'         => $this->cleanText($in['logistics'] ?? '', self::MAX_SECTION),
+            'summary'         => Input::line($in['summary'] ?? '', self::MAX_SUMMARY),
+            'description'     => Input::text($in['description'] ?? '', self::MAX_DESCRIPTION),
+            'good_fit'          => Input::text($in['good_fit'] ?? '', self::MAX_SECTION),
+            'strong_candidates' => Input::text($in['strong_candidates'] ?? '', self::MAX_SECTION),
+            'projects'          => Input::text($in['projects'] ?? '', self::MAX_SECTION),
+            'logistics'         => Input::text($in['logistics'] ?? '', self::MAX_SECTION),
             'employment_type' => (string) ($in['employment_type'] ?? ''),
-            'city'            => $this->clean($in['city'] ?? '', 100),
+            'city'            => Input::line($in['city'] ?? '', 100),
             'province'        => (string) ($in['province'] ?? ''),
             'is_remote'       => empty($in['is_remote']) ? 0 : 1,
             'salary_min'      => $this->money($in['salary_min'] ?? ''),
@@ -464,7 +465,7 @@ class CareersService
         }
 
         if ($existing === null) {
-            $d['slug']   = $this->uniqueSlug($d['title']);
+            $d['slug']   = ensure_unique_slug($this->roles, 'slug', slugify($d['title']) ?: 'role', maxLength: 120);
             $d['status'] = CareerRoleModel::STATUS_DRAFT;
             $id          = (int) $this->roles->insert($d);
             $message     = 'Role saved as a draft. Open it when it is ready to show.';
@@ -525,11 +526,11 @@ class CareersService
         }
 
         $d = [
-            'name'         => $this->clean($in['name'] ?? '', 120),
-            'email'        => strtolower($this->clean($in['email'] ?? '', 190)),
-            'phone'        => $this->clean($in['phone'] ?? '', 40),
-            'linkedin_url' => $this->clean($in['linkedin_url'] ?? '', 255),
-            'message'      => $this->cleanText($in['message'] ?? '', self::MAX_MESSAGE),
+            'name'         => Input::line($in['name'] ?? '', 120),
+            'email'        => strtolower(Input::line($in['email'] ?? '', 190)),
+            'phone'        => Input::line($in['phone'] ?? '', 40),
+            'linkedin_url' => Input::line($in['linkedin_url'] ?? '', 255),
+            'message'      => Input::text($in['message'] ?? '', self::MAX_MESSAGE),
         ];
 
         $errors = [];
@@ -643,7 +644,7 @@ class CareersService
 
         $this->applications->update($id, [
             'status'      => $status,
-            'admin_notes' => $this->cleanText($notes, 2000) ?: null,
+            'admin_notes' => Input::text($notes, 2000) ?: null,
         ]);
 
         if (! $notify || $status === $app['status'] || $this->statusEmail($status, null) === null) {
@@ -878,18 +879,6 @@ class CareersService
         return is_array($result) && isset($result['items'], $result['score'], $result['total']) ? $result : null;
     }
 
-    private function uniqueSlug(string $title): string
-    {
-        helper('slug');
-        $base = slugify($title) ?: 'role';
-        $slug = $base;
-        for ($n = 2; $this->roles->findBySlug($slug) !== null; $n++) {
-            $slug = $base . '-' . $n;
-        }
-
-        return $slug;
-    }
-
     /** The two pay columns as int|null, since the database hands back strings. */
     private function numeric(array $role): array
     {
@@ -914,23 +903,5 @@ class CareersService
     private function forgetSitemap(): void
     {
         cache()->delete('directory_sitemap_xml');
-    }
-
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
     }
 }

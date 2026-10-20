@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Libraries\Geocoding\NominatimGeocoder;
-use App\Libraries\ListingText;
+use App\Libraries\Input;
 use App\Libraries\ListingGeocoder;
+use App\Libraries\ListingText;
 use App\Libraries\Mailer;
 use App\Libraries\RichText;
 use App\Libraries\ServiceArea;
@@ -13,9 +14,9 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryTagModel;
+use App\Services\ListingFacetService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
-use App\Services\ListingFacetService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
 use App\Services\VerificationService;
@@ -49,7 +50,7 @@ class DirectoryListingMutationService
 
     public function __construct()
     {
-        helper(['slug', 'directory_hours']);
+        helper('directory_hours');
         $this->listings = new DirectoryListingModel();
         $this->tags     = new DirectoryTagModel();
         $this->config   = config('Directory');
@@ -176,7 +177,7 @@ class DirectoryListingMutationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            log_message('error', 'Listing signup failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Listing signup failed and was rolled back: ' . Mailer::oneLine($e->getMessage()));
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];
         }
@@ -256,7 +257,7 @@ class DirectoryListingMutationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            log_message('error', 'Rejected-listing resubmit failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Rejected-listing resubmit failed and was rolled back: ' . Mailer::oneLine($e->getMessage()));
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save the profile. Please try again.'];
         }
@@ -825,7 +826,7 @@ class DirectoryListingMutationService
         } catch (\Throwable $e) {
             $db->transRollback();
             $videoSvc->deleteFile($video['new_file'] ?? null);
-            log_message('error', 'Owner edit failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Owner edit failed and was rolled back: ' . Mailer::oneLine($e->getMessage()));
 
             return ['ok' => false, 'errors' => [], 'message' => 'Could not save your changes. Please try again.'];
         }
@@ -1309,15 +1310,6 @@ class DirectoryListingMutationService
         ))));
     }
 
-    /**
-     * Flatten anything destined for a mail header. Mirrors Contact::clean() —
-     * a bare CR/LF in a header is how a submitter adds their own Bcc.
-     */
-    private function headerSafe(string $v): string
-    {
-        return trim((string) preg_replace('/[\r\n\t]+/', ' ', $v));
-    }
-
     private function categoryExists(int $id): bool
     {
         return (new DirectoryCategoryModel())->where('id', $id)->countAllResults() > 0;
@@ -1459,12 +1451,6 @@ class DirectoryListingMutationService
         return ListingText::tidyDescriptionHtml($this->richText($v));
     }
 
-    /** Collapse newlines so a failure message can't forge extra log lines. */
-    private function oneLine(string $s): string
-    {
-        return trim((string) preg_replace('/\s+/', ' ', $s));
-    }
-
     /**
      * The stored form of a magic-link token.
      *
@@ -1527,7 +1513,7 @@ class DirectoryListingMutationService
         // setSubject() encodes it, so this is not header injection today — but
         // that safety lives in the framework, and the same one-line defence
         // Contact.php applies to its user-supplied subject costs nothing here.
-        $name    = $this->headerSafe((string) ($listing['display_name'] ?? ''));
+        $name    = Input::line((string) ($listing['display_name'] ?? ''));
         $subject = $event === 'edited'
             ? 'Profile edited: ' . $name
             : 'New published profile: ' . $name;

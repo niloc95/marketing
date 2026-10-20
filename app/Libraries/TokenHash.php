@@ -23,4 +23,14 @@ final class TokenHash
     {
         return hash('sha256', $token);
     }
+
+    /**
+     * A visitor's address, keyed with the app's encryption key, for the
+     * one-per-visitor limits on reviews and job reports. Keyed so the stored
+     * column cannot be reversed by hashing the IPv4 space.
+     */
+    public static function ip(string $ip): string
+    {
+        return hash('sha256', $ip . '|' . config('Encryption')->key);
+    }
 }

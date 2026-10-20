@@ -61,31 +61,12 @@ class PayFastNotify extends Controller
             return $this->done('PayFast is not configured; notification ignored.', level: 'info');
         }
 
-        // Read the raw stream first, because that is what PayFast signed and
-        // what check 3 has to echo back verbatim.
-        //
-        // But it cannot be the only source. PayFast posts notifications as
-        // multipart/form-data, and PHP makes php://input unavailable for that
-        // content type — it consumes the body into $_POST and leaves the stream
-        // empty. Reading only the stream therefore saw every notification as
-        // empty, logged it at a level production discards, and answered 200. The
-        // result was silent and total: PayFast recorded "Success" for every
-        // delivery, and not one ITN in this deployment's history was ever
-        // processed. Falling back to the parsed body is what makes the endpoint
-        // work at all.
-        //
-        // The round-trip is faithful: PHP preserves the order the fields arrived
-        // in, parseNotification() urldecodes what we re-encode here, and the
-        // signature is computed over decoded values.
-        $raw = (string) file_get_contents('php://input');
-
-        if (trim($raw) === '') {
-            $post = $this->request->getPost();
-            if (is_array($post) && $post !== []) {
-                $raw               = http_build_query($post);
-                $this->bodySource = 'parsed-body';
-            }
-        }
+        // The raw stream, or the parsed body when PayFast's multipart post has
+        // emptied it. Reading only the stream once saw every notification as
+        // empty, logged it at a level production discards, and answered 200:
+        // PayFast recorded "Success" for every delivery and not one ITN was
+        // ever processed. See PayFast::readNotificationBody().
+        [$raw, $this->bodySource] = PayFast::readNotificationBody($this->request);
 
         if (trim($raw) === '') {
             // A body that was declared and then arrived empty is an anomaly
@@ -101,32 +82,12 @@ class PayFastNotify extends Controller
         $fields = $payfast->parseNotification($raw);
         $ip     = (string) $this->request->getIPAddress();
 
-        // --- Check 1: signature ------------------------------------------------
-        if (! $payfast->verifySignature($fields)) {
-            return $this->done('Notification rejected: bad signature.', $fields, $ip);
-        }
-
-        // --- Check 2: source address -------------------------------------------
-        if (! $payfast->isValidSourceIp($ip)) {
-            return $this->done('Notification rejected: source address is not PayFast.', $fields, $ip);
-        }
-
-        // --- Check 3: PayFast confirms it sent this ----------------------------
-        if (! $payfast->validateWithPayFast($raw)) {
-            // Production refuses, always — this is the strongest of the four.
-            //
-            // The sandbox is the exception, and only the sandbox: its validate
-            // endpoint answers INVALID for notifications it did itself send, so
-            // enforcing this there makes an end-to-end test of the badge
-            // impossible while proving nothing about the live path. Gated on
-            // isSandbox() so a correctly configured production box can never
-            // reach it, and loud when it runs.
-            if (! $payfast->isSandbox()) {
-                return $this->done('Notification rejected: PayFast did not confirm it.', $fields, $ip);
-            }
-
-            log_message('warning', 'PayFast ITN: sandbox POST-back validation failed; continuing '
-                . 'because directory.payfastSandbox is on. This must never run in production.');
+        // --- Checks 1 to 3: signature, source address, PayFast confirms it -----
+        // Production refuses a failed POST-back, always; only the sandbox, whose
+        // validate endpoint rejects its own notifications, carries on.
+        $refused = $payfast->checkNotification($fields, $raw, $ip, 'PayFast ITN');
+        if ($refused !== null) {
+            return $this->done('Notification rejected: ' . $refused . '.', $fields, $ip);
         }
 
         // Which subscription is this? m_payment_id is ours and is what we look

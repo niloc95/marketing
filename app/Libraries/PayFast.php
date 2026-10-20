@@ -3,6 +3,7 @@
 namespace App\Libraries;
 
 use App\Models\DirectoryVerificationModel;
+use CodeIgniter\HTTP\IncomingRequest;
 use Config\Directory as DirectoryConfig;
 
 /**
@@ -509,5 +510,62 @@ class PayFast
         }
 
         return $fields;
+    }
+
+    /**
+     * The notification body exactly as PayFast signed it, and where it came from.
+     *
+     * The raw stream first, because that is what PayFast signed and what the
+     * POST-back has to echo verbatim. But PayFast posts multipart/form-data, and
+     * PHP empties php://input for that content type, so the parsed body is the
+     * fallback. Reading only the stream once made every ITN look empty and
+     * nothing was ever processed; see PayFastNotify::index(). The round-trip is
+     * faithful: PHP keeps field order and parseNotification() urldecodes it.
+     *
+     * @return array{0:string,1:string} [body, 'php://input'|'parsed-body']
+     */
+    public static function readNotificationBody(IncomingRequest $request): array
+    {
+        $raw = (string) file_get_contents('php://input');
+
+        if (trim($raw) === '') {
+            $post = $request->getPost();
+            if (is_array($post) && $post !== []) {
+                return [http_build_query($post), 'parsed-body'];
+            }
+        }
+
+        return [$raw, 'php://input'];
+    }
+
+    /**
+     * The three checks every notification must pass, in order: signature,
+     * source address, then PayFast's own confirmation. Null when it passes,
+     * otherwise the reason it was refused.
+     *
+     * The sandbox's validate endpoint answers INVALID for notifications it did
+     * itself send, so only there a failed POST-back is logged and let through.
+     * Gated on isSandbox(), so a correctly configured production box can never
+     * reach it.
+     *
+     * @param array<string,string> $fields
+     */
+    public function checkNotification(array $fields, string $raw, string $ip, string $logLabel): ?string
+    {
+        if (! $this->verifySignature($fields)) {
+            return 'bad signature';
+        }
+        if (! $this->isValidSourceIp($ip)) {
+            return 'source address is not PayFast';
+        }
+        if (! $this->validateWithPayFast($raw)) {
+            if (! $this->isSandbox()) {
+                return 'PayFast did not confirm it';
+            }
+            log_message('warning', $logLabel . ': sandbox POST-back validation failed; continuing '
+                . 'because directory.payfastSandbox is on. This must never run in production.');
+        }
+
+        return null;
     }
 }

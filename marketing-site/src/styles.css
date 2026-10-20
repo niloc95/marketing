@@ -50,7 +50,7 @@
     @apply bg-white text-primary-900 antialiased;
     @apply transition-colors duration-200;
   }
-  .dark body { @apply bg-[#0f1419] text-slate-100; }
+  .dark body { @apply bg-surface-page text-slate-100; }
   ::selection { @apply bg-brand-orange/20; }
 }
 
@@ -73,7 +73,7 @@
            transition-colors duration-300;
   }
   .site-header.is-solid { @apply border-slate-200 bg-white/90 backdrop-blur; }
-  .dark .site-header.is-solid { @apply border-slate-800 bg-[#0f1419]/90; }
+  .dark .site-header.is-solid { @apply border-slate-800 bg-surface-page/90; }
 
   /* Buttons — mirror the app's xs-btn language (ocean primary, orange accent). */
   .btn {
@@ -101,7 +101,7 @@
   .card {
     @apply rounded-2xl border border-slate-200 bg-white shadow-brand;
   }
-  .dark .card { @apply border-slate-800 bg-[#1a202c]; }
+  .dark .card { @apply border-slate-800 bg-surface-card; }
 
   /* Eyebrow label. */
   .eyebrow {

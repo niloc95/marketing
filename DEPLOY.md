@@ -1,30 +1,16 @@
-# Deploying to production (Hostinger / hPanel) — superseded
+# Deploying to production (Hostinger / hPanel): archived
 
-> ## ⚠️ Production is moving to AWS Lightsail
+> ## This is the historical Hostinger record
 >
-> **For the new stack, provisioning, and the cutover runbook, read
-> [`deploy/README.md`](deploy/README.md).** For a routine release, use the
-> **`deploy-production` skill**.
+> Production has been on AWS Lightsail since the cutover, at `local.webscheduler.co.za`
+> (the old `listing.` hostname only 301s, and keeps serving `/payfast/notify`). Releases
+> are **manual**: use the **`deploy-production` skill**, and
+> [`deploy/README.md`](deploy/README.md) for the stack and provisioning.
+> `.github/workflows/deploy.yml` is dormant.
 >
-> This file is the Hostinger shared-hosting record. It stays accurate for the
-> environment that is live **until the DNS cutover completes**, and is worth keeping
-> after that as the rollback target — rollback is repointing two Cloudflare A records
-> back here, which only works while this environment still exists.
->
-> What has already changed in the repo, and therefore no longer matches this file:
->
-> | This document says | Now |
-> |---|---|
-> | FTPS upload via `SamKirkland/FTP-Deploy-Action` | `rsync` over SSH |
-> | The `directory` job is disabled; deploy by hand | Both jobs deploy automatically |
-> | Migrations are a manual hPanel terminal step | Run automatically after the rsync |
-> | `FTP_SERVER` / `FTP_USERNAME` / `FTP_PASSWORD` / `FTP_MARKETING_DIR` | `SSH_HOST` / `SSH_USER` / `SSH_PRIVATE_KEY` / `SSH_KNOWN_HOSTS` |
-> | Never set `FTP_DIRECTORY_DIR` | The secret is no longer read by anything |
-> | Backups rely on the Hostinger plan | Lightsail snapshots + nightly `mysqldump` |
->
-> The workflow's deploy steps are guarded on `SSH_HOST`, so until that secret is set it
-> builds, runs every guard, and ships nothing — pushing to `main` before the instance
-> exists is safe, it just does not deploy anywhere.
+> Kept for the parts other files still cite (§6, where secrets live outside the docroot)
+> and as a record of how the Hostinger environment was built. Anything below about FTPS,
+> hPanel, `listing.` as the live host, or automatic deploys is out of date.
 
 This repo ships **two deployables**:
 

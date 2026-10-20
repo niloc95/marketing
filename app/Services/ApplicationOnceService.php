@@ -36,7 +36,6 @@ class ApplicationOnceService
 
     public function __construct()
     {
-        helper('directory_ui');
         $this->keys = new DirectoryApplicationKeyModel();
     }
 

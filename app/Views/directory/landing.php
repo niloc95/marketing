@@ -1,7 +1,6 @@
 <?= $this->extend('layouts/public') ?>
 
 <?php
-helper('slug');
 $siteName = config('Directory')->siteName();
 $catName  = (string) $category['name'];
 $catSlug  = (string) $category['slug'];

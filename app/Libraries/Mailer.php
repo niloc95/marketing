@@ -66,13 +66,13 @@ class Mailer
             // The empty array matters: the default includes the full headers,
             // subject and body, which would put the recipient's address and the
             // message content into the log and into /health.
-            $reason = $this->oneLine(strip_tags($email->printDebugger([])));
+            $reason = self::oneLine(strip_tags($email->printDebugger([])));
             log_message('error', 'Directory email to ' . $this->domainOf($to) . ' failed: ' . $reason);
             MailHealth::recordFailure($reason);
         } catch (\Throwable $e) {
             // Malformed Config\Email, or the cache being unavailable underneath
             // MailHealth. Still must not surface to the visitor.
-            log_message('error', 'Directory email to ' . $this->domainOf($to) . ' threw: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Directory email to ' . $this->domainOf($to) . ' threw: ' . self::oneLine($e->getMessage()));
 
             try {
                 MailHealth::recordFailure($e->getMessage());
@@ -99,8 +99,41 @@ class Mailer
         return $at === false ? '(malformed address)' : '@' . substr($email, $at + 1);
     }
 
-    /** Collapse newlines so a failure message can't forge extra log lines. */
-    private function oneLine(string $s): string
+    /**
+     * Send one of the short notices built on emails/job-notice: a heading,
+     * paragraphs, and optionally a button, bullets and a footnote. Jobs,
+     * reviews, referrals and the Partner Program all send these.
+     *
+     * Every optional key is defaulted and saveData is off: CI4's renderer keeps
+     * data between renders, so a notice with no button would otherwise inherit
+     * the previous email's (a lead alert's stop link, say).
+     *
+     * @param array{heading:string,paragraphs:list<string>,eyebrow?:string,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
+     */
+    public function notice(string $to, string $subject, array $content): bool
+    {
+        if ($to === '') {
+            return false;
+        }
+
+        $body = view('emails/job-notice', $content + [
+            'site'           => config('Directory')->siteName(),
+            'button'         => null,
+            'footnote'       => null,
+            'footnoteLink'   => null,
+            'bullets'        => null,
+            'bulletsHeading' => null,
+            'extras'         => null,
+            'extrasHeading'  => null,
+            'highlight'      => null,
+            'closing'        => null,
+        ], ['saveData' => false]);
+
+        return $this->send($to, $subject, $body);
+    }
+
+    /** Collapse whitespace so a failure message can't forge extra log lines. */
+    public static function oneLine(string $s): string
     {
         return trim((string) preg_replace('/\s+/', ' ', $s));
     }

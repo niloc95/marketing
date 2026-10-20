@@ -388,7 +388,7 @@ function renderPage(int $status, string $title, string $inner): never
       </script>
     </head>
     <body class="font-sans">
-      <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0f1419]">
+      <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-surface-page">
         <div class="container-x flex h-16 items-center">
           <a href="./index.html" class="flex items-center gap-2.5">
             <img src="./assets/logo.svg" alt="" class="h-8 w-8" />
@@ -403,7 +403,7 @@ function renderPage(int $status, string $title, string $inner): never
           </div>
         </div>
       </main>
-      <footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-[#0b0f14]">
+      <footer class="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-surface-footer">
         <div class="container-x flex flex-col items-center justify-between gap-4 py-6 text-sm text-slate-500 sm:flex-row dark:text-slate-400">
           <p>&copy; <span data-year>2026</span> WebScheduler. All rights reserved.</p>
           <div class="flex gap-6">

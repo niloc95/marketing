@@ -19,8 +19,6 @@ class DirectoryCategoriesSeeder extends Seeder
 {
     public function run(): void
     {
-        helper('slug');
-
         $groups = [
             // Enumerated in full, legacy rows included. Everything the launch
             // taxonomy created — the specialists, the nursing and pharmacy rows —

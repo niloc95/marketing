@@ -209,7 +209,7 @@ class VerificationService
             ]);
         } catch (Throwable $e) {
             log_message('error', 'Could not open an international subscription for listing '
-                . $listingId . ': ' . $this->oneLine($e->getMessage()));
+                . $listingId . ': ' . Mailer::oneLine($e->getMessage()));
 
             return null;
         }
@@ -350,7 +350,7 @@ class VerificationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            log_message('error', 'Verification application failed and was rolled back: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Verification application failed and was rolled back: ' . Mailer::oneLine($e->getMessage()));
             $this->discardStoredFiles($listingId, $documents);
 
             return ['ok' => false, 'message' => 'We could not store your documents. Please try again.'];
@@ -586,7 +586,7 @@ class VerificationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            log_message('error', 'Manual verification activation failed: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Manual verification activation failed: ' . Mailer::oneLine($e->getMessage()));
 
             return false;
         }
@@ -638,7 +638,7 @@ class VerificationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            log_message('error', 'Verification revoke failed: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Verification revoke failed: ' . Mailer::oneLine($e->getMessage()));
 
             return false;
         }
@@ -742,7 +742,7 @@ class VerificationService
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
-            log_message('error', 'Verification payment could not be recorded: ' . $this->oneLine($e->getMessage()));
+            log_message('error', 'Verification payment could not be recorded: ' . Mailer::oneLine($e->getMessage()));
 
             return 'failed';
         }
@@ -758,7 +758,7 @@ class VerificationService
             try {
                 (new PartnerService())->recordCommission($verificationId, $pfPaymentId, $amountGross);
             } catch (\Throwable $e) {
-                log_message('error', 'Partner commission hook failed: ' . $this->oneLine($e->getMessage()));
+                log_message('error', 'Partner commission hook failed: ' . Mailer::oneLine($e->getMessage()));
             }
         }
 
@@ -820,7 +820,7 @@ class VerificationService
                 $lapsed++;
             } catch (\Throwable $e) {
                 $db->transRollback();
-                log_message('error', 'Could not lapse verification ' . (int) $row['id'] . ': ' . $this->oneLine($e->getMessage()));
+                log_message('error', 'Could not lapse verification ' . (int) $row['id'] . ': ' . Mailer::oneLine($e->getMessage()));
             }
         }
 
@@ -1171,7 +1171,7 @@ class VerificationService
         } catch (Throwable $e) {
             log_message('error', 'Could not mint an owner link for listing {id}: {msg}', [
                 'id'  => $listingId,
-                'msg' => $this->oneLine($e->getMessage()),
+                'msg' => Mailer::oneLine($e->getMessage()),
             ]);
 
             return base_url('manage');
@@ -1180,11 +1180,5 @@ class VerificationService
         return $event === 'approved'
             ? base_url('manage/' . $token) . '?to=checkout'
             : base_url('manage/' . $token);
-    }
-
-    /** Collapse newlines so a failure message can't forge extra log lines. */
-    private function oneLine(string $s): string
-    {
-        return trim((string) preg_replace('/\s+/', ' ', $s));
     }
 }

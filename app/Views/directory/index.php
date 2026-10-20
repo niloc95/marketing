@@ -2,7 +2,6 @@
 
 <?= $this->section('head') ?>
 <?php
-helper('slug');
 $siteName = config('Directory')->siteName();
 
 // $category and $province come from the controller already resolved against

@@ -395,7 +395,6 @@ $moments = [
             <?php endif; ?>
 
             <?php if ($provinceCounts !== []): ?>
-                <?php helper('slug'); ?>
                 <div class="home-group" data-scroll-reveal>
                     <h3 class="home-group-label">Explore by location</h3>
                     <ul class="type-list type-list-places">

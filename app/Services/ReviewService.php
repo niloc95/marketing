@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\TokenHash;
 use App\Models\DirectoryListingModel;
@@ -137,8 +138,8 @@ class ReviewService
     public function validate(array $in): array
     {
         $rating = filter_var($in['rating'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 5]]);
-        $name   = $this->clean($in['reviewer_name'] ?? '', 80);
-        $email  = strtolower($this->clean($in['reviewer_email'] ?? '', 190));
+        $name   = Input::line($in['reviewer_name'] ?? '', 80);
+        $email  = strtolower(Input::line($in['reviewer_email'] ?? '', 190));
         $body   = $this->cleanText($in['body'] ?? '', $this->cfg->bodyMax + 1);
 
         $errors = [];
@@ -240,7 +241,7 @@ class ReviewService
         $row   = $d + [
             'listing_id'     => $listingId,
             'email_hash'     => $emailHash,
-            'ip_hash'        => $this->ipHash($ip),
+            'ip_hash'        => TokenHash::ip($ip),
             'status'         => DirectoryReviewModel::STATUS_UNVERIFIED,
             'verify_token'   => TokenHash::hash($token),
             'verify_expires' => date('Y-m-d H:i:s', time() + self::VERIFY_TTL),
@@ -260,7 +261,7 @@ class ReviewService
             $this->reviews->insert($row);
         }
 
-        $this->notice($d['reviewer_email'], 'Confirm your review of ' . $this->headerSafe((string) $listing['display_name']), [
+        $this->notice($d['reviewer_email'], 'Confirm your review of ' . Input::line((string) $listing['display_name'], 120), [
             'heading'    => 'Confirm your review',
             'paragraphs' => [
                 'Hi ' . $d['reviewer_name'] . ',',
@@ -455,11 +456,11 @@ class ReviewService
         }
 
         $reports = new DirectoryReviewReportModel();
-        $key     = $ownerListingId !== null ? $this->ipHash('owner-' . $ownerListingId) : $this->ipHash($ip);
+        $key     = $ownerListingId !== null ? TokenHash::ip('owner-' . $ownerListingId) : TokenHash::ip($ip);
         if ($reports->where('review_id', $id)->where('ip_hash', $key)->countAllResults() === 0) {
             $reports->insert([
                 'review_id' => $id,
-                'reason'    => mb_substr($this->clean($reason, 500), 0, 500),
+                'reason'    => mb_substr(Input::line($reason, 500), 0, 500),
                 'ip_hash'   => $key,
                 'by_owner'  => $ownerListingId !== null ? 1 : 0,
             ]);
@@ -591,7 +592,7 @@ class ReviewService
 
         $this->reviews->update($id, [
             'status'        => $status,
-            'reject_reason' => $reason !== '' ? mb_substr($this->clean($reason, 500), 0, 500) : null,
+            'reject_reason' => $reason !== '' ? mb_substr(Input::line($reason, 500), 0, 500) : null,
             'decided_at'    => date('Y-m-d H:i:s'),
         ]);
         $this->recalculate((int) $review['listing_id']);
@@ -607,7 +608,7 @@ class ReviewService
             return;
         }
 
-        $this->notice((string) $listing['email'], 'New review of ' . $this->headerSafe((string) $listing['display_name']), [
+        $this->notice((string) $listing['email'], 'New review of ' . Input::line((string) $listing['display_name'], 120), [
             'heading'    => 'You have a new ' . (int) $review['rating'] . '-star review',
             'paragraphs' => [
                 self::displayName($review['reviewer_name']) . ' reviewed ' . $listing['display_name'] . ' on ' . $this->site->siteName() . ':',
@@ -639,7 +640,7 @@ class ReviewService
             $paragraphs[] = 'Flagged: ' . $review['flagged_reason'];
         }
 
-        $this->notice($admin, $event . ': ' . $this->headerSafe((string) ($listing['display_name'] ?? '')), [
+        $this->notice($admin, $event . ': ' . Input::line((string) ($listing['display_name'] ?? ''), 120), [
             'heading'    => $event,
             'paragraphs' => $paragraphs,
             'button'     => ['Open the reviews queue', base_url('admin/reviews')],
@@ -647,45 +648,13 @@ class ReviewService
     }
 
     /**
-     * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string} $content
+     * A notice on the shared template, under this feature's eyebrow.
+     *
+     * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
      */
     private function notice(string $to, string $subject, array $content): bool
     {
-        if ($to === '') {
-            return false;
-        }
-
-        // Every optional key defaulted, and saveData off: CI4's renderer keeps
-        // data between renders. See JobBoardService::notice().
-        $body = view('emails/job-notice', $content + [
-            'site'           => $this->site->siteName(),
-            'eyebrow'        => $this->site->siteName() . ' Reviews',
-            'button'         => null,
-            'footnote'       => null,
-            'footnoteLink'   => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
-
-        return (new Mailer())->send($to, $subject, $body);
-    }
-
-    private function ipHash(string $ip): string
-    {
-        return hash('sha256', $ip . '|' . config('Encryption')->key);
-    }
-
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
+        return (new Mailer())->notice($to, $subject, $content + ['eyebrow' => $this->site->siteName() . ' Reviews']);
     }
 
     private function cleanText($v, int $max): string
@@ -698,10 +667,5 @@ class ReviewService
         $text = (string) preg_replace("/\n{3,}/", "\n\n", str_replace("\r\n", "\n", (string) $v));
 
         return mb_substr(trim($text), 0, $max);
-    }
-
-    private function headerSafe(string $s): string
-    {
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', $s)), 0, 120);
     }
 }

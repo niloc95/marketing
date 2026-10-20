@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\Input;
 use App\Libraries\Screening;
 use App\Models\DirectoryListingModel;
 use App\Models\JobPostModel;
@@ -427,11 +428,11 @@ class Jobs extends BaseController
         }
 
         $in = [
-            'name'    => $this->clean($this->request->getPost('name'), 120),
-            'email'   => strtolower($this->clean($this->request->getPost('email'), 190)),
-            'phone'   => $this->clean($this->request->getPost('phone'), 40),
-            'cv_link' => $this->clean($this->request->getPost('cv_link'), 500),
-            'message' => $this->cleanText($this->request->getPost('message'), 3000),
+            'name'    => Input::line($this->request->getPost('name'), 120),
+            'email'   => strtolower(Input::line($this->request->getPost('email'), 190)),
+            'phone'   => Input::line($this->request->getPost('phone'), 40),
+            'cv_link' => Input::line($this->request->getPost('cv_link'), 500),
+            'message' => Input::text($this->request->getPost('message'), 3000),
         ];
 
         $errors = [];
@@ -725,23 +726,5 @@ class Jobs extends BaseController
         $v = $this->request->getGet($key);
 
         return is_string($v) ? mb_substr(trim($v), 0, $max) : '';
-    }
-
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
     }
 }

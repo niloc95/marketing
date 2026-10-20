@@ -18,6 +18,14 @@ module.exports = {
       golden: '#FCBF49',
       cream: '#EAE2B7',
     },
+    // Dark mode surfaces, shared by both sites. page is the canvas, card a
+    // panel on it, tone the quieter fill of a listing card, footer the floor.
+    surface: {
+      page: '#0f1419',
+      card: '#1a202c',
+      tone: '#141a21',
+      footer: '#0b0f14',
+    },
     primary: {
       50: '#f0f9ff',
       100: '#e0f2fe',

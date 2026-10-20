@@ -13,7 +13,8 @@ condensed working reference for making and verifying code changes.
 
 **Deploying is a separate skill: `deploy-production`.** Use it for releases, migrations
 against production, and diagnosing a deploy that went green without changing anything.
-`DEPLOY.md` is the first-time server setup.
+`deploy/README.md` and `deploy/LAMP-SETUP.md` are the first-time server setup; `DEPLOY.md`
+is the archived Hostinger record.
 
 ## Routes (`app/Config/Routes.php`)
 

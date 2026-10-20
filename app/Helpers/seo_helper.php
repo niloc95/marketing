@@ -188,8 +188,6 @@ if (! function_exists('listing_meta_description')) {
      */
     function listing_meta_description(array $l): string
     {
-        helper('schema');
-
         $max   = 160;
         $name  = trim((string) ($l['display_name'] ?? ''));
         $prof  = trim((string) ($l['category']['name'] ?? ($l['category_name'] ?? '')));

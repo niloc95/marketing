@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\TokenHash;
 use App\Models\DirectoryCategoryModel;
@@ -58,16 +59,16 @@ class ReferralService
     public function submit(array $in, string $ip): array
     {
         $d = [
-            'business_name'   => $this->clean($in['business_name'] ?? '', 200),
-            'business_email'  => strtolower($this->clean($in['business_email'] ?? '', 190)),
-            'business_phone'  => $this->clean($in['business_phone'] ?? '', 40),
-            'website'         => $this->clean($in['website'] ?? '', 255),
+            'business_name'   => Input::line($in['business_name'] ?? '', 200),
+            'business_email'  => strtolower(Input::line($in['business_email'] ?? '', 190)),
+            'business_phone'  => Input::line($in['business_phone'] ?? '', 40),
+            'website'         => Input::line($in['website'] ?? '', 255),
             'category_id'     => null,
-            'city'            => $this->clean($in['city'] ?? '', 120),
-            'province'        => $this->clean($in['province'] ?? '', 40),
-            'note'            => $this->cleanText($in['note'] ?? '', self::MAX_NOTE),
-            'referrer_name'   => $this->clean($in['referrer_name'] ?? '', 120),
-            'referrer_email'  => strtolower($this->clean($in['referrer_email'] ?? '', 190)),
+            'city'            => Input::line($in['city'] ?? '', 120),
+            'province'        => Input::line($in['province'] ?? '', 40),
+            'note'            => Input::text($in['note'] ?? '', self::MAX_NOTE),
+            'referrer_name'   => Input::line($in['referrer_name'] ?? '', 120),
+            'referrer_email'  => strtolower(Input::line($in['referrer_email'] ?? '', 190)),
             'notify_referrer' => empty($in['notify_referrer']) ? 0 : 1,
             'relationship'    => (string) ($in['relationship'] ?? ''),
         ];
@@ -349,7 +350,7 @@ class ReferralService
                 ]);
 
                 if ((int) $r['notify_referrer'] === 1 && ! empty($r['referrer_email'])) {
-                    $this->notice((string) $r['referrer_email'], $this->headerSafe((string) $listing['display_name']) . ' now has a profile', [
+                    $this->notice((string) $r['referrer_email'], Input::line((string) $listing['display_name'], 120) . ' now has a profile', [
                         'heading'    => 'Thanks, they now have a profile',
                         'paragraphs' => [
                             'You recommended ' . $listing['display_name'] . ' to ' . $this->site->siteName() . '. Their profile is live now.',
@@ -466,7 +467,7 @@ class ReferralService
             //
             // Jobs is a badge feature: JobBoardService::canUseJobsFeatures()
             // gates posting vacancies and replying to requests.
-            return $this->notice($to, 'Get ' . $this->headerSafe((string) $r['business_name']) . ' verified on ' . $site, [
+            return $this->notice($to, 'Get ' . Input::line((string) $r['business_name'], 120) . ' verified on ' . $site, [
                 'heading'    => 'You were recommended on ' . $site,
                 'paragraphs' => [
                     'Hello ' . $r['business_name'] . ',',
@@ -492,7 +493,7 @@ class ReferralService
             ]);
         }
 
-        return $this->notice($to, 'Create a free business profile for ' . $this->headerSafe((string) $r['business_name']) . ' on ' . $site, [
+        return $this->notice($to, 'Create a free business profile for ' . Input::line((string) $r['business_name'], 120) . ' on ' . $site, [
             'heading'    => 'You were recommended on ' . $site,
             'paragraphs' => [
                 'Hello ' . $r['business_name'] . ',',
@@ -513,7 +514,7 @@ class ReferralService
             return;
         }
 
-        $this->notice($admin, 'Business recommended: ' . $this->headerSafe((string) $r['business_name']), [
+        $this->notice($admin, 'Business recommended: ' . Input::line((string) $r['business_name'], 120), [
             'heading'    => 'A business was recommended',
             'paragraphs' => array_values(array_filter([
                 (string) $r['business_name'] . ', ' . trim(($r['city'] ?? '') . ', ' . ($r['province'] ?? ''), ', '),
@@ -524,55 +525,12 @@ class ReferralService
     }
 
     /**
+     * A notice on the shared template, under this feature's eyebrow.
+     *
      * @param array{heading:string,paragraphs:list<string>,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
      */
     private function notice(string $to, string $subject, array $content): bool
     {
-        if ($to === '') {
-            return false;
-        }
-
-        // The Jobs board's notice template, which differs only in its eyebrow.
-        // saveData off and every optional key defaulted, as in JobBoardService:
-        // CI4 keeps view data between renders, so an email with no stop link
-        // would otherwise inherit the previous one's.
-        $body = view('emails/job-notice', $content + [
-            'site'         => $this->site->siteName(),
-            'eyebrow'      => $this->site->siteName(),
-            'button'       => null,
-            'footnote'     => null,
-            'footnoteLink' => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
-
-        return (new Mailer())->send($to, $subject, $body);
-    }
-
-    private function clean($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', (string) $v)), 0, $max);
-    }
-
-    private function cleanText($v, int $max): string
-    {
-        if (! is_scalar($v)) {
-            return '';
-        }
-
-        return mb_substr(trim(str_replace("\r\n", "\n", (string) $v)), 0, $max);
-    }
-
-    private function headerSafe(string $s): string
-    {
-        return mb_substr(trim((string) preg_replace('/[\r\n\t]+/', ' ', $s)), 0, 120);
+        return (new Mailer())->notice($to, $subject, $content + ['eyebrow' => $this->site->siteName()]);
     }
 }
