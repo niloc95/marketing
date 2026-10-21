@@ -173,7 +173,8 @@ $donts = [
                     <h3>Unlawful use of the badge</h3>
                     <p>Should the Verified Business badge be found used unlawfully, <?= esc($siteName) ?> will take
                         immediate legal action against the person or business responsible.</p>
-                    <p>Seen the badge somewhere it shouldn't be? <a href="<?= base_url('contact') ?>">Tell us</a>.</p>
+                    <p>Our <a href="<?= base_url('terms#brand') ?>">Terms, section 20</a>, set this out in full.
+                        Seen the badge somewhere it shouldn't be? <a href="<?= base_url('contact') ?>">Tell us</a>.</p>
                 </div>
             </div>
         </div>
@@ -185,7 +186,8 @@ $donts = [
         <div class="section-head">
             <h2>Press and partnerships</h2>
             <p>The <?= esc($siteName) ?> name and logo are ours. Using them as this page describes gives no other rights,
-                and we may ask you to stop at any time. For anything this page doesn't cover, please ask first.</p>
+                and we may ask you to stop at any time (<a class="underline underline-offset-2" href="<?= base_url('terms#brand') ?>">Terms, section 20</a>).
+                For anything this page doesn't cover, please ask first.</p>
             <a class="btn btn-accent mt-6" href="<?= base_url('contact') ?>"><?= lucide('mail', 'h-4 w-4 shrink-0') ?>Contact us</a>
         </div>
     </div>

@@ -68,6 +68,7 @@ $contact   = config('Directory')->adminEmail();
             <p><strong>Refunds.</strong> Because cancelling leaves you with the full month you bought, we do not refund partial months and payments already taken are not refunded. If you believe you have been charged in error, or charged after cancelling, contact us and we will investigate and put right anything that was our mistake. This does not affect your rights under the Consumer Protection Act, 2008.</p>
             <p><strong>If a payment fails.</strong> The badge stays up until the period you have paid for ends, and then comes down. Your profile itself is unaffected and stays published. You can start the badge again from your dashboard at any time.</p>
             <p><strong>If we withdraw it.</strong> If we remove the badge because the profile breached these terms, or because the documents behind it turn out to be inaccurate, we may do so without a refund. If we withdraw it for our own reasons, we stop offering the badge, for instance, we will refund the unused part of the month.</p>
+            <p><strong>Only we display it.</strong> The badge appears only on this site, on a profile whose badge is live. You may not copy it or show it anywhere else, even while you hold it. Section 20 explains this, and what happens if it is misused.</p>
 
             <?php // Mirrors section 4's structure deliberately — what it is, what
                   // you pay, cancelling, failed payments — because the two are the
@@ -126,6 +127,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Scrape, bulk download or systematically copy the site, or use automated tools against it beyond ordinary browsing.</li>
                 <li>Harvest the contact details published here in order to send unsolicited marketing. Doing so is also an offence under section 45 of the ECT Act and POPIA section 69.</li>
                 <li>Attempt to gain unauthorised access to any part of the service, or interfere with its operation.</li>
+                <li>Copy, recreate or display the Verified Business badge, or anything made to look like it (section 20).</li>
             </ul>
 
             <h2>9. Moderation</h2>
@@ -174,7 +176,17 @@ $contact   = config('Directory')->adminEmail();
             </ul>
             <p><strong>Ending.</strong> A partner may leave at any time by telling us. We may suspend or end a partnership, and cancel commission that has not been paid, if we believe these terms were broken. Commission fairly earned before then is still paid. Partners are independent: nothing here makes a partner our employee, agent or representative.</p>
 
-            <h2>20. Contact</h2>
+            <?php // Added with /media (Contact::media()). That page and this
+                  // section say the same thing: the logo may be shown under its
+                  // rules, the badge may not be shown by anyone but us. Change
+                  // them together. Appended rather than inserted so the existing
+                  // cross references ("section 4", "section 10") stay true. ?>
+            <h2 id="brand">20. Our name, logo and the Verified Business badge</h2>
+            <p><strong>Our name and logo.</strong> The WebScheduler Local name and logo belong to us. You may show our logo, exactly as supplied on our <a href="<?= base_url('media') ?>">Media resources</a> page and following the rules there, to link to this site or to your business profile on it. That permission gives you no other rights in our name or logo, does not mean we endorse, sponsor or have checked your business, and may be withdrawn by us at any time. If we ask you to remove our logo, you must do so promptly.</p>
+            <p><strong>The Verified Business badge.</strong> The badge is a statement by us that we have checked a particular business's documents (section 4). It is shown only by us, on this site, on a profile whose badge is live. It is not available for download, and nobody, including a business that holds the badge, may download, copy, recreate, alter or display the badge, or anything made to look like it, on a website, social media, advert, vehicle, sign, printed material or anywhere else. A business that holds the badge may link to its profile on this site, where customers can see the badge for themselves.</p>
+            <p><strong>Unlawful use of the badge.</strong> Showing the badge without our authority tells customers that we have checked a business when we have not, which may also be a misleading representation under the Consumer Protection Act, 2008. <strong>Should the Verified Business badge be found used unlawfully, WebScheduler Local will take immediate legal action against the person or business responsible</strong>, which may include court proceedings for an interdict, damages and legal costs. We may also unpublish any profile connected with the misuse and withdraw any badge it holds without a refund (section 4). To report misuse, please <a href="<?= base_url('contact') ?>">contact us</a>.</p>
+
+            <h2>21. Contact</h2>
             <?php if ($contact !== ''): ?>
                 <p><a href="mailto:<?= esc($contact, 'attr') ?>"><?= esc($contact) ?></a></p>
             <?php else: ?>

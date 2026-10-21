@@ -75,6 +75,20 @@ final class MediaResourcesPageTest extends CIUnitTestCase
         );
     }
 
+    public function testTheTermsCarryTheSameRulesAndThePageLinksToThem(): void
+    {
+        $terms = preg_replace('/\s+/', ' ', html_entity_decode($this->html('terms')));
+
+        $this->assertStringContainsString('<h2 id="brand">20. Our name, logo and the Verified Business badge</h2>', $terms);
+        $this->assertStringContainsString('It is not available for download', $terms);
+        $this->assertStringContainsString(
+            'Should the Verified Business badge be found used unlawfully, WebScheduler Local will take immediate legal action',
+            $terms
+        );
+        $this->assertStringContainsString('href="' . base_url('media') . '"', $terms);
+        $this->assertStringContainsString('href="' . base_url('terms#brand') . '"', $this->html('media'));
+    }
+
     public function testTheFooterAndSitemapLinkToIt(): void
     {
         $this->assertStringContainsString('href="' . base_url('media') . '">Media resources</a>', $this->html('company'));
