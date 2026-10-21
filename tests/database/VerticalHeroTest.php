@@ -85,7 +85,7 @@ final class VerticalHeroTest extends CIUnitTestCase
 
         $this->assertStringContainsString('hero-vertical', $html);
         $this->assertStringContainsString('cat-tint-red', $html);
-        // And the heading follows the band rather than still saying "Browse".
+        // And the heading follows the band rather than still saying "Discover".
         $this->assertStringContainsString('Cardiologist profiles', $html);
     }
 
@@ -102,7 +102,7 @@ final class VerticalHeroTest extends CIUnitTestCase
             $html = $this->get($url)->getBody();
 
             $this->assertStringNotContainsString('hero-vertical', $html, $url);
-            $this->assertStringContainsString('>Browse</h1>', $html, $url);
+            $this->assertStringContainsString('>Discover</h1>', $html, $url);
         }
     }
 
@@ -117,7 +117,7 @@ final class VerticalHeroTest extends CIUnitTestCase
         $html = $this->get('directory?category=Cheap-Loans-Payday')->getBody();
 
         $this->assertStringNotContainsString('hero-vertical', $html);
-        $this->assertStringContainsString('>Browse</h1>', $html);
+        $this->assertStringContainsString('>Discover</h1>', $html);
         $this->assertStringNotContainsString('Cheap-Loans-Payday', $html);
     }
 

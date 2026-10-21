@@ -13,7 +13,7 @@ $total     = (int) $result['total'];
 $schema = schema_page(
     [
         schema_breadcrumb([
-            ['name' => 'Browse', 'url' => base_url('directory')],
+            ['name' => 'Discover', 'url' => base_url('directory')],
             ['name' => $province, 'url' => $canonical],
         ], $canonical),
         schema_item_list($heading, schema_listing_elements($result['items']), $total, $canonical),
@@ -38,7 +38,7 @@ $schema = schema_page(
 <section class="hero">
     <div class="container">
         <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="<?= base_url('directory') ?>">Browse</a>
+            <a href="<?= base_url('directory') ?>">Discover</a>
             <span class="crumbs-sep">/</span>
             <span aria-current="page"><?= esc($province) ?></span>
         </nav>

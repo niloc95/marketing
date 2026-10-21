@@ -46,7 +46,7 @@ $group = $l['category']['group_name'] ?? null;
 $style = category_group_style($group);
 $v     = vertical_profile($group, $catSlug !== '' ? $catSlug : null);
 $crumbs   = [
-    ['name' => 'Browse', 'url' => base_url('directory')],
+    ['name' => 'Discover', 'url' => base_url('directory')],
 ];
 if ($catSlug !== '') {
     $crumbs[] = ['name' => $prof, 'url' => base_url('directory/' . $catSlug)];

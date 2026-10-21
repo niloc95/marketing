@@ -44,7 +44,7 @@ $heading = $activeCategory !== '' ? $activeCategory . ' at ' . $name : $name;
 $schema = schema_page(
     [
         schema_breadcrumb([
-            ['name' => 'Browse', 'url' => base_url('directory')],
+            ['name' => 'Discover', 'url' => base_url('directory')],
             ['name' => $name, 'url' => $canonical],
         ], $canonical),
         schema_item_list($heading, schema_listing_elements($result['items']), $shown, $canonical),
@@ -58,7 +58,7 @@ $schema = schema_page(
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => $name . ($place !== '' ? ', ' . $place : '') . ' | ' . $siteName,
-    'description' => 'Every business at ' . $name . ($place !== '' ? ', ' . $place : '') . '. Shops, services and contact details, free to browse.',
+    'description' => 'Every business at ' . $name . ($place !== '' ? ', ' . $place : '') . '. Shops, services and contact details, free to discover.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
     'schema'      => $schema,
@@ -69,7 +69,7 @@ $schema = schema_page(
 <section class="hero">
     <div class="container">
         <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="<?= base_url('directory') ?>">Browse</a>
+            <a href="<?= base_url('directory') ?>">Discover</a>
             <span class="crumbs-sep">/</span>
             <?php if ($activeCategory !== ''): ?>
                 <a href="<?= esc($canonical) ?>"><?= esc($name) ?></a>

@@ -22,7 +22,7 @@ foreach ($groups as $cats) {
 $schema = schema_page(
     [
         schema_breadcrumb([
-            ['name' => 'Browse', 'url' => base_url('directory')],
+            ['name' => 'Discover', 'url' => base_url('directory')],
             ['name' => 'All categories', 'url' => $canonical],
         ], $canonical),
         schema_item_list('All categories', schema_link_elements($links), null, $canonical),
@@ -46,11 +46,11 @@ $schema = schema_page(
 <section class="hero">
     <div class="container">
         <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="<?= base_url('directory') ?>">Browse</a>
+            <a href="<?= base_url('directory') ?>">Discover</a>
             <span class="crumbs-sep">/</span>
             <span aria-current="page">All categories</span>
         </nav>
-        <h1 class="text-2xl sm:text-3xl">Browse by category</h1>
+        <h1 class="text-2xl sm:text-3xl">Discover by category</h1>
         <p class="mt-2 text-sm text-white/80">Everything on <?= esc($siteName) ?>, grouped for easy browsing.</p>
     </div>
 </section>

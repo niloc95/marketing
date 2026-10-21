@@ -120,7 +120,7 @@
                 <?php // Three links is the most that stays visible without crowding the
                       // CTA; everything else lives in the panel below. Hidden on phones,
                       // where the same links are in the panel instead. ?>
-                <a class="hidden md:inline" href="<?= base_url('directory') ?>">Browse</a>
+                <a class="hidden md:inline" href="<?= base_url('directory') ?>">Discover</a>
                 <a class="hidden md:inline" href="<?= base_url('directory/categories') ?>">Categories</a>
                 <?php // NOT /directory/map — that route is the JSON pin feed the map
                       // widget fetches, not a page. The map itself is embedded in the
@@ -128,7 +128,7 @@
                 <a class="hidden md:inline" href="<?= base_url('jobs') ?>">Jobs</a>
                 <?php // Map drops to lg-and-up since Jobs arrived, keeping the md bar
                       // at three links. ?>
-                <a class="hidden lg:inline" href="<?= base_url('directory') ?>#map">Map</a>
+                <a class="hidden lg:inline" href="<?= base_url('directory') ?>#map">Discovery map</a>
                 <?php // Both icons stay in the DOM and are swapped with dark:hidden /
                       // hidden dark:block — no JS icon logic, so they can't desync from
                       // the class the FOUC guard already set. aria-pressed is corrected
@@ -215,9 +215,9 @@
               // as the marketing site's header, deliberately — the two properties share
               // the shape, and directory.js adds the dismiss/aria behaviour on top. ?>
         <div id="site-menu" class="mobile-menu hidden md:hidden" data-mobile-menu>
-            <a href="<?= base_url('directory') ?>">Explore local businesses</a>
+            <a href="<?= base_url('directory') ?>">Discover local businesses</a>
             <a href="<?= base_url('directory/categories') ?>">All categories</a>
-            <a href="<?= base_url('directory') ?>#map">Map</a>
+            <a href="<?= base_url('directory') ?>#map">Discovery map</a>
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>
             <a href="<?= base_url('verified') ?>">Verified businesses</a>
             <a href="<?= base_url('manage') ?>">Manage your profile</a>
@@ -342,9 +342,9 @@
 
             </div>
             <div class="site-footer-col">
-                <h3>Browse</h3>
+                <h3>Discover</h3>
                 <ul>
-                    <li><a href="<?= base_url('directory') ?>">Explore local businesses</a></li>
+                    <li><a href="<?= base_url('directory') ?>">Discover local businesses</a></li>
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>

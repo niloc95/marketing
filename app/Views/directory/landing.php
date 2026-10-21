@@ -36,7 +36,7 @@ $photo  = category_photo($category);
 // members carry full LocalBusiness detail — the search query already selects
 // every field used, so this costs no extra queries.
 $crumbs = [
-    ['name' => 'Browse', 'url' => base_url('directory')],
+    ['name' => 'Discover', 'url' => base_url('directory')],
     ['name' => $catName, 'url' => base_url('directory/' . $catSlug)],
 ];
 if ($province !== null) {
@@ -84,7 +84,7 @@ $schema = schema_page(
     <?php endif; ?>
     <div class="container">
         <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="<?= base_url('directory') ?>">Browse</a>
+            <a href="<?= base_url('directory') ?>">Discover</a>
             <span class="crumbs-sep">/</span>
             <?php if ($province !== null): ?>
                 <a href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>

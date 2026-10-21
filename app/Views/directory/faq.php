@@ -45,11 +45,11 @@ $groups = [
             ],
             [
                 'q' => 'Do I need an account to discover businesses?',
-                'a' => 'No. There is no signup and no password anywhere on the site. Just <a href="' . base_url('directory') . '">browse</a> and discover.',
+                'a' => 'No. There is no signup and no password anywhere on the site. Just <a href="' . base_url('directory') . '">discover</a> what is near you.',
             ],
             [
                 'q' => 'How do I find someone near me?',
-                'a' => 'Type a name or keyword, then narrow it down by category, province and town. On the <a href="' . base_url('directory') . '">browse page</a> you can also press <strong>Use my location</strong> to sort by distance. Your browser asks permission first, you can refuse, and we never store where you are.',
+                'a' => 'Type a name or keyword, then narrow it down by category, province and town. On the <a href="' . base_url('directory') . '">discover page</a> you can also press <strong>Use my location</strong> to sort by distance. Your browser asks permission first, you can refuse, and we never store where you are.',
             ],
             [
                 'q' => 'How is the order of discovery results decided?',

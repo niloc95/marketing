@@ -13,7 +13,7 @@ $askedProvince = ($filters['province'] ?? '') !== '';
 $unknownFilter = ($askedCategory && $category === null) || ($askedProvince && $province === null);
 
 $group = $group ?? null;
-$title = 'Browse everything';
+$title = 'Discover everything';
 if ($group !== null) { $title = $group['name']; }
 if ($category !== null) { $title = $category['name'] . ' profiles'; }
 // $place is only ever read out of the words (see Directory::interpretSearch()),
@@ -109,7 +109,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
               // reads as a styling accident, and this page already knew the better
               // wording: $title is what the <title> and the ItemList both use, so
               // the three now agree instead of the h1 saying "Browse" while the tab
-              // says "Dentist profiles in Gauteng". Unfiltered, it is still Browse. ?>
+              // says "Dentist profiles in Gauteng". Unfiltered, it is Discover. ?>
         <?php if ($vertical !== null): ?>
             <?php // The group as the eyebrow, as on landing.php. ?>
             <?php if (($styled['group_name'] ?? '') !== ''): ?>
@@ -117,7 +117,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             <?php endif; ?>
             <h1><?= esc($title) ?></h1>
         <?php else: ?>
-            <h1 class="text-2xl sm:text-3xl">Browse</h1>
+            <h1 class="text-2xl sm:text-3xl">Discover</h1>
         <?php endif; ?>
         <?php // The box is the same composer as the home page's; the selects sit
               // under it as a quieter row for refining, not beside it competing. ?>
@@ -212,7 +212,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                     <?php $seenGroup = $c['group_name'] ?? ''; $shown++; ?>
                     <?= view('directory/_chip', ['label' => $c['name'], 'href' => base_url('directory/' . $c['slug']), 'tint' => category_group_tint($c['group_name'] ?? null)], ['saveData' => false]) ?>
                 <?php endforeach; ?>
-                <?= view('directory/_chip', ['label' => 'Browse all categories', 'href' => base_url('directory/categories'), 'icon' => 'arrow-right'], ['saveData' => false]) ?>
+                <?= view('directory/_chip', ['label' => 'Discover all categories', 'href' => base_url('directory/categories'), 'icon' => 'arrow-right'], ['saveData' => false]) ?>
             </div>
         <?php endif; ?>
 

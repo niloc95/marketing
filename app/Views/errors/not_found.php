@@ -69,7 +69,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
         <div class="panel">
             <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Or try one of these</h2>
             <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                <li><a class="<?= $link ?>" href="<?= base_url('directory') ?>">Browse every business</a></li>
+                <li><a class="<?= $link ?>" href="<?= base_url('directory') ?>">Discover every business</a></li>
                 <li><a class="<?= $link ?>" href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                 <?php if ($wasListing): ?>
                     <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('manage') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>">add it again</a>.</li>

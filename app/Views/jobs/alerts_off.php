@@ -29,7 +29,7 @@
                     reply to requests on the
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs?kind=service') ?>">Jobs board</a>.
                 <?php else: ?>
-                    browse requests on the
+                    discover requests on the
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs?kind=service') ?>">Jobs board</a>.
                     Replying to them is part of the <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('verified') ?>">Verified Business</a> badge.
                 <?php endif; ?>

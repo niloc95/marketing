@@ -408,7 +408,7 @@ $moments = [
                             </li>
                         <?php endforeach; ?>
                     </ul>
-                    <a class="home-link" href="<?= base_url('directory') ?>">Browse every business<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+                    <a class="home-link" href="<?= base_url('directory') ?>">Discover every business<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
                 </div>
             <?php endif; ?>
         </div>
