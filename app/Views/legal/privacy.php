@@ -58,6 +58,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Booking links</li>
                 <li>Business logo and photographs</li>
                 <li>Information about delivery, card payments and online bookings</li>
+                <li>On Verified Business profiles, team members' names, positions, qualifications, areas of focus, short bios and photos</li>
             </ul>
             <p>Businesses and service providers are responsible for ensuring that information they submit to the service is accurate and that they have the necessary authority to provide any personal information included in their profile.</p>
             <p>Because the purpose of <?= esc($siteName) ?> is to provide a public business discovery platform, information included in a published profile may be visible to anyone and may be indexed by search engines.</p>
@@ -114,6 +115,16 @@ $contact   = config('Directory')->adminEmail();
                 <li>Gallery photographs</li>
             </ul>
 
+            <h3>Team members (Verified Business profiles)</h3>
+            <ul>
+                <li>Name and position</li>
+                <li>Qualifications and areas of focus</li>
+                <li>Short bio</li>
+                <li>Photo</li>
+            </ul>
+            <p>This is information about other people, supplied by the business. Before adding someone, the business must have their agreement to their details being published, and must tell them where they will appear. We publish what the business gives us and do not check qualifications (see section 6).</p>
+            <p>If you are listed as a team member and want your details corrected or removed, you can ask the business, or ask us directly using the contact details in section 23. We will remove them without needing the business to agree. Your rights are set out in section 18.</p>
+
             <p>Most of this information forms part of the public business profile and is therefore intended for publication.</p>
 
             <h2>6. Verified Business badge</h2>
@@ -128,6 +139,7 @@ $contact   = config('Directory')->adminEmail();
             <p>We seek to collect only the information reasonably necessary to perform the verification process. We do not intentionally reproduce or publish information contained in the submitted documents as part of the public profile.</p>
             <p>The verification process records the outcome of the review, together with relevant administrative information such as who performed the review and when.</p>
             <p>The Verified Business badge itself is the only verification information displayed publicly.</p>
+            <p>We do not ask for certificates and do not check qualifications. Any qualification shown on a profile, including on a team member card, is the business's own statement, and the badge does not cover it. Our <a href="<?= base_url('terms#qualifications') ?>">Terms, section 21</a>, set out what a business confirms when it shows one.</p>
 
             <h2>7. Information you provide when contacting us</h2>
             <p>If you contact us through a <a href="<?= base_url('contact') ?>">contact form</a>, we may receive:</p>
@@ -253,6 +265,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Public business profiles</h3>
             <p>Information that you choose to publish as part of a business profile is publicly accessible and may be indexed by search engines.</p>
+            <p>This includes qualifications and, on Verified Business profiles, team member cards. Anyone can see a published profile without an account, and there is no setting that hides one field while showing the rest, so the way to keep something private is to leave it out. Qualifications, areas of focus and team members are also published in a structured form that search engines and AI tools read, and they may show excerpts on their own services. After you remove information, copies may remain in those services for a while; we do not control them.</p>
 
             <h3>Customer reviews</h3>
             <p>A published review, with the reviewer's first name and surname initial, is publicly accessible and may be indexed by search engines. The reviewer's full name and email address are not shared with the business or anyone else.</p>
