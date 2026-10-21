@@ -31,6 +31,8 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 - Code identifiers stay: `_search_composer`, `/directory/suggest`, `Config\Search`, CSS
   classes, `name="q"`.
 - No dashes or hyphenated words in this copy either (see the no dashes rule).
+- Tagline (footer, /company, `Config\Directory::$slogan` in the home JSON-LD):
+  **Discover local. Be discovered.** Never write "More than a business listing."
 
 ## Routes (`app/Config/Routes.php`)
 

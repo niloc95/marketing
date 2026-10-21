@@ -6,7 +6,7 @@ business profile (plus locations, team and jobs with the paid Verified Business 
 Browse/search by category and location, public profile pages, and a "create your free
 business profile" signup gated by email verification.
 
-**Positioning:** "More than a business listing." User-facing copy never calls the product a
+**Positioning:** "Discover local. Be discovered." (never "More than a business listing.") User-facing copy never calls the product a
 directory; "listing" is fine descriptively, "business profile" is preferred. Code identifiers
 (`DirectoryService`, `/directory` routes, `xs_directory_*` tables) keep their names.
 

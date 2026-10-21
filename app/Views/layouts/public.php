@@ -288,7 +288,7 @@
                     <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-64.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline">More than a business listing. Discover South African businesses, services, locations, professionals and opportunities, or create your free business profile.</p>
+                <p class="site-footer-tagline">Discover local. Be discovered. A discovery platform for South African businesses, services, locations, professionals and opportunities. Create your free business profile.</p>
                 <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
                 <?php // Newsletter -> Mautic (updates.webscheduler.co.za), the LOCAL
                       // form. The marketing site posts to its own form (id 1); the

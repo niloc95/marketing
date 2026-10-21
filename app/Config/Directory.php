@@ -22,7 +22,7 @@ class Directory extends BaseConfig
         . 'Discover businesses, services, locations, professionals and opportunities near you, '
         . 'or create a free business profile: no monthly fee, no subscription, no obligation.';
 
-    public string $slogan = 'More than a business listing.';
+    public string $slogan = 'Discover local. Be discovered.';
 
     /**
      * WebScheduler Local's own social profiles: brand_icon() name => URL.

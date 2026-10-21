@@ -65,7 +65,7 @@ $looking = [
 <section class="section">
     <div class="container">
         <p class="company-statement">
-            More than a business listing. Discover businesses. Discover professionals. Discover opportunities.
+            Discover local. Be discovered. Discover businesses. Discover professionals. Discover opportunities.
         </p>
         <div class="company-points">
             <div>

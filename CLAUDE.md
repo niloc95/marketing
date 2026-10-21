@@ -12,6 +12,7 @@ Two products live here: the WebScheduler marketing site (`marketing-site/`, see 
   results** for results, and **discovered on the platform** for being found.
 - Keep "search" only for other people's search: search engines, Google's job search,
   paid search ads, address lookup.
+- Tagline: **Discover local. Be discovered.** Never write "More than a business listing."
 - Prefer "business profile" over "listing".
 - No "—" and no hyphenated words in anything customers see (proper names such as
   KwaZulu-Natal are fine).
