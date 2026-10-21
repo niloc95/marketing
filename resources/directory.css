@@ -531,6 +531,48 @@
   .resource-meta         { @apply text-sm text-slate-500; }
   .dark .resource-list h2 { @apply text-white; }
 
+  /* /media: logo downloads, the website snippet, usage rules and the Verified
+     badge notice. The preview tile is grey so the transparent PNGs show their
+     edges; .is-white is the logo that carries its own white square. */
+  .media-logos            { @apply grid gap-6 sm:grid-cols-2; }
+  .media-logo             { @apply flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center; }
+  .media-logo-preview     { @apply flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-slate-100 p-2; }
+  .media-logo-preview.is-white { @apply bg-white ring-1 ring-slate-200; }
+  .media-logo-preview img { @apply h-full w-full object-contain; }
+  .media-logo-body        { @apply min-w-0 flex-1; }
+  .media-logo-body h2     { @apply text-lg font-bold text-slate-900; }
+  .media-logo-body p      { @apply mt-1 text-slate-600; }
+  .media-logo .btn        { @apply self-start sm:self-center; }
+  .media-code             { @apply flex flex-col gap-4 sm:flex-row sm:items-start; }
+  .media-code pre         { @apply min-w-0 flex-1 overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm leading-relaxed text-slate-100; }
+  .media-code .btn        { @apply self-start shrink-0; }
+  .media-rules            { @apply grid gap-8 md:grid-cols-2 md:gap-10; }
+  .media-rules h3         { @apply flex items-center gap-2 text-lg font-bold text-slate-900; }
+  .media-rules ul         { @apply mt-3 list-disc space-y-2 pl-5 leading-relaxed text-slate-600; }
+  .media-boilerplate      { @apply mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4 leading-relaxed text-slate-700; }
+  .media-verified         { @apply grid gap-6 sm:grid-cols-[8rem_1fr] sm:gap-10; }
+  .media-verified-seal    { @apply select-none; }
+  .media-verified h2      { @apply text-2xl font-extrabold text-slate-900 sm:text-3xl; }
+  .media-verified p       { @apply mt-4 max-w-3xl leading-relaxed text-slate-600; }
+  .media-verified a       { @apply font-medium text-primary-600 underline underline-offset-2 hover:text-primary-500; }
+  .media-legal            { @apply mt-6 max-w-3xl rounded-xl border-l-4 border-red-600 bg-red-50 p-5; }
+  .media-legal h3         { @apply font-bold text-red-800; }
+  .media-legal p          { @apply mt-2 text-red-900; }
+  .media-legal p:first-of-type { @apply font-semibold; }
+  .dark .media-logo       { @apply border-slate-800 bg-slate-900; }
+  .dark .media-logo-preview:not(.is-white) { @apply bg-slate-800; }
+  .dark .media-logo-body h2,
+  .dark .media-rules h3,
+  .dark .media-verified h2 { @apply text-white; }
+  .dark .media-logo-body p,
+  .dark .media-rules ul,
+  .dark .media-verified p { @apply text-slate-400; }
+  .dark .media-boilerplate { @apply border-slate-800 bg-slate-900 text-slate-300; }
+  .dark .media-verified a { @apply text-primary-300 hover:text-primary-200; }
+  .dark .media-legal      { @apply bg-red-950/40; }
+  .dark .media-legal h3   { @apply text-red-300; }
+  .dark .media-legal p    { @apply text-red-200; }
+
   /* ----------------------------------------------------- home: media band */
   /* The photographs or the video, as one moment below the opening search
      rather than a backdrop behind it. Held to the same width as .container's
@@ -791,6 +833,7 @@
      stretching to the full column width once the row collapses. */
   .section-head-split { @apply mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between; }
   .section-head h2,
+  .section-head-split h1,
   .section-head-split h2 {
     @apply font-bold text-primary-500;
     font-size: clamp(1.75rem, 3.6vw, 3rem);
@@ -800,6 +843,7 @@
   .section-head p        { @apply mx-auto mt-3 max-w-2xl text-slate-500; }
   .section-head-split p  { @apply mt-2 max-w-xl text-slate-500; }
   .dark .section-head h2,
+  .dark .section-head-split h1,
   .dark .section-head-split h2 { @apply text-white; }
   .dark .section-head p,
   .dark .section-head-split p  { @apply text-slate-400; }

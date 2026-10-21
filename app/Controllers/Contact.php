@@ -142,6 +142,62 @@ class Contact extends BaseController
         return view('directory/resources', ['documents' => $documents]);
     }
 
+    /**
+     * Media resources: our logo to download, and the rules for using it.
+     *
+     * Modelled on LinkedIn's brand pages. The Verified Business badge is
+     * deliberately not in this list: it is a claim we make about one business
+     * after checking its documents, so it is only ever shown by us, on our own
+     * pages. The view says so and carries the legal warning.
+     *
+     * Each file's `download` name is what lands in the visitor's Downloads
+     * folder, so it carries our name rather than "logo-512".
+     */
+    public function media()
+    {
+        $logos = [];
+        foreach ([
+            [
+                'title'    => 'Logo, large',
+                'summary'  => 'Transparent background. For print, presentations and large screens.',
+                'file'     => 'assets/brand/logo-1024.png',
+                'download' => 'webscheduler-local-logo-1024.png',
+            ],
+            [
+                'title'    => 'Logo, medium',
+                'summary'  => 'Transparent background. The usual choice for a website.',
+                'file'     => 'assets/brand/logo-512.png',
+                'download' => 'webscheduler-local-logo-512.png',
+            ],
+            [
+                'title'    => 'Logo, small',
+                'summary'  => 'Transparent background. For footers, sidebars and email signatures.',
+                'file'     => 'assets/brand/logo-256.png',
+                'download' => 'webscheduler-local-logo-256.png',
+            ],
+            [
+                'title'    => 'Logo on white',
+                'summary'  => 'Square, white background. For social media posts and documents.',
+                'file'     => 'assets/brand/social-1080.png',
+                'download' => 'webscheduler-local-logo-white-1080.png',
+            ],
+        ] as $logo) {
+            $path = FCPATH . $logo['file'];
+            if (! is_file($path)) {
+                continue;
+            }
+            [$width, $height] = getimagesize($path) ?: [0, 0];
+            $logo['dimensions'] = $width . ' × ' . $height . ' px';
+            $logo['size']       = max(1, (int) round(filesize($path) / 1024)) . ' KB';
+            // Same ?v=<filemtime> buster as resources(): a file replaced at the
+            // same path gets a new URL, so Cloudflare needs no purge.
+            $logo['version'] = filemtime($path);
+            $logos[]         = $logo;
+        }
+
+        return view('directory/media', ['logos' => $logos]);
+    }
+
     public function index()
     {
         // Stamped here, checked in submit() — see the timing floor below.

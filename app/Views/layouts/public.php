@@ -369,6 +369,7 @@
                           // with sizes on one page (Contact::resources) rather than a
                           // footer link per PDF. ?>
                     <li><a href="<?= base_url('resources') ?>">Guides and reports</a></li>
+                    <li><a href="<?= base_url('media') ?>">Media resources</a></li>
                     <li><a href="<?= base_url('profile-setup') ?>">We set up your profile</a></li>
                     <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                 </ul>
