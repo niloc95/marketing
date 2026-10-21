@@ -436,6 +436,7 @@ if (! function_exists('category_photo')) {
     function category_photo(array $category, array $taken = []): ?array
     {
         // slug => [photographer, Pexels id]; the file is named after the slug.
+        // Id 0 is a photo the owner supplied, with no Pexels page to link.
         static $bySlug = [
             'dentist'            => ['Arda Kaykısız', 19976604],
             'physiotherapist'    => ['Ryutaro Tsukata', 5473182],
@@ -455,6 +456,9 @@ if (! function_exists('category_photo')) {
             'coffee-shop'        => ['Chevanon Photography', 302896],
             'restaurant'         => ['Anna Tarazevich', 6937464],
             'tailor-alterations' => ['Tima Miroshnichenko', 6765514],
+            // Supplied by the owner on 21 Oct 2026, replacing the Beauty &
+            // Wellness group photo the category used to fall back to.
+            'tattoo-piercing'    => ['Supplied by the owner', 0],
         ];
 
         // group => list of [file name, photographer, Pexels id], in order of
@@ -504,7 +508,7 @@ if (! function_exists('category_photo')) {
             // is visibly soft once the photo is shown at full colour.
             'src_lg'     => 'assets/categories/' . $name . '-1600.webp',
             'credit'     => $credit,
-            'credit_url' => 'https://www.pexels.com/photo/' . $id . '/',
+            'credit_url' => $id > 0 ? 'https://www.pexels.com/photo/' . $id . '/' : '',
         ];
 
         $slug  = (string) ($category['slug'] ?? '');

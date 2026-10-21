@@ -52,6 +52,14 @@ final class CategoryPhotoTest extends CIUnitTestCase
         $this->assertSame('assets/categories/group-health-medical-800.webp', $gp['src']);
     }
 
+    public function testTattooAndPiercingHasItsOwnPhoto(): void
+    {
+        $photo = category_photo(['slug' => 'tattoo-piercing', 'group_name' => 'Beauty & Wellness']);
+
+        $this->assertSame('assets/categories/tattoo-piercing-800.webp', $photo['src']);
+        $this->assertSame('', $photo['credit_url']);
+    }
+
     public function testAnUnknownGroupHasNoPhoto(): void
     {
         $this->assertNull(category_photo(['slug' => 'widget-polisher', 'group_name' => 'Widgets']));
@@ -89,7 +97,11 @@ final class CategoryPhotoTest extends CIUnitTestCase
             $this->assertFileExists(FCPATH . $photo['src']);
             $this->assertFileExists(FCPATH . $photo['src_sm']);
             $this->assertFileExists(FCPATH . $photo['src_lg']);
-            $this->assertMatchesRegularExpression('#^https://www\.pexels\.com/photo/\d+/$#', $photo['credit_url']);
+            if ($photo['credit'] === 'Supplied by the owner') {
+                $this->assertSame('', $photo['credit_url']);
+            } else {
+                $this->assertMatchesRegularExpression('#^https://www\.pexels\.com/photo/\d+/$#', $photo['credit_url']);
+            }
         }
 
         // And nothing on disk is orphaned from the map.
