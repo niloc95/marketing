@@ -129,8 +129,8 @@ $moments = [
     <section class="home-open">
         <div class="container">
             <p class="home-eyebrow"><?= esc($siteName) ?></p>
-            <h1 class="home-display">What are you looking for?</h1>
-            <p class="home-lede">Discover businesses, services, professionals and locations across South Africa.</p>
+            <h1 class="home-display">Discover local.</h1>
+            <p class="home-lede">The local discovery platform for businesses, services, professionals and locations across South Africa.</p>
 
             <?php // One box. The words are read into category and place on the
                   // results page (Directory::interpretSearch()), so the category
@@ -145,7 +145,7 @@ $moments = [
                 <?= view('directory/_search_composer', [
                     'listId'      => 'search-suggest-hero',
                     'placeholder' => $examples !== [] ? 'Try “' . $examples[0] . '”' : 'A business, service, person or place',
-                    'ariaLabel'   => 'What are you looking for?',
+                    'ariaLabel'   => 'Discover local businesses',
                     'size'        => 'lg',
                     'rotate'      => array_map(static fn (string $e) => 'Try “' . $e . '”', $examples),
                 ], ['saveData' => false]) ?>
