@@ -57,7 +57,7 @@ $price = 'R' . rtrim(rtrim((string) $order['amount'], '0'), '.');
 
             <ul class="checkout-terms">
                 <li>We email you to collect your details, then complete your profile within <?= (int) $days ?> business days of having them.</li>
-                <li>Your profile stays free and yours. Paying does not change where it appears in search results.</li>
+                <li>Your profile stays free and yours. Paying does not change where it appears in discovery results.</li>
                 <li>PayFast takes the payment. <strong>We never see your card details.</strong></li>
             </ul>
 

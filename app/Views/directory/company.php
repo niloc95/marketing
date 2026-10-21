@@ -32,7 +32,7 @@ $collage = [
 $looking = [
     ['A trusted professional', 'Doctors, attorneys, accountants and more.', 'group-health-medical', 'stethoscope', base_url('directory/categories'), 'Browse categories'],
     ['Services in your area', 'Trades, salons and services near you.', 'electrician', 'map-pin', base_url('directory') . '#map', 'Open the map'],
-    ['A particular business', 'Restaurants, shops and more, by name.', 'restaurant', 'search', base_url('directory'), 'Search local businesses'],
+    ['A particular business', 'Restaurants, shops and more, by name.', 'restaurant', 'search', base_url('directory'), 'Discover local businesses'],
     ['Your next job', 'Vacancies and service requests.', 'group-professional-services-2', 'briefcase', base_url('jobs'), 'See jobs'],
 ];
 ?>

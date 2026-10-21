@@ -60,7 +60,7 @@ $prettyDate = static function (?string $date): string {
             <p class="hint">Changed your mind? Get in touch and we will start it up again.</p>
         <?php else: ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Your badge is live on your profile and in search results.
+                Your badge is live on your profile and in discovery results.
                 Paid through <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?= empty($row['pf_subscription_token']) ? '.' : ', and it renews automatically.' ?>
             </p>
             <?php if (! empty($row['pf_subscription_token'])): ?>
@@ -118,7 +118,7 @@ $prettyDate = static function (?string $date): string {
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your documents check out. Switch the badge on for
                 <strong>R<?= esc($amount) ?> a month</strong>: it appears on your profile and
-                everywhere your business shows up in search.
+                everywhere your business is discovered on the platform.
             </p>
             <p class="mt-4">
                 <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Activate my badge</a>

@@ -18,9 +18,9 @@
             <div style="margin-top:22px;border:1px solid #6ee7b7;border-radius:12px;padding:16px 18px;background:#ecfdf5">
                 <p style="font-size:15px;font-weight:700;color:#065f46;margin:0 0 8px">Next: get the Verified Business badge</p>
                 <ul style="font-size:14px;line-height:1.6;color:#0f172a;margin:0 0 10px;padding-left:18px">
-                    <li>A green <strong>Verified Business</strong> badge on your profile and beside your name in search results</li>
+                    <li>A green <strong>Verified Business</strong> badge on your profile and beside your name in discovery results</li>
                     <li>All your locations: your other branches or practices, each with its own address, phone, map pin and hours, and described to Google as a location in its own right</li>
-                    <li>Your people by name, with photos, qualifications and areas of expertise, so searches for your people find you</li>
+                    <li>Your people by name, with photos, qualifications and areas of expertise, so people who look for your team discover you</li>
                     <li>Post jobs on our Jobs board, and reply to customers who need your kind of service</li>
                     <li>First to hear about new work: verified businesses are the first we alert when a customer in your province asks for your kind of service</li>
                 </ul>

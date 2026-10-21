@@ -29,12 +29,12 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
         <?php if ($wasListing): ?>
             <h1 class="text-2xl sm:text-3xl">We couldn't find that business</h1>
             <p class="mt-2 text-sm text-white/80">
-                It may have changed its name, or its owner may have removed it. Search for it below, or explore local businesses.
+                It may have changed its name, or its owner may have removed it. Look for it below, or discover other local businesses.
             </p>
         <?php else: ?>
             <h1 class="text-2xl sm:text-3xl">We couldn't find that page</h1>
             <p class="mt-2 text-sm text-white/80">
-                The link may be old or mistyped. Try a search, or pick up from one of the links below.
+                The link may be old or mistyped. Discover from the box below, or pick up from one of the links below.
             </p>
         <?php endif; ?>
 

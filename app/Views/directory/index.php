@@ -71,7 +71,7 @@ if ($indexable && ! empty($result['items'])) {
 ?>
 <?= seo_meta([
     'title'       => $title . ' | ' . $siteName,
-    'description' => 'Discover and search South African businesses, services and professionals by category, province and city.',
+    'description' => 'Discover South African businesses, services and professionals by category, province and city, on one local discovery platform.',
     'canonical'   => $canonical,
     'robots'      => $indexable,
     'schema'      => $schema,
@@ -311,14 +311,14 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                          data-cluster-css="<?= base_url('assets/vendor/leaflet/markercluster.css') ?>"
                          data-cluster-default-css="<?= base_url('assets/vendor/leaflet/markercluster.default.css') ?>">
                         <div class="results-map-canvas" data-results-map-canvas role="application"
-                             aria-label="Map of results matching your search"></div>
+                             aria-label="Map of the businesses you discovered"></div>
                         <p class="results-map-status" role="status" data-results-map-status></p>
                     </div>
                 <?php endif; ?>
 
                 <?php if (empty($result['items'])): ?>
                     <div class="empty">
-                        <p class="mb-4">Nothing matches your search.</p>
+                        <p class="mb-4">Nothing to discover for that yet.</p>
                         <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
                         <?php // The moment someone knows a business we are missing. Carries
                               // the category and province over, but only as the controller

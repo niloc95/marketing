@@ -45,7 +45,7 @@ $isLive       = ! isset($isLive) || $isLive;
             It scores <strong><?= $score ?> out of <?= $max ?></strong> for completeness right now.
         </p>
         <p style="font-size:15px;line-height:1.6">
-            Profiles at <strong><?= $target ?> or more</strong> appear higher in search, can be featured on
+            Profiles at <strong><?= $target ?> or more</strong> appear higher in discovery, can be featured on
             the home page and are shown to Google. These would get you there fastest:
         </p>
 

@@ -94,7 +94,7 @@ $schema = schema_page(
             <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
                 'value'       => $q,
-                'placeholder' => 'Search within ' . $name,
+                'placeholder' => 'Discover within ' . $name,
             ], ['saveData' => false]) ?>
             <?php if ($category !== ''): ?><input type="hidden" name="category" value="<?= esc($category, 'attr') ?>"><?php endif; ?>
         </form>

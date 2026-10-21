@@ -49,7 +49,7 @@ $schema = schema_page(
         <form class="search-form" method="get" action="<?= base_url('directory') ?>">
             <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
-                'placeholder' => 'Search in ' . $province,
+                'placeholder' => 'Discover in ' . $province,
             ], ['saveData' => false]) ?>
             <input type="hidden" name="province" value="<?= esc($province, 'attr') ?>">
         </form>

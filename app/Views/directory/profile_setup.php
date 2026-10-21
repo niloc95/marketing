@@ -29,7 +29,7 @@ $v     = fn (string $f) => (string) ($old[$f] ?? '');
 $err   = fn (string $f) => $errors[$f] ?? '';
 
 $included = [
-    ['A description that sells', 'Written with you, in the words your customers search with, and checked for spelling and clarity.'],
+    ['A description that sells', 'Written with you, in the words your customers use, and checked for spelling and clarity.'],
     ['Every service you offer', 'Each one named on its own, with prices if you want them shown, so each one can be found.'],
     ['Hours and service areas', 'Your opening hours, and the suburbs and towns you serve.'],
     ['Logo and photos', 'Your logo and up to ' . Listing::GALLERY_MAX . ' photos of your work, from the pictures you send us.'],
@@ -47,8 +47,8 @@ $faqs = [
         'a' => 'After you pay, we email you to collect your logo, a few photos of your work, your opening hours, the services you offer and the areas you serve. Reply with what you have and we do the rest.',
     ],
     [
-        'q' => 'Will my profile show higher in search results?',
-        'a' => 'No. Nobody can pay for a higher place on ' . esc($siteName) . '. A complete profile simply answers more of the searches customers make, which is the point of the service.',
+        'q' => 'Will my profile show higher in discovery results?',
+        'a' => 'No. Nobody can pay for a higher place on ' . esc($siteName) . '. A complete profile simply matches more of what customers set out to discover, which is the point of the service.',
     ],
     [
         'q' => 'Does this include the Verified Business badge?',
@@ -251,7 +251,7 @@ $faqs = [
             <li>We complete your profile within <?= (int) $days ?> business days of receiving your details, logo and photos.</li>
             <li>You may cancel for a full refund until we start work on your profile. Once we have started, the fee is not refundable.</li>
             <li>You confirm that the logo, photos and information you send us are yours to use, and accurate.</li>
-            <li>Paying for setup does not change where your profile appears in search results, and does not include the Verified Business badge, branches, team members or job posts.</li>
+            <li>Paying for setup does not change where your profile appears in discovery results, and does not include the Verified Business badge, branches, team members or job posts.</li>
             <li>Your profile stays free, belongs to you, and you can change or remove it at any time. Our <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>">terms</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>">privacy policy</a> apply.</li>
         </ul>
     </div>

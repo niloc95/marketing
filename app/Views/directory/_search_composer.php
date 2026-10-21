@@ -25,7 +25,7 @@
  */
 $value       = $value       ?? '';
 $placeholder = $placeholder ?? 'A business, service, person or place';
-$ariaLabel   = $ariaLabel   ?? 'Search local businesses';
+$ariaLabel   = $ariaLabel   ?? 'Discover local businesses';
 $size        = $size        ?? '';
 $type        = $type        ?? 'text';
 $rotate      = $rotate      ?? [];
@@ -53,8 +53,8 @@ $sizeClass = ['lg' => ' search-composer-lg', 'sm' => ' search-composer-sm'][$siz
         </div>
     <?php endif; ?>
     <?php // The word is the accessible name, so a screen reader hears the same
-          // "Search" button the old boxes had. ?>
-    <button class="search-composer-send" type="submit" aria-label="Search">
+          // "Discover" button on every box. ?>
+    <button class="search-composer-send" type="submit" aria-label="Discover">
         <?= lucide('arrow-up', $size === 'sm' ? 'h-4 w-4' : 'h-5 w-5', ['aria-hidden' => 'true']) ?>
     </button>
 </div>

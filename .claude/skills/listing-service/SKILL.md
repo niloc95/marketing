@@ -16,6 +16,22 @@ against production, and diagnosing a deploy that went green without changing any
 `deploy/README.md` and `deploy/LAMP-SETUP.md` are the first-time server setup; `DEPLOY.md`
 is the archived Hostinger record.
 
+## Copy keywords: discover, discovery, platform (since 21 Oct 2026)
+
+Customer facing copy (public views, owner pages, emails, JS messages, `Config\Comparison`)
+uses **discover**, **discovery** and **platform** as its key words. WebScheduler Local is
+"a local business discovery and visibility platform", never a directory.
+
+- Our own feature is never "Search": buttons, placeholders and aria labels say
+  **Discover** ("Discover local businesses", "Discover in Gauteng"); results are
+  **discovery results**; a business is **discovered on the platform**.
+- Keep "search" only where it means someone else's search: search engines, Google's job
+  search, paid search ads, Mapbox address search. Legal pages and admin screens were
+  left as they are.
+- Code identifiers stay: `_search_composer`, `/directory/suggest`, `Config\Search`, CSS
+  classes, `name="q"`.
+- No dashes or hyphenated words in this copy either (see the no dashes rule).
+
 ## Routes (`app/Config/Routes.php`)
 
 | Route | Controller/action |

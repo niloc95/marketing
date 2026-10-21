@@ -116,7 +116,7 @@ helper('directory_hours');
 <?= $stepOpen(1) ?>
 <div class="form-section-head form-section-head-first">
     <h3><?= $stepNum(1) ?>What you do</h3>
-    <p class="hint">Choose the kind of profile and the category customers would search for.</p>
+    <p class="hint">Choose the kind of profile and the category customers would look for.</p>
 </div>
 <div class="form-row">
     <div class="field">
@@ -320,7 +320,7 @@ helper('directory_hours');
 <?= $stepOpen(4) ?>
 <div class="form-section-head form-section-head-first">
     <h3><?= $stepNum(4) ?>Where you are</h3>
-    <p class="hint">Your address puts you on the map and in local searches. You choose below whether it shows on your profile.</p>
+    <p class="hint">Your address puts you on the map and in local discovery. You choose below whether it shows on your profile.</p>
 </div>
 <?php // id: the profile-strength panel links here for the address, city and
       // province steps. The ids for those three inputs cannot live in
@@ -398,7 +398,7 @@ helper('directory_hours');
         <?php elseif ($pinNotFound): ?>
             <p class="map-picker-help map-picker-warn">
                 <strong>We could not find your address on the map.</strong>
-                Your address still shows on your profile and you can still be found in search.
+                Your address still shows on your profile and you can still be discovered on the platform.
                 Drag the marker to your spot if you would like a map too.
             </p>
         <?php elseif ($pinIsApprox): ?>

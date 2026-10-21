@@ -106,7 +106,7 @@ $schema = schema_page(
         <form class="search-form" method="get" action="<?= base_url('directory') ?>">
             <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
-                'placeholder' => 'Search within ' . strtolower($plural),
+                'placeholder' => 'Discover ' . strtolower($plural),
             ], ['saveData' => false]) ?>
             <input type="hidden" name="category" value="<?= esc($catSlug, 'attr') ?>">
             <?php if ($province !== null): ?><input type="hidden" name="province" value="<?= esc($province, 'attr') ?>"><?php endif; ?>

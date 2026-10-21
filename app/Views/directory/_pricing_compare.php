@@ -58,14 +58,14 @@ $free = [
     'Phone, email, address and your place on the map',
     'A logo and up to ' . (int) $gallery . ' photos',
     'Your opening hours',
-    'Found in search, on the map and in your category',
+    'Discovered on the platform, on the map and in your category',
 ];
 
 $benefits = [
     [
         'icon'  => 'badge-check',
         'title' => 'Trust and credibility',
-        'text'  => 'The Verified Business badge beside your name, on your profile and in search results. '
+        'text'  => 'The Verified Business badge beside your name, on your profile and in discovery results. '
             . 'It tells customers we have checked your business registration document and the owner\'s ID.',
     ],
     [

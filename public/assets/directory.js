@@ -1423,7 +1423,7 @@
     // from every visitor who starts typing.
     var MIN_CHARS = 3;
 
-    var KIND = { category: 'Category', place: 'Place', person: 'Person', search: 'Search' };
+    var KIND = { category: 'Category', place: 'Place', person: 'Person', search: 'Discover' };
 
     var hideList = function () {
       list.hidden = true;
@@ -1456,7 +1456,7 @@
         var empty = document.createElement('li');
         empty.className = 'is-empty';
         empty.setAttribute('aria-disabled', 'true');
-        empty.textContent = 'No quick matches. Press Enter to search everything.';
+        empty.textContent = 'No quick matches. Press Enter to discover every match.';
         list.appendChild(empty);
         list.hidden = false;
         input.setAttribute('aria-expanded', 'true');
@@ -2464,8 +2464,8 @@
           // Declining is a choice, not a fault. Say so plainly and leave the
           // search exactly as it was rather than blocking on it.
           note(err.code === err.PERMISSION_DENIED
-            ? 'Location access declined. Search by suburb or city instead.'
-            : 'Could not get your location. Search by suburb or city instead.');
+            ? 'Location access declined. Discover by suburb or city instead.'
+            : 'Could not get your location. Discover by suburb or city instead.');
         }, { timeout: 10000, maximumAge: 300000 });
       });
     }
@@ -3850,7 +3850,7 @@
     function labelFor(data) {
       if (data.source === 'category') return 'Others in ' + data.category + ' often mention these. Tap any you offer to add it to your Areas of focus.';
       if (data.source === 'group') return 'Similar businesses often mention these. Tap any you offer to add it to your Areas of focus.';
-      return 'People looking for ' + data.category + ' also search for these. Tap any you offer to add it to your Areas of focus.';
+      return 'People looking for ' + data.category + ' also look for these. Tap any you offer to add it to your Areas of focus.';
     }
 
     function loadHints() {

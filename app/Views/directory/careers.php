@@ -89,7 +89,7 @@ $faqs = [
             <form method="get" action="<?= base_url('careers') ?>#roles" class="posting-filter" role="search">
                 <div class="posting-filter-search">
                     <?= lucide('search', 'posting-filter-icon h-4 w-4 shrink-0') ?>
-                    <label class="sr-only" for="cf-q">Search roles</label>
+                    <label class="sr-only" for="cf-q">Discover roles</label>
                     <input type="search" id="cf-q" name="q" maxlength="100" placeholder="Search roles" value="<?= esc($filters['q'], 'attr') ?>">
                 </div>
                 <label class="sr-only" for="cf-team">Team</label>
@@ -106,7 +106,7 @@ $faqs = [
                         <option value="<?= esc($place, 'attr') ?>" <?= $filters['location'] === $place ? 'selected' : '' ?>><?= esc($place) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary">Discover</button>
             </form>
 
             <p class="mb-2 mt-5 text-sm text-slate-500 dark:text-slate-400">

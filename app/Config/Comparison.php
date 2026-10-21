@@ -173,7 +173,7 @@ class Comparison extends BaseConfig
         ],
         [
             'key'   => 'staff_search',
-            'label' => 'Search a staff member by name and find the business',
+            'label' => 'Discover the business through a staff member\'s name',
             'cells' => [
                 'local'    => ['status' => 'verified', 'note' => 'Their name, role, qualification or expertise brings up the business'],
                 'google'   => ['status' => 'partial', 'note' => 'Finds the practitioner\'s own profile, if they have one'],

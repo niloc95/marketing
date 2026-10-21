@@ -72,7 +72,7 @@ $otherCell = static function (string $status): string {
 <?= seo_meta([
     'title'       => 'How ' . $siteName . ' compares | Google Business Profile, LinkedIn and SA directories',
     'description' => $siteName . ' next to Google Business Profile, LinkedIn and South African directories: '
-        . 'searchable staff profiles, document checked verification and two way jobs, and which features are free.',
+        . 'discoverable staff profiles, document checked verification and two way jobs, and which features are free.',
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'WebPage', 'How ' . $siteName . ' compares'),
 ]) ?>
@@ -84,7 +84,7 @@ $otherCell = static function (string $status): string {
         <h1 class="text-2xl sm:text-3xl">How <?= esc($siteName) ?> compares</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
             Next to Google Business Profile, LinkedIn and South African directories. Where we stand out:
-            staff people can search for, verification checked against real documents, and jobs that work
+            staff people can discover, verification checked against real documents, and jobs that work
             both ways. Where we are behind, the table says so too.
         </p>
     </div>

@@ -37,22 +37,22 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Is ' . esc($siteName) . ' free to use?',
-                'a' => 'Yes. Searching is free, and so is a business profile for a business with a South African address: no monthly fee, no subscription, no obligation. Two things are paid, and neither affects a South African profile: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Profile</strong> subscription for a business based outside South Africa. Nothing about a South African profile depends on buying anything. The badge does add features on top: your other locations, your team, and posting job vacancies and replying to requests on the Jobs board.',
+                'a' => 'Yes. Discovering businesses is free, and so is a business profile for a business with a South African address: no monthly fee, no subscription, no obligation. Two things are paid, and neither affects a South African profile: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Profile</strong> subscription for a business based outside South Africa. Nothing about a South African profile depends on buying anything. The badge does add features on top: your other locations, your team, and posting job vacancies and replying to requests on the Jobs board.',
             ],
             [
                 'q' => 'What is ' . esc($siteName) . '?',
                 'a' => 'A local business discovery and visibility platform built for South Africa. People use it to discover businesses, services, locations, professionals and opportunities near them. Businesses use it to build their local online presence: a profile that shows what they do, the services they provide, where they operate, how to reach them and, with a Verified Business profile, their other locations, their people and their job vacancies. It is more than a business listing.',
             ],
             [
-                'q' => 'Do I need an account to search?',
-                'a' => 'No. There is no signup and no password anywhere on the site. Just <a href="' . base_url('directory') . '">browse</a> or search.',
+                'q' => 'Do I need an account to discover businesses?',
+                'a' => 'No. There is no signup and no password anywhere on the site. Just <a href="' . base_url('directory') . '">browse</a> and discover.',
             ],
             [
                 'q' => 'How do I find someone near me?',
-                'a' => 'Search by name or keyword, then narrow it down by category, province and town. On the <a href="' . base_url('directory') . '">browse page</a> you can also press <strong>Use my location</strong> to sort by distance. Your browser asks permission first, you can refuse, and we never store where you are.',
+                'a' => 'Type a name or keyword, then narrow it down by category, province and town. On the <a href="' . base_url('directory') . '">browse page</a> you can also press <strong>Use my location</strong> to sort by distance. Your browser asks permission first, you can refuse, and we never store where you are.',
             ],
             [
-                'q' => 'How is the order of search results decided?',
+                'q' => 'How is the order of discovery results decided?',
                 'a' => 'If you have shared your location, by distance, nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website or another way to reach you online (WhatsApp or a social page, no website needed), a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it. The <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. So are reviews and star ratings: they are there for you to read, not to sort by. We worked out how the order should work before we worked out what to sell, and we are not going to sell it. Every profile goes live as soon as you confirm your email, however much is filled in; a profile with very little on it is simply not offered to search engines like Google until it has a bit more, and it is picked up automatically once it does.',
             ],
             [
@@ -62,7 +62,7 @@ $groups = [
             [
                 'id' => 'reviews',
                 'q'  => 'How do reviews work?',
-                'a'  => 'Anyone who has used a business can review it on its profile: a star rating from one to five and a few words about how it went. You confirm your email address first, and a person here reads every review before it is published. We publish honest reviews whether they are good or bad, and we do not publish reviews that are fake, from someone who was not a customer, abusive, or that share someone\'s private details. Your email address is never shown; the review appears under your first name and surname initial. The business can reply publicly, and anyone can report a review they think breaks our <a href="' . base_url('terms') . '#reviews">terms</a>. Businesses cannot pay to remove a review, and the star rating does not change where a business appears in search results.',
+                'a'  => 'Anyone who has used a business can review it on its profile: a star rating from one to five and a few words about how it went. You confirm your email address first, and a person here reads every review before it is published. We publish honest reviews whether they are good or bad, and we do not publish reviews that are fake, from someone who was not a customer, abusive, or that share someone\'s private details. Your email address is never shown; the review appears under your first name and surname initial. The business can reply publicly, and anyone can report a review they think breaks our <a href="' . base_url('terms') . '#reviews">terms</a>. Businesses cannot pay to remove a review, and the star rating does not change where a business appears in discovery results.',
             ],
             [
                 'id' => 'verified',
@@ -92,7 +92,7 @@ $groups = [
             ],
             [
                 'q' => 'Can I show my team and their qualifications?',
-                'a' => 'Yes, with a <a href="' . base_url('verified') . '">Verified Business</a> profile. People want to know who they are dealing with, so you can show up to ' . (int) $team . ' team members with a photo, their role, their qualifications and their areas of expertise. A search for one of your people by name, or for something only one of them does, then brings up your business too. Qualifications are as the business states them; we do not check them.',
+                'a' => 'Yes, with a <a href="' . base_url('verified') . '">Verified Business</a> profile. People want to know who they are dealing with, so you can show up to ' . (int) $team . ' team members with a photo, their role, their qualifications and their areas of expertise. Someone looking for one of your people by name, or for something only one of them does, then brings up your business too. Qualifications are as the business states them; we do not check them.',
             ],
             [
                 'q' => 'How do jobs work?',
@@ -100,11 +100,11 @@ $groups = [
             ],
             [
                 'q' => 'My business is not in South Africa. Can I still create a profile?',
-                'a' => 'Yes, on a paid <strong>International Profile</strong> subscription. ' . esc($siteName) . ' is built for South African businesses. The search, the categories and the province pages are all built around South African places, so a South African business profile is free and always will be. A business based anywhere else is welcome, and its profile goes live once the monthly subscription is paid. You fill in the same form, confirm your email the same way, and your profile is saved either way; it publishes when the first payment clears. Cancel any time: the profile stays live until the paid period ends and then comes down, and nothing you entered is deleted, if you subscribe again later it comes back exactly as it was. Payment is taken in South African rand.',
+                'a' => 'Yes, on a paid <strong>International Profile</strong> subscription. ' . esc($siteName) . ' is built for South African businesses. Discovery, the categories and the province pages are all built around South African places, so a South African business profile is free and always will be. A business based anywhere else is welcome, and its profile goes live once the monthly subscription is paid. You fill in the same form, confirm your email the same way, and your profile is saved either way; it publishes when the first payment clears. Cancel any time: the profile stays live until the paid period ends and then comes down, and nothing you entered is deleted, if you subscribe again later it comes back exactly as it was. Payment is taken in South African rand.',
             ],
             [
                 'q' => 'How much is the Verified Business badge, and what do I get?',
-                'a' => 'R' . esc((new App\Services\DirectorySettings())->badgePrice()) . ' a month. Your profile and every search result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile a search for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the search results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
+                'a' => 'R' . esc((new App\Services\DirectorySettings())->badgePrice()) . ' a month. Your profile and every discovery result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',

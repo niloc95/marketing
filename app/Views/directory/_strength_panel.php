@@ -98,10 +98,10 @@ $tone = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amb
                 Everything still missing, biggest win first. These are the steps the owner sees,
                 and the email below sends them the top few.
             <?php elseif ($audience === 'signup'): ?>
-                The more you fill in now, the higher you appear in search, and the more reason
+                The more you fill in now, the higher you appear in discovery, and the more reason
                 someone has to call you. <strong>Nothing here costs money.</strong>
             <?php else: ?>
-                A fuller profile appears higher in the search results, and gives someone more reason to
+                A fuller profile appears higher in the discovery results, and gives someone more reason to
                 call you. <strong>Nothing here costs money.</strong>
             <?php endif; ?>
         </p>
@@ -122,7 +122,7 @@ $tone = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amb
         <?php if ($target > 0 && $score < $target): ?>
             <p class="strength-panel-note">
                 <strong>Aim for <?= $target ?>.</strong> Profiles at <?= $target ?> or more appear higher
-                in search, can be featured on the home page and are shown to Google. <?= $you ?>
+                in discovery, can be featured on the home page and are shown to Google. <?= $you ?>
                 <?= $target - $score ?> point<?= $target - $score === 1 ? '' : 's' ?> away.
             </p>
         <?php endif; ?>

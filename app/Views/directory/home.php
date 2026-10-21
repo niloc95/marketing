@@ -130,7 +130,7 @@ $moments = [
         <div class="container">
             <p class="home-eyebrow"><?= esc($siteName) ?></p>
             <h1 class="home-display">What are you looking for?</h1>
-            <p class="home-lede">Search businesses, services, professionals and locations across South Africa.</p>
+            <p class="home-lede">Discover businesses, services, professionals and locations across South Africa.</p>
 
             <?php // One box. The words are read into category and place on the
                   // results page (Directory::interpretSearch()), so the category
@@ -152,7 +152,7 @@ $moments = [
             </form>
 
             <?php if ($examples !== []): ?>
-                <ul class="home-examples" aria-label="Example searches">
+                <ul class="home-examples" aria-label="Things to discover">
                     <?php foreach (array_slice($examples, 0, 4) as $example): ?>
                         <li><a href="<?= esc(base_url('directory') . '?q=' . rawurlencode($example), 'attr') ?>"><?= esc($example) ?></a></li>
                     <?php endforeach; ?>

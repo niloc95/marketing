@@ -72,8 +72,8 @@ foreach ($stored as $rows) {
     <div class="disclosure-body">
         <input type="hidden" name="<?= ListingFacetService::FACETS_MARKER ?>" value="1">
         <p class="hint">
-            These are what visitors filter on, so a profile that fills them in is found by
-            far more searches. Free, like everything else here. Leave anything you are
+            These are what visitors filter on, so a profile that fills them in is discovered
+            far more often. Free, like everything else here. Leave anything you are
             unsure of empty rather than guessing.
         </p>
 

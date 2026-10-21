@@ -77,8 +77,8 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
             <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-jobs',
                 'value'       => $filters['q'],
-                'placeholder' => 'Search jobs and requests, e.g. electrician',
-                'ariaLabel'   => 'Search jobs',
+                'placeholder' => 'Discover jobs and requests, e.g. electrician',
+                'ariaLabel'   => 'Discover jobs',
                 'suggest'     => false,
             ], ['saveData' => false]) ?>
             <div class="search-refine">

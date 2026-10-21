@@ -29,7 +29,7 @@ $paidUntil = $paid_until ?? '';
             <p style="font-size:15px;line-height:1.6">
                 Your Verified Business badge is ready to switch on. It costs
                 <strong>R<?= esc($amount) ?> a month</strong>, and it appears on your profile and
-                everywhere your business shows up in search results.
+                everywhere your business is discovered on the platform.
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'Activate my badge') ?>

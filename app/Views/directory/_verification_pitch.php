@@ -49,7 +49,7 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 <ul class="verify-benefits">
     <li>
         <strong>A checked badge</strong> on your profile and beside your name in every
-        search result you appear in, so someone deciding between you and a business
+        discovery result you appear in, so someone deciding between you and a business
         with no badge can see we have checked who you are. Visitors who hover over or tap
         the badge are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
         business registration document and your ID.
@@ -68,9 +68,9 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         lands in the right place.
     </li>
     <li>
-        <?php // Deliberately "more searches match you", never "you rank higher".
+        <?php // Deliberately "more people discover you", never "you rank higher".
               // See the docblock — the badge has no effect on ordering. ?>
-        <strong>More searches find you.</strong> Once your team is listed, a search for one
+        <strong>More people discover you.</strong> Once your team is listed, someone looking for one
         of your people by name, or for something only one of them does, brings
         up your business too.
     </li>
