@@ -43,6 +43,16 @@
       analytics_storage: state,
     });
   }
+  /* Clarity is only defined on properties that run it (the listing app defines
+     window.wsLoadClarity in its <head>). Accept loads it; a later Decline tells it to
+     erase its cookies and stop, since a loaded script cannot be unloaded. */
+  function clarityConsent(state) {
+    if (state === 'granted') {
+      if (window.wsLoadClarity) window.wsLoadClarity();
+    } else if (window.clarity) {
+      window.clarity('consent', false);
+    }
+  }
   function store(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
 
@@ -92,10 +102,10 @@
       + '</div></div>';
     document.body.appendChild(el);
     el.querySelector('.wsc-accept').addEventListener('click', function () {
-      store('granted'); gtagConsent('granted'); removeBanner();
+      store('granted'); gtagConsent('granted'); clarityConsent('granted'); removeBanner();
     });
     el.querySelector('.wsc-decline').addEventListener('click', function () {
-      store('denied'); gtagConsent('denied'); removeBanner();
+      store('denied'); gtagConsent('denied'); clarityConsent('denied'); removeBanner();
     });
   }
 

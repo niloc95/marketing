@@ -4,6 +4,7 @@
 $siteName    = config('Directory')->siteName();
 $canonical   = base_url('cookie-policy');
 $analyticsId = config('Directory')->analyticsId();
+$clarityId   = config('Directory')->clarityId();
 ?>
 
 <?= $this->section('head') ?>
@@ -59,6 +60,17 @@ $analyticsId = config('Directory')->analyticsId();
                         <tr><td><code>_ga_&lt;id&gt;</code></td><td>Google</td><td>Keeps session state for the property.</td><td>2 years</td></tr>
                     </tbody>
                 </table>
+                <?php if ($clarityId !== ''): ?>
+                    <p>We also use <strong>Microsoft Clarity</strong> to see how people move through our pages, through heatmaps and recordings of clicks, taps and scrolling. Clarity is not loaded at all until you press Accept. It hides what you type into forms, and it never runs on our admin pages. See <a href="https://privacy.microsoft.com/privacystatement" rel="noopener">Microsoft's privacy statement</a>.</p>
+                    <table class="table">
+                        <thead><tr><th>Name</th><th>Provider</th><th>Purpose</th><th>Lifetime</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>_clck</code></td><td>Microsoft</td><td>Recognises a returning visitor across visits.</td><td>1 year</td></tr>
+                            <tr><td><code>_clsk</code></td><td>Microsoft</td><td>Joins the pages of one visit into a single recording.</td><td>1 day</td></tr>
+                            <tr><td><code>CLID</code>, <code>MUID</code></td><td>Microsoft</td><td>Identify the same browser to Clarity and Microsoft.</td><td>1 year</td></tr>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
                 <p>If you decline, these are never written. If you accept and change your mind, the same applies from that moment on, though cookies already set stay in your browser until you clear them.</p>
 
                 <h2>Changing your choice</h2>

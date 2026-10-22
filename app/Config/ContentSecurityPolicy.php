@@ -71,14 +71,14 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $scriptSrc = ['self', 'https://www.googletagmanager.com'];
+    public $scriptSrc = ['self', 'https://www.googletagmanager.com', 'https://*.clarity.ms'];
 
     /**
      * Specifies valid sources for JavaScript <script> elements.
      *
      * @var list<string>|string
      */
-    public array|string $scriptSrcElem = ['self', 'https://www.googletagmanager.com'];
+    public array|string $scriptSrcElem = ['self', 'https://www.googletagmanager.com', 'https://*.clarity.ms'];
 
     /**
      * Specifies valid sources for JavaScript inline event
@@ -158,6 +158,10 @@ class ContentSecurityPolicy extends BaseConfig
         'https://analytics.google.com',
         'https://*.google-analytics.com',
         'https://*.analytics.google.com',
+        // Microsoft Clarity: recordings upload to a lettered host (k.clarity.ms
+        // and so on), and its cookie sync goes through c.bing.com.
+        'https://*.clarity.ms',
+        'https://c.bing.com',
     ];
 
     /**
@@ -285,6 +289,9 @@ class ContentSecurityPolicy extends BaseConfig
             // first left that second beacon blocked once CSP started enforcing.
             'https://www.google-analytics.com',
             'https://www.googletagmanager.com',
+            // Clarity's c.clarity.ms/c.gif and its c.bing.com sync pixel.
+            'https://*.clarity.ms',
+            'https://c.bing.com',
         ];
 
         $tileHost = $this->originOf(config('Directory')->mapTileUrl());

@@ -276,7 +276,7 @@ $contact   = config('Directory')->adminEmail();
             <p>Mapping services such as <strong>CARTO</strong> may also receive technical information, including your IP address, when your browser loads map content directly from their infrastructure. See <a href="https://carto.com/privacy/" rel="noopener">CARTO's privacy policy</a>.</p>
 
             <h3>Analytics</h3>
-            <p>Where you have provided the required cookie consent, we may use Google Analytics or another analytics service to understand how the service is used.</p>
+            <p>Where you have provided the required cookie consent, we may use Google Analytics, Microsoft Clarity or another analytics service to understand how the service is used. Clarity records how visitors click, tap and scroll through our pages, with anything typed into forms hidden.</p>
 
             <h3>Email services</h3>
             <p>We use an email service provider to deliver verification, profile management and other necessary service communications.</p>

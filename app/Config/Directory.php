@@ -64,6 +64,20 @@ class Directory extends BaseConfig
     public string $analyticsId = 'G-5WNR0873VB';
 
     /**
+     * Microsoft Clarity project ID (heatmaps and session recordings).
+     *
+     * Rides on the same cookie banner as GA, with one difference: GA loads on every
+     * page under Consent Mode, but Clarity is not loaded at all until the visitor
+     * accepts. Its cookieless mode still records the session, which the cookie
+     * policy promises not to do before Accept. Never loaded on admin pages.
+     *
+     * Committed for the same reason as $analyticsId. It only runs where analytics
+     * does (no banner, no consent to ask for), and directory.clarityId = '' turns
+     * it off on its own — see clarityId().
+     */
+    public string $clarityId = 'z1oo85nwb2';
+
+    /**
      * Tile source for every Leaflet map in the app — the listing form's pin
      * picker, the profile map, and the search results map.
      *
@@ -550,6 +564,19 @@ class Directory extends BaseConfig
     {
         $env = env('directory.analyticsId');
         return is_string($env) ? trim($env) : $this->analyticsId;
+    }
+
+    /**
+     * Same env semantics as analyticsId(): present but empty means off. Also off
+     * whenever analytics is, since the consent banner only exists alongside GA.
+     */
+    public function clarityId(): string
+    {
+        if ($this->analyticsId() === '') {
+            return '';
+        }
+        $env = env('directory.clarityId');
+        return is_string($env) ? trim($env) : $this->clarityId;
     }
 
     /**

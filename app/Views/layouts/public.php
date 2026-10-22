@@ -1,4 +1,6 @@
 <?php $analyticsId = config('Directory')->analyticsId();
+// Admin screens are never recorded: they show applicants, payments and owner details.
+$clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Directory')->clarityId();
       // Brand images are cached for 4h at Cloudflare and in browsers and, unlike
       // the stylesheet, used to carry no buster, so a new logo stayed invisible
       // until someone purged. Same ?v=<filemtime> trick as directory.css below.
@@ -73,6 +75,28 @@
           gtag('js', new Date());
           gtag('config', <?= json_encode($analyticsId, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
         </script>
+        <?php if ($clarityId !== ''): ?>
+            <?php // Microsoft Clarity, Microsoft's own snippet wrapped in a loader that runs
+                  // only once consent is granted: here for a returning visitor who already
+                  // accepted, otherwise from consent.js when Accept is pressed. Unlike GA
+                  // there is no "denied" mode to load into, because Clarity's cookieless
+                  // mode still records the session. consentv2 tells Clarity consent was
+                  // given, without which it stays cookieless for EEA/UK visitors. ?>
+            <script {csp-script-nonce}>
+              window.wsLoadClarity = function () {
+                if (window.clarity) return;
+                (function(c,l,a,r,i,t,y){
+                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
+                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                })(window, document, "clarity", "script", <?= json_encode($clarityId, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+                window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
+              };
+              try {
+                if (localStorage.getItem('ws-consent') === 'granted') window.wsLoadClarity();
+              } catch (e) {}
+            </script>
+        <?php endif; ?>
     <?php endif; ?>
 </head>
 <body>
