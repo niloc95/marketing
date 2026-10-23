@@ -13,6 +13,7 @@ use App\Models\DirectoryPartnerPayoutModel;
 use App\Models\DirectoryVerificationModel;
 use Config\Directory as DirectoryConfig;
 use Config\Partners as PartnersConfig;
+use Config\Sites;
 
 /**
  * The Partner Program: affiliates who promote WebScheduler Local with a
@@ -95,7 +96,7 @@ class PartnerService
 
     public function linkFor(array $partner): string
     {
-        return base_url('p/' . $partner['code']);
+        return site_url_for(Sites::ZA, 'p/' . $partner['code']);
     }
 
     // ------------------------------------------------------------- applying
@@ -194,7 +195,7 @@ class PartnerService
                 'Sign in to your partner dashboard to see your clicks, signups and earnings, and to add the bank account we pay into.',
             ],
             'button'   => ['Open my dashboard', $this->loginLink($p)],
-            'footnote' => 'The sign in button works once and lasts one hour. You can always ask for a new one at ' . base_url('partners/login') . '.',
+            'footnote' => 'The sign in button works once and lasts one hour. You can always ask for a new one at ' . site_url_for(Sites::ZA, 'partners/login') . '.',
         ]);
 
         return ['ok' => true, 'message' => $p['name'] . ' is approved and has been emailed their link.'];
@@ -330,7 +331,7 @@ class PartnerService
             'login_expires' => date('Y-m-d H:i:s', time() + 60 * $this->config->loginLinkMinutes),
         ]);
 
-        return base_url('partners/login/' . $token);
+        return site_url_for(Sites::ZA, 'partners/login/' . $token);
     }
 
     // ------------------------------------------------------- the partner link
@@ -727,7 +728,7 @@ class PartnerService
                 'EFT reference: ' . $eftReference,
                 'It can take up to two working days to reflect, depending on your bank.',
             ],
-            'button' => ['See my statement', base_url('partners/login')],
+            'button' => ['See my statement', site_url_for(Sites::ZA, 'partners/login')],
         ]);
 
         return ['ok' => true, 'message' => 'Payout of ' . $this->rand($total) . ' recorded and ' . $p['name'] . ' has been emailed.'];
@@ -897,7 +898,7 @@ class PartnerService
                 (string) ($p['website'] ?? ''),
                 (string) $p['promo_plan'],
             ])),
-            'button' => ['Review applications', base_url('admin/partners')],
+            'button' => ['Review applications', site_url_for(Sites::ZA, 'admin/partners')],
         ]);
     }
 

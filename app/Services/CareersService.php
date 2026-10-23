@@ -12,6 +12,7 @@ use App\Models\CareerRoleModel;
 use CodeIgniter\HTTP\Files\UploadedFile;
 use Config\Careers as CareersConfig;
 use Config\Directory as DirectoryConfig;
+use Config\Sites;
 
 /**
  * Careers at WebScheduler Local: our own roles on /careers and the
@@ -235,7 +236,7 @@ class CareersService
 
     public function url(array $role): string
     {
-        return base_url('careers/' . $role['slug']);
+        return site_url_for(Sites::ZA, 'careers/' . $role['slug']);
     }
 
     public function teamLabel(array $role): string
@@ -814,7 +815,7 @@ class CareersService
                 (string) ($app['linkedin_url'] ?? ''),
                 $app['message'],
             ])),
-            'button'         => ['Open in admin', base_url('admin/careers/applications') . '#application-' . $id],
+            'button'         => ['Open in admin', site_url_for(Sites::ZA, 'admin/careers/applications') . '#application-' . $id],
             'footnote'       => 'Reply to this email to answer ' . strtok($app['name'], ' ') . ' directly. The CV opens from the admin page.',
             'footnoteLink'   => null,
             'bullets'        => $marked !== null ? $this->screening->lines($marked) : null,
@@ -854,7 +855,7 @@ class CareersService
             'button'         => null,
             'footnote'       => 'You are receiving this because this address was used to apply on our careers page. '
                 . 'If that was not you, you can ignore this email.',
-            'footnoteLink'   => ['Privacy policy', base_url('privacy') . '#careers'],
+            'footnoteLink'   => ['Privacy policy', site_url_for(Sites::ZA, 'privacy') . '#careers'],
             'bullets'        => null,
             'bulletsHeading' => null,
             'extras'         => null,
@@ -902,6 +903,8 @@ class CareersService
 
     private function forgetSitemap(): void
     {
+        // Both sites list careers in their sitemap.
         cache()->delete('directory_sitemap_xml');
+        cache()->delete('directory_sitemap_xml_app');
     }
 }

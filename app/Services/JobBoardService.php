@@ -16,6 +16,7 @@ use App\Models\JobReportModel;
 use App\Models\JobResponseModel;
 use Config\Directory as DirectoryConfig;
 use Config\JobBoard;
+use Config\Sites;
 
 /**
  * The Jobs board: vacancies and "service required" requests, from listed
@@ -253,7 +254,7 @@ class JobBoardService
 
     public function url(array $post): string
     {
-        return base_url('jobs/' . (int) $post['id'] . '-' . ($post['slug'] ?? 'post'));
+        return row_site_url($post, 'jobs/' . (int) $post['id'] . '-' . ($post['slug'] ?? 'post'));
     }
 
     /**
@@ -283,7 +284,7 @@ class JobBoardService
     {
         $out = [];
         foreach ($this->posts->live()->where('kind', JobPostModel::KIND_JOB)
-            ->select('id, slug, updated_at')->orderBy('published_at', 'DESC')->findAll(5000) as $r) {
+            ->select('id, slug, country_code, updated_at')->orderBy('published_at', 'DESC')->findAll(5000) as $r) {
             $out[] = [
                 'loc'     => $this->url($r),
                 'lastmod' => substr((string) ($r['updated_at'] ?? date('Y-m-d')), 0, 10),
@@ -640,7 +641,7 @@ class JobBoardService
         $manageLink = null;
         if (empty($post['listing_id'])) {
             $token      = TokenHash::mint();
-            $manageLink = base_url('jobs/manage/' . $token);
+            $manageLink = row_site_url($post, 'jobs/manage/' . $token);
             $update['manage_token']   = TokenHash::hash($token);
             $update['manage_expires'] = $this->manageExpiry($validThrough);
         }
@@ -654,7 +655,7 @@ class JobBoardService
             $paragraphs[] = 'Keep this email. The link below lets you edit, close or renew the post at any time. Anyone with the link can do the same, so do not forward it.';
             $paragraphs[] = 'Manage your post: ' . $manageLink;
         } else {
-            $paragraphs[] = 'You can close or renew it from your profile dashboard: ' . base_url('manage');
+            $paragraphs[] = 'You can close or renew it from your profile dashboard: ' . listing_site_url((int) $post['listing_id'], 'manage');
         }
 
         (new Mailer())->notice($this->contactEmail($post), 'Your post is live: ' . Input::line($post['title'], 120), [
@@ -918,7 +919,7 @@ class JobBoardService
         $count = $responses->where('post_id', $postId)->countAllResults();
         $this->posts->update($postId, ['response_count' => $count]);
 
-        $profile = base_url('directory/' . $listing['slug']);
+        $profile = listing_site_url($listing, 'directory/' . $listing['slug']);
         $body    = view('emails/job-relay', [
             'site'            => $this->site->siteName(),
             'heading'         => $listing['display_name'] . ' replied to your request',
@@ -1138,7 +1139,7 @@ class JobBoardService
         $sent  = $paragraphs === [] || (new Mailer())->notice($admin, $count . ' new job post report' . ($count === 1 ? '' : 's'), [
             'heading'    => $count . ' new report' . ($count === 1 ? '' : 's') . ' on ' . count($paragraphs) . ' post' . (count($paragraphs) === 1 ? '' : 's'),
             'paragraphs' => $paragraphs,
-            'button'     => ['Open the jobs queue', base_url('admin/jobs?status=published')],
+            'button'     => ['Open the jobs queue', site_url_for(Sites::ZA, 'admin/jobs?status=published')],
             'footnote'   => 'A post is hidden for review automatically after ' . $this->cfg->reportThreshold . ' reports from different visitors.',
         ]);
         if (! $sent) {
@@ -1239,7 +1240,7 @@ class JobBoardService
             $listings->update($listingId, ['job_alerts_token' => $token]);
         }
 
-        return base_url('jobs/alerts/off/' . $token);
+        return listing_site_url($listingId, 'jobs/alerts/off/' . $token);
     }
 
     /**
@@ -1299,7 +1300,7 @@ class JobBoardService
             'paragraphs'   => $paragraphs,
             'button'       => $canReply
                 ? ['See the request and reply', $this->url($post)]
-                : ['Get verified to reply', base_url('verified')],
+                : ['Get verified to reply', listing_site_url($listing, 'verified')],
             'footnote'     => 'You get these because ' . $listing['display_name'] . ' has a profile under '
                 . ($post['category_name'] ?: 'this category') . ' in ' . $post['province'] . '.',
             'footnoteLink' => ['Stop these emails', $this->alertsOffUrl((int) $listing['id'])],
@@ -1489,9 +1490,9 @@ class JobBoardService
                 'manage_token'   => TokenHash::hash($token),
                 'manage_expires' => $this->manageExpiry((string) $post['valid_through']),
             ]);
-            $link = base_url('jobs/manage/' . $token);
+            $link = row_site_url($post, 'jobs/manage/' . $token);
         } else {
-            $link = base_url('manage');
+            $link = listing_site_url((int) $post['listing_id'], 'manage');
         }
 
         (new Mailer())->notice($this->contactEmail($post), 'Your post closes soon: ' . Input::line($post['title'], 120), [
@@ -1523,7 +1524,7 @@ class JobBoardService
         (new Mailer())->notice($admin, $event . ': ' . Input::line($post['title'], 120), [
             'heading'    => $event,
             'paragraphs' => $paragraphs,
-            'button'     => ['Open the jobs queue', base_url('admin/jobs')],
+            'button'     => ['Open the jobs queue', site_url_for(Sites::ZA, 'admin/jobs')],
         ]);
     }
 

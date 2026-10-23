@@ -178,7 +178,7 @@ class MarketingConsentService
             $this->listings->update($listingId, ['marketing_token' => $token]);
         }
 
-        return base_url('unsubscribe/' . $token);
+        return listing_site_url($listingId, 'unsubscribe/' . $token);
     }
 
     /**

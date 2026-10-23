@@ -229,20 +229,21 @@ if (! function_exists('header_quick_categories')) {
      */
     function header_quick_categories(int $limit = 6): array
     {
-        // Keyed by limit: the memo is per-request, and a caller asking for a
-        // different count must not be served the first caller's slice.
+        // Keyed by limit and site: the memo is per-request, and a caller
+        // asking for a different count (or on the other site) must not be
+        // served the first caller's slice.
         static $memo = [];
 
-        if (isset($memo[$limit])) {
-            return $memo[$limit];
-        }
+        $key = site_cache_key('header_quick_cats_' . $limit);
 
-        $key = 'header_quick_cats_' . $limit;
+        if (isset($memo[$key])) {
+            return $memo[$key];
+        }
 
         try {
             $cached = cache()->get($key);
             if (is_array($cached)) {
-                return $memo[$limit] = $cached;
+                return $memo[$key] = $cached;
             }
         } catch (\Throwable $e) {
             log_message('warning', 'Header category cache unavailable, reading through: ' . $e->getMessage());
@@ -253,7 +254,7 @@ if (! function_exists('header_quick_categories')) {
         } catch (\Throwable $e) {
             log_message('error', 'Could not read header categories, dropping the strip: ' . $e->getMessage());
 
-            return $memo[$limit] = [];
+            return $memo[$key] = [];
         }
 
         try {
@@ -265,7 +266,7 @@ if (! function_exists('header_quick_categories')) {
             log_message('warning', 'Could not cache header categories: ' . $e->getMessage());
         }
 
-        return $memo[$limit] = $cats;
+        return $memo[$key] = $cats;
     }
 }
 
@@ -599,8 +600,8 @@ if (! function_exists('safe_external_url')) {
 if (! function_exists('is_own_site_url')) {
     /**
      * Whether a URL points at WebScheduler Local itself: this install's own
-     * host, or local./listing. on webscheduler.co.za (listing. is the old name
-     * and still 301s here).
+     * host, either site's host (Config\Sites), or local./listing. on
+     * webscheduler.co.za (listing. is the old name and still 301s here).
      *
      * A business's website is never one of ours. The profile already is its
      * page on this site, and its address changes with the name. One got in
@@ -615,8 +616,10 @@ if (! function_exists('is_own_site_url')) {
             return false;
         }
         $host = (string) preg_replace('/^www\./', '', $host);
-        $own  = ['local.webscheduler.co.za', 'listing.webscheduler.co.za',
-                 strtolower((string) parse_url(base_url(), PHP_URL_HOST))];
+        $sites = config(\Config\Sites::class);
+        $own   = ['local.webscheduler.co.za', 'listing.webscheduler.co.za', 'local.webscheduler.app',
+                  $sites->host(\Config\Sites::ZA), $sites->host(\Config\Sites::APP),
+                  strtolower((string) parse_url(base_url(), PHP_URL_HOST))];
 
         return in_array($host, $own, true);
     }

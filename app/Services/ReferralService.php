@@ -10,6 +10,7 @@ use App\Models\DirectoryInviteSuppressionModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryReferralModel;
 use Config\Directory as DirectoryConfig;
+use Config\Sites;
 
 /**
  * "Recommend a business": a visitor names a business that should be listed.
@@ -355,7 +356,7 @@ class ReferralService
                         'paragraphs' => [
                             'You recommended ' . $listing['display_name'] . ' to ' . $this->site->siteName() . '. Their profile is live now.',
                         ],
-                        'button'   => ['See their profile', base_url('directory/' . $listing['slug'])],
+                        'button'   => ['See their profile', listing_site_url($listing, 'directory/' . $listing['slug'])],
                         'footnote' => 'This is the only email we send about your recommendation.',
                     ]);
                 }
@@ -450,7 +451,7 @@ class ReferralService
         }
 
         $to           = (string) $r['business_email'];
-        $stop         = ["Don't contact me again", base_url('recommend/stop/' . $token)];
+        $stop         = ["Don't contact me again", row_site_url($r, 'recommend/stop/' . $token)];
         $verification = new VerificationService();
 
         // With the badge on sale, the invite leads with it and lands on the
@@ -487,7 +488,7 @@ class ReferralService
                     'We have already filled in what we were told about your business. Just check your details and upload the two documents.',
                     'Your business profile stays free either way.',
                 ],
-                'button'       => ['Get your business verified', base_url('add-profile/verified?invite=' . $token)],
+                'button'       => ['Get your business verified', row_site_url($r, 'add-profile/verified?invite=' . $token)],
                 'footnote'     => 'We will not email you about this again. Not interested?',
                 'footnoteLink' => $stop,
             ]);
@@ -500,7 +501,7 @@ class ReferralService
                 $site . ' is a local business discovery and visibility platform for South Africa.' . $by,
                 'A business profile is free: no monthly fee, no subscription, no obligation. It takes a few minutes, and we have filled in what we were told, so you only need to check it and add the rest.',
             ],
-            'button'       => ['Create your free business profile', base_url('add-profile?invite=' . $token)],
+            'button'       => ['Create your free business profile', row_site_url($r, 'add-profile?invite=' . $token)],
             'footnote'     => 'We will not email you about this again. Not interested?',
             'footnoteLink' => $stop,
         ]);
@@ -520,7 +521,7 @@ class ReferralService
                 (string) $r['business_name'] . ', ' . trim(($r['city'] ?? '') . ', ' . ($r['province'] ?? ''), ', '),
                 (string) ($r['note'] ?? ''),
             ])),
-            'button' => ['Review referrals', base_url('admin/referrals')],
+            'button' => ['Review referrals', site_url_for(Sites::ZA, 'admin/referrals')],
         ]);
     }
 

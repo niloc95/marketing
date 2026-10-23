@@ -41,6 +41,7 @@ class Filters extends BaseFilters
         'signupchannel' => \App\Filters\SignupChannel::class,
         'partnerref'    => \App\Filters\PartnerRef::class,
         'frontcontrollerpath' => \App\Filters\FrontControllerPath::class,
+        'siteresolver'        => \App\Filters\SiteResolver::class,
         'cfaccess'      => \App\Filters\CloudflareAccessFilter::class,
     ];
 
@@ -96,6 +97,9 @@ class Filters extends BaseFilters
             // rules (Cloudflare Access on admin*) never saw it. First, so
             // nothing else runs for one. See the class.
             'frontcontrollerpath',
+            // co.za or .app for this request; 302s the app host to co.za until
+            // sites.app.enabled. See the class.
+            'siteresolver',
             // Rejects any POST that filled the hidden field 'honeypot' (below)
             // injects. Deliberately App\Filters\BotTrap rather than the
             // framework's own honeypot filter — same check, but a 403 instead

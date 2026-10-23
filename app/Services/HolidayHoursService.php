@@ -126,7 +126,7 @@ class HolidayHoursService
             'holiday'     => PublicHolidays::label($holiday),
             'holidayDate' => date('l j F', strtotime($holiday['date'])),
             'upcoming'    => array_map(static fn (array $d): string => PublicHolidays::label($d) . ', ' . date('l j F', strtotime($d['date'])), array_values($soon)),
-            'profileUrl'  => base_url('directory/' . $listing['slug']),
+            'profileUrl'  => listing_site_url($listing, 'directory/' . $listing['slug']),
             'manageLink'  => $this->manageLink($id),
             'unsubscribe' => (new MarketingConsentService())->unsubscribeUrl($id),
         ], ['saveData' => false]);
@@ -151,14 +151,14 @@ class HolidayHoursService
             $token = (new DirectoryListingMutationService())
                 ->mintManageToken($id, config('Directory')->approvalLinkTtl);
 
-            return base_url('manage/' . $token);
+            return listing_site_url($id, 'manage/' . $token);
         } catch (Throwable $e) {
             log_message('error', 'Could not mint a holiday reminder link for listing {id}: {msg}', [
                 'id'  => $id,
                 'msg' => trim((string) preg_replace('/\s+/', ' ', $e->getMessage())),
             ]);
 
-            return base_url('manage');
+            return listing_site_url($id, 'manage');
         }
     }
 }

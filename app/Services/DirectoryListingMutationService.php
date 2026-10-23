@@ -534,7 +534,7 @@ class DirectoryListingMutationService
 
         $body = view('emails/manage', [
             'name' => (string) ($listing['display_name'] ?? ''),
-            'link' => base_url('manage/' . $token),
+            'link' => listing_site_url($listing, 'manage/' . $token),
             'site' => $this->config->siteName(),
             'ttl'  => (int) round($this->config->manageTtl / 60),
             // A deployment with the badge switched off must not advertise it.
@@ -1515,7 +1515,7 @@ class DirectoryListingMutationService
         }
         $body = view('emails/admin-notify', [
             'listing' => $listing,
-            'url'     => base_url('directory/' . ($listing['slug'] ?? '')),
+            'url'     => listing_site_url($listing, 'directory/' . ($listing['slug'] ?? '')),
             'site'    => $this->config->siteName(),
             'event'   => $event,
         ]);

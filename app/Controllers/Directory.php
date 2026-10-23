@@ -750,7 +750,7 @@ class Directory extends BaseController
 
     public function sitemap()
     {
-        $xml = cache('directory_sitemap_xml');
+        $xml = cache(site_cache_key('directory_sitemap_xml'));
         if ($xml === null) {
             $svc  = new DirectoryService();
             $urls = array_merge(
@@ -794,7 +794,7 @@ class Directory extends BaseController
             // 15 min TTL, no active invalidation on listing changes — crawlers
             // don't need sub-15-minute freshness, and coupling every listing
             // mutation to sitemap cache-busting isn't worth it for that.
-            cache()->save('directory_sitemap_xml', $xml, 900);
+            cache()->save(site_cache_key('directory_sitemap_xml'), $xml, 900);
         }
 
         return $this->response

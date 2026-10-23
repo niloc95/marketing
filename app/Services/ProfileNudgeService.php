@@ -181,7 +181,7 @@ class ProfileNudgeService
             'max'        => (int) $strength['max'],
             'target'     => $target,
             'steps'      => $strength['next'],
-            'profileUrl' => base_url('directory/' . $listing['slug']),
+            'profileUrl' => listing_site_url($listing, 'directory/' . $listing['slug']),
             'hasWebsite' => listing_website_url($listing['website'] ?? '') !== '',
             'manageLink' => $this->manageLink($id),
             'unsubscribe' => (new MarketingConsentService())->unsubscribeUrl($id),
@@ -214,14 +214,14 @@ class ProfileNudgeService
             $token = (new DirectoryListingMutationService())
                 ->mintManageToken($id, config('Directory')->approvalLinkTtl);
 
-            return base_url('manage/' . $token);
+            return listing_site_url($id, 'manage/' . $token);
         } catch (Throwable $e) {
             log_message('error', 'Could not mint a nudge link for listing {id}: {msg}', [
                 'id'  => $id,
                 'msg' => trim((string) preg_replace('/\s+/', ' ', $e->getMessage())),
             ]);
 
-            return base_url('manage');
+            return listing_site_url($id, 'manage');
         }
     }
 }

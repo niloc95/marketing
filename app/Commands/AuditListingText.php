@@ -6,6 +6,7 @@ use App\Libraries\ListingText;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
+use Config\Sites;
 
 /**
  * List listings whose name or description breaks the rules new signups are
@@ -63,7 +64,7 @@ class AuditListingText extends BaseCommand
             }
             $found++;
             CLI::write(sprintf('#%d [%s] %s', $row['id'], $row['status'], mb_strimwidth($name, 0, 90, '…')), 'yellow');
-            CLI::write('    ' . base_url('admin/edit/' . $row['id']));
+            CLI::write('    ' . site_url_for(Sites::ZA, 'admin/edit/' . $row['id']));
             foreach ($problems as $problem) {
                 CLI::write('    - ' . $problem);
             }

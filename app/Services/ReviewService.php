@@ -10,6 +10,7 @@ use App\Models\DirectoryReviewModel;
 use App\Models\DirectoryReviewReportModel;
 use Config\Directory as DirectoryConfig;
 use Config\Reviews;
+use Config\Sites;
 
 /**
  * Customer reviews of a business profile: 1–5 stars and a written review.
@@ -268,7 +269,7 @@ class ReviewService
                 'Thanks for reviewing ' . $listing['display_name'] . ' on ' . $this->site->siteName() . '. Click below to confirm your email address. We then read the review and publish it, usually within one business day.',
                 'The link lasts 48 hours. Your email address is never shown on the site; your review appears under your first name and the first letter of your surname.',
             ],
-            'button'     => ['Confirm my review', base_url('reviews/confirm/' . $token)],
+            'button'     => ['Confirm my review', listing_site_url($listing, 'reviews/confirm/' . $token)],
             'footnote'   => 'If you did not write this review, ignore this email and nothing will be published.',
         ]);
 
@@ -528,7 +529,7 @@ class ReviewService
         $sent  = $paragraphs === [] || $this->notice($admin, $count . ' new review report' . ($count === 1 ? '' : 's'), [
             'heading'    => $count . ' new report' . ($count === 1 ? '' : 's') . ' on ' . count($paragraphs) . ' review' . (count($paragraphs) === 1 ? '' : 's'),
             'paragraphs' => $paragraphs,
-            'button'     => ['Open the reviews queue', base_url('admin/reviews?status=published')],
+            'button'     => ['Open the reviews queue', site_url_for(Sites::ZA, 'admin/reviews?status=published')],
             'footnote'   => 'A review goes back to the queue automatically after ' . $this->cfg->reportThreshold . ' reports from different people.',
         ]);
         if (! $sent) {
@@ -615,8 +616,8 @@ class ReviewService
                 '"' . mb_strimwidth((string) $review['body'], 0, 400, '…') . '"',
                 'You can reply publicly from your dashboard. A short, polite reply helps the next customer more than the review alone, whatever the rating.',
             ],
-            'button'     => ['See it on your profile', base_url('directory/' . $listing['slug']) . '#reviews'],
-            'footnote'   => 'To reply, sign in to your dashboard: request a link at ' . base_url('manage') . '. If you believe the review breaks our terms, report it from the dashboard and we will look at it.',
+            'button'     => ['See it on your profile', listing_site_url($listing, 'directory/' . $listing['slug']) . '#reviews'],
+            'footnote'   => 'To reply, sign in to your dashboard: request a link at ' . listing_site_url($listing, 'manage') . '. If you believe the review breaks our terms, report it from the dashboard and we will look at it.',
         ]);
     }
 
@@ -643,7 +644,7 @@ class ReviewService
         $this->notice($admin, $event . ': ' . Input::line((string) ($listing['display_name'] ?? ''), 120), [
             'heading'    => $event,
             'paragraphs' => $paragraphs,
-            'button'     => ['Open the reviews queue', base_url('admin/reviews')],
+            'button'     => ['Open the reviews queue', site_url_for(Sites::ZA, 'admin/reviews')],
         ]);
     }
 

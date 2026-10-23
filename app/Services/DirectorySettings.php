@@ -384,10 +384,23 @@ class DirectorySettings
 
     // -------------------------------------------------------------- internals
 
-    /** The stored value for a name, or null when it has never been set. */
+    /**
+     * The stored value for a name, or null when it has never been set.
+     *
+     * On local.webscheduler.app a row named "{name}@app" wins over the plain
+     * one, so .app can carry its own price without touching co.za's. co.za
+     * reads only the plain name, exactly as before.
+     */
     private function stored(string $name): ?string
     {
-        $value = $this->map()[$name]['value'] ?? null;
+        $map   = $this->map();
+        $value = null;
+
+        if (service('site')->isApp()) {
+            $value = $map[$name . '@' . service('site')->key()]['value'] ?? null;
+        }
+
+        $value ??= $map[$name]['value'] ?? null;
 
         return $value === null || trim((string) $value) === '' ? null : (string) $value;
     }

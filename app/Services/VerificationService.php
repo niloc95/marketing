@@ -6,10 +6,11 @@ use App\Libraries\Mailer;
 use App\Libraries\PayFast;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationDocumentModel;
-use App\Models\DirectoryVerificationSubmissionModel;
 use App\Models\DirectoryVerificationEventModel;
 use App\Models\DirectoryVerificationModel;
+use App\Models\DirectoryVerificationSubmissionModel;
 use Config\Directory as DirectoryConfig;
+use Config\Sites;
 use Throwable;
 
 /**
@@ -1077,7 +1078,7 @@ class VerificationService
             'Verified Business cancelled: ' . $name,
             '<p><strong>' . esc($name) . '</strong> cancelled their Verified Business badge.</p>'
             . '<p>' . esc($detail) . '</p>'
-            . '<p><a href="' . esc(base_url('admin/verifications?state=active'), 'attr') . '">Open the queue</a></p>'
+            . '<p><a href="' . esc(site_url_for(Sites::ZA, 'admin/verifications?state=active'), 'attr') . '">Open the queue</a></p>'
         );
     }
 
@@ -1103,7 +1104,7 @@ class VerificationService
         $body = view('emails/verification-admin', [
             'site'    => $this->config->siteName(),
             'listing' => $listing,
-            'url'     => base_url('admin/verifications'),
+            'url'     => site_url_for(Sites::ZA, 'admin/verifications'),
         ]);
 
         (new Mailer())->send(
@@ -1162,7 +1163,7 @@ class VerificationService
     private function ownerLink(int $listingId, string $event): string
     {
         if ($event !== 'approved' && $event !== 'rejected') {
-            return base_url('manage');
+            return listing_site_url($listingId, 'manage');
         }
 
         try {
@@ -1174,11 +1175,11 @@ class VerificationService
                 'msg' => Mailer::oneLine($e->getMessage()),
             ]);
 
-            return base_url('manage');
+            return listing_site_url($listingId, 'manage');
         }
 
         return $event === 'approved'
-            ? base_url('manage/' . $token) . '?to=checkout'
-            : base_url('manage/' . $token);
+            ? listing_site_url($listingId, 'manage/' . $token) . '?to=checkout'
+            : listing_site_url($listingId, 'manage/' . $token);
     }
 }

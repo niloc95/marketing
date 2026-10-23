@@ -13,6 +13,7 @@ use App\Services\Description\DescriptionDraftService;
 use App\Services\Description\DescriptionWriter;
 use App\Services\DirectoryService;
 use App\Services\ListingVideoService;
+use App\Services\SiteContext;
 use App\Services\Search\QueryInterpreter;
 use App\Services\Search\RuleBasedInterpreter;
 use CodeIgniter\Config\BaseService;
@@ -90,6 +91,34 @@ class Services extends BaseService
         }
 
         return new DescriptionDraftService();
+    }
+
+    /**
+     * Which site (co.za or .app) this request is on. See Config\Sites.
+     *
+     * Read from the Host header the client sent, not from base_url(): in
+     * production base_url() only follows the request for allowed hosts, and
+     * this is the thing that decides what is allowed to render there. CLI is
+     * always za. Filters\SiteResolver resets the shared copy at the start of
+     * every request, so feature tests that change Host between requests get a
+     * fresh one.
+     */
+    public static function site(bool $getShared = true): SiteContext
+    {
+        if ($getShared) {
+            return static::getSharedInstance('site');
+        }
+
+        if (is_cli() && ENVIRONMENT !== 'testing') {
+            return new SiteContext(null);
+        }
+
+        $request = service('request');
+        $host    = $request instanceof \CodeIgniter\HTTP\IncomingRequest
+            ? ($request->getHeaderLine('Host') ?: (string) $request->getServer('HTTP_HOST'))
+            : '';
+
+        return new SiteContext($host);
     }
 
     /**

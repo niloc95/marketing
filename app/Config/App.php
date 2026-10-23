@@ -60,13 +60,23 @@ class App extends BaseConfig
     {
         parent::__construct();
 
+        // local.webscheduler.app is served by this same install (Config\Sites),
+        // so base_url() must follow a request on that host in production too,
+        // or every asset there is cross origin and CSP blocks it. It is the
+        // only extra host production trusts; SiteResolver decides what that
+        // host may actually show.
+        $appHost = (new Sites())->host(Sites::APP);
+
         if (ENVIRONMENT === 'production') {
+            $this->allowedHostnames = $appHost === '' ? [] : [$appHost];
+
             return;
         }
 
-        $this->allowedHostnames = array_values(array_filter(
-            array_map('trim', explode(',', (string) env('app.devHostnames', '')))
-        ));
+        $this->allowedHostnames = array_values(array_unique(array_filter(array_merge(
+            array_map('trim', explode(',', (string) env('app.devHostnames', ''))),
+            [$appHost]
+        ))));
     }
 
     /**

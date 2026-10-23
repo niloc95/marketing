@@ -8,6 +8,7 @@ use App\Libraries\PayFast;
 use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\ProfileSetupOrderModel;
 use Config\Directory as DirectoryConfig;
+use Config\Sites;
 
 /**
  * The profile setup service: a business pays a once-off fee through PayFast
@@ -263,7 +264,7 @@ class ProfileSetupService
                 $order['profile_url'] ? 'Existing profile: ' . $order['profile_url'] : 'No profile yet.',
                 (string) ($order['notes'] ?? ''),
             ])),
-            'button'         => ['Open the queue', base_url('admin/profile-setup') . '#order-' . (int) $order['id']],
+            'button'         => ['Open the queue', site_url_for(Sites::ZA, 'admin/profile-setup') . '#order-' . (int) $order['id']],
             'footnote'       => 'Reply to this email to ask ' . strtok((string) $order['name'], ' ') . ' for their logo, photos and details. '
                 . 'We promised to finish within ' . $this->days() . ' business days of having them.',
             'footnoteLink'   => null,
@@ -303,7 +304,7 @@ class ProfileSetupService
             'button'         => null,
             'footnote'       => 'You are receiving this because this address was used to order a profile setup on '
                 . $this->site->siteName() . '. Keep it as your receipt.',
-            'footnoteLink'   => ['Terms of the service', base_url('profile-setup') . '#terms'],
+            'footnoteLink'   => ['Terms of the service', site_url_for(Sites::ZA, 'profile-setup') . '#terms'],
             'bullets'        => null,
             'bulletsHeading' => null,
             'extras'         => null,

@@ -5,6 +5,7 @@ namespace App\Libraries;
 use App\Models\DirectoryVerificationModel;
 use CodeIgniter\HTTP\IncomingRequest;
 use Config\Directory as DirectoryConfig;
+use Config\Sites;
 
 /**
  * PayFast, for the Verified Business monthly subscription.
@@ -106,9 +107,9 @@ class PayFast
         $fields = [
             'merchant_id'  => $this->config->payfastMerchantId(),
             'merchant_key' => $this->config->payfastMerchantKey(),
-            'return_url'   => base_url('manage/verification/done'),
-            'cancel_url'   => base_url('manage/edit'),
-            'notify_url'   => base_url('payfast/notify'),
+            'return_url'   => site_url_for(Sites::ZA, 'manage/verification/done'),
+            'cancel_url'   => site_url_for(Sites::ZA, 'manage/edit'),
+            'notify_url'   => site_url_for(Sites::ZA, 'payfast/notify'),
 
             'email_address' => (string) ($listing['email'] ?? ''),
 
@@ -172,9 +173,9 @@ class PayFast
         $fields = [
             'merchant_id'  => $this->config->payfastMerchantId(),
             'merchant_key' => $this->config->payfastMerchantKey(),
-            'return_url'   => base_url('profile-setup/thanks'),
-            'cancel_url'   => base_url('profile-setup/checkout'),
-            'notify_url'   => base_url('payfast/setup-notify'),
+            'return_url'   => site_url_for(Sites::ZA, 'profile-setup/thanks'),
+            'cancel_url'   => site_url_for(Sites::ZA, 'profile-setup/checkout'),
+            'notify_url'   => site_url_for(Sites::ZA, 'payfast/setup-notify'),
 
             'name_first'    => mb_substr($first, 0, 100),
             'email_address' => (string) ($order['email'] ?? ''),

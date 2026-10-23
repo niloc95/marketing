@@ -37,6 +37,22 @@ class DirectoryService
     private DirectoryListingTeamModel $team;
     private DirectoryVenueModel $venues;
 
+    /**
+     * The "published" condition every public read uses, limited to the
+     * request's site (co.za: South Africa, .app: everywhere else) once
+     * local.webscheduler.app is live. Until then it is exactly the old
+     * status = 'published' and co.za keeps showing every country.
+     *
+     * Raw SQL for where(…, null, false); $prefix is "", "l." or the table
+     * name, always written here, never taken from a request.
+     */
+    private function published(string $prefix = ''): string
+    {
+        $scope = service('site')->scopeSql($prefix . 'country_code');
+
+        return $prefix . "status = 'published'" . ($scope !== '' ? ' AND ' . $scope : '');
+    }
+
     public function __construct()
     {
         helper('directory_hours');
@@ -106,7 +122,7 @@ class DirectoryService
             ->select($select, false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
-            ->where('xs_directory_listings.status', 'published');
+            ->where($this->published('xs_directory_listings.'), null, false);
 
         $q = trim($filters['q'] ?? '');
         // Ranked by how well each listing matches only when the visitor asked
@@ -301,7 +317,7 @@ class DirectoryService
 
         $listings = $this->listings
             ->select('display_name, slug, city, province, quality_score', false)
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->like('display_name', $q)
             ->orderBy('LOCATE(' . $escaped . ', display_name) = 1', 'DESC', false)
             ->orderBy('is_featured', 'DESC')
@@ -330,7 +346,7 @@ class DirectoryService
         $staff = $db->table('xs_directory_listing_team tm')
             ->select('tm.name, tm.slug, tm.role, l.display_name, l.slug AS listing_slug')
             ->join('xs_directory_listings l', 'l.id = tm.listing_id')
-            ->where('l.status', 'published')
+            ->where($this->published('l.'), null, false)
             ->where('l.deleted_at', null)
             ->where('l.verified_until >=', date('Y-m-d'))
             ->like('tm.name', $q)
@@ -388,7 +404,7 @@ class DirectoryService
 
         $places = $this->listings
             ->select('city, province, COUNT(*) AS c', false)
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('city !=', '')
             ->like('city', $q)
             ->groupBy('city, province')
@@ -473,7 +489,7 @@ class DirectoryService
      */
     public function searchVocabulary(): SearchVocabulary
     {
-        $key = 'search_vocabulary_v1';
+        $key = site_cache_key('search_vocabulary_v1');
         try {
             $cached = cache()->get($key);
             if ($cached instanceof SearchVocabulary) {
@@ -513,7 +529,7 @@ class DirectoryService
         // Towns first, so a suburb that shares a town's name stays a town.
         $places = [];
         $towns  = $this->listings->select('DISTINCT city', false)
-            ->where('status', 'published')->where('city !=', '')
+            ->where($this->published(), null, false)->where('city !=', '')
             ->findAll();
         foreach ($towns as $row) {
             $k = $norm((string) $row['city']);
@@ -524,7 +540,7 @@ class DirectoryService
         // Only suburbs the public can see — see HIDDEN_ADDRESS_SQL. Otherwise
         // a hidden owner's suburb would become a word the search recognises.
         $suburbs = $this->listings->select('DISTINCT suburb', false)
-            ->where('status', 'published')->where('suburb !=', '')
+            ->where($this->published(), null, false)->where('suburb !=', '')
             ->where('NOT ' . self::HIDDEN_ADDRESS_SQL, null, false)
             ->findAll();
         foreach ($suburbs as $row) {
@@ -539,13 +555,13 @@ class DirectoryService
             array_column($db->table('xs_directory_listing_services sv')
                 ->select('DISTINCT sv.name', false)
                 ->join('xs_directory_listings l', 'l.id = sv.listing_id')
-                ->where('l.status', 'published')->where('l.deleted_at', null)
+                ->where($this->published('l.'), null, false)->where('l.deleted_at', null)
                 ->limit(5000)->get()->getResultArray(), 'name'),
             array_column($db->table('xs_directory_tags t')
                 ->select('DISTINCT t.name', false)
                 ->join('xs_directory_listing_tags lt', 'lt.tag_id = t.id')
                 ->join('xs_directory_listings l', 'l.id = lt.listing_id')
-                ->where('l.status', 'published')->where('l.deleted_at', null)
+                ->where($this->published('l.'), null, false)->where('l.deleted_at', null)
                 ->limit(5000)->get()->getResultArray(), 'name'),
         );
         $filler = array_flip(config('Search')->fillerWords);
@@ -574,7 +590,7 @@ class DirectoryService
         $rows = $this->listings
             ->select('p.name AS category, xs_directory_listings.city, COUNT(*) AS c', false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id')
-            ->where('xs_directory_listings.status', 'published')
+            ->where($this->published('xs_directory_listings.'), null, false)
             ->where('p.is_active', 1)
             ->where('xs_directory_listings.city !=', '')
             ->groupBy('p.id, p.name, xs_directory_listings.city')
@@ -614,7 +630,7 @@ class DirectoryService
         }
 
         return $this->listings
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->like('display_name', $q)
             ->countAllResults() > 0;
     }
@@ -659,7 +675,7 @@ class DirectoryService
         $builder = $this->listings
             ->select($select, false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
-            ->where('xs_directory_listings.status', 'published');
+            ->where($this->published('xs_directory_listings.'), null, false);
 
         $q = trim($filters['q'] ?? '');
         if ($q !== '') {
@@ -1413,7 +1429,7 @@ class DirectoryService
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
-            ->where('xs_directory_listings.status', 'published')
+            ->where($this->published('xs_directory_listings.'), null, false)
             ->where('xs_directory_listings.is_featured', 1)
             ->orderBy('xs_directory_listings.published_at', 'DESC')
             ->limit($limit)
@@ -1465,7 +1481,7 @@ class DirectoryService
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
-            ->where('xs_directory_listings.status', 'published')
+            ->where($this->published('xs_directory_listings.'), null, false)
             // groupStart/groupEnd, not a bare orWhere — same discipline the
             // comment above applySearch() demands. An ungrouped orWhere here
             // would escape the status filter and put unpublished listings on
@@ -1522,7 +1538,7 @@ class DirectoryService
     {
         $rows = $this->listings
             ->select('category_id, COUNT(*) AS c')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('category_id IS NOT NULL')
             ->groupBy('category_id')
             ->findAll();
@@ -1594,7 +1610,7 @@ class DirectoryService
     {
         $rows = $this->listings
             ->select('province, COUNT(*) AS c')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('province !=', '')
             ->groupBy('province')
             ->orderBy('c', 'DESC')
@@ -1623,7 +1639,7 @@ class DirectoryService
 
         $rows = $this->listings
             ->select('city, COUNT(*) AS c')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('province', $province)
             ->where('city !=', '')
             ->groupBy('city')
@@ -1655,7 +1671,7 @@ class DirectoryService
 
         $rows = $this->listings
             ->select('category_id, COUNT(*) AS c')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('province', $province)
             ->where('category_id IS NOT NULL')
             ->groupBy('category_id')
@@ -1694,7 +1710,7 @@ class DirectoryService
         $counts = $this->categoryListingCounts();
 
         return [
-            'listings'   => (int) $this->listings->where('status', 'published')->countAllResults(),
+            'listings'   => (int) $this->listings->where($this->published(), null, false)->countAllResults(),
             'categories' => count($counts),
             'provinces'  => count($this->provinceCounts()),
         ];
@@ -1761,7 +1777,7 @@ class DirectoryService
     {
         $rows = $this->listings
             ->select('province, COUNT(*) AS c')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('category_id', $categoryId)
             ->where('province !=', '')
             ->groupBy('province')
@@ -1793,7 +1809,7 @@ class DirectoryService
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
-            ->where('xs_directory_listings.status', 'published')
+            ->where($this->published('xs_directory_listings.'), null, false)
             ->where('xs_directory_listings.category_id', $categoryId)
             ->where('xs_directory_listings.id !=', $listingId);
 
@@ -1845,7 +1861,7 @@ class DirectoryService
 
         $rows = $this->listings
             ->select('category_id, province, COUNT(*) AS c, MAX(updated_at) AS m')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('category_id IS NOT NULL')
             ->groupBy('category_id, province')
             ->findAll();
@@ -1924,7 +1940,7 @@ class DirectoryService
         if ($id === 0) {
             return null;
         }
-        $row = $this->listings->select('display_name, slug')->where('status', 'published')->find($id);
+        $row = $this->listings->select('display_name, slug')->where($this->published(), null, false)->find($id);
 
         return $row ?: null;
     }
@@ -1933,7 +1949,7 @@ class DirectoryService
     public function venueListingCount(int $venueId): int
     {
         return $this->listings
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('venue_id', $venueId)
             ->countAllResults();
     }
@@ -1950,7 +1966,7 @@ class DirectoryService
         $rows = $this->listings
             ->select('p.name AS name, p.slug AS slug, COUNT(*) AS c', false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'inner')
-            ->where('xs_directory_listings.status', 'published')
+            ->where($this->published('xs_directory_listings.'), null, false)
             ->where('xs_directory_listings.venue_id', $venueId)
             ->groupBy('p.id')
             ->orderBy('c', 'DESC')
@@ -2001,7 +2017,7 @@ class DirectoryService
 
         $rows = $this->listings
             ->select('province, COUNT(*) AS c, MAX(updated_at) AS m')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             ->where('province !=', '')
             ->groupBy('province')
             ->findAll();
@@ -2031,7 +2047,7 @@ class DirectoryService
         $config  = config('Directory');
         $builder = $this->listings
             ->select('slug, updated_at')
-            ->where('status', 'published')
+            ->where($this->published(), null, false)
             // listing_is_indexable() in SQL: a page that says noindex has no
             // business in the sitemap. Grouped so the OR cannot escape the
             // status filter, and unscored rows pass for the reason recent() gives.

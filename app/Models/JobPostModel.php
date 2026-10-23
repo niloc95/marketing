@@ -69,12 +69,23 @@ class JobPostModel extends Model
      * as in the nightly expiry run, so a post never shows for the hours
      * between midnight and the cron.
      *
+     * Limited to the request's site once local.webscheduler.app is live
+     * (SiteContext::scopeSql), so co.za lists South African posts and .app
+     * the rest; until then it is the same query as always.
+     *
      * @return $this
      */
     public function live()
     {
-        return $this->where($this->table . '.status', self::STATUS_PUBLISHED)
+        $this->where($this->table . '.status', self::STATUS_PUBLISHED)
             ->where($this->table . '.valid_through >=', date('Y-m-d'));
+
+        $scope = service('site')->scopeSql($this->table . '.country_code');
+        if ($scope !== '') {
+            $this->where($scope, null, false);
+        }
+
+        return $this;
     }
 
     /** Every post a listing owns, newest first, for the owner dashboard. */
