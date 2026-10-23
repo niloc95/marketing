@@ -405,7 +405,7 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
                     <p class="site-footer-tagline">
                         Show customers you're a real, checked business, with your team and your
                         other branches on your profile. The Verified Business badge is
-                        R<?= esc((new App\Services\VerificationService())->monthlyAmount()) ?> a month, and there is
+                        <?= esc(money((new App\Services\VerificationService())->monthlyAmount())) ?> a month, and there is
                         nothing to pay until we've checked your documents.
                     </p>
                     <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your business verified</a>

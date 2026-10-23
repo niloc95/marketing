@@ -334,6 +334,52 @@ final class ListingCountryTest extends CIUnitTestCase
         $this->assertStringNotContainsString('data-country-select', $html);
     }
 
+    // ---------------------------------------------------------- country_code
+
+    public function testASignupStoresTheIsoCodeBesideTheName(): void
+    {
+        // country_code is what decides which site a profile is served on, so
+        // it has to follow the name on every write path without the path
+        // having to remember it.
+        $local   = $this->row($this->svc->submitPublic($this->signup()));
+        $foreign = $this->row($this->svc->submitPublic($this->foreign()));
+
+        $this->assertSame('ZA', $local['country_code']);
+        $this->assertSame('DE', $foreign['country_code']);
+    }
+
+    public function testTheCodeFollowsACountryChangeAndSurvivesOtherSaves(): void
+    {
+        $id = (int) $this->svc->submitPublic($this->signup())['id'];
+
+        $this->listings->update($id, ['country' => 'Kenya']);
+        $this->assertSame('KE', $this->listings->find($id)['country_code']);
+
+        $this->listings->update($id, ['display_name' => 'Nairobi Bakery']);
+        $this->assertSame('KE', $this->listings->find($id)['country_code']);
+    }
+
+    public function testACraftedCodeCannotDisagreeWithTheCountry(): void
+    {
+        $id = (int) $this->svc->submitPublic($this->signup())['id'];
+
+        $this->listings->update($id, ['country' => Countries::SOUTH_AFRICA, 'country_code' => 'GB']);
+
+        $this->assertSame('ZA', $this->listings->find($id)['country_code']);
+    }
+
+    public function testTheBackfillFillsOnlyMissingCodes(): void
+    {
+        $za = (int) $this->svc->submitPublic($this->signup())['id'];
+        $de = (int) $this->svc->submitPublic($this->foreign())['id'];
+        db_connect()->table('xs_directory_listings')->update(['country_code' => null]);
+
+        command('directory:countries:backfill');
+
+        $this->assertSame('ZA', $this->listings->find($za)['country_code']);
+        $this->assertSame('DE', $this->listings->find($de)['country_code']);
+    }
+
     // ------------------------------------------------------------- fixtures
 
     /** @param array<string,mixed> $result */

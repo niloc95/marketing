@@ -5,7 +5,7 @@
  * (manage_edit.php). One copy so the price and wording cannot drift; the
  * price comes from the same config the /profile-setup page reads.
  */
-$setupPrice = 'R' . rtrim(rtrim(config('Directory')->profileSetupAmount(), '0'), '.');
+$setupPrice = money(rtrim(rtrim(config('Directory')->profileSetupAmount(), '0'), '.'));
 ?>
 <p class="mb-6 rounded-surface bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
     <strong>Short on time? For a single payment of <?= esc($setupPrice) ?>, we complete your profile for you.</strong>

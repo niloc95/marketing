@@ -104,7 +104,7 @@ $groups = [
             ],
             [
                 'q' => 'How much is the Verified Business badge, and what do I get?',
-                'a' => 'R' . esc((new App\Services\DirectorySettings())->badgePrice()) . ' a month. Your profile and every discovery result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
+                'a' => esc(money((new App\Services\DirectorySettings())->badgePrice())) . ' a month. Your profile and every discovery result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',

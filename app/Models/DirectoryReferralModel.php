@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DerivesCountryCode;
 use CodeIgniter\Model;
 
 /**
@@ -10,6 +11,8 @@ use CodeIgniter\Model;
  */
 class DirectoryReferralModel extends Model
 {
+    use DerivesCountryCode;
+
     public const STATUS_PENDING   = 'pending';
     public const STATUS_INVITED   = 'invited';
     public const STATUS_LISTED    = 'listed';
@@ -33,11 +36,16 @@ class DirectoryReferralModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
+        // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
+        'country_code',
         'business_name', 'business_email', 'business_phone', 'website', 'category_id',
         'city', 'province', 'note', 'referrer_name', 'referrer_email', 'notify_referrer',
         'relationship', 'status', 'invite_token', 'invited_at', 'listing_id', 'ip_hash',
         'pruned_at',
     ];
+
+    protected $beforeInsert = ['deriveCountryCode'];
+    protected $beforeUpdate = ['deriveCountryCode'];
 
     /**
      * One page of the admin queue. Pending is oldest first, because it is the

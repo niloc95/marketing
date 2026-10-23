@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DerivesCountryCode;
 use CodeIgniter\Model;
 
 /**
@@ -12,14 +13,21 @@ use CodeIgniter\Model;
  */
 class DirectoryVenueModel extends Model
 {
+    use DerivesCountryCode;
+
     protected $table         = 'xs_directory_venues';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
+        // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
+        'country_code',
         'name', 'slug', 'address_line', 'suburb', 'city', 'province', 'postal_code',
         'latitude', 'longitude', 'description', 'is_active', 'listing_id',
     ];
+
+    protected $beforeInsert = ['deriveCountryCode'];
+    protected $beforeUpdate = ['deriveCountryCode'];
 
     protected $validationRules = [
         // Same {id} placeholder rule as DirectoryCategoryModel: without a rule

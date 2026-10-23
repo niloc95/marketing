@@ -25,7 +25,7 @@
                     <li>First to hear about new work: verified businesses are the first we alert when a customer in your province asks for your kind of service</li>
                 </ul>
                 <p style="font-size:13px;line-height:1.6;color:#334155;margin:0">
-                    R<?= esc($badgePrice ?? '') ?> a month, and nothing to pay until we've checked your company
+                    <?= esc(money($badgePrice ?? '')) ?> a month, and nothing to pay until we've checked your company
                     registration and the owner's ID. If you haven't sent them yet, confirming above takes you
                     straight there. Your business profile stays free either way.
                     <a href="<?= esc(base_url('verified')) ?>" style="color:#065f46">What we check &rarr;</a>

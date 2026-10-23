@@ -52,7 +52,7 @@ $prettyDate = static function (?string $date): string {
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">
                 Verified Business
-                <span class="text-sm font-normal text-slate-500 dark:text-slate-400">R<?= esc($amount) ?>/month</span>
+                <span class="text-sm font-normal text-slate-500 dark:text-slate-400"><?= esc(money($amount)) ?>/month</span>
             </h1>
         </div>
 

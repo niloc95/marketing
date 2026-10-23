@@ -117,7 +117,7 @@ $prettyDate = static function (?string $date): string {
         <?php elseif ($payable): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your documents check out. Switch the badge on for
-                <strong>R<?= esc($amount) ?> a month</strong>: it appears on your profile and
+                <strong><?= esc(money($amount)) ?> a month</strong>: it appears on your profile and
                 everywhere your business is discovered on the platform.
             </p>
             <p class="mt-4">
@@ -132,7 +132,7 @@ $prettyDate = static function (?string $date): string {
                 Good news. Your documents check out and your business is approved.
             </p>
             <p class="hint">
-                We will email you about payment (<strong>R<?= esc($amount) ?> a month</strong>) and
+                We will email you about payment (<strong><?= esc(money($amount)) ?> a month</strong>) and
                 switch your badge on as soon as it clears. Nothing has been charged.
             </p>
         <?php endif; ?>
@@ -170,12 +170,12 @@ $prettyDate = static function (?string $date): string {
                 We still have your approved documents, so starting again really is one step.
             </p>
             <p class="mt-4">
-                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge, R<?= esc($amount) ?> a month</a>
+                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge, <?= esc(money($amount)) ?> a month</a>
             </p>
         <?php else: ?>
             <p class="hint">
                 We still have your approved documents. We will email you about payment
-                (<strong>R<?= esc($amount) ?> a month</strong>) and put your badge back up as soon
+                (<strong><?= esc(money($amount)) ?> a month</strong>) and put your badge back up as soon
                 as it clears.
             </p>
         <?php endif; ?>

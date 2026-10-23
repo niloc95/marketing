@@ -49,7 +49,7 @@ $link = static fn (string $s) => base_url('admin/profile-setup') . '?status=' . 
                                 <strong><?= esc($o['business_name']) ?></strong>
                                 <div class="text-xs"><?= esc($o['name']) ?></div>
                                 <div class="text-xs"><a href="mailto:<?= esc($o['email'], 'attr') ?>"><?= esc($o['email']) ?></a> · <?= esc($o['phone']) ?></div>
-                                <div class="text-xs text-slate-500"><?= esc($o['reference']) ?> · R<?= esc($o['amount']) ?></div>
+                                <div class="text-xs text-slate-500"><?= esc($o['reference']) ?> · <?= esc(money($o['amount'])) ?></div>
                             </td>
                             <td class="text-sm">
                                 <?php if ($profile !== ''): ?>

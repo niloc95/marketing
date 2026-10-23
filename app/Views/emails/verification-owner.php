@@ -28,7 +28,7 @@ $paidUntil = $paid_until ?? '';
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Your Verified Business badge is ready to switch on. It costs
-                <strong>R<?= esc($amount) ?> a month</strong>, and it appears on your profile and
+                <strong><?= esc(money($amount)) ?> a month</strong>, and it appears on your profile and
                 everywhere your business is discovered on the platform.
             </p>
             <p style="margin:22px 0">
@@ -70,7 +70,7 @@ $paidUntil = $paid_until ?? '';
             <p style="font-size:15px;line-height:1.6">
                 Just so there are no surprises: your Verified Business badge renews on
                 <strong><?= esc($paidUntil) ?></strong>, and PayFast will charge
-                <strong>R<?= esc($amount) ?></strong> as usual.
+                <strong><?= esc(money($amount)) ?></strong> as usual.
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Nothing to do if that's all fine. If you'd rather stop, cancel from your PayFast

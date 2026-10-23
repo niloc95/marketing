@@ -1433,7 +1433,7 @@ class JobBoardService
             return '';
         }
 
-        $r      = static fn ($v) => 'R' . number_format((int) $v, 0, '.', ' ');
+        $r      = static fn ($v) => money((int) $v, 'ZAR', 0);
         $period = $this->cfg->salaryPeriods[$post['salary_period'] ?? '']['label'] ?? '';
         if ($min !== null && $max !== null && (int) $min !== (int) $max) {
             $amount = $r($min) . ' – ' . $r($max);

@@ -92,7 +92,7 @@ $prettyDate = static function (?string $date): string {
             <strong>Your profile is not published yet.</strong>
             A business profile in South Africa is free. Yours is outside South
             Africa, which needs an International Profile subscription at
-            <strong>R<?= esc($amount) ?> per month</strong>.
+            <strong><?= esc(money($amount)) ?> per month</strong>.
             <?php // Everything they have already done still exists. Someone
                   // looking at an unpublished profile needs to know they are
                   // not being asked to start again. ?>

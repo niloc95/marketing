@@ -20,7 +20,7 @@
  * @var array<string,string> $fields
  * @var bool                 $sandbox
  */
-$price = 'R' . rtrim(rtrim((string) $order['amount'], '0'), '.');
+$price = money(rtrim(rtrim((string) $order['amount'], '0'), '.'));
 ?>
 
 <?= $this->section('content') ?>

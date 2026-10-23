@@ -116,7 +116,7 @@ $row = static function (array $r, string $col): string {
               // will actually see on their own listing. ?>
         <?= verified_seal('verified-seal mx-auto mb-2 w-14') ?>
         <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
-        <p class="plan-price">R<?= esc($amount) ?><span class="plan-price-unit">per month</span></p>
+        <p class="plan-price"><?= esc(money($amount)) ?><span class="plan-price-unit">per month</span></p>
         <p class="plan-blurb">
             Everything in the free profile, plus a checked badge, your other locations,
             your people and your job vacancies.

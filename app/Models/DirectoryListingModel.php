@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DerivesCountryCode;
 use CodeIgniter\Model;
 
 class DirectoryListingModel extends Model
 {
+    use DerivesCountryCode;
+
     protected $table          = 'xs_directory_listings';
     protected $primaryKey     = 'id';
     protected $returnType     = 'array';
@@ -14,6 +17,8 @@ class DirectoryListingModel extends Model
     protected $deletedField   = 'deleted_at';
 
     protected $allowedFields = [
+        // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
+        'country_code',
         'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
         'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'whatsapp', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
@@ -46,8 +51,8 @@ class DirectoryListingModel extends Model
         'holiday_hours', 'holiday_open_dates', 'holiday_reminded_at',
     ];
 
-    protected $beforeInsert = ['deriveHolidayColumns'];
-    protected $beforeUpdate = ['deriveHolidayColumns'];
+    protected $beforeInsert = ['deriveHolidayColumns', 'deriveCountryCode'];
+    protected $beforeUpdate = ['deriveHolidayColumns', 'deriveCountryCode'];
 
     /**
      * Fields an OWNER may write through the self-service edit form.

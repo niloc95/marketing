@@ -482,7 +482,7 @@ class ReferralService
                     '💼 Jobs: post your vacancies on our Jobs board, set up so eligible vacancies can appear in Google\'s job search, and reply to customers who need your kind of service.',
                     '📢 New work first: when someone in your province asks for your kind of service, verified businesses are the first we alert.',
                 ],
-                'highlight' => 'R' . $amount . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
+                'highlight' => money($amount) . ' a month, and nothing to pay until we have checked your company registration and the owner\'s ID.',
                 'closing'   => [
                     'We have already filled in what we were told about your business. Just check your details and upload the two documents.',
                     'Your business profile stays free either way.',

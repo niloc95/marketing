@@ -121,8 +121,8 @@ $benefits = [
                 <div class="pricing-card-top">
                     <div>
                         <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
-                        <p class="plan-price">R<?= esc($amount) ?><span class="plan-price-unit">per month</span></p>
-                        <p class="pricing-yearly">R<?= esc($yearly) ?> over 12 months, billed monthly</p>
+                        <p class="plan-price"><?= esc(money($amount)) ?><span class="plan-price-unit">per month</span></p>
+                        <p class="pricing-yearly"><?= esc(money($yearly)) ?> over 12 months, billed monthly</p>
                     </div>
                     <?= verified_seal('verified-seal pricing-seal') ?>
                 </div>

@@ -1093,7 +1093,7 @@ if (! function_exists('facet_range_label')) {
             return $low !== null ? 'From ' . $part($low) : 'Up to ' . $part($high);
         }
 
-        $money = static fn (int $n): string => 'R' . number_format($n, 0, '.', ' ');
+        $money = static fn (int $n): string => money($n, 'ZAR', 0);
         $per   = $unit === 'rand-hour' ? ' an hour' : ' a month';
 
         if ($low !== null && $high !== null) {

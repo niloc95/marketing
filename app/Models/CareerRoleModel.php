@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DerivesCountryCode;
 use CodeIgniter\Model;
 
 /**
@@ -10,6 +11,8 @@ use CodeIgniter\Model;
  */
 class CareerRoleModel extends Model
 {
+    use DerivesCountryCode;
+
     public const STATUS_DRAFT  = 'draft';
     public const STATUS_OPEN   = 'open';
     public const STATUS_CLOSED = 'closed';
@@ -21,11 +24,16 @@ class CareerRoleModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
+        // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
+        'country_code',
         'slug', 'title', 'team', 'summary', 'description',
         'good_fit', 'strong_candidates', 'projects', 'logistics', 'screening_level', 'employment_type',
         'city', 'province', 'is_remote', 'salary_min', 'salary_max', 'salary_period',
         'status', 'published_at', 'valid_through', 'sort_order',
     ];
+
+    protected $beforeInsert = ['deriveCountryCode'];
+    protected $beforeUpdate = ['deriveCountryCode'];
 
     /**
      * Open and not past its closing date, in page order. The date is checked

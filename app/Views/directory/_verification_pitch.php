@@ -95,7 +95,7 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
     </li>
 </ul>
 <p class="hint verify-benefits-terms">
-    <strong>R<?= esc($amount) ?> a month, and nothing to pay now.</strong>
+    <strong><?= esc(money($amount)) ?> a month, and nothing to pay now.</strong>
     We review your documents first and only ask for payment if they check out.
     Cancel any time. A South African business profile is free either way, and stays free.
 </p>

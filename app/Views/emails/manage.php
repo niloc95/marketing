@@ -15,7 +15,7 @@
             <p style="font-size:13px;color:#64748b">
                 While you're there: you can apply for a <strong style="color:#0f172a">Verified Business</strong>
                 badge from your dashboard. We check your company registration document and the owner's ID, and
-                you only pay (R<?= esc($badgePrice ?? '') ?> a month) if they're approved.
+                you only pay (<?= esc(money($badgePrice ?? '')) ?> a month) if they're approved.
                 <a href="<?= esc(base_url('verified')) ?>" style="color:#003049">What we check &rarr;</a>
             </p>
         <?php endif; ?>

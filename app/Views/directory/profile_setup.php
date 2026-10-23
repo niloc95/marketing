@@ -24,7 +24,7 @@ $canonical = base_url('profile-setup');
  * @var array<string,string>  $errors
  * @var array<string,mixed>   $old
  */
-$price = 'R' . rtrim(rtrim($amount, '0'), '.');
+$price = money(rtrim(rtrim($amount, '0'), '.'));
 $v     = fn (string $f) => (string) ($old[$f] ?? '');
 $err   = fn (string $f) => $errors[$f] ?? '';
 

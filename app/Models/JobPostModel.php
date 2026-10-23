@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DerivesCountryCode;
 use CodeIgniter\Model;
 
 /**
@@ -10,12 +11,16 @@ use CodeIgniter\Model;
  */
 class JobPostModel extends Model
 {
+    use DerivesCountryCode;
+
     protected $table          = 'xs_directory_job_posts';
     protected $primaryKey     = 'id';
     protected $returnType     = 'array';
     protected $useTimestamps  = true;
     protected $useSoftDeletes = true;
     protected $allowedFields  = [
+        // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
+        'country_code',
         'kind', 'slug', 'listing_id',
         'poster_name', 'poster_email', 'poster_phone', 'company_name',
         'title', 'description', 'good_fit', 'strong_candidates', 'projects', 'logistics', 'category_id', 'province', 'city', 'is_remote',
@@ -26,6 +31,9 @@ class JobPostModel extends Model
         'published_at', 'valid_through', 'reminded_at', 'ended_at',
         'report_count', 'response_count', 'price_cents',
     ];
+
+    protected $beforeInsert = ['deriveCountryCode'];
+    protected $beforeUpdate = ['deriveCountryCode'];
 
     public const KIND_JOB     = 'job';
     public const KIND_SERVICE = 'service';

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DerivesCountryCode;
 use CodeIgniter\Model;
 
 class DirectoryPracticeLocationModel extends Model
 {
+    use DerivesCountryCode;
+
     protected $table         = 'xs_directory_practice_locations';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
@@ -17,6 +20,8 @@ class DirectoryPracticeLocationModel extends Model
      * a branch reuse the primary's renderers instead of needing copies of them.
      */
     protected $allowedFields = [
+        // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
+        'country_code',
         'listing_id', 'name', 'contact_person',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
         'phone', 'phone_alt', 'email',
@@ -25,6 +30,9 @@ class DirectoryPracticeLocationModel extends Model
         'trading_hours',
         'is_primary', 'sort_order',
     ];
+
+    protected $beforeInsert = ['deriveCountryCode'];
+    protected $beforeUpdate = ['deriveCountryCode'];
 
     /**
      * @return array<int,array<string,mixed>>

@@ -857,7 +857,7 @@ class PartnerService
 
     public function rand(float $amount): string
     {
-        return 'R' . number_format($amount, 2, '.', ' ');
+        return money($amount, 'ZAR', 2);
     }
 
     public function percent(float $rate): string

@@ -34,7 +34,7 @@
                 </div>
                 <div class="checkout-line">
                     <span class="checkout-label">Price</span>
-                    <span><strong>R<?= esc($amount) ?></strong> per month</span>
+                    <span><strong><?= esc(money($amount)) ?></strong> per month</span>
                 </div>
                 <div class="checkout-line">
                     <span class="checkout-label">First charge</span>
@@ -42,11 +42,11 @@
                 </div>
                 <div class="checkout-line">
                     <span class="checkout-label">Then</span>
-                    <span>R<?= esc($amount) ?> on <?= esc($renewsOn) ?>, and monthly after that</span>
+                    <span><?= esc(money($amount)) ?> on <?= esc($renewsOn) ?>, and monthly after that</span>
                 </div>
                 <div class="checkout-line checkout-total">
                     <span class="checkout-label">Due now</span>
-                    <span><strong>R<?= esc($amount) ?></strong></span>
+                    <span><strong><?= esc(money($amount)) ?></strong></span>
                 </div>
             </div>
 
@@ -69,7 +69,7 @@
                 <?php foreach ($fields as $name => $value): ?>
                     <input type="hidden" name="<?= esc($name, 'attr') ?>" value="<?= esc($value, 'attr') ?>">
                 <?php endforeach; ?>
-                <button type="submit" class="btn btn-accent btn-block">Pay R<?= esc($amount) ?> with PayFast</button>
+                <button type="submit" class="btn btn-accent btn-block">Pay <?= esc(money($amount)) ?> with PayFast</button>
             </form>
 
             <p class="mt-4 text-center text-sm">

@@ -227,7 +227,7 @@ class SystemStatusService
             // cause being a .env line nobody remembers setting.
             [
                 'label' => 'Verified Business price',
-                'value' => 'R' . $settings->badgePrice() . ' / month (from the ' . $settings->priceSource() . ')',
+                'value' => money($settings->badgePrice()) . ' / month (from the ' . $settings->priceSource() . ')',
                 'env'   => true,
                 'warn'  => false,
             ],
