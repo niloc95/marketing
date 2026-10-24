@@ -4,13 +4,14 @@
 /**
  * Privacy policy for local.webscheduler.app (Legal::privacy() on the app host).
  *
- * DRAFT FOR LEGAL REVIEW. Adapted from Views/legal/privacy.php (co.za), whose
- * description of what we collect and how long we keep it is the same here
- * because it is the same software. What differs: the laws named, the lawful
- * bases (UK GDPR style), the regulators, the rights, the UK representative
- * (a placeholder until the owner appoints one, decided 24 Oct 2026), and the
- * sections that exist only on co.za (Partner Program, careers, setup service,
- * recommendations). Change the two together when the software changes.
+ * Reviewed by the owner's lawyer, 24 Oct 2026. Adapted from
+ * Views/legal/privacy.php (co.za), whose description of what we collect and
+ * how long we keep it is the same here because it is the same software. What
+ * differs: the laws named, the lawful bases (UK GDPR style), the regulators,
+ * the rights, and the sections that exist only on co.za (Partner Program,
+ * careers, recommendations). No UK GDPR Article 27 representative is named
+ * (owner decision, 24 Oct 2026). Change the two together when the software
+ * changes, and have a material change reviewed again.
  *
  * Copy rules as everywhere customers read: no dashes, no hyphenated words.
  */
@@ -66,10 +67,6 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <?php endif; ?>
                 <li><strong>Website</strong>: <a href="https://webscheduler.co.za/" rel="noopener">webscheduler.co.za</a></li>
             </ul>
-            <?php // PLACEHOLDER (owner decision 24 Oct 2026): appoint a UK
-                  // representative under UK GDPR Article 27 before launch and
-                  // replace this paragraph with their name and address. ?>
-            <p id="uk-representative"><strong>Our representative in the United Kingdom</strong> (UK GDPR Article 27): <em>[Representative's name and UK address to be added before this site launches.]</em> You can contact them instead of us about anything in this policy.</p>
 
             <h2>4. Business profiles</h2>
             <p>The site lets businesses and service providers create and maintain an online business profile. A profile may contain the business or trading name, category, description, qualifications or credentials, operating hours, services, location, contact details, website, social media and booking links, logo and photographs, information about delivery, card payments and online bookings, and team members' names, positions, qualifications, areas of focus, short bios and photos.</p>
@@ -210,7 +207,6 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                     <li>Email: <a href="mailto:<?= esc($contact, 'attr') ?>"><?= esc($contact) ?></a></li>
                 <?php endif; ?>
                 <li>Or our <a href="<?= base_url('contact') ?>">contact form</a></li>
-                <li>In the United Kingdom, our representative named in section 3</li>
             </ul>
         </div>
     </div>

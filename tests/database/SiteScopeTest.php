@@ -251,7 +251,7 @@ final class SiteScopeTest extends CIUnitTestCase
 
         $appPrivacy = $this->page(self::APP_HOST, '/privacy');
         $this->assertStringContainsString('UK General Data Protection Regulation', $appPrivacy);
-        $this->assertStringContainsString('id="uk-representative"', $appPrivacy);
+        $this->assertStringNotContainsString('representative', $appPrivacy, 'no UK representative named (owner, 24 Oct 2026)');
 
         $this->assertStringContainsString('International Profile', $this->page(self::ZA_HOST, '/terms'));
         $this->assertStringNotContainsString('UK General Data Protection Regulation', $this->page(self::ZA_HOST, '/privacy'));
@@ -295,6 +295,14 @@ final class SiteScopeTest extends CIUnitTestCase
         $moved->assertStatus(301);
         $this->assertSame(self::APP_HOST, parse_url((string) $moved->getRedirectUrl(), PHP_URL_HOST));
         $this->assertStringContainsString('Verified businesses', $this->page(self::ZA_HOST, '/'));
+    }
+
+    public function testEachSiteCarriesOnlyItsOwnOwnershipTags(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $this->assertStringContainsString('<meta name="msvalidate.01" content="DCE52B24BAE5E4896E636D6B6BD0A921">', $this->page(self::APP_HOST, '/'));
+        $this->assertStringNotContainsString('msvalidate.01', $this->page(self::ZA_HOST, '/'));
     }
 
     public function testTheAdminIsNotServedOnTheAppHost(): void

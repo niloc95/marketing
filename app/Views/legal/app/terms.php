@@ -4,9 +4,9 @@
 /**
  * Terms of use for local.webscheduler.app (Legal::terms() on the app host).
  *
- * DRAFT FOR LEGAL REVIEW. Adapted from Views/legal/terms.php (co.za) for
- * businesses and visitors outside South Africa. The site must not go live
- * on this text until a lawyer has read it. Decisions behind it (owner, 24 Oct
+ * Reviewed by the owner's lawyer, 24 Oct 2026; have a material change
+ * reviewed again. Adapted from Views/legal/terms.php (co.za) for businesses
+ * and visitors outside South Africa. Decisions behind it (owner, 24 Oct
  * 2026): South African law governs, consumers keep the protections of their
  * own country's law; the Verified Business badge is not sold here until
  * Paddle is in place; the Partner Program, careers and recommendations are

@@ -32,9 +32,8 @@ class Legal extends BaseController
 
     /**
      * local.webscheduler.app's own Terms and Privacy (Views/legal/app/), dated
-     * separately. They are drafts for legal review: the app site must not go
-     * live on them until that review has happened. The cookie policy is the
-     * same on both sites and keeps one date.
+     * separately and reviewed by a lawyer (24 Oct 2026). The cookie policy is
+     * the same on both sites and keeps one date.
      */
     public const APP_LAST_UPDATED = [
         'privacy' => '2026-10-24',

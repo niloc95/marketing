@@ -98,6 +98,11 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
             </script>
         <?php endif; ?>
     <?php endif; ?>
+    <?php // Search engine ownership tags for this site only (Config\Sites): .app's
+          // Bing Webmaster Tools tag must not claim co.za, nor the reverse. ?>
+    <?php if (! empty(site()->profile()['bingVerification'])): ?>
+    <meta name="msvalidate.01" content="<?= esc(site()->profile()['bingVerification'], 'attr') ?>">
+    <?php endif; ?>
 </head>
 <?php
 // Where maps open: the country a form names, else this site's default. Read
