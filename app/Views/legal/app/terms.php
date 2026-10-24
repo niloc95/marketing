@@ -9,8 +9,9 @@
  * on this text until a lawyer has read it. Decisions behind it (owner, 24 Oct
  * 2026): South African law governs, consumers keep the protections of their
  * own country's law; the Verified Business badge is not sold here until
- * Paddle is in place; the Partner Program, careers, the setup service and
- * recommendations are co.za only.
+ * Paddle is in place; the Partner Program, careers and recommendations are
+ * co.za only. (Since superseded: Plus is sold here through PayFast, and so is
+ * the profile setup service, both in US dollars billed in rand.)
  *
  * Copy rules as everywhere customers read: no dashes, no hyphenated words.
  */
@@ -48,7 +49,7 @@ $zaTerms   = site_url_for(\Config\Sites::ZA, 'terms');
             <p>We publish information that businesses themselves submit. <strong>We are not a party to any dealing between you and a business on the site.</strong> We do not vet qualifications, inspect premises, endorse anyone, or guarantee that a profile is accurate, current or complete. Satisfy yourself about any business before engaging it.</p>
 
             <h2>3. Adding a business</h2>
-            <p>Adding a business to the site is free. A profile lives on the site for the country it is in: a business in South Africa is created on local.webscheduler.co.za instead, and we may move a profile there, or from there to here, if its country changes. By submitting a profile you confirm that:</p>
+            <p>Adding a business to the site is free, and stays free. A profile lives on the site for the country it is in: a business in South Africa is created on local.webscheduler.co.za instead, and we may move a profile there, or from there to here, if its country changes. By submitting a profile you confirm that:</p>
             <ul>
                 <li>You own the business or are authorised to act for it.</li>
                 <li>The information you provide is accurate and not misleading.</li>
@@ -60,11 +61,24 @@ $zaTerms   = site_url_for(\Config\Sites::ZA, 'terms');
             <p>A profile goes live only once you confirm it from the verification email we send.</p>
             <p><strong>Emails from us.</strong> We send the emails the service needs (verification and profile management links) to the address on your profile. We also send a <strong>monthly analytics report about your own profile</strong>: how many views it got and where your leads came from. That report is switched on by default when you sign up, and you can switch it off on the signup form itself, in <a href="<?= base_url('manage') ?>">Manage your profile</a>, or with the unsubscribe link in every report. Switching it off is free and never affects your profile. We do not send you marketing about other products, and we do not sell or share your address for advertising.</p>
 
-            <h2>4. The Verified Business badge</h2>
-            <p>The Verified Business badge is not yet offered on this site. When it is, this section will set out what it costs, what we check, how billing, cancelling and refunds work and who processes the payment, and nobody will be charged before those terms are published here. Until then everything on this site is free.</p>
+            <?php // Written to match what the code does: VerificationService
+                  // (Plus is the International plan once .app is live),
+                  // listing_has_premium() for what it unlocks, cancelPlus()
+                  // and lapseExpired() for what happens when it stops. Change
+                  // them together. ?>
+            <h2 id="plus">4. Plus</h2>
+            <p><strong>Plus</strong> is an optional monthly upgrade. Apart from our once off <a href="<?= base_url('profile-setup') ?>">profile setup service</a>, whose terms are on its own page, it is the only thing anyone is ever charged for on this site. Your business profile is free and stays free and published whether or not you buy either.</p>
+            <p><strong>What it includes.</strong> Your other branches or locations, your team members, posting vacancies and replying to requests on the Jobs board (section 5), and a Plus label on your profile and in discovery results.</p>
+            <p><strong>What it is not.</strong> Plus is not a check of your business. We do not review documents for it, and the Plus label says only that the business has Plus, not that we have verified, endorsed or recommended it. Section 2 applies to a Plus profile exactly as to every other one.</p>
+            <p><strong>What you pay, and in which currency.</strong> The price is shown in US dollars, and before you pay, the checkout page shows it together with the amount in South African rand. <strong>WebScheduler is a South African company and Plus is billed in South African rand</strong>, at the rand amount shown at checkout. Your bank converts the charge to your own currency, so the amount on your statement may differ slightly from the dollar price, and your bank may add a foreign transaction fee, which is outside our control. Payments are processed by PayFast; we never receive or store your card details.</p>
+            <p><strong>Billing.</strong> Plus is billed monthly from the day you start it and <strong>recurs automatically until you cancel</strong>. The rand amount is fixed for your subscription when it starts. If we change the price, the change applies only to new subscriptions, never to yours.</p>
+            <p><strong>Cancelling.</strong> You can cancel at any time from <a href="<?= base_url('manage') ?>">Manage your profile</a>, without giving a reason. Cancelling stops future payments. <strong>Plus stays on until the end of the month you have already paid for</strong>; then its features switch off and your profile stays published. Nothing you added is deleted: your branches and team come back if you start Plus again.</p>
+            <p><strong>Refunds.</strong> Because cancelling leaves you with the full month you bought, we do not refund partial months. If you believe you have been charged in error, or after cancelling, contact us and we will put right anything that was our mistake. This does not affect any right to a refund you have under the consumer law of your country.</p>
+            <p><strong>If a payment fails.</strong> Plus stays on until the period you have paid for ends, and then switches off. You can start it again from your dashboard at any time.</p>
+            <p><strong>If we withdraw it.</strong> If we remove Plus because the profile breached these terms, we may do so without a refund. If we stop offering Plus for our own reasons, we will refund the unused part of the month.</p>
 
             <h2>5. The Jobs board</h2>
-            <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries two kinds of post: <strong>job vacancies</strong>, and <strong>requests for a service</strong> (someone looking for a business to do a piece of work). Anyone may post a request for a service, free. Job vacancies may be posted by a business with a profile on the site, from its profile dashboard, and by an employer that does not have a profile.</p>
+            <p>The <a href="<?= base_url('jobs') ?>">Jobs board</a> carries two kinds of post: <strong>job vacancies</strong>, and <strong>requests for a service</strong> (someone looking for a business to do a piece of work). Anyone may post a request for a service, free. Job vacancies may be posted by a business with Plus (section 4), from its profile dashboard, and by an employer that does not have a profile. Replying to a request also needs Plus. While we are not offering Plus, any business with a profile may do both.</p>
             <p><strong>By posting you confirm that:</strong></p>
             <ul>
                 <li>the vacancy or request is real, and you are entitled to offer it;</li>

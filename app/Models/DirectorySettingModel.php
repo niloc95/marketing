@@ -30,6 +30,22 @@ class DirectorySettingModel extends Model
     public const INTERNATIONAL_PRICE   = 'international_listing_price';
     public const INTERNATIONAL_ENABLED = 'international_listing_enabled';
 
+    /**
+     * Plus, the same plan once local.webscheduler.app is live: an optional
+     * upgrade priced in US dollars and charged in rand at the operator's own
+     * rate (DirectorySettings::plusRandAmount()). INTERNATIONAL_ENABLED is its
+     * on switch then too.
+     */
+    public const PLUS_PRICE_USD = 'plus_price_usd';
+    public const USD_ZAR_RATE   = 'usd_zar_rate';
+
+    /**
+     * The profile setup service's price on local.webscheduler.app, in US
+     * dollars, charged in rand at USD_ZAR_RATE. co.za keeps its rand price
+     * (Config\Directory::profileSetupAmount()).
+     */
+    public const PROFILE_SETUP_USD = 'profile_setup_usd';
+
     /** Home hero background: 'photos' (the rotation), 'video' or 'youtube'. */
     public const HERO_MEDIA      = 'hero_media';
     /** Superseded by xs_directory_hero_videos; read once by that migration. */
@@ -57,6 +73,9 @@ class DirectorySettingModel extends Model
         self::BADGE_ENABLED,
         self::INTERNATIONAL_PRICE,
         self::INTERNATIONAL_ENABLED,
+        self::PLUS_PRICE_USD,
+        self::USD_ZAR_RATE,
+        self::PROFILE_SETUP_USD,
         self::HERO_MEDIA,
         self::HERO_VIDEO_PATH,
         self::HERO_YOUTUBE_ID,

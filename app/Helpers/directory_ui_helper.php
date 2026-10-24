@@ -205,6 +205,52 @@ if (! function_exists('verified_badge_pill')) {
     }
 }
 
+if (! function_exists('listing_has_plus')) {
+    /**
+     * Does this listing have Plus right now?
+     *
+     * Plus is the International plan once local.webscheduler.app is live: a
+     * business outside South Africa, paid up (hosting_paid_until, the same
+     * date compare as listing_subscription_active()). Before launch that
+     * subscription only buys publication, so it unlocks nothing here.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_has_plus(array $listing): bool
+    {
+        return service('site')->scoping()
+            && service('site')->forRow($listing) === \Config\Sites::APP
+            && listing_subscription_active($listing);
+    }
+}
+
+if (! function_exists('listing_has_premium')) {
+    /**
+     * Branches, team members and the Jobs board: the Verified Business badge
+     * on co.za, or Plus on .app. One gate, so the two can never unlock
+     * different things by accident. (Video stays with the badge.)
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_has_premium(array $listing): bool
+    {
+        return listing_is_verified_business($listing) || listing_has_plus($listing);
+    }
+}
+
+if (! function_exists('plus_badge_pill')) {
+    /**
+     * The "Plus" label on a profile and its cards. Deliberately not the
+     * emerald Verified pill or seal: nothing about a Plus business has been
+     * checked, and a look alike would claim it had.
+     */
+    function plus_badge_pill(): string
+    {
+        return '<span class="badge gap-1" title="This business has WebScheduler Local Plus">'
+            . lucide('sparkles', 'h-3.5 w-3.5 shrink-0') . 'Plus</span>';
+    }
+}
+
 if (! function_exists('header_quick_categories')) {
     /**
      * The categories on the header's quick-access strip.

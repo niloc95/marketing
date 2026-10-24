@@ -141,7 +141,7 @@ final class SiteScopeTest extends CIUnitTestCase
     {
         $this->setEnv('sites.app.enabled', 'true');
 
-        foreach (['/careers', '/partners', '/profile-setup', '/directory/province/western-cape', '/directory/bakeries/western-cape'] as $path) {
+        foreach (['/careers', '/partners', '/verified', '/directory/province/western-cape', '/directory/bakeries/western-cape'] as $path) {
             Services::resetSingle('site');
             $result = $this->withHeaders(['Host' => self::APP_HOST])->get($path);
             $result->assertStatus(301);
@@ -183,7 +183,7 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->setEnv('sites.app.enabled', 'true');
 
         $xml = $this->page(self::APP_HOST, '/sitemap.xml');
-        foreach (['/careers', '/partners', '/compare', '/faq', '/profile-setup'] as $zaOnly) {
+        foreach (['/careers', '/partners', '/compare', '/verified'] as $zaOnly) {
             $this->assertStringNotContainsString($zaOnly . '<', $xml, $zaOnly);
         }
         $this->assertStringContainsString('/jobs<', $xml);
@@ -261,11 +261,35 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertSame(\App\Controllers\Legal::APP_LAST_UPDATED['terms'], \App\Controllers\Legal::termsVersion());
     }
 
+    public function testTheAppHasItsOwnFaqAndAboutPage(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $faq = $this->page(self::APP_HOST, '/faq');
+        $this->assertStringContainsString('What is Plus?', $faq);
+        $this->assertStringContainsString('Changing or removing your profile', $faq);
+        $this->assertStringNotContainsString('International Profile', $faq);
+        $this->assertStringNotContainsString('Verified Business badge', $faq);
+
+        $company = $this->page(self::APP_HOST, '/company');
+        $this->assertStringContainsString('for businesses everywhere', $company);
+        $this->assertStringNotContainsString('built for South Africa', $company);
+
+        // co.za's are untouched.
+        $this->assertStringContainsString('International Profile', $this->page(self::ZA_HOST, '/faq'));
+        $this->assertStringContainsString('built for South Africa', $this->page(self::ZA_HOST, '/company'));
+    }
+
     public function testTheAdminIsNotServedOnTheAppHost(): void
     {
         $this->setEnv('sites.app.enabled', 'true');
 
-        $this->withHeaders(['Host' => self::APP_HOST])->get('/admin/login')->assertStatus(404);
+        $result = $this->withHeaders(['Host' => self::APP_HOST])->get('/admin/login');
+
+        // Never served here: sent to the one admin, on co.za.
+        $result->assertStatus(302);
+        $this->assertSame(config(Sites::class)->host(Sites::ZA), parse_url((string) $result->getRedirectUrl(), PHP_URL_HOST));
+        $this->assertStringEndsWith('/admin/login', (string) $result->getRedirectUrl());
     }
 
     private function page(string $host, string $path): string

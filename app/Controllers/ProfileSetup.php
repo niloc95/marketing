@@ -35,6 +35,8 @@ class ProfileSetup extends BaseController
 
         return view('directory/profile_setup', [
             'amount'  => $svc->amount(),
+            // The dollar price on local.webscheduler.app, null on co.za.
+            'usd'     => $svc->usdAmount(),
             'days'    => $svc->days(),
             'canPay'  => $svc->canTakePayment(),
             'errors'  => (array) (session('errors') ?? []),
@@ -101,6 +103,7 @@ class ProfileSetup extends BaseController
         return view('directory/profile_setup_checkout', [
             'order'      => $order,
             'days'       => $svc->days(),
+            'usd'        => $svc->usdAmount(),
             'processUrl' => $payfast->processUrl(),
             'fields'     => $payfast->onceOffFields($order),
             'sandbox'    => $payfast->isSandbox(),

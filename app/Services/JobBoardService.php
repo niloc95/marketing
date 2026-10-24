@@ -149,6 +149,12 @@ class JobBoardService
             return false;
         }
 
+        // On local.webscheduler.app Plus does what the badge does here, with
+        // the same fallback: not on sale, nothing to buy, Jobs open to all.
+        if (service('site')->scoping() && service('site')->forRow($listing) === \Config\Sites::APP) {
+            return ! (new VerificationService())->plusOffered() || listing_has_premium($listing);
+        }
+
         return ! (new DirectorySettings())->badgeEnabled() || listing_is_verified_business($listing);
     }
 

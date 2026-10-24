@@ -40,7 +40,7 @@ $looking = [
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'About us | ' . $siteName,
-    'description' => $siteName . ' is a local business discovery and visibility platform built for South Africa. '
+    'description' => $siteName . ' is a local business discovery and visibility platform ' . site_copy('companyFor', 'built for South Africa') . '. '
         . 'Discover businesses, services, locations, professionals and opportunities, or create a free business profile.',
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'AboutPage', 'About ' . $siteName),
@@ -56,7 +56,7 @@ $looking = [
     </div>
     <div class="hero-collage-veil" aria-hidden="true"></div>
     <div class="container">
-        <h1 class="max-w-3xl">A local business discovery and visibility platform, built for South Africa</h1>
+        <h1 class="max-w-3xl">A local business discovery and visibility platform, <?= esc(site_copy('companyFor', 'built for South Africa')) ?></h1>
         <p><?= esc($siteName) ?> connects people looking for services with the businesses and professionals who provide them.</p>
         <a class="btn btn-accent mt-6" href="<?= base_url('directory') ?>">Explore local businesses<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
     </div>
@@ -80,7 +80,7 @@ $looking = [
                 <h2>A real local presence</h2>
                 <p>
                     A business profile shows what a business does, the services it provides, where it is, when it
-                    is open and how to reach it, with photos. Verified businesses can add their other branches,
+                    is open and how to reach it, with photos. <?= site()->isApp() ? 'With Plus, businesses' : 'Verified businesses' ?> can add their other branches,
                     the people behind the business and their job vacancies too.
                 </p>
             </div>
@@ -100,7 +100,7 @@ $looking = [
         <div class="section-head-split">
             <div>
                 <h2>Whatever you're looking for</h2>
-                <p><?= esc($siteName) ?> helps you discover what South Africa has to offer.</p>
+                <p><?= esc($siteName) ?> helps you discover what <?= esc(site_copy('companyOffer', 'South Africa has')) ?> to offer.</p>
             </div>
         </div>
         <div class="tile-grid">
@@ -139,7 +139,7 @@ $looking = [
                 <span class="company-step-num">01</span>
                 <div>
                     <h3>Create your free business profile</h3>
-                    <p>Your business information, services, contact details, address and map location, photos and opening hours. It takes a couple of minutes, and a South African business profile is free.</p>
+                    <p>Your business information, services, contact details, address and map location, photos and opening hours. It takes a couple of minutes, and <?= site()->isApp() ? 'a business profile is free' : 'a South African business profile is free' ?>.</p>
                 </div>
             </li>
             <li>
@@ -164,6 +164,15 @@ $looking = [
                         <p>A <a href="<?= base_url('verified') ?>">Verified Business</a> profile shows customers we have checked your registration and ID. It also lets you add your other locations, your team with their qualifications and areas of expertise, and your job vacancies.</p>
                     </div>
                 </li>
+            <?php elseif (! empty($plusOffered)): ?>
+                <?php // local.webscheduler.app sells Plus, not the badge. ?>
+                <li>
+                    <span class="company-step-num">04</span>
+                    <div>
+                        <h3>Add Plus, if you want to</h3>
+                        <p>Plus lets you add your other locations, your team with what they do, and your job vacancies, and puts a Plus label on your profile. Add it from your dashboard whenever you like.</p>
+                    </div>
+                </li>
             <?php endif; ?>
         </ol>
     </div>
@@ -174,7 +183,9 @@ $looking = [
         <div class="section-head">
             <h2><?= esc($siteName) ?></h2>
             <p>A place where your business can be discovered, understood and connected with customers, professionals and opportunities.</p>
-            <p><a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('compare') ?>">See how we compare with Google, LinkedIn and South African directories</a></p>
+            <?php if (! site()->isApp()): // /compare is about South African directories ?>
+                <p><a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('compare') ?>">See how we compare with Google, LinkedIn and South African directories</a></p>
+            <?php endif; ?>
         </div>
         <?php if (config('Directory')->socialLinks !== []): ?>
             <?= view('directory/_our_socials', ['class' => 'justify-center']) ?>

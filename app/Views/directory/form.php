@@ -53,6 +53,16 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 We have kept what you typed. Please add your logo and photos again, check your details and submit.
             </div>
         <?php endif; ?>
+        <?php // local.webscheduler.app: Free vs Plus where co.za shows Free vs
+              // Verified (the badge is not sold there). Plus is bought from the
+              // dashboard once the profile is live; the cards say so. ?>
+        <?php if (! empty($plusUsd) && ! empty($plusRand)): ?>
+            <div class="plan-choose">
+                <span class="eyebrow">Your business profile</span>
+                <h1 class="plan-choose-title">Start free. Add Plus when you are ready.</h1>
+                <?= view('directory/_plus_compare', ['usd' => $plusUsd, 'rand' => $plusRand, 'onSignup' => true], ['saveData' => false]) ?>
+            </div>
+        <?php endif; ?>
         <?php // The comparison comes first. The two options used to meet only inside a
               // collapsed <details> further down, which is why businesses kept arriving
               // unsure what the difference was. Renders nothing when the badge is off. ?>

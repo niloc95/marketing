@@ -20,7 +20,10 @@
  * @var array<string,string> $fields
  * @var bool                 $sandbox
  */
-$price = money(rtrim(rtrim((string) $order['amount'], '0'), '.'));
+// On .app: the dollar price, then the rand PayFast actually charges.
+$usd   = $usd ?? null;
+$rand  = money(rtrim(rtrim((string) $order['amount'], '0'), '.'));
+$price = $usd !== null ? money($usd, 'USD') : $rand;
 ?>
 
 <?= $this->section('content') ?>
@@ -51,7 +54,7 @@ $price = money(rtrim(rtrim((string) $order['amount'], '0'), '.'));
                 </div>
                 <div class="checkout-line checkout-total">
                     <span class="checkout-label">Due now</span>
-                    <span><strong><?= esc($price) ?></strong>, paid once</span>
+                    <span><strong><?= esc($price) ?></strong>, paid once<?php if ($usd !== null): ?>, billed in South African rand<?php endif; ?></span>
                 </div>
             </div>
 
@@ -67,7 +70,14 @@ $price = money(rtrim(rtrim((string) $order['amount'], '0'), '.'));
                 <?php foreach ($fields as $name => $value): ?>
                     <input type="hidden" name="<?= esc($name, 'attr') ?>" value="<?= esc($value, 'attr') ?>">
                 <?php endforeach; ?>
-                <button type="submit" class="btn btn-accent btn-block">Pay <?= esc($price) ?> with PayFast</button>
+                <?php if ($usd !== null): ?>
+                    <p class="alert alert-info">
+                        <strong>Billed in South African rand.</strong> WebScheduler is a South African company,
+                        so PayFast charges it in rand and your bank converts it to your own currency. The amount on your statement may differ slightly from <?= esc($price) ?>,
+                        and some banks add a foreign transaction fee.
+                    </p>
+                <?php endif; ?>
+                <button type="submit" class="btn btn-accent btn-block"><?= $usd !== null ? 'Pay with PayFast' : 'Pay ' . esc($rand) . ' with PayFast' ?></button>
             </form>
 
             <p class="mt-4 text-center text-sm">

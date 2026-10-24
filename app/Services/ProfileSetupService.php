@@ -37,9 +37,34 @@ class ProfileSetupService
         $this->site   = $site ?? config('Directory');
     }
 
+    /**
+     * What a new order is charged, in rand. On local.webscheduler.app the
+     * dollar price at the Plus rate (DirectorySettings::profileSetupRandOnApp());
+     * on co.za, and on .app before a rate is set, the rand price.
+     */
     public function amount(): string
     {
+        if ($this->onApp() && ($rand = (new DirectorySettings())->profileSetupRandOnApp()) !== null) {
+            return $rand;
+        }
+
         return $this->site->profileSetupAmount();
+    }
+
+    /**
+     * The dollar price shown on .app, or null on co.za, and on .app while no
+     * rate is set (it is then shown and charged in rand, as amount() does).
+     */
+    public function usdAmount(): ?string
+    {
+        $settings = new DirectorySettings();
+
+        return $this->onApp() && $settings->profileSetupRandOnApp() !== null ? $settings->profileSetupUsd() : null;
+    }
+
+    private function onApp(): bool
+    {
+        return service('site')->isApp() && service('site')->scoping();
     }
 
     public function days(): int

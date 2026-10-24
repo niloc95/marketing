@@ -209,6 +209,11 @@ class Manage extends BaseController
             // applies to this listing, so a South African owner never sees a
             // panel about a country they are not in.
             'hostingRequired' => $verification->requiresSubscription($listing),
+            // Plus on local.webscheduler.app: offered to a business abroad, and
+            // shown to one that still holds it even if it is no longer on sale.
+            'plusShown'       => $verification->plusMode()
+                && ($verification->plusAvailableFor($listing) || listing_subscription_active($listing)),
+            'plusUsd'         => $verification->plusPriceUsd(),
             'hostingAmount'   => $verification->internationalAmount(),
             'hosting'         => $hostingRow,
             'hostingPending'  => $this->paymentPending($hostingRow),
@@ -437,6 +442,12 @@ class Manage extends BaseController
         if ($service->requiresSubscription($listing) && ! $service->subscriptionActive($listing)) {
             $plan = DirectoryVerificationModel::PLAN_INTERNATIONAL;
             $service->ensureInternationalSubscription((int) $listing['id']);
+        } elseif ($this->request->getGet('plan') === 'plus' && $service->plusAvailableFor($listing)) {
+            // Plus is asked for by name: it is optional, so there is no
+            // "only one right answer" to infer as there is above. Same row
+            // and same PayFast flow as the International plan it replaced.
+            $plan = DirectoryVerificationModel::PLAN_INTERNATIONAL;
+            $service->ensureInternationalSubscription((int) $listing['id']);
         }
 
         $current = $service->forListing((int) $listing['id'], $plan);
@@ -464,6 +475,19 @@ class Manage extends BaseController
         }
 
         $verification = $current['verification'];
+
+        // Plus has no quote to honour: nobody approved a price for it, it is
+        // just on sale. So a row that was never paid, or has lapsed, takes
+        // today's price (VerificationService::internationalAmount()), and only
+        // a live subscription keeps the rand it started at. The badge keeps
+        // the price an admin's approval quoted, as the settings page says.
+        if ($plan === DirectoryVerificationModel::PLAN_INTERNATIONAL && $service->plusMode()) {
+            $today = $service->internationalAmount();
+            if ($verification['amount'] !== $today) {
+                (new DirectoryVerificationModel())->update((int) $verification['id'], ['amount' => $today]);
+                $verification['amount'] = $today;
+            }
+        }
 
         // The correlation id is minted on first use rather than at application
         // time, because a payment that is never started should not burn one —
@@ -497,6 +521,9 @@ class Manage extends BaseController
 
         return view('directory/verification_checkout', [
             'listing'    => $listing,
+            // Which plan the page is selling: 'badge', 'international' or 'plus'.
+            'product'    => $plan === DirectoryVerificationModel::PLAN_BADGE ? 'badge' : ($service->plusMode() ? 'plus' : 'international'),
+            'plusUsd'    => $service->plusPriceUsd(),
             'amount'     => $verification['amount'],
             'processUrl' => $payfast->processUrl(),
             'fields'     => $payfast->subscriptionFields($listing, $verification),

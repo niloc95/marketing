@@ -103,12 +103,17 @@ class PayFast
         // that is what every row written before the plan column looks like.
         $isInternational = ($verification['plan'] ?? DirectoryVerificationModel::PLAN_BADGE)
             === DirectoryVerificationModel::PLAN_INTERNATIONAL;
+        $plus = $isInternational && service('site')->scoping();
 
         $fields = [
             'merchant_id'  => $this->config->payfastMerchantId(),
             'merchant_key' => $this->config->payfastMerchantKey(),
-            'return_url'   => site_url_for(Sites::ZA, 'manage/verification/done'),
-            'cancel_url'   => site_url_for(Sites::ZA, 'manage/edit'),
+            // Back to the listing's own site, where the owner is signed in
+            // (sessions are per host); a .app owner sent to co.za would land
+            // signed out. The ITN always goes to co.za: every stored PayFast
+            // subscription already points there.
+            'return_url'   => row_site_url($listing, 'manage/verification/done'),
+            'cancel_url'   => row_site_url($listing, 'manage/edit'),
             'notify_url'   => site_url_for(Sites::ZA, 'payfast/notify'),
 
             'email_address' => (string) ($listing['email'] ?? ''),
@@ -119,11 +124,12 @@ class PayFast
             // statement, so it has to name the thing they are actually buying.
             // An international subscriber charged for a "Verified Business
             // badge" they never asked for is a chargeback waiting to happen.
-            'item_name'        => $isInternational ? 'International Profile' : 'Verified Business badge',
+            // Plus once local.webscheduler.app is live (VerificationService::plusMode()).
+            'item_name'        => $isInternational ? ($plus ? 'WebScheduler Local Plus' : 'International Profile') : 'Verified Business badge',
             // Truncated because PayFast caps this field and silently rejects
             // the whole request rather than trimming it for us.
             'item_description' => mb_substr(
-                ($isInternational ? 'Monthly International Profile for ' : 'Monthly Verified Business badge for ') . $name,
+                ($isInternational ? ($plus ? 'Monthly WebScheduler Local Plus for ' : 'Monthly International Profile for ') : 'Monthly Verified Business badge for ') . $name,
                 0,
                 200
             ),
@@ -173,8 +179,10 @@ class PayFast
         $fields = [
             'merchant_id'  => $this->config->payfastMerchantId(),
             'merchant_key' => $this->config->payfastMerchantKey(),
-            'return_url'   => site_url_for(Sites::ZA, 'profile-setup/thanks'),
-            'cancel_url'   => site_url_for(Sites::ZA, 'profile-setup/checkout'),
+            // Back to the site the order was placed on (the service is sold
+            // on both); the ITN to co.za, as above.
+            'return_url'   => base_url('profile-setup/thanks'),
+            'cancel_url'   => base_url('profile-setup/checkout'),
             'notify_url'   => site_url_for(Sites::ZA, 'payfast/setup-notify'),
 
             'name_first'    => mb_substr($first, 0, 100),

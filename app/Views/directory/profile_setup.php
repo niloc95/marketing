@@ -16,15 +16,24 @@ $canonical = base_url('profile-setup');
  *
  * Two claims to keep honest if this copy changes: paying buys our time and
  * nothing else (no higher place in results, no badge), and branches, team
- * members and job posts stay Verified Business features.
+ * members and job posts stay Verified Business features (Plus on .app).
  *
- * @var string                $amount  "250.00"
+ * @var string                $amount  "250.00", what PayFast charges in rand
+ * @var string|null           $usd     the dollar price on local.webscheduler.app
  * @var int                   $days    business days to finish
  * @var bool                  $canPay  PayFast is configured
  * @var array<string,string>  $errors
  * @var array<string,mixed>   $old
  */
-$price = money(rtrim(rtrim($amount, '0'), '.'));
+// On .app the price is dollars, charged in rand by a South African company
+// ($randNote, said wherever payment is). No rand figure: it moves with the
+// exchange rate, so the page says only that rand is charged (owner, 24 Oct
+// 2026). co.za: the rand price, as always.
+$usd      = $usd ?? null;
+$price    = $usd !== null ? money($usd, 'USD') : money(rtrim(rtrim($amount, '0'), '.'));
+$randNote = $usd !== null
+    ? ' WebScheduler is a South African company, so PayFast charges it in South African rand and your bank converts it.'
+    : '';
 $v     = fn (string $f) => (string) ($old[$f] ?? '');
 $err   = fn (string $f) => $errors[$f] ?? '';
 
@@ -51,8 +60,11 @@ $faqs = [
         'a' => 'No. Nobody can pay for a higher place on ' . esc($siteName) . '. A complete profile simply matches more of what customers set out to discover, which is the point of the service.',
     ],
     [
-        'q' => 'Does this include the Verified Business badge?',
-        'a' => 'No. The badge needs your business registration document and your ID, which only you can send. You can <a href="' . base_url('verified') . '">apply for it</a> at any time.',
+        // local.webscheduler.app sells Plus, not the badge (VerificationService::plusMode()).
+        'q' => $usd !== null ? 'Does this include Plus?' : 'Does this include the Verified Business badge?',
+        'a' => $usd !== null
+            ? 'No. Plus is a separate monthly upgrade that adds your other locations, your team and the Jobs board. You can add it from <a href="' . base_url('manage') . '">your dashboard</a> at any time.'
+            : 'No. The badge needs your business registration document and your ID, which only you can send. You can <a href="' . base_url('verified') . '">apply for it</a> at any time.',
     ],
     [
         'q' => 'Who owns the profile afterwards?',
@@ -120,7 +132,7 @@ $faqs = [
                 <span class="company-step-num">01</span>
                 <div>
                     <h3>Order and pay</h3>
-                    <p>Fill in the form below and pay <?= esc($price) ?> securely with PayFast. You get a receipt by email.</p>
+                    <p>Fill in the form below and pay <?= esc($price) ?> securely with PayFast.<?= esc($randNote) ?> You get a receipt by email.</p>
                 </div>
             </li>
             <li>
@@ -153,7 +165,7 @@ $faqs = [
         <div class="section-head-split">
             <div>
                 <h2>Order your profile setup</h2>
-                <p><?= esc($price) ?>, paid once. Your profile itself stays free.</p>
+                <p><?= esc($price) ?>, paid once. Your profile itself stays free.<?= esc($randNote) ?></p>
             </div>
         </div>
 
@@ -247,11 +259,11 @@ $faqs = [
             </div>
         </div>
         <ul class="checkout-terms">
-            <li>The fee is <?= esc($price) ?>, paid once through PayFast. There is nothing further to pay for the service.</li>
+            <li>The fee is <?= esc($price) ?>, paid once through PayFast.<?= esc($randNote) ?> There is nothing further to pay for the service.</li>
             <li>We complete your profile within <?= (int) $days ?> business days of receiving your details, logo and photos.</li>
             <li>You may cancel for a full refund until we start work on your profile. Once we have started, the fee is not refundable.</li>
             <li>You confirm that the logo, photos and information you send us are yours to use, and accurate.</li>
-            <li>Paying for setup does not change where your profile appears in discovery results, and does not include the Verified Business badge, branches, team members or job posts.</li>
+            <li>Paying for setup does not change where your profile appears in discovery results, and does not include <?= $usd !== null ? 'Plus' : 'the Verified Business badge' ?>, branches, team members or job posts.</li>
             <li>Your profile stays free, belongs to you, and you can change or remove it at any time. Our <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>">terms</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>">privacy policy</a> apply.</li>
         </ul>
     </div>

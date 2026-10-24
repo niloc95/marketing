@@ -99,14 +99,63 @@ $changeNote = static function (?array $change): string {
 
                 <hr class="my-6 border-slate-200 dark:border-slate-700">
 
-                <h2 class="mb-1.5 text-base font-bold text-slate-900 dark:text-white">International listings</h2>
+                <h2 class="mb-1.5 text-base font-bold text-slate-900 dark:text-white">International listings and Plus</h2>
                 <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                    A business with a South African address lists free, always. A business
-                    anywhere else publishes only while this subscription is paid.
+                    A business with a South African address lists free, always.
+                    <?php if ($plusLive): ?>
+                        local.webscheduler.app is live, so a business anywhere else also lists free there,
+                        and this subscription is <strong>Plus</strong>: an optional upgrade with branches,
+                        team members, the Jobs board and a Plus label, and no document checks.
+                    <?php else: ?>
+                        Until local.webscheduler.app is live, a business anywhere else publishes only while
+                        the International Profile subscription is paid. At launch that subscription becomes
+                        <strong>Plus</strong>, priced in US dollars below, and existing subscribers carry on as Plus.
+                    <?php endif; ?>
                 </p>
+                <div class="form-row">
+                    <div class="field">
+                        <label for="plus-usd">Plus price (US dollars per month)</label>
+                        <input type="text" id="plus-usd" name="plus_price_usd" inputmode="decimal"
+                               value="<?= esc($v('plus_price_usd', $plusUsd ?? ''), 'attr') ?>" placeholder="2.99">
+                        <?php if ($err('plus_price_usd')): ?><div class="err"><?= esc($err('plus_price_usd')) ?></div><?php endif; ?>
+                        <?php if ($n = $changeNote($lastPlusPrice)): ?><div class="hint"><?= esc($n) ?></div><?php endif; ?>
+                    </div>
+                    <div class="field">
+                        <label for="usd-rate">Rand per US dollar</label>
+                        <input type="text" id="usd-rate" name="usd_zar_rate" inputmode="decimal"
+                               value="<?= esc($v('usd_zar_rate', $usdRate ?? ''), 'attr') ?>" placeholder="18.20">
+                        <?php if ($err('usd_zar_rate')): ?><div class="err"><?= esc($err('usd_zar_rate')) ?></div><?php endif; ?>
+                        <?php if ($n = $changeNote($lastUsdRate)): ?><div class="hint"><?= esc($n) ?></div><?php endif; ?>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="setup-usd">Profile setup service price on local.webscheduler.app (US dollars, once off)</label>
+                    <input type="text" id="setup-usd" name="profile_setup_usd" inputmode="decimal"
+                           value="<?= esc($v('profile_setup_usd', $setupUsd), 'attr') ?>" placeholder="39.99">
+                    <?php if ($err('profile_setup_usd')): ?><div class="err"><?= esc($err('profile_setup_usd')) ?></div><?php endif; ?>
+                    <div class="hint">
+                        <?php if ($setupRandApp !== null): ?>
+                            Charged <strong><?= esc(money($setupRandApp)) ?></strong> at the rate above.
+                        <?php else: ?>
+                            Shown and charged in rand on .app until the rate is set.
+                        <?php endif; ?>
+                        co.za keeps its own rand price.
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <?php if ($plusRand !== null): ?>
+                        A new Plus subscription is charged <strong><?= esc(money($plusRand)) ?></strong> a month
+                        (<?= esc(money((string) $plusUsd, 'USD')) ?> at R<?= esc($usdRate) ?> to the dollar).
+                    <?php else: ?>
+                        Plus is not on sale until both the dollar price and the rate are set.
+                    <?php endif; ?>
+                    PayFast charges rand only, so the rand figure is what the card is charged. It is fixed
+                    for each subscription when it starts: changing the rate later only changes it for new ones.
+                    Update the rate now and then, for example monthly.
+                </div>
 
                 <div class="field">
-                    <label for="intl-price">International Profile price (rand per month)</label>
+                    <label for="intl-price">International Profile price, until local.webscheduler.app launches (rand per month)</label>
                     <input type="text" id="intl-price" name="international_price" inputmode="decimal"
                            value="<?= esc($v('international_price', $intlPrice), 'attr') ?>">
                     <?php if ($err('international_price')): ?>
@@ -127,7 +176,7 @@ $changeNote = static function (?array $change): string {
                     <label class="font-medium">
                         <input type="checkbox" name="international_enabled" value="1"
                                <?= (array_key_exists('international_enabled', $old) ? ! empty($old['international_enabled']) : $intlEnabled) ? 'checked' : '' ?>>
-                        Require a subscription for listings outside South Africa
+                        <?= $plusLive ? 'Offer Plus on local.webscheduler.app' : 'Require a subscription for listings outside South Africa (becomes "Offer Plus" at launch)' ?>
                     </label>
                     <div class="hint">
                         <?php // The failure mode matters more than the feature here. Switching

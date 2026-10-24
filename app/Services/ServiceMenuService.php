@@ -101,7 +101,7 @@ class ServiceMenuService
             }
             if (mb_strlen($row['price_label']) > self::MAX_PRICE_LENGTH) {
                 $errors[sprintf('services.%d.price_label', $index)] = sprintf(
-                    'Keep the price under %d characters, for example “from R250”.',
+                    'Keep the price under %d characters, for example “from ' . (service('site')->isApp() ? '$25' : 'R250') . '”.',
                     self::MAX_PRICE_LENGTH + 1
                 );
             }

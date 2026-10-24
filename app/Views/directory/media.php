@@ -24,7 +24,7 @@ $snippet    = '<a href="' . base_url('/') . '" title="Discover local businesses 
     . '  <img src="' . base_url('assets/brand/logo-256.png') . '" alt="' . $siteName . '" width="128" height="128">' . "\n"
     . '</a>';
 
-$boilerplate = $siteName . ' is a local business discovery and visibility platform built for South Africa. '
+$boilerplate = $siteName . ' is a local business discovery and visibility platform ' . site_copy('companyFor', 'built for South Africa') . '. '
     . 'Customers discover businesses, professionals and home industries near them, and every business can create '
     . 'a free business profile to be discovered. ' . config('Directory')->slogan;
 
@@ -39,7 +39,9 @@ $donts = [
     'Stretch, squash, crop, rotate, recolour or redraw the logo, or add shadows or other effects.',
     'Change its words, or put your own name or logo inside it.',
     'Use it as your own logo, app icon, profile picture or domain name.',
-    'Suggest that we endorse, sponsor or have checked your business. Only the Verified Business badge says that, and only we show it.',
+    site()->isApp()
+        ? 'Suggest that we endorse, sponsor or have checked your business.'
+        : 'Suggest that we endorse, sponsor or have checked your business. Only the Verified Business badge says that, and only we show it.',
     'Use it on anything misleading, unlawful or offensive.',
 ];
 ?>
@@ -47,8 +49,8 @@ $donts = [
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Media resources | ' . $siteName,
-    'description' => 'Download the ' . $siteName . ' logo for your website, with simple rules for using it. '
-        . 'The Verified Business badge is not available for download.',
+    'description' => 'Download the ' . $siteName . ' logo for your website, with simple rules for using it.'
+        . (site()->isApp() ? '' : ' The Verified Business badge is not available for download.'),
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'WebPage', 'Media resources'),
 ]) ?>
@@ -152,6 +154,8 @@ $donts = [
     </div>
 </section>
 
+<?php // The badge is co.za's; local.webscheduler.app does not sell it. ?>
+<?php if (! site()->isApp()): ?>
 <section class="section section-alt" id="verified-badge">
     <div class="container">
         <div class="media-verified">
@@ -180,6 +184,7 @@ $donts = [
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="section">
     <div class="container">

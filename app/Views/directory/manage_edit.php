@@ -100,6 +100,17 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 ]) ?>
             <?php endif; ?>
 
+            <?php if (! empty($plusShown)): ?>
+                <?= view('directory/_plus_panel', [
+                    'listing'      => $listing,
+                    'subscription' => $hosting,
+                    'amount'       => $hostingAmount,
+                    'usd'          => $plusUsd ?? null,
+                    'payable'      => $verificationPayable,
+                    'pending'      => $hostingPending,
+                ]) ?>
+            <?php endif; ?>
+
             <?php if ($verificationOffered): ?>
                 <?= view('directory/_verification_panel', [
                     'verification' => $verification,

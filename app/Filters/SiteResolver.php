@@ -18,8 +18,9 @@ use Config\Sites;
  *    302 to the same path on co.za. Cloudflare does the same at the edge;
  *    this is the backstop if that rule is ever removed, so Google never
  *    indexes a half built site.
- *  - Once enabled, /admin* on the app host is a 404. The admin lives on co.za
- *    only, behind the one Cloudflare Access application it already has.
+ *  - Once enabled, /admin* on the app host redirects to the same page on
+ *    co.za. There is one admin, on co.za, for both sites, behind the one
+ *    Cloudflare Access application it already has; .app never serves it.
  *  - Once enabled, co.za's own pages (Config\Sites::$zaOnlyPaths) 301 there.
  *
  * Runs right after frontcontrollerpath, before anything reads service('site').
@@ -55,7 +56,13 @@ class SiteResolver implements FilterInterface
         }
 
         if ($path === 'admin' || str_starts_with($path, 'admin/')) {
-            throw PageNotFoundException::forPageNotFound();
+            // A redirect, not the page: a 302 so nothing caches it, and only
+            // for GET, so no form is ever posted to the admin from this host.
+            if (! in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)) {
+                throw PageNotFoundException::forPageNotFound();
+            }
+
+            return service('response')->redirect(site_url_for(Sites::ZA, $path), 'auto', 302);
         }
 
         // co.za's own pages (Config\Sites::$zaOnlyPaths) move there for good.

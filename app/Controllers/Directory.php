@@ -46,10 +46,16 @@ class Directory extends BaseController
             $settings       = new DirectorySettings();
             $pricingOffered = $settings->badgeEnabled();
             $pricingAmount  = $settings->badgePrice();
+            // Plus on local.webscheduler.app, where the badge is not sold.
+            $plusOnSale = service('site')->isApp() && service('site')->scoping() && $settings->internationalEnabled();
+            $plusUsd    = $plusOnSale ? $settings->plusPriceUsd() : null;
+            $plusRand   = $plusOnSale ? $settings->plusRandAmount() : null;
         } catch (\Throwable $e) {
             log_message('warning', 'Could not read badge settings for the home pricing section: ' . $e->getMessage());
             $pricingOffered = false;
             $pricingAmount  = '';
+            $plusUsd        = null;
+            $plusRand       = null;
         }
 
         return view('directory/home', [
@@ -67,6 +73,8 @@ class Directory extends BaseController
             'heroBackground' => (new HeroImageService())->background(),
             'pricingOffered' => $pricingOffered,
             'pricingAmount'  => $pricingAmount,
+            'plusUsd'        => $plusUsd,
+            'plusRand'       => $plusRand,
         ]);
     }
 

@@ -82,25 +82,27 @@ class Sites extends BaseConfig
         'where'           => ' near you',
         'discoverDescription' => 'Discover local businesses, services and professionals by category, country and city, on one local discovery platform.',
         'jobsWhere'       => 'near you',
+        'companyFor'      => 'for businesses everywhere',
+        'companyOffer'    => 'your area has',
     ];
 
     /**
      * Pages that exist on co.za only, as route path prefixes. On the app host
      * a GET for one of them is a 301 to the same path on co.za
-     * (Filters\SiteResolver): our own careers, the partner programme and the
-     * profile setup service are South African businesses paid in rand, the
+     * (Filters\SiteResolver): our own careers and the partner programme are
+     * South African (the profile setup service is sold on both, see
+     * ProfileSetupService::amount()), the
      * comparison and the guides are about South Africa, recommendations and
      * province pages are South African by construction.
      *
      * @var list<string>
      */
     public array $zaOnlyPaths = [
-        'careers', 'partners', 'p/', 'profile-setup', 'compare', 'resources', 'recommend',
+        'careers', 'partners', 'p/', 'compare', 'resources', 'recommend',
         'directory/province/',
-        // Until .app has its own versions: the FAQ quotes rand prices and South
-        // African rules, /company is the South African company's own page,
-        // and /verified explains a badge .app does not sell yet (Paddle).
-        'faq', 'company', 'verified',
+        // /verified explains a badge .app does not sell (Plus instead). The
+        // FAQ and /company have .app versions (faq.php, company.php).
+        'verified',
     ];
 
     /** The app site's default host; .env sites.app.host overrides it. */

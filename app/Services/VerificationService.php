@@ -111,10 +111,56 @@ class VerificationService
         return $this->settings->internationalEnabled();
     }
 
-    /** As monthlyAmount(), for the other plan. */
+    /**
+     * As monthlyAmount(), for the other plan: Plus's dollar price in rand once
+     * local.webscheduler.app is live, the rand International Profile price
+     * until then.
+     */
     public function internationalAmount(): string
     {
+        if ($this->plusMode() && ($rand = $this->settings->plusRandAmount()) !== null) {
+            return $rand;
+        }
+
         return $this->settings->internationalPrice();
+    }
+
+    /**
+     * Has the International plan become Plus?
+     *
+     * Until local.webscheduler.app is live, a business outside South Africa
+     * pays the International Profile subscription to be published on co.za,
+     * as it always has. From launch it is published free on .app, and the
+     * same subscription is Plus: optional, sold in dollars, unlocking
+     * branches, team members and the Jobs board. One switch, the site flag, so
+     * the two can never be half in force.
+     */
+    public function plusMode(): bool
+    {
+        return service('site')->scoping();
+    }
+
+    /** Is Plus on sale: live, switched on, and priced? */
+    public function plusOffered(): bool
+    {
+        return $this->plusMode() && $this->internationalEnabled() && $this->settings->plusRandAmount() !== null;
+    }
+
+    /** Plus's monthly price in US dollars, or null while it is not priced. */
+    public function plusPriceUsd(): ?string
+    {
+        return $this->settings->plusPriceUsd();
+    }
+
+    /**
+     * May this listing buy Plus? A business outside South Africa, while Plus
+     * is on sale.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function plusAvailableFor(array $listing): bool
+    {
+        return $this->plusOffered() && ! config('Countries')->isLocal((string) ($listing['country'] ?? ''));
     }
 
     /**
@@ -128,6 +174,11 @@ class VerificationService
      */
     public function requiresSubscription(array $listing): bool
     {
+        // Plus is optional: once it exists nobody pays to be published.
+        if ($this->plusMode()) {
+            return false;
+        }
+
         return $this->internationalEnabled()
             && ! config('Countries')->isLocal((string) ($listing['country'] ?? ''));
     }
@@ -194,7 +245,7 @@ class VerificationService
         }
 
         $listing = $this->listings->find($listingId);
-        if (! is_array($listing) || ! $this->requiresSubscription($listing)) {
+        if (! is_array($listing) || ! ($this->requiresSubscription($listing) || $this->plusAvailableFor($listing))) {
             return null;
         }
 
@@ -467,6 +518,11 @@ class VerificationService
         $isInternational = $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL;
         $what            = $isInternational ? 'subscription' : 'badge';
 
+        // Plus is an extra, so cancelling it never takes the profile down.
+        if ($isInternational && $this->plusMode()) {
+            return $this->cancelPlus($listingId);
+        }
+
         if ($row === null || $row['state'] !== DirectoryVerificationModel::STATE_ACTIVE) {
             return ['ok' => false, 'message' => 'There is no active ' . $what . ' to cancel.'];
         }
@@ -524,75 +580,42 @@ class VerificationService
     }
 
     /**
-     * End one International Profile subscription for good, now that a
-     * profile outside South Africa is free (local.webscheduler.app).
+     * cancelSubscription() for Plus: the same PayFast call and the same
+     * failure rule (nothing recorded if PayFast will not confirm), with Plus's
+     * own words, because what the owner keeps differs: the profile always.
      *
-     * In this order, and stopping at the first failure so nobody is left
-     * half moved:
-     *  1. Cancel the PayFast subscription, if there is a live one. If PayFast
-     *     will not confirm, nothing else happens and a human is told, exactly
-     *     as an owner's own cancel does: a card that keeps being billed for
-     *     something now free is the outcome to avoid.
-     *  2. Close the row as lapsed. That matters more than it looks: left
-     *     active, lapseExpired() would take the profile DOWN at the end of the
-     *     term, which is what lapsing an International row has always meant.
-     *  3. Clear hosting_paid_until and publish the profile if it was waiting
-     *     on the money (publishIfPaidFor: confirmed email only, never over a
-     *     rejection).
-     *  4. Tell the owner, with a link on their own site.
-     *
-     * Refuses while the International plan is still on sale, so the order of
-     * a release cannot be got wrong: switch the plan off, then retire.
-     *
-     * @param array<string,mixed> $row a verification row with plan international
-     *
-     * @return 'retired'|'failed'|'skipped'
+     * @return array{ok:bool,message:string}
      */
-    public function retireInternational(array $row): string
+    private function cancelPlus(int $listingId): array
     {
-        if ($this->internationalEnabled() || ! $this->isInternational($row)
-            || $row['state'] === DirectoryVerificationModel::STATE_REJECTED) {
-            return 'skipped';
+        $row = $this->verifications->forListing($listingId, DirectoryVerificationModel::PLAN_INTERNATIONAL);
+        if ($row === null || $row['state'] !== DirectoryVerificationModel::STATE_ACTIVE) {
+            return ['ok' => false, 'message' => 'There is no active Plus subscription to cancel.'];
+        }
+        $until = $this->prettyDate($row['paid_until']);
+        if (! empty($row['cancelled_at'])) {
+            return ['ok' => true, 'message' => 'Plus is already cancelled. It stays on until ' . $until . '.'];
         }
 
-        $listingId = (int) $row['listing_id'];
-        $token     = trim((string) ($row['pf_subscription_token'] ?? ''));
+        $token = trim((string) ($row['pf_subscription_token'] ?? ''));
+        if ($token !== '' && ! $this->payfast->cancelSubscription($token)) {
+            $this->notifyAdminOfCancellation($listingId, 'PAYFAST API CALL FAILED cancelling Plus. Cancel this subscription by hand in the PayFast dashboard');
 
-        if ($row['state'] === DirectoryVerificationModel::STATE_ACTIVE && empty($row['cancelled_at']) && $token !== '') {
-            if (! $this->payfast->cancelSubscription($token)) {
-                $this->notifyAdminOfCancellation($listingId, 'RETIRING THE INTERNATIONAL PLAN: PAYFAST API CALL FAILED. Cancel this subscription by hand in the PayFast dashboard, then run the retire command again');
-
-                return 'failed';
-            }
+            return [
+                'ok'      => false,
+                'message' => 'We could not cancel Plus automatically. We have alerted our team '
+                    . 'and someone will sort it out today. You will get an email confirming it.',
+            ];
         }
 
-        $this->verifications->update((int) $row['id'], [
-            'state'        => DirectoryVerificationModel::STATE_LAPSED,
-            'cancelled_at' => $row['cancelled_at'] ?? date('Y-m-d H:i:s'),
-        ]);
-        $this->applyHostingPaidUntil($listingId, null);
+        $this->verifications->update((int) $row['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
+        $this->notifyAdminOfCancellation($listingId, $token === '' ? 'Plus cancelled (no PayFast subscription to stop)' : 'Plus cancelled through PayFast successfully');
 
-        $listing = $this->listings->find($listingId);
-        if (! is_array($listing)) {
-            return 'retired';
-        }
-        $this->publishIfPaidFor($listing);
-
-        if (trim((string) ($listing['email'] ?? '')) !== '') {
-            (new Mailer())->notice((string) $listing['email'], 'Your profile on ' . $this->config->siteName() . ' is now free', [
-                'heading'    => 'Your business profile is now free',
-                'paragraphs' => [
-                    'Hello ' . ($listing['contact_person'] ?: $listing['display_name']) . ',',
-                    'Business profiles outside South Africa no longer need an International Profile subscription. Yours is free from today, and stays free.',
-                    $token !== '' ? 'We have cancelled your subscription, so you will not be charged again.' : 'There is nothing more to pay.',
-                    'Your profile now lives on ' . service('site')->host(service('site')->forRow($listing)) . ', the home for businesses outside South Africa. Your old link takes people there.',
-                ],
-                'button'     => ['See your profile', listing_site_url($listing, 'directory/' . $listing['slug'])],
-            ]);
-        }
-        $this->notifyAdminOfCancellation($listingId, 'International Profile retired: subscription closed, profile kept and free');
-
-        return 'retired';
+        return [
+            'ok'      => true,
+            'message' => 'Cancelled. You will not be charged again. Plus stays on until ' . $until
+                . ', and your profile stays published after that.',
+        ];
     }
 
     /**
@@ -665,7 +688,7 @@ class VerificationService
         }
 
         if (empty($row['activated_at'])) {
-            $this->mailOwner((int) $row['listing_id'], 'activated', []);
+            $this->mailOwner((int) $row['listing_id'], 'activated', ['product' => $this->productOf($row)]);
         }
 
         return true;
@@ -703,7 +726,10 @@ class VerificationService
             // same act as revoking a badge.
             if ($this->isInternational($row)) {
                 $this->applyHostingPaidUntil((int) $row['listing_id'], null);
-                $this->listings->update((int) $row['listing_id'], ['status' => 'unpublished']);
+                // Before Plus the plan was the publication; Plus is an extra.
+                if (! $this->plusMode()) {
+                    $this->listings->update((int) $row['listing_id'], ['status' => 'unpublished']);
+                }
             } else {
                 $this->applyPaidUntil((int) $row['listing_id'], null);
             }
@@ -821,7 +847,7 @@ class VerificationService
         }
 
         if ($status === 'COMPLETE' && empty($verification['activated_at'])) {
-            $this->mailOwner($listingId, 'activated', []);
+            $this->mailOwner($listingId, 'activated', ['product' => $this->productOf($verification)]);
         }
 
         // Partner commission, after the commit like the mail above: the
@@ -869,7 +895,7 @@ class VerificationService
                     'state' => DirectoryVerificationModel::STATE_LAPSED,
                 ]);
 
-                if ($this->isInternational($row)) {
+                if ($this->isInternational($row) && ! $this->plusMode()) {
                     // Unlike the badge, this plan is what keeps the listing
                     // public, so lapsing has to take it down. 'unpublished' is
                     // already in the status ENUM and every read path filters
@@ -885,6 +911,9 @@ class VerificationService
                     // and every other query that filters on status.
                     $this->applyHostingPaidUntil((int) $row['listing_id'], null);
                     $this->listings->update((int) $row['listing_id'], ['status' => 'unpublished']);
+                } elseif ($this->isInternational($row)) {
+                    // Plus lapsing takes away its extras, never the profile.
+                    $this->applyHostingPaidUntil((int) $row['listing_id'], null);
                 } else {
                     $this->applyPaidUntil((int) $row['listing_id'], null);
                 }
@@ -920,8 +949,23 @@ class VerificationService
         $this->mailOwner(
             (int) $verification['listing_id'],
             'renewing',
-            ['paid_until' => $verification['paid_until'], 'amount' => $verification['amount']]
+            ['paid_until' => $verification['paid_until'], 'amount' => $verification['amount'], 'product' => $this->productOf($verification)]
         );
+    }
+
+    /**
+     * What a verification row sells, as the owner emails name it: 'badge',
+     * 'international' (the co.za plan before .app) or 'plus'.
+     *
+     * @param array<string,mixed> $row
+     */
+    private function productOf(array $row): string
+    {
+        if (! $this->isInternational($row)) {
+            return 'badge';
+        }
+
+        return $this->plusMode() ? 'plus' : 'international';
     }
 
     /**
@@ -1197,11 +1241,12 @@ class VerificationService
             return;
         }
 
+        $what     = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile'][$extra['product'] ?? ''] ?? 'Verified Business badge';
         $subjects = [
             'approved'  => 'Your documents are approved: activate your Verified Business badge',
             'rejected'  => 'We could not verify your business yet',
-            'activated' => 'Your Verified Business badge is live',
-            'renewing'  => 'Your Verified Business badge renews soon',
+            'activated' => 'Your ' . $what . ' is live',
+            'renewing'  => 'Your ' . $what . ' renews soon',
         ];
 
         $body = view('emails/verification-owner', array_merge([

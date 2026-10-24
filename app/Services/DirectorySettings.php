@@ -94,6 +94,64 @@ class DirectorySettings
             : $this->config->normaliseAmount($stored);
     }
 
+    /**
+     * Plus's monthly price in US dollars ("2.99"), or null while unset. Plus
+     * is not offered without one: there is no sensible default for a price.
+     */
+    public function plusPriceUsd(): ?string
+    {
+        $stored = $this->stored(DirectorySettingModel::PLUS_PRICE_USD);
+
+        return $stored === null ? null : $this->config->normaliseAmount($stored);
+    }
+
+    /** How many rand one US dollar is at, as set on the settings page, or null. */
+    public function usdZarRate(): ?string
+    {
+        $stored = $this->stored(DirectorySettingModel::USD_ZAR_RATE);
+
+        return $stored === null ? null : number_format((float) $stored, 4, '.', '');
+    }
+
+    /**
+     * What PayFast charges for Plus, in rand: the dollar price at the
+     * operator's rate, to the cent. Null until both are set. A new
+     * subscription snapshots it (VerificationService), so changing the rate
+     * later never changes what an existing subscriber pays.
+     */
+    public function plusRandAmount(): ?string
+    {
+        $usd  = $this->plusPriceUsd();
+        $rate = $this->usdZarRate();
+        if ($usd === null || $rate === null || (float) $usd <= 0 || (float) $rate <= 0) {
+            return null;
+        }
+
+        return number_format(round((float) $usd * (float) $rate, 2), 2, '.', '');
+    }
+
+    /** The setup service's dollar price on .app: the saved one, else the default. */
+    public function profileSetupUsd(): string
+    {
+        $stored = $this->stored(DirectorySettingModel::PROFILE_SETUP_USD);
+
+        return $this->config->normaliseAmount($stored ?? $this->config->profileSetupUsdAmount);
+    }
+
+    /**
+     * What PayFast charges for the setup service on .app, in rand, at the Plus
+     * rate. Null while no rate is set, which keeps the service off sale there.
+     */
+    public function profileSetupRandOnApp(): ?string
+    {
+        $rate = $this->usdZarRate();
+        if ($rate === null || (float) $rate <= 0) {
+            return null;
+        }
+
+        return number_format(round((float) $this->profileSetupUsd() * (float) $rate, 2), 2, '.', '');
+    }
+
     public function internationalEnabled(): bool
     {
         $stored = $this->stored(DirectorySettingModel::INTERNATIONAL_ENABLED);
@@ -206,6 +264,30 @@ class DirectorySettings
 
             $writes[DirectorySettingModel::BADGE_PRICE]   = static fn (): string => (string) $price;
             $writes[DirectorySettingModel::BADGE_ENABLED] = static fn (): string => empty($input['badge_enabled']) ? '0' : '1';
+        }
+
+        // Plus (local.webscheduler.app): its dollar price and the rate it is
+        // charged in rand at. Posted with the International section, whose
+        // switch also turns Plus on and off.
+        // Both blank is "not priced yet", not an error: the form always posts
+        // them, and the badge or International price must still save.
+        $plusBlank = trim((string) ($input['plus_price_usd'] ?? '')) === '' && trim((string) ($input['usd_zar_rate'] ?? '')) === '';
+        if (array_key_exists('plus_price_usd', $input) && ! $plusBlank) {
+            $usd = $this->validatePrice($input, 'plus_price_usd', $errors);
+
+            $rawRate = trim((string) ($input['usd_zar_rate'] ?? ''));
+            $rate    = (float) str_replace(',', '.', $rawRate);
+            if ($rawRate === '' || $rate < 1 || $rate > 100) {
+                $errors['usd_zar_rate'] = 'Enter how many rand one US dollar is, for example 18.20.';
+            }
+
+            $writes[DirectorySettingModel::PLUS_PRICE_USD] = static fn (): string => (string) $usd;
+            $writes[DirectorySettingModel::USD_ZAR_RATE]   = static fn (): string => number_format($rate, 4, '.', '');
+        }
+        if (trim((string) ($input['profile_setup_usd'] ?? '')) !== '') {
+            $setupUsd = $this->validatePrice($input, 'profile_setup_usd', $errors);
+
+            $writes[DirectorySettingModel::PROFILE_SETUP_USD] = static fn (): string => (string) $setupUsd;
         }
 
         if (array_key_exists('international_price', $input)) {

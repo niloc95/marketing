@@ -346,6 +346,11 @@ $moments = [
         'amount'  => $pricingAmount ?? '',
         'offered' => $pricingOffered ?? false,
     ], ['saveData' => false]) ?>
+    <?php // local.webscheduler.app sells Plus instead; renders nothing on co.za. ?>
+    <?= view('directory/_plus_compare', [
+        'usd'  => $plusUsd ?? null,
+        'rand' => $plusRand ?? null,
+    ], ['saveData' => false]) ?>
 
     <?php // ------------------------------------------------------- discover ?>
     <?php if ($featured !== [] || $topCategories !== [] || $provinceCounts !== []): ?>

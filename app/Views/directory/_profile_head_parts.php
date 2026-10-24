@@ -86,10 +86,13 @@
               // them. Hiring is a fact about the business today, not a claim
               // we checked, so it gets its own colour, not the emerald. ?>
         <?php $headVerified = listing_is_verified_business($l); ?>
+        <?php // Plus on local.webscheduler.app: its own label, never the Verified one. ?>
+        <?php $headPlus = ! $headVerified && listing_has_plus($l); ?>
         <?php $headJobs = $openJobs ?? []; ?>
-        <?php if ($headVerified || ! empty($l['is_featured']) || $headJobs !== []): ?>
+        <?php if ($headVerified || $headPlus || ! empty($l['is_featured']) || $headJobs !== []): ?>
             <div class="mt-2 flex flex-wrap items-center gap-2">
                 <?php if ($headVerified): ?><?= verified_badge_pill() ?><?php endif; ?>
+                <?php if ($headPlus): ?><?= plus_badge_pill() ?><?php endif; ?>
                 <?php if (! empty($l['is_featured'])): ?><span class="badge badge-featured gap-1"><?= lucide('star', 'h-3.5 w-3.5 shrink-0') ?>Featured</span><?php endif; ?>
                 <?php if ($headJobs !== []): ?>
                     <span class="profile-hiring">

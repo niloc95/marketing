@@ -78,8 +78,9 @@ $row = function ($i, array $m = []) use ($err): string {
               // list means "clear my services" rather than "not submitted". ?>
         <input type="hidden" name="<?= ServiceMenuService::SERVICES_MARKER ?>" value="1">
         <p class="hint">
-            One line per service or class, e.g. &ldquo;Beginner yoga class&rdquo;. Prices are optional: &ldquo;R250&rdquo;,
-            &ldquo;from R150&rdquo; or &ldquo;POA&rdquo; all work.
+            <?php // Examples in the local currency; .app's owners price in their own. ?>
+            One line per service or class, e.g. &ldquo;Beginner yoga class&rdquo;. Prices are optional: &ldquo;<?= site()->isApp() ? '$25' : 'R250' ?>&rdquo;,
+            &ldquo;from <?= site()->isApp() ? '$15' : 'R150' ?>&rdquo; or &ldquo;POA&rdquo; all work.
         </p>
         <?php if ($err('services')): ?><div class="err"><?= esc($err('services')) ?></div><?php endif; ?>
 

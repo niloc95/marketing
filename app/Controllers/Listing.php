@@ -177,6 +177,9 @@ class Listing extends BaseController
             'strength'       => (new ListingQualityService())->strengthForDraft($old),
             'strengthTarget' => (int) config('Directory')->qualityTarget,
             'handedOver'     => $handedOver ? (string) ($old['country'] ?? '') : '',
+            // Free vs Plus on local.webscheduler.app (nothing on co.za).
+            'plusUsd'        => service('site')->isApp() && $verification->plusOffered() ? $verification->plusPriceUsd() : null,
+            'plusRand'       => service('site')->isApp() && $verification->plusOffered() ? $verification->internationalAmount() : null,
         ]);
     }
 

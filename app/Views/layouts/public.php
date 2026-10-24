@@ -182,9 +182,9 @@ foreach (config('Countries')->profiles as $code => $profile) {
                       // old mobile string — "Add" + "free" rendered as "Add free", which
                       // reads as a misspelt "ad-free". The phone has ~110px here once the
                       // brand lockup and menu button are placed, so the full desktop wording
-                      // cannot fit; "Free profile" does, and says the same thing. The
-                      // longer wording is desktop-only for the same reason — the form states it in its own
-                      // eyebrow and intro the moment you land.
+                      // cannot fit; "Add business" does, and says the same thing. The
+                      // longer wording is desktop-only for the same reason; the form states
+                      // what is free in its own eyebrow and intro the moment you land.
                       //
                       // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
                       // gets its own spacing without a literal one.
@@ -197,18 +197,12 @@ foreach (config('Countries')->profiles as $code => $profile) {
                       // for them; the upsell is the page's job. "Add business" is the
                       // phone's ~110px version. Each width's phrase is one element, all
                       // bold: split across two, .nav-cta's flex gap reads as a double space. ?>
-                <?php if (signup_cta()['verified']): ?>
-                    <a href="<?= esc(signup_cta()['url']) ?>" class="btn btn-accent nav-cta">
-                        <strong class="sm:hidden">Add business</strong>
-                        <strong class="hidden sm:inline">Add your business</strong>
-                    </a>
-                <?php else: ?>
-                    <a href="<?= base_url('add-profile') ?>" class="btn btn-accent nav-cta">
-                        <span class="sm:hidden">Free profile</span>
-                        <span class="hidden sm:inline">Create your</span>
-                        <strong class="hidden sm:inline">free profile</strong>
-                    </a>
-                <?php endif; ?>
+                <?php // The same words whether or not the badge is on sale (it never
+                      // is on local.webscheduler.app); only where it goes differs. ?>
+                <a href="<?= esc(signup_cta()['verified'] ? signup_cta()['url'] : base_url('add-profile')) ?>" class="btn btn-accent nav-cta">
+                    <strong class="sm:hidden">Add business</strong>
+                    <strong class="hidden sm:inline">Add your business</strong>
+                </a>
                 <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
                       // aria-expanded — one source of truth for open/closed. ?>
                 <button type="button" class="menu-toggle md:hidden" data-menu-toggle aria-controls="site-menu" aria-expanded="false" aria-label="Menu">
@@ -252,7 +246,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
             <a href="<?= base_url('directory/categories') ?>">All categories</a>
             <a href="<?= base_url('directory') ?>#map">Discovery map</a>
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>
-            <a href="<?= base_url('verified') ?>">Verified businesses</a>
+            <?php if (! site()->isApp()): // co.za only, see Config\Sites::$zaOnlyPaths ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?>
             <a href="<?= base_url('manage') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
             <a href="<?= site_url_for(\Config\Sites::ZA, 'careers') ?>">Careers</a>
@@ -392,7 +386,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
-                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Create your free profile' ?></a></li>
+                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Add your business' ?></a></li>
                     <?php if (! site()->isApp()): ?>
                     <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
                     <?php endif; ?>
@@ -409,7 +403,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                           // "Book a demo" form for the scheduling product, which is
                           // not what someone here is asking for. ?>
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
-                    <li><a href="<?= base_url('verified') ?>">Verified businesses</a></li>
+                    <li><?php if (! site()->isApp()): // co.za only, see Config\Sites::$zaOnlyPaths ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?></li>
                     <?php // co.za's own pages (Config\Sites::$zaOnlyPaths) are not
                           // offered on local.webscheduler.app. ?>
                     <?php if (! site()->isApp()): ?>
@@ -420,9 +414,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <li><a href="<?= base_url('resources') ?>">Guides and reports</a></li>
                     <?php endif; ?>
                     <li><a href="<?= base_url('media') ?>">Media resources</a></li>
-                    <?php if (! site()->isApp()): ?>
                     <li><a href="<?= base_url('profile-setup') ?>">We set up your profile</a></li>
-                    <?php endif; ?>
                     <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                 </ul>
             </div>
@@ -437,10 +429,18 @@ foreach (config('Countries')->profiles as $code => $profile) {
                         nothing to pay until we've checked your documents.
                     </p>
                     <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your business verified</a>
+                <?php elseif (site()->isApp() && ($footerPlus = (new App\Services\VerificationService())->plusOffered() ? (new App\Services\DirectorySettings())->plusPriceUsd() : null) !== null): ?>
+                    <?php // local.webscheduler.app's upgrade, as _plus_compare.php words it. ?>
+                    <h3>Get Plus</h3>
+                    <p class="site-footer-tagline">
+                        Your business profile is free. Plus adds your other locations, your team and the
+                        Jobs board, for <?= esc(money($footerPlus, 'USD')) ?> a month, billed in South African rand.
+                    </p>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your business</a>
                 <?php else: ?>
                     <h3>Get started</h3>
                     <p class="site-footer-tagline">Create your business profile in a couple of minutes. No monthly fee. No subscription. No obligation.</p>
-                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Create your FREE business profile</a>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your business</a>
                 <?php endif; ?>
             </div>
         </div>

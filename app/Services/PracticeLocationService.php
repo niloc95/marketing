@@ -65,7 +65,8 @@ class PracticeLocationService
      */
     public function canManage(array $listing): bool
     {
-        return listing_is_verified_business($listing);
+        // The badge on co.za, or Plus on .app (listing_has_premium()).
+        return listing_has_premium($listing);
     }
 
     // ----------------------------------------------------------------- writes

@@ -99,6 +99,8 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <li><strong>Replying to a request</strong>: your message, business name, profile link, phone number and email address are sent to the person who posted it. We keep your message and a record that you replied.</li>
                 <li><strong>Request alerts</strong>: we may email a published request to a few businesses in the same category and area. The email does not contain the requester's contact details. Businesses can switch these off at any time.</li>
             </ul>
+            <h3 id="profile-setup">Our profile setup service</h3>
+            <p>If you order our <a href="<?= base_url('profile-setup') ?>">profile setup service</a>, we receive your name, business name, email address and phone number, and optionally a link to your existing profile and a note. We use them to take your payment through PayFast, to ask you for the details, logo and photos we need, and to complete your profile. We keep the order record, including when you accepted the terms of the service, as proof of the purchase.</p>
             <h3 id="reviews">Customer reviews</h3>
             <p>If you review a business we receive your rating, review, name and email address. The rating and review are <strong>published</strong> under your first name and surname initial once we have checked them. Your full name and email address are <strong>never published</strong> and are not given to the business. We keep one way hashes of your email address and IP address to allow one review per person and to spot fake reviews.</p>
 
@@ -116,6 +118,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <tbody>
                     <tr><td>Creating, verifying and publishing a business profile</td><td>Contract (providing the service you asked for), and your consent to publication when you submit and confirm it</td></tr>
                     <tr><td>Sending verification and profile management links</td><td>Contract</td></tr>
+                    <tr><td>Taking payment for Plus or the profile setup service, and sending billing notices</td><td>Contract</td></tr>
                     <tr><td>Answering messages sent through the contact form</td><td>Legitimate interests (responding to you)</td></tr>
                     <tr><td>Confirming, checking and publishing Jobs board posts and emailing the poster</td><td>Contract, and consent to publication</td></tr>
                     <tr><td>Passing a job application to the employer</td><td>Your consent, given on the form before it is sent</td></tr>
@@ -137,6 +140,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <li><strong>Mapping and address services</strong>: addresses entered on a profile, including as you type, are sent from our server to <strong>Mapbox</strong> (<a href="https://www.mapbox.com/legal/privacy" rel="noopener">privacy policy</a>) and <strong>OpenStreetMap's Nominatim</strong> (<a href="https://osmfoundation.org/wiki/Privacy_Policy" rel="noopener">privacy policy</a>) for suggestions and map coordinates; they do not receive your IP address from these requests. Map images are loaded by your browser from <strong>CARTO</strong> (<a href="https://carto.com/privacy/" rel="noopener">privacy policy</a>), which receives your IP address.</li>
                 <li><strong>Analytics</strong>, with your consent: Google Analytics and Microsoft Clarity. Clarity records how visitors click, tap and scroll, with anything typed into forms hidden.</li>
                 <li><strong>Email</strong>: our email delivery provider for service emails, and our own mailing system at <code>updates.webscheduler.co.za</code> for the newsletter and the monthly report.</li>
+                <li><strong>Payments</strong>: if you buy Plus or our profile setup service, <strong>PayFast</strong> processes the payment, in South Africa (<a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">privacy policy</a>). We never receive or store your card details.</li>
                 <li><strong>Network and security</strong>: Cloudflare, which carries all traffic to the site.</li>
                 <li><strong>Employers, requesters and businesses</strong>, on the Jobs board, as described in section 6.</li>
                 <li><strong>Authorities</strong>, where the law requires it, such as a valid court order.</li>
@@ -192,7 +196,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
             </ul>
 
             <h2>17. Pages run from our South African site</h2>
-            <p>Our careers page, Partner Program, profile setup service and Recommend a business form are run from local.webscheduler.co.za. Information you give on them is covered by <a href="<?= esc($zaPrivacy, 'attr') ?>">that site's privacy policy</a>.</p>
+            <p>Our careers page, Partner Program and Recommend a business form are run from local.webscheduler.co.za. Information you give on them is covered by <a href="<?= esc($zaPrivacy, 'attr') ?>">that site's privacy policy</a>.</p>
 
             <h2>18. Changes to this policy</h2>
             <p>We may update this policy as our services, technology or the law change. The <strong>Last updated</strong> date at the top shows when it last changed. Where a change materially affects how we use information you have already given us, we will also tell affected profile owners by email.</p>

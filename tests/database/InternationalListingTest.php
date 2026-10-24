@@ -11,6 +11,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Countries;
 use Tests\Support\ValidListingInput;
+use Tests\Support\WithEnv;
 
 /**
  * The International Listing plan: a listing outside South Africa publishes
@@ -39,6 +40,8 @@ final class InternationalListingTest extends CIUnitTestCase
 {
     use ValidListingInput;
     use DatabaseTestTrait;
+    use \CodeIgniter\Test\FeatureTestTrait;
+    use WithEnv;
 
     protected $namespace   = 'App';
     protected $migrate     = true;
@@ -74,6 +77,8 @@ final class InternationalListingTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
+        $this->restoreEnv();
+        \Config\Services::resetSingle('site');
         (new DirectorySettings())->forget();
         parent::tearDown();
     }
@@ -292,65 +297,164 @@ final class InternationalListingTest extends CIUnitTestCase
         $this->assertFalse((new VerificationService())->requiresSubscription($listing));
     }
 
-    // ------------------------------------------- retiring the plan (.app)
+    // ---------------------------------- Plus (the plan once .app is live)
 
-    public function testRetiringKeepsTheProfileFreeAndClosesTheSubscription(): void
+    public function testWithTheAppLiveAForeignListingPublishesFreeAndPlusIsOptional(): void
     {
+        $this->goLiveWithPlus();
+
         [$id, $token] = $this->signup(local: false);
         $this->mutations->verify($token);
-        $this->pay($this->svc->ensureInternationalSubscription($id), 'PF-INTL-R1');
-        $this->switchThePlanOff();
 
-        $payfast = $this->payFast(cancelSucceeds: true);
-        $row     = $this->verifications->forListing($id, DirectoryVerificationModel::PLAN_INTERNATIONAL);
+        $listing = $this->listings->find($id);
+        $this->assertSame('published', $listing['status']);
+        $svc = new VerificationService();
+        $this->assertFalse($svc->requiresSubscription($listing));
+        $this->assertTrue($svc->plusAvailableFor($listing));
+        $this->assertFalse(listing_has_plus($listing));
+    }
 
-        $this->assertSame('retired', (new VerificationService($payfast))->retireInternational($row));
+    public function testPlusIsChargedInRandAtTheOperatorsRate(): void
+    {
+        $this->goLiveWithPlus();
 
-        $this->assertSame(['tok-intl'], $payfast->cancelled);
-        $row = $this->verifications->find((int) $row['id']);
-        $this->assertSame(DirectoryVerificationModel::STATE_LAPSED, $row['state']);
-        $this->assertNotNull($row['cancelled_at']);
+        $this->assertSame('54.42', (new DirectorySettings())->plusRandAmount(), 'US$2.99 at R18.20');
+
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $row = (new VerificationService())->ensureInternationalSubscription($id);
+
+        $this->assertSame('54.42', number_format((float) $row['amount'], 2, '.', ''));
+        $this->assertSame(DirectoryVerificationModel::STATE_APPROVED, $row['state'], 'no document review');
+    }
+
+    public function testPayingForPlusUnlocksBranchesTeamAndJobs(): void
+    {
+        $this->goLiveWithPlus();
+        helper('directory_ui');
+
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $before = $this->listings->find($id);
+        $this->assertFalse((new \App\Services\TeamMemberService())->canManage($before));
+        $this->assertFalse((new \App\Services\JobBoardService())->canUseJobsFeatures($before));
+
+        $svc = new VerificationService();
+        $this->assertSame('applied', $this->payWith($svc, $svc->ensureInternationalSubscription($id), 'PF-PLUS-1'));
+
+        $after = $this->listings->find($id);
+        $this->assertTrue(listing_has_plus($after));
+        $this->assertFalse(listing_is_verified_business($after), 'Plus is not the Verified badge');
+        $this->assertTrue((new \App\Services\TeamMemberService())->canManage($after));
+        $this->assertTrue((new \App\Services\PracticeLocationService())->canManage($after));
+        $this->assertTrue((new \App\Services\JobBoardService())->canUseJobsFeatures($after));
+    }
+
+    public function testPlusLapsingTakesTheExtrasNotTheProfile(): void
+    {
+        $this->goLiveWithPlus();
+
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $svc = new VerificationService();
+        $this->payWith($svc, $svc->ensureInternationalSubscription($id), 'PF-PLUS-2');
+        $this->verifications->where('listing_id', $id)->set(['paid_until' => date('Y-m-d', strtotime('-1 day'))])->update();
+
+        $svc->lapseExpired();
+
         $listing = $this->listings->find($id);
         $this->assertSame('published', $listing['status']);
         $this->assertNull($listing['hosting_paid_until']);
+        $this->assertFalse(listing_has_plus($listing));
+    }
 
-        // The sweep that used to take a lapsed International profile down has
-        // nothing left to act on.
-        (new VerificationService($payfast))->lapseExpired();
+    public function testCancellingPlusKeepsTheProfileAndSaysSo(): void
+    {
+        $this->goLiveWithPlus();
+
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $payfast = $this->payFast(cancelSucceeds: true);
+        $svc     = new VerificationService($payfast);
+        $this->payWith($svc, $svc->ensureInternationalSubscription($id), 'PF-PLUS-3');
+
+        $result = $svc->cancelSubscription($id, DirectoryVerificationModel::PLAN_INTERNATIONAL);
+
+        $this->assertTrue($result['ok']);
+        $this->assertStringContainsString('your profile stays published', $result['message']);
+        $this->assertSame(['tok-intl'], $payfast->cancelled);
         $this->assertSame('published', $this->listings->find($id)['status']);
     }
 
-    public function testRetiringRepublishesAProfileThatLapsedForWantOfPayment(): void
+    public function testAnUnpaidPlusCheckoutUsesTodaysPrice(): void
     {
+        $this->goLiveWithPlus();
+        $this->setEnv('directory.payfastMerchantId', '10000100');
+        $this->setEnv('directory.payfastMerchantKey', '46f0cd694581a');
+        $this->setEnv('directory.payfastSandbox', 'true');
+
         [$id, $token] = $this->signup(local: false);
         $this->mutations->verify($token);
-        $row = $this->svc->ensureInternationalSubscription($id);
-        $this->assertSame('pending', $this->listings->find($id)['status']);
-        $this->switchThePlanOff();
+        $row = (new VerificationService())->ensureInternationalSubscription($id);
+        $this->assertSame('54.42', number_format((float) $row['amount'], 2, '.', ''));
 
-        $this->assertSame('retired', (new VerificationService($this->payFast(cancelSucceeds: true)))->retireInternational($row));
-        $this->assertSame('published', $this->listings->find($id)['status']);
+        // The operator raises Plus to US$12.99 before the owner pays.
+        (new DirectorySettings())->save([
+            'international_price' => '29.99', 'international_enabled' => '1',
+            'plus_price_usd' => '12.99', 'usd_zar_rate' => '18.20',
+        ], 'test');
+
+        \Config\Services::resetSingle('site');
+        $page = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/verification/checkout?plan=plus');
+        $page->assertOK();
+        // Dollars on the page, never a rand figure (it moves with the rate);
+        // only that it is billed in rand. The rand charged is on the row.
+        $this->assertStringContainsString('$12.99', (string) $page->getBody());
+        $this->assertStringContainsString('billed in South African rand', (string) $page->getBody());
+        $this->assertStringNotContainsString('R236.42', (string) $page->getBody());
+        $this->assertSame('236.42', number_format((float) $this->verifications->find((int) $row['id'])['amount'], 2, '.', ''));
     }
 
-    public function testAPayFastFailureLeavesTheSubscriptionAlone(): void
+    public function testTheSetupServiceIsSoldInDollarsOnTheApp(): void
     {
-        [$id, $token] = $this->signup(local: false);
-        $this->mutations->verify($token);
-        $this->pay($this->svc->ensureInternationalSubscription($id), 'PF-INTL-R2');
-        $this->switchThePlanOff();
-        $row = $this->verifications->forListing($id, DirectoryVerificationModel::PLAN_INTERNATIONAL);
+        $this->goLiveWithPlus();
+        \Config\Services::injectMock('site', new \App\Services\SiteContext('local.webscheduler.app'));
 
-        $this->assertSame('failed', (new VerificationService($this->payFast(cancelSucceeds: false)))->retireInternational($row));
-        $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $this->verifications->find((int) $row['id'])['state']);
+        $svc = new \App\Services\ProfileSetupService();
+        $this->assertSame('39.99', $svc->usdAmount());
+        $this->assertSame('727.82', $svc->amount(), 'US$39.99 at R18.20');
+
+        // co.za keeps its rand price and shows no dollars.
+        \Config\Services::injectMock('site', new \App\Services\SiteContext(null));
+        $this->assertNull((new \App\Services\ProfileSetupService())->usdAmount());
+        $this->assertSame(config('Directory')->profileSetupAmount(), (new \App\Services\ProfileSetupService())->amount());
     }
 
-    public function testRetiringRefusesWhileThePlanIsOnSale(): void
+    public function testPayFastSendsAnAppOwnerBackToTheApp(): void
     {
+        $this->goLiveWithPlus();
+
         [$id, $token] = $this->signup(local: false);
         $this->mutations->verify($token);
-        $row = $this->svc->ensureInternationalSubscription($id);
+        $row    = (new VerificationService())->ensureInternationalSubscription($id) + ['pf_m_payment_id' => 'il-test'];
+        $fields = (new PayFast())->subscriptionFields($this->listings->find($id), $row);
 
-        $this->assertSame('skipped', (new VerificationService($this->payFast(cancelSucceeds: true)))->retireInternational($row));
+        $this->assertSame('local.webscheduler.app', parse_url($fields['return_url'], PHP_URL_HOST));
+        $this->assertNotSame('local.webscheduler.app', parse_url($fields['notify_url'], PHP_URL_HOST), 'the ITN stays on co.za');
+        $this->assertSame('WebScheduler Local Plus', $fields['item_name']);
+    }
+
+    public function testBeforeLaunchTheInternationalPlanIsUnchanged(): void
+    {
+        // co.za today: a foreign listing still pays to be published, and its
+        // subscription unlocks nothing else.
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+
+        $listing = $this->listings->find($id);
+        $this->assertTrue((new VerificationService())->requiresSubscription($listing));
+        $this->assertNotSame('published', $listing['status']);
+        $this->assertFalse((new VerificationService())->plusOffered());
     }
 
     // ------------------------------------------------------------ fixtures
@@ -415,6 +519,27 @@ final class InternationalListingTest extends CIUnitTestCase
     }
 
     /** @param array<string,mixed> $verification */
+    /** local.webscheduler.app live, with Plus priced at US$2.99 and R18.20 to the dollar. */
+    private function goLiveWithPlus(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+        \Config\Services::resetSingle('site');
+        (new DirectorySettings())->save([
+            'international_price'   => '29.99',
+            'international_enabled' => '1',
+            'plus_price_usd'        => '2.99',
+            'usd_zar_rate'          => '18.20',
+        ], 'test');
+    }
+
+    private function payWith(VerificationService $svc, array $verification, string $paymentId): string
+    {
+        $amount = number_format((float) $verification['amount'], 2, '.', '');
+
+        return $svc->recordPayment($verification, $paymentId, 'COMPLETE', (float) $amount,
+            ['pf_payment_id' => $paymentId, 'amount_gross' => $amount, 'token' => 'tok-intl']);
+    }
+
     private function switchThePlanOff(): void
     {
         (new DirectorySettings())->save(['international_price' => '29.99', 'international_enabled' => null], 'test');

@@ -49,6 +49,8 @@ class Contact extends BaseController
     {
         return view('directory/company', [
             'offered' => (new VerificationService())->isEnabled(),
+            // local.webscheduler.app's own upgrade, in place of the badge.
+            'plusOffered' => service('site')->isApp() && (new VerificationService())->plusOffered(),
         ]);
     }
 

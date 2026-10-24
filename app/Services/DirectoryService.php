@@ -1354,7 +1354,7 @@ class DirectoryService
         // Extra branches are part of the paid badge, gated here for the same
         // reason as the team below: the panel and the JSON-LD both follow from
         // this one decision. A lapsed badge hides the rows; it never deletes them.
-        $listing['locations'] = listing_is_verified_business($listing)
+        $listing['locations'] = listing_has_premium($listing)
             ? array_map(
                 static function (array $loc): array {
                     $loc['holiday_rule']  = hours_holiday_rule($loc['trading_hours'] ?? null);
@@ -1416,7 +1416,7 @@ class DirectoryService
         // JSON-LD both follow from it, and a listing without a live badge does
         // not pay for the query. The rows are untouched — see
         // TeamMemberService::canManage().
-        $listing['team'] = listing_is_verified_business($listing)
+        $listing['team'] = listing_has_premium($listing)
             ? $this->team->forListing((int) $listing['id'])
             : [];
 

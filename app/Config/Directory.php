@@ -337,6 +337,12 @@ class Directory extends BaseConfig
      */
     public string $profileSetupAmount = '250.00';
 
+    /**
+     * The setup service's price on local.webscheduler.app, in US dollars,
+     * until /admin/settings sets one (DirectorySettings::profileSetupUsd()).
+     */
+    public string $profileSetupUsdAmount = '39.99';
+
     /** Business days we promise to finish a paid profile setup in. */
     public int $profileSetupDays = 3;
 

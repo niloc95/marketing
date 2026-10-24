@@ -182,6 +182,15 @@ $groups = [
     ],
 ];
 
+// local.webscheduler.app answers its own questions (Plus, not the badge; no
+// rand prices or South African rules), keeping the group both sites share.
+if (site()->isApp()) {
+    $settings = new App\Services\DirectorySettings();
+    $plusUsd  = (new App\Services\VerificationService())->plusOffered() ? $settings->plusPriceUsd() : null;
+    $shared   = array_values(array_filter($groups, static fn (array $g): bool => $g['heading'] === 'Changing or removing your profile'))[0] ?? ['heading' => 'Changing or removing your profile', 'faqs' => []];
+    $groups   = include __DIR__ . '/_faq_app_groups.php';
+}
+
 // FAQPage schema, built from the same array. Google stopped rendering FAQ rich
 // results in August 2023 (authoritative government and health sites only), so
 // this earns no snippet — it stays because the markup is simply true of this
@@ -205,7 +214,7 @@ $schema = schema_page(
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Frequently asked questions | ' . $siteName,
-    'description' => 'Answers about ' . $siteName . ': your free business profile, locations, team members, jobs, what the Verified Business badge means, and how to get help.',
+    'description' => 'Answers about ' . $siteName . ': your free business profile, locations, team members, jobs, ' . (site()->isApp() ? 'what Plus includes' : 'what the Verified Business badge means') . ', and how to get help.',
     'canonical'   => $canonical,
     'schema'      => $schema,
 ]) ?>

@@ -12,7 +12,10 @@
  * @var string $reason     rejected only
  * @var string $amount     approved and renewing only
  * @var string $paidUntil  renewing only
+ * @var string $product    activated and renewing: badge|international|plus
+ *                         (VerificationService::productOf())
  */
+$product   = $product ?? 'badge';
 $amount    = $amount ?? '';
 $reason    = $reason ?? '';
 $paidUntil = $paid_until ?? '';
@@ -54,6 +57,32 @@ $paidUntil = $paid_until ?? '';
                 <?= email_button($manageLink, 'Send new documents') ?>
             </p>
 
+        <?php elseif ($event === 'activated' && $product === 'plus'): ?>
+            <p style="font-size:15px;line-height:1.6">
+                Your payment came through and <strong>Plus</strong> is now on: you can add your other
+                branches and your team, and post on the Jobs board, from your dashboard.
+            </p>
+            <p style="font-size:15px;line-height:1.6">
+                It renews automatically each month, billed in South African rand. You can cancel any time
+                from your dashboard; Plus stays on until the month you've paid for runs out, and your
+                profile stays published either way.
+            </p>
+            <p style="margin:22px 0">
+                <?= email_button($manageLink, 'Go to my dashboard') ?>
+            </p>
+
+        <?php elseif ($event === 'activated' && $product === 'international'): ?>
+            <p style="font-size:15px;line-height:1.6">
+                Your payment came through and your <strong>International Profile</strong> is live.
+            </p>
+            <p style="font-size:15px;line-height:1.6">
+                It renews automatically each month. You can cancel any time from your dashboard; your
+                profile stays live until the month you've paid for runs out.
+            </p>
+            <p style="margin:22px 0">
+                <?= email_button($manageLink, 'View my profile') ?>
+            </p>
+
         <?php elseif ($event === 'activated'): ?>
             <p style="font-size:15px;line-height:1.6">
                 Your payment came through and your <strong>Verified Business</strong> badge is now live on your profile.
@@ -64,6 +93,17 @@ $paidUntil = $paid_until ?? '';
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'View my profile') ?>
+            </p>
+
+        <?php elseif ($product === 'plus'): /* renewing */ ?>
+            <p style="font-size:15px;line-height:1.6">
+                Just so there are no surprises: your Plus subscription renews on
+                <strong><?= esc($paidUntil) ?></strong>, and PayFast will charge it in South African
+                rand as usual.
+            </p>
+            <p style="font-size:15px;line-height:1.6">
+                Nothing to do if that's all fine. If you'd rather stop, cancel from your dashboard before
+                that date: Plus switches off when the month ends and your profile stays published.
             </p>
 
         <?php else: /* renewing */ ?>

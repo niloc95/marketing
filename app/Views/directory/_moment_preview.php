@@ -30,8 +30,9 @@
 <?php elseif ($kind === 'services'): ?>
     <p class="preview-label">Services</p>
     <ul class="preview-rows preview-rows-split">
-        <li><span>Consultation</span><span class="preview-price">R 450</span></li>
-        <li><span>Follow up visit</span><span class="preview-price">R 300</span></li>
+        <?php // Sample prices in the site's own currency: dollars on .app. ?>
+        <li><span>Consultation</span><span class="preview-price"><?= site()->isApp() ? '$45' : 'R 450' ?></span></li>
+        <li><span>Follow up visit</span><span class="preview-price"><?= site()->isApp() ? '$30' : 'R 300' ?></span></li>
         <li><span>Callout</span><span class="preview-price">On request</span></li>
         <li><span>After hours</span><span class="preview-price">On request</span></li>
     </ul>
