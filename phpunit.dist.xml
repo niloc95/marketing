@@ -44,6 +44,12 @@
 
     <php>
         <server name="app.baseURL" value="http://example.com/"/>
+        <!-- Both sites under test, whatever a developer's .env previews
+             (Config\Sites): local.webscheduler.app is off unless a test
+             switches it on, and has its real name. Set before .env loads,
+             so they win over it (DotEnv never overwrites a set variable). -->
+        <env name="sites.app.enabled" value="false" force="true"/>
+        <env name="sites.app.host" value="local.webscheduler.app" force="true"/>
         <server name="CODEIGNITER_SCREAM_DEPRECATIONS" value="0"/>
         <!-- Directory containing phpunit.xml -->
         <const name="HOMEPATH" value="./"/>

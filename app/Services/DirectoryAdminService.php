@@ -338,7 +338,12 @@ class DirectoryAdminService
         $data = \App\Libraries\ServiceArea::columns($input, $id !== null ? ($this->listings->find($id) ?? []) : []) + $data;
 
         if (array_key_exists('hours', $input) || $id === null) {
-            $data['trading_hours']  = hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []);
+            // The holidays of the country this save leaves the listing in.
+            $data['trading_hours']  = hours_within(
+                array_filter(['country' => $input['country'] ?? null, 'region' => $input['region'] ?? null])
+                    + ($id !== null ? ($this->listings->find($id) ?? []) : []),
+                static fn () => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : [])
+            );
             // The checkbox beside the grid, so it is only meaningful when the grid was posted.
             $data['by_appointment'] = empty($input['by_appointment']) ? 0 : 1;
         }

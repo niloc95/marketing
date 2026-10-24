@@ -53,7 +53,7 @@ class MarketingConsentService
 
         return [
             'terms_accepted_at'        => $now,
-            'terms_version'            => Legal::LAST_UPDATED['terms'],
+            'terms_version'            => Legal::termsVersion(),
             'marketing_opt_in'         => $marketingOptIn ? 1 : 0,
             'marketing_consent_at'     => $marketingOptIn ? $now : null,
             'marketing_withdrawn_at'   => null,

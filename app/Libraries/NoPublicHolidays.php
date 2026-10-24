@@ -21,4 +21,9 @@ class NoPublicHolidays extends PublicHolidays
     {
         return [];
     }
+
+    public function named(): array
+    {
+        return [];
+    }
 }

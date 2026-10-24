@@ -30,6 +30,10 @@ class SiteResolver implements FilterInterface
     {
         Services::resetSingle('site');
         $site = service('site');
+        // Every request starts on South African clocks; a page about one
+        // business switches to its own (hours_context()).
+        helper('directory_hours');
+        hours_context();
 
         if (! $site->isApp()) {
             return null;

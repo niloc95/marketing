@@ -6,6 +6,7 @@
     "homepage": "https://local.webscheduler.co.za",
     "require": {
         "php": "^8.2",
+        "azuyalabs/yasumi": "^2.7",
         "codeigniter4/framework": "^4.7",
         "phpmailer/phpmailer": "^6.9"
     },

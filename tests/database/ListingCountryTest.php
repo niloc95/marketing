@@ -356,6 +356,29 @@ final class ListingCountryTest extends CIUnitTestCase
         $this->assertStringContainsString('not in United Kingdom', $result['errors']['address_line'] ?? '');
     }
 
+    public function testAUkOwnerAnswersForUkHolidays(): void
+    {
+        $input                   = $this->british();
+        $input['hours']['holidays'] = [
+            'mode'   => 'usual',
+            'except' => [
+                ['key' => 'christmasDay', 'mode' => 'closed'],
+                ['key' => 'heritage', 'mode' => 'closed'],
+            ],
+        ];
+        $before = hours_context(null, false);
+        $result = $this->svc->submitPublic($input);
+        $this->assertTrue($result['ok'], $result['message'] . ' ' . json_encode($result['errors']));
+        $id = (int) $result['id'];
+
+        $stored = json_decode((string) $this->listings->find($id)['trading_hours'], true);
+        $this->assertArrayHasKey('christmasDay', $stored['holidays']['except'] ?? []);
+        $this->assertArrayNotHasKey('heritage', $stored['holidays']['except'] ?? [], "South Africa's Heritage Day is not a UK holiday");
+
+        // And the save put back whatever calendar was in force before it.
+        $this->assertSame($before, hours_context(null, false));
+    }
+
     public function testTheAdminFormOffersTheUkRegionsAsAList(): void
     {
         $id = (int) $this->svc->submitPublic($this->british())['id'];

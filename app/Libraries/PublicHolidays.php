@@ -161,6 +161,19 @@ class PublicHolidays
     }
 
     /**
+     * Every holiday an owner can give its own answer for, key => name, in
+     * calendar order. South Africa's are NATIONAL; other calendars
+     * (YasumiHolidays) answer with their own, which is why callers ask the
+     * calendar instead of reading the constant.
+     *
+     * @return array<string,string>
+     */
+    public function named(): array
+    {
+        return self::NATIONAL;
+    }
+
+    /**
      * "Heritage Day", or "Public holiday for Christmas Day" for a moved one, as
      * the Government Gazette words it.
      */

@@ -267,8 +267,20 @@ class DirectoryListingModel extends Model
         helper('directory_hours');
         $json = is_string($event['data']['trading_hours']) ? $event['data']['trading_hours'] : null;
 
+        // On this listing's own calendar and clock: the country being written,
+        // or for an update that does not touch it, the stored one.
+        $row = $event['data'];
+        if (! isset($row['country']) && ! isset($row['country_code']) && isset($event['id'])) {
+            $id  = is_array($event['id']) ? (int) reset($event['id']) : (int) $event['id'];
+            $row += $this->db->table($this->table)->select('country_code, region, timezone')
+                ->where('id', $id)->get()->getRowArray() ?? [];
+        }
+
         $event['data']['holiday_hours']      = hours_holiday_rule($json)['mode'] ?? null;
-        $event['data']['holiday_open_dates'] = hours_holiday_open_dates($json, hours_now()->format('Y-m-d'));
+        $event['data']['holiday_open_dates'] = hours_within(
+            $row,
+            static fn () => hours_holiday_open_dates($json, hours_now()->format('Y-m-d'))
+        );
 
         return $event;
     }

@@ -49,14 +49,19 @@ class HolidayHoursService
     {
         $db   = db_connect();
         $rows = $db->table('xs_directory_listings')
-            ->select('id, trading_hours, holiday_open_dates')
+            ->select('id, trading_hours, holiday_open_dates, country_code, region, timezone')
             ->where('holiday_hours IS NOT NULL')
             ->where('deleted_at', null)
             ->get()->getResultArray();
 
         $changed = 0;
         foreach ($rows as $row) {
-            $dates = hours_holiday_open_dates($row['trading_hours'], $today, $this->calendar);
+            // Each listing's own calendar: South Africa's (injectable for the
+            // tests), or its country's (hours_calendar()).
+            $local = in_array($row['country_code'] ?? null, [null, '', 'ZA'], true);
+            $dates = $local
+                ? hours_holiday_open_dates($row['trading_hours'], $today, $this->calendar)
+                : hours_within($row, static fn () => hours_holiday_open_dates($row['trading_hours'], $today, hours_calendar()));
             if ($dates !== $row['holiday_open_dates']) {
                 $db->table('xs_directory_listings')->where('id', $row['id'])->update(['holiday_open_dates' => $dates]);
                 $changed++;

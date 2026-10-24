@@ -364,7 +364,11 @@ class DirectoryListingMutationService
             'postal_code'    => $this->clean($input['postal_code'] ?? ''),
             'country'        => $this->normaliseCountry($input['country'] ?? ''),
             'logo_path'      => $this->clean($input['logo_path'] ?? ''),
-            'trading_hours'          => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : []),
+            // Holiday answers keyed by the listing's own calendar (hours_context()).
+            'trading_hours'          => hours_within(
+                ['country' => $input['country'] ?? '', 'region' => $input['region'] ?? ''],
+                static fn () => hours_encode(is_array($input['hours'] ?? null) ? $input['hours'] : [])
+            ),
             'by_appointment'         => empty($input['by_appointment']) ? 0 : 1,
             'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
             'offers_delivery'        => empty($input['offers_delivery']) ? 0 : 1,
@@ -718,7 +722,12 @@ class DirectoryListingMutationService
         // literal "trading_hours" key, so OWNER_EDITABLE's generic loop above
         // never picks it up — handle it explicitly.
         if (array_key_exists('hours', $input)) {
-            $data['trading_hours'] = hours_encode(is_array($input['hours']) ? $input['hours'] : []);
+            // The owner cannot change the country, so the stored one decides
+            // which holidays they are answering for (hours_context()).
+            $data['trading_hours'] = hours_within(
+                ['region' => $input['region'] ?? $listing['region'] ?? ''] + $listing,
+                static fn () => hours_encode(is_array($input['hours']) ? $input['hours'] : [])
+            );
         }
 
         // An unticked checkbox sends nothing, so the generic loop above would

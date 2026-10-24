@@ -70,8 +70,8 @@ $todayKey = hours_today_key();
     $nextAns  = $next !== null ? hours_holiday_answer($holidays, $next['key'], hours_weekday_row($hours, $next['date'])) : null;
     $differs  = [];
     foreach ((array) ($holidays['except'] ?? []) as $key => $ex) {
-        if (isset(App\Libraries\PublicHolidays::NATIONAL[$key])) {
-            $differs[] = App\Libraries\PublicHolidays::NATIONAL[$key] . ': ' . hours_holiday_text($ex);
+        if (isset($calendar->named()[$key])) {
+            $differs[] = $calendar->named()[$key] . ': ' . hours_holiday_text($ex);
         }
     }
     ?>

@@ -30,13 +30,42 @@ class Legal extends BaseController
         'cookies' => '2026-10-22',
     ];
 
+    /**
+     * local.webscheduler.app's own Terms and Privacy (Views/legal/app/), dated
+     * separately. They are drafts for legal review: the app site must not go
+     * live on them until that review has happened. The cookie policy is the
+     * same on both sites and keeps one date.
+     */
+    public const APP_LAST_UPDATED = [
+        'privacy' => '2026-10-24',
+        'terms'   => '2026-10-24',
+    ];
+
+    /**
+     * The terms date a signup on this site accepts, stored as terms_version
+     * (a date, VARCHAR(10)). Which site's terms it was is the profile's
+     * country (Config\Sites), so the date alone is enough.
+     */
+    public static function termsVersion(): string
+    {
+        return service('site')->isApp() ? self::APP_LAST_UPDATED['terms'] : self::LAST_UPDATED['terms'];
+    }
+
     public function privacy()
     {
+        if (service('site')->isApp()) {
+            return view('legal/app/privacy', ['lastUpdated' => self::APP_LAST_UPDATED['privacy']]);
+        }
+
         return view('legal/privacy', ['lastUpdated' => self::LAST_UPDATED['privacy']]);
     }
 
     public function terms()
     {
+        if (service('site')->isApp()) {
+            return view('legal/app/terms', ['lastUpdated' => self::APP_LAST_UPDATED['terms']]);
+        }
+
         return view('legal/terms', ['lastUpdated' => self::LAST_UPDATED['terms']]);
     }
 

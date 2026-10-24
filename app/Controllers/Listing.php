@@ -142,6 +142,17 @@ class Listing extends BaseController
             $plan = $old['plan'];
         }
 
+        // The holidays the hours section asks about: on .app the visitor's own
+        // country's (CF-IPCountry), or none when we cannot tell, never South
+        // Africa's. A posted form keeps the country it was filled in for.
+        if (service('site')->isApp()) {
+            $guess = isset($old['country']) && $old['country'] !== ''
+                ? (string) config('Countries')->codeForName((string) $old['country'])
+                : strtoupper(trim($this->request->getHeaderLine('CF-IPCountry')));
+            // XX: a code no calendar or profile has, so the section stays hidden.
+            hours_context(['country_code' => preg_match('/^[A-Z]{2}$/', $guess) === 1 && $guess !== 'ZA' ? $guess : 'XX', 'region' => $old['region'] ?? '']);
+        }
+
         return view('directory/form', [
             'old'         => $old,
             'errors'      => session()->getFlashdata('errors') ?? [],

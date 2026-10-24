@@ -169,8 +169,10 @@ class Countries extends BaseConfig
      * state that spans zones gets the zone most of its people live in, and
      * the owner can override it on the hours form. postalPattern null means
      * no check (Namibia and Botswana barely use postal codes). holidays is
-     * whether a public holiday calendar exists for the country yet; only
-     * South Africa's does, so the holiday questions stay hidden elsewhere.
+     * whether a public holiday calendar exists for the country: South
+     * Africa's own (PublicHolidays) or Yasumi's (YasumiHolidays). Namibia,
+     * Botswana and Nigeria have none yet, so their holiday questions stay
+     * hidden and their hours stand every day.
      *
      * @var array<string,array<string,mixed>>
      */
@@ -208,7 +210,7 @@ class Countries extends BaseConfig
             'mapView'         => [54.5, -3.0, 5],
             'currency'        => 'GBP',
             'locale'          => 'en-GB',
-            'holidays'        => false,
+            'holidays'        => true,
         ],
         'US' => [
             'slug'            => 'united-states',
@@ -306,7 +308,7 @@ class Countries extends BaseConfig
             'mapView'         => [39.8, -98.6, 4],
             'currency'        => 'USD',
             'locale'          => 'en-US',
-            'holidays'        => false,
+            'holidays'        => true,
         ],
         'AU' => [
             'slug'            => 'australia',
@@ -335,7 +337,7 @@ class Countries extends BaseConfig
             'mapView'         => [-25.3, 133.8, 4],
             'currency'        => 'AUD',
             'locale'          => 'en-AU',
-            'holidays'        => false,
+            'holidays'        => true,
         ],
         'NZ' => [
             'slug'            => 'new-zealand',
@@ -365,7 +367,7 @@ class Countries extends BaseConfig
             'mapView'         => [-41.0, 174.0, 5],
             'currency'        => 'NZD',
             'locale'          => 'en-NZ',
-            'holidays'        => false,
+            'holidays'        => true,
         ],
         'NA' => [
             'slug'            => 'namibia',
@@ -484,7 +486,7 @@ class Countries extends BaseConfig
             'mapView'         => [0.2, 37.9, 6],
             'currency'        => 'KES',
             'locale'          => 'en-KE',
-            'holidays'        => false,
+            'holidays'        => true,
         ],
         'NG' => [
             'slug'            => 'nigeria',

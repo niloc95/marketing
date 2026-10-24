@@ -105,18 +105,18 @@ if (! function_exists('hours_context')) {
      *
      * @param array<string,mixed>|null $row
      *
-     * @return array{timezone:string,country:string}
+     * @return array{timezone:string,country:string,region:string}
      */
     function hours_context(?array $row = null, bool $set = true): array
     {
-        static $context = ['timezone' => 'Africa/Johannesburg', 'country' => 'ZA'];
+        static $context = ['timezone' => 'Africa/Johannesburg', 'country' => 'ZA', 'region' => ''];
 
         if (! $set) {
             return $context;
         }
 
         if ($row === null) {
-            return $context = ['timezone' => 'Africa/Johannesburg', 'country' => 'ZA'];
+            return $context = ['timezone' => 'Africa/Johannesburg', 'country' => 'ZA', 'region' => ''];
         }
 
         $country = \App\Libraries\Geocoding\NominatimGeocoder::countryOf($row);
@@ -125,7 +125,34 @@ if (! function_exists('hours_context')) {
             $tz = config('Countries')->timezone($country, (string) ($row['region'] ?? $row['province'] ?? ''));
         }
 
-        return $context = ['timezone' => $tz, 'country' => $country];
+        return $context = ['timezone' => $tz, 'country' => $country, 'region' => (string) ($row['region'] ?? '')];
+    }
+}
+
+if (! function_exists('hours_within')) {
+    /**
+     * Run $fn with hours_context() set from $row, then put back whatever was
+     * in force before. For saves, which must encode holiday answers against
+     * the listing's own calendar without leaving that calendar behind for the
+     * rest of the request (or, under test, the rest of the run).
+     *
+     * @template T
+     *
+     * @param array<string,mixed> $row
+     * @param callable():T        $fn
+     *
+     * @return T
+     */
+    function hours_within(array $row, callable $fn)
+    {
+        $before = hours_context(null, false);
+        hours_context($row);
+
+        try {
+            return $fn();
+        } finally {
+            hours_context(['country_code' => $before['country'], 'region' => $before['region'], 'timezone' => $before['timezone']]);
+        }
     }
 }
 
@@ -327,19 +354,22 @@ if (! function_exists('hours_holiday_encode')) {
         // Exceptions arrive two ways: keyed by holiday, as stored, or as the
         // form's repeat rows, a list each naming its holiday in 'key' (with
         // '_remove' when ticked). A holiday given twice keeps the last row.
+        // The holidays of the calendar in force (hours_context()): an owner
+        // answers for their own country's days, keyed as that calendar keys them.
+        $named = hours_calendar()->named();
         $byKey = [];
         foreach (is_array($raw['except'] ?? null) ? $raw['except'] : [] as $index => $row) {
             if (! is_array($row) || ! empty($row['_remove'])) {
                 continue;
             }
             $key = is_string($index) && ! ctype_digit($index) ? $index : (string) ($row['key'] ?? '');
-            if (isset(\App\Libraries\PublicHolidays::NATIONAL[$key])) {
+            if (isset($named[$key])) {
                 $byKey[$key] = $row;
             }
         }
 
         $except = [];
-        foreach (\App\Libraries\PublicHolidays::NATIONAL as $key => $name) {
+        foreach ($named as $key => $name) {
             $row  = $byKey[$key] ?? [];
             $eMode = in_array($row['mode'] ?? '', HOURS_HOLIDAY_MODES, true) ? (string) $row['mode'] : '';
             // "Same as other holidays" is the absence of an exception.
@@ -535,20 +565,29 @@ if (! function_exists('hours_open_now_line')) {
 
 if (! function_exists('hours_calendar')) {
     /**
-     * One PublicHolidays per request: it reads the settings once. South
-     * Africa's is the only calendar so far, so a business elsewhere (see
-     * hours_context()) gets one with no holidays rather than ours.
+     * The public holiday calendar for the business being shown (see
+     * hours_context()), one per country and region per request: South
+     * Africa's own (it reads the admin's extra days once), Yasumi's for the
+     * countries it covers (YasumiHolidays), and one with no holidays for the
+     * rest, so a business is never shown somebody else's holidays.
      */
     function hours_calendar(): \App\Libraries\PublicHolidays
     {
-        static $calendar = null;
-        static $none     = null;
+        static $calendars = [];
 
-        if (hours_context(null, false)['country'] !== 'ZA') {
-            return $none ??= new \App\Libraries\NoPublicHolidays();
+        $context = hours_context(null, false);
+        $country = $context['country'];
+        $key     = $country . '|' . $context['region'];
+
+        if ($country === 'ZA') {
+            return $calendars['ZA'] ??= new \App\Libraries\PublicHolidays();
+        }
+        if (\App\Libraries\YasumiHolidays::supports($country)
+            && (config('Countries')->profile($country)['holidays'] ?? false)) {
+            return $calendars[$key] ??= new \App\Libraries\YasumiHolidays($country, $context['region']);
         }
 
-        return $calendar ??= new \App\Libraries\PublicHolidays();
+        return $calendars['none'] ??= new \App\Libraries\NoPublicHolidays();
     }
 }
 

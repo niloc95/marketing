@@ -103,7 +103,7 @@ $label = $label ?? 'Trading hours';
             continue;
         }
         $key = is_string($index) && ! ctype_digit($index) ? $index : (string) ($row['key'] ?? '');
-        if (isset(App\Libraries\PublicHolidays::NATIONAL[$key])) {
+        if (isset($calendar->named()[$key])) {
             $exceptRows[] = ['key' => $key] + $row;
         }
     }
@@ -113,7 +113,7 @@ $label = $label ?? 'Trading hours';
     // little without one.
     $holidayOptions = [];
     $year           = $calendar->between($today, date('Y-m-d', strtotime($today . ' +1 year')));
-    foreach (App\Libraries\PublicHolidays::NATIONAL as $key => $holidayName) {
+    foreach ($calendar->named() as $key => $holidayName) {
         $holidayOptions[$key] = $holidayName;
         foreach ($year as $day) {
             if ($day['key'] === $key && ! $day['observed']) {
@@ -194,7 +194,7 @@ $label = $label ?? 'Trading hours';
                 <noscript><?= $exceptRow(count($exceptRows)) ?></noscript>
                 <template data-repeat-template><?= $exceptRow('__h__') ?></template>
                 <button type="button" class="btn btn-ghost btn-xs" data-repeat-add
-                        data-repeat-max="<?= count(App\Libraries\PublicHolidays::NATIONAL) ?>"
+                        data-repeat-max="<?= count($calendar->named()) ?>"
                         data-repeat-full="Every public holiday already has its own answer.">
                     + Add a holiday that&rsquo;s different
                 </button>

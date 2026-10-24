@@ -240,6 +240,27 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory?q=bakery+in+scotland'));
     }
 
+    public function testEachSiteHasItsOwnTermsAndPrivacy(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $appTerms = $this->page(self::APP_HOST, '/terms');
+        $this->assertStringContainsString('businesses, services and professionals outside South Africa', $appTerms);
+        $this->assertStringNotContainsString('International Profile', $appTerms);
+        $this->assertStringContainsString('governed by the law of the Republic of South Africa', $appTerms);
+
+        $appPrivacy = $this->page(self::APP_HOST, '/privacy');
+        $this->assertStringContainsString('UK General Data Protection Regulation', $appPrivacy);
+        $this->assertStringContainsString('id="uk-representative"', $appPrivacy);
+
+        $this->assertStringContainsString('International Profile', $this->page(self::ZA_HOST, '/terms'));
+        $this->assertStringNotContainsString('UK General Data Protection Regulation', $this->page(self::ZA_HOST, '/privacy'));
+
+        Services::resetSingle('site');
+        Services::injectMock('site', new \App\Services\SiteContext(self::APP_HOST));
+        $this->assertSame(\App\Controllers\Legal::APP_LAST_UPDATED['terms'], \App\Controllers\Legal::termsVersion());
+    }
+
     public function testTheAdminIsNotServedOnTheAppHost(): void
     {
         $this->setEnv('sites.app.enabled', 'true');
