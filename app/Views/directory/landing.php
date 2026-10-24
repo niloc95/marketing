@@ -5,9 +5,13 @@ $siteName = config('Directory')->siteName();
 $catName  = (string) $category['name'];
 $catSlug  = (string) $category['slug'];
 $plural   = category_plural($catName);            // "Hair Salon" -> "Hair Salons"
-$where    = $province !== null ? ' in ' . $province : site_copy('where', ' in South Africa');
+// local.webscheduler.app's country or region (Directory::placeFor()), or null.
+// co.za never sets it, so everything below reads exactly as it did there.
+$place       = $place ?? null;
+$placeCounts = $placeCounts ?? [];
+$where    = $province !== null ? ' in ' . $province : ($place !== null ? ' in ' . $place['name'] : site_copy('where', ' in South Africa'));
 $heading  = $plural . $where;
-$canonical = base_url('directory/' . $catSlug . ($province !== null ? '/' . slugify($province) : ''));
+$canonical = base_url('directory/' . $catSlug . ($province !== null ? '/' . slugify($province) : ($place !== null ? '/' . $place['path'] : '')));
 $total    = (int) $result['total'];
 $sort     = (string) ($sort ?? '');            // '' or 'new' — see Directory::sortParam()
 
@@ -41,6 +45,12 @@ $crumbs = [
 ];
 if ($province !== null) {
     $crumbs[] = ['name' => $province, 'url' => $canonical];
+}
+if ($place !== null) {
+    if ($place['region'] !== null) {
+        $crumbs[] = ['name' => $place['countryName'], 'url' => base_url('directory/' . $catSlug . '/' . $place['countryPath'])];
+    }
+    $crumbs[] = ['name' => $place['name'], 'url' => $canonical];
 }
 
 $schema = schema_page(
@@ -89,6 +99,12 @@ $schema = schema_page(
             <?php if ($province !== null): ?>
                 <a href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
                 <span class="crumbs-sep">/</span><span aria-current="page"><?= esc($province) ?></span>
+            <?php elseif ($place !== null): ?>
+                <a href="<?= base_url('directory/' . $catSlug) ?>"><?= esc($catName) ?></a>
+                <?php if ($place['region'] !== null): ?>
+                    <span class="crumbs-sep">/</span><a href="<?= base_url('directory/' . $catSlug . '/' . $place['countryPath']) ?>"><?= esc($place['countryName']) ?></a>
+                <?php endif; ?>
+                <span class="crumbs-sep">/</span><span aria-current="page"><?= esc($place['name']) ?></span>
             <?php else: ?>
                 <span aria-current="page"><?= esc($catName) ?></span>
             <?php endif; ?>
@@ -101,7 +117,7 @@ $schema = schema_page(
         <?php endif; ?>
         <h1><?= esc($heading) ?></h1>
         <p class="mt-2 text-sm text-white/80">
-            <?= $total ?> <?= $total === 1 ? 'profile' : 'profiles' ?><?= $province !== null ? ' in ' . esc($province) : '' ?>.
+            <?= $total ?> <?= $total === 1 ? 'profile' : 'profiles' ?><?= $province !== null ? ' in ' . esc($province) : ($place !== null ? ' in ' . esc($place['name']) : '') ?>.
         </p>
         <form class="search-form" method="get" action="<?= base_url('directory') ?>">
             <?= view('directory/_search_composer', [
@@ -110,6 +126,10 @@ $schema = schema_page(
             ], ['saveData' => false]) ?>
             <input type="hidden" name="category" value="<?= esc($catSlug, 'attr') ?>">
             <?php if ($province !== null): ?><input type="hidden" name="province" value="<?= esc($province, 'attr') ?>"><?php endif; ?>
+            <?php if ($place !== null): ?>
+                <input type="hidden" name="country" value="<?= esc($place['country'], 'attr') ?>">
+                <?php if ($place['region'] !== null): ?><input type="hidden" name="region" value="<?= esc($place['region'], 'attr') ?>"><?php endif; ?>
+            <?php endif; ?>
         </form>
     </div>
 </section>
@@ -199,6 +219,38 @@ $schema = schema_page(
                         <?= view('directory/_chip', [
                             'label' => 'Every business in ' . $province,
                             'href'  => base_url('directory/province/' . slugify($province)),
+                        ], ['saveData' => false]) ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php // .app's version of the province chips: by country, then by region
+              // within the country, each with a way back up. ?>
+        <?php if ($placeCounts !== []): ?>
+            <div class="link-group">
+                <h3><?= esc($plural) ?> by <?= $place === null ? 'country' : 'region' ?></h3>
+                <div class="flex flex-wrap gap-2">
+                    <?php foreach ($placeCounts as $key => $count): ?>
+                        <?php
+                        if ($place === null) {
+                            $chipLabel = (string) config('Countries')->nameForCode((string) $key);
+                            $chipSlug  = config('Countries')->profile((string) $key)['slug'] ?? null;
+                            $chipHref  = $chipSlug === null ? null : base_url('directory/' . $catSlug . '/' . $chipSlug);
+                        } else {
+                            if ((string) $key === $place['region']) { continue; }
+                            $chipLabel = (string) $key;
+                            $chipHref  = base_url('directory/' . $catSlug . '/' . $place['countryPath'] . '/' . slugify((string) $key));
+                        }
+                        if ($chipHref === null || $chipLabel === '') { continue; }
+                        ?>
+                        <?= view('directory/_chip', ['label' => $chipLabel, 'href' => $chipHref, 'count' => (int) $count], ['saveData' => false]) ?>
+                    <?php endforeach; ?>
+                    <?php if ($place !== null): ?>
+                        <?= view('directory/_chip', ['label' => 'All countries', 'href' => base_url('directory/' . $catSlug)], ['saveData' => false]) ?>
+                        <?= view('directory/_chip', [
+                            'label' => 'Every business in ' . $place['name'],
+                            'href'  => base_url('directory/' . $place['path']),
                         ], ['saveData' => false]) ?>
                     <?php endif; ?>
                 </div>

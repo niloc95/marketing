@@ -121,8 +121,8 @@ $schema = schema_page(
             </div>
         <?php endif; ?>
 
-        <?php // There are no category pages per country yet, so these are
-              // filtered discovery links, like the city chips below. ?>
+        <?php // Down into the category pages for this place
+              // (/directory/{category}/{country}[/{region}]). ?>
         <?php if ($categories !== []): ?>
             <div class="link-group">
                 <h3>Popular categories in <?= esc($place) ?></h3>
@@ -130,9 +130,7 @@ $schema = schema_page(
                     <?php foreach ($categories as $c): ?>
                         <?= view('directory/_chip', [
                             'label' => $c['name'],
-                            'href'  => base_url('directory') . '?' . http_build_query(array_filter([
-                                'category' => $c['slug'], 'country' => $code, 'region' => $region,
-                            ])),
+                            'href'  => base_url('directory/' . $c['slug'] . '/' . $slug . ($region !== null ? '/' . slugify($region) : '')),
                             'count' => (int) $c['listing_count'],
                             'tint'  => category_group_tint($c['group_name'] ?? null),
                         ], ['saveData' => false]) ?>

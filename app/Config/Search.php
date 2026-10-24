@@ -83,6 +83,16 @@ class Search extends BaseConfig
         'mpumalanga'   => 'Mpumalanga',
     ];
 
+    /**
+     * Province aliases that only count after a place preposition ("in",
+     * "near"...), because the name is also an everyday word. Empty for
+     * co.za, whose province names are not; local.webscheduler.app's
+     * one word regions ("Central", "Delta", "Rivers") are (see forSite()).
+     *
+     * @var array<string,true>
+     */
+    public array $provinceAfterPreposition = [];
+
     /** @var array<string,string> two-letter codes, matched only in capitals */
     public array $provinceCodes = [
         'wc' => 'Western Cape', 'ec' => 'Eastern Cape', 'nc' => 'Northern Cape',
@@ -395,6 +405,35 @@ class Search extends BaseConfig
      *
      * @var list<string>
      */
+    /**
+     * State codes that are safe to read as a place on local.webscheduler.app,
+     * in capitals only, like $provinceCodes. Deliberately short: IN, OR, ME,
+     * OK, HI and friends are English words in a search typed in capitals, LA
+     * is a city, WA is two states, SA is South Africa to most of our users.
+     *
+     * @var array<string,string> code => region name (Config\Countries)
+     */
+    public array $appRegionCodes = [
+        'ca' => 'California', 'ny' => 'New York', 'tx' => 'Texas', 'fl' => 'Florida',
+        'nj' => 'New Jersey', 'az' => 'Arizona', 'nv' => 'Nevada', 'ga' => 'Georgia',
+        'nc' => 'North Carolina', 'va' => 'Virginia', 'ma' => 'Massachusetts', 'mi' => 'Michigan',
+        'nsw' => 'New South Wales', 'vic' => 'Victoria', 'qld' => 'Queensland', 'tas' => 'Tasmania',
+    ];
+
+    /**
+     * Informal place names on local.webscheduler.app, as $placeAliases.
+     *
+     * @var array<string,string>
+     */
+    public array $appPlaceAliases = [
+        'nyc'     => 'New York',
+        'sf'      => 'San Francisco',
+        'philly'  => 'Philadelphia',
+        'vegas'   => 'Las Vegas',
+        'melbs'   => 'Melbourne',
+        'akl'     => 'Auckland',
+    ];
+
     public array $fallbackExamples = [
         'Dentist in Sandton',
         'IT support in Johannesburg',
@@ -402,4 +441,63 @@ class Search extends BaseConfig
         'Attorney in Pretoria',
         'Photographer in Durban',
     ];
+
+    /**
+     * This vocabulary as the site the search is on reads it.
+     *
+     * co.za: unchanged. local.webscheduler.app: South Africa's provinces, codes
+     * and nicknames are swapped for the regions and country names of the
+     * countries in Config\Countries, in the same slots, so the interpreter
+     * stays one interpreter. A "province" it finds there is a region or a
+     * country name, and Directory::interpretSearch() files it as one.
+     * Category synonyms and filler words are shared.
+     */
+    public function forSite(string $siteKey): self
+    {
+        if ($siteKey !== Sites::APP) {
+            return $this;
+        }
+
+        $copy      = clone $this;
+        $countries = config(Countries::class);
+        $aliases   = [];
+        $oneWord   = [];
+        $seen      = [];
+
+        foreach ($countries->profiles as $code => $profile) {
+            if ($code === 'ZA') {
+                continue;
+            }
+            $names = array_merge([(string) $countries->nameForCode($code)], array_values($profile['regions']));
+            foreach ($names as $name) {
+                $key = \App\Services\Search\RuleBasedInterpreter::normalise($name);
+                if ($key === '') {
+                    continue;
+                }
+                // A name two countries share is nobody's: leave it a keyword.
+                if (isset($seen[$key]) && $seen[$key] !== $name) {
+                    unset($aliases[$key]);
+                    continue;
+                }
+                $seen[$key]    = $name;
+                $aliases[$key] = $name;
+                if (! str_contains($key, ' ')) {
+                    $oneWord[$key] = true;
+                }
+            }
+        }
+        // Common enough as names that they need no "in": countries, and
+        // states nobody would type for any other reason.
+        foreach (['united states', 'usa', 'united kingdom', 'uk', 'australia', 'new zealand', 'namibia', 'botswana', 'kenya', 'nigeria', 'scotland', 'england', 'wales'] as $safe) {
+            unset($oneWord[$safe]);
+        }
+        $aliases += ['usa' => 'United States of America', 'uk' => 'United Kingdom', 'britain' => 'United Kingdom'];
+
+        $copy->provinceAliases          = $aliases;
+        $copy->provinceAfterPreposition = $oneWord;
+        $copy->provinceCodes            = $this->appRegionCodes;
+        $copy->placeAliases             = $this->appPlaceAliases;
+
+        return $copy;
+    }
 }

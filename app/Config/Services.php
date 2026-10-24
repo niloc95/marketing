@@ -75,7 +75,9 @@ class Services extends BaseService
      */
     public static function queryInterpreter(bool $getShared = false): QueryInterpreter
     {
-        return new RuleBasedInterpreter((new DirectoryService())->searchVocabulary(), config('Search'));
+        // The vocabulary as the request's site reads it: co.za's provinces,
+        // or .app's regions and countries (Config\Search::forSite()).
+        return new RuleBasedInterpreter((new DirectoryService())->searchVocabulary(), config('Search')->forSite(service('site')->key()));
     }
 
     /**

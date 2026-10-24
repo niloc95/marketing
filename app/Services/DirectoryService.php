@@ -1705,6 +1705,34 @@ class DirectoryService
         return $out;
     }
 
+    /**
+     * Where one category's profiles are on local.webscheduler.app: per
+     * country (country code => count), or per region of one country (region
+     * => count). The .app counterpart of provinceCountsForCategory().
+     *
+     * @return array<string,int>
+     */
+    public function placeCountsForCategory(int $categoryId, ?string $countryCode = null): array
+    {
+        $column  = $countryCode === null ? 'country_code' : 'region';
+        $builder = $this->listings
+            ->select($column . ', COUNT(*) AS c')
+            ->where($this->published(), null, false)
+            ->where('category_id', $categoryId)
+            ->where($column . ' IS NOT NULL')
+            ->where($column . ' !=', '');
+        if ($countryCode !== null) {
+            $builder->where('country_code', $countryCode);
+        }
+
+        $out = [];
+        foreach ($builder->groupBy($column)->orderBy('c', 'DESC')->findAll() as $r) {
+            $out[(string) $r[$column]] = (int) $r['c'];
+        }
+
+        return $out;
+    }
+
     /** @return array<string,int> */
     private function countsBy(string $column, string $countryCode, ?string $region, int $limit): array
     {
@@ -2185,6 +2213,37 @@ class DirectoryService
         foreach ($byCountry as $code => $agg) {
             if ($agg['c'] >= $minListings) {
                 $out[] = ['loc' => base_url('directory/' . $countries->profile($code)['slug']), 'lastmod' => substr($agg['m'] ?: $today, 0, 10)];
+            }
+        }
+
+        // And each category in each country and region, by the same rule.
+        $slugs = array_column($this->categories(), 'slug', 'id');
+        $rows  = $this->listings
+            ->select('category_id, country_code, region, COUNT(*) AS c, MAX(updated_at) AS m')
+            ->where($this->published(), null, false)
+            ->where('category_id IS NOT NULL')
+            ->groupBy(['category_id', 'country_code', 'region'])
+            ->findAll();
+        $byCategory = [];
+        foreach ($rows as $r) {
+            $code = (string) ($r['country_code'] ?? '');
+            $slug = $countries->profile($code)['slug'] ?? null;
+            $cat  = $slugs[(int) $r['category_id']] ?? null;
+            if ($slug === null || $cat === null) {
+                continue;
+            }
+            $key                   = $cat . '/' . $slug;
+            $byCategory[$key]['c'] = ($byCategory[$key]['c'] ?? 0) + (int) $r['c'];
+            $byCategory[$key]['m'] = max($byCategory[$key]['m'] ?? '', (string) $r['m']);
+
+            $region = (string) ($r['region'] ?? '');
+            if ($region !== '' && (int) $r['c'] >= $minListings && in_array($region, $countries->regions($code), true)) {
+                $out[] = ['loc' => base_url('directory/' . $key . '/' . slugify($region)), 'lastmod' => substr($r['m'] ?: $today, 0, 10)];
+            }
+        }
+        foreach ($byCategory as $key => $agg) {
+            if ($agg['c'] >= $minListings) {
+                $out[] = ['loc' => base_url('directory/' . $key), 'lastmod' => substr($agg['m'] ?: $today, 0, 10)];
             }
         }
 

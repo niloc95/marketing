@@ -381,6 +381,8 @@ $routes->get('directory/at/(:segment)', 'Directory::venue/$1');
 $routes->get('directory/(:segment)/menu', 'Directory::menu/$1');
 // {category}/{province} landing page.
 $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
+// One category in one region, on local.webscheduler.app: /directory/plumbers/united-kingdom/scotland
+$routes->get('directory/(:segment)/(:segment)/(:segment)', 'Directory::categoryInRegion/$1/$2/$3');
 // One segment is either a category landing page or a listing profile;
 // Directory::segment() resolves category first. listing_reserved_slugs() stops a
 // listing ever claiming a category's slug.

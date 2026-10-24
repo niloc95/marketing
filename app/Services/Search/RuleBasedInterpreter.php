@@ -97,7 +97,7 @@ final class RuleBasedInterpreter implements QueryInterpreter
                     // want done. The connector itself is not a keyword.
                     $inService = true;
                     $matched   = $n;
-                } elseif ($province === null && ($found = $this->province($phrase, $n, $original[$i])) !== null) {
+                } elseif ($province === null && ($found = $this->province($phrase, $n, $original[$i], $before)) !== null) {
                     $province = $found;
                     $matched  = $n;
                 } elseif ($category === null && $group === null && ($found = $this->category($phrase)) !== null) {
@@ -204,9 +204,14 @@ final class RuleBasedInterpreter implements QueryInterpreter
         return $this->categories[$single] ?? null;
     }
 
-    private function province(string $phrase, int $n, string $typed): ?string
+    private function province(string $phrase, int $n, string $typed, string $before = ''): ?string
     {
         if (isset($this->config->provinceAliases[$phrase])) {
+            // "Rivers" is a Nigerian state after "in" and a word anywhere else.
+            if (isset($this->config->provinceAfterPreposition[$phrase]) && ! isset($this->prepositions[$before])) {
+                return null;
+            }
+
             return $this->config->provinceAliases[$phrase];
         }
         // "EC" is a province; "ec" in a sentence is not.

@@ -223,4 +223,55 @@ final class RuleBasedInterpreterTest extends CIUnitTestCase
             $this->assertSame(RuleBasedInterpreter::normalise($phrase), $phrase, $phrase);
         }
     }
+
+    // ------------------------------------------- local.webscheduler.app
+
+    private function readOnApp(string $q): SearchIntent
+    {
+        $vocabulary = new SearchVocabulary(
+            categories: ['plumber' => ['slug' => 'plumber', 'name' => 'Plumber'], 'dentist' => ['slug' => 'dentist', 'name' => 'Dentist']],
+            groups: [],
+            places: ['london' => ['name' => 'London', 'kind' => 'city']],
+            serviceWords: [],
+        );
+
+        return (new RuleBasedInterpreter($vocabulary, config('Search')->forSite(\Config\Sites::APP)))->interpret($q);
+    }
+
+    public function testOnAppARegionOrCountryIsAPlace(): void
+    {
+        $this->assertSame('Scotland', $this->readOnApp('plumber in scotland')->province);
+        $this->assertSame('Kenya', $this->readOnApp('dentist kenya')->province);
+        $this->assertSame('New South Wales', $this->readOnApp('plumber new south wales')->province);
+        $this->assertSame("Hawke's Bay", $this->readOnApp('dentist hawkes bay')->province);
+        $this->assertSame('United Kingdom', $this->readOnApp('plumber uk')->province);
+    }
+
+    public function testOnAppARegionThatIsAWordNeedsIn(): void
+    {
+        // Rivers and Central are a Nigerian state and a Botswana district.
+        $this->assertNull($this->readOnApp('rivers plumber')->province);
+        $this->assertSame('Rivers', $this->readOnApp('plumber in rivers')->province);
+        $this->assertNull($this->readOnApp('central heating')->province);
+    }
+
+    public function testOnAppStateCodesCountOnlyInCapitals(): void
+    {
+        $this->assertSame('California', $this->readOnApp('dentist CA')->province);
+        $this->assertNull($this->readOnApp('dentist ca')->province);
+        $this->assertNull($this->readOnApp('PLUMBER IN LONDON')->province, 'IN is not Indiana');
+        $this->assertSame('London', $this->readOnApp('PLUMBER IN LONDON')->place);
+    }
+
+    public function testOnAppSouthAfricanNamesAreJustWords(): void
+    {
+        $this->assertNull($this->readOnApp('plumber gauteng')->province);
+        $this->assertNull($this->readOnApp('plumber joburg')->place);
+    }
+
+    public function testCoZaReadsExactlyAsBefore(): void
+    {
+        $this->assertSame(config('Search'), config('Search')->forSite(\Config\Sites::ZA));
+        $this->assertNull($this->read('plumber in scotland')->province);
+    }
 }

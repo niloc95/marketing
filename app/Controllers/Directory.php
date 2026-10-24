@@ -382,7 +382,17 @@ class Directory extends BaseController
         } else {
             $overridden[] = $intent->categoryName ?? $intent->groupName ?? '';
         }
-        if ($intent->province !== null) {
+        if ($intent->province !== null && service('site')->isApp()) {
+            // On local.webscheduler.app the "province" read from the words is a
+            // country or one of its regions (Config\Search::forSite()).
+            [$country, $region] = $this->countryOrRegion($intent->province);
+            if ($country !== null && $filters['country'] === '' && $filters['region'] === '') {
+                $effective['country'] = $country;
+                $effective['region']  = $region ?? '';
+            } else {
+                $overridden[] = $intent->province;
+            }
+        } elseif ($intent->province !== null) {
             if ($filters['province'] === '') {
                 $effective['province'] = $intent->province;
             } else {
@@ -406,6 +416,29 @@ class Directory extends BaseController
         }
 
         return [$effective, $intent];
+    }
+
+    /**
+     * A name read out of a search on .app, as [country code, region]: a
+     * country name gives [code, null], a region gives its country and
+     * itself, anything else [null, null].
+     *
+     * @return array{0:?string,1:?string}
+     */
+    private function countryOrRegion(string $name): array
+    {
+        $countries = config('Countries');
+        $code      = $countries->codeForName($name);
+        if ($code !== null && $code !== 'ZA' && $countries->isSupported($code)) {
+            return [$code, null];
+        }
+        foreach ($countries->profiles as $code => $profile) {
+            if ($code !== 'ZA' && in_array($name, $profile['regions'], true)) {
+                return [$code, $name];
+            }
+        }
+
+        return [null, null];
     }
 
     /**
@@ -483,6 +516,17 @@ class Directory extends BaseController
     public function place(string $categorySlug, string $provinceSlug)
     {
         $svc = new DirectoryService();
+
+        // /directory/plumbers/united-kingdom: one category in a country, on .app.
+        $countryCode = config('Countries')->codeForSlug($provinceSlug);
+        if ($countryCode !== null && $countryCode !== 'ZA' && service('site')->scoping()) {
+            $category = $svc->findCategoryBySlug($categorySlug);
+            if ($category === null) {
+                throw PageNotFoundException::forPageNotFound();
+            }
+
+            return $this->renderLanding($svc, $category, null, $this->placeFor($countryCode, null));
+        }
 
         // /directory/united-kingdom/scotland: a region page on .app.
         $code = config('Countries')->codeForSlug($categorySlug);
@@ -625,8 +669,51 @@ class Directory extends BaseController
     /**
      * @param array<string,mixed> $category
      */
-    private function renderLanding(DirectoryService $svc, array $category, ?string $province)
+    /**
+     * /directory/{category}/{country}/{region}: one category in one region,
+     * on local.webscheduler.app.
+     */
+    public function categoryInRegion(string $categorySlug, string $countrySlug, string $regionSlug)
     {
+        $svc      = new DirectoryService();
+        $category = $svc->findCategoryBySlug($categorySlug);
+        $code     = config('Countries')->codeForSlug($countrySlug);
+        $region   = $code === null ? null : config('Countries')->regionFromSlug($code, $regionSlug);
+        if ($category === null || $code === null || $code === 'ZA' || $region === null || ! service('site')->scoping()) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        return $this->renderLanding($svc, $category, null, $this->placeFor($code, $region));
+    }
+
+    /**
+     * A country, or a region of one, as the category landing page names it.
+     *
+     * @return array{country:string,region:?string,name:string,path:string,countryName:string,countryPath:string}
+     */
+    private function placeFor(string $code, ?string $region): array
+    {
+        $countries = config('Countries');
+        $slug      = (string) $countries->profile($code)['slug'];
+        $name      = (string) $countries->nameForCode($code);
+
+        return [
+            'country'     => $code,
+            'region'      => $region,
+            'name'        => $region ?? $name,
+            'path'        => $slug . ($region !== null ? '/' . slugify($region) : ''),
+            'countryName' => $name,
+            'countryPath' => $slug,
+        ];
+    }
+
+    private function renderLanding(DirectoryService $svc, array $category, ?string $province, ?array $place = null)
+    {
+        // A country or region landing lives on local.webscheduler.app only.
+        if ($place !== null && ! service('site')->isApp()) {
+            return $this->redirectToSite(Sites::APP) ?? throw PageNotFoundException::forPageNotFound();
+        }
+
         $page = (int) ($this->request->getGet('page') ?? 1);
 
         // The landing page is where facets earn their keep: it is already
@@ -638,6 +725,8 @@ class Directory extends BaseController
         $result = $svc->browse([
             'category' => (string) $category['slug'],
             'province' => (string) ($province ?? ''),
+            'country'  => (string) ($place['country'] ?? ''),
+            'region'   => (string) ($place['region'] ?? ''),
             'facets'   => $facets,
             'sort'     => $sort,
         ], $page);
@@ -657,6 +746,11 @@ class Directory extends BaseController
         return view('directory/landing', [
             'category'       => $category,
             'province'       => $province,
+            'place'          => $place,
+            // .app links its category pages by country, then by region.
+            'placeCounts'    => service('site')->isApp()
+                ? $svc->placeCountsForCategory((int) $category['id'], $place['country'] ?? null)
+                : [],
             'result'         => $result,
             'facets'         => $facets,
             'sort'           => $sort,

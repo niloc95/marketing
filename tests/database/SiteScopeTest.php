@@ -205,6 +205,41 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertStringContainsString('hreflang="x-default" href="http://local.webscheduler.app', $this->page(self::ZA_HOST, '/'));
     }
 
+    public function testTheAppHasCategoryPagesPerCountryAndRegion(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $all = $this->page(self::APP_HOST, '/directory/bakeries');
+        $this->assertStringContainsString('Bakeries by country', $all);
+        $this->assertStringContainsString('/directory/bakeries/united-kingdom', $all);
+
+        $country = $this->page(self::APP_HOST, '/directory/bakeries/united-kingdom');
+        $this->assertStringContainsString('Bakeries in United Kingdom', $country);
+        $this->assertStringContainsString('Thames Loaf Bakery', $country);
+        $this->assertStringContainsString('/directory/bakeries/united-kingdom/england', $country);
+
+        $region = $this->page(self::APP_HOST, '/directory/bakeries/united-kingdom/england');
+        $this->assertStringContainsString('Bakeries in England', $region);
+        $this->assertStringContainsString('Thames Loaf Bakery', $region);
+
+        Services::resetSingle('site');
+        $moved = $this->withHeaders(['Host' => self::ZA_HOST])->get('/directory/bakeries/united-kingdom');
+        $moved->assertStatus(301);
+        $this->assertSame(self::APP_HOST, parse_url((string) $moved->getRedirectUrl(), PHP_URL_HOST));
+
+        // co.za's own category page is untouched by any of it.
+        $this->assertStringNotContainsString('by country', $this->page(self::ZA_HOST, '/directory/bakeries'));
+    }
+
+    public function testASearchOnTheAppReadsRegionsAndCountries(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory?q=bakery+in+england'));
+        $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory?q=bakery+united+kingdom'));
+        $this->assertStringNotContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory?q=bakery+in+scotland'));
+    }
+
     public function testTheAdminIsNotServedOnTheAppHost(): void
     {
         $this->setEnv('sites.app.enabled', 'true');
