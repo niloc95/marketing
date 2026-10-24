@@ -57,15 +57,15 @@ if (! function_exists('schema_organization')) {
             '@id'         => schema_id('organization'),
             'name'        => $siteName,
             'url'         => base_url('/'),
-            'description' => $config->siteDescription,
+            'description' => site_copy('siteDescription', $config->siteDescription),
             'slogan'      => $config->slogan,
             'logo'        => [
                 '@type' => 'ImageObject',
                 'url'   => base_url($config->ogImage()),
             ],
-            // Businesses outside South Africa can list (International Listing),
-            // but the audience the site is built for is South African.
-            'areaServed'  => ['@type' => 'Country', 'name' => 'South Africa'],
+            // co.za is built for South Africa; local.webscheduler.app for the
+            // countries with a profile in Config\Countries.
+            'areaServed'  => site_area_served(),
         ];
         $sameAs = array_values(config('Directory')->socialLinks);
         if ($sameAs !== []) {
@@ -90,8 +90,8 @@ if (! function_exists('schema_website')) {
             '@id'             => schema_id('website'),
             'name'            => config('Directory')->siteName(),
             'url'             => base_url('/'),
-            'description'     => config('Directory')->siteDescription,
-            'inLanguage'      => 'en-ZA',
+            'description'     => site_copy('siteDescription', config('Directory')->siteDescription),
+            'inLanguage'      => (string) site()->profile()['locale'],
             'publisher'       => ['@id' => schema_id('organization')],
             'potentialAction' => [
                 '@type'       => 'SearchAction',
@@ -702,13 +702,14 @@ if (! function_exists('schema_geo')) {
 if (! function_exists('schema_phone')) {
     /**
      * One number in international format ("011 728 5501" -> "+27117285501"),
-     * by the same rule as the WhatsApp button: a leading 0 is South African.
+     * by the same rule as the WhatsApp button: a leading 0 is the business's
+     * own country (South African unless $dialCode says otherwise).
      * A number that does not parse is published as typed rather than dropped.
      */
-    function schema_phone(string $phone): string
+    function schema_phone(string $phone, ?string $dialCode = '27'): string
     {
         $phone  = trim($phone);
-        $digits = whatsapp_digits($phone);
+        $digits = whatsapp_digits($phone, $dialCode);
 
         return $digits !== null && $digits !== '' ? '+' . $digits : $phone;
     }
@@ -727,9 +728,10 @@ if (! function_exists('schema_telephone')) {
      */
     function schema_telephone(array $row)
     {
+        $dial   = country_dial_code((string) ($row['country_code'] ?? $row['country'] ?? ''));
         $phones = array_values(array_filter([
-            schema_phone((string) ($row['phone'] ?? '')),
-            schema_phone((string) ($row['phone_alt'] ?? '')),
+            schema_phone((string) ($row['phone'] ?? ''), $dial),
+            schema_phone((string) ($row['phone_alt'] ?? ''), $dial),
         ], static fn (string $p) => $p !== ''));
 
         return $phones === [] ? null : (count($phones) === 1 ? $phones[0] : $phones);

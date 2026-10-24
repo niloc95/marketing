@@ -1,5 +1,6 @@
 <?php
 
+use App\Libraries\PayFast;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationModel;
@@ -291,6 +292,67 @@ final class InternationalListingTest extends CIUnitTestCase
         $this->assertFalse((new VerificationService())->requiresSubscription($listing));
     }
 
+    // ------------------------------------------- retiring the plan (.app)
+
+    public function testRetiringKeepsTheProfileFreeAndClosesTheSubscription(): void
+    {
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $this->pay($this->svc->ensureInternationalSubscription($id), 'PF-INTL-R1');
+        $this->switchThePlanOff();
+
+        $payfast = $this->payFast(cancelSucceeds: true);
+        $row     = $this->verifications->forListing($id, DirectoryVerificationModel::PLAN_INTERNATIONAL);
+
+        $this->assertSame('retired', (new VerificationService($payfast))->retireInternational($row));
+
+        $this->assertSame(['tok-intl'], $payfast->cancelled);
+        $row = $this->verifications->find((int) $row['id']);
+        $this->assertSame(DirectoryVerificationModel::STATE_LAPSED, $row['state']);
+        $this->assertNotNull($row['cancelled_at']);
+        $listing = $this->listings->find($id);
+        $this->assertSame('published', $listing['status']);
+        $this->assertNull($listing['hosting_paid_until']);
+
+        // The sweep that used to take a lapsed International profile down has
+        // nothing left to act on.
+        (new VerificationService($payfast))->lapseExpired();
+        $this->assertSame('published', $this->listings->find($id)['status']);
+    }
+
+    public function testRetiringRepublishesAProfileThatLapsedForWantOfPayment(): void
+    {
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $row = $this->svc->ensureInternationalSubscription($id);
+        $this->assertSame('pending', $this->listings->find($id)['status']);
+        $this->switchThePlanOff();
+
+        $this->assertSame('retired', (new VerificationService($this->payFast(cancelSucceeds: true)))->retireInternational($row));
+        $this->assertSame('published', $this->listings->find($id)['status']);
+    }
+
+    public function testAPayFastFailureLeavesTheSubscriptionAlone(): void
+    {
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $this->pay($this->svc->ensureInternationalSubscription($id), 'PF-INTL-R2');
+        $this->switchThePlanOff();
+        $row = $this->verifications->forListing($id, DirectoryVerificationModel::PLAN_INTERNATIONAL);
+
+        $this->assertSame('failed', (new VerificationService($this->payFast(cancelSucceeds: false)))->retireInternational($row));
+        $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $this->verifications->find((int) $row['id'])['state']);
+    }
+
+    public function testRetiringRefusesWhileThePlanIsOnSale(): void
+    {
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $row = $this->svc->ensureInternationalSubscription($id);
+
+        $this->assertSame('skipped', (new VerificationService($this->payFast(cancelSucceeds: true)))->retireInternational($row));
+    }
+
     // ------------------------------------------------------------ fixtures
 
     /**
@@ -353,6 +415,32 @@ final class InternationalListingTest extends CIUnitTestCase
     }
 
     /** @param array<string,mixed> $verification */
+    private function switchThePlanOff(): void
+    {
+        (new DirectorySettings())->save(['international_price' => '29.99', 'international_enabled' => null], 'test');
+    }
+
+    /** A PayFast whose subscription cancel answers $cancelSucceeds and records the token. */
+    private function payFast(bool $cancelSucceeds): PayFast
+    {
+        return new class ($cancelSucceeds) extends PayFast {
+            /** @var list<string> */
+            public array $cancelled = [];
+
+            public function __construct(private readonly bool $succeeds)
+            {
+                parent::__construct();
+            }
+
+            public function cancelSubscription(string $token): bool
+            {
+                $this->cancelled[] = $token;
+
+                return $this->succeeds;
+            }
+        };
+    }
+
     private function pay(array $verification, string $paymentId): string
     {
         $amount = number_format((float) $verification['amount'], 2, '.', '');

@@ -1063,16 +1063,44 @@
   // there is nothing to search for or nothing was found.
   function locateAddress(url, scope) {
     var params = [];
-    ['address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code'].forEach(function (key) {
-      var field = scope && scope.querySelector('[data-address-field="' + key + '"]');
-      if (field && field.value.trim()) {
+    ['address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code'].forEach(function (key) {
+      var field = addressField(scope, key);
+      if (field && !field.disabled && field.value.trim()) {
         params.push(key + '=' + encodeURIComponent(field.value.trim()));
       }
     });
     if (!url || !params.length) return Promise.resolve(null);
-    return fetch(url + '?' + params.join('&'))
+    return fetch(url + '?' + params.join('&') + countryParam('&'))
       .then(function (res) { return res.ok ? res.json() : {}; })
       .then(function (data) { return data && data.lat ? data : null; });
+  }
+
+  // The enabled control for an address field. The region has two under one
+  // name (a list for countries that have one, free text for the rest) and
+  // only the enabled one posts, so that is the one to read and fill.
+  function addressField(scope, key) {
+    if (!scope) return null;
+    var all = scope.querySelectorAll('[data-address-field="' + key + '"]');
+    for (var i = 0; i < all.length; i++) {
+      if (!all[i].disabled) return all[i];
+    }
+    return all[0] || null;
+  }
+
+  // The country the form is for, as the select posts it (a name), so the
+  // address lookups search that country. The owner's edit form shows the
+  // country read only and carries it in data-country-fixed instead. A branch
+  // row has neither and inherits the listing's, which is the point.
+  function formCountry() {
+    var select = document.querySelector('[data-country-select]');
+    if (select) return select.value;
+    var fixed = document.querySelector('[data-country-fixed]');
+    return fixed ? fixed.getAttribute('data-country-fixed') : '';
+  }
+
+  function countryParam(joiner) {
+    var c = formCountry();
+    return c ? joiner + 'country=' + encodeURIComponent(c) : '';
   }
 
   // --------------------------------------------------------- address autocomplete
@@ -1182,8 +1210,20 @@
         var field = addressWrap.querySelector('[data-address-field="' + key + '"]');
         if (field) field.value = r[key] || '';
       });
-      var province = addressWrap.querySelector('[data-address-field="province"]');
-      if (province && r.province) province.value = r.province;
+      // The geocoder answers with the province, or another country's state
+      // or region, in r.province. Whichever of the two fields is live takes it;
+      // a list only takes a value it offers.
+      var province = addressField(addressWrap, 'province');
+      var region = addressField(addressWrap, 'region');
+      if (r.province) {
+        if (province && !province.disabled) {
+          province.value = r.province;
+        } else if (region && !region.disabled) {
+          if (region.tagName !== 'SELECT' || region.querySelector('option[value="' + r.province.replace(/"/g, '') + '"]')) {
+            region.value = r.province;
+          }
+        }
+      }
 
       // A row that carries coordinates (a reverse-geocoded pin) is complete.
       // A Mapbox suggestion deliberately has none: it is a temporary result
@@ -1227,15 +1267,15 @@
       var query = addressInput.value.trim();
       // No suggestUrl means no provider offers autocomplete (no Mapbox token).
       // data-suggest-off is set by the country switch below. /address-suggest
-      // is South-Africa-only, so for an address anywhere else it can only
-      // ever answer "nothing found" — a box that searches and always fails
-      // reads as broken, so it does not search at all.
+      // only searches countries with a profile on the server, so for any other
+      // country it can only ever answer "nothing found", and a box that
+      // searches and always fails reads as broken, so it does not search.
       if (query.length < 3 || !suggestUrl || addressWrap.hasAttribute('data-suggest-off')) {
         hideList();
         return;
       }
       var seq = ++requestSeq;
-      fetch(suggestUrl + '?q=' + encodeURIComponent(query))
+      fetch(suggestUrl + '?q=' + encodeURIComponent(query) + countryParam('&'))
         .then(function (res) {
           if (!res.ok) {
             console.error('Address autocomplete: /address-suggest returned HTTP ' + res.status);
@@ -1281,7 +1321,7 @@
       // what decides whether the pin can even be checked against the South
       // African bounding box.
       if (suppressClear || pinIsManual()
-        || !e.target.closest('[data-address-field="province"], [data-address-field="country"]')) return;
+        || !e.target.closest('[data-address-field="province"], [data-address-field="region"], [data-address-field="country"]')) return;
       locateSeq++;
       setCoords('', '', '');
     });
@@ -1326,11 +1366,26 @@
 
   document.querySelectorAll('[data-address-autocomplete]').forEach(initAddressAutocomplete);
 
+  // ------------------------------------------------------------ other site hint
+  // "Not now" on the co.za / .app line (site_hint()). Half a year, then it may
+  // ask once more; the server reads the same cookie, so it is not rendered at
+  // all meanwhile.
+  document.querySelectorAll('[data-site-hint-dismiss]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var secure = location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = 'ws_site_hint=off; Max-Age=' + (180 * 24 * 3600) + '; Path=/; SameSite=Lax' + secure;
+      var hint = btn.closest('[data-site-hint]');
+      if (hint) hint.hidden = true;
+    });
+  });
+
   // ------------------------------------------------------------ country switch
   // The address block asks for different things depending on the country: a
   // South African address has a province from a fixed list of nine and a
-  // four-digit numeric postal code, everything else has a free-text state or
-  // region and a postal code of any shape.
+  // four-digit numeric postal code; a country with a profile on the server
+  // (UK, US, Australia...) has a state or region from its own list; anything
+  // else has a free-text state or region. Postal codes outside South Africa
+  // take any shape here and are checked by the server.
   //
   // The server renders whichever half is correct for the stored (or
   // just-posted) country, so this is enhancement only. With the script off the
@@ -1349,8 +1404,9 @@
     if (!select) return;
 
     // Read from the DOM rather than hardcoded: Config\Countries::SOUTH_AFRICA
-    // is the server's authority, and the first option is it.
-    var LOCAL = select.options.length ? select.options[0].value : 'South Africa';
+    // is the server's authority, and the select carries it. (Not the first
+    // option: on local.webscheduler.app the first one is "Choose".)
+    var LOCAL = select.getAttribute('data-local-country') || 'South Africa';
 
     var scope = select.closest('[data-address-autocomplete]') || document;
     var province = scope.querySelector('[data-address-province]');
@@ -1364,11 +1420,49 @@
       if (input) input.disabled = !on;
     };
 
+    // Countries with a fixed list of states or regions, name => list, from
+    // the server (Config\Countries). The region field is a select for those
+    // and free text for the rest; only the live control is enabled.
+    var regionLists = {};
+    try {
+      regionLists = JSON.parse((region && region.getAttribute('data-region-lists')) || '{}') || {};
+    } catch (err) {
+      regionLists = {};
+    }
+    var regionSelect = region && region.querySelector('[data-region-select]');
+    var regionText = region && region.querySelector('[data-region-text]');
+
+    var setRegion = function (on, list) {
+      if (!region) return;
+      region.hidden = !on;
+      var useList = on && !!list && !!regionSelect;
+      if (regionSelect) {
+        if (useList) {
+          var keep = regionSelect.value;
+          while (regionSelect.options.length > 1) regionSelect.remove(1);
+          list.forEach(function (name) {
+            var opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === keep) opt.selected = true;
+            regionSelect.appendChild(opt);
+          });
+        }
+        regionSelect.hidden = !useList;
+        regionSelect.disabled = !useList;
+      }
+      if (regionText) {
+        regionText.hidden = !on || useList;
+        regionText.disabled = !on || useList;
+      }
+    };
+
     var apply = function () {
       var isLocal = select.value === LOCAL;
+      var list = regionLists[select.value] || null;
 
       setActive(province, isLocal);
-      setActive(region, !isLocal);
+      setRegion(!isLocal, list);
 
       if (postal) {
         // Four numeric digits is the South African shape and nobody else's.
@@ -1381,12 +1475,12 @@
         }
       }
 
-      // The suggestion endpoint is South-Africa-only (the geocoder is called with
-      // country=za), so leaving it live abroad means a box that searches
-      // and always finds nothing — which reads as broken rather than as
-      // unavailable. initAddressAutocomplete() checks this flag before firing.
+      // Suggestions are offered for South Africa and every country with a
+      // region list (the server searches those); for any other country the
+      // endpoint can only answer "nothing found", which reads as broken, so
+      // initAddressAutocomplete() is told not to ask.
       if (scope !== document && scope.setAttribute) {
-        if (isLocal) scope.removeAttribute('data-suggest-off');
+        if (isLocal || list) scope.removeAttribute('data-suggest-off');
         else scope.setAttribute('data-suggest-off', '1');
       }
     };
@@ -1754,8 +1848,24 @@
   // an argument with.
 
   // Whole-country view, so an unpinned listing still shows a usable map rather
-  // than an arbitrary city.
-  var SA_CENTRE = [-28.8, 24.7];
+  // than an arbitrary city. Which country: the one the form's country select
+  // (or a read only country) names, else the site's own default, both from
+  // data attributes the layout sets from Config\Countries and Config\Sites.
+  // South Africa when neither is there, as it always was.
+  function defaultMapView() {
+    var fallback = [-28.8, 24.7, 5];
+    var body = document.body;
+    try {
+      var views = JSON.parse(body.getAttribute('data-country-views') || '{}') || {};
+      var country = formCountry();
+      if (country && views[country]) return views[country];
+      var site = JSON.parse(body.getAttribute('data-site-map-view') || 'null');
+      if (site && site.length === 3) return site;
+    } catch (err) {
+      // A malformed attribute is not worth a broken map.
+    }
+    return fallback;
+  }
 
   var pickerWrap = document.querySelector('[data-map-picker]');
   if (pickerWrap) {
@@ -1818,7 +1928,7 @@
       if (!reverseUrl || !suggestBox || !suggestText) return;
 
       var seq = ++reverseSeq;
-      fetch(reverseUrl + '?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng))
+      fetch(reverseUrl + '?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng) + countryParam('&'))
         .then(function (res) { return res.ok ? res.json() : null; })
         .then(function (data) {
           // The marker moved again while this was in flight.
@@ -1873,7 +1983,8 @@
         if (resetBtn) resetBtn.hidden = false;
         say('Drag the marker if this is not the right spot.');
       } else {
-        map.center(SA_CENTRE[0], SA_CENTRE[1], 5);
+        var view = defaultMapView();
+        map.center(view[0], view[1], view[2]);
         say('No pin yet. Search for your address or click the map.');
       }
 
@@ -1980,7 +2091,8 @@
     var iconPath = wrap.getAttribute('data-icon-path');
     if (iconPath) L.Icon.Default.imagePath = iconPath;
 
-    var map = L.map(canvas, { scrollWheelZoom: false }).setView(SA_CENTRE, 5);
+    var startView = defaultMapView();
+    var map = L.map(canvas, { scrollWheelZoom: false }).setView([startView[0], startView[1]], startView[2]);
     L.tileLayer(wrap.getAttribute('data-tile-url'), {
       maxZoom: 19,
       attribution: wrap.getAttribute('data-tile-attribution')
@@ -2235,7 +2347,8 @@
       var parts = start.split(',');
       map.setView([parseFloat(parts[0]), parseFloat(parts[1])], parseInt(parts[2], 10) || 11);
     } else {
-      map.setView(SA_CENTRE, 5);
+      var siteView = defaultMapView();
+      map.setView([siteView[0], siteView[1]], siteView[2]);
     }
 
     var cluster = L.markerClusterGroup

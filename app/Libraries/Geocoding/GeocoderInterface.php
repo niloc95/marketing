@@ -23,7 +23,9 @@ namespace App\Libraries\Geocoding;
 interface GeocoderInterface
 {
     /**
-     * Suggestions for a partly-typed address, South Africa only.
+     * Suggestions for a partly-typed address in one country (ISO code; South
+     * Africa unless told otherwise, which is every call that predates
+     * local.webscheduler.app).
      *
      * These rows are what the browser renders in the autocomplete dropdown, and
      * picking one fills the address fields. lat/lng are optional. Mapbox's
@@ -34,13 +36,14 @@ interface GeocoderInterface
      *
      * @return list<array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat?:float,lng?:float,precision:string}>
      */
-    public function suggest(string $query, int $limit = 5): array;
+    public function suggest(string $query, int $limit = 5, string $country = 'ZA'): array;
 
     /**
      * Resolve already-separated address fields to a single point, for addresses
      * typed by hand rather than picked from the dropdown.
      *
-     * @param array<string,mixed> $parts address_line, address_line_2, suburb, city, province, postal_code
+     * @param array<string,mixed> $parts address_line, address_line_2, suburb, city, province, region,
+     *                                   postal_code, and country_code (ISO, ZA when absent)
      *
      * @return array{lat:float,lng:float,precision:string,label?:string}|null
      *   precision is one of exact|street|suburb|city; label is the provider's
@@ -57,7 +60,7 @@ interface GeocoderInterface
      * says is there and let them accept or discard it.
      *
      * @return array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}|null
-     *   null when the point resolves to nothing, or falls outside South Africa.
+     *   null when the point resolves to nothing, or falls outside $country.
      */
-    public function reverse(float $lat, float $lng): ?array;
+    public function reverse(float $lat, float $lng, string $country = 'ZA'): ?array;
 }

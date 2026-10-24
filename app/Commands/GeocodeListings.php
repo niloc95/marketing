@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\ListingGeocoder;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\CLI\BaseCommand;
@@ -133,13 +134,15 @@ class GeocodeListings extends BaseCommand
                 continue;
             }
 
-            // Same rule as ListingGeocoder::resolve(): every lookup is limited
-            // to South Africa, so a foreign address can only come back as a
-            // same-named place here ("Lisboa" → Lisbon, Mpumalanga).
-            if (! config('Countries')->isLocal((string) ($listing['country'] ?? ''))) {
+            // Same rule as ListingGeocoder::resolve(): a lookup is limited to
+            // the listing's country, so only countries with a profile in
+            // Config\Countries (a bounding box and regions to check against)
+            // are looked up at all.
+            $country = NominatimGeocoder::countryOf($listing);
+            if ($country !== 'ZA' && ! config('Countries')->isSupported($country)) {
                 $skipped++;
                 CLI::write($label, 'white');
-                CLI::write('  → skipped (outside South Africa; place the pin by hand)', 'dark_gray');
+                CLI::write('  → skipped (no address lookup for ' . ($listing['country'] ?? $country) . ' yet; place the pin by hand)', 'dark_gray');
                 CLI::newLine();
 
                 continue;

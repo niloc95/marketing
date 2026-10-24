@@ -433,7 +433,7 @@ final class PracticeLocationServiceTest extends CIUnitTestCase
     private function serviceWithStubGeocoder(): PracticeLocationService
     {
         $stub = new class implements GeocoderInterface {
-            public function suggest(string $query, int $limit = 5): array
+            public function suggest(string $query, int $limit = 5, string $country = 'ZA'): array
             {
                 return [];
             }
@@ -453,7 +453,7 @@ final class PracticeLocationServiceTest extends CIUnitTestCase
                 ];
             }
 
-            public function reverse(float $lat, float $lng): ?array
+            public function reverse(float $lat, float $lng, string $country = 'ZA'): ?array
             {
                 return null;
             }

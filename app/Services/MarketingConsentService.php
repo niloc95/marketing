@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Controllers\Legal;
 use App\Models\DirectoryListingModel;
+use Config\Sites;
 
 /**
  * The listing owner's email record: terms acceptance, and whether they want the
@@ -131,10 +132,17 @@ class MarketingConsentService
             return 'skipped';
         }
 
+        // A local.webscheduler.app owner is tagged as one, so the reports and
+        // anything else sent from Mautic can tell the two audiences apart.
+        $tags = ['listing-owner'];
+        if (service('site')->forRow($listing) === Sites::APP) {
+            $tags[] = 'site-app';
+        }
+
         $contactId = $mautic->upsertContact($email, [
             'firstname' => (string) ($listing['contact_person'] ?? ''),
             'company'   => (string) ($listing['display_name'] ?? ''),
-            'tags'      => ['listing-owner'],
+            'tags'      => $tags,
         ]);
         if ($contactId === null) {
             return 'failed';

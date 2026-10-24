@@ -562,6 +562,12 @@ class Directory extends BaseConfig
      */
     public function analyticsId(): string
     {
+        // local.webscheduler.app has its own GA4 property, so its visits never
+        // land in co.za's numbers. Unset means no analytics there at all.
+        if (service('site')->isApp()) {
+            return trim((string) env('sites.app.analyticsId', ''));
+        }
+
         $env = env('directory.analyticsId');
         return is_string($env) ? trim($env) : $this->analyticsId;
     }
@@ -575,6 +581,10 @@ class Directory extends BaseConfig
         if ($this->analyticsId() === '') {
             return '';
         }
+        if (service('site')->isApp()) {
+            return trim((string) env('sites.app.clarityId', ''));
+        }
+
         $env = env('directory.clarityId');
         return is_string($env) ? trim($env) : $this->clarityId;
     }

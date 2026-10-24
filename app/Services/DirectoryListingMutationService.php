@@ -348,7 +348,7 @@ class DirectoryListingMutationService
             'description'      => $description,
             'description_text' => RichText::toPlainText($description),
             'phone'          => $this->clean($input['phone'] ?? ''),
-            'whatsapp'       => (string) $this->normaliseWhatsapp($input['whatsapp'] ?? ''),
+            'whatsapp'       => (string) $this->normaliseWhatsapp($input['whatsapp'] ?? '', $input['country'] ?? null),
             'website'        => $this->normaliseWebsite($input['website'] ?? ''),
             'social_facebook'  => (string) $this->normaliseSocial('social_facebook', $input['social_facebook'] ?? ''),
             'social_instagram' => (string) $this->normaliseSocial('social_instagram', $input['social_instagram'] ?? ''),
@@ -679,7 +679,7 @@ class DirectoryListingMutationService
                     // is not to this network.
                     $data[$field] = $this->normaliseSocial($field, $input[$field]) ?? '';
                 } elseif ($field === 'whatsapp') {
-                    $data[$field] = $this->normaliseWhatsapp($input[$field]) ?? '';
+                    $data[$field] = $this->normaliseWhatsapp($input[$field], $listing['country'] ?? null) ?? '';
                 } else {
                     $data[$field] = $this->clean($input[$field]);
                 }
@@ -1089,7 +1089,7 @@ class DirectoryListingMutationService
                 $errors[$field] = sprintf('Please keep the %s link under %d characters.', $network, self::MAX_LENGTHS[$field][0] + 1);
             }
         }
-        if ($this->normaliseWhatsapp($input['whatsapp'] ?? '') === null) {
+        if ($this->normaliseWhatsapp($input['whatsapp'] ?? '', $input['country'] ?? null) === null) {
             $errors['whatsapp'] = 'Please enter a WhatsApp number, e.g. 082 123 4567 or +44 7700 900123.';
         }
 
@@ -1117,6 +1117,12 @@ class DirectoryListingMutationService
         if ($country !== '' && ! in_array($country, $this->countries()->all(), true)) {
             $errors['country'] = 'Please choose a country from the list.';
         }
+        // On local.webscheduler.app a blank country is not South Africa by
+        // default, as it is on co.za: the form starts with nothing chosen, so
+        // a new profile has to say where it is.
+        if ($country === '' && $isNew && service('site')->isApp()) {
+            $errors['country'] = 'Please choose a country.';
+        }
         $isLocal = $country === '' || $this->countries()->isLocal($country);
 
         // province is echoed on the public profile and slugified into the
@@ -1138,6 +1144,18 @@ class DirectoryListingMutationService
             $errors['region'] = 'Please choose a province instead.';
         }
 
+        // A country with a profile in Config\Countries has a fixed list of
+        // states or regions, and local.webscheduler.app builds its region
+        // pages from that list, so its region is whitelisted the way a
+        // province is. Any other country keeps free text.
+        $countryCode = $isLocal ? 'ZA' : (string) $this->countries()->codeForName($country);
+        $regions     = $isLocal ? [] : $this->countries()->regions($countryCode);
+        $region      = $this->clean($input['region'] ?? '');
+        if ($regions !== [] && $region !== '' && ! isset($errors['region'])
+            && ! in_array($region, $regions, true)) {
+            $errors['region'] = 'Please choose a state or region from the list.';
+        }
+
         // A new listing must say where it is. This is a directory of places
         // people walk into, and an address-less profile is both unfindable on
         // the map and unplaceable by the geocoder — which is how businesses
@@ -1157,7 +1175,7 @@ class DirectoryListingMutationService
             // asked for, so only one can ever be missing.
             $pair = $isLocal
                 ? ['province', 'Please choose a province.']
-                : ['region', 'Please enter the state or region.'];
+                : ['region', $regions !== [] ? 'Please choose a state or region.' : 'Please enter the state or region.'];
             if (! isset($errors[$pair[0]]) && $this->clean($input[$pair[0]] ?? '') === '') {
                 $errors[$pair[0]] = $pair[1];
             }
@@ -1178,6 +1196,14 @@ class DirectoryListingMutationService
             && preg_match('/^\d{4}$/', $postal) !== 1) {
             $errors['postal_code'] = 'A South African postal code is four digits.';
         }
+        // The same idea for every other country with a profile: its shape
+        // from Config\Countries, or no check where postal codes are barely
+        // used (Namibia, Botswana).
+        $pattern = $isLocal ? null : ($this->countries()->profile($countryCode)['postalPattern'] ?? null);
+        if ($pattern !== null && $postal !== '' && ! isset($errors['postal_code'])
+            && preg_match($pattern, $postal) !== 1) {
+            $errors['postal_code'] = 'That postal code does not look right for ' . $country . '.';
+        }
 
         // A pin dropped outside South Africa on a listing that claims to be in
         // it. ListingGeocoder::submittedCoords() already drops these, silently,
@@ -1188,12 +1214,15 @@ class DirectoryListingMutationService
         // contains Lesotho and Eswatini, so passing it proves only "not
         // obviously somewhere else". Someone who simply types a Sandton
         // address and drops no pin at all is not caught here by design.
-        if ($isLocal && ! isset($errors['address_line'])) {
+        //
+        // Every country with a profile gets the same check against its own box.
+        $checkPin = $isLocal || $this->countries()->isSupported($countryCode);
+        if ($checkPin && ! isset($errors['address_line'])) {
             $lat = trim((string) ($input['latitude'] ?? ''));
             $lng = trim((string) ($input['longitude'] ?? ''));
             if ($lat !== '' && $lng !== '' && is_numeric($lat) && is_numeric($lng)
-                && ! NominatimGeocoder::isPlausible((float) $lat, (float) $lng)) {
-                $errors['address_line'] = 'That map pin is not in South Africa. '
+                && ! NominatimGeocoder::isPlausible((float) $lat, (float) $lng, $countryCode)) {
+                $errors['address_line'] = 'That map pin is not in ' . ($isLocal ? 'South Africa' : $country) . '. '
                     . 'Move it to the business address, or change the country above.';
             }
         }
@@ -1433,11 +1462,12 @@ class DirectoryListingMutationService
 
     /**
      * A WhatsApp number as wa.me digits, '' when empty, or null when invalid.
-     * See whatsapp_digits().
+     * A leading 0 is read in the listing's country ($country, a name; South
+     * Africa when absent). See whatsapp_digits().
      */
-    public function normaliseWhatsapp($value): ?string
+    public function normaliseWhatsapp($value, ?string $country = null): ?string
     {
-        return whatsapp_digits($value);
+        return whatsapp_digits($value, country_dial_code($country));
     }
 
     private function clean($v): string

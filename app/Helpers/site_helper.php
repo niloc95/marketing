@@ -107,3 +107,103 @@ if (! function_exists('site_cache_key')) {
         return site()->isApp() ? $key . '_' . site()->key() : $key;
     }
 }
+
+if (! function_exists('site_copy')) {
+    /**
+     * Wording that differs by site. On co.za this returns $za, the text as it
+     * has always been written in the view, so co.za does not change by a
+     * word. On local.webscheduler.app it returns Config\Sites::$appCopy[$key],
+     * falling back to $za if the key is missing.
+     */
+    function site_copy(string $key, string $za): string
+    {
+        if (! site()->isApp()) {
+            return $za;
+        }
+
+        return config(Sites::class)->appCopy[$key] ?? $za;
+    }
+}
+
+if (! function_exists('site_area_served')) {
+    /**
+     * schema.org areaServed for the site itself: South Africa on co.za, the
+     * countries with a profile on local.webscheduler.app.
+     *
+     * @return array<string,string>|list<array<string,string>>
+     */
+    function site_area_served(): array
+    {
+        if (! site()->isApp()) {
+            return ['@type' => 'Country', 'name' => 'South Africa'];
+        }
+
+        $countries = config('Countries');
+        $out       = [];
+        foreach (array_keys($countries->profiles) as $code) {
+            if ($code !== 'ZA') {
+                $out[] = ['@type' => 'Country', 'name' => (string) $countries->nameForCode($code)];
+            }
+        }
+
+        return $out;
+    }
+}
+
+if (! function_exists('site_hint')) {
+    /**
+     * The "you may want the other site" line, or null.
+     *
+     * Shown only while both sites are live, only on public discovery pages
+     * (home, /directory, /jobs), and only when Cloudflare's CF-IPCountry says
+     * the visitor is on the other side of the line: outside South Africa on
+     * co.za, in South Africa on .app. Never a redirect: a South African on
+     * holiday in London still gets co.za, a crawler still gets the page it
+     * asked for. Never on manage, signup, checkout, verification or admin
+     * pages, where it would only get in the way. "Not now" sets ws_site_hint
+     * for half a year (directory.js).
+     *
+     * @return array{text:string,label:string,url:string}|null
+     */
+    function site_hint(): ?array
+    {
+        $site = site();
+        if (! $site->scoping()) {
+            return null;
+        }
+
+        $request = service('request');
+        if (! $request instanceof \CodeIgniter\HTTP\IncomingRequest || $request->getCookie('ws_site_hint') === 'off') {
+            return null;
+        }
+
+        $path = trim($request->getPath(), '/');
+        if ($path !== '' && preg_match('#^(directory|jobs)(/|$)#', $path) !== 1) {
+            return null;
+        }
+
+        // Two letters, and not Cloudflare's XX (unknown) or T1 (Tor).
+        $country = strtoupper(trim($request->getHeaderLine('CF-IPCountry')));
+        if (preg_match('/^[A-Z]{2}$/', $country) !== 1 || in_array($country, ['XX', 'T1'], true)) {
+            return null;
+        }
+
+        if (! $site->isApp() && $country !== 'ZA') {
+            return [
+                'text'  => 'Looks like you are outside South Africa.',
+                'label' => 'Discover businesses near you on ' . $site->host(Sites::APP),
+                'url'   => site_url_for(Sites::APP),
+            ];
+        }
+
+        if ($site->isApp() && $country === 'ZA') {
+            return [
+                'text'  => 'Looks like you are in South Africa.',
+                'label' => 'Discover South African businesses on ' . $site->host(Sites::ZA),
+                'url'   => site_url_for(Sites::ZA),
+            ];
+        }
+
+        return null;
+    }
+}

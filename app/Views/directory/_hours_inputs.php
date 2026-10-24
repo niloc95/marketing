@@ -77,7 +77,12 @@ $label = $label ?? 'Trading hours';
           // Collapsed, because open it doubled the length of the hours section.
           // The summary carries the current answer, so a closed accordion still
           // says what is set, and it opens by itself when an exception is set,
-          // since those are what an owner would not otherwise see. ?>
+          // since those are what an owner would not otherwise see.
+          //
+          // Only where we have the country's holiday calendar (South Africa so
+          // far; see hours_context()). Elsewhere the questions would be about
+          // somebody else's holidays, so they are not asked. ?>
+    <?php if (config('Countries')->profile(hours_context(null, false)['country'])['holidays'] ?? false): ?>
     <?php
     $hol      = is_array($hours['holidays'] ?? null) ? $hours['holidays'] : [];
     $holMode  = (string) ($hol['mode'] ?? '');
@@ -196,4 +201,5 @@ $label = $label ?? 'Trading hours';
             </div>
         </div>
     </details>
+    <?php endif; ?>
 </div>

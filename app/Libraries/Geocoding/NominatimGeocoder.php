@@ -76,6 +76,13 @@ class NominatimGeocoder implements GeocoderInterface
     private static float $lastRequestAt = 0.0;
 
     /**
+     * The country the current lookup is limited to (ISO). Set at the start of
+     * geocodeParts() and reverse() and read by request() and accept(), so the
+     * ladder below stays one ladder for every country.
+     */
+    private string $country = 'ZA';
+
+    /**
      * Resolve a listing's address fields to coordinates, trying progressively
      * looser queries until one is accepted.
      *
@@ -86,17 +93,22 @@ class NominatimGeocoder implements GeocoderInterface
      */
     public function geocodeParts(array $parts): ?array
     {
+        $this->country = self::countryOf($parts);
         $street   = $this->clean($parts['address_line'] ?? '');
         $suburb   = $this->clean($parts['suburb'] ?? '');
         $city     = $this->clean($parts['city'] ?? '');
+        // A South African province, or another country's state or region.
         $province = $this->clean($parts['province'] ?? '');
+        if ($province === '' && $this->country !== 'ZA') {
+            $province = $this->clean($parts['region'] ?? '');
+        }
         $postal   = $this->clean($parts['postal_code'] ?? '');
 
         if ($street === '' && $suburb === '' && $city === '' && $postal === '') {
             return null;
         }
 
-        $cacheKey = 'geocode_' . md5(strtolower(implode('|', [$street, $suburb, $city, $province, $postal])));
+        $cacheKey = 'geocode_' . md5(strtolower(implode('|', [$street, $suburb, $city, $province, $postal]))) . self::keySuffix($this->country);
         $cached   = cache($cacheKey);
         if (is_array($cached)) {
             return $cached;
@@ -206,15 +218,51 @@ class NominatimGeocoder implements GeocoderInterface
     }
 
     /**
-     * Are these coordinates plausibly a South African address? Used to vet
-     * lat/lng posted by the browser (captured when the user picked an
-     * autocomplete suggestion) before they are trusted in place of a lookup.
+     * Are these coordinates plausibly an address in this country (ISO, South
+     * Africa by default)? Used to vet lat/lng posted by the browser (captured
+     * when the user picked an autocomplete suggestion) before they are trusted
+     * in place of a lookup.
+     *
+     * Each country's box comes from Config\Countries. A country without a
+     * profile has no box, so only the planet's own limits apply.
      */
-    public static function isPlausible(float $lat, float $lng): bool
+    public static function isPlausible(float $lat, float $lng, string $country = 'ZA'): bool
     {
-        [$minLat, $maxLat, $minLng, $maxLng] = self::SA_BBOX;
+        $country = strtoupper(trim($country)) ?: 'ZA';
+        $bbox    = $country === 'ZA' ? self::SA_BBOX : (config('Countries')->profile($country)['bbox'] ?? null);
+
+        if ($bbox === null) {
+            return abs($lat) <= 90.0 && abs($lng) <= 180.0;
+        }
+
+        [$minLat, $maxLat, $minLng, $maxLng] = $bbox;
 
         return $lat >= $minLat && $lat <= $maxLat && $lng >= $minLng && $lng <= $maxLng;
+    }
+
+    /**
+     * The ISO country a parts array is in: country_code, else the country
+     * name, else South Africa.
+     *
+     * @param array<string,mixed> $parts
+     */
+    public static function countryOf(array $parts): string
+    {
+        $code = strtoupper(trim((string) ($parts['country_code'] ?? '')));
+        if ($code === '' && isset($parts['country'])) {
+            $code = (string) config('Countries')->codeForName((string) $parts['country']);
+        }
+
+        return preg_match('/^[A-Z]{2}$/', $code) === 1 ? $code : 'ZA';
+    }
+
+    /**
+     * Cache key suffix for a lookup outside South Africa. Empty for ZA, so the
+     * month of cached South African answers survives the release.
+     */
+    public static function keySuffix(string $country): string
+    {
+        return $country === 'ZA' ? '' : '_' . strtolower($country);
     }
 
     /**
@@ -229,7 +277,7 @@ class NominatimGeocoder implements GeocoderInterface
      *
      * @return list<array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}>
      */
-    public function suggest(string $query, int $limit = 5): array
+    public function suggest(string $query, int $limit = 5, string $country = 'ZA'): array
     {
         return [];
     }
@@ -246,15 +294,16 @@ class NominatimGeocoder implements GeocoderInterface
      *
      * @return array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}|null
      */
-    public function reverse(float $lat, float $lng): ?array
+    public function reverse(float $lat, float $lng, string $country = 'ZA'): ?array
     {
-        if (! self::isPlausible($lat, $lng)) {
+        $this->country = strtoupper(trim($country)) ?: 'ZA';
+        if (! self::isPlausible($lat, $lng, $this->country)) {
             return null;
         }
 
         // 7dp is roughly a centimetre — far finer than anyone can drag, so this
         // is what the marker writes and what the cache key can safely round to.
-        $cacheKey = 'reverse_' . md5(number_format($lat, 7, '.', '') . ',' . number_format($lng, 7, '.', ''));
+        $cacheKey = 'reverse_' . md5(number_format($lat, 7, '.', '') . ',' . number_format($lng, 7, '.', '')) . self::keySuffix($this->country);
         $cached   = cache($cacheKey);
         if (is_array($cached)) {
             return $cached;
@@ -299,7 +348,7 @@ class NominatimGeocoder implements GeocoderInterface
         $results = $this->call($params + [
             'format'         => 'json',
             'addressdetails' => 1,
-            'countrycodes'   => 'za',
+            'countrycodes'   => strtolower($this->country),
             'limit'          => 1,
         ], 'geocode(' . http_build_query($params) . ')');
 
@@ -454,8 +503,7 @@ class NominatimGeocoder implements GeocoderInterface
         $lat = (float) $result['lat'];
         $lng = (float) $result['lon'];
 
-        [$minLat, $maxLat, $minLng, $maxLng] = self::SA_BBOX;
-        if ($lat < $minLat || $lat > $maxLat || $lng < $minLng || $lng > $maxLng) {
+        if (! self::isPlausible($lat, $lng, $this->country)) {
             return false;
         }
 
@@ -491,7 +539,7 @@ class NominatimGeocoder implements GeocoderInterface
                 continue;
             }
 
-            $key    = 'geocode_anchor_' . md5(strtolower($locality . '|' . $province));
+            $key    = 'geocode_anchor_' . md5(strtolower($locality . '|' . $province)) . self::keySuffix($this->country);
             $cached = cache($key);
             if (is_array($cached)) {
                 return $cached;
@@ -591,7 +639,7 @@ class NominatimGeocoder implements GeocoderInterface
             return null;
         }
 
-        $province = DirectoryService::normaliseProvince((string) ($addr['state'] ?? ''));
+        $province = self::normaliseRegion((string) ($addr['state'] ?? ''), $this->country);
 
         // How specific is the thing the user would be picking? A suggestion for
         // a whole road is a point somewhere along it, not a doorstep — saying so
@@ -632,5 +680,27 @@ class NominatimGeocoder implements GeocoderInterface
         $email = config('Directory')->adminEmail();
 
         return trim($site . '/1.0' . ($email !== '' ? ' (contact: ' . $email . ')' : ''));
+    }
+
+    /**
+     * A provider's state name as this app stores it: a South African province
+     * from SA_PROVINCES, or a region from the country's Config\Countries list,
+     * matched case insensitively. '' when it is not one we know, so a guess is
+     * never written into a whitelisted field.
+     */
+    public static function normaliseRegion(string $name, string $country = 'ZA'): string
+    {
+        if ($country === 'ZA') {
+            return DirectoryService::normaliseProvince($name);
+        }
+
+        $name = trim($name);
+        foreach (config('Countries')->regions($country) as $known) {
+            if (strcasecmp($known, $name) === 0) {
+                return $known;
+            }
+        }
+
+        return '';
     }
 }

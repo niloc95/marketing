@@ -304,8 +304,9 @@ final class ListingCountryTest extends CIUnitTestCase
         $signup->assertOK();
         $html = $signup->getBody();
         $this->assertMatchesRegularExpression('/data-address-province\s*>/', $html);
-        $this->assertMatchesRegularExpression('/data-address-region\s+hidden\s*>/', $html);
-        $this->assertStringContainsString('data-address-field="region" required disabled', $html);
+        $this->assertMatchesRegularExpression('/data-address-region\s+hidden\b/', $html);
+        $this->assertMatchesRegularExpression('/<input[^>]*data-region-text[^>]*\bdisabled\b/', $html);
+        $this->assertMatchesRegularExpression('/<select[^>]*data-region-select[^>]*\bdisabled\b/', $html);
 
         // The admin form for the German listing: the other way round, decided
         // by the server so it is correct before any JavaScript runs.
@@ -313,8 +314,57 @@ final class ListingCountryTest extends CIUnitTestCase
         $admin->assertOK();
         $html = $admin->getBody();
         $this->assertMatchesRegularExpression('/data-address-province\s+hidden\s*>/', $html);
-        $this->assertMatchesRegularExpression('/data-address-region\s*>/', $html);
-        $this->assertStringContainsString('value="Bavaria"', $html);
+        $this->assertMatchesRegularExpression('/data-address-region\s+data-region-lists/', $html);
+        // Germany has no region list, so the free text control is the live one.
+        $this->assertMatchesRegularExpression('/<input[^>]*value="Bavaria"[^>]*data-region-text(?![^>]*\bdisabled\b)[^>]*>/', $html);
+    }
+
+    // ------------------------------------------- countries with a full profile
+
+    public function testAUkSignupTakesARegionFromTheList(): void
+    {
+        $result = $this->svc->submitPublic($this->british());
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $row = $this->row($result);
+        $this->assertSame('GB', $row['country_code']);
+        $this->assertSame('England', $row['region']);
+    }
+
+    public function testAUkRegionMustComeFromTheList(): void
+    {
+        $result = $this->svc->submitPublic($this->british(['region' => 'Bavaria']));
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('region', $result['errors']);
+    }
+
+    public function testAUkPostcodeIsCheckedForItsOwnShape(): void
+    {
+        $result = $this->svc->submitPublic($this->british(['postal_code' => '8001']));
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('United Kingdom', $result['errors']['postal_code'] ?? '');
+    }
+
+    public function testAUkPinMustBeInTheUk(): void
+    {
+        // Cape Town coordinates on a London address.
+        $result = $this->svc->submitPublic($this->british(['latitude' => '-33.9249', 'longitude' => '18.4241']));
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('not in United Kingdom', $result['errors']['address_line'] ?? '');
+    }
+
+    public function testTheAdminFormOffersTheUkRegionsAsAList(): void
+    {
+        $id = (int) $this->svc->submitPublic($this->british())['id'];
+
+        $html = $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id)->getBody();
+
+        $this->assertMatchesRegularExpression('/<select[^>]*data-region-select(?![^>]*\bdisabled\b)[^>]*>/', $html);
+        $this->assertStringContainsString('<option value="England" selected>England</option>', $html);
+        $this->assertMatchesRegularExpression('/<option value="Wales"\s*>Wales<\/option>/', $html);
     }
 
     public function testTheOwnerFormShowsTheCountryButOffersNoControlForIt(): void
@@ -417,6 +467,29 @@ final class ListingCountryTest extends CIUnitTestCase
             'province'     => 'Western Cape',
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
+        ], $overrides));
+    }
+
+    /**
+     * A valid London submission. Coordinates match the address, which keeps
+     * ListingGeocoder off the network.
+     *
+     * @param array<string,mixed> $overrides
+     *
+     * @return array<string,mixed>
+     */
+    private function british(array $overrides = []): array
+    {
+        return $this->signup(array_merge([
+            'display_name' => 'Thames Loaf',
+            'country'      => 'United Kingdom',
+            'address_line' => '10 Downing Street',
+            'city'         => 'London',
+            'postal_code'  => 'SW1A 2AA',
+            'province'     => '',
+            'region'       => 'England',
+            'latitude'     => '51.5034',
+            'longitude'    => '-0.1276',
         ], $overrides));
     }
 

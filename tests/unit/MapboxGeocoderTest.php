@@ -368,4 +368,30 @@ final class MapboxGeocoderTest extends CIUnitTestCase
     {
         $this->assertSame([], (new NominatimGeocoder())->suggest('1 Adderley Street, Cape Town'));
     }
+
+    public function testEveryLookupSearchesTheCountryItIsFor(): void
+    {
+        $geocoder = $this->stub(static fn () => []);
+
+        $geocoder->suggest('10 Downing', 5, 'GB');
+        $geocoder->geocodeParts(['address_line' => '10 Country Test Street ' . uniqid(), 'city' => 'London', 'country_code' => 'GB']);
+        $geocoder->reverse(51.5034, -0.1276, 'GB');
+
+        $this->assertNotEmpty($this->calls);
+        foreach ($this->calls as $call) {
+            $this->assertSame('gb', $call['query']['country']);
+        }
+    }
+
+    public function testSouthAfricaIsStillTheDefault(): void
+    {
+        $geocoder = $this->stub(static fn () => []);
+
+        $geocoder->suggest('12 Long Street');
+        // A London point is outside South Africa's box, so no call at all.
+        $this->assertNull($geocoder->reverse(51.5034, -0.1276));
+
+        $this->assertCount(1, $this->calls);
+        $this->assertSame('za', $this->calls[0]['query']['country']);
+    }
 }

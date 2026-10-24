@@ -289,4 +289,41 @@ final class NominatimGeocoderTest extends CIUnitTestCase
 
         $this->assertNull($geocoder->reverse(-30.1234567, 25.1234567));
     }
+
+    public function testAForeignAddressIsCheckedAgainstItsOwnCountry(): void
+    {
+        $london = ['lat' => '51.5034', 'lon' => '-0.1276'];
+        $geocoder = $this->stub(fn (array $params) => $this->hit($london, ['address' => ['state' => 'England']]));
+
+        $coords = $geocoder->geocodeParts([
+            'address_line' => '10 Test Downing Street ' . uniqid(),
+            'city'         => 'London',
+            'region'       => 'England',
+            'country_code' => 'GB',
+        ]);
+
+        $this->assertNotNull($coords);
+        $this->assertEqualsWithDelta(51.5034, $coords['lat'], 0.0001);
+    }
+
+    public function testEachCountryHasItsOwnBox(): void
+    {
+        $this->assertTrue(NominatimGeocoder::isPlausible(-33.92, 18.42));
+        $this->assertFalse(NominatimGeocoder::isPlausible(51.50, -0.12));
+        $this->assertTrue(NominatimGeocoder::isPlausible(51.50, -0.12, 'GB'));
+        $this->assertFalse(NominatimGeocoder::isPlausible(-33.92, 18.42, 'GB'));
+        $this->assertTrue(NominatimGeocoder::isPlausible(-1.29, 36.82, 'KE'));
+        // No profile, no box: only the planet's limits.
+        $this->assertTrue(NominatimGeocoder::isPlausible(52.52, 13.40, 'DE'));
+        $this->assertFalse(NominatimGeocoder::isPlausible(95.0, 13.40, 'DE'));
+    }
+
+    public function testRegionsAreMatchedToTheCountrysOwnList(): void
+    {
+        $this->assertSame('Western Cape', NominatimGeocoder::normaliseRegion('western cape'));
+        $this->assertSame('England', NominatimGeocoder::normaliseRegion('ENGLAND', 'GB'));
+        $this->assertSame('', NominatimGeocoder::normaliseRegion('Gauteng', 'GB'));
+        $this->assertSame('GB', NominatimGeocoder::countryOf(['country' => 'United Kingdom']));
+        $this->assertSame('ZA', NominatimGeocoder::countryOf([]));
+    }
 }

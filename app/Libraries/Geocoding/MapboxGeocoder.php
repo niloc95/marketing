@@ -2,7 +2,6 @@
 
 namespace App\Libraries\Geocoding;
 
-use App\Services\DirectoryService;
 
 /**
  * Address lookups via the Mapbox Geocoding API (v6), used whenever
@@ -91,15 +90,19 @@ class MapboxGeocoder implements GeocoderInterface
         return $this->failed;
     }
 
+    /** The country (ISO) of the lookup in progress; see NominatimGeocoder::$country. */
+    private string $country = 'ZA';
+
     /**
      * Temporary lookups for the typeahead. Components only, no coordinates:
      * see the class docblock for why.
      *
      * @return list<array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,precision:string}>
      */
-    public function suggest(string $query, int $limit = 5): array
+    public function suggest(string $query, int $limit = 5, string $country = 'ZA'): array
     {
-        $this->failed = false;
+        $this->failed  = false;
+        $this->country = strtoupper(trim($country)) ?: 'ZA';
         $query        = trim($query);
         if (mb_strlen($query) < self::MIN_QUERY_LEN) {
             return [];
@@ -107,7 +110,7 @@ class MapboxGeocoder implements GeocoderInterface
 
         $features = $this->request(self::FORWARD_ENDPOINT, [
             'q'            => $query,
-            'country'      => 'za',
+            'country'      => strtolower($this->country),
             'autocomplete' => 'true',
             'limit'        => max(1, min($limit, 10)),
             'language'     => 'en',
@@ -144,11 +147,16 @@ class MapboxGeocoder implements GeocoderInterface
      */
     public function geocodeParts(array $parts): ?array
     {
-        $this->failed = false;
+        $this->failed  = false;
+        $this->country = NominatimGeocoder::countryOf($parts);
         $street   = $this->clean($parts['address_line'] ?? '');
         $suburb   = $this->clean($parts['suburb'] ?? '');
         $city     = $this->clean($parts['city'] ?? '');
+        // A South African province, or another country's state or region.
         $province = $this->clean($parts['province'] ?? '');
+        if ($province === '' && $this->country !== 'ZA') {
+            $province = $this->clean($parts['region'] ?? '');
+        }
         $postal   = $this->clean($parts['postal_code'] ?? '');
 
         if ($street === '' && $suburb === '' && $city === '' && $postal === '') {
@@ -157,7 +165,7 @@ class MapboxGeocoder implements GeocoderInterface
 
         // Prefixed differently from Nominatim's keys so switching provider
         // doesn't serve one provider's cached answer as the other's.
-        $cacheKey = 'mapbox_geocode_' . md5(strtolower(implode('|', [$street, $suburb, $city, $province, $postal])));
+        $cacheKey = 'mapbox_geocode_' . md5(strtolower(implode('|', [$street, $suburb, $city, $province, $postal]))) . NominatimGeocoder::keySuffix($this->country);
         $cached   = cache($cacheKey);
         if (is_array($cached)) {
             return $cached;
@@ -167,7 +175,7 @@ class MapboxGeocoder implements GeocoderInterface
         }
 
         $base = [
-            'country'      => 'za',
+            'country'      => strtolower($this->country),
             'autocomplete' => 'false',
             'limit'        => 1,
             'language'     => 'en',
@@ -238,14 +246,15 @@ class MapboxGeocoder implements GeocoderInterface
      *
      * @return array{label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}|null
      */
-    public function reverse(float $lat, float $lng): ?array
+    public function reverse(float $lat, float $lng, string $country = 'ZA'): ?array
     {
-        $this->failed = false;
-        if (! NominatimGeocoder::isPlausible($lat, $lng)) {
+        $this->failed  = false;
+        $this->country = strtoupper(trim($country)) ?: 'ZA';
+        if (! NominatimGeocoder::isPlausible($lat, $lng, $this->country)) {
             return null;
         }
 
-        $cacheKey = 'mapbox_reverse_' . md5(number_format($lat, 7, '.', '') . ',' . number_format($lng, 7, '.', ''));
+        $cacheKey = 'mapbox_reverse_' . md5(number_format($lat, 7, '.', '') . ',' . number_format($lng, 7, '.', '')) . NominatimGeocoder::keySuffix($this->country);
         $cached   = cache($cacheKey);
         if (is_array($cached)) {
             return $cached;
@@ -257,7 +266,7 @@ class MapboxGeocoder implements GeocoderInterface
         $features = $this->request(self::REVERSE_ENDPOINT, [
             'latitude'  => number_format($lat, 7, '.', ''),
             'longitude' => number_format($lng, 7, '.', ''),
-            'country'   => 'za',
+            'country'   => strtolower($this->country),
             'language'  => 'en',
             'types'     => self::TYPES,
             'permanent' => 'true',
@@ -357,7 +366,7 @@ class MapboxGeocoder implements GeocoderInterface
             return false;
         }
 
-        if (! NominatimGeocoder::isPlausible($mapped['lat'], $mapped['lng'])) {
+        if (! NominatimGeocoder::isPlausible($mapped['lat'], $mapped['lng'], $this->country)) {
             return false;
         }
 
@@ -419,7 +428,7 @@ class MapboxGeocoder implements GeocoderInterface
             'address_line' => $addressLine,
             'suburb'       => $suburb,
             'city'         => $city,
-            'province'     => DirectoryService::normaliseProvince($part('region')),
+            'province'     => NominatimGeocoder::normaliseRegion($part('region'), $this->country),
             'postal_code'  => $part('postcode'),
             'lat'          => $lat,
             'lng'          => $lng,

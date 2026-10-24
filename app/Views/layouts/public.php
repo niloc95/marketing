@@ -6,11 +6,11 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
       // until someone purged. Same ?v=<filemtime> trick as directory.css below.
       $brandUrl = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0); ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= esc(site()->isApp() ? (string) site()->profile()['locale'] : 'en', 'attr') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' | Discover local businesses in South Africa']) ?>
+    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' | ' . site_copy('title', 'Discover local businesses in South Africa')]) ?>
     <?php // Every icon is the orange WebScheduler Local badge, generated from
           // resources/brand/webscheduler-local-badge-1024.png. favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
           // skip the .ico entirely. The apple-touch icon is on white because iOS
@@ -99,7 +99,16 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
         <?php endif; ?>
     <?php endif; ?>
 </head>
-<body>
+<?php
+// Where maps open: the country a form names, else this site's default. Read
+// by directory.js (defaultMapView), so a map on .app does not open on Pretoria.
+$countryViews = [];
+foreach (config('Countries')->profiles as $code => $profile) {
+    $countryViews[(string) config('Countries')->nameForCode($code)] = $profile['mapView'];
+}
+?>
+<body data-site-map-view="<?= esc(json_encode(site()->profile()['mapView']), 'attr') ?>"
+      data-country-views="<?= esc(json_encode($countryViews, JSON_UNESCAPED_UNICODE), 'attr') ?>">
     <header class="site-header">
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>" aria-label="WebScheduler Local">
@@ -246,7 +255,7 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
             <a href="<?= base_url('verified') ?>">Verified businesses</a>
             <a href="<?= base_url('manage') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
-            <a href="<?= base_url('careers') ?>">Careers</a>
+            <a href="<?= site_url_for(\Config\Sites::ZA, 'careers') ?>">Careers</a>
             <a href="<?= base_url('contact') ?>">Contact</a>
             <?php // Second [data-theme-toggle] on the page, and that needs no JS change:
                   // applyTheme() writes aria-pressed to every one of them and the click
@@ -268,6 +277,17 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
           // also the page's main landmark, which screen readers use to skip the
           // header. See .site-main in resources/directory.css. ?>
     <main class="site-main">
+
+    <?php // The other site, offered and never imposed. See site_hint(). ?>
+    <?php if ($siteHint = site_hint()): ?>
+        <div class="container mt-5" data-site-hint>
+            <div class="alert alert-info">
+                <?= esc($siteHint['text']) ?>
+                <a href="<?= esc($siteHint['url'], 'attr') ?>"><?= esc($siteHint['label']) ?></a>
+                <button type="button" class="btn btn-ghost ml-2" data-site-hint-dismiss>Not now</button>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?php foreach (['success' => 'alert-success', 'error' => 'alert-error', 'info' => 'alert-info'] as $key => $cls): ?>
         <?php if (session()->getFlashdata($key)): ?>
@@ -312,7 +332,7 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
                     <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-64.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline">Discover local. Be discovered. A discovery platform for South African businesses, services, locations, professionals and opportunities. Create your free business profile.</p>
+                <p class="site-footer-tagline"><?= esc(site_copy('footer', 'Discover local. Be discovered. A discovery platform for South African businesses, services, locations, professionals and opportunities. Create your free business profile.')) ?></p>
                 <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
                 <?php // Newsletter -> Mautic (updates.webscheduler.co.za), the LOCAL
                       // form. The marketing site posts to its own form (id 1); the
@@ -373,8 +393,10 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
                     <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Create your free profile' ?></a></li>
+                    <?php if (! site()->isApp()): ?>
                     <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
-                    <li><a href="<?= base_url('partners') ?>">Partner Program</a></li>
+                    <?php endif; ?>
+                    <li><a href="<?= site_url_for(\Config\Sites::ZA, 'partners') ?>">Partner Program</a></li>
                     <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
                 </ul>
             </div>
@@ -382,19 +404,25 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
                 <h3>Company</h3>
                 <ul>
                     <li><a href="<?= base_url('company') ?>">Company</a></li>
-                    <li><a href="<?= base_url('careers') ?>">Careers</a></li>
+                    <li><a href="<?= site_url_for(\Config\Sites::ZA, 'careers') ?>">Careers</a></li>
                     <?php // Our own pages, not the marketing site's — that one is a
                           // "Book a demo" form for the scheduling product, which is
                           // not what someone here is asking for. ?>
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
                     <li><a href="<?= base_url('verified') ?>">Verified businesses</a></li>
+                    <?php // co.za's own pages (Config\Sites::$zaOnlyPaths) are not
+                          // offered on local.webscheduler.app. ?>
+                    <?php if (! site()->isApp()): ?>
                     <li><a href="<?= base_url('compare') ?>">How we compare</a></li>
                     <?php // The playbook, the Verified brochure and the outlook, listed
                           // with sizes on one page (Contact::resources) rather than a
                           // footer link per PDF. ?>
                     <li><a href="<?= base_url('resources') ?>">Guides and reports</a></li>
+                    <?php endif; ?>
                     <li><a href="<?= base_url('media') ?>">Media resources</a></li>
+                    <?php if (! site()->isApp()): ?>
                     <li><a href="<?= base_url('profile-setup') ?>">We set up your profile</a></li>
+                    <?php endif; ?>
                     <li><a href="<?= base_url('contact') ?>">Contact</a></li>
                 </ul>
             </div>

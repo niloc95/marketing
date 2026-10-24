@@ -524,6 +524,78 @@ class VerificationService
     }
 
     /**
+     * End one International Profile subscription for good, now that a
+     * profile outside South Africa is free (local.webscheduler.app).
+     *
+     * In this order, and stopping at the first failure so nobody is left
+     * half moved:
+     *  1. Cancel the PayFast subscription, if there is a live one. If PayFast
+     *     will not confirm, nothing else happens and a human is told, exactly
+     *     as an owner's own cancel does: a card that keeps being billed for
+     *     something now free is the outcome to avoid.
+     *  2. Close the row as lapsed. That matters more than it looks: left
+     *     active, lapseExpired() would take the profile DOWN at the end of the
+     *     term, which is what lapsing an International row has always meant.
+     *  3. Clear hosting_paid_until and publish the profile if it was waiting
+     *     on the money (publishIfPaidFor: confirmed email only, never over a
+     *     rejection).
+     *  4. Tell the owner, with a link on their own site.
+     *
+     * Refuses while the International plan is still on sale, so the order of
+     * a release cannot be got wrong: switch the plan off, then retire.
+     *
+     * @param array<string,mixed> $row a verification row with plan international
+     *
+     * @return 'retired'|'failed'|'skipped'
+     */
+    public function retireInternational(array $row): string
+    {
+        if ($this->internationalEnabled() || ! $this->isInternational($row)
+            || $row['state'] === DirectoryVerificationModel::STATE_REJECTED) {
+            return 'skipped';
+        }
+
+        $listingId = (int) $row['listing_id'];
+        $token     = trim((string) ($row['pf_subscription_token'] ?? ''));
+
+        if ($row['state'] === DirectoryVerificationModel::STATE_ACTIVE && empty($row['cancelled_at']) && $token !== '') {
+            if (! $this->payfast->cancelSubscription($token)) {
+                $this->notifyAdminOfCancellation($listingId, 'RETIRING THE INTERNATIONAL PLAN: PAYFAST API CALL FAILED. Cancel this subscription by hand in the PayFast dashboard, then run the retire command again');
+
+                return 'failed';
+            }
+        }
+
+        $this->verifications->update((int) $row['id'], [
+            'state'        => DirectoryVerificationModel::STATE_LAPSED,
+            'cancelled_at' => $row['cancelled_at'] ?? date('Y-m-d H:i:s'),
+        ]);
+        $this->applyHostingPaidUntil($listingId, null);
+
+        $listing = $this->listings->find($listingId);
+        if (! is_array($listing)) {
+            return 'retired';
+        }
+        $this->publishIfPaidFor($listing);
+
+        if (trim((string) ($listing['email'] ?? '')) !== '') {
+            (new Mailer())->notice((string) $listing['email'], 'Your profile on ' . $this->config->siteName() . ' is now free', [
+                'heading'    => 'Your business profile is now free',
+                'paragraphs' => [
+                    'Hello ' . ($listing['contact_person'] ?: $listing['display_name']) . ',',
+                    'Business profiles outside South Africa no longer need an International Profile subscription. Yours is free from today, and stays free.',
+                    $token !== '' ? 'We have cancelled your subscription, so you will not be charged again.' : 'There is nothing more to pay.',
+                    'Your profile now lives on ' . service('site')->host(service('site')->forRow($listing)) . ', the home for businesses outside South Africa. Your old link takes people there.',
+                ],
+                'button'     => ['See your profile', listing_site_url($listing, 'directory/' . $listing['slug'])],
+            ]);
+        }
+        $this->notifyAdminOfCancellation($listingId, 'International Profile retired: subscription closed, profile kept and free');
+
+        return 'retired';
+    }
+
+    /**
      * Grant the badge without PayFast, for a business that paid some other way.
      *
      * The EFT path, and the reason splitting the payment gate does not create a

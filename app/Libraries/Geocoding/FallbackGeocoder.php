@@ -26,9 +26,9 @@ final class FallbackGeocoder implements GeocoderInterface
     ) {
     }
 
-    public function suggest(string $query, int $limit = 5): array
+    public function suggest(string $query, int $limit = 5, string $country = 'ZA'): array
     {
-        return $this->primary->suggest($query, $limit);
+        return $this->primary->suggest($query, $limit, $country);
     }
 
     public function geocodeParts(array $parts): ?array
@@ -43,15 +43,15 @@ final class FallbackGeocoder implements GeocoderInterface
         return $this->secondary->geocodeParts($parts);
     }
 
-    public function reverse(float $lat, float $lng): ?array
+    public function reverse(float $lat, float $lng, string $country = 'ZA'): ?array
     {
-        $row = $this->primary->reverse($lat, $lng);
+        $row = $this->primary->reverse($lat, $lng, $country);
         if ($row !== null || ! $this->primary->failed()) {
             return $row;
         }
 
         log_message('warning', 'FallbackGeocoder: Mapbox failed for reverse, asking Nominatim');
 
-        return $this->secondary->reverse($lat, $lng);
+        return $this->secondary->reverse($lat, $lng, $country);
     }
 }

@@ -20,6 +20,10 @@ class Listing extends BaseController
     /** Nobody fills in a whole business listing this fast. */
     private const MIN_FORM_SECONDS = 3;
 
+    /** Cache key prefix and lifetime for a signup carried to the other site. */
+    private const HANDOVER_CACHE = 'signup_handover_';
+    private const HANDOVER_TTL   = 1800;
+
     /** Where a signup came from when nothing else says so. See signupSource(). */
     public const SOURCE_DIRECT = 'direct';
     public const SOURCE_SITE   = 'site';
@@ -104,6 +108,19 @@ class Listing extends BaseController
         $offered      = $verification->isEnabled();
         $old          = session()->getFlashdata('old') ?? [];
 
+        // Sent here by the other site's form (handOver()): what was typed
+        // there, once, so the business is created on the site it belongs to.
+        $handedOver = false;
+        $token      = (string) $this->request->getGet('handover');
+        if ($old === [] && preg_match('/^[a-f0-9]{32}$/', $token) === 1) {
+            $carried = cache(self::HANDOVER_CACHE . $token);
+            if (is_array($carried)) {
+                cache()->delete(self::HANDOVER_CACHE . $token);
+                $old        = $carried;
+                $handedOver = true;
+            }
+        }
+
         // Arrived from a "Recommend a business" invite: pre-fill what the
         // referrer told us. A failed submission's own input still wins, and
         // the token rides along as a hidden field so store() can close the
@@ -148,7 +165,42 @@ class Listing extends BaseController
             // carried back after a failed submit, so none count here.
             'strength'       => (new ListingQualityService())->strengthForDraft($old),
             'strengthTarget' => (int) config('Directory')->qualityTarget,
+            'handedOver'     => $handedOver ? (string) ($old['country'] ?? '') : '',
         ]);
+    }
+
+    /**
+     * Send a signup for a business in the other site's country to that site.
+     *
+     * A profile lives on the site its business country belongs to (Config\Sites):
+     * South Africa on co.za, everywhere else on .app. Someone abroad adding a
+     * Cape Town business, or a South African adding their London branch, is
+     * not turned away and does not have to start again. The typed fields go
+     * into the shared cache under a random, single use token for half an
+     * hour (sessions are per host, the cache is not), and the browser is sent
+     * to the other site's form, which fills itself in from it and asks them
+     * to check and submit there. Files are not carried; the form says so.
+     *
+     * Nothing happens until local.webscheduler.app is live, or when the
+     * country is unknown (validate() reports that on the spot).
+     *
+     * @param array<string,mixed> $post
+     */
+    private function handOver(array $post): ?\CodeIgniter\HTTP\RedirectResponse
+    {
+        $site = service('site');
+        $code = config('Countries')->codeForName((string) ($post['country'] ?? ''));
+        if (! $site->scoping() || $code === null || $site->ownsCountry($code)) {
+            return null;
+        }
+
+        $fields = array_diff_key($post, array_flip([
+            csrf_token(), 'company_website_hp', 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
+        ]));
+        $token = bin2hex(random_bytes(16));
+        cache()->save(self::HANDOVER_CACHE . $token, $fields, self::HANDOVER_TTL);
+
+        return redirect()->to(site_url_for($site->forCountry($code), 'add-profile') . '?handover=' . $token, 303);
     }
 
     /**
@@ -223,6 +275,13 @@ class Listing extends BaseController
         }
 
         $post = $this->request->getPost();
+
+        // A business in another site's country is created on that site: hand
+        // the typed fields over instead of saving here. See handOver().
+        if (($handover = $this->handOver($post)) !== null) {
+            return $handover;
+        }
+
         $logo = $this->resolveLogo();
 
         // Where this signup came from. Always overwritten here, so the form

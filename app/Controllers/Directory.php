@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\LocksDownDocumentCsp;
+use App\Controllers\Concerns\RedirectsToOwningSite;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
@@ -16,9 +17,12 @@ use App\Services\ListingMenuService;
 use App\Services\VerificationService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use Config\Services;
+use Config\Sites;
 
 class Directory extends BaseController
 {
+    use RedirectsToOwningSite;
+
     use LocksDownDocumentCsp;
 
     public function home()
@@ -210,6 +214,8 @@ class Directory extends BaseController
 
         $out = [];
         foreach ($items as $l) {
+            // Each pin's own clock: on .app one map can span time zones.
+            hours_context($l);
             $hours = hours_decode($l['trading_hours'] ?? null);
 
             $out[] = [
@@ -242,6 +248,8 @@ class Directory extends BaseController
                 'area'     => map_area_radius($l['geocode_precision'] ?? null) !== null,
             ];
         }
+
+        hours_context();
 
         return $this->response->setJSON(['items' => $out]);
     }
@@ -293,7 +301,18 @@ class Directory extends BaseController
     {
         $cap = static fn ($v, int $len) => mb_substr(trim((string) $v), 0, $len);
 
+        // local.webscheduler.app's country and region, from the city chips on
+        // its country and region pages. Only values Config\Countries knows
+        // survive, so neither can put arbitrary text into a query or a title.
+        $countries = config('Countries');
+        $country   = strtoupper($cap($this->request->getGet('country'), 2));
+        $country   = $country !== 'ZA' && $countries->isSupported($country) ? $country : '';
+        $region    = $cap($this->request->getGet('region'), 120);
+        $region    = $country !== '' && in_array($region, $countries->regions($country), true) ? $region : '';
+
         return [
+            'country'  => $country,
+            'region'   => $region,
             'q'        => $cap($this->request->getGet('q'), 100),
             // A main-category slug (DirectoryCategoryGroupModel). Broader than
             // category and combinable with it; an unknown one is ignored.
@@ -451,6 +470,12 @@ class Directory extends BaseController
             return $this->renderLanding($svc, $category, null);
         }
 
+        // /directory/united-kingdom: a country page on local.webscheduler.app.
+        $code = config('Countries')->codeForSlug($slug);
+        if ($code !== null && $code !== 'ZA' && service('site')->scoping()) {
+            return $this->renderCountry($svc, $code, null);
+        }
+
         return $this->show($slug);
     }
 
@@ -459,10 +484,25 @@ class Directory extends BaseController
     {
         $svc = new DirectoryService();
 
+        // /directory/united-kingdom/scotland: a region page on .app.
+        $code = config('Countries')->codeForSlug($categorySlug);
+        if ($code !== null && $code !== 'ZA' && service('site')->scoping()) {
+            $region = config('Countries')->regionFromSlug($code, $provinceSlug);
+            if ($region === null) {
+                throw PageNotFoundException::forPageNotFound();
+            }
+
+            return $this->renderCountry($svc, $code, $region);
+        }
+
         $category = $svc->findCategoryBySlug($categorySlug);
         $province = $svc->provinceFromSlug($provinceSlug);
         if ($category === null || $province === null) {
             throw PageNotFoundException::forPageNotFound();
+        }
+        // A South African province page belongs on co.za.
+        if (service('site')->isApp() && ($moved = $this->redirectToSite(Sites::ZA)) !== null) {
+            return $moved;
         }
 
         return $this->renderLanding($svc, $category, $province);
@@ -499,6 +539,35 @@ class Directory extends BaseController
     }
 
     /**
+     * A local.webscheduler.app country page (/directory/{country}) or region
+     * page (/directory/{country}/{region}): what province() is on co.za, for
+     * every other country with a profile in Config\Countries. Its own site
+     * only; asked for on co.za it 301s to .app.
+     */
+    private function renderCountry(DirectoryService $svc, string $code, ?string $region)
+    {
+        if (! service('site')->isApp()) {
+            return $this->redirectToSite(Sites::APP) ?? throw PageNotFoundException::forPageNotFound();
+        }
+
+        $page   = (int) ($this->request->getGet('page') ?? 1);
+        $result = $svc->browse(['country' => $code, 'region' => $region ?? ''], $page);
+        $min    = (int) config('Directory')->landingMinListings;
+
+        return view('directory/country', [
+            'code'       => $code,
+            'country'    => (string) config('Countries')->nameForCode($code),
+            'slug'       => (string) config('Countries')->profile($code)['slug'],
+            'region'     => $region,
+            'result'     => $result,
+            'indexable'  => (int) $result['total'] >= $min && $page === 1,
+            'regions'    => $region === null ? $svc->regionCounts($code) : [],
+            'cityCounts' => $svc->cityCountsIn($code, $region),
+            'categories' => $svc->topCategoriesIn($code, $region),
+        ]);
+    }
+
+    /**
      * /directory/at/{venue} — every published business in one complex, mall or
      * building.
      *
@@ -517,6 +586,9 @@ class Directory extends BaseController
         $venue = $svc->findVenueBySlug($slug);
         if ($venue === null) {
             throw PageNotFoundException::forPageNotFound();
+        }
+        if (($moved = $this->redirectToOwningSite($venue)) !== null) {
+            return $moved;
         }
 
         $page     = (int) ($this->request->getGet('page') ?? 1);
@@ -602,6 +674,13 @@ class Directory extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
+        if (($moved = $this->redirectToOwningSite($listing)) !== null) {
+            return $moved;
+        }
+
+        // "Open now", "Today" and the holiday line on this business's clock.
+        hours_context($listing);
+
         return view('directory/show', [
             'l'       => $listing,
             'related' => $svc->relatedListings(
@@ -631,6 +710,9 @@ class Directory extends BaseController
         $listing = (new DirectoryListingModel())->findPublishedBySlug($slug);
         if ($listing === null) {
             throw PageNotFoundException::forPageNotFound();
+        }
+        if (($moved = $this->redirectToOwningSite($listing)) !== null) {
+            return $moved;
         }
 
         $category = ! empty($listing['category_id'])
@@ -776,13 +858,24 @@ class Directory extends BaseController
                 ],
                 $svc->sitemapLandingUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapProvinceUrls((int) config('Directory')->landingMinListings),
+                $svc->sitemapCountryUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapVenueUrls((int) config('Directory')->landingMinListings),
                 $svc->sitemapUrls(),
                 // Live vacancies only; service requests are noindex.
                 (new JobBoardService())->sitemapUrls(),
                 // Our own open roles; drafts and closed roles are left out.
-                (new \App\Services\CareersService())->sitemapUrls()
+                // co.za's, like every page in Config\Sites::$zaOnlyPaths.
+                service('site')->isApp() ? [] : (new \App\Services\CareersService())->sitemapUrls()
             );
+
+            // A sitemap lists its own host's pages only: on local.webscheduler.app,
+            // co.za's pages would be URLs that 301 elsewhere.
+            if (service('site')->isApp()) {
+                $sites = config(Sites::class);
+                $urls  = array_values(array_filter($urls, static fn (array $u): bool => ! $sites->isZaOnly(
+                    ltrim((string) parse_url($u['loc'], PHP_URL_PATH), '/')
+                )));
+            }
 
             $xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
             $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";

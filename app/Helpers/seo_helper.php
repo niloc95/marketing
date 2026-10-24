@@ -12,7 +12,7 @@ if (! function_exists('seo_meta')) {
      * `image` falls back to the site-wide default OG image when omitted or
      * passed as an empty string (e.g. a listing with no logo).
      *
-     * @param array{title?:string,description?:string,canonical?:string,image?:string,type?:string,schema?:array,robots?:string|bool} $d
+     * @param array{title?:string,description?:string,canonical?:string,image?:string,type?:string,schema?:array,robots?:string|bool,alternates?:string} $d
      */
     function seo_meta(array $d): string
     {
@@ -50,6 +50,20 @@ if (! function_exists('seo_meta')) {
         $out .= '<meta property="og:title" content="' . $e($title) . "\">\n";
         $out .= '<meta property="og:description" content="' . $e($desc) . "\">\n";
         $out .= '<meta property="og:url" content="' . $u($url) . "\">\n";
+
+        // A page that exists on both sites (only the home page so far): tell
+        // Google which one is for South Africa and which for everyone else, so
+        // the two never compete. 'alternates' is the shared path. Only once
+        // local.webscheduler.app is live, and only on pages that really are
+        // the same page, never on a profile, which lives on one site only.
+        if (isset($d['alternates']) && service('site')->scoping()) {
+            $path  = (string) $d['alternates'];
+            $za    = site_url_for(\Config\Sites::ZA, $path);
+            $app   = site_url_for(\Config\Sites::APP, $path);
+            $out  .= '<link rel="alternate" hreflang="en-ZA" href="' . $u($za) . "\">\n";
+            $out  .= '<link rel="alternate" hreflang="en" href="' . $u($app) . "\">\n";
+            $out  .= '<link rel="alternate" hreflang="x-default" href="' . $u($app) . "\">\n";
+        }
         if ($image !== '') {
             $out .= '<meta property="og:image" content="' . $u($image) . "\">\n";
             $out .= '<meta name="twitter:card" content="summary_large_image">' . "\n";

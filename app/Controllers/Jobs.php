@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Controllers\Concerns\RedirectsToOwningSite;
 use App\Libraries\Input;
 use App\Libraries\Screening;
 use App\Models\DirectoryListingModel;
@@ -22,6 +23,8 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Jobs extends BaseController
 {
+    use RedirectsToOwningSite;
+
     /** Nobody reads the form and writes a job advert this fast. */
     private const MIN_FORM_SECONDS = 3;
 
@@ -69,6 +72,9 @@ class Jobs extends BaseController
         $post = $svc->find($id);
         if ($post === null) {
             throw PageNotFoundException::forPageNotFound();
+        }
+        if (($moved = $this->redirectToOwningSite($post)) !== null) {
+            return $moved;
         }
 
         $isAdmin = (bool) session('dir_admin');

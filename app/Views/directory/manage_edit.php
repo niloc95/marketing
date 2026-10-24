@@ -26,6 +26,8 @@ $v = function (string $f, string $default = '') use ($old, $listing) {
 $err = fn (string $f) => $errors[$f] ?? '';
 
 helper('directory_hours');
+// The hours section asks on this listing's own clock and calendar.
+hours_context($listing);
 $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : (hours_decode($listing['trading_hours'] ?? null) ?? []);
 // The public holiday answer travels with the days as hours[holidays], the
 // shape the form posts; the stored copy is decoded separately.

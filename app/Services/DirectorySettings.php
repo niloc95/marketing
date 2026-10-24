@@ -71,6 +71,13 @@ class DirectorySettings
 
     public function badgeEnabled(): bool
     {
+        // local.webscheduler.app takes payment through Paddle, not PayFast, so
+        // the badge is off there until a "verified_badge_enabled@app" row
+        // turns it on; co.za's own switch never reaches it.
+        if (service('site')->isApp()) {
+            return $this->isTruthy((string) ($this->map()[DirectorySettingModel::BADGE_ENABLED . '@' . service('site')->key()]['value'] ?? '0'));
+        }
+
         $stored = $this->stored(DirectorySettingModel::BADGE_ENABLED);
 
         return $stored === null

@@ -24,9 +24,11 @@ use CodeIgniter\Config\BaseConfig;
  * app.webscheduler.test. The za host defaults to app.baseURL's host, which is
  * what keeps base_url() and site_url_for('za') identical on co.za.
  *
- *   sites.za.host     = local.webscheduler.co.za
- *   sites.app.host    = local.webscheduler.app
- *   sites.app.enabled = false
+ *   sites.za.host        = local.webscheduler.co.za
+ *   sites.app.host       = local.webscheduler.app
+ *   sites.app.enabled    = false
+ *   sites.app.analyticsId = G-...   .app's own GA4 property; unset = no analytics
+ *   sites.app.clarityId   = ...     .app's own Clarity project
  */
 class Sites extends BaseConfig
 {
@@ -35,30 +37,70 @@ class Sites extends BaseConfig
 
     /**
      * Per site settings. `countries` is the ISO codes the site shows, or null
-     * for "every country the other site does not". Values left null fall back
-     * to Config\Directory, so co.za keeps reading exactly what it reads today.
+     * for "every country the other site does not". Analytics IDs come from
+     * .env (see the class docblock), wording from $appCopy.
      *
      * @var array<string,array<string,mixed>>
      */
     public array $profiles = [
         self::ZA => [
             'countries'       => ['ZA'],
+            // [lat, lng, zoom] a map opens on when nothing else says where.
+            'mapView'         => [-28.8, 24.7, 5],
             'locale'          => 'en-ZA',
             'currency'        => 'ZAR',
             'paymentProvider' => 'payfast',
-            'siteName'        => null,
-            'analyticsId'     => null,
-            'clarityId'       => null,
         ],
         self::APP => [
             'countries'       => null,
+            'mapView'         => [25.0, 10.0, 2],
             'locale'          => 'en',
             'currency'        => 'USD',
             'paymentProvider' => 'paddle',
-            'siteName'        => null,
-            'analyticsId'     => null,
-            'clarityId'       => null,
         ],
+    ];
+
+    /**
+     * Wording that names South Africa on co.za, as local.webscheduler.app
+     * says it. Read through site_copy(), which hands back co.za's own text
+     * untouched there, so co.za keeps every word it has today. Same copy
+     * rules as everywhere: discover, discovery, platform; never "directory";
+     * no dashes and no hyphenated words.
+     *
+     * @var array<string,string>
+     */
+    public array $appCopy = [
+        'title'           => 'Discover local businesses near you',
+        'footer'          => 'Discover local. Be discovered. A discovery platform for local businesses, services, locations, professionals and opportunities. Create your free business profile.',
+        'siteDescription' => 'A local business discovery and visibility platform for the United Kingdom, the United States, Australia, New Zealand, Namibia, Botswana, Kenya and Nigeria. '
+            . 'Discover businesses, services, locations, professionals and opportunities near you, '
+            . 'or create a free business profile: no monthly fee, no subscription, no obligation.',
+        'homeDescription' => 'Discover local businesses, services, locations, professionals and opportunities near you. Create your free business profile: no monthly fee, no subscription.',
+        'homeLede'        => 'The local discovery platform for businesses, services, professionals and locations near you.',
+        'discoverTitle'   => 'Discover businesses near you.',
+        'featuredLine'    => 'Handpicked from across the platform, and open for enquiries.',
+        'where'           => ' near you',
+        'discoverDescription' => 'Discover local businesses, services and professionals by category, country and city, on one local discovery platform.',
+        'jobsWhere'       => 'near you',
+    ];
+
+    /**
+     * Pages that exist on co.za only, as route path prefixes. On the app host
+     * a GET for one of them is a 301 to the same path on co.za
+     * (Filters\SiteResolver): our own careers, the partner programme and the
+     * profile setup service are South African businesses paid in rand, the
+     * comparison and the guides are about South Africa, recommendations and
+     * province pages are South African by construction.
+     *
+     * @var list<string>
+     */
+    public array $zaOnlyPaths = [
+        'careers', 'partners', 'p/', 'profile-setup', 'compare', 'resources', 'recommend',
+        'directory/province/',
+        // Until .app has its own versions: the FAQ quotes rand prices and South
+        // African rules, /company is the South African company's own page,
+        // and /verified explains a badge .app does not sell yet (Paddle).
+        'faq', 'company', 'verified',
     ];
 
     /** The app site's default host; .env sites.app.host overrides it. */
@@ -85,6 +127,19 @@ class Sites extends BaseConfig
     public function appEnabled(): bool
     {
         return filter_var(env('sites.app.enabled', false), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /** Is this route path (no leading slash) one of $zaOnlyPaths? */
+    public function isZaOnly(string $path): bool
+    {
+        $path = ltrim($path, '/');
+        foreach ($this->zaOnlyPaths as $prefix) {
+            if (str_ends_with($prefix, '/') ? str_starts_with($path, $prefix) : ($path === $prefix || str_starts_with($path, $prefix . '/'))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return list<string> */

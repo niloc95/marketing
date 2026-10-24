@@ -6,6 +6,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
+use Config\Sites;
 use Tests\Support\WithEnv;
 
 /**
@@ -31,7 +32,7 @@ final class SiteScopeTest extends CIUnitTestCase
     protected $migrateOnce = false;
     protected $refresh     = true;
 
-    /** Not the app host, so za: the test baseURL's host. */
+    /** Not the app host, so za. Redirects go to Sites::host(ZA), the baseURL's host. */
     private const ZA_HOST  = 'example.com';
     private const APP_HOST = 'local.webscheduler.app';
 
@@ -107,6 +108,101 @@ final class SiteScopeTest extends CIUnitTestCase
 
         $this->assertStringContainsString('Cape Crumb Bakery', $this->page(self::ZA_HOST, '/directory'));
         $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory'));
+    }
+
+    public function testOnceLiveAProfileOnTheWrongSiteMovesForGood(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        Services::resetSingle('site');
+        $toApp = $this->withHeaders(['Host' => self::ZA_HOST])->get('/directory/thames-loaf-bakery?ref=x');
+        $toApp->assertStatus(301);
+        $this->assertSame(self::APP_HOST, parse_url((string) $toApp->getRedirectUrl(), PHP_URL_HOST));
+        $this->assertStringEndsWith('/directory/thames-loaf-bakery?ref=x', (string) $toApp->getRedirectUrl());
+
+        Services::resetSingle('site');
+        $toZa = $this->withHeaders(['Host' => self::APP_HOST])->get('/directory/cape-crumb-bakery');
+        $toZa->assertStatus(301);
+        $this->assertSame(config(Sites::class)->host(Sites::ZA), parse_url((string) $toZa->getRedirectUrl(), PHP_URL_HOST));
+
+        // Each on its own site renders.
+        $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory/thames-loaf-bakery'));
+        $this->assertStringContainsString('Cape Crumb Bakery', $this->page(self::ZA_HOST, '/directory/cape-crumb-bakery'));
+    }
+
+    public function testWhileOffEveryProfileStaysOnCoZa(): void
+    {
+        $this->setEnv('sites.app.enabled', 'false');
+
+        $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::ZA_HOST, '/directory/thames-loaf-bakery'));
+    }
+
+    public function testCoZaOnlyPagesMoveFromTheAppHost(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        foreach (['/careers', '/partners', '/profile-setup', '/directory/province/western-cape', '/directory/bakeries/western-cape'] as $path) {
+            Services::resetSingle('site');
+            $result = $this->withHeaders(['Host' => self::APP_HOST])->get($path);
+            $result->assertStatus(301);
+            $this->assertSame(config(Sites::class)->host(Sites::ZA), parse_url((string) $result->getRedirectUrl(), PHP_URL_HOST), $path);
+        }
+    }
+
+    public function testTheAppHasCountryAndRegionPages(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $country = $this->page(self::APP_HOST, '/directory/united-kingdom');
+        $this->assertStringContainsString('Local services in United Kingdom', $country);
+        $this->assertStringContainsString('Thames Loaf Bakery', $country);
+        $this->assertStringContainsString('/directory/united-kingdom/england', $country);
+
+        $region = $this->page(self::APP_HOST, '/directory/united-kingdom/england');
+        $this->assertStringContainsString('Local services in England', $region);
+        $this->assertStringContainsString('Thames Loaf Bakery', $region);
+
+        Services::resetSingle('site');
+        $this->withHeaders(['Host' => self::APP_HOST])->get('/directory/united-kingdom/bavaria')->assertStatus(404);
+
+        Services::resetSingle('site');
+        $moved = $this->withHeaders(['Host' => self::ZA_HOST])->get('/directory/united-kingdom');
+        $moved->assertStatus(301);
+        $this->assertSame(self::APP_HOST, parse_url((string) $moved->getRedirectUrl(), PHP_URL_HOST));
+    }
+
+    public function testCountryPagesDoNotExistWhileTheAppIsOff(): void
+    {
+        $this->setEnv('sites.app.enabled', 'false');
+
+        $this->withHeaders(['Host' => self::ZA_HOST])->get('/directory/united-kingdom')->assertStatus(404);
+    }
+
+    public function testTheAppSitemapListsOnlyItsOwnPages(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $xml = $this->page(self::APP_HOST, '/sitemap.xml');
+        foreach (['/careers', '/partners', '/compare', '/faq', '/profile-setup'] as $zaOnly) {
+            $this->assertStringNotContainsString($zaOnly . '<', $xml, $zaOnly);
+        }
+        $this->assertStringContainsString('/jobs<', $xml);
+    }
+
+    public function testTheHomePagesPointAtEachOther(): void
+    {
+        $this->setEnv('sites.app.enabled', 'false');
+        $this->assertStringNotContainsString('hreflang', $this->page(self::ZA_HOST, '/'));
+
+        $this->setEnv('sites.app.enabled', 'true');
+        foreach ([self::ZA_HOST, self::APP_HOST] as $host) {
+            $this->assertStringContainsString('hreflang="en-ZA"', $this->page($host, '/'), $host);
+        }
+
+        // Only checkable from co.za here: under test, base_url() keeps the
+        // configured host whatever the request's, so .app's own links would
+        // read as co.za's. On a real server they follow the host.
+        $this->assertStringContainsString('hreflang="x-default" href="http://local.webscheduler.app', $this->page(self::ZA_HOST, '/'));
     }
 
     public function testTheAdminIsNotServedOnTheAppHost(): void

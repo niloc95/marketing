@@ -20,6 +20,7 @@ use Config\Sites;
  *    indexes a half built site.
  *  - Once enabled, /admin* on the app host is a 404. The admin lives on co.za
  *    only, behind the one Cloudflare Access application it already has.
+ *  - Once enabled, co.za's own pages (Config\Sites::$zaOnlyPaths) 301 there.
  *
  * Runs right after frontcontrollerpath, before anything reads service('site').
  */
@@ -51,6 +52,17 @@ class SiteResolver implements FilterInterface
 
         if ($path === 'admin' || str_starts_with($path, 'admin/')) {
             throw PageNotFoundException::forPageNotFound();
+        }
+
+        // co.za's own pages (Config\Sites::$zaOnlyPaths) move there for good.
+        if (in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true) && config(Sites::class)->isZaOnly($path)) {
+            $query = (string) $request->getUri()->getQuery();
+
+            return service('response')->redirect(
+                site_url_for(Sites::ZA, $path) . ($query !== '' ? '?' . $query : ''),
+                'auto',
+                301
+            );
         }
 
         return null;

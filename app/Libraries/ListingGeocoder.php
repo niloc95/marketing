@@ -93,19 +93,17 @@ final class ListingGeocoder
         $missingCoords = $existing !== null
             && ($existing['latitude'] === null || $existing['longitude'] === null);
 
-        // Is this address one the geocoder can even be asked about? Nominatim
-        // is called with countrycodes=za at every call site, and the whole
-        // accept/reject ladder — the SA bounding box, the suburb anchor
-        // distance, the province checks — is built around South African
-        // addresses. A foreign address therefore cannot resolve: the lookup
-        // returns nothing and the row is marked 'failed', which is a lie about
-        // what happened and costs an upstream call per save to produce.
-        //
-        // So a foreign listing is placed by hand or not at all. Generalising
-        // the geocoder is a project of its own.
-        $isLocal = config('Countries')->isLocal((string) ($address['country'] ?? ''));
+        // Is this address one the geocoder can be asked about? South Africa
+        // and every country with a Config\Countries profile can: the lookup
+        // is limited to that country and its bounding box. Any other country
+        // has no box and no region list to check a match against, so a lookup
+        // there would be a guess; those listings are placed by hand or not at
+        // all, and the row is not marked 'failed' for a lookup never made.
+        $country    = NominatimGeocoder::countryOf($address);
+        $geocodable = $country === 'ZA' || config('Countries')->isSupported($country);
+        $address['country_code'] = $country;
 
-        $submitted = $this->submittedCoords($input, $isLocal);
+        $submitted = $this->submittedCoords($input, $geocodable ? $country : null);
 
         // The form re-posts the stored point on every save. On a row whose pin
         // is waiting to be checked, that is not the owner confirming it, only
@@ -133,7 +131,7 @@ final class ListingGeocoder
             return null;
         }
 
-        if (! $isLocal) {
+        if (! $geocodable) {
             // Nothing to look up, and nothing to keep: the address just
             // changed, so any pin from before it did is now wrong. Clearing is
             // what drops the listing out of "near me" — see syncPoint().
@@ -299,12 +297,12 @@ final class ListingGeocoder
 
     /**
      * @param array<string,mixed> $input
-     * @param bool $isLocal whether the address claims to be in South Africa,
-     *                      which is what makes the bounding box applicable
+     * @param string|null $country the address's ISO country when it has a
+     *                             bounding box to check against, else null
      *
      * @return array{lat:float,lng:float,precision:string}|null
      */
-    private function submittedCoords(array $input, bool $isLocal = true): ?array
+    private function submittedCoords(array $input, ?string $country = 'ZA'): ?array
     {
         $lat = trim((string) ($input['latitude'] ?? ''));
         $lng = trim((string) ($input['longitude'] ?? ''));
@@ -320,13 +318,13 @@ final class ListingGeocoder
             return null;
         }
 
-        // A South African listing's pin must be in (roughly) South Africa.
+        // A listing's pin must be in (roughly) its own country.
         // DirectoryListingMutationService::validate() rejects this combination
         // with a field error before any save reaches here, so by this point it
         // means a write path that does not validate. Dropping the pin is the
         // safe end state either way: a listing with no coordinates is findable
         // by name, one pinned in the wrong hemisphere is not.
-        if ($isLocal && ! NominatimGeocoder::isPlausible((float) $lat, (float) $lng)) {
+        if ($country !== null && ! NominatimGeocoder::isPlausible((float) $lat, (float) $lng, $country)) {
             return null;
         }
 

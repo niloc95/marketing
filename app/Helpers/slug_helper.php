@@ -92,7 +92,10 @@ if (! function_exists('listing_reserved_slugs')) {
         $rows  = (new App\Models\DirectoryCategoryModel())->select('slug')->findAll();
         // 'province' is the literal first segment of /directory/province/{slug};
         // a category or listing holding it would shadow every province page.
-        $cache = array_merge(['verify', 'categories', 'map', 'suggest', 'province', 'at'], array_column($rows, 'slug'));
+        // Country slugs (united-kingdom...) are local.webscheduler.app's
+        // country pages, /directory/{country}, for the same reason.
+        $countries = array_column(config('Countries')->profiles, 'slug');
+        $cache     = array_merge(['verify', 'categories', 'map', 'suggest', 'province', 'at'], $countries, array_column($rows, 'slug'));
 
         return $cache;
     }

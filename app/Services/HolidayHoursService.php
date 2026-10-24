@@ -89,8 +89,10 @@ class HolidayHoursService
         }
         $since = date('Y-m-d H:i:s', strtotime($today . ' -' . self::REMIND_EVERY_DAYS . ' days'));
 
+        // South African holidays, so South African profiles only.
         return $this->listings
             ->where('status', 'published')
+            ->groupStart()->where('country_code', null)->orWhere('country_code', 'ZA')->groupEnd()
             ->where('is_verified', 1)
             ->where('holiday_hours', null)
             ->where('by_appointment', 0)

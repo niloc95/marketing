@@ -15,7 +15,7 @@ $siteName = config('Directory')->siteName();
 // mentions), since schema_item_list()'s default #list would collide.
 // All three come from data the controller already loaded, so no extra queries.
 $canonical   = base_url('/');
-$description = 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.';
+$description = site_copy('homeDescription', 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.');
 
 $homeLists = [];
 if ($featured !== []) {
@@ -39,7 +39,7 @@ foreach ($homeLists as $key => $list) {
 
 $pageProps = [
     'description'        => $description,
-    'inLanguage'         => 'en-ZA',
+    'inLanguage'         => (string) site()->profile()['locale'],
     'primaryImageOfPage' => ['@type' => 'ImageObject', 'url' => base_url(config('Directory')->ogImage())],
 ];
 if (isset($homeLists['featured'])) {
@@ -60,6 +60,8 @@ $schema = schema_page(array_values($homeLists), $canonical, 'WebPage', $siteName
     'description' => $description,
     'canonical'   => $canonical,
     'schema'      => $schema,
+    // The same page on both sites: co.za for South Africa, .app for the rest.
+    'alternates'  => '',
 ]) ?>
 <?= $this->endSection() ?>
 
@@ -130,7 +132,7 @@ $moments = [
         <div class="container">
             <p class="home-eyebrow"><?= esc($siteName) ?></p>
             <h1 class="home-display">Discover local.</h1>
-            <p class="home-lede">The local discovery platform for businesses, services, professionals and locations across South Africa.</p>
+            <p class="home-lede"><?= esc(site_copy('homeLede', 'The local discovery platform for businesses, services, professionals and locations across South Africa.')) ?></p>
 
             <?php // One box. The words are read into category and place on the
                   // results page (Directory::interpretSearch()), so the category
@@ -168,7 +170,11 @@ $moments = [
                     <p class="home-stats">
                         <span><strong><?= number_format($stats['listings']) ?></strong> profiles</span>
                         <span><strong><?= number_format($stats['categories']) ?></strong> categories</span>
-                        <span><strong><?= number_format($stats['provinces']) ?></strong> provinces</span>
+                        <?php if (site()->isApp()): ?>
+                            <span><strong><?= number_format($stats['countries'] ?? 0) ?></strong> countries</span>
+                        <?php else: ?>
+                            <span><strong><?= number_format($stats['provinces']) ?></strong> provinces</span>
+                        <?php endif; ?>
                     </p>
                 <?php endif; ?>
             </div>
@@ -346,7 +352,7 @@ $moments = [
     <section class="home-discover">
         <div class="container">
             <hr class="home-rule">
-            <h2 class="home-statement home-discover-title" data-scroll-reveal>Discover businesses across South Africa.</h2>
+            <h2 class="home-statement home-discover-title" data-scroll-reveal><?= esc(site_copy('discoverTitle', 'Discover businesses across South Africa.')) ?></h2>
         </div>
 
         <?php // Only renders when an admin has actually flagged something. featured()
@@ -356,7 +362,7 @@ $moments = [
             <div class="home-group">
                 <div class="container home-group-head" data-scroll-reveal>
                     <h3>Featured</h3>
-                    <p>Handpicked from across South Africa, and open for enquiries.</p>
+                    <p><?= esc(site_copy('featuredLine', 'Handpicked from across South Africa, and open for enquiries.')) ?></p>
                 </div>
                 <?php // A carousel after deepmind.google's: tall picture cards that start
                       // on the content edge and run off the right of the screen, so the

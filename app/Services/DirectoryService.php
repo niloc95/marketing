@@ -147,6 +147,15 @@ class DirectoryService
         if (! empty($filters['province'])) {
             $builder->where('xs_directory_listings.province', $filters['province']);
         }
+        // local.webscheduler.app's country and region pages. Both arrive
+        // already checked against Config\Countries (Directory::index(),
+        // Directory::country()).
+        if (! empty($filters['country'])) {
+            $builder->where('xs_directory_listings.country_code', $filters['country']);
+        }
+        if (! empty($filters['region'])) {
+            $builder->where('xs_directory_listings.region', $filters['region']);
+        }
         if (! empty($filters['city'])) {
             $builder->like('xs_directory_listings.city', trim($filters['city']));
         }
@@ -666,6 +675,8 @@ class DirectoryService
             . ' xs_directory_listings.address_line, xs_directory_listings.address_line_2,'
             . ' xs_directory_listings.suburb, xs_directory_listings.city,'
             . ' xs_directory_listings.province, xs_directory_listings.postal_code,'
+            // Whose clock "Open now" reads: see hours_context().
+            . ' xs_directory_listings.region, xs_directory_listings.country_code, xs_directory_listings.timezone,'
             . ' p.name AS category_name';
 
         if ($near !== null) {
@@ -758,11 +769,16 @@ class DirectoryService
         if (! is_numeric($lat) || ! is_numeric($lng)) {
             return null;
         }
-        // Same bounding box that vets everything else entering this app. A
-        // position outside South Africa cannot produce a useful result here,
-        // and silently searching from it would return the whole directory
-        // sorted by distance to another continent.
-        if (! NominatimGeocoder::isPlausible((float) $lat, (float) $lng)) {
+        // On co.za, the same bounding box that vets everything else entering
+        // this app: a position outside South Africa cannot produce a useful
+        // result there, and silently searching from it would return the whole
+        // directory sorted by distance to another continent. local.webscheduler.app
+        // covers every other country, so there any real position on the planet
+        // is a fair starting point.
+        $plausible = service('site')->isApp()
+            ? abs((float) $lat) <= 90.0 && abs((float) $lng) <= 180.0
+            : NominatimGeocoder::isPlausible((float) $lat, (float) $lng);
+        if (! $plausible) {
             return null;
         }
 
@@ -1130,6 +1146,11 @@ class DirectoryService
      */
     private function applyHolidays(BaseBuilder|Model $builder, ?string $today = null): void
     {
+        // South African public holidays mean nothing on local.webscheduler.app,
+        // and no other country has a calendar yet.
+        if (service('site')->isApp()) {
+            return;
+        }
         helper('directory_hours');
         $today ??= hours_now()->format('Y-m-d');
         if (hours_calendar()->on($today) !== null) {
@@ -1626,6 +1647,88 @@ class DirectoryService
     }
 
     /**
+     * Published profiles per region of one country, busiest first: the
+     * region chips on a local.webscheduler.app country page. The
+     * counterpart of provinceCounts() for every country but South Africa,
+     * whose regions live in `region` rather than `province`.
+     *
+     * @return array<string,int> region => count
+     */
+    public function regionCounts(string $countryCode): array
+    {
+        return $this->countsBy('region', $countryCode, null, 50);
+    }
+
+    /**
+     * The busiest cities in a country, or in one of its regions.
+     *
+     * @return array<string,int> city => count
+     */
+    public function cityCountsIn(string $countryCode, ?string $region = null, int $limit = 8): array
+    {
+        return $this->countsBy('city', $countryCode, $region, $limit);
+    }
+
+    /**
+     * Categories present in a country or one of its regions, busiest first,
+     * each with a 'listing_count' for that place, as topCategoriesInProvince().
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function topCategoriesIn(string $countryCode, ?string $region = null, int $limit = 8): array
+    {
+        $builder = $this->listings
+            ->select('category_id, COUNT(*) AS c')
+            ->where($this->published(), null, false)
+            ->where('country_code', $countryCode)
+            ->where('category_id IS NOT NULL');
+        if ($region !== null) {
+            $builder->where('region', $region);
+        }
+        $rows = $builder->groupBy('category_id')->orderBy('c', 'DESC')->limit($limit)->findAll();
+
+        $byId = [];
+        foreach ($this->categories() as $c) {
+            $byId[(int) $c['id']] = $c;
+        }
+
+        $out = [];
+        foreach ($rows as $r) {
+            $cid = (int) $r['category_id'];
+            if (isset($byId[$cid])) {
+                $cat                  = $byId[$cid];
+                $cat['listing_count'] = (int) $r['c'];
+                $out[]                = $cat;
+            }
+        }
+
+        return $out;
+    }
+
+    /** @return array<string,int> */
+    private function countsBy(string $column, string $countryCode, ?string $region, int $limit): array
+    {
+        $builder = $this->listings
+            ->select($column . ', COUNT(*) AS c')
+            ->where($this->published(), null, false)
+            ->where('country_code', $countryCode)
+            ->where($column . ' !=', '');
+        if ($region !== null) {
+            $builder->where('region', $region);
+        }
+        $rows = $builder->groupBy($column)->orderBy('c', 'DESC')->limit($limit)->findAll();
+
+        $out = [];
+        foreach ($rows as $r) {
+            if (($r[$column] ?? '') !== '') {
+                $out[(string) $r[$column]] = (int) $r['c'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * The busiest cities in a province, for the homepage card's "Johannesburg ·
      * Pretoria · Soweto" line and the province page's city chips.
      *
@@ -1703,7 +1806,7 @@ class DirectoryService
     /**
      * Headline numbers for the homepage trust bar.
      *
-     * @return array{listings:int,categories:int,provinces:int}
+     * @return array{listings:int,categories:int,provinces:int,countries:int}
      */
     public function stats(): array
     {
@@ -1713,6 +1816,11 @@ class DirectoryService
             'listings'   => (int) $this->listings->where($this->published(), null, false)->countAllResults(),
             'categories' => count($counts),
             'provinces'  => count($this->provinceCounts()),
+            // local.webscheduler.app counts countries where co.za counts provinces.
+            'countries'  => service('site')->isApp()
+                ? (int) db_connect()->table('xs_directory_listings')->select('COUNT(DISTINCT country_code) AS n')
+                    ->where($this->published(), null, false)->where('deleted_at', null)->get()->getRow('n')
+                : 1,
         ];
     }
 
@@ -2032,6 +2140,52 @@ class DirectoryService
                 'loc'     => base_url('directory/province/' . slugify($province)),
                 'lastmod' => substr((string) $r['m'] ?: $today, 0, 10),
             ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * local.webscheduler.app's country and region pages that clear the
+     * landing threshold, for its sitemap. Empty on co.za, whose places are
+     * provinces (sitemapProvinceUrls()).
+     *
+     * @return array<int,array{loc:string,lastmod:string}>
+     */
+    public function sitemapCountryUrls(int $minListings): array
+    {
+        if (! service('site')->isApp()) {
+            return [];
+        }
+
+        $countries = config('Countries');
+        $today     = date('Y-m-d');
+        $rows      = $this->listings
+            ->select('country_code, region, COUNT(*) AS c, MAX(updated_at) AS m')
+            ->where($this->published(), null, false)
+            ->groupBy(['country_code', 'region'])
+            ->findAll();
+
+        $byCountry = [];
+        $out       = [];
+        foreach ($rows as $r) {
+            $code = (string) ($r['country_code'] ?? '');
+            $slug = $countries->profile($code)['slug'] ?? null;
+            if ($slug === null) {
+                continue;
+            }
+            $byCountry[$code]['c'] = ($byCountry[$code]['c'] ?? 0) + (int) $r['c'];
+            $byCountry[$code]['m'] = max($byCountry[$code]['m'] ?? '', (string) $r['m']);
+
+            $region = (string) ($r['region'] ?? '');
+            if ($region !== '' && (int) $r['c'] >= $minListings && in_array($region, $countries->regions($code), true)) {
+                $out[] = ['loc' => base_url('directory/' . $slug . '/' . slugify($region)), 'lastmod' => substr($r['m'] ?: $today, 0, 10)];
+            }
+        }
+        foreach ($byCountry as $code => $agg) {
+            if ($agg['c'] >= $minListings) {
+                $out[] = ['loc' => base_url('directory/' . $countries->profile($code)['slug']), 'lastmod' => substr($agg['m'] ?: $today, 0, 10)];
+            }
         }
 
         return $out;

@@ -743,16 +743,40 @@ if (! function_exists('social_profile_url')) {
     }
 }
 
+if (! function_exists('country_dial_code')) {
+    /**
+     * The dialling code a leading 0 stands for in this country (a name or an
+     * ISO code): "27" for South Africa and for an empty value, the profile's
+     * own for every country in Config\Countries, and null for any other,
+     * where a number has to be typed with its + and country code.
+     */
+    function country_dial_code(?string $country): ?string
+    {
+        $country = trim((string) $country);
+        $code    = preg_match('/^[A-Za-z]{2}$/', $country) === 1
+            ? strtoupper($country)
+            : config('Countries')->codeForName($country);
+
+        if ($code === 'ZA') {
+            return '27';
+        }
+
+        return config('Countries')->profile($code)['dialCode'] ?? null;
+    }
+}
+
 if (! function_exists('whatsapp_digits')) {
     /**
      * A WhatsApp number as the international digits wa.me takes, or null.
      *
      * "082 123 4567", "+27 82 123 4567" and "27821234567" all come out as
-     * "27821234567". A leading 0 is read as South African because this is a
-     * South African directory; anyone abroad types their + and country code.
+     * "27821234567". A leading 0 is read as the business's own country
+     * ($dialCode, see country_dial_code()), South Africa unless told
+     * otherwise; with no known dialling code a leading 0 is left alone and
+     * the number has to carry its + and country code.
      * Returns '' for empty input so callers can tell "cleared" from "invalid".
      */
-    function whatsapp_digits($value): ?string
+    function whatsapp_digits($value, ?string $dialCode = '27'): ?string
     {
         $value = is_scalar($value) ? trim((string) $value) : '';
         if ($value === '') {
@@ -764,8 +788,8 @@ if (! function_exists('whatsapp_digits')) {
             return null;
         }
         $digits = (string) preg_replace('/\D+/', '', $value);
-        if (! str_starts_with($value, '+') && str_starts_with($digits, '0')) {
-            $digits = '27' . substr($digits, 1);
+        if ($dialCode !== null && ! str_starts_with($value, '+') && str_starts_with($digits, '0')) {
+            $digits = $dialCode . substr($digits, 1);
         }
 
         return preg_match('/^[1-9]\d{9,14}$/', $digits) === 1 ? $digits : null;

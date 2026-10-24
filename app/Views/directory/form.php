@@ -46,6 +46,13 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
 ?>
 <section class="section">
     <div class="container">
+        <?php // Arrived from the other site's form: see Listing::handOver(). ?>
+        <?php if (! empty($handedOver)): ?>
+            <div class="alert alert-info mb-6">
+                Businesses in <?= esc($handedOver) ?> are listed here, on <?= esc(site()->host()) ?>.
+                We have kept what you typed. Please add your logo and photos again, check your details and submit.
+            </div>
+        <?php endif; ?>
         <?php // The comparison comes first. The two options used to meet only inside a
               // collapsed <details> further down, which is why businesses kept arriving
               // unsure what the difference was. Renders nothing when the badge is off. ?>

@@ -49,7 +49,7 @@ final class FallbackGeocoderTest extends CIUnitTestCase
                 $this->calls = &$calls;
             }
 
-            public function suggest(string $query, int $limit = 5): array
+            public function suggest(string $query, int $limit = 5, string $country = 'ZA'): array
             {
                 $this->calls[] = 'suggest';
 
@@ -63,7 +63,7 @@ final class FallbackGeocoderTest extends CIUnitTestCase
                 return ['lat' => -33.9249, 'lng' => 18.4241, 'precision' => 'street'];
             }
 
-            public function reverse(float $lat, float $lng): ?array
+            public function reverse(float $lat, float $lng, string $country = 'ZA'): ?array
             {
                 $this->calls[] = 'reverse';
 

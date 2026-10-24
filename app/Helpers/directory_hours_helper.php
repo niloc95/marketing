@@ -90,18 +90,58 @@ if (! function_exists('hours_decode')) {
     }
 }
 
+if (! function_exists('hours_context')) {
+    /**
+     * Whose hours are being shown: set from the profile (or branch) a page is
+     * rendering, so "Open now", "Today" and the holiday line use that
+     * business's own clock and calendar. hours_now() and hours_calendar()
+     * read it.
+     *
+     * Called with a row, it switches to the row's timezone (its own column,
+     * else its country and region via Config\Countries) and country. Called
+     * with nothing, it goes back to South Africa, which is also what it is
+     * before anyone calls it, so every South African page reads exactly what
+     * it always read. Returns the context now in force.
+     *
+     * @param array<string,mixed>|null $row
+     *
+     * @return array{timezone:string,country:string}
+     */
+    function hours_context(?array $row = null, bool $set = true): array
+    {
+        static $context = ['timezone' => 'Africa/Johannesburg', 'country' => 'ZA'];
+
+        if (! $set) {
+            return $context;
+        }
+
+        if ($row === null) {
+            return $context = ['timezone' => 'Africa/Johannesburg', 'country' => 'ZA'];
+        }
+
+        $country = \App\Libraries\Geocoding\NominatimGeocoder::countryOf($row);
+        $tz      = trim((string) ($row['timezone'] ?? ''));
+        if ($tz === '' || ! in_array($tz, DateTimeZone::listIdentifiers(), true)) {
+            $tz = config('Countries')->timezone($country, (string) ($row['region'] ?? $row['province'] ?? ''));
+        }
+
+        return $context = ['timezone' => $tz, 'country' => $country];
+    }
+}
+
 if (! function_exists('hours_now')) {
     /**
-     * The current time on South African clocks.
+     * The current time on the clocks of the business being shown (see
+     * hours_context()): South Africa's unless a page said otherwise.
      *
      * The app runs in UTC (Config\App::$appTimezone, see local_datetime()), but
-     * trading hours are typed as wall clock times in South Africa. A bare date()
-     * put "Today" on the wrong row from 22:00 to midnight and said "Open now"
-     * two hours late.
+     * trading hours are typed as wall clock times where the business is. A
+     * bare date() put "Today" on the wrong row from 22:00 to midnight and said
+     * "Open now" two hours late.
      */
     function hours_now(): DateTimeImmutable
     {
-        return new DateTimeImmutable('now', new DateTimeZone('Africa/Johannesburg'));
+        return new DateTimeImmutable('now', new DateTimeZone(hours_context(null, false)['timezone']));
     }
 }
 
@@ -494,10 +534,19 @@ if (! function_exists('hours_open_now_line')) {
 }
 
 if (! function_exists('hours_calendar')) {
-    /** One PublicHolidays per request: it reads the settings once. */
+    /**
+     * One PublicHolidays per request: it reads the settings once. South
+     * Africa's is the only calendar so far, so a business elsewhere (see
+     * hours_context()) gets one with no holidays rather than ours.
+     */
     function hours_calendar(): \App\Libraries\PublicHolidays
     {
         static $calendar = null;
+        static $none     = null;
+
+        if (hours_context(null, false)['country'] !== 'ZA') {
+            return $none ??= new \App\Libraries\NoPublicHolidays();
+        }
 
         return $calendar ??= new \App\Libraries\PublicHolidays();
     }

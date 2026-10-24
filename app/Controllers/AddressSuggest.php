@@ -36,7 +36,7 @@ class AddressSuggest extends BaseController
         }
 
         return $this->response->setJSON(
-            service('geocoder')->suggest($query, self::SUGGESTION_LIMIT)
+            service('geocoder')->suggest($query, self::SUGGESTION_LIMIT, $this->country())
         );
     }
 
@@ -57,9 +57,10 @@ class AddressSuggest extends BaseController
         }
 
         $parts = [];
-        foreach (['address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code'] as $field) {
+        foreach (['address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code'] as $field) {
             $parts[$field] = trim((string) $this->request->getGet($field));
         }
+        $parts['country_code'] = $this->country();
 
         $coords = service('geocoder')->geocodeParts($parts);
 
@@ -89,8 +90,23 @@ class AddressSuggest extends BaseController
         }
 
         return $this->response->setJSON(
-            service('geocoder')->reverse((float) $lat, (float) $lng) ?? []
+            service('geocoder')->reverse((float) $lat, (float) $lng, $this->country()) ?? []
         );
+    }
+
+    /**
+     * The country the form is filling in, posted by the script as the
+     * country select's value (a name). South Africa when absent, which is
+     * every form that has no country select. A country without a profile in
+     * Config\Countries falls back to South Africa too: the script does not
+     * ask about those, so only a crafted request lands here.
+     */
+    private function country(): string
+    {
+        $name = trim((string) $this->request->getGet('country'));
+        $code = $name === '' ? 'ZA' : (string) config('Countries')->codeForName($name);
+
+        return config('Countries')->isSupported($code) ? $code : 'ZA';
     }
 
     /** Per-IP, per-action rate limit. False means "over the limit". */
