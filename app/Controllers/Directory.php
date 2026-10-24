@@ -973,7 +973,9 @@ class Directory extends BaseController
             // A sitemap lists its own host's pages only: on local.webscheduler.app,
             // co.za's pages would be URLs that 301 elsewhere.
             if (service('site')->isApp()) {
-                $sites = config(Sites::class);
+                // .app's twin of /verified, which the filter below takes out.
+                $urls[] = ['loc' => base_url('plus'), 'lastmod' => date('Y-m-d')];
+                $sites  = config(Sites::class);
                 $urls  = array_values(array_filter($urls, static fn (array $u): bool => ! $sites->isZaOnly(
                     ltrim((string) parse_url($u['loc'], PHP_URL_PATH), '/')
                 )));

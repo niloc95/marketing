@@ -47,6 +47,8 @@ $routes->get('company', 'Contact::company');
 // What the Verified Business badge means. Public and indexable — the badge on
 // every verified profile links here, so visitors can check the claim.
 $routes->get('verified', 'Contact::verified');
+// What the Plus label means, on local.webscheduler.app (co.za's twin is /verified).
+$routes->get('plus', 'Contact::plus');
 // WebScheduler Local next to Google, LinkedIn and the SA directories. The
 // table is edited at /admin/comparison, so it changes without a deploy.
 $routes->get('compare', 'Contact::compare');

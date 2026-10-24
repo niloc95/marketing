@@ -76,6 +76,28 @@ class Contact extends BaseController
     }
 
     /**
+     * /plus: what the Plus label means, on local.webscheduler.app. Plus does
+     * not exist on co.za, so there it goes to .app once that is live and is a
+     * 404 before.
+     */
+    public function plus()
+    {
+        if (! service('site')->isApp()) {
+            if (service('site')->scoping()) {
+                return redirect()->to(site_url_for(\Config\Sites::APP, 'plus'), 301);
+            }
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $svc = new VerificationService();
+
+        return view('directory/plus', [
+            'offered' => $svc->plusOffered(),
+            'usd'     => $svc->plusPriceUsd(),
+        ]);
+    }
+
+    /**
      * WebScheduler Local next to Google Business Profile, LinkedIn and the
      * South African directories. The table itself is ComparisonService's.
      */

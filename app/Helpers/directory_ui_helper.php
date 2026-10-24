@@ -246,8 +246,10 @@ if (! function_exists('plus_badge_pill')) {
      */
     function plus_badge_pill(): string
     {
-        return '<span class="badge gap-1" title="This business has WebScheduler Local Plus">'
-            . lucide('sparkles', 'h-3.5 w-3.5 shrink-0') . 'Plus</span>';
+        // A link to what it means, as the Verified pill links to /verified.
+        return '<a class="badge gap-1" href="' . esc(base_url('plus'), 'attr') . '"'
+            . ' title="This business has WebScheduler Local Plus. What that means">'
+            . lucide('sparkles', 'h-3.5 w-3.5 shrink-0') . 'Plus</a>';
     }
 }
 
