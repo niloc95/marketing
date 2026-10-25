@@ -314,6 +314,38 @@ final class InternationalListingTest extends CIUnitTestCase
         $this->assertFalse(listing_has_plus($listing));
     }
 
+    public function testConfirmingAProfileAbroadLandsOnThePlusPanel(): void
+    {
+        $this->goLiveWithPlus();
+
+        [, $token] = $this->signup(local: false);
+        $result = $this->get('directory/verify/' . $token);
+        $result->assertRedirectTo(base_url('manage/edit') . '#get-plus');
+        $this->assertStringContainsString('$2.99 a month', (string) session('success'));
+        $this->assertStringNotContainsString('Verified', (string) session('success'));
+
+        // A South African profile never hears about Plus.
+        [, $token] = $this->signup(local: true);
+        $result = $this->get('directory/verify/' . $token);
+        $this->assertStringNotContainsString('#get-plus', (string) $result->getRedirectUrl());
+    }
+
+    public function testTheDashboardOffersPlusToAProfileAbroad(): void
+    {
+        $this->goLiveWithPlus();
+
+        [$abroad, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $abroad])->get('manage/edit')->getBody();
+        $this->assertStringContainsString('id="get-plus"', $html);
+        $this->assertStringContainsString('manage/verification/checkout?plan=plus', $html);
+
+        [$local, $token] = $this->signup(local: true);
+        $this->mutations->verify($token);
+        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $local])->get('manage/edit')->getBody();
+        $this->assertStringNotContainsString('id="get-plus"', $html);
+    }
+
     public function testPlusIsChargedInRandAtTheOperatorsRate(): void
     {
         $this->goLiveWithPlus();

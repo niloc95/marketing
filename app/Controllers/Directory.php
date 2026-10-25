@@ -894,6 +894,19 @@ class Directory extends BaseController
                         . 'subscription before the profile goes live. This is the last step.');
             }
 
+            // The same moment on local.webscheduler.app, where the upgrade is
+            // Plus rather than the badge: a business abroad lands on the Plus
+            // panel, unless it already holds Plus.
+            if ($verification->plusAvailableFor($listing) && ! listing_subscription_active($listing)) {
+                $usd = $verification->plusPriceUsd();
+
+                return redirect()->to(base_url('manage/edit') . '#get-plus')
+                    ->with('success', 'Your business profile is live and you are signed in. Want more on show? '
+                        . 'Plus adds your other locations, your team and job vacancies'
+                        . ($usd !== null ? ' for ' . money($usd, 'USD') . ' a month' : '')
+                        . '. Your business profile stays free either way.');
+            }
+
             // The moment they are most likely to say yes: signed in, listing just
             // live. With the badge on sale and no application yet (none attached
             // at signup), go straight to the badge panel on the dashboard instead
@@ -907,7 +920,9 @@ class Directory extends BaseController
 
             return redirect()->to(base_url('directory/' . $listing['slug']))
                 ->with('success', 'Your profile is verified and now live. You are signed in. '
-                    . 'Use Manage your profile to edit it or apply for the Verified Business badge.');
+                    . ($verification->isEnabled()
+                        ? 'Use Manage your profile to edit it or apply for the Verified Business badge.'
+                        : 'Use Manage your profile to edit it.'));
         }
         return redirect()->to(base_url('/'))
             ->with('error', 'That verification link is invalid or has expired.');

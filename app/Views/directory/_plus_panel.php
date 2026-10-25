@@ -32,7 +32,8 @@ $prettyDate = static function (?string $date): string {
 };
 $price = $usd !== null && $usd !== '' ? money($usd, 'USD') . ' a month' : money($amount) . ' a month';
 ?>
-<div class="panel verify-panel">
+<?php // #get-plus is where Directory::verify() lands a new profile abroad. ?>
+<div class="panel verify-panel" id="get-plus">
     <h2 class="verify-panel-title"><?= plus_badge_pill() ?></h2>
 
     <?php if ($active): ?>
