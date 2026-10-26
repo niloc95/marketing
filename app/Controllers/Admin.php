@@ -752,19 +752,38 @@ class Admin extends BaseController
      */
     public function verifications()
     {
-        $model = new DirectoryVerificationModel();
-        $state = (string) ($this->request->getGet('state') ?? DirectoryVerificationModel::STATE_SUBMITTED);
-        $page  = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $model   = new DirectoryVerificationModel();
+        $service = new VerificationService();
+        // Two plans, one table: ?plan=plus shows the International rows,
+        // which are Plus once local.webscheduler.app is live. Plus has no
+        // review, so its view opens on every state rather than the queue.
+        $isPlus = $this->request->getGet('plan') === 'plus';
+        $plan   = $isPlus ? DirectoryVerificationModel::PLAN_INTERNATIONAL : DirectoryVerificationModel::PLAN_BADGE;
+        $state  = (string) ($this->request->getGet('state') ?? ($isPlus ? 'all' : DirectoryVerificationModel::STATE_SUBMITTED));
+        $page   = max(1, (int) ($this->request->getGet('page') ?? 1));
 
-        $result = $model->queue($state, $page);
+        $result = $model->queue($state, $page, 20, $plan);
 
         return view('admin/verifications', [
-            'state'   => $state,
-            'rows'    => $result['rows'],
-            'pager'   => $result['pager'],
-            'counts'  => $model->counts(),
-            'amount'  => (new VerificationService())->monthlyAmount(),
+            'state'      => $state,
+            'isPlus'     => $isPlus,
+            'plusMode'   => $service->plusMode(),
+            'rows'       => $result['rows'],
+            'pager'      => $result['pager'],
+            'counts'     => $model->counts($plan),
+            'planCounts' => [
+                'badge' => $model->counts(DirectoryVerificationModel::PLAN_BADGE)['all'],
+                'plus'  => $model->counts(DirectoryVerificationModel::PLAN_INTERNATIONAL)['all'],
+            ],
+            'amount'     => $isPlus ? $service->internationalAmount() : $service->monthlyAmount(),
+            'plusUsd'    => $service->plusPriceUsd(),
         ]);
+    }
+
+    /** /admin/plus: the Plus view of the verification page. */
+    public function plus()
+    {
+        return redirect()->to(base_url('admin/verifications') . '?plan=plus');
     }
 
     public function approveVerification(int $id)
@@ -801,8 +820,8 @@ class Admin extends BaseController
 
         return $this->outcome(
             (new VerificationService())->activateManually($id, $this->adminActor(), $months),
-            sprintf('Badge activated for %d month%s.', max(1, $months), $months === 1 ? '' : 's'),
-            'Could not activate that badge. An application still awaiting review has to be approved first.'
+            sprintf('%s activated for %d month%s.', $this->planWord($id), max(1, $months), $months === 1 ? '' : 's'),
+            'Could not activate that one. An application still awaiting review has to be approved first.'
         );
     }
 
@@ -810,9 +829,20 @@ class Admin extends BaseController
     {
         return $this->outcome(
             (new VerificationService())->revoke($id, $this->adminActor()),
-            'Badge removed. Cancel the subscription in the PayFast dashboard too. We cannot do that from here.',
-            'Could not remove that badge.'
+            $this->planWord($id) . ' removed. Cancel the subscription in the PayFast dashboard too. We cannot do that from here.',
+            'Could not remove that one.'
         );
+    }
+
+    /** "Plus", "International" or "Badge": what verification row $id sells, for flash messages. */
+    private function planWord(int $id): string
+    {
+        $row = (new DirectoryVerificationModel())->find($id);
+        if (($row['plan'] ?? '') !== DirectoryVerificationModel::PLAN_INTERNATIONAL) {
+            return 'Badge';
+        }
+
+        return (new VerificationService())->plusMode() ? 'Plus' : 'International';
     }
 
     /**

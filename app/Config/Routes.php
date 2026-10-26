@@ -259,6 +259,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // outside the docroot, so it lives inside this filter group and nowhere
     // else — see Admin::verificationDocument.
     $routes->get('verifications', 'Admin::verifications');
+    $routes->get('plus', 'Admin::plus');
     $routes->post('verifications/(:num)/approve', 'Admin::approveVerification/$1');
     $routes->post('verifications/(:num)/reject', 'Admin::rejectVerification/$1');
     $routes->post('verifications/(:num)/activate', 'Admin::activateVerification/$1');

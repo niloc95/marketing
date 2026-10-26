@@ -96,7 +96,7 @@ class DirectoryVerificationModel extends Model
      *
      * @return array{rows:array<int,array<string,mixed>>,pager:\CodeIgniter\Pager\Pager,total:int}
      */
-    public function queue(string $state, int $page = 1, int $perPage = 20): array
+    public function queue(string $state, int $page = 1, int $perPage = 20, ?string $plan = null): array
     {
         $builder = $this->select(
             'xs_directory_verifications.*,'
@@ -108,6 +108,9 @@ class DirectoryVerificationModel extends Model
 
         if (in_array($state, self::STATES, true)) {
             $builder->where('xs_directory_verifications.state', $state);
+        }
+        if (in_array($plan, self::PLANS, true)) {
+            $builder->where('xs_directory_verifications.plan', $plan);
         }
 
         // Oldest first: a review queue is a queue, and the person who has been
@@ -130,10 +133,13 @@ class DirectoryVerificationModel extends Model
      *
      * @return array<string,int>
      */
-    public function counts(): array
+    public function counts(?string $plan = null): array
     {
         $counts = array_fill_keys(self::STATES, 0);
 
+        if (in_array($plan, self::PLANS, true)) {
+            $this->where('plan', $plan);
+        }
         $rows = $this->select('state, COUNT(*) AS n')->groupBy('state')->findAll();
         foreach ($rows as $row) {
             $counts[(string) $row['state']] = (int) $row['n'];

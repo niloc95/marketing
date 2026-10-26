@@ -346,6 +346,27 @@ final class InternationalListingTest extends CIUnitTestCase
         $this->assertStringNotContainsString('id="get-plus"', $html);
     }
 
+    public function testAdminHasAPlusViewOfTheVerificationPage(): void
+    {
+        $this->goLiveWithPlus();
+
+        [$id, $token] = $this->signup(local: false);
+        $this->mutations->verify($token);
+        (new VerificationService())->ensureInternationalSubscription($id);
+
+        $admin = ['dir_admin' => true, \App\Filters\AdminFilter::SEEN_KEY => time()];
+        $this->withSession($admin)->get('admin/plus')->assertRedirectTo(base_url('admin/verifications') . '?plan=plus');
+
+        $html = (string) $this->withSession($admin)->get('admin/verifications?plan=plus')->getBody();
+        $this->assertStringContainsString('Brezel Bakery', $html);
+        $this->assertStringContainsString('Plus (1)', $html);
+        $this->assertStringContainsString('$2.99/month', $html);
+
+        // The badge view no longer mixes the two plans.
+        $html = (string) $this->withSession($admin)->get('admin/verifications?state=approved')->getBody();
+        $this->assertStringNotContainsString('Brezel Bakery', $html);
+    }
+
     public function testPlusIsChargedInRandAtTheOperatorsRate(): void
     {
         $this->goLiveWithPlus();

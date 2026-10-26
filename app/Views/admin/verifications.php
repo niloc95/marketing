@@ -25,16 +25,32 @@ $digest = static function (?string $sha): string {
 
 // Submitted first: it is the only tab with work in it. The rest are for looking
 // things up, not for getting through.
-$tabs = [
-    DirectoryVerificationModel::STATE_SUBMITTED => 'Awaiting review',
-    DirectoryVerificationModel::STATE_APPROVED  => 'Awaiting payment',
-    DirectoryVerificationModel::STATE_ACTIVE    => 'Active',
-    DirectoryVerificationModel::STATE_LAPSED    => 'Lapsed',
-    DirectoryVerificationModel::STATE_REJECTED  => 'Rejected',
-];
+//
+// Plus (the International plan) has no document review, so it never sits in
+// the first or the last tab: its view opens on everything instead.
+$isPlus   = $isPlus ?? false;
+$plusMode = $plusMode ?? false;
+$plusWord = $plusMode ? 'Plus' : 'International';
+$tabs = $isPlus
+    ? [
+        'all'                                       => 'All',
+        DirectoryVerificationModel::STATE_APPROVED  => 'Awaiting payment',
+        DirectoryVerificationModel::STATE_ACTIVE    => 'Active',
+        DirectoryVerificationModel::STATE_LAPSED    => 'Lapsed',
+    ]
+    : [
+        DirectoryVerificationModel::STATE_SUBMITTED => 'Awaiting review',
+        DirectoryVerificationModel::STATE_APPROVED  => 'Awaiting payment',
+        DirectoryVerificationModel::STATE_ACTIVE    => 'Active',
+        DirectoryVerificationModel::STATE_LAPSED    => 'Lapsed',
+        DirectoryVerificationModel::STATE_REJECTED  => 'Rejected',
+    ];
 
 $link = static fn (string $state, $page = '') => base_url('admin/verifications')
-    . '?' . http_build_query(array_filter(['state' => $state, 'page' => $page], static fn ($v) => $v !== '' && $v !== null));
+    . '?' . http_build_query(array_filter(
+        ['plan' => $isPlus ? 'plus' : '', 'state' => $state, 'page' => $page],
+        static fn ($v) => $v !== '' && $v !== null
+    ));
 
 $prettyDate = static function (?string $date): string {
     if ($date === null || $date === '') {
@@ -51,9 +67,21 @@ $prettyDate = static function (?string $date): string {
     <div class="container">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">
-                Verified Business
-                <span class="text-sm font-normal text-slate-500 dark:text-slate-400"><?= esc(money($amount)) ?>/month</span>
+                <?php if ($isPlus): ?>
+                    <?= esc($plusWord) ?>
+                    <span class="text-sm font-normal text-slate-500 dark:text-slate-400">
+                        <?php if ($plusMode && ! empty($plusUsd)): ?><?= esc(money($plusUsd, 'USD')) ?>/month, charged as <?php endif; ?><?= esc(money($amount)) ?>/month
+                    </span>
+                <?php else: ?>
+                    Verified Business
+                    <span class="text-sm font-normal text-slate-500 dark:text-slate-400"><?= esc(money($amount)) ?>/month</span>
+                <?php endif; ?>
             </h1>
+        </div>
+
+        <div class="tabs mb-3">
+            <a class="<?= $isPlus ? '' : 'active' ?>" href="<?= base_url('admin/verifications') ?>">Verified badge (<?= (int) ($planCounts['badge'] ?? 0) ?>)</a>
+            <a class="<?= $isPlus ? 'active' : '' ?>" href="<?= base_url('admin/verifications') ?>?plan=plus"><?= esc($plusWord) ?> (<?= (int) ($planCounts['plus'] ?? 0) ?>)</a>
         </div>
 
         <div class="tabs">
@@ -101,15 +129,16 @@ $prettyDate = static function (?string $date): string {
                                       // the business's profile comes down — so an admin has to be
                                       // able to see it without opening the row. ?>
                                 <?php if (($r['plan'] ?? '') === \App\Models\DirectoryVerificationModel::PLAN_INTERNATIONAL): ?>
-                                    <span class="pill">International</span>
+                                    <span class="pill"><?= esc($plusWord) ?></span>
                                     <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($r['listing_country'] ?? '') ?></div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">publication, not a badge</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400"><?= $plusMode ? 'optional extras, not a badge' : 'publication, not a badge' ?></div>
                                 <?php else: ?>
                                     <span class="pill pill-verified">Badge</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php $docs = $documents->forVerification((int) $r['id']); ?>
+                                <?php $rowWord = ($r['plan'] ?? '') === DirectoryVerificationModel::PLAN_INTERNATIONAL ? $plusWord : 'badge'; ?>
                                 <?php if ($docs === []): ?>
                                     None
                                 <?php else: ?>
@@ -196,9 +225,9 @@ $prettyDate = static function (?string $date): string {
                                         </form>
                                     <?php elseif ($r['state'] === DirectoryVerificationModel::STATE_ACTIVE): ?>
                                         <form method="post" action="<?= base_url('admin/verifications/' . $r['id'] . '/revoke') ?>"
-                                              data-confirm="Remove this badge now? You must also cancel the subscription in PayFast. This does not do that.">
+                                              data-confirm="Remove this <?= esc($rowWord, 'attr') ?> now? You must also cancel the subscription in PayFast. This does not do that.">
                                             <?= csrf_field() ?>
-                                            <button class="btn btn-ghost btn-xs text-brand-crimson">Revoke badge</button>
+                                            <button class="btn btn-ghost btn-xs text-brand-crimson">Revoke <?= esc($rowWord) ?></button>
                                         </form>
                                     <?php endif; ?>
 
@@ -210,7 +239,7 @@ $prettyDate = static function (?string $date): string {
                                     <?php if ($r['state'] !== DirectoryVerificationModel::STATE_SUBMITTED): ?>
                                         <form method="post" action="<?= base_url('admin/verifications/' . $r['id'] . '/activate') ?>"
                                               class="flex items-center gap-1"
-                                              data-confirm="Activate this badge without PayFast? Only do this once payment has actually arrived.">
+                                              data-confirm="Activate this <?= esc($rowWord, 'attr') ?> without PayFast? Only do this once payment has actually arrived.">
                                             <?= csrf_field() ?>
                                             <?php // w-16, not an inline width: CSP enforces style-src-attr. ?>
                                             <input type="number" name="months" value="1" min="1" max="24" class="text-xs w-16"
