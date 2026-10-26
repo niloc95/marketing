@@ -11,6 +11,9 @@ $parts = preg_split('/\s+/', trim($name)) ?: [];
 $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? substr(end($parts), 0, 1) : ''));
 $logoUrl = listing_image_url($l['logo_path'] ?? null);
 $place = trim(implode(', ', array_filter([$l['city'] ?? '', $l['province'] ?? ''])));
+// Set by browse() when the card is here because of a branch, not the
+// profile's own address: "Also in Rondebosch, Cape Town".
+$branchPlace = trim((string) ($l['branch_place'] ?? ''));
 
 // Distance, present only on a "near me" search. Phrased as loosely as the pin
 // deserves: a street/suburb/city match is a centroid that can sit hundreds of
@@ -69,6 +72,7 @@ if (isset($l['distance_m'])) {
 
     <div class="mt-auto flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <?php if ($place !== ''): ?><span class="inline-flex items-center gap-1"><?= lucide('map-pin', 'h-3.5 w-3.5 shrink-0') ?><?= esc($place) ?></span><?php endif; ?>
+        <?php if ($branchPlace !== ''): ?><span class="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200"><?= lucide('map-pin', 'h-3.5 w-3.5 shrink-0') ?>Also in <?= esc($branchPlace) ?></span><?php endif; ?>
         <?php if ($distance !== ''): ?><span class="card-distance"><?= esc($distance) ?></span><?php endif; ?>
         <?php // Verified before Featured: one says we checked this business, the
               // other says we are promoting it. The stronger claim reads first. ?>

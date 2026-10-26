@@ -144,8 +144,12 @@ class DirectoryService
         if ($groupName !== null) {
             $builder->where('p.group_name', $groupName);
         }
+        // A business with a branch in the province or town is found there
+        // too, and the card says which branch (branch_place).
         if (! empty($filters['province'])) {
-            $builder->where('xs_directory_listings.province', $filters['province']);
+            $cond = '= ' . $this->listings->db->escape((string) $filters['province']);
+            $builder->where($this->ownOrBranch('province', $cond), null, false);
+            $builder->select($this->branchPlace('province', $cond) . ' AS branch_place', false);
         }
         // local.webscheduler.app's country and region pages. Both arrive
         // already checked against Config\Countries (Directory::index(),
@@ -157,7 +161,11 @@ class DirectoryService
             $builder->where('xs_directory_listings.region', $filters['region']);
         }
         if (! empty($filters['city'])) {
-            $builder->like('xs_directory_listings.city', trim($filters['city']));
+            $cond = 'LIKE ' . $this->likePattern(trim((string) $filters['city'])) . " ESCAPE '!'";
+            $builder->where($this->ownOrBranch('city', $cond), null, false);
+            if (empty($filters['province'])) {
+                $builder->select($this->branchPlace('city', $cond) . ' AS branch_place', false);
+            }
         }
         if (! empty($filters['place'])) {
             $this->applyPlace($builder, (string) $filters['place']);
@@ -347,6 +355,15 @@ class DirectoryService
             ];
         }
 
+        // Then what a business does: "cervical" offers PinkDrive, whose
+        // name never says it, from its programmes, services or tags. Same
+        // tables applySearch() reads, so the row leads to a profile the
+        // results page also finds. Word starts only ("cerv", not "rvic").
+        $left = 5 - count($listings);
+        if ($left > 0) {
+            $out = array_merge($out, $this->topicSuggestions($q, array_column($listings, 'slug'), $left));
+        }
+
         // The people inside a business, so typing the name of the dentist
         // you were referred to offers the practice. Same gate as the team
         // EXISTS in applySearch(): a member is only offered while the badge
@@ -431,6 +448,49 @@ class DirectoryService
         }
 
         return array_slice($out, 0, max(1, $limit));
+    }
+
+    /**
+     * Business rows for suggest() matched on a service, programme or tag
+     * rather than the name. The sub line names what matched.
+     *
+     * @param list<string> $skipSlugs already offered by name
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function topicSuggestions(string $q, array $skipSlugs, int $limit): array
+    {
+        $db    = db_connect();
+        $start = $db->escape($db->escapeLikeString($q) . '%');
+        $word  = $db->escape('% ' . $db->escapeLikeString($q) . '%');
+        $match = static fn (string $col): string => "({$col} LIKE {$start} ESCAPE '!' OR {$col} LIKE {$word} ESCAPE '!')";
+
+        $skip = $skipSlugs === [] ? ''
+            : ' AND l.slug NOT IN (' . implode(', ', array_map([$db, 'escape'], $skipSlugs)) . ')';
+
+        $rows = $db->query(
+            'SELECT l.display_name, l.slug, l.city, l.province, MIN(m.name) AS topic'
+            . ' FROM xs_directory_listings l JOIN ('
+            . ' SELECT sv.listing_id, sv.name FROM xs_directory_listing_services sv WHERE ' . $match('sv.name')
+            . ' UNION SELECT lt.listing_id, t.name FROM xs_directory_listing_tags lt'
+            . ' JOIN xs_directory_tags t ON t.id = lt.tag_id WHERE ' . $match('t.name')
+            . ') m ON m.listing_id = l.id'
+            . ' WHERE ' . $this->published('l.') . ' AND l.deleted_at IS NULL' . $skip
+            . ' GROUP BY l.id ORDER BY l.is_featured DESC, l.quality_score DESC, l.display_name ASC'
+            . ' LIMIT ' . max(1, $limit)
+        )->getResultArray();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $where = trim(implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['province'] ?? '')])));
+            $out[] = [
+                'type'  => 'listing',
+                'label' => (string) $row['display_name'],
+                'sub'   => trim(implode(' · ', array_filter([(string) $row['topic'], $where]))),
+                'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -711,6 +771,8 @@ class DirectoryService
         if ($groupName !== null) {
             $builder->where('p.group_name', $groupName);
         }
+        // Own address only, unlike browse(): a pin is the profile's own point,
+        // so a branch match would drop a Johannesburg pin on a Cape Town map.
         if (! empty($filters['province'])) {
             $builder->where('xs_directory_listings.province', $filters['province']);
         }
@@ -718,7 +780,7 @@ class DirectoryService
             $builder->like('xs_directory_listings.city', trim($filters['city']));
         }
         if (! empty($filters['place'])) {
-            $this->applyPlace($builder, (string) $filters['place']);
+            $this->applyPlace($builder, (string) $filters['place'], false);
         }
         if (! empty($filters['holidays'])) {
             $this->applyHolidays($builder, $filters['today'] ?? null);
@@ -1181,16 +1243,60 @@ class DirectoryService
      * owner lives there and chose not to say so. Their town and the areas they
      * serve are public, and match as normal.
      */
-    private function applyPlace(BaseBuilder|Model $builder, string $place): void
+    private function applyPlace(BaseBuilder|Model $builder, string $place, bool $branches = true): void
     {
         $like = $this->likePattern(trim($place));
         $builder->where(
             '(xs_directory_listings.city LIKE ' . $like . " ESCAPE '!'"
             . ' OR xs_directory_listings.service_areas LIKE ' . $like . " ESCAPE '!'"
-            . ' OR (xs_directory_listings.suburb LIKE ' . $like . " ESCAPE '!' AND NOT " . self::HIDDEN_ADDRESS_SQL . '))',
+            . ' OR (xs_directory_listings.suburb LIKE ' . $like . " ESCAPE '!' AND NOT " . self::HIDDEN_ADDRESS_SQL . ')'
+            // A branch is somewhere customers go, so its suburb is public.
+            // Not on the map (mapPoints() passes false): see its own filters.
+            . ($branches ? ' OR ' . $this->branchExists('(bl.city LIKE ' . $like . " ESCAPE '!' OR bl.suburb LIKE " . $like . " ESCAPE '!')") : '')
+            . ')',
             null,
             false
         );
+    }
+
+    /**
+     * "Own address matches, or a branch does", for the province and city
+     * filters. $cond is the SQL that follows the column ("= 'Gauteng'",
+     * "LIKE '%sandton%' ESCAPE '!'"), always built here from escaped values.
+     */
+    private function ownOrBranch(string $column, string $cond): string
+    {
+        return '(xs_directory_listings.' . $column . ' ' . $cond
+            . ' OR ' . $this->branchExists('bl.' . $column . ' ' . $cond) . ')';
+    }
+
+    /**
+     * EXISTS over the listing's branches (directory_practice_locations).
+     * Branches only render while the badge or Plus is live (getProfile()),
+     * the same gate as teamExists(): without it a page would list a
+     * business on the strength of a panel the visitor cannot see.
+     */
+    private function branchExists(string $match): string
+    {
+        return '(xs_directory_listings.verified_until >= CURDATE()'
+            . ' AND EXISTS (SELECT 1 FROM xs_directory_practice_locations bl'
+            . ' WHERE bl.listing_id = xs_directory_listings.id AND ' . $match . '))';
+    }
+
+    /**
+     * "Rondebosch, Cape Town": the first branch that matched, for the card,
+     * or NULL when the profile's own address matched (the card shows that
+     * already) or the branches are not on show.
+     */
+    private function branchPlace(string $column, string $cond): string
+    {
+        return '(CASE WHEN xs_directory_listings.' . $column . ' ' . $cond
+            . ' OR xs_directory_listings.verified_until IS NULL'
+            . ' OR xs_directory_listings.verified_until < CURDATE() THEN NULL ELSE'
+            . " (SELECT CONCAT_WS(', ', NULLIF(bl.suburb, ''), NULLIF(bl.city, ''))"
+            . ' FROM xs_directory_practice_locations bl'
+            . ' WHERE bl.listing_id = xs_directory_listings.id AND bl.' . $column . ' ' . $cond
+            . ' ORDER BY bl.sort_order, bl.id LIMIT 1) END)';
     }
 
     /**
@@ -1656,7 +1762,53 @@ class DirectoryService
                 $out[(string) $r['province']] = (int) $r['c'];
             }
         }
+        return $this->addCounts($out, $this->branchCounts('b.province', "b.province <> '' AND b.province <> l.province"));
+    }
+
+    /**
+     * Profiles a place gains through branches alone, as place => count, for
+     * the tallies beside browse()'s province and city filters. Same gate as
+     * branchExists(), and a profile counts once per place, never where its
+     * own address already counts it ($where says what "already" means).
+     *
+     * @return array<string,int>
+     */
+    private function branchCounts(string $groupBy, string $where): array
+    {
+        $rows = db_connect()->table('xs_directory_practice_locations b')
+            ->select($groupBy . ' AS k, COUNT(DISTINCT l.id) AS c', false)
+            ->join('xs_directory_listings l', 'l.id = b.listing_id')
+            ->where($this->published('l.'), null, false)
+            ->where('l.deleted_at', null)
+            ->where('l.verified_until >= CURDATE()', null, false)
+            ->where($where, null, false)
+            ->groupBy($groupBy, false)
+            ->get()
+            ->getResultArray();
+
+        $out = [];
+        foreach ($rows as $r) {
+            if ((string) ($r['k'] ?? '') !== '') {
+                $out[(string) $r['k']] = (int) $r['c'];
+            }
+        }
+
         return $out;
+    }
+
+    /**
+     * @param array<string,int> $a
+     * @param array<string,int> $b
+     * @return array<string,int> busiest first
+     */
+    private function addCounts(array $a, array $b): array
+    {
+        foreach ($b as $k => $c) {
+            $a[$k] = ($a[$k] ?? 0) + $c;
+        }
+        arsort($a);
+
+        return $a;
     }
 
     /**
@@ -1788,7 +1940,6 @@ class DirectoryService
             ->where('city !=', '')
             ->groupBy('city')
             ->orderBy('c', 'DESC')
-            ->limit($limit)
             ->findAll();
 
         $out = [];
@@ -1797,7 +1948,12 @@ class DirectoryService
                 $out[(string) $r['city']] = (int) $r['c'];
             }
         }
-        return $out;
+        $p = db_connect()->escape($province);
+
+        return array_slice($this->addCounts($out, $this->branchCounts(
+            'b.city',
+            "b.province = {$p} AND b.city <> '' AND NOT (l.province = {$p} AND l.city = b.city)"
+        )), 0, $limit, true);
     }
 
     /**
@@ -1820,8 +1976,21 @@ class DirectoryService
             ->where('category_id IS NOT NULL')
             ->groupBy('category_id')
             ->orderBy('c', 'DESC')
-            ->limit($limit)
             ->findAll();
+
+        $counts = [];
+        foreach ($rows as $r) {
+            $counts[(string) $r['category_id']] = (int) $r['c'];
+        }
+        $p      = db_connect()->escape($province);
+        $counts = $this->addCounts($counts, $this->branchCounts(
+            'l.category_id',
+            "b.province = {$p} AND l.province <> {$p} AND l.category_id IS NOT NULL"
+        ));
+        $rows = [];
+        foreach (array_slice($counts, 0, $limit, true) as $cid => $c) {
+            $rows[] = ['category_id' => $cid, 'c' => $c];
+        }
 
         if ($rows === []) {
             return [];
@@ -1938,7 +2107,10 @@ class DirectoryService
                 $out[(string) $r['province']] = (int) $r['c'];
             }
         }
-        return $out;
+        return $this->addCounts($out, $this->branchCounts(
+            'b.province',
+            'l.category_id = ' . $categoryId . " AND b.province <> '' AND b.province <> l.province"
+        ));
     }
 
     /**
@@ -2034,6 +2206,25 @@ class DirectoryService
                     'lastmod' => substr($info['m'] ?: $today, 0, 10),
                 ];
             }
+        }
+
+        // Category and province pages count branches (browse()), so these
+        // entries must too. The category totals above stay one per profile.
+        $branches = $this->branchCounts(
+            "CONCAT(l.category_id, '|', b.province)",
+            "l.category_id IS NOT NULL AND b.province <> '' AND b.province <> l.province"
+        );
+        foreach ($rows as &$r) {
+            $key = (int) $r['category_id'] . '|' . (string) ($r['province'] ?? '');
+            if (isset($branches[$key])) {
+                $r['c'] = (int) $r['c'] + $branches[$key];
+                unset($branches[$key]);
+            }
+        }
+        unset($r);
+        foreach ($branches as $key => $c) {
+            [$cid, $province] = explode('|', $key, 2);
+            $rows[] = ['category_id' => (int) $cid, 'province' => $province, 'c' => $c, 'm' => $today];
         }
 
         foreach ($rows as $r) {
@@ -2171,10 +2362,18 @@ class DirectoryService
             ->groupBy('province')
             ->findAll();
 
+        // The page counts branches (browse()), so its sitemap entry must too.
+        $branches = $this->branchCounts('b.province', "b.province <> '' AND b.province <> l.province");
+        foreach (array_keys($branches) as $province) {
+            if (! in_array($province, array_column($rows, 'province'), true)) {
+                $rows[] = ['province' => $province, 'c' => 0, 'm' => $today];
+            }
+        }
+
         $out = [];
         foreach ($rows as $r) {
             $province = (string) ($r['province'] ?? '');
-            if ($province === '' || (int) $r['c'] < $minListings) {
+            if ($province === '' || (int) $r['c'] + ($branches[$province] ?? 0) < $minListings) {
                 continue;
             }
             $out[] = [
