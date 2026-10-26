@@ -240,6 +240,37 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory?q=bakery+in+scotland'));
     }
 
+    public function testTheAppHomeExamplesAreNeverSouthAfrican(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        // One British pair is too few for real examples: the app's own
+        // fallbacks show, never the South African towns.
+        $app = $this->page(self::APP_HOST, '/');
+        $this->assertStringContainsString('Accountant', $app);
+        $this->assertStringNotContainsString('Sandton', $app);
+        $this->assertStringContainsString('Sandton', $this->page(self::ZA_HOST, '/'), 'co.za keeps its own fallbacks');
+
+        // A profile with no town makes an example from its country.
+        $categories = new DirectoryCategoryModel();
+        $listings   = new DirectoryListingModel();
+        foreach (['Attorney' => 'Portugal', 'Dentist' => 'India'] as $name => $country) {
+            $category = (int) $categories->insert([
+                'name' => $name, 'slug' => strtolower($name), 'group_name' => 'Services', 'is_active' => 1,
+            ], true);
+            $listings->insert([
+                'type' => 'practice', 'display_name' => $name . ' Co', 'slug' => strtolower($name) . '-co',
+                'email' => strtolower($name) . '@example.test', 'status' => 'published', 'category_id' => $category,
+                'city' => '', 'country' => $country, 'published_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        $app = $this->page(self::APP_HOST, '/');
+        $this->assertStringContainsString('Attorney in Portugal', $app);
+        $this->assertStringContainsString('Bakeries in London', $app);
+        $this->assertStringNotContainsString('Sandton', $app);
+    }
+
     public function testEachSiteHasItsOwnTermsAndPrivacy(): void
     {
         $this->setEnv('sites.app.enabled', 'true');

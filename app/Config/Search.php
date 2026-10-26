@@ -443,6 +443,20 @@ class Search extends BaseConfig
     ];
 
     /**
+     * $fallbackExamples on local.webscheduler.app: business types with no
+     * place, because a town there could easily have no profile behind it.
+     *
+     * @var list<string>
+     */
+    public array $appFallbackExamples = [
+        'Accountant',
+        'Hair salon',
+        'IT support',
+        'Photographer',
+        'Plumber',
+    ];
+
+    /**
      * This vocabulary as the site the search is on reads it.
      *
      * co.za: unchanged. local.webscheduler.app: South Africa's provinces, codes
@@ -497,6 +511,7 @@ class Search extends BaseConfig
         $copy->provinceAfterPreposition = $oneWord;
         $copy->provinceCodes            = $this->appRegionCodes;
         $copy->placeAliases             = $this->appPlaceAliases;
+        $copy->fallbackExamples         = $this->appFallbackExamples;
 
         return $copy;
     }

@@ -596,13 +596,24 @@ class DirectoryService
      */
     public function searchExamples(int $limit = 6): array
     {
-        $rows = $this->listings
-            ->select('p.name AS category, xs_directory_listings.city, COUNT(*) AS c', false)
+        // On local.webscheduler.app a profile with no town still makes an
+        // example from its country ("Attorney in Portugal"): discovery reads
+        // a country there, and the site is young enough that every one counts.
+        $isApp = service('site')->isApp();
+        $place = $isApp
+            ? "COALESCE(NULLIF(TRIM(xs_directory_listings.city), ''), xs_directory_listings.country)"
+            : 'xs_directory_listings.city';
+
+        $builder = $this->listings
+            ->select('p.name AS category, ' . $place . ' AS city, COUNT(*) AS c', false)
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id')
             ->where($this->published('xs_directory_listings.'), null, false)
-            ->where('p.is_active', 1)
-            ->where('xs_directory_listings.city !=', '')
-            ->groupBy('p.id, p.name, xs_directory_listings.city')
+            ->where('p.is_active', 1);
+        if (! $isApp) {
+            $builder->where('xs_directory_listings.city !=', '');
+        }
+        $rows = $builder
+            ->groupBy('p.id, p.name, ' . $place, false)
             ->orderBy('c', 'DESC')
             ->orderBy('p.name', 'ASC')
             ->limit(40)
@@ -610,7 +621,7 @@ class DirectoryService
 
         $out = $seen = [];
         foreach ($rows as $row) {
-            if (isset($seen[$row['category']])) {
+            if (isset($seen[$row['category']]) || trim((string) $row['city']) === '') {
                 continue;
             }
             $seen[$row['category']] = true;
@@ -620,7 +631,9 @@ class DirectoryService
             }
         }
 
-        return count($out) >= 3 ? $out : array_slice(config('Search')->fallbackExamples, 0, $limit);
+        return count($out) >= 3
+            ? $out
+            : array_slice(config('Search')->forSite(service('site')->key())->fallbackExamples, 0, $limit);
     }
 
     /**
