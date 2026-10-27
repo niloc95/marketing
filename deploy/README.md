@@ -310,7 +310,10 @@ app's password prompt.
 cover URLs that literally start `admin`. On 14 Oct 2026
 `/index.php/admin/login` answered 200 straight past Access. Two app changes
 close that class of hole. `App\Filters\FrontControllerPath` 404s every
-`/index.php/…` URL. `App\Filters\CloudflareAccessFilter` refuses any `/admin*`
+`/index.php/admin…` URL and any non GET one, and 301s other GETs to the clean
+address (since 27 Oct 2026). That only works with `App::$indexPage = ''`, so the
+app never builds an `/index.php/` URL itself. Until 27 Oct it did: every failed
+signup's `redirect()->back()` landed on a 404. `App\Filters\CloudflareAccessFilter` refuses any `/admin*`
 request (whatever URL reached it) without a valid `Cf-Access-Jwt-Assertion`
 token signed by the team's keys. The token check is off until both keys are in
 the server `.env`:

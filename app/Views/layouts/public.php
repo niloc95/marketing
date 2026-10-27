@@ -107,13 +107,19 @@ $clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Di
 <?php
 // Where maps open: the country a form names, else this site's default. Read
 // by directory.js (defaultMapView), so a map on .app does not open on Pretoria.
+// The boxes are where a pin may go (pinOutsideCountry), the same ones the
+// server checks on save, so a pin in the sea is refused before submitting.
 $countryViews = [];
+$countryBoxes = [];
 foreach (config('Countries')->profiles as $code => $profile) {
-    $countryViews[(string) config('Countries')->nameForCode($code)] = $profile['mapView'];
+    $name                = (string) config('Countries')->nameForCode($code);
+    $countryViews[$name] = $profile['mapView'];
+    $countryBoxes[$name] = $profile['bbox'];
 }
 ?>
 <body data-site-map-view="<?= esc(json_encode(site()->profile()['mapView']), 'attr') ?>"
-      data-country-views="<?= esc(json_encode($countryViews, JSON_UNESCAPED_UNICODE), 'attr') ?>">
+      data-country-views="<?= esc(json_encode($countryViews, JSON_UNESCAPED_UNICODE), 'attr') ?>"
+      data-country-bboxes="<?= esc(json_encode($countryBoxes, JSON_UNESCAPED_UNICODE), 'attr') ?>">
     <header class="site-header">
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>" aria-label="WebScheduler Local">

@@ -285,6 +285,22 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $this->assertSame([], $this->sent);
     }
 
+    /**
+     * A rejected post goes back to the form by name, not to previous_url(),
+     * which until 27 Oct 2026 was an /index.php/ URL we 404 (Listing::formUrl()).
+     */
+    public function testARejectedPostReturnsToTheFormWithItsErrors(): void
+    {
+        $result = $this->withSession(['job_form_rendered_at' => time() - 30, '_ci_previous_url' => base_url('index.php/jobs')])
+            ->post('jobs/post', ['title' => ''] + $this->serviceForm() + $this->csrf());
+        $result->assertRedirectTo(base_url('jobs/post'));
+        $result->assertSessionHas('errors');
+
+        $this->assertSame(0, $this->posts->countAllResults());
+        $this->assertSame('Thandi', session()->getFlashdata('old')['poster_name'] ?? null);
+        $this->assertArrayNotHasKey(csrf_token(), session()->getFlashdata('old'));
+    }
+
     public function testAListedOwnerPostsAndEditsThroughTheDashboardForms(): void
     {
         $listing = $this->listing();

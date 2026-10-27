@@ -4,6 +4,7 @@ use App\Filters\FrontControllerPath;
 use App\Libraries\CloudflareAccess;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\Test\CIUnitTestCase;
 
 /**
@@ -12,8 +13,9 @@ use CodeIgniter\Test\CIUnitTestCase;
  *
  * CloudflareAccess must accept only an RS256 token signed by the team's key,
  * for our AUD and issuer, inside its lifetime. Each refusal below is a real
- * way JWT checks have been bypassed. FrontControllerPath must 404 the
- * /index.php/{path} form, however it is spelled, and nothing else.
+ * way JWT checks have been bypassed. FrontControllerPath must 404 the admin,
+ * POST and oddly spelled /index.php/{path} forms, 301 every other GET to the
+ * clean address on our own host, and leave everything else alone.
  *
  * @internal
  */
@@ -145,7 +147,12 @@ final class CloudflareAccessTest extends CIUnitTestCase
         yield 'capitals'     => ['/INDEX.PHP/admin/login'];
         yield 'double slash' => ['//index.php/admin'];
         yield 'encoded dot'  => ['/index%2Ephp/admin/login'];
-        yield 'with query'   => ['/index.php/directory?q=x'];
+        yield 'admin prefix' => ['/index.php/adminer'];
+        yield 'admin, caps'  => ['/INDEX.PHP/Admin'];
+        yield 'admin slashes' => ['//index.php//admin'];
+        yield 'encoded page' => ['/index%2Ephp/directory'];
+        yield 'twice'        => ['/index.php/index.php/directory'];
+        yield 'twice, slash' => ['/index.php//index.php/directory'];
     }
 
     /** @dataProvider frontControllerPaths */
@@ -153,6 +160,39 @@ final class CloudflareAccessTest extends CIUnitTestCase
     {
         $this->expectException(PageNotFoundException::class);
         (new FrontControllerPath())->before($this->requestFor($uri));
+    }
+
+    /** A form post never follows a 301 as a post, so it is refused, not moved. */
+    public function testAPostToTheFrontControllerFormIsA404(): void
+    {
+        $this->expectException(PageNotFoundException::class);
+        (new FrontControllerPath())->before($this->requestFor('/index.php/add-profile', 'POST'));
+    }
+
+    /**
+     * Old /index.php/ links, which the app itself built until 27 Oct 2026,
+     * move to the clean address on our own host with the query untouched.
+     *
+     * @return iterable<string,array{string,string,string}>
+     */
+    public static function legacyPaths(): iterable
+    {
+        yield 'search'      => ['GET', '/index.php/directory?q=Wood+%26+Marble&group=', 'directory?q=Wood+%26+Marble&group='];
+        yield 'signup plan' => ['GET', '/index.php/add-profile?plan=free', 'add-profile?plan=free'];
+        yield 'no query'    => ['HEAD', '/index.php/directory/some-profile', 'directory/some-profile'];
+        yield 'encoded'     => ['GET', '/index.php/directory%20x', 'directory%20x'];
+        yield 'off host'    => ['GET', '/index.php//evil.example/x', 'evil.example/x'];
+        yield 'capitals'    => ['get', '/Index.PHP/faq', 'faq'];
+    }
+
+    /** @dataProvider legacyPaths */
+    public function testLegacyLinksMoveToTheCleanAddress(string $method, string $uri, string $path): void
+    {
+        $response = (new FrontControllerPath())->before($this->requestFor($uri, $method));
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(rtrim(base_url(), '/') . '/' . $path, $response->getHeaderLine('Location'));
     }
 
     /** @return iterable<string,array{string}> */
@@ -171,10 +211,11 @@ final class CloudflareAccessTest extends CIUnitTestCase
         $this->assertNull((new FrontControllerPath())->before($this->requestFor($uri)));
     }
 
-    private function requestFor(string $uri): IncomingRequest
+    private function requestFor(string $uri, string $method = 'GET'): IncomingRequest
     {
         $request = $this->createMock(IncomingRequest::class);
         $request->method('getServer')->with('REQUEST_URI')->willReturn($uri);
+        $request->method('getMethod')->willReturn($method);
 
         return $request;
     }

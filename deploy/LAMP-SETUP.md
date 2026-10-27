@@ -513,11 +513,11 @@ database.default.password = 'THE-DBPW-FROM-PART-6'
 Leave everything else exactly as it is. `app.baseURL` stays
 `https://listing.webscheduler.co.za/` — the domain is not changing.
 
-> Optional, and a behaviour change rather than a fix: adding `app.indexPage = ''`
-> strips the `/index.php/` that CodeIgniter currently puts in generated URLs and
-> redirects. Hostinger does the same thing today, so leaving it out reproduces
-> production exactly. Set it only as a deliberate improvement, not as part of the
-> migration.
+> Superseded 27 Oct 2026: `App::$indexPage` is now `''` in code, and the live
+> `.env` also sets `app.indexPage = ''`. Never set it back to `index.php`.
+> `FrontControllerPath` refuses `/index.php/…`, so every URL the framework built
+> with it (including each `redirect()->back()` after a failed form) was a 404.
+> See deploy/README.md, "Make the app enforce it".
 
 ### Install both, and mind the modes
 

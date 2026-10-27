@@ -132,14 +132,14 @@ class Jobs extends BaseController
         $throttler = service('throttler');
         if ($throttler->check('jobpost-ip-' . md5((string) $this->request->getIPAddress()), 3, HOUR) === false
             || ($email !== '' && $throttler->check('jobpost-to-' . md5($email), 3, DAY) === false)) {
-            return redirect()->back()->with('old', $this->request->getPost())
+            return redirect()->to(base_url('jobs/post'))->with('old', $this->typedFields())
                 ->with('error', 'Too many posts. Please wait a little while and try again.');
         }
 
         $result = (new JobBoardService())->submitUnlisted($this->request->getPost());
         if (! $result['ok']) {
-            return redirect()->back()
-                ->with('old', $this->request->getPost())
+            return redirect()->to(base_url('jobs/post'))
+                ->with('old', $this->typedFields())
                 ->with('errors', $result['errors'])
                 ->with('error', 'Please correct the highlighted fields.');
         }
@@ -289,14 +289,14 @@ class Jobs extends BaseController
 
         $throttler = service('throttler');
         if ($throttler->check('jobpost-listing-' . (int) $listing['id'], 10, DAY) === false) {
-            return redirect()->back()->with('old', $this->request->getPost())
+            return redirect()->to($this->ownerFormUrl())->with('old', $this->typedFields())
                 ->with('error', 'You have posted a lot today. Please try again tomorrow.');
         }
 
         $result = (new JobBoardService())->submitForListing($listing, $this->request->getPost());
         if (! $result['ok']) {
-            return redirect()->back()
-                ->with('old', $this->request->getPost())
+            return redirect()->to($this->ownerFormUrl())
+                ->with('old', $this->typedFields())
                 ->with('errors', $result['errors'])
                 ->with('error', $result['errors']['listing'] ?? 'Please correct the highlighted fields.');
         }
@@ -732,5 +732,26 @@ class Jobs extends BaseController
         $v = $this->request->getGet($key);
 
         return is_string($v) ? mb_substr(trim($v), 0, $max) : '';
+    }
+
+    /**
+     * The owner's posting form, for the kind they were posting. Named outright
+     * rather than redirect()->back(), which follows the last page the session
+     * opened in any tab (see Listing::formUrl()).
+     */
+    private function ownerFormUrl(): string
+    {
+        $kind = (string) $this->request->getPost('kind');
+
+        return base_url('manage/jobs/new') . (preg_match('/^[a-z_]{1,20}$/', $kind) === 1 ? '?kind=' . $kind : '');
+    }
+
+    /** The posted fields to refill the form with, without the CSRF token. */
+    private function typedFields(): array
+    {
+        $post = $this->request->getPost();
+        unset($post[csrf_token()]);
+
+        return $post;
     }
 }

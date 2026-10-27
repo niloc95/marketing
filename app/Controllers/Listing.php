@@ -132,10 +132,10 @@ class Listing extends BaseController
             $invite  = $prefill === [] ? '' : $invite;
         }
 
-        // The plan picker switches plan with pushState, which does not change the
-        // Referer — so redirect()->back() after a failed submission can land on
-        // the other plan's URL and quietly undo the choice. The posted value is
-        // what the person actually picked, so it outranks the route.
+        // The plan picker switches plan with pushState, so the URL a failed
+        // submission returns to (formUrl()) can disagree with the card last
+        // picked. The posted value is what the person actually picked, so it
+        // outranks the route.
         //
         // Not in verified-only mode, which has no Free card to have picked.
         if (! $verifiedOnly && isset($old['plan']) && in_array($old['plan'], ['free', 'verified'], true)) {
@@ -208,10 +208,8 @@ class Listing extends BaseController
             return null;
         }
 
-        $fields = array_diff_key($post, array_flip([
-            csrf_token(), 'company_website_hp', 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
-        ]));
-        $token = bin2hex(random_bytes(16));
+        $fields = self::typedFields($post);
+        $token  = bin2hex(random_bytes(16));
         cache()->save(self::HANDOVER_CACHE . $token, $fields, self::HANDOVER_TTL);
 
         return redirect()->to(site_url_for($site->forCountry($code), 'add-profile') . '?handover=' . $token, 303);
@@ -282,13 +280,14 @@ class Listing extends BaseController
         $ipKey     = 'signup-ip-' . md5((string) $this->request->getIPAddress());
         $mailKey   = 'signup-to-' . md5($email);
 
+        $post = $this->request->getPost();
+
         if ($throttler->check($ipKey, 3, HOUR) === false
             || ($email !== '' && $throttler->check($mailKey, 2, HOUR) === false)) {
-            return redirect()->back()->withInput()
+            return redirect()->to(self::formUrl($post))
+                ->with('old', self::typedFields($post))
                 ->with('error', 'Too many submissions. Please wait a little while and try again.');
         }
-
-        $post = $this->request->getPost();
 
         // A business in another site's country is created on that site: hand
         // the typed fields over instead of saving here. See handOver().
@@ -312,15 +311,14 @@ class Listing extends BaseController
 
         if (! $result['ok']) {
             // Nothing was saved, so the file this upload produced is already
-            // unreachable. Bin it and blank the path before the input is
-            // flashed back, or the redisplayed form points at a dead file.
+            // unreachable. Bin it; typedFields() keeps its path out of the
+            // flashed input, or the redisplayed form would point at a dead file.
             $this->discardLogo($logo['path']);
-            $post['logo_path'] = '';
 
             return $this->withUploadErrors(
-                redirect()->back()
+                redirect()->to(self::formUrl($post))
                     ->with('errors', $result['errors'])
-                    ->with('old', $post)
+                    ->with('old', self::typedFields($post))
                     ->with('error', $result['message']),
                 array_filter([$logo['error']])
             );
@@ -442,5 +440,39 @@ class Listing extends BaseController
     {
         return redirect()->to(base_url('/'))
             ->with('success', 'Almost done. Check your email to verify and publish your profile.');
+    }
+
+    /**
+     * The form a failed submission goes back to, named outright.
+     *
+     * Not redirect()->back(): that follows previous_url(), which is the last
+     * page this session opened in ANY tab, and until 27 Oct 2026 it carried an
+     * /index.php/ prefix we 404. Wood & Marble filled the form in twice and
+     * landed on a 404 both times, their errors and typing gone. The posted
+     * form_mode and plan say which form they were on, so that is where they go.
+     *
+     * @param array<string,mixed> $post
+     */
+    private static function formUrl(array $post): string
+    {
+        if (($post['form_mode'] ?? '') === 'verified-only') {
+            return base_url('add-profile/verified');
+        }
+
+        return base_url(($post['plan'] ?? '') === 'free' ? 'add-profile?plan=free' : 'add-profile');
+    }
+
+    /**
+     * What the visitor typed, without the tokens, traps and server-set fields
+     * that must never be echoed back into a form or carried to another site.
+     *
+     * @param array<string,mixed> $post
+     * @return array<string,mixed>
+     */
+    private static function typedFields(array $post): array
+    {
+        return array_diff_key($post, array_flip([
+            csrf_token(), 'company_website_hp', 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
+        ]));
     }
 }

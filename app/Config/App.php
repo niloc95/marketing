@@ -87,8 +87,15 @@ class App extends BaseConfig
      * Typically, this will be your `index.php` file, unless you've renamed it to
      * something else. If you have configured your web server to remove this file
      * from your site URIs, set this variable to an empty string.
+     *
+     * Empty, and it must stay empty. FrontControllerPath refuses every
+     * /index.php/{path} URL (the 14 Oct 2026 admin hole), so a URL the framework
+     * builds with it is a URL we 404 ourselves. Until 27 Oct 2026 this was
+     * 'index.php': previous_url() carried it, and every redirect()->back() after
+     * a failed form landed on a 404 with its errors and typing lost.
+     * CleanUrlTest pins it.
      */
-    public string $indexPage = 'index.php';
+    public string $indexPage = '';
 
     /**
      * --------------------------------------------------------------------------

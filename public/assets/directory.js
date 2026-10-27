@@ -1867,6 +1867,20 @@
     return fallback;
   }
 
+  // The form's country, when this point lies outside its box, else ''. The
+  // same boxes NominatimGeocoder::isPlausible() checks on save. A country with
+  // no box, or no country picked yet, refuses nothing.
+  function pinOutsideCountry(lat, lng) {
+    try {
+      var boxes = JSON.parse(document.body.getAttribute('data-country-bboxes') || '{}') || {};
+      var box = boxes[formCountry()];
+      if (!box || !isFinite(lat) || !isFinite(lng)) return '';
+      return lat < box[0] || lat > box[1] || lng < box[2] || lng > box[3] ? formCountry() : '';
+    } catch (err) {
+      return '';
+    }
+  }
+
   var pickerWrap = document.querySelector('[data-map-picker]');
   if (pickerWrap) {
     var canvas = pickerWrap.querySelector('[data-map-picker-canvas]');
@@ -1944,7 +1958,27 @@
         .catch(function () { hideSuggestion(); });
     };
 
+    // A pin outside the form's country is refused here rather than saved: the
+    // server rejects it anyway ("That map pin is not in South Africa"), and on
+    // 26 Oct 2026 a business clicked the Atlantic, submitted twice and never
+    // learnt why. Says so and returns true; the caller leaves the old pin.
+    var refuseOutsideCountry = function (lat, lng) {
+      var country = pinOutsideCountry(Number(lat), Number(lng));
+      if (!country) return false;
+      say('That spot is outside ' + country + '. Click the map at your business address, or search for the address above.');
+      return true;
+    };
+
     var onMarkerMoved = function (lat, lng) {
+      if (refuseOutsideCountry(lat, lng)) {
+        var previous = readPin();
+        if (previous) {
+          map.marker(previous[0], previous[1]);
+        } else {
+          map.clear();
+        }
+        return;
+      }
       writePin(Number(lat).toFixed(7), Number(lng).toFixed(7), 'manual');
       say('Pin saved. It will be used exactly as placed.');
       if (resetBtn) resetBtn.hidden = false;
@@ -1952,6 +1986,7 @@
     };
 
     var onMapClicked = function (lat, lng) {
+      if (refuseOutsideCountry(lat, lng)) return;
       placeMarker(lat, lng, { pan: false });
       say('Pin saved. It will be used exactly as placed.');
       suggestAddressFor(Number(lat).toFixed(7), Number(lng).toFixed(7));
