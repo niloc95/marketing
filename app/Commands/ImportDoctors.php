@@ -266,7 +266,7 @@ class ImportDoctors extends BaseCommand
             }
 
             // A second practice gets its town in the URL rather than a bare "-2".
-            $slugBase = $p['display_name'];
+            $slugBase = self::ascii($p['display_name']);
             if (isset($seenName[$p['display_name']]) && $p['city'] !== '') {
                 $slugBase .= ' ' . $p['city'];
             }
@@ -404,6 +404,14 @@ class ImportDoctors extends BaseCommand
             'phone_alt'      => trim($row['phone_alt']),
             'description'    => $this->description($row, $name, $place['province']),
         ] + $place;
+    }
+
+    /** "Böcking" => "Bocking", so slugify() keeps the letter instead of dropping it. */
+    public static function ascii(string $name): string
+    {
+        $plain = \Normalizer::normalize($name, \Normalizer::FORM_D);
+
+        return preg_replace('/\p{Mn}+/u', '', is_string($plain) ? $plain : $name) ?? $name;
     }
 
     /** Monday to Friday 08:00 to 16:30, closed at the weekend. */
