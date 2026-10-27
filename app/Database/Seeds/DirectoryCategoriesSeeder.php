@@ -31,6 +31,20 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Cardiologist', 'Dermatologist', 'Gynaecologist', 'Neurologist',
                 'Oncologist', 'Urologist', 'ENT Specialist', 'Ophthalmologist',
                 'General Surgeon', 'Orthopaedic Surgeon', 'Anaesthetist', 'Radiologist',
+                // The specialties the October 2026 doctors import brought in.
+                // Filing a neurosurgeon under Neurologist, or a cardiothoracic
+                // surgeon under General Surgeon, would publish a wrong claim
+                // about a named doctor, so each gets its own row.
+                'Neurosurgeon', 'Cardiothoracic Surgeon', 'Vascular Surgeon',
+                'Plastic & Reconstructive Surgeon', 'Maxillofacial & Oral Surgeon',
+                'Paediatric Surgeon', 'Hepatobiliary Surgeon', 'Colorectal Surgeon',
+                'Breast Surgeon', 'Spinal Surgeon', 'Trauma Surgeon',
+                'Gastroenterologist', 'Pulmonologist', 'Endocrinologist', 'Nephrologist',
+                'Rheumatologist', 'Haematologist', 'Infectious Diseases Specialist',
+                'Radiation Oncologist', 'Gynaecological Oncologist', 'Fertility Specialist',
+                'Neonatologist', 'Paediatric Neurologist', 'Geriatrician', 'Intensivist',
+                'Emergency Medicine Doctor', 'Nuclear Medicine Physician', 'Pain Specialist',
+                'Pathologist',
                 'Dentist', 'Orthodontist', 'Oral Hygienist',
                 'Optometrist', 'Audiologist',
                 'Physiotherapist', 'Chiropractor', 'Biokineticist',
