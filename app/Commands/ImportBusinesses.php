@@ -152,7 +152,7 @@ class ImportBusinesses extends BaseCommand
 
             [$suburb, $city] = $this->area($row['area']);
             $mobile          = (bool) preg_match('/\bmobile service\b/i', $row['description']);
-            $description     = $this->description($row['description']);
+            $description     = self::description($row['description']);
 
             $data = [
                 'type'                  => 'practice',
@@ -265,14 +265,19 @@ class ImportBusinesses extends BaseCommand
         return implode(', ', $parts);
     }
 
-    private function description(string $text): string
+    /**
+     * The source's description as one paragraph that follows the copy rules.
+     * Shared with ImportAttorneys. "Book (a consultation) through
+     * WebScheduler Local" becomes "get in touch": there is no booking here.
+     */
+    public static function description(string $text): string
     {
         $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
-        $text = str_replace(
-            'Clients can find contact details and book through WebScheduler Local.',
-            'Clients can find contact details and get in touch through WebScheduler Local.',
+        $text = preg_replace(
+            '/and book (a consultation )?through WebScheduler Local\./',
+            'and get in touch through WebScheduler Local.',
             $text
-        );
+        ) ?? $text;
         $text = str_replace([' – ', ' — ', '–', '—'], [', ', ', ', ' ', ' '], $text);
         while (preg_match('/\b([a-z]+)-(?=[a-z])/', $text)) {
             $text = preg_replace('/\b([a-z]+)-(?=[a-z])/', '$1 ', $text) ?? $text;
