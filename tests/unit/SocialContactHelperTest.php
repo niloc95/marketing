@@ -55,6 +55,15 @@ final class SocialContactHelperTest extends CIUnitTestCase
         $this->assertSame('', whatsapp_digits(''));
     }
 
+    public function testTheLocalZeroAfterPlus27IsDropped(): void
+    {
+        $this->assertSame('27113125038', whatsapp_digits('+27 011 312 5038'));
+        $this->assertSame('27113125038', whatsapp_digits('+27 (0)11 312 5038'));
+        $this->assertSame('27113125038', whatsapp_digits('27 011 312 5038'));
+        // Another country's 0 after its code is left alone.
+        $this->assertSame('390612345678', whatsapp_digits('+39 06 1234 5678'));
+    }
+
     public function testAWhatsappNumberThatCannotBeDialledIsRefused(): void
     {
         $this->assertNull(whatsapp_digits('12'));

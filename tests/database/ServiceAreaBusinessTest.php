@@ -69,7 +69,7 @@ final class ServiceAreaBusinessTest extends CIUnitTestCase
         $this->assertStringContainsString('15 Tin Road', $html);
         $this->assertStringContainsString('data-map-view', $html);
         $this->assertStringContainsString('google.com/maps/dir', $html);
-        $this->assertStringContainsString('"streetAddress":"15 Tin Road"', $html);
+        $this->assertStringContainsString('"streetAddress":"15 Tin Road, Bromhof"', $html);
         $this->assertStringNotContainsString('we travel to you', $html);
     }
 

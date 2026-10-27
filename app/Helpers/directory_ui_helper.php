@@ -818,7 +818,7 @@ if (! function_exists('whatsapp_digits')) {
      * A WhatsApp number as the international digits wa.me takes, or null.
      *
      * "082 123 4567", "+27 82 123 4567" and "27821234567" all come out as
-     * "27821234567". A leading 0 is read as the business's own country
+     * "27821234567", and so does "+27 082 123 4567". A leading 0 is read as the business's own country
      * ($dialCode, see country_dial_code()), South Africa unless told
      * otherwise; with no known dialling code a leading 0 is left alone and
      * the number has to carry its + and country code.
@@ -838,6 +838,12 @@ if (! function_exists('whatsapp_digits')) {
         $digits = (string) preg_replace('/\D+/', '', $value);
         if ($dialCode !== null && ! str_starts_with($value, '+') && str_starts_with($digits, '0')) {
             $digits = $dialCode . substr($digits, 1);
+        }
+        // "+27 011 312 5038" or "+27 (0)11 312 5038": the local 0 kept after
+        // the country code. No South African number starts 270, so it goes.
+        // South Africa only: Italy's numbers really do keep their 0 after +39.
+        if (str_starts_with($digits, '270')) {
+            $digits = '27' . substr($digits, 3);
         }
 
         return preg_match('/^[1-9]\d{9,14}$/', $digits) === 1 ? $digits : null;

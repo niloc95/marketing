@@ -379,6 +379,8 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('+27768287070', schema_phone('0768287070'));
         $this->assertSame('+27829974805', schema_phone('+27829974805'));
         $this->assertSame('+442071234567', schema_phone('+44 20 7123 4567'));
+        // The local 0 typed after +27 is not part of the number.
+        $this->assertSame('+27113125038', schema_phone('+27 011 312 5038'));
         // Unparseable is published as typed, not dropped.
         $this->assertSame('ask for Thabo', schema_phone(' ask for Thabo '));
         $this->assertSame('', schema_phone(''));
@@ -394,6 +396,41 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame('Johannesburg Road, Lyndhurst', schema_street_address(['address_line' => 'Johannesburg Road, Lyndhurst', 'city' => 'Johannesburg']));
         // A street line that is only the city is kept rather than emptied.
         $this->assertSame('Sandton', schema_street_address(['address_line' => 'Sandton', 'city' => 'Sandton']));
+    }
+
+    public function testStreetLineCarriesLineTwoAndTheSuburb(): void
+    {
+        $row = ['address_line' => '68 Richards Drive', 'suburb' => 'Midrand', 'city' => 'Johannesburg', 'postal_code' => '1685'];
+        $this->assertSame('68 Richards Drive, Midrand', schema_street_address($row));
+        $this->assertSame('68 Richards Drive, Midrand', schema_postal_address($row)['streetAddress']);
+        $this->assertSame('Johannesburg', schema_postal_address($row)['addressLocality']);
+
+        $this->assertSame(
+            '12 Main Road, Unit 4 Oak Park, Claremont',
+            schema_street_address(['address_line' => '12 Main Road', 'address_line_2' => 'Unit 4 Oak Park', 'suburb' => 'Claremont', 'city' => 'Cape Town'])
+        );
+        // Already in the street line, or only the city again: not repeated.
+        $this->assertSame('40 Packwood Road, Gresswold', schema_street_address(['address_line' => '40 Packwood Road, Gresswold, Johannesburg', 'suburb' => 'gresswold', 'city' => 'Johannesburg']));
+        $this->assertSame('38 Central Street', schema_street_address(['address_line' => '38 Central Street', 'suburb' => 'Sandton', 'city' => 'Sandton']));
+        // A suburb with no street line still says where the business is.
+        $this->assertSame('Rosebank', schema_street_address(['suburb' => 'Rosebank', 'city' => 'Johannesburg']));
+    }
+
+    public function testAHiddenAddressKeepsTheSuburbOutOfTheBusinessNode(): void
+    {
+        $business = schema_local_business([
+            'display_name'      => 'Mobile Mechanic',
+            'address_line'      => '5 Hidden Lane',
+            'suburb'            => 'Fourways',
+            'city'              => 'Johannesburg',
+            'province'          => 'Gauteng',
+            'customer_location' => 'travel',
+            'show_address'      => 0,
+            'category'          => ['group_name' => 'Motoring'],
+        ], 'https://example.test/directory/mobile-mechanic');
+
+        $this->assertArrayNotHasKey('streetAddress', $business['address']);
+        $this->assertStringNotContainsString('Hidden Lane', json_encode($business));
     }
 
     public function testListItemUsesTheProfileAddressAndPhoneRules(): void

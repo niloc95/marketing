@@ -643,11 +643,11 @@ if (! function_exists('schema_postal_address')) {
 
 if (! function_exists('schema_street_address')) {
     /**
-     * The street line alone. Owners often type the whole address into it
-     * ("40 Packwood Road, Gresswold, Johannesburg, 2090"), which then repeats
-     * the city and postcode that have their own properties. Trailing
-     * comma-separated parts equal to the city, province, region, postcode or
-     * country are dropped; the suburb and anything mid-line stay.
+     * The street line, then line 2 and the suburb. Owners often type the whole
+     * address into it ("40 Packwood Road, Gresswold, Johannesburg, 2090"), which
+     * then repeats the city and postcode that have their own properties.
+     * Trailing comma-separated parts equal to the city, province, region,
+     * postcode or country are dropped; the suburb and anything mid-line stay.
      *
      * @param array<string,mixed> $row
      */
@@ -664,7 +664,20 @@ if (! function_exists('schema_street_address')) {
             array_pop($parts);
         }
 
-        return implode(', ', $parts);
+        // Line 2 and the suburb follow, in map_address_text()'s order. The
+        // suburb has no PostalAddress property of its own, and without it a
+        // Midrand street filed under Johannesburg reads as somewhere else.
+        // Either is skipped when the street line already has it, and so is a
+        // suburb that only repeats the city.
+        foreach (['address_line_2', 'suburb'] as $field) {
+            $extra = trim((string) ($row[$field] ?? ''));
+            $lower = array_map('mb_strtolower', $parts);
+            if ($extra !== '' && ! in_array(mb_strtolower($extra), array_merge($known, $lower), true)) {
+                $parts[] = $extra;
+            }
+        }
+
+        return implode(', ', array_filter($parts, static fn (string $p) => $p !== ''));
     }
 }
 
