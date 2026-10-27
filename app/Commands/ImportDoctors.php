@@ -291,8 +291,10 @@ class ImportDoctors extends BaseCommand
                 'postal_code'      => $p['postal_code'],
                 'country'          => \Config\Countries::SOUTH_AFRICA,
                 'country_code'     => 'ZA',
-                // No hours and no "by appointment": the source gives neither, and an
-                // emergency doctor is not seen by appointment.
+                // The source gives no hours; the owner set consulting rooms
+                // hours for the whole batch (27 Oct 2026). Not "by
+                // appointment": an emergency doctor is not seen by appointment.
+                'trading_hours'    => self::hours(),
                 'by_appointment'   => 0,
                 'customer_location' => 'visit',
                 'show_address'     => 1,
@@ -402,6 +404,16 @@ class ImportDoctors extends BaseCommand
             'phone_alt'      => trim($row['phone_alt']),
             'description'    => $this->description($row, $name, $place['province']),
         ] + $place;
+    }
+
+    /** Monday to Friday 08:00 to 16:30, closed at the weekend. */
+    public static function hours(): string
+    {
+        helper('directory_hours');
+
+        $week = array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri'], ['open' => '08:00', 'close' => '16:30']);
+
+        return (string) hours_encode($week + ['sat' => ['closed' => '1'], 'sun' => ['closed' => '1']]);
     }
 
     private function tidyName(string $name): string
