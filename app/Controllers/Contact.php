@@ -124,6 +124,13 @@ class Contact extends BaseController
         $documents = [];
         foreach ([
             [
+                'title'       => 'Profile guide',
+                'summary'     => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then locations, team members, jobs and reviews with Verified Business.',
+                'file'        => 'assets/documents/webscheduler-local-profile-guide.pdf',
+                'pages'       => 19,
+                'tag'         => 'Guide',
+            ],
+            [
                 'title'       => 'Local visibility playbook',
                 'summary'     => 'How customers find local businesses today, and the practical steps that make a business easier to find, on search, on maps and in AI assistants.',
                 'file'        => 'assets/playbook/webscheduler-local-visibility-playbook.pdf',
