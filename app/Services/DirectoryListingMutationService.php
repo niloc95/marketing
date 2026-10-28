@@ -6,6 +6,7 @@ use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\Input;
 use App\Libraries\ListingGeocoder;
 use App\Libraries\ListingText;
+use App\Libraries\ProfessionalRegistration;
 use App\Libraries\Mailer;
 use App\Libraries\RichText;
 use App\Libraries\ServiceArea;
@@ -314,7 +315,7 @@ class DirectoryListingMutationService
             'title'          => $this->clean($input['title'] ?? ''),
             'position'       => $this->clean($input['position'] ?? '') ?: null,
             'email'          => trim((string) $input['email']),
-        ] + $this->draftColumns($input) + ServiceArea::columns($input) + [
+        ] + $this->draftColumns($input) + ServiceArea::columns($input) + ProfessionalRegistration::columns($input) + [
             'slug'           => ensure_unique_slug($this->listings, 'slug', $name, $existingId, listing_reserved_slugs()),
             'status'         => 'pending',
             'is_verified'    => 0,
@@ -747,6 +748,9 @@ class DirectoryListingMutationService
         // Behind its own marker, so a POST without the section leaves a hidden
         // address hidden. The address columns themselves are untouched here.
         $data = ServiceArea::columns($input, $listing) + $data;
+        // Same marker convention; outside OWNER_EDITABLE because the number,
+        // ORCID and link each need their own normalising.
+        $data = ProfessionalRegistration::columns($input, $listing) + $data;
 
         // A booking link implies the flag — see buildListingData(). Read from
         // the merged row so a partial POST that leaves the link alone still
@@ -1245,6 +1249,12 @@ class DirectoryListingMutationService
 
         $errors += (new ServiceMenuService())->validate($input);
         $errors += (new ListingFacetService())->validate($input, $this->submittedCategoryId($input));
+        // The submitted category decides the regulator, for the reason
+        // submittedCategoryId() gives; the stored one covers a partial POST.
+        $errors += ProfessionalRegistration::problems(
+            $input,
+            ProfessionalRegistration::regulatorForCategoryId($this->submittedCategoryId($input) ?? (int) ($stored['category_id'] ?? 0))
+        );
 
         // The three "stand out" sections most owners skipped, now compulsory.
         // Signup always; an owner edit whenever it carries the section (the

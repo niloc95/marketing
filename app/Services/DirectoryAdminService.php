@@ -337,6 +337,27 @@ class DirectoryAdminService
         }
         $data = \App\Libraries\ServiceArea::columns($input, $id !== null ? ($this->listings->find($id) ?? []) : []) + $data;
 
+        // Registration number, ORCID and ResearchGate: same rules again. The
+        // regulator comes from the category this save leaves the listing in.
+        $stored    = $id !== null ? ($this->listings->find($id) ?? []) : [];
+        $regErrors = \App\Libraries\ProfessionalRegistration::problems(
+            $input,
+            \App\Libraries\ProfessionalRegistration::regulatorForCategoryId((int) ($input['category_id'] ?? $stored['category_id'] ?? 0))
+        );
+        if ($regErrors !== []) {
+            return ['ok' => false, 'errors' => $regErrors, 'message' => 'Please correct the highlighted fields.'];
+        }
+        $data = \App\Libraries\ProfessionalRegistration::columns($input, $stored) + $data;
+        // The admin's "checked against the register" mark. Admin only, and
+        // only meaningful beside a number: columns() has already cleared it
+        // if the number changed in this same save. Keeps the first date.
+        if (array_key_exists('reg_checked_present', $input)) {
+            $number = $data['reg_number'] ?? $stored['reg_number'] ?? null;
+            $data['reg_checked_at'] = ! empty($input['reg_checked']) && $number !== null
+                ? ((array_key_exists('reg_checked_at', $data) ? null : ($stored['reg_checked_at'] ?? null)) ?? date('Y-m-d H:i:s'))
+                : null;
+        }
+
         if (array_key_exists('hours', $input) || $id === null) {
             // The holidays of the country this save leaves the listing in.
             $data['trading_hours']  = hours_within(
