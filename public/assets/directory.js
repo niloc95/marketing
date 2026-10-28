@@ -3025,6 +3025,44 @@
     apply();
   })();
 
+  // -------------------------------------------- registration by category
+  // Regulated professions only. Each category <option> names its regulator as
+  // data-regulator ('' for none), and the panel carries every regulator's
+  // labels as data-regulators, so one fieldset serves the HPCSA, the LPC and
+  // the rest. Hidden AND disabled for none, as the menu field is, so the marker
+  // is not posted and a stored number survives a switch to "Plumber".
+
+  (function () {
+    var panel  = document.querySelector('[data-registration]');
+    var select = document.querySelector('select[name="category_id"]');
+    if (!panel || !select) return;
+
+    var fieldset = panel.querySelector('fieldset');
+    var research = panel.querySelector('[data-reg-research]');
+    var number   = panel.querySelector('input[name="reg_number"]');
+    var labels   = {};
+    try { labels = JSON.parse(panel.getAttribute('data-regulators') || '{}'); } catch (e) {}
+
+    function text(sel, value) {
+      panel.querySelectorAll(sel).forEach(function (el) { el.textContent = value; });
+    }
+
+    function apply() {
+      var opt = select.options[select.selectedIndex];
+      var reg = labels[opt ? (opt.getAttribute('data-regulator') || '') : ''];
+      panel.hidden      = !reg;
+      fieldset.disabled = !reg;
+      if (!reg) return;
+      text('[data-reg-short]', reg.short);
+      text('[data-reg-name]', reg.name);
+      if (number) number.placeholder = reg.example;
+      if (research) research.hidden = research.disabled = !reg.research;
+    }
+
+    select.addEventListener('change', apply);
+    apply();
+  })();
+
   // --------------------------------------------------------- facets by category
   // "Ages, curriculum & fees" offers one fieldset per facet SET, and the chosen
   // category names its set on the <option> as data-facet-set. Same swap as the
