@@ -399,11 +399,11 @@ class DirectoryListingMutationService
      *
      * @return array{verify_token:string,verify_expires:string}
      */
-    private function verifyTokenColumns(string $token): array
+    private function verifyTokenColumns(string $token, ?int $ttl = null): array
     {
         return [
             'verify_token'   => $this->hashToken($token),
-            'verify_expires' => date('Y-m-d H:i:s', time() + $this->config->verifyTtl),
+            'verify_expires' => date('Y-m-d H:i:s', time() + ($ttl ?? $this->config->verifyTtl)),
         ];
     }
 
@@ -415,11 +415,11 @@ class DirectoryListingMutationService
      * Any previously issued token is overwritten, so only the newest link
      * works — same single-link rule mintManageToken() follows.
      */
-    private function mintVerifyToken(int $listingId): string
+    private function mintVerifyToken(int $listingId, ?int $ttl = null): string
     {
         $token = TokenHash::mint();
 
-        $this->listings->update($listingId, $this->verifyTokenColumns($token));
+        $this->listings->update($listingId, $this->verifyTokenColumns($token, $ttl));
 
         return $token;
     }
@@ -449,6 +449,84 @@ class DirectoryListingMutationService
             (string) $listing['display_name'],
             $this->mintVerifyToken($listingId)
         );
+
+        return true;
+    }
+
+    /**
+     * Email the owner a private preview of a profile we built for them, with
+     * a button to approve it (the "we set up your profile" service).
+     *
+     * The preview link carries a fresh verify token, so it IS a verify link:
+     * approving it runs verify() and publishes exactly as the usual email
+     * would, and the address is proven by the same fact, that the owner
+     * received it. Minting it retires any earlier verify or preview link.
+     *
+     * Pending only, for resendVerification()'s reasons. Returns whether an
+     * email went out.
+     */
+    public function sendPreview(int $listingId): bool
+    {
+        $listing = $this->listings->find($listingId);
+        if (! is_array($listing) || ($listing['status'] ?? '') !== 'pending'
+            || ! filter_var((string) ($listing['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        $token = $this->mintVerifyToken($listingId, $this->config->previewTtl);
+        $body  = view('emails/preview', [
+            'name' => (string) (($listing['contact_person'] ?? '') ?: $listing['display_name']),
+            'business' => (string) $listing['display_name'],
+            'link' => listing_site_url($listing, 'preview/' . $token),
+            'site' => $this->config->siteName(),
+            'days' => (int) round($this->config->previewTtl / 86400),
+        ]);
+        $this->send((string) $listing['email'], 'Your business profile is ready for you to approve', $body);
+
+        return true;
+    }
+
+    /**
+     * The pending listing a preview link belongs to, or null when the link is
+     * unknown, expired, or already used (verify() clears the token).
+     *
+     * @return array<string,mixed>|null
+     */
+    public function findByPreviewToken(string $token): ?array
+    {
+        $token = trim($token);
+        if ($token === '') {
+            return null;
+        }
+        $listing = $this->listings
+            ->where('verify_token', $this->hashToken($token))
+            ->where('verify_expires >=', date('Y-m-d H:i:s'))
+            ->where('status', 'pending')
+            ->first();
+
+        return is_array($listing) ? $listing : null;
+    }
+
+    /**
+     * The owner's "please change this" from the preview page, mailed to the
+     * admin inbox. The link stays valid, so they can approve once it is fixed.
+     */
+    public function requestPreviewChanges(string $token, string $message): bool
+    {
+        $listing = $this->findByPreviewToken($token);
+        $message = trim(strip_tags($message));
+        $admin   = $this->config->adminEmail();
+        if ($listing === null || $message === '' || $admin === '') {
+            return false;
+        }
+
+        $body = view('emails/preview-changes', [
+            'listing' => $listing,
+            'message' => mb_substr($message, 0, 3000),
+            'editUrl' => base_url('admin/edit/' . (int) $listing['id']),
+            'site'    => $this->config->siteName(),
+        ]);
+        $this->send($admin, 'Changes requested: ' . Input::line((string) $listing['display_name']), $body);
 
         return true;
     }
