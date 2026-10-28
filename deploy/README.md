@@ -440,29 +440,33 @@ server `.env` only, never in the repo.
 defaults of 120 a minute and 1,500 an hour, then reload FPM. For the next week, watch
 Search Console *Settings → Crawl stats → By response*: 429s should not rise.
 
-**4. Block AI training crawlers.** Go to *Security → WAF → Custom rules → Create rule*.
-- Name: `Block AI training crawlers`
-- Expression:
+**4. Block AI training crawlers.** Use *AI Crawl Control* (Security → "Manage how AI
+crawlers access your content"). It is on the free plan and blocks by Cloudflare's own
+crawler identity, which is better than a user agent rule because a scanner can fake a
+user agent. Set **Block** on:
 
-```
-(http.user_agent contains "GPTBot") or (http.user_agent contains "CCBot")
-or (http.user_agent contains "Bytespider") or (http.user_agent contains "ClaudeBot")
-or (http.user_agent contains "anthropic-ai") or (http.user_agent contains "Amazonbot")
-or (http.user_agent contains "meta-externalagent")
-```
-- Action: **Block**. Place it after `Block scanner probes`.
+| Block | Why |
+|---|---|
+| GPTBot, ClaudeBot, CCBot, Bytespider, Amazonbot, Meta-ExternalAgent | the training list in `App\Controllers\Directory::AI_TRAINING_BOTS`; robots.txt already asks them to stay out |
+| TikTok Spider, FacebookBot | same companies, training crawlers, not in robots.txt |
 
-These names match `App\Controllers\Directory::AI_TRAINING_BOTS`, which robots.txt already
-shuts out; this rule catches the crawlers that ignore robots.txt.
-- `Applebot-Extended` is on the robots.txt list but not here. It is a robots.txt token,
-  not a user agent: Apple crawls as Applebot.
-- `Google-Extended` is allowed on purpose. It is a robots.txt token too, and blocking it
-  could cost citations in Google's Gemini apps.
+**Leave allowed:**
 
-Do **not** use the blanket *Block AI bots* toggle. It also blocks the answer bots that
-cite and link to profiles: OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot
-and Claude-User. "ClaudeBot" and "GPTBot" are not substrings of any of those names, so
-this rule leaves them alone.
+| Allow | Why |
+|---|---|
+| Googlebot, BingBot, Baidu, PetalBot | search engines |
+| Applebot | Siri and Spotlight. Apple's training opt-out is the `Applebot-Extended` robots.txt token, which is already set |
+| OAI-SearchBot, ChatGPT-User, PerplexityBot, Perplexity-User, Claude-SearchBot, Claude-User, DuckAssistBot | AI answer bots that cite and link to profiles |
+| archive.org_bot | the Internet Archive |
+| Everything else | currently has no traffic |
+
+Never use a blanket "block all AI" switch: it takes the answer bots with it.
+
+The page's *Unsuccessful* column is not crawlers failing to read the site. Measured on
+28 Oct 2026, real Googlebot got 2,085 × 200 from the app against 12 × 404. The
+"unsuccessful" requests are vulnerability probes that use crawler user agents (paths
+like `/Dockerfile`, `/key.pem`, `/api%2F.env` in `marketing-access.log`), stopped at the
+edge by `Block scanner probes` or answered 404.
 
 **5. Rate limit the directory.** Go to *Security → WAF → Rate limiting rules → Create rule*.
 - Name: `Directory rate limit`
