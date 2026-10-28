@@ -118,6 +118,9 @@ class Contact extends BaseController
      * ship with the deploy bundle like any other asset; each entry's size is
      * read from disk so the page can't advertise a stale one. A file that is
      * missing is left off rather than linked to a 404.
+     *
+     * 'inside' is what the document covers, from its own page headings, shown
+     * when a row rolls down. Change it when the PDF changes.
      */
     public function resources()
     {
@@ -129,6 +132,21 @@ class Contact extends BaseController
                 'file'        => 'assets/documents/webscheduler-local-profile-guide.pdf',
                 'pages'       => 19,
                 'tag'         => 'Guide',
+                'inside'      => [
+                    'before you start',
+                    'profile strength',
+                    'photos that work',
+                    'your description with ChatGPT',
+                    'services',
+                    'hours and map',
+                    'brands we carry',
+                    'Verified Business',
+                    'locations',
+                    'team members',
+                    'jobs',
+                    'reviews',
+                    'a launch checklist',
+                ],
             ],
             [
                 'title'       => 'Local visibility playbook',
@@ -136,6 +154,18 @@ class Contact extends BaseController
                 'file'        => 'assets/playbook/webscheduler-local-visibility-playbook.pdf',
                 'pages'       => 12,
                 'tag'         => 'Guide',
+                'inside'      => [
+                    'why this matters now',
+                    'how local search works',
+                    'what you own and what you rent',
+                    'the local visibility loop',
+                    'a complete profile',
+                    'local SEO',
+                    'service and location visibility',
+                    'the customer journey',
+                    'a worked example',
+                    'a 30 day plan',
+                ],
             ],
             [
                 'title'       => 'Verified Business brochure',
@@ -143,6 +173,15 @@ class Contact extends BaseController
                 'file'        => 'assets/documents/webscheduler-local-verified-business.pdf',
                 'pages'       => 9,
                 'tag'         => 'Brochure',
+                'inside'      => [
+                    'when the advert budget runs out',
+                    'impressions are not sales',
+                    'start free, get verified',
+                    'everything Verified adds',
+                    'built for search, maps and AI',
+                    'fast, by Google\'s own measure',
+                    'every source behind the numbers',
+                ],
             ],
             [
                 'title'       => '2027 local visibility outlook',
@@ -150,6 +189,17 @@ class Contact extends BaseController
                 'file'        => 'assets/documents/webscheduler-local-2027-outlook.pdf',
                 'pages'       => 13,
                 'tag'         => 'Forecast',
+                'inside'      => [
+                    'five things to know',
+                    'the growth picture',
+                    'the research behind it',
+                    'four segments',
+                    'the completeness advantage',
+                    'what customers look for',
+                    'projected benchmarks',
+                    'where to focus first',
+                    'methodology and sources',
+                ],
             ],
             [
                 'title'       => 'Hiring guide',
@@ -157,6 +207,19 @@ class Contact extends BaseController
                 'file'        => 'assets/documents/webscheduler-local-hiring-guide.pdf',
                 'pages'       => 15,
                 'tag'         => 'Guide',
+                'inside'      => [
+                    'define the role',
+                    'write a post people answer',
+                    'fair wording',
+                    'post it',
+                    'shortlist',
+                    'interview',
+                    'check before you commit',
+                    'treat CVs like customer records',
+                    'job scams',
+                    'offer and onboarding',
+                    'a one page checklist',
+                ],
             ],
         ] as $doc) {
             $path = FCPATH . $doc['file'];
@@ -167,6 +230,9 @@ class Contact extends BaseController
             // Same ?v=<filemtime> buster as the layout's CSS: a PDF replaced at
             // the same path gets a new URL, so Cloudflare needs no purge.
             $doc['version'] = filemtime($path);
+            // What lands in the visitor's Downloads folder: the published name,
+            // which already carries ours.
+            $doc['download'] = basename($doc['file']);
             $documents[] = $doc;
         }
 

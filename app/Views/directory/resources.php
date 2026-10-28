@@ -10,9 +10,12 @@ $canonical = base_url('resources');
  * an entry there.
  *
  * Built from the company page's pieces (.section bands, .company-steps rows)
- * so it reads as part of the same site. Links open in a new tab, as the
- * footer's playbook link always has: leaving the site to open a PDF loses
- * whatever the visitor was doing.
+ * so it reads as part of the same site. Each row is a native <details> that
+ * rolls down to the summary, what the document covers, and two buttons:
+ * Open reads it in a new tab (leaving the site to open a PDF loses whatever
+ * the visitor was doing), Download saves it. The rows share a name, so
+ * browsers that support it keep one open at a time; older ones let several
+ * open, which is harmless.
  */
 ?>
 
@@ -20,7 +23,7 @@ $canonical = base_url('resources');
 <?= seo_meta([
     'title'       => 'Guides and reports | ' . $siteName,
     'description' => 'Free guides and reports from ' . $siteName . ' for South African businesses: '
-        . 'the local visibility playbook, the Verified Business brochure, the 2027 local visibility outlook and a hiring guide.',
+        . 'a profile guide, the local visibility playbook, the Verified Business brochure, the 2027 local visibility outlook and a hiring guide.',
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'CollectionPage', 'Guides and reports'),
 ]) ?>
@@ -42,19 +45,33 @@ $canonical = base_url('resources');
         <?php else: ?>
             <ol class="company-steps resource-list">
                 <?php foreach ($documents as $i => $doc): ?>
+                    <?php $url = base_url($doc['file']) . '?v=' . (int) $doc['version']; ?>
                     <li>
                         <span class="company-step-num"><?= sprintf('%02d', $i + 1) ?></span>
-                        <div class="resource-row">
-                            <div>
-                                <span class="resource-tag"><?= esc($doc['tag']) ?></span>
-                                <h2><?= esc($doc['title']) ?></h2>
+                        <details class="resource" name="resources">
+                            <summary class="resource-summary">
+                                <span>
+                                    <span class="resource-tag"><?= esc($doc['tag']) ?></span>
+                                    <h2><?= esc($doc['title']) ?></h2>
+                                </span>
+                                <span class="resource-pages"><span class="hidden sm:inline">PDF · <?= (int) $doc['pages'] ?> pages</span><?= lucide('chevron-down', 'resource-chevron') ?></span>
+                            </summary>
+                            <div class="resource-body">
                                 <p><?= esc($doc['summary']) ?></p>
+                                <?php if (! empty($doc['inside'])): ?>
+                                    <p class="resource-inside"><strong>Inside:</strong> <?= esc(implode(' · ', $doc['inside'])) ?></p>
+                                <?php endif; ?>
                                 <p class="resource-meta">PDF · <?= (int) $doc['pages'] ?> pages · <?= esc($doc['size']) ?></p>
+                                <div class="resource-actions">
+                                    <a class="btn btn-ghost" href="<?= $url ?>" target="_blank" rel="noopener">
+                                        <?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Open<span class="sr-only"> <?= esc($doc['title']) ?> (PDF, new tab)</span>
+                                    </a>
+                                    <a class="btn btn-primary" href="<?= $url ?>" download="<?= esc($doc['download'], 'attr') ?>">
+                                        <?= lucide('download', 'h-4 w-4 shrink-0') ?>Download<span class="sr-only"> <?= esc($doc['title']) ?> (PDF)</span>
+                                    </a>
+                                </div>
                             </div>
-                            <a class="btn btn-ghost shrink-0" href="<?= base_url($doc['file']) ?>?v=<?= (int) $doc['version'] ?>" target="_blank" rel="noopener">
-                                <?= lucide('download', 'h-4 w-4 shrink-0') ?>Download<span class="sr-only"> <?= esc($doc['title']) ?> (PDF)</span>
-                            </a>
-                        </div>
+                        </details>
                     </li>
                 <?php endforeach; ?>
             </ol>
