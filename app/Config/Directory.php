@@ -221,6 +221,27 @@ class Directory extends BaseConfig
     public int $indexMinDescription = 50;
 
     /**
+     * Page budget per IP across all /directory pages (App\Filters\ScrapeGuard).
+     * A person reading profiles stays far under both; a scraper walking the
+     * sitemap hits them within minutes.
+     *
+     * Overridable as directory.scrapeGuardPerMinute / scrapeGuardPerHour.
+     * 0 switches that window off (phpunit.dist.xml does, for the suite).
+     */
+    public int $scrapeGuardPerMinute = 120;
+
+    public int $scrapeGuardPerHour = 1500;
+
+    /**
+     * Shared secret Cloudflare's Transform rule puts in X-WS-Verified-Bot for
+     * verified search bots (cf.client.bot), so Googlebot and Bingbot never
+     * meet ScrapeGuard. Empty means no request is exempt.
+     *
+     * Set as directory.verifiedBotToken in .env, never here.
+     */
+    public string $verifiedBotToken = '';
+
+    /**
      * The score owners are told to aim for: the manage page's strength panel
      * names it, and the one-off nudge email (directory:quality:nudge) goes to
      * profiles still under it a few days after going live. Keep it at or above

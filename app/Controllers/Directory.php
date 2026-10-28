@@ -7,6 +7,7 @@ use App\Controllers\Concerns\RedirectsToOwningSite;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
+use App\Models\DirectoryPracticeLocationModel;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use App\Services\DirectorySettings;
@@ -24,6 +25,16 @@ class Directory extends BaseController
     use RedirectsToOwningSite;
 
     use LocksDownDocumentCsp;
+
+    /**
+     * Crawlers that collect pages to train AI models. Each one is shut out in
+     * robots.txt; the same names are blocked at Cloudflare for the ones that
+     * ignore it.
+     */
+    public const AI_TRAINING_BOTS = [
+        'GPTBot', 'CCBot', 'Bytespider', 'ClaudeBot',
+        'anthropic-ai', 'Amazonbot', 'meta-externalagent', 'Applebot-Extended',
+    ];
 
     public function home()
     {
@@ -194,9 +205,15 @@ class Directory extends BaseController
         // still far past what panning a map actually needs: a viewport holding
         // more than 200 businesses is zoomed out far enough that the pins are
         // clustered and individual popups aren't reachable regardless.
+        //
+        // Since Oct 2026 a pin carries no phone and no row id (the popup links
+        // to the profile, which has both), the cap is 100, and an hourly budget
+        // sits on top of the per minute one: 300 pans an hour is far past a
+        // person browsing and stops one IP walking the country's viewports.
         $throttler = service('throttler');
-        $key       = 'directory-map-' . md5((string) $this->request->getIPAddress());
-        if ($throttler->check($key, 30, MINUTE) === false) {
+        $ip        = md5((string) $this->request->getIPAddress());
+        if ($throttler->check('directory-map-' . $ip, 30, MINUTE) === false
+            || $throttler->check('directory-map-hour-' . $ip, 300, HOUR) === false) {
             return $this->response
                 ->setStatusCode(429)
                 ->setHeader('Retry-After', (string) $throttler->getTokentime())
@@ -216,7 +233,7 @@ class Directory extends BaseController
             $filters['q'] = '';
         }
         $filters['facets'] = $svc->sanitiseFacets($filters['facets'], $filters['category']);
-        $items             = $svc->mapPoints($filters, 200);
+        $items             = $svc->mapPoints($filters, 100);
 
         helper('directory_hours');
 
@@ -227,13 +244,11 @@ class Directory extends BaseController
             $hours = hours_decode($l['trading_hours'] ?? null);
 
             $out[] = [
-                'id'       => (int) $l['id'],
                 'name'     => (string) $l['display_name'],
                 'category' => (string) ($l['category_name'] ?? ''),
                 'lat'      => (float) $l['latitude'],
                 'lng'      => (float) $l['longitude'],
                 'address'  => map_address_text($l),
-                'phone'    => (string) ($l['phone'] ?? ''),
                 'url'      => base_url('directory/' . $l['slug']),
                 'logo'     => listing_image_url($l['logo_path'] ?? null),
                 // Holiday aware: on a public holiday this follows the owner's
@@ -848,6 +863,46 @@ class Directory extends BaseController
     }
 
     /**
+     * A profile's email address, fetched when a visitor taps "Show email".
+     *
+     * The address used to sit in the page reversed (strrev), which stopped
+     * nothing: any scraper reading the HTML could reverse it back. Now it is
+     * not in the page at all, and this endpoint gives out only 20 an hour per
+     * IP, which is plenty for a person and useless for a harvest.
+     *
+     * ?branch={id} reads one of the listing's branches instead, on the same
+     * terms the profile shows them (premium only, and only its own branches).
+     */
+    public function email(string $slug)
+    {
+        $throttler = service('throttler');
+        if ($throttler->check('directory-email-' . md5((string) $this->request->getIPAddress()), 20, HOUR) === false) {
+            return $this->response
+                ->setStatusCode(429)
+                ->setHeader('Retry-After', (string) $throttler->getTokentime())
+                ->setJSON(['email' => '']);
+        }
+
+        $listing = (new DirectoryListingModel())->findPublishedBySlug($slug);
+        $email   = '';
+        if ($listing !== null) {
+            $branch = (string) $this->request->getGet('branch');
+            if ($branch === '') {
+                $email = (string) ($listing['email'] ?? '');
+            } elseif (ctype_digit($branch) && listing_has_premium($listing)) {
+                $row   = (new DirectoryPracticeLocationModel())->findForListing((int) $branch, (int) $listing['id']);
+                $email = (string) ($row['email'] ?? '');
+            }
+        }
+
+        return $this->response
+            ->setStatusCode($email === '' ? 404 : 200)
+            ->setHeader('X-Robots-Tag', 'noindex')
+            ->setHeader('Cache-Control', 'private, no-store')
+            ->setJSON(['email' => $email]);
+    }
+
+    /**
      * Confirm the emailed signup link: publish the listing, and sign the owner in.
      *
      * The sign-in is deliberate. This token proves control of the listing's email
@@ -934,13 +989,26 @@ class Directory extends BaseController
      */
     public function robots()
     {
-        $body = "User-agent: *\n"
+        // AI training crawlers copy the whole platform into datasets and send
+        // no visitors back, so they get nothing. AI answer bots (OAI-SearchBot,
+        // ChatGPT-User, PerplexityBot) link to the profile and stay allowed
+        // under the wildcard group.
+        $body = '';
+        foreach (self::AI_TRAINING_BOTS as $bot) {
+            $body .= "User-agent: {$bot}\nDisallow: /\n\n";
+        }
+
+        $body .= "User-agent: *\n"
             . "Allow: /\n"
             // Owner and admin areas hold no public content and should not be
             // crawled; both are noindex too, this just saves the crawl.
             . "Disallow: /manage\n"
             . "Disallow: /jobs/manage\n"
             . "Disallow: /admin\n"
+            // JSON feeds behind the map and the typeahead: nothing to index,
+            // and exactly the bulk shape a scraper wants.
+            . "Disallow: /directory/map\n"
+            . "Disallow: /directory/suggest\n"
             . "\n"
             . 'Sitemap: ' . base_url('sitemap.xml') . "\n";
 

@@ -96,10 +96,13 @@ foreach ($locations as $loc) {
             <div class="loc-body">
                 <?php if (! $isPrimary): ?>
                     <?= view('directory/_contact_panel', [
-                        'row'     => $row,
-                        'heading' => 'Contact',
+                        'row'      => $row,
+                        'heading'  => 'Contact',
                         // Website and socials belong to the business, not the branch.
-                        'showWeb' => false,
+                        'showWeb'  => false,
+                        'emailUrl' => ! empty($primary['slug'])
+                            ? base_url('directory/' . $primary['slug'] . '/email') . '?branch=' . (int) $row['id']
+                            : '',
                     ]) ?>
                 <?php endif; ?>
 

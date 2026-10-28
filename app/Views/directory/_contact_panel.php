@@ -21,9 +21,14 @@
  *                       WhatsApp, website, socials and Suggest an edit. False for a branch: a
  *                       per-branch copy would only go stale against the
  *                       listing's own, and one edit link per profile is enough.
+ * @var string $emailUrl where "Show email" fetches the address (Directory::email);
+ *                       '' hides the row. Every caller passes it: CI4 keeps view
+ *                       data between renders, so a default here could inherit a
+ *                       branch's URL.
  */
-$heading = $heading ?? 'Contact';
-$showWeb = $showWeb ?? true;
+$heading  = $heading ?? 'Contact';
+$showWeb  = $showWeb ?? true;
+$emailUrl = $emailUrl ?? '';
 
 // Two different intents, so two different Google Maps schemes. The address text
 // means "show me where this is" — /maps/search/ drops a pin. Get directions
@@ -111,12 +116,12 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
     <?php endforeach; ?>
 
     <?php // Email alone stays behind the reveal: it is the one an address-harvesting
-          // scraper is actually after, and nobody needs it in one tap. Reversed in
-          // data-reveal-value so it never appears as plain text in the HTML; the
-          // click handler in directory.js reverses it back into a mailto: link. ?>
-    <?php if (! empty($row['email'])): ?>
+          // scraper is actually after, and nobody needs it in one tap. The address
+          // is not in the HTML at all; the click handler in directory.js fetches
+          // it from $emailUrl (throttled per IP) and turns it into a mailto: link. ?>
+    <?php if (! empty($row['email']) && $emailUrl !== ''): ?>
         <div class="contact-row">
-            <span><button type="button" class="reveal-btn" data-reveal data-reveal-type="mailto" data-reveal-value="<?= esc(strrev($row['email']), 'attr') ?>">Show email</button></span>
+            <span><button type="button" class="reveal-btn" data-reveal data-reveal-url="<?= esc($emailUrl, 'attr') ?>">Show email</button></span>
             <?= lucide('mail') ?>
         </div>
     <?php endif; ?>

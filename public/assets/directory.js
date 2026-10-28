@@ -282,22 +282,29 @@
   });
 
   // ------------------------------------------------------------- reveal
-  // Phone/email are stored reversed in data-reveal-value so they never
-  // appear as plain text/tel:/mailto: in the HTML a scraper reads. On
-  // click we reverse the string back and turn the button into a real link.
+  // The email address is not in the HTML a scraper reads. On click we fetch
+  // it from data-reveal-url (Directory::email, throttled per IP) and turn the
+  // button into a real mailto: link.
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-reveal]');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
 
-    var value = btn.getAttribute('data-reveal-value').split('').reverse().join('');
-    var type = btn.getAttribute('data-reveal-type');
-    var href = type === 'tel' ? 'tel:' + value.replace(/[^\d+]/g, '') : 'mailto:' + value;
-
-    var link = document.createElement('a');
-    link.href = href;
-    link.textContent = value;
-    link.className = btn.className;
-    btn.replaceWith(link);
+    fetch(btn.getAttribute('data-reveal-url'), { headers: { Accept: 'application/json' } })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var value = (data && data.email) || '';
+        if (!value) throw new Error('no email');
+        var link = document.createElement('a');
+        link.href = 'mailto:' + value;
+        link.textContent = value;
+        link.className = btn.className;
+        btn.replaceWith(link);
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'Try again later';
+      });
   });
 
   // ------------------------------------------------------- gallery lightbox
@@ -2446,13 +2453,14 @@
           var keep = {};
           var added = [];
           items.forEach(function (item) {
-            keep[item.id] = true;
-            if (shown[item.id]) return; // already on the map, leave it alone
+            // Keyed by profile URL: the feed carries no row ids.
+            keep[item.url] = true;
+            if (shown[item.url]) return; // already on the map, leave it alone
             // An area dot rather than a pin when only the suburb or city is
             // known. Still an L.marker, so it clusters like the rest.
             var marker = L.marker([item.lat, item.lng], item.area ? { icon: areaIcon } : {})
               .bindPopup(popupHtml(item), { minWidth: 220 });
-            shown[item.id] = marker;
+            shown[item.url] = marker;
             added.push(marker);
           });
 
@@ -2521,9 +2529,6 @@
     html += '<p class="map-popup-name">' + e(item.name) + '</p>';
     if (item.category) html += '<p class="map-popup-meta">' + e(item.category) + '</p>';
     if (item.address) html += '<p class="map-popup-meta">' + e(item.address) + '</p>';
-    if (item.phone) {
-      html += '<p class="map-popup-meta"><a href="tel:' + e(item.phone) + '">' + e(item.phone) + '</a></p>';
-    }
 
     // Only ever stated when the hours actually say so. openNow is null when the
     // listing has no usable hours for today, and a red "Closed" on a business

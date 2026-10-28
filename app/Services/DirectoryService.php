@@ -743,7 +743,7 @@ class DirectoryService
         $select = 'xs_directory_listings.id, xs_directory_listings.slug, xs_directory_listings.display_name,'
             . ' xs_directory_listings.latitude, xs_directory_listings.longitude,'
             . ' xs_directory_listings.geocode_precision, xs_directory_listings.logo_path,'
-            . ' xs_directory_listings.phone, xs_directory_listings.trading_hours,'
+            . ' xs_directory_listings.trading_hours,'
             . ' xs_directory_listings.offers_online_booking, xs_directory_listings.booking_url,'
             . ' xs_directory_listings.address_line, xs_directory_listings.address_line_2,'
             . ' xs_directory_listings.suburb, xs_directory_listings.city,'

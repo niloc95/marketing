@@ -395,6 +395,117 @@ curl -s -o /dev/null -w '%{http_code}\n' https://webscheduler.co.za/
 
 **Rollback:** toggle the rule off. It takes effect within seconds.
 
+## Scraping safeguards at Cloudflare
+
+The app limits pages per IP itself (`App\Filters\ScrapeGuard`, Oct 2026). Even so, one
+IP can still copy the whole platform in about an hour, and a scraper spread over many
+IPs is not slowed at all. These rules stop that at the edge, and keep search engines out
+of the app's own limit. Like the scanner rule, this is dashboard configuration only;
+there is no Cloudflare API token on the Mac.
+
+**Apply every rule in both zones,** `webscheduler.co.za` and `webscheduler.app`. They are
+separate zones, and `local.webscheduler.app` is served by the same app.
+
+**Do not turn on Bot Fight Mode.** On the free plan it cannot be skipped for a path, and
+it can challenge PayFast's server-to-server `POST /payfast/notify`. That would lose
+payment notifications without any error showing.
+
+**Release order matters.** Release the code with ScrapeGuard switched off in the prod
+`/var/www/listing/directory-app/.env`:
+
+```
+directory.scrapeGuardPerMinute = 0
+directory.scrapeGuardPerHour = 0
+```
+
+Switch it on (step 3) only after steps 1 and 2 are done. Until then Googlebot counts
+against the same per-IP budget as everyone else. It crawls hard from a few IPs, so it
+would hit 429s, and Google slows its crawl when it keeps seeing them.
+
+**1. Mark verified bots for the app.** Generate a secret once with `openssl rand -hex 24`.
+In each zone, go to *Rules → Transform Rules → Modify Request Header* and create two rules:
+- `Mark verified bots`: custom filter expression `(cf.client.bot)`, then *Set static*,
+  header `X-WS-Verified-Bot`, value `<the secret>`.
+- `Strip forged bot mark`: custom filter expression `(not cf.client.bot)`, then *Remove*,
+  header `X-WS-Verified-Bot`.
+
+The app trusts the header only when it carries the secret. A request that reaches the
+origin around Cloudflare can send any header it likes, so a bare flag would not do.
+
+**2. Give the app the secret.** In the prod `.env`, set
+`directory.verifiedBotToken = <the same secret>`, then reload FPM. The secret goes in the
+server `.env` only, never in the repo.
+
+**3. Switch ScrapeGuard on.** Remove the two `= 0` lines above, which restores the
+defaults of 120 a minute and 1,500 an hour, then reload FPM. For the next week, watch
+Search Console *Settings → Crawl stats → By response*: 429s should not rise.
+
+**4. Block AI training crawlers.** Go to *Security → WAF → Custom rules → Create rule*.
+- Name: `Block AI training crawlers`
+- Expression:
+
+```
+(http.user_agent contains "GPTBot") or (http.user_agent contains "CCBot")
+or (http.user_agent contains "Bytespider") or (http.user_agent contains "ClaudeBot")
+or (http.user_agent contains "anthropic-ai") or (http.user_agent contains "Amazonbot")
+or (http.user_agent contains "meta-externalagent")
+```
+- Action: **Block**. Place it after `Block scanner probes`.
+
+These names match `App\Controllers\Directory::AI_TRAINING_BOTS`, which robots.txt already
+shuts out; this rule catches the crawlers that ignore robots.txt.
+- `Applebot-Extended` is on the robots.txt list but not here. It is a robots.txt token,
+  not a user agent: Apple crawls as Applebot.
+- `Google-Extended` is allowed on purpose. It is a robots.txt token too, and blocking it
+  could cost citations in Google's Gemini apps.
+
+Do **not** use the blanket *Block AI bots* toggle. It also blocks the answer bots that
+cite and link to profiles: OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot
+and Claude-User. "ClaudeBot" and "GPTBot" are not substrings of any of those names, so
+this rule leaves them alone.
+
+**5. Rate limit the directory.** Go to *Security → WAF → Rate limiting rules → Create rule*.
+- Name: `Directory rate limit`
+- Expression: `(starts_with(http.request.uri.path, "/directory") and not cf.client.bot)`
+- Count by IP, **60 requests per 10 seconds**.
+- Action: **Managed Challenge** where the plan offers it, otherwise Block, for the
+  shortest duration offered.
+
+This is the stop for a scraper spread over many IPs: no single IP gets far, and a
+challenge is cheap for a person but expensive at scale. If the plan does not accept
+`cf.client.bot` in a rate limiting expression, use the path test alone. Even Googlebot
+stays well under 6 requests a second per IP on a site this size.
+
+**6. Verify** in both zones, swapping the host:
+```bash
+H=https://local.webscheduler.co.za
+# 403 from Cloudflare: a training crawler
+curl -s -o /dev/null -w '%{http_code}\n' -A 'Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)' $H/directory
+# 200: answer bots, robots.txt, the sitemap
+curl -s -o /dev/null -w '%{http_code}\n' -A 'Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot)' $H/directory
+curl -s -o /dev/null -w '%{http_code}\n' -A 'Mozilla/5.0 (compatible; PerplexityBot/1.0)' $H/directory
+curl -s -o /dev/null -w '%{http_code}\n' $H/robots.txt
+curl -s -o /dev/null -w '%{http_code}\n' $H/sitemap.xml
+# PayFast's notify must still reach the app: expect the app's own answer to an
+# empty post, never a 403 with server: cloudflare.
+curl -s -i -X POST $H/payfast/notify | grep -i '^HTTP\|^server'
+```
+
+After step 3, check that a forged mark is not trusted. Run this from a connection you
+don't mind being challenged for a minute, because it also trips step 5. Expect 429s from
+the app, or challenges from Cloudflare:
+```bash
+for i in $(seq 1 130); do curl -s -o /dev/null -w '%{http_code}\n' -H 'X-WS-Verified-Bot: guess' "$H/directory/no-such-$i"; done | sort | uniq -c
+```
+
+Then confirm two things:
+- *Security → Events* shows the blocks.
+- In Search Console, URL Inspection's *Test live URL* on one profile still returns the page.
+
+**Rollback:**
+- Cloudflare rules: toggle any of them off. It takes effect within seconds.
+- The app's own limit: set the two `.env` values back to `0` and reload FPM.
+
 ## Hostname: local. and the legacy listing. host
 
 WebScheduler Local is served from `local.webscheduler.co.za`. Until the move it

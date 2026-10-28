@@ -110,6 +110,7 @@ $zaTerms   = site_url_for(\Config\Sites::ZA, 'terms');
                 <li>Post false, misleading, unlawful, defamatory, hateful or obscene content.</li>
                 <li>Add the same business repeatedly to gain prominence, or stuff keywords into fields.</li>
                 <li>Scrape, bulk download or systematically copy the site, or use automated tools against it beyond ordinary browsing.</li>
+                <li>Use any content from the site, including business profiles, to build a competing database or to train artificial intelligence models.</li>
                 <li>Harvest the contact details published here in order to send unsolicited marketing, which anti spam and data protection laws also forbid.</li>
                 <li>Attempt to gain unauthorised access to any part of the service, or interfere with its operation.</li>
                 <li>Copy, recreate or display the Verified Business badge, or anything made to look like it (section 14).</li>

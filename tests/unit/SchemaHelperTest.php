@@ -256,8 +256,7 @@ final class SchemaHelperTest extends CIUnitTestCase
 
         $this->assertSame('Acme', $item['name']);
         $this->assertStringEndsWith('/directory/acme#business', $item['@id']);
-        // A blank telephone or a @type-only PostalAddress is worse than none.
-        $this->assertArrayNotHasKey('telephone', $item);
+        // A @type-only PostalAddress is worse than none.
         $this->assertArrayNotHasKey('address', $item);
         $this->assertArrayNotHasKey('image', $item);
     }
@@ -287,7 +286,6 @@ final class SchemaHelperTest extends CIUnitTestCase
             'address_line' => '',
         ]);
 
-        $this->assertSame('+27825292242', $item['telephone']);
         $this->assertSame('Johannesburg', $item['address']['addressLocality']);
         $this->assertSame('Gauteng', $item['address']['addressRegion']);
         $this->assertArrayNotHasKey('streetAddress', $item['address']);
@@ -433,7 +431,7 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Hidden Lane', json_encode($business));
     }
 
-    public function testListItemUsesTheProfileAddressAndPhoneRules(): void
+    public function testListItemUsesTheProfileAddressRulesButCarriesNoPhone(): void
     {
         $item = schema_listing_item([
             'slug' => 'q', 'display_name' => 'Q', 'phone' => '082 997 4805',
@@ -441,7 +439,8 @@ final class SchemaHelperTest extends CIUnitTestCase
             'city' => 'Johannesburg', 'province' => 'Gauteng', 'postal_code' => '2090',
         ]);
 
-        $this->assertSame('+27829974805', $item['telephone']);
+        // A results page must not hand a scraper a dozen phones at once.
+        $this->assertArrayNotHasKey('telephone', $item);
         $this->assertSame('40 Packwood Road, Gresswold', $item['address']['streetAddress']);
     }
 

@@ -43,6 +43,7 @@ class Filters extends BaseFilters
         'frontcontrollerpath' => \App\Filters\FrontControllerPath::class,
         'siteresolver'        => \App\Filters\SiteResolver::class,
         'cfaccess'      => \App\Filters\CloudflareAccessFilter::class,
+        'scrapeguard'   => \App\Filters\ScrapeGuard::class,
     ];
 
     /**
@@ -201,5 +202,7 @@ class Filters extends BaseFilters
         // path list. Off until directory.accessTeamDomain and accessAud are
         // set. 'admin' covers the dashboard, 'admin/*' login, logout and the rest.
         'cfaccess' => ['before' => ['admin', 'admin/*']],
+        // A page budget per IP on every /directory page; see ScrapeGuard.
+        'scrapeguard' => ['before' => ['directory', 'directory/*']],
     ];
 }

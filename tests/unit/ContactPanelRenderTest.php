@@ -26,8 +26,9 @@ final class ContactPanelRenderTest extends CIUnitTestCase
                 'address_line' => '12 Main Road',
                 'city'         => 'Cape Town',
             ],
-            'heading' => 'Contact',
-            'showWeb' => $showWeb,
+            'heading'  => 'Contact',
+            'showWeb'  => $showWeb,
+            'emailUrl' => 'https://example.test/directory/hana-nail/email',
         ]), ENT_QUOTES | ENT_HTML5);
     }
 
@@ -60,8 +61,11 @@ final class ContactPanelRenderTest extends CIUnitTestCase
 
         $this->assertStringContainsString('href="tel:0215550100"', $html);
         $this->assertStringContainsString('(021) 555-0100', $html);
-        $this->assertStringNotContainsString('owner@example.test', $html, 'the email is reversed in the markup');
+        $this->assertStringNotContainsString('owner@example.test', $html);
+        // Not even reversed: the old strrev() trick was one line for a scraper to undo.
+        $this->assertStringNotContainsString(strrev('owner@example.test'), $html);
         $this->assertStringContainsString('Show email', $html);
+        $this->assertStringContainsString('data-reveal-url="https://example.test/directory/hana-nail/email"', $html);
     }
 
     public function testDirectionsCarryTheAddress(): void

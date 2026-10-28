@@ -325,9 +325,10 @@ $metaDesc = listing_meta_description($l);
                 <?php // The listing's own address, rendered by the same three panels
                       // each branch above gets. One definition per panel, used twice. ?>
                 <?= view('directory/_contact_panel', [
-                    'row'     => $l,
-                    'heading' => 'Contact',
-                    'showWeb' => true,
+                    'row'      => $l,
+                    'heading'  => 'Contact',
+                    'showWeb'  => true,
+                    'emailUrl' => base_url('directory/' . $l['slug'] . '/email'),
                 ]) ?>
 
                 <?php // For the owner, not the visitor: a quiet line under the contact

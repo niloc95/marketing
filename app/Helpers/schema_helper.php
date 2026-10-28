@@ -136,8 +136,11 @@ if (! function_exists('schema_listing_item')) {
      * The list query already selects slug, display_name, logo_path, phone, the
      * address columns and category_name, so this costs no extra queries — but
      * it also means anything outside that select simply is not available here.
-     * Absent keys are dropped rather than emitted empty: a blank telephone is
-     * worse than no telephone.
+     * Absent keys are dropped rather than emitted empty.
+     *
+     * No telephone on purpose: a results page would otherwise hand a scraper
+     * twelve phone numbers per request without a single profile visit. The
+     * profile's own LocalBusiness node still carries it for Google.
      *
      * @param array<string,mixed> $row
      *
@@ -157,9 +160,8 @@ if (! function_exists('schema_listing_item')) {
             'url'       => $url,
             // The same builders the profile page uses, so a business reads
             // identically in a list and on its own page.
-            'telephone' => schema_phone((string) ($row['phone'] ?? '')),
-            'image'     => ($row['logo_path'] ?? null) !== null ? listing_image_url($row['logo_path']) : '',
-            'address'   => schema_postal_address($row),
+            'image'   => ($row['logo_path'] ?? null) !== null ? listing_image_url($row['logo_path']) : '',
+            'address' => schema_postal_address($row),
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }
