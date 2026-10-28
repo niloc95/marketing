@@ -1,6 +1,10 @@
-<?php $analyticsId = config('Directory')->analyticsId();
+<?php
+// A private preview is never measured: its URL is the owner's preview token,
+// and GA's page_location or a Clarity recording would keep a copy of it.
+$untracked   = str_starts_with(trim(uri_string(), '/'), 'preview/');
+$analyticsId = $untracked ? '' : config('Directory')->analyticsId();
 // Admin screens are never recorded: they show applicants, payments and owner details.
-$clarityId = str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Directory')->clarityId();
+$clarityId = $untracked || str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Directory')->clarityId();
       // Brand images are cached for 4h at Cloudflare and in browsers and, unlike
       // the stylesheet, used to carry no buster, so a new logo stayed invisible
       // until someone purged. Same ?v=<filemtime> trick as directory.css below.

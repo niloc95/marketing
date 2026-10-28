@@ -182,6 +182,8 @@ $quality = new \App\Services\ListingQualityService();
                                     <?php // Only where a verify link still means something — resendVerification() refuses any other status anyway. ?>
                                     <?php if ($l['status'] === 'pending'): ?>
                                         <form method="post" action="<?= base_url('admin/resend-verify/' . $id) ?>"><?= csrf_field() ?><button class="icon-act" title="Resend verify email" aria-label="Resend verify email to <?= esc($l['display_name'], 'attr') ?>"><?= lucide('send', 'h-4 w-4') ?></button></form>
+                                        <?php // For a profile we built: the owner sees it privately and approves it. ?>
+                                        <form method="post" action="<?= base_url('admin/send-preview/' . $id) ?>" data-confirm="Email the owner a preview to approve? This replaces any verify link already sent."><?= csrf_field() ?><button class="icon-act" title="Send preview for approval" aria-label="Send preview for approval to <?= esc($l['display_name'], 'attr') ?>"><?= lucide('mail', 'h-4 w-4') ?></button></form>
                                     <?php endif; ?>
                                     <form method="post" action="<?= base_url('admin/feature/' . $id) ?>">
                                         <?= csrf_field() ?>

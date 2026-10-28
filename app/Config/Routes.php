@@ -240,6 +240,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // filter group, so the only way to make the app mail an arbitrary listing
     // is to already be an admin.
     $routes->post('resend-verify/(:num)', 'Admin::resendVerification/$1');
+    $routes->post('send-preview/(:num)', 'Admin::sendPreview/$1');
 
     // Taxonomy
     $routes->get('categories', 'Admin::categories');
@@ -358,6 +359,11 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
 $routes->get('directory', 'Directory::index');
 // verify/{token} is also two segments, so it MUST stay above the landing route.
 $routes->get('directory/verify/(:segment)', 'Directory::verify/$1');
+// The private preview of a profile we set up for a customer, and its two
+// buttons. Top level, so it never meets the directory/{segment} catch-all.
+$routes->get('preview/(:segment)', 'Directory::preview/$1');
+$routes->post('preview/(:segment)/approve', 'Directory::previewApprove/$1');
+$routes->post('preview/(:segment)/changes', 'Directory::previewChanges/$1');
 // "browse all categories" hub — a literal segment, so it too MUST precede the
 // {segment} catch-all below.
 $routes->get('directory/categories', 'Directory::categories');

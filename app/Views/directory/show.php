@@ -11,6 +11,12 @@ $l = listing_public_view($l);
 // sitemap) until the owner fills it in — live and shareable, just not offered
 // to Google yet. listing_is_indexable() has the rule.
 $indexable = listing_is_indexable($l);
+// The owner's private preview of a pending profile (Directory::preview()):
+// never indexed, and the approve bar sits above the page.
+$preview = $preview ?? null;
+if ($preview !== null) {
+    $indexable = 'noindex, nofollow';
+}
 $siteName = config('Directory')->siteName();
 $name = $l['display_name'] ?? '';
 $prof = $l['category']['name'] ?? ($l['category_name'] ?? '');
@@ -81,6 +87,10 @@ $metaDesc = listing_meta_description($l);
     'schema'      => $schema,
     'robots'      => $indexable,
 ]) ?>
+<?php if ($preview !== null): ?>
+    <?php // The URL carries the preview token: keep it out of Referer headers. ?>
+    <meta name="referrer" content="no-referrer">
+<?php endif; ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -122,6 +132,9 @@ $metaDesc = listing_meta_description($l);
         . ($logoUrl !== '' ? '<img src="' . esc($logoUrl) . '" alt="">' : esc($initials))
         . '</div>'; ?>
     <div class="container">
+        <?php if ($preview !== null): ?>
+            <?= view('directory/_preview_bar', ['preview' => $preview], ['saveData' => false]) ?>
+        <?php endif; ?>
         <nav class="crumbs" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>
                 <?php if ($i > 0): ?><span class="crumbs-sep">/</span><?php endif; ?>
