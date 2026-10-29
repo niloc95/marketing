@@ -291,8 +291,10 @@ class DirectoryService
      * Deliberately NOT browse(). That method answers "what matches this
      * search" — FULLTEXT in boolean mode, four unanchored LIKEs and a
      * correlated EXISTS over two tables — and running it on every keystroke is
-     * the one thing a suggestion list must never do. These are five small
-     * lookups with their own small limits.
+     * the one thing a suggestion list must never do. These are small lookups
+     * with their own small limits. The one FULLTEXT among them (descriptions,
+     * see descriptionSuggestions()) is the indexed part of browse(), not the
+     * LIKEs and EXISTS that make it heavy.
      *
      * Ordering puts a prefix match above a mid-word one, so typing "plu" offers
      * "Plumbers" before "Superb Plumbing". LOCATE() rather than a second query:
@@ -364,6 +366,15 @@ class DirectoryService
             $out = array_merge($out, $this->topicSuggestions($q, array_column($listings, 'slug'), $left));
         }
 
+        // Then what a business says about itself: "cancer" offers the
+        // oncologists whose descriptions say it, not just PinkDrive's tag.
+        // The same FULLTEXT the results page runs, so every row here is a
+        // profile pressing Enter also finds. Four letters, not three: "plu*"
+        // in a description is every "plus", where in a name it is plumbers.
+        $terms   = mb_strlen($q) >= 4 ? $this->searchTerms($q) : [];
+        $matched = $terms === [] ? [] : $this->descriptionSuggestions($terms, $out, 5 - count(array_filter($out, static fn ($r) => $r['type'] === 'listing')));
+        $out     = array_merge($out, $matched);
+
         // The people inside a business, so typing the name of the dentist
         // you were referred to offers the practice. Same gate as the team
         // EXISTS in applySearch(): a member is only offered while the badge
@@ -409,6 +420,14 @@ class DirectoryService
             ];
         }
 
+        // No category is called "cancer", but Oncologist is where most of the
+        // profiles that say it sit. Learned from the profiles, not a synonym:
+        // a synonym would filter the results page to one category and hide
+        // the radiation oncologists and PinkDrive.
+        if ($terms !== [] && count($categories) < 3) {
+            $out = array_merge($out, $this->relatedCategorySuggestions($terms, $q, array_column($categories, 'id'), 3 - count($categories)));
+        }
+
         // Cities of published listings, not a place table — the only places
         // worth offering are ones that will actually return results.
         $venues = $this->venues
@@ -447,7 +466,114 @@ class DirectoryService
             ];
         }
 
+        // Rows found in descriptions are a sample of a longer list, so end
+        // with the way to all of it. It keeps its place inside the limit.
+        if ($matched !== []) {
+            $out   = array_slice($out, 0, max(1, $limit - 1));
+            $out[] = [
+                'type'  => 'search',
+                'label' => 'Discover every match for "' . $q . '"',
+                'sub'   => '',
+                'url'   => base_url('directory') . '?q=' . rawurlencode($q),
+            ];
+        }
+
         return array_slice($out, 0, max(1, $limit));
+    }
+
+    /**
+     * Business rows for suggest() matched in the description, after the
+     * name and topic rows. Ordered by how well they match, then the quality
+     * score; never is_featured, so nothing paid moves a profile up. The sub
+     * line names the category, which is why a doctor turned up for "cancer".
+     *
+     * @param list<string> $terms from searchTerms()
+     * @param list<array{type:string,label:string,sub:string,url:string}> $offered rows already in the list
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function descriptionSuggestions(array $terms, array $offered, int $limit): array
+    {
+        if ($limit <= 0) {
+            return [];
+        }
+
+        $match = $this->fulltextMatch($terms);
+        $taken = array_flip(array_column($offered, 'url'));
+
+        // A few spare rows, because the ones already offered by name or
+        // topic are skipped here rather than in SQL.
+        $rows = $this->listings
+            ->select('xs_directory_listings.display_name, xs_directory_listings.slug, xs_directory_listings.city, xs_directory_listings.province, c.name AS category', false)
+            ->join('xs_directory_categories c', 'c.id = xs_directory_listings.category_id', 'left')
+            ->where($this->published('xs_directory_listings.'), null, false)
+            ->where($match, null, false)
+            ->orderBy($match, 'DESC', false)
+            ->orderBy('xs_directory_listings.quality_score', 'DESC')
+            ->orderBy('xs_directory_listings.display_name', 'ASC')
+            ->limit($limit + count($taken))
+            ->findAll();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $url = base_url('directory/' . $row['slug']);
+            if (isset($taken[$url])) {
+                continue;
+            }
+            $where = trim(implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['province'] ?? '')])));
+            $out[] = [
+                'type'  => 'listing',
+                'label' => (string) $row['display_name'],
+                'sub'   => trim(implode(' · ', array_filter([(string) ($row['category'] ?? ''), $where]))),
+                'url'   => $url,
+            ];
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Categories for suggest() that most of the profiles mentioning the words
+     * belong to, at least two of them, so one stray profile cannot make a link.
+     *
+     * @param list<string> $terms from searchTerms()
+     * @param list<int|string> $skipIds categories already offered by name
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function relatedCategorySuggestions(array $terms, string $q, array $skipIds, int $limit): array
+    {
+        $builder = $this->listings->builder()
+            ->select('c.name, c.slug, COUNT(*) AS matches', false)
+            ->join('xs_directory_categories c', 'c.id = xs_directory_listings.category_id')
+            ->where($this->published('xs_directory_listings.'), null, false)
+            ->where('xs_directory_listings.deleted_at', null)
+            ->where('c.is_active', 1)
+            ->where($this->fulltextMatch($terms), null, false);
+        if ($skipIds !== []) {
+            $builder->whereNotIn('c.id', $skipIds);
+        }
+        $rows = $builder
+            ->groupBy('c.id, c.name, c.slug')
+            ->having('matches >=', 2)
+            ->orderBy('matches', 'DESC')
+            ->orderBy('c.name', 'ASC')
+            ->limit(max(1, $limit))
+            ->get()
+            ->getResultArray();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'type'  => 'category',
+                'label' => (string) $row['name'],
+                'sub'   => (int) $row['matches'] . ' profiles mention "' . $q . '"',
+                'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+
+        return $out;
     }
 
     /**

@@ -105,6 +105,20 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory'));
     }
 
+    public function testOnceLiveTheDropdownFindsDescriptionsOnlyOnItsOwnSite(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+        db_connect()->table('xs_directory_listings')->set('description_text', 'Sourdough baked daily.')->update();
+
+        $za = $this->page(self::ZA_HOST, '/directory/suggest?q=sourdough');
+        $this->assertStringContainsString('Cape Crumb Bakery', $za);
+        $this->assertStringNotContainsString('Thames Loaf', $za);
+
+        $app = $this->page(self::APP_HOST, '/directory/suggest?q=sourdough');
+        $this->assertStringContainsString('Thames Loaf Bakery', $app);
+        $this->assertStringNotContainsString('Cape Crumb', $app);
+    }
+
     public function testOnceLiveAProfileOnTheWrongSiteMovesForGood(): void
     {
         $this->setEnv('sites.app.enabled', 'true');

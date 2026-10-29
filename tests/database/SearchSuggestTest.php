@@ -152,7 +152,68 @@ final class SearchSuggestTest extends CIUnitTestCase
         $this->assertIsArray(json_decode($result->getJSON(), true)['items']);
     }
 
+    public function testAWordOnlyInTheDescriptionFindsTheBusinessWithItsCategory(): void
+    {
+        $oncology = $this->category('Oncologist', 'oncologist');
+        $this->listing([
+            'display_name'     => 'Dr Anna Smit',
+            'slug'             => 'dr-anna-smit',
+            'category_id'      => $oncology,
+            'city'             => 'Pretoria',
+            'province'         => 'Gauteng',
+            'description_text' => 'Treats breast and bowel cancer with chemotherapy.',
+        ]);
+
+        $items   = $this->suggest('cancer');
+        $listing = $this->firstOfType($items, 'listing');
+        $this->assertSame('Dr Anna Smit', $listing['label']);
+        $this->assertSame('Oncologist · Pretoria, Gauteng', $listing['sub']);
+
+        $last = end($items);
+        $this->assertSame('search', $last['type'], 'a sample of a longer list ends with the way to all of it');
+        $this->assertStringEndsWith('/directory?q=cancer', $last['url']);
+    }
+
+    public function testThreeLettersDoNotReachIntoDescriptions(): void
+    {
+        $this->listing(['display_name' => 'Nothing Alike', 'slug' => 'nothing-alike', 'description_text' => 'Cancer care plus support.']);
+
+        $labels = array_column($this->suggest('plu'), 'label');
+        $this->assertNotContains('Nothing Alike', $labels);
+    }
+
+    public function testACategoryMostMatchesShareIsOfferedFromTwoUp(): void
+    {
+        $oncology = $this->category('Oncologist', 'oncologist');
+        $skin     = $this->category('Dermatologist', 'dermatologist');
+        foreach (['a', 'b'] as $n) {
+            $this->listing(['display_name' => 'Onco ' . $n, 'slug' => 'onco-' . $n, 'category_id' => $oncology, 'description_text' => 'Cancer treatment.']);
+        }
+        $this->listing(['display_name' => 'Skin One', 'slug' => 'skin-one', 'category_id' => $skin, 'description_text' => 'Skin cancer checks.']);
+
+        $categories = array_values(array_filter($this->suggest('cancer'), static fn ($i) => $i['type'] === 'category'));
+        $this->assertSame(['Oncologist'], array_column($categories, 'label'), 'one profile is not enough to link a category');
+        $this->assertStringEndsWith('/directory/oncologist', $categories[0]['url']);
+    }
+
+    public function testADescriptionMatchIsNeverOfferedTwiceOrWhenUnpublished(): void
+    {
+        $this->listing(['display_name' => 'Cancer Care Centre', 'slug' => 'cancer-care', 'description_text' => 'Cancer support.']);
+        $this->listing(['display_name' => 'Quiet Clinic', 'slug' => 'quiet-clinic', 'status' => 'pending', 'description_text' => 'Cancer support.']);
+
+        $labels = array_column($this->suggest('cancer'), 'label');
+        $this->assertSame(1, count(array_keys($labels, 'Cancer Care Centre', true)));
+        $this->assertNotContains('Quiet Clinic', $labels);
+    }
+
     // -------------------------------------------------------------- helpers
+
+    private function category(string $name, string $slug): int
+    {
+        return (int) (new DirectoryCategoryModel())->insert([
+            'name' => $name, 'slug' => $slug, 'group_name' => 'Health', 'is_active' => 1,
+        ], true);
+    }
 
     /**
      * @return list<array{type:string,label:string,sub:string,url:string}>
