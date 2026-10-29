@@ -147,7 +147,13 @@ class Filters extends BaseFilters
             // manage/preview renders the owner's unsaved form and writes
             // nothing; its POST would otherwise rotate the token under the
             // edit tab. Manage::preview() refuses cross site requests itself.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview']],
+            //
+            // discovery/opened is a navigator.sendBeacon from the results page,
+            // which cannot carry the token. It writes one anonymous row, at most
+            // 30 a minute per IP, into data that only counts once per query,
+            // profile and day, under thresholds, and never orders profiles
+            // (Discovery::opened()).
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

@@ -1674,6 +1674,32 @@
 
   document.querySelectorAll('[data-search-suggest]').forEach(initSearchSuggest);
 
+  // ------------------------------------------------------------ opened results
+  // On a Discover results page (directory/index.php, [data-discovery-clicks]),
+  // tell the server which profile was opened and at which position, so the
+  // discovery model learns what people want. The words and the profile only:
+  // no cookie, nothing about the visitor. sendBeacon survives the navigation
+  // and never delays it; without it, nothing is sent.
+  document.querySelectorAll('[data-discovery-clicks]').forEach(function (grid) {
+    if (!navigator.sendBeacon) return;
+    var url = grid.getAttribute('data-discovery-clicks');
+    var q = grid.getAttribute('data-discovery-q') || '';
+    var offset = parseInt(grid.getAttribute('data-discovery-offset') || '0', 10) || 0;
+    grid.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a[href]') : null;
+      if (!link || !grid.contains(link)) return;
+      var match = new URL(link.href, window.location.href).pathname.match(/\/directory\/([a-z0-9-]+)\/?$/);
+      if (!match) return;
+      var card = link;
+      while (card.parentElement && card.parentElement !== grid) card = card.parentElement;
+      var data = new FormData();
+      data.append('q', q);
+      data.append('slug', match[1]);
+      data.append('position', String(offset + Array.prototype.indexOf.call(grid.children, card) + 1));
+      navigator.sendBeacon(url, data);
+    });
+  });
+
   // ------------------------------------------------------------ showcase
   // The home page's featured carousel (home.php, "featured carousel" in the
   // CSS). The track is an ordinary scroll container, so swiping, trackpads and

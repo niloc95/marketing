@@ -236,6 +236,10 @@ $contact   = config('Directory')->adminEmail();
             <p>You can refuse this request.</p>
             <p>Where you allow access, the location information is used to help sort search results by distance for that search. We do not intentionally store your location for the purpose of building a personal location profile.</p>
 
+            <h3>What you type in Discover</h3>
+            <p>When you use Discover, we keep the words you typed, how many results they found and, if you open a result, which profile you opened and its place in the list. We do not keep your IP address, a cookie or anything else with it that says who typed the words.</p>
+            <p>We use this to improve discovery, for example to learn which kinds of business people mean by a word and which searches find nothing. We delete it after 180 days.</p>
+
             <h2>14. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">

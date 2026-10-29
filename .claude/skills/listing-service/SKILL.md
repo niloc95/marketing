@@ -352,6 +352,30 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   never filters or orders. Switch: `search.discoveryModel = false`. Never add a topic
   word ("cancer") to `categorySynonyms`: a synonym hard filters to one category.
   Tests: `DiscoveryModelTest`, `SearchSuggestTest`.
+- **Layers 2 to 4 of the model** (same service, same nightly run; tests
+  `DiscoveryLayersTest`):
+  - *Related words* (`xs_directory_discovery_related`): words sharing profiles 3x+ more
+    than chance, and the related word must be a topic (a service, tag or category name)
+    on at most 5% of profiles, or imported template sentences relate everything.
+    `Directory::index()` passes them as `expand` to `browse()`: an extra FULLTEXT OR in
+    `applySearch()`, 1 point in `relevanceSelect()` (below every direct match). The page
+    says "Also including profiles that mention …". Switch `search.discoveryExpand`.
+  - *Spelling* (`xs_directory_discovery_vocab`, surface words from profiles, names and
+    categories): only when a search finds nothing, words of 5+ letters the platform never
+    uses, one edit (two at 8+ letters), same first letter. Results page retries and shows
+    "Showing results for … Discover “…” instead" (`exact=1` skips it); the dropdown offers
+    "Did you mean". Switch `search.discoverySpelling`.
+  - *Visitors* (`DiscoveryEventService`, `xs_directory_discovery_events`): results page
+    logs the words and result count; `directory.js` sendBeacons opened results to
+    `POST /discovery/opened` (CSRF exempt, 30/min/IP, always 204). No IP, cookie or
+    session; crawlers skipped; purged after 180 days by `discovery:learn` (Privacy, both
+    sites). 3+ opened results (one per query, profile, day) with 30%+ share link a word to
+    a category. Switch `search.discoveryLog`.
+  - `/admin/discovery` (`AdminDiscovery`, `?site=app` for .app): searches that found
+    nothing, most asked, learned links with Block (`xs_directory_discovery_blocks`, the
+    only non cache table: removed now and never relearned).
+  - Word columns are `utf8mb4_bin`: the default collation made "maré" and "mare" one key
+    and rolled the nightly rebuild back.
 - **Its own throttle key** (`directory-suggest-`, 30/min). Sharing `directory-index-`
   (60/min) would have a visitor's typing 429 their own results page. Over the limit
   answers an empty list with 200, as `AddressSuggest` does.
@@ -957,7 +981,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `directory:verifications:sweep` | lapse expired badge and Plus subscriptions, renewal reminders | 03:00 |
 | `directory:quality:recalculate [--stale]` | rescore profiles | 03:15 |
 | `directory:insights:build` | rebuild the description hints | 03:20 |
-| `discovery:learn [--show <word>]` | rebuild the discovery model (word → categories, per site) | 03:25 |
+| `discovery:learn [--show <word>]` | rebuild the discovery model (categories, related words, vocabulary, clicks; per site) and purge old searches | 03:25 |
 | `jobs:expire` | expire posts, renew reminders, retention, report digest | 03:30 |
 | `referrals:prune` | referral retention | 03:45 |
 | `partners:sweep` | release held commission, rebuild missed ones | 03:50 |

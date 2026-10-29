@@ -2413,9 +2413,16 @@
   .search-notice-title { @apply font-semibold; }
   /* Related categories from the discovery model (_search_related.php):
      links to other pages, so no remove icon, and quieter than the reading. */
-  .search-related { @apply mt-4 flex flex-wrap items-center gap-x-3 gap-y-2; }
+  .search-related { @apply flex flex-wrap items-center gap-x-3 gap-y-2; }
   .search-related-label { @apply text-sm font-medium text-slate-600; }
   .dark .search-related-label { @apply text-slate-300; }
+  .search-reading .search-corrected { @apply text-base text-slate-700; }
+  .search-corrected strong { @apply font-semibold text-slate-900; }
+  .search-corrected a { @apply ml-1 text-sm font-medium text-primary-500 underline-offset-4 hover:underline; }
+  .search-reading .search-expanded { @apply text-sm text-slate-600; }
+  .dark .search-reading .search-corrected { @apply text-slate-300; }
+  .dark .search-corrected strong { @apply text-white; }
+  .dark .search-reading .search-expanded { @apply text-slate-400; }
   .dark .search-reading .search-reading-line { @apply text-slate-300; }
   .dark .search-reading-line strong { @apply text-white; }
   .dark .search-chip { @apply border-slate-700 bg-transparent text-slate-200 hover:border-primary-400 hover:text-primary-300; }

@@ -37,10 +37,11 @@ MAILTO=""
 20 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:insights:build --quiet
 
 # --- Discovery model -----------------------------------------------------------
-# Relearns which categories a word is typical of ("cancer" -> Oncologist) from
-# the day's published profiles, per site. Feeds the Discover dropdown's
-# Category rows and the results page's Related categories. Not load-bearing:
-# a missed run leaves the model a day older.
+# Relearns, per site, which categories a word is typical of ("cancer" ->
+# Oncologist), related words that widen a search, the vocabulary for spelling,
+# and what opened results taught it; purges Discover searches older than 180
+# days (the privacy policy promises it). Not load-bearing: a missed run leaves
+# the model a day older, but the purge must keep running.
 25 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark discovery:learn --quiet
 
 # --- Profile-strength nudge ---------------------------------------------------

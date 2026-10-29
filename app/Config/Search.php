@@ -28,6 +28,24 @@ class Search extends BaseConfig
     public bool $discoveryModel = true;
 
     /**
+     * Widen a search with related words the model learned ("cancer" also
+     * finds "chemotherapy"), at a low weight. `search.discoveryExpand`.
+     */
+    public bool $discoveryExpand = true;
+
+    /**
+     * When a search finds nothing, try again with misspelt words replaced
+     * by the platform's own closest word. `search.discoverySpelling`.
+     */
+    public bool $discoverySpelling = true;
+
+    /**
+     * Record Discover searches and opened results, without who made them
+     * (DiscoveryEventService). `search.discoveryLog`.
+     */
+    public bool $discoveryLog = true;
+
+    /**
      * Words that carry no meaning for the search once the rest is understood.
      * Dropped only from what is left over, never from inside a phrase match, so
      * "near me" and "it company" still match as phrases.

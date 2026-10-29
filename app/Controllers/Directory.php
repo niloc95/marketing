@@ -14,6 +14,7 @@ use App\Services\DirectoryService;
 use App\Services\DirectorySettings;
 use App\Services\JobBoardService;
 use App\Services\HeroImageService;
+use App\Services\Search\DiscoveryEventService;
 use App\Services\Search\SearchIntent;
 use App\Services\ListingMenuService;
 use App\Services\VerificationService;
@@ -122,7 +123,37 @@ class Directory extends BaseController
         $effective['facets'] = $svc->sanitiseFacets($filters['facets'], $effective['category']);
         $filters['facets']   = $effective['facets'];
 
+        // Related words the discovery model learned widen the search at a
+        // low weight ("cancer" also finds "chemotherapy"); the page names them.
+        $literal = $filters['exact'] === '1';
+        if (! $literal && $effective['q'] !== '') {
+            $effective['expand'] = $svc->relatedWords($effective['q']);
+        }
+
         $result = $svc->browse($effective, $page);
+
+        // Nothing for "oncoligist": try once more spelt the platform's way
+        // and say so, with a link back to the words as typed (exact=1, which
+        // skips this). Only on nothing, so a rare real word is never changed.
+        $correctedFrom = null;
+        if ((int) $result['total'] === 0 && ! $literal && $page <= 1 && $filters['q'] !== '') {
+            $fixed = $svc->correctSpelling($filters['q']);
+            if ($fixed !== null) {
+                $retry = $filters;
+                $retry['q'] = $fixed;
+                [$retryEffective, $retryIntent] = $this->interpretSearch($svc, $retry);
+                $retryEffective['facets'] = $svc->sanitiseFacets($retry['facets'], $retryEffective['category']);
+                if ($retryEffective['q'] !== '') {
+                    $retryEffective['expand'] = $svc->relatedWords($retryEffective['q']);
+                }
+                $retryResult = $svc->browse($retryEffective, $page);
+                if ((int) $retryResult['total'] > 0) {
+                    $correctedFrom = $filters['q'];
+                    [$filters, $effective, $intent, $result] = [$retry, $retryEffective, $retryIntent, $retryResult];
+                    $filters['facets'] = $effective['facets'];
+                }
+            }
+        }
 
         // One step back, and said out loud: "dentist in Sandton that does teeth
         // whitening" with no match on the whitening shows Sandton's dentists
@@ -166,6 +197,13 @@ class Directory extends BaseController
             $filters['group'] = '';
         }
 
+        // What was typed and how much it found, without who typed it
+        // (DiscoveryEventService): the no result list in /admin/discovery
+        // and, with the opened results, what the model learns from people.
+        if ($page <= 1 && $filters['q'] !== '' && ! DiscoveryEventService::isBot($this->request)) {
+            (new DiscoveryEventService())->logSearch($correctedFrom ?? $filters['q'], (int) $result['total']);
+        }
+
         // Vacancies matching the words as typed, above the business results
         // on the first page only. $filters['q'], not $effective['q']: the
         // interpreter takes "medical" out of "Junior Medical Admin Assistant"
@@ -188,6 +226,8 @@ class Directory extends BaseController
             // "cancer" names no category, but the discovery model knows where
             // the profiles that say it sit. Links, never a filter; only while
             // nothing narrows the list to a category already.
+            'expanded'    => $effective['expand'] ?? [],
+            'correctedFrom' => $correctedFrom,
             'related'     => $page <= 1 && $effective['q'] !== '' && $effective['category'] === '' && $effective['group'] === ''
                 ? $svc->relatedCategories((string) $filters['q'], 4)
                 : [],

@@ -107,6 +107,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <li><strong>Your country</strong>, as our network provider Cloudflare reports it from your IP address, used only to suggest the right site for you (this one or local.webscheduler.co.za) and to start the signup form on your country. We do not store it.</li>
                 <li><strong>Analytics</strong>, only if you consent through the cookie banner. See our <a href="<?= base_url('cookie-policy') ?>">cookie policy</a>.</li>
                 <li><strong>Approximate location</strong>, only if you choose <strong>Use my location</strong> and your browser asks you and you agree. It is used to sort that discovery by distance and is not stored to build a location history.</li>
+                <li><strong>What you type in Discover</strong>: the words, how many results they found and, if you open a result, which profile and its place in the list. Nothing with it says who typed the words (no IP address, no cookie). We use it to improve discovery and delete it after 180 days.</li>
             </ul>
 
             <h2>8. Why we process personal information, and our lawful basis</h2>

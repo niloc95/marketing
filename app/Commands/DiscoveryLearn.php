@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Services\Search\DiscoveryEventService;
 use App\Services\Search\DiscoveryModelService;
 use App\Services\SiteContext;
 use CodeIgniter\CLI\BaseCommand;
@@ -10,8 +11,10 @@ use Config\Services;
 use Config\Sites;
 
 /**
- * Rebuild the discovery model (which categories a word is typical of) from
- * the day's published profiles, one site at a time.
+ * Rebuild the discovery model (word → categories, related words, the
+ * vocabulary for spelling, and what opened results taught it) from the day's
+ * published profiles and the last 180 days of searches, one site at a time.
+ * Purges searches and opened results older than that first.
  *
  *   php spark discovery:learn                 # every live site
  *   php spark discovery:learn --show cancer   # then print what a word points at
@@ -41,6 +44,12 @@ class DiscoveryLearn extends BaseCommand
         $quiet = CLI::getOption('quiet') !== null;
         $sites = config('Sites');
 
+        // Searches and opened results older than the privacy policy allows.
+        $purged = (new DiscoveryEventService())->purge();
+        if (! $quiet && $purged > 0) {
+            CLI::write(sprintf('Purged %d discovery events older than %d days.', $purged, DiscoveryEventService::KEEP_DAYS));
+        }
+
         foreach ([Sites::ZA, Sites::APP] as $key) {
             if ($key === Sites::APP && ! $sites->appEnabled()) {
                 continue;
@@ -52,12 +61,18 @@ class DiscoveryLearn extends BaseCommand
             try {
                 $stats = (new DiscoveryModelService())->learn();
                 if (! $quiet) {
-                    CLI::write(sprintf('%s: %d profiles, %d words linked to categories, %d links.', $key, $stats['profiles'], $stats['terms'], $stats['links']));
+                    CLI::write(sprintf(
+                        '%s: %d profiles, %d words linked to %d categories (%d from opened results), %d related word pairs, %d words in the vocabulary.',
+                        $key, $stats['profiles'], $stats['terms'], $stats['links'], $stats['clicks'], $stats['related'], $stats['vocab']
+                    ));
                 }
                 if (is_string($show) && $show !== '') {
-                    foreach ((new DiscoveryModelService())->related($show, 5) as $row) {
+                    $model = new DiscoveryModelService();
+                    foreach ($model->related($show, 5) as $row) {
                         CLI::write(sprintf('  %-32s %d profiles', $row['name'], $row['profiles']));
                     }
+                    CLI::write('  related words: ' . implode(', ', $model->expansions($show)));
+                    CLI::write('  spelt: ' . ($model->correct($show) ?? '(as typed)'));
                 }
             } finally {
                 Services::resetSingle('site');

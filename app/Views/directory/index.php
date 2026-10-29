@@ -193,7 +193,12 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             'urlFilters' => $urlFilters,
             'hasNear'    => ($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '',
         ], ['saveData' => false]) ?>
-        <?= view('directory/_search_related', ['related' => $related ?? []], ['saveData' => false]) ?>
+        <?= view('directory/_search_related', [
+            'related'       => $related ?? [],
+            'expanded'      => $expanded ?? [],
+            'correctedFrom' => $correctedFrom ?? null,
+            'q'             => (string) ($filters['q'] ?? ''),
+        ], ['saveData' => false]) ?>
     </div>
 </section>
 
@@ -371,7 +376,13 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                         </p>
                     </div>
                 <?php else: ?>
-                    <div class="card-grid">
+                    <?php // A Discover search: opening a result is recorded, without who
+                          // opened it, so the discovery model learns what people
+                          // want (DiscoveryEventService). directory.js sends it. ?>
+                    <div class="card-grid"<?php if (($filters['q'] ?? '') !== ''): ?>
+                         data-discovery-clicks="<?= esc(base_url('discovery/opened'), 'attr') ?>"
+                         data-discovery-q="<?= esc($correctedFrom ?? $filters['q'], 'attr') ?>"
+                         data-discovery-offset="<?= (int) (($result['page'] - 1) * $result['perPage']) ?>"<?php endif; ?>>
                         <?php foreach ($result['items'] as $l): ?>
                             <?= view('directory/_card', ['l' => $l]) ?>
                         <?php endforeach; ?>

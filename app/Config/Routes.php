@@ -314,6 +314,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // by application id only, never by path. The literal segments MUST
     // precede careers/{id}.
     // Profile setup orders (the paid /profile-setup service).
+    // What the discovery model learned, and what people asked for.
+    $routes->get('discovery', 'AdminDiscovery::index');
+    $routes->post('discovery/block', 'AdminDiscovery::block');
     $routes->get('profile-setup', 'AdminProfileSetup::index');
     $routes->post('profile-setup/(:num)', 'AdminProfileSetup::update/$1');
     $routes->get('careers', 'AdminCareers::index');
@@ -376,6 +379,8 @@ $routes->get('directory/map', 'Directory::map');
 // Search typeahead suggestions, as JSON. Same ordering rule as the map above,
 // and 'suggest' is in listing_reserved_slugs() so no listing can claim it.
 $routes->get('directory/suggest', 'Directory::suggest');
+// A result opened from a Discover results page (sendBeacon, CSRF exempt).
+$routes->post('discovery/opened', 'Discovery::opened');
 // Province landing page — /directory/province/{province}. "province" is a
 // literal first segment, so the same ordering rule applies: below the
 // two-segment route it would resolve as a category named "province" and 404.

@@ -130,14 +130,17 @@ class DirectoryService
         // a question with words in it and no other order: "near me" is ordered
         // by distance and "newest" by date, and both are what was asked for.
         $byRelevance = $q !== '' && $near === null && ($filters['sort'] ?? '') !== 'new';
+        // Related words from the discovery model ("chemotherapy" for
+        // "cancer"), set by Directory::index(). Letters only, as learned.
+        $expand = $q === '' ? [] : $this->searchTerms(implode(' ', array_filter((array) ($filters['expand'] ?? []), 'is_string')));
         if ($byRelevance) {
-            $builder->select($this->relevanceSelect($q) . ' AS relevance', false);
+            $builder->select($this->relevanceSelect($q, $expand) . ' AS relevance', false);
         }
         if ($q !== '') {
             // Everything applySearch adds is one OR group. Any filter appended
             // after it must be a plain where() — an orWhere here would escape
             // that group and quietly widen the search instead of narrowing it.
-            $this->applySearch($builder, $q);
+            $this->applySearch($builder, $q, $expand);
         }
         if (! empty($filters['category'])) {
             $builder->where('p.slug', $filters['category']);
@@ -323,6 +326,7 @@ class DirectoryService
         // searches it is heading towards, then look up only the words that
         // were not understood ("sa" here, too short to bother with). When
         // every word was understood, fall back to the whole string.
+        $typed  = $q;
         $intent = \Config\Services::queryInterpreter()->interpret($q);
         $out    = $this->intentSuggestions($intent);
         if ($intent->hasFilters() && $intent->keywords() !== '') {
@@ -467,6 +471,20 @@ class DirectoryService
             ];
         }
 
+        // Nothing at all for "oncoligist": offer the search spelt the way
+        // the platform's own profiles spell it, first.
+        if ($out === [] && config('Search')->discoverySpelling && mb_strlen($typed) >= 5) {
+            $fixed = $this->correctSpelling($typed);
+            if ($fixed !== null) {
+                return [[
+                    'type'  => 'search',
+                    'label' => 'Did you mean "' . $fixed . '"?',
+                    'sub'   => '',
+                    'url'   => base_url('directory') . '?q=' . rawurlencode($fixed),
+                ]];
+            }
+        }
+
         // Rows found in descriptions are a sample of a longer list, so end
         // with the way to all of it. It keeps its place inside the limit.
         if ($matched !== []) {
@@ -557,6 +575,41 @@ class DirectoryService
             log_message('warning', 'Discovery model unavailable: ' . $e->getMessage());
 
             return [];
+        }
+    }
+
+    /**
+     * Related words to widen a search with, from the discovery model. Empty
+     * while switched off or before the model has been built.
+     *
+     * @return list<string>
+     */
+    public function relatedWords(string $q): array
+    {
+        if (! config('Search')->discoveryExpand) {
+            return [];
+        }
+        try {
+            return (new DiscoveryModelService())->expansions($q);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Discovery model unavailable: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /** The search spelt with the platform's own words, or null. See DiscoveryModelService::correct(). */
+    public function correctSpelling(string $q): ?string
+    {
+        if (! config('Search')->discoverySpelling) {
+            return null;
+        }
+        try {
+            return (new DiscoveryModelService())->correct($q);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Discovery model unavailable: ' . $e->getMessage());
+
+            return null;
         }
     }
 
@@ -1263,7 +1316,7 @@ class DirectoryService
      *
      * @param \CodeIgniter\Database\BaseBuilder|\CodeIgniter\Model $builder
      */
-    private function applySearch($builder, string $q): void
+    private function applySearch($builder, string $q, array $expand = []): void
     {
         $terms = $this->searchTerms($q);
         $like  = $this->likePattern($q);
@@ -1320,6 +1373,13 @@ class DirectoryService
         // each word, so the name index does the work.
         $builder->orWhere($this->brandExists($q, $this->likeTerms($terms)), null, false);
 
+        // Related words the discovery model learned: a profile that only
+        // says "chemotherapy" answers "cancer" too. Descriptions only, and
+        // relevanceSelect() scores it below every direct match.
+        if ($expand !== []) {
+            $builder->orWhere($this->fulltextMatch($expand), null, false);
+        }
+
         $builder->groupEnd();
     }
 
@@ -1335,6 +1395,7 @@ class DirectoryService
      *   service 9 phrase / 5 a word      category 8 phrase / 4 a word
      *   tag 6 phrase / 3 a word          team 4 phrase
      *   town or service area 2           description (FULLTEXT) up to 4
+     *   a related word from the discovery model 1
      *
      * Two things are deliberately NOT in it, for the reason browse() gives for
      * its own order: reviews, and the paid badge. The team weight is where the
@@ -1343,7 +1404,8 @@ class DirectoryService
      * free profile can match on. A Verified business is found by its team; it
      * is not ranked above a free one for having one.
      */
-    private function relevanceSelect(string $q): string
+    /** @param list<string> $expand related words, see applySearch() */
+    private function relevanceSelect(string $q, array $expand = []): string
     {
         $db        = $this->listings->db;
         $terms     = $this->searchTerms($q);
@@ -1372,6 +1434,9 @@ class DirectoryService
         ];
         if ($terms !== []) {
             $parts[] = 'LEAST(2 * ' . $this->fulltextMatch($terms) . ', 4)';
+        }
+        if ($expand !== []) {
+            $parts[] = '(' . $this->fulltextMatch($expand) . ' > 0)';
         }
 
         return '(' . implode(' + ', $parts) . ')';
