@@ -193,6 +193,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             'urlFilters' => $urlFilters,
             'hasNear'    => ($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '',
         ], ['saveData' => false]) ?>
+        <?= view('directory/_search_related', ['related' => $related ?? []], ['saveData' => false]) ?>
     </div>
 </section>
 

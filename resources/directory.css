@@ -2411,6 +2411,11 @@
   .search-notice { @apply rounded-surface border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900; }
   .search-reading .search-notice p { @apply text-sm text-amber-900; }
   .search-notice-title { @apply font-semibold; }
+  /* Related categories from the discovery model (_search_related.php):
+     links to other pages, so no remove icon, and quieter than the reading. */
+  .search-related { @apply mt-4 flex flex-wrap items-center gap-x-3 gap-y-2; }
+  .search-related-label { @apply text-sm font-medium text-slate-600; }
+  .dark .search-related-label { @apply text-slate-300; }
   .dark .search-reading .search-reading-line { @apply text-slate-300; }
   .dark .search-reading-line strong { @apply text-white; }
   .dark .search-chip { @apply border-slate-700 bg-transparent text-slate-200 hover:border-primary-400 hover:text-primary-300; }

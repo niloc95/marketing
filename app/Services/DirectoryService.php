@@ -12,6 +12,7 @@ use App\Models\DirectoryCategoryGroupModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryTagModel;
 use App\Models\DirectoryVenueModel;
+use App\Services\Search\DiscoveryModelService;
 use App\Services\Search\RuleBasedInterpreter;
 use App\Services\Search\SearchVocabulary;
 use CodeIgniter\Database\BaseBuilder;
@@ -535,6 +536,31 @@ class DirectoryService
     }
 
     /**
+     * Categories the words point at, learned from the profiles by the
+     * discovery model: the dropdown's Category rows and the results page's
+     * "Related categories". Empty while the model is switched off.
+     *
+     * @param list<int|string> $skipIds
+     * @return list<array{id:int,name:string,slug:string,profiles:int}>
+     */
+    public function relatedCategories(string $q, int $limit = 3, array $skipIds = []): array
+    {
+        if (! config('Search')->discoveryModel) {
+            return [];
+        }
+
+        try {
+            return (new DiscoveryModelService())->related($q, $limit, $skipIds);
+        } catch (\Throwable $e) {
+            // Before the migration has run, or a broken table: suggestions
+            // carry on without it.
+            log_message('warning', 'Discovery model unavailable: ' . $e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
      * Categories for suggest() that most of the profiles mentioning the words
      * belong to, at least two of them, so one stray profile cannot make a link.
      *
@@ -544,6 +570,21 @@ class DirectoryService
      */
     private function relatedCategorySuggestions(array $terms, string $q, array $skipIds, int $limit): array
     {
+        $out = [];
+        foreach ($this->relatedCategories($q, $limit, $skipIds) as $row) {
+            $out[] = [
+                'type'  => 'category',
+                'label' => $row['name'],
+                'sub'   => $row['profiles'] . ' related profiles',
+                'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+        if ($out !== []) {
+            return $out;
+        }
+
+        // The model knows nothing about these words yet (a new word, or no
+        // nightly run so far): group today's FULLTEXT matches instead.
         $builder = $this->listings->builder()
             ->select('c.name, c.slug, COUNT(*) AS matches', false)
             ->join('xs_directory_categories c', 'c.id = xs_directory_listings.category_id')
@@ -568,7 +609,7 @@ class DirectoryService
             $out[] = [
                 'type'  => 'category',
                 'label' => (string) $row['name'],
-                'sub'   => (int) $row['matches'] . ' profiles mention "' . $q . '"',
+                'sub'   => (int) $row['matches'] . ' related profiles',
                 'url'   => base_url('directory/' . $row['slug']),
             ];
         }

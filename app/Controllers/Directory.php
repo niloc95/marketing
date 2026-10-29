@@ -185,6 +185,12 @@ class Directory extends BaseController
             // view names each part, with a link to take it away.
             'intent'      => $intent,
             'relaxed'     => $relaxed,
+            // "cancer" names no category, but the discovery model knows where
+            // the profiles that say it sit. Links, never a filter; only while
+            // nothing narrows the list to a category already.
+            'related'     => $page <= 1 && $effective['q'] !== '' && $effective['category'] === '' && $effective['group'] === ''
+                ? $svc->relatedCategories((string) $filters['q'], 4)
+                : [],
             'place'       => $effective['place'] !== '' ? $effective['place'] : null,
             // Null means "asked for, but no such thing" — the view must not
             // treat that page as indexable or name it after the raw input.

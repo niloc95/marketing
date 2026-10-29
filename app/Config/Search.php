@@ -20,6 +20,14 @@ use CodeIgniter\Config\BaseConfig;
 class Search extends BaseConfig
 {
     /**
+     * Use the discovery model (DiscoveryModelService, rebuilt nightly by
+     * discovery:learn) for related categories. false is the rollback: the
+     * dropdown goes back to grouping its FULLTEXT matches live, and the
+     * results page shows no related categories. `search.discoveryModel`.
+     */
+    public bool $discoveryModel = true;
+
+    /**
      * Words that carry no meaning for the search once the rest is understood.
      * Dropped only from what is left over, never from inside a phrase match, so
      * "near me" and "it company" still match as phrases.

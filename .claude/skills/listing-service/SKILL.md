@@ -338,6 +338,20 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   lookups (businesses 5, team members 2, categories 3, venues 2, cities 3, capped at 8 total), because `browse()` is
   FULLTEXT + four LIKEs + a correlated EXISTS and must never run per keystroke. Ordering
   puts a prefix match above a mid-word one.
+- **Businesses by description (since 29 Oct 2026):** after name and topic rows, free
+  business slots are filled from the same FULLTEXT the results page runs, four letters
+  up, ranked by match then quality (never `is_featured`), sub line = category. When any
+  are shown, the list ends with a `search` row "Discover every match for …".
+- **Related categories come from the discovery model** (`Search\DiscoveryModelService`,
+  table `xs_directory_discovery_terms`, rebuilt nightly by `discovery:learn`, per site):
+  a word links to a category when 2+ of its profiles use it (description, credentials,
+  services, tags) and it is 2x+ as common there as platform wide; places and filler are
+  never learned. Used for the dropdown's Category rows (falls back to grouping the live
+  FULLTEXT matches when the model knows nothing) and the results page's "Related
+  categories" links (`_search_related.php`, only when no category is set). It suggests,
+  never filters or orders. Switch: `search.discoveryModel = false`. Never add a topic
+  word ("cancer") to `categorySynonyms`: a synonym hard filters to one category.
+  Tests: `DiscoveryModelTest`, `SearchSuggestTest`.
 - **Its own throttle key** (`directory-suggest-`, 30/min). Sharing `directory-index-`
   (60/min) would have a visitor's typing 429 their own results page. Over the limit
   answers an empty list with 200, as `AddressSuggest` does.
@@ -943,6 +957,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `directory:verifications:sweep` | lapse expired badge and Plus subscriptions, renewal reminders | 03:00 |
 | `directory:quality:recalculate [--stale]` | rescore profiles | 03:15 |
 | `directory:insights:build` | rebuild the description hints | 03:20 |
+| `discovery:learn [--show <word>]` | rebuild the discovery model (word → categories, per site) | 03:25 |
 | `jobs:expire` | expire posts, renew reminders, retention, report digest | 03:30 |
 | `referrals:prune` | referral retention | 03:45 |
 | `partners:sweep` | release held commission, rebuild missed ones | 03:50 |
