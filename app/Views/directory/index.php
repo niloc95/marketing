@@ -341,22 +341,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                         <?php endforeach; ?>
                     </div>
 
-                    <?php if ($result['totalPages'] > 1): ?>
-                        <nav class="pager">
-                            <?php
-                            $q = $urlFilters;
-                            for ($i = 1; $i <= $result['totalPages']; $i++):
-                                $q['page'] = $i;
-                                $href = base_url('directory') . '?' . http_build_query(array_filter($q, fn ($v) => $v !== '' && $v !== null));
-                            ?>
-                                <?php if ($i === $result['page']): ?>
-                                    <span class="current"><?= $i ?></span>
-                                <?php else: ?>
-                                    <a href="<?= esc($href) ?>"><?= $i ?></a>
-                                <?php endif; ?>
-                            <?php endfor; ?>
-                        </nav>
-                    <?php endif; ?>
+                    <?= view('directory/_pager', ['result' => $result, 'baseUrl' => base_url('directory'), 'query' => $urlFilters], ['saveData' => false]) ?>
                 <?php endif; ?>
             </div>
         </div>

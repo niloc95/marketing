@@ -71,17 +71,7 @@ $schema = schema_page(
             </div>
         <?php endif; ?>
 
-        <?php if ($result['totalPages'] > 1): ?>
-            <nav class="pager">
-                <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                    <?php if ($i === $result['page']): ?>
-                        <span class="current"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="<?= esc($canonical . '?page=' . $i) ?>"><?= $i ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-            </nav>
-        <?php endif; ?>
+        <?= view('directory/_pager', ['result' => $result, 'baseUrl' => $canonical, 'query' => []], ['saveData' => false]) ?>
 
         <?php // Internal links, same job they do on landing.php: this page is the
               // parent of the category × province pages, so it has to pass equity
