@@ -46,7 +46,7 @@ site's config, if a brand-wide change is needed.
 |---|---|
 | `npm run site:css` | Compile Tailwind once → `marketing-site/assets/styles.css` |
 | `npm run site:dev` | Same, `--watch`, for live editing |
-| `npm run site:serve` | Serve the **source** at http://localhost:8096 |
+| `npm run site:serve` | Serve the **source** at http://localhost:8096 (8095 is the Local app, 8098 the `international-app` worktree) |
 | `npm run site:build` | Assemble the deployable site → `dist/site/` (runs the guards below) |
 | `npm run site:preview` | Serve the **build output** at http://localhost:8097 |
 | `npm run site:shots` | Capture real product screenshots → `assets/screenshots/` |
@@ -91,7 +91,8 @@ live on `data-ok-class` / `data-err-class` in `contact.html`.
 ### In production, the endpoint needs a file that never ships
 
 `contact.php` reads `__DIR__ . '/../.ws-contact.env'` — i.e. **above** the docroot, at
-`/home/<cpuser>/.ws-contact.env`, placed by hand and `chmod 600`. Nothing in the repo or
+`/var/www/.ws-contact.env` on the Lightsail server, placed by hand, `640 deploy:www-data`
+(at `600` PHP cannot read it). Nothing in the repo or
 the deploy bundle ever contains it (the build has a guard that fails if an `.env*` lands
 in `dist/site/`). A deployed site whose endpoint answers **503** is almost always this
 file missing or unreadable; the log names the missing keys.
@@ -134,6 +135,8 @@ exactly this reason.
   form's `action`), `www.googletagmanager.com`, `www.google-analytics.com`, plus
   `inforegulator.org.za` and `policies.google.com`, which the legal pages must link to as
   content. Anything else (a CDN, a font host, a third-party script) fails the build.
+  `local.webscheduler.app` is **not** on the list yet: add it in the script before
+  linking the international site from here.
   Self-host any new asset instead of linking out. Read the list in the script rather than
   trusting this copy.
 - **Positioning guard**: fails on `open-source`, `free plan`, `free tier`, `free forever`,

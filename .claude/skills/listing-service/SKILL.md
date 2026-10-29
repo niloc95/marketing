@@ -1,14 +1,19 @@
 ---
 name: listing-service
-description: Work on the WebScheduler Directory CodeIgniter 4 app (app/) — public listing/search/detail pages, signup+verify, the paid Verified Business badge (application, PayFast checkout, admin review queue, team members and extra branches), owner self-service manage flow, admin backend. Routes, models, services, settings precedence, local env, and end-to-end verify steps.
+description: Work on WebScheduler Local, the CodeIgniter 4 app in app/ that serves local.webscheduler.co.za and local.webscheduler.app. Code map (controllers, services, libraries, helpers, filters, config, commands, cron), routes, data model, signup and verify, owner manage flow, admin, the paid Verified Business badge and its gates, Jobs board, careers and screening, reviews, referrals, partners, profile setup service, public holiday hours, profile page parts, geocoding, typeahead, consent and Mautic, CSP rules, local env, tests and verify steps. For anything that differs between co.za and .app (countries, Plus, per site copy, prices, links in emails) also load the two-sites skill.
 ---
 
-# Directory listing service (`app/`)
+# WebScheduler Local (`app/`)
 
-Public directory SaaS: browse/search South African service businesses, public profile
-("show") pages, "list your business" signup gated by email verification, owner
-self-service editing via a passwordless magic link, and an admin backend. Repo root
-`README.md` has the setup runbook — read it for env vars and Mailpit; this skill is the
+A local business discovery and visibility platform: free business profiles, discovery
+(browse, smart search, maps, near me), public profile pages, signup gated by email
+verification, owner self service through a passwordless magic link, a Jobs board, reviews,
+and an admin backend. One install serves **two sites**: `local.webscheduler.co.za` (South
+Africa) and `local.webscheduler.app` (every other country, live since 25 Oct 2026). How the
+two are kept apart is the **`two-sites`** skill; read it before touching anything a page
+shows, where a link points, or a price.
+
+Repo root `README.md` has the setup runbook (env vars, Mailpit); this skill is the
 condensed working reference for making and verifying code changes.
 
 **Deploying is a separate skill: `deploy-production`.** Use it for releases, migrations
@@ -33,33 +38,61 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 - No dashes or hyphenated words in this copy either (see the no dashes rule).
 - Tagline (footer, /company, `Config\Directory::$slogan` in the home JSON-LD):
   **Discover local. Be discovered.** Never write "More than a business listing."
+- On .app: never "built for South Africa", and no rand figures (see `two-sites`).
+
+## Code map
+
+| Where | What lives there |
+|---|---|
+| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (owner magic link, dashboard, badge and Plus checkout), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` |
+| `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
+| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
+| `app/Libraries/` | `Mailer` (the only mail path), `MauticClient`, `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input` |
+| `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
+| `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
+| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `AdminDocuments`, `Hostnames`, `ContentSecurityPolicy` |
+| `app/Models/` | One per table, `xs_` prefix. `DirectoryListingModel` is the hub; `Concerns/DerivesCountryCode` |
+| `app/Views/` | `layouts/public.php` (one layout for every page, header, footer, analytics), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
+| `app/Commands/` | spark commands, see Commands below |
+| `resources/directory.css` → `public/assets/directory.css` | Tailwind (`tailwind.directory.cjs`, tokens shared with the marketing site in `tailwind.tokens.cjs`) |
+| `public/assets/directory.js` | every client behaviour, one file: typeahead, address lookup and maps, form steps, repeaters, photo band, lightbox, consent |
+| `tests/database/`, `tests/unit/` | PHPUnit. `tests/_support/` holds `ValidListingInput`, `WithEnv` and the bootstrap |
+
+**Conventions worth copying:** a feature's rules live in one service that is the only
+writer of its tables; controllers stay thin; anything an owner must not set stays out of
+`OWNER_EDITABLE`; customer emails render through `emails/_layout.php` with
+`saveData => false`; long docblocks explain *why* and point at the test that pins the rule.
 
 ## Routes (`app/Config/Routes.php`)
 
 | Route | Controller/action |
 |---|---|
-| `GET /` | `Directory::home` — featured listings, categories |
-| `GET /directory` | `Directory::index` — browse/search (`q`, `category`, `province`, `city`) |
-| `GET /directory/categories` | `Directory::categories` — all categories hub |
-| `GET /directory/suggest` | `Directory::suggest` — search typeahead JSON (see below) |
-| `GET /directory/at/{venue}` | `Directory::venue` — every business in one complex/mall/building |
-| `GET /directory/{category}/{province}` | `Directory::place` — landing page |
-| `GET /directory/{slug}` | `Directory::segment` → category landing page **or** falls through to `show($slug)`, the listing detail page — category wins so a listing can never claim a category's slug |
-| `GET /directory/verify/{token}` | `Directory::verify` — publishes a pending listing |
-| `GET/POST /add-listing` | `Listing::create` / `Listing::store` — public signup |
-| `GET /add-listing/verified` | `Listing::createVerified` — the **same** form and POST target in **verified-only** mode, where every link we control points. Not a second signup path; see "Signup form" below |
-| `GET /verified` | `Contact::verified` — public explainer for what the badge claims. Every badge on a profile links here |
-| `GET /compare` | `Contact::compare` — WebScheduler Local vs Google Business Profile, LinkedIn and SA directories. Table from `ComparisonService`; see "Comparison page" below |
-| `POST /manage/verification`, `GET /manage/verification/checkout`, `POST .../cancel`, `GET .../done` | `Manage::*` — apply, pay, cancel, PayFast return |
-| `POST /payfast/notify` | `PayFastNotify::index` — PayFast ITN |
-| `GET /admin/verifications`, `POST /admin/verifications/{id}/{approve,reject,activate,revoke}` | `Admin::*` — the review queue |
-| `GET/POST /manage` | `Manage::index` / `Manage::request` — owner requests an edit link by email |
-| `GET /manage/{token}` | `Manage::redeem` — single-use, trades the token for a session |
-| `GET/POST /manage/edit` | `Manage::edit` / `Manage::update` — the owner's edit form |
-| `GET/POST /contact` | `Contact::index` / `Contact::submit` — emails `directory.adminEmail`, stores nothing |
-| `GET/POST /recommend`, `GET/POST /recommend/stop/{token}` | `Referral::*` — "Recommend a business"; see that section. Admin queue at `/admin/referrals` |
-| `GET /faq` | `Contact::faq` — copy lives in the view as one `$groups` array that renders the page **and** builds the `FAQPage` JSON-LD, so the two cannot drift. Edit answers there, not in two places. |
-| `GET/POST /admin`, `/admin/login` | `Admin::*` — admin backend |
+| `GET /` | `Directory::home`: featured, categories, examples, pricing cards |
+| `GET /directory` | `Directory::index`: discovery (`q`, `category`, `province`, `city`, near me, facets) |
+| `GET /directory/categories`, `/directory/map`, `/directory/suggest` | hub, map JSON, typeahead JSON |
+| `GET /directory/province/{slug}` | `Directory::province` (co.za) |
+| `GET /directory/at/{venue}` | `Directory::venue`: every business in one complex, mall or building |
+| `GET /directory/{slug}/menu` | `Directory::menu`: uploaded menu file |
+| `GET /directory/{a}/{b}` | `Directory::place`: category in a province (co.za) or country (.app), or country + region |
+| `GET /directory/{category}/{country}/{region}` | `Directory::categoryInRegion` (.app) |
+| `GET /directory/{slug}` | `Directory::segment`: category landing, country page (.app) **or** the profile (`show`). Category wins, so a profile can never claim a category's slug |
+| `GET /directory/verify/{token}` | `Directory::verify`: confirms the email, publishes, signs in, lands on the upgrade panel |
+| `GET/POST /add-profile`, `GET /add-profile/verified`, `POST /add-profile/score` | `Listing::*`: signup (one form, three modes), live quality score. `/add-listing*` 301s here; `POST /add-listing` still works |
+| `GET /verified`, `GET /plus` | what the badge (co.za) and Plus (.app) mean |
+| `GET /compare`, `/resources`, `/media`, `/company`, `/faq` | `Contact::*` |
+| `GET/POST /profile-setup`, `/profile-setup/checkout`, `/profile-setup/thanks` | the paid setup service |
+| `GET/POST /manage`, `GET /manage/{token}`, `GET/POST /manage/edit`, `/manage/signout` | owner magic link and dashboard |
+| `POST /manage/verification`, `GET /manage/verification/checkout[?plan=plus]`, `POST …/cancel`, `GET …/done` | badge or Plus: apply, pay, cancel, PayFast return |
+| `/manage/jobs/*`, `/manage/reviews/*`, `POST /manage/photo-delete/{id}`, `/manage/brand-delete/{id}` | owner tools |
+| `/jobs/*` | Jobs board, see that section |
+| `/reviews/*` | customer reviews |
+| `/recommend`, `/partners`, `/p/{code}`, `/careers/*` | referrals, Partner Program, our own hiring (co.za only) |
+| `GET /privacy`, `/terms`, `/cookie-policy` | `Legal::*` (per site views) |
+| `GET /address-suggest`, `/address-locate`, `/address-reverse` | address lookup |
+| `GET /description/insights`, `/description/prompt` | the description helper |
+| `POST /payfast/notify`, `POST /payfast/setup-notify` | PayFast ITNs (subscriptions, setup orders) |
+| `GET /sitemap.xml`, `/robots.txt`, `/health`, `POST /csp-report` | per site sitemap and robots, health, CSP reports |
+| `/admin/*` | profiles, categories, venues, verifications (`?plan=plus`, `/admin/plus`), jobs, reviews, referrals, partners, careers, profile setup, hero, settings, comparison, documents, status, funnel |
 
 **404s go through `Errors::notFound`**, the `Config\Routing::$override404`. That covers
 unknown routes and any `PageNotFoundException` a controller throws. It renders the branded
@@ -112,7 +145,21 @@ over `display_name`/`description`/`credentials`.
   Both sections carry a `*_present` marker input: absent = leave alone, present-but-empty =
   clear), `directory_settings` (admin-editable badge price/enabled), and the verification
   set — `directory_verifications`, `_verification_documents`, `_verification_events`,
-  `_verification_submissions`, `_verification_itn_rejections`.
+  `_verification_submissions`, `_verification_itn_rejections` (the verifications table
+  holds both plans: `plan = badge` or `international`, which is Plus on .app).
+- Every table is `xs_` prefixed. The full set, by feature: profiles
+  (`directory_listings`, `_practice_locations`, `_listing_photos`, `_listing_brands`,
+  `_listing_menu_files`, `_listing_facets`, `_listing_team`, `_listing_services`,
+  `_listing_attributes`, `_tags`, `_venues`, `_categories`, `_category_groups`); money
+  (`_verifications` + its four child tables, `_profile_setup_orders`); Jobs
+  (`_job_posts`, `_job_responses`, `_job_reports`, `_job_alerts`); reviews (`_reviews`,
+  `_review_reports`); growth (`_referrals`, `_invite_suppressions`, `_partners`,
+  `_partner_clicks`, `_partner_commissions`, `_partner_payouts`); careers
+  (`_career_roles`, `_career_applications`); `_application_keys` (apply once); home
+  (`_hero_images`, `_hero_videos`); `_settings` (`name`, `value`).
+- Country columns (since 23 Oct 2026): `country_code` on listings, locations, venues, job
+  posts, careers and referrals (derived, see `two-sites`); `timezone` on listings and
+  locations; `currency` on the money tables.
 
 ## Signup quality rules (since 30 Sep 2026)
 
@@ -468,7 +515,7 @@ the rows are `directory_referrals`.
 
 - **The form never emails the business.** It stores a row and emails the admin. Only
   **Invite** at `/admin/referrals` contacts the business: one email with
-  `/add-listing?invite={token}` and a "don't contact me again" link. There is one invite
+  `/add-profile?invite={token}` (or `/add-profile/verified?invite=` while the badge is on sale) and a "don't contact me again" link. There is one invite
   per address, however many people recommend it (`inviteBlocker()`). Anything that emails a
   business straight from the public form turns our domain into a way to mail any address.
 - **The invite pre-fills signup.** `Listing::renderForm()` maps the token through
@@ -533,6 +580,145 @@ one. `Admin::document($key)` streams by registry key, never by path, with the
 same nosniff/no-store/locked CSP as verification documents. Tests:
 `tests/database/AdminDocumentsTest.php`.
 
+## The profile page (`directory/show.php`)
+
+Built from partials so the profile, cards and schema read the same data. Every row goes
+through `listing_public_view()` first (hidden addresses).
+
+- **Header:** a Yelp style photo band (name, category, rating and hours over an edge to
+  edge photo strip; one swipeable photo on a phone), or the light `.profile-head` when
+  there are no photos and no video. Shared pieces in `_profile_head_parts.php` (`pills`,
+  `locations`…). Arrows reuse the home showcase controller (`data-showcase-step="page"`).
+- **Pills:** Featured, the Verified pill (`verified_badge_pill()`) or Plus
+  (`plus_badge_pill()`), a sky "We're hiring" pill when the profile has live vacancies
+  (one: "Apply for {title}"; more: "See N open positions" → `#open-positions`).
+- **Today's hours line** ("Open now · 08:30–16:30 today · See hours") in the profile's own
+  timezone (`hours_today_line()`, `hours_context()`).
+- **Video** (badge only, `ListingVideoService` + `video_helper.php`): a YouTube or Vimeo
+  link checked by oEmbed before the save; first tile of the band, plays in the lightbox;
+  owner options autoplay (silent loop) and start with sound. Our own pause and sound
+  buttons drive the players by postMessage. CSP admits `player.vimeo.com`.
+- **Photo alt text** is built at render by `listing_image_alt()` ("Name, Category in
+  Suburb, City" for the lead). `og:image` falls back to the first photo without a logo.
+- **Brands we carry** strip under the description (`ListingBrandService`, free, up to
+  `MAX_BRANDS` 20, name plus logo, no links; greyscale loop over 4 logos, pause button,
+  still under reduced motion). Discovery matches brand names by prefix. A new vertical's
+  `order` must include `brands`.
+- **Locations:** right column cards under Contact (`<details class="panel loc"
+  id="location-N">`, the primary open and carrying `id="hours"`), header links with open
+  or closed dots; `profile_location_label()`.
+- **Services and prices, features, facets, menu file, reviews, team, open positions,
+  service area, map** each have their own `_*.php` partial in `app/Views/directory/`.
+- Public holidays: see below.
+
+## Signup form (`/add-profile`) and the owner form
+
+- `directory/form.php` (signup) and `manage_edit.php` (owner) share `_form_fields.php`.
+  Five numbered colour cards, one list: `listing_form_steps()` (blue, teal, violet,
+  amber, pink; class names written out in full so Tailwind keeps them). Each card is a
+  `<section id="form-step-N" data-form-step>`. The tracker is `_form_steps_nav.php`: in
+  the sticky score bar on `/add-profile`, in `.form-steps-dock` with a Save button on
+  `/manage/edit`; none on admin edit. JS marks accordions `is-todo` / `is-done`.
+  A new section needs an entry in `listing_form_steps()` and a wrapper in
+  `_form_fields.php`; `SignupModesTest::testTheFormIsFiveNumberedSectionsWithATracker`
+  pins the structure.
+- **Live score bar:** `POST /add-profile/score` (read only, CSRF exempt) returns the
+  strength panel for what is typed so far.
+- **Description helper:** `/description/insights` and `/description/prompt`
+  (`Services/Description/*`, hints rebuilt nightly by `directory:insights:build`) and a
+  "write it with ChatGPT" link. There is no AI call on our side.
+- **Repeaters** (`data-repeat`, branches, holiday rows, services) are nesting safe
+  (`repeatOwn`/`repeatItems`, `data-repeat-placeholder`).
+- The profile setup offer line (`_profile_setup_offer.php`) shows on both forms.
+
+## Profile quality bars (`ListingQualityService`, `Config\Directory`)
+
+The score never gates publishing (required fields alone give about 25). Bars, each
+overridable in `.env` as `directory.*`:
+
+- `indexMinQuality` 40 **and** `indexMinDescription` 50 characters: below either, the
+  profile is `noindex, follow` and out of the sitemap (`listing_is_indexable()`). Set
+  `indexMinDescription = 0` to switch that half off (production does, since 25 Oct 2026).
+- `recentMinQuality` 55: the home "Recently added" strip.
+- `qualityTarget` 65: shown on the strength panel; `directory:quality:nudge` (07:00)
+  emails opted in owners once, 3 to 17 days after going live, if still under it. Admin
+  sees the score, a checklist, and an "Email suggestions" button
+  (`ProfileNudgeService::sendNow()`).
+- `directory:quality:recalculate --stale` (03:15) rescores. Holiday answers count inside
+  the "Features and details" cap so no score drops under a bar.
+
+## Addresses that geocode badly (`ListingGeocoder`)
+
+- Lat/lng are nullable, a failed lookup still saves, the owner can drag the pin, and plain
+  discovery never drops a profile without a pin. Postal code is optional (checked by the
+  country's `postalPattern` when given).
+- `geocode_precision` suburb or city draws a shaded circle (`map_area_radius()`, 1500 m
+  or 6000 m) instead of a pin, a hollow dot on the results map, and no `geo` in JSON-LD.
+- A failed lookup after an edit keeps the old pin as `geocoding_status = 'stale'` only when
+  suburb, city, province, region and country are unchanged; a coarser result never replaces
+  a street pin in the same area. Near me sorts profiles without a distance last.
+- Weekly retry: `directory:geocode --status failed,stale --limit 100` (Sunday 04:10).
+  Even `--dry-run` makes real, billed Mapbox lookups.
+
+## Public holiday hours
+
+- Owners answer once for all public holidays plus exceptions per holiday; stored in the
+  `trading_hours` JSON under a `holidays` key (`hours_decode()` still returns seven days).
+  Model callbacks derive `holiday_hours` and `holiday_open_dates` for SQL.
+- With no answer a profile says "Public holiday: hours may differ" and never claims Open
+  or Closed. Google gets special opening hours for answered holidays in the next 60 days.
+- Calendars per country (see `two-sites`). South Africa's is coded in `PublicHolidays`
+  (Sunday to Monday rule); declared one off days come from `/admin/settings`
+  (`extra_public_holidays`, `Admin::saveHolidays`).
+- `directory:holidays:remind` (07:05) rolls open dates forward and emails opted in,
+  unanswered owners in the 10 days before a holiday, at most once per 90 days
+  (`--refresh-only` to skip the emails). Discovery has an "Open on public holidays" chip.
+
+## Careers (`/careers`) and screening questions
+
+- Our own hiring, separate from the Jobs board on purpose, co.za only. `CareersService`;
+  tables `directory_career_roles` / `directory_career_applications`; admin at
+  `/admin/careers` (`AdminCareers`). CVs (PDF or Word) are stored privately in
+  `writable/careers/` (2770) and streamed to the admin; `careers:purge` (03:55) deletes
+  them and applicant details after the retention period (privacy §11).
+- The applicant gets a receipt and an email per status change (`statusEmail()`); receipts
+  echo nothing typed except a letters only first name. JobPosting schema per role
+  (`schemaTitle()` strips the city from the title).
+- **Screening** (`Libraries/Screening`, `ScreeningBank`, `Config\Screening`): a role or a
+  vacancy picks a level (Basic, Intermediate, Advanced); each applicant gets one reading,
+  one language and one numbers question with fresh numbers, a soft timer per kind
+  (late answers are flagged, not dropped), page leaves counted, copy blocked. Attempts
+  live in the session. Nobody is blocked; the reviewer sees score, time and leaves. The
+  applicant receipt never shows the score. Never reuse a question id. Jobs board vacancies
+  can use it too (premium profiles; answers relayed, never stored).
+- **Apply once** (`ApplicationOnceService`, `directory_application_keys`): the same
+  vacancy or role refuses a second application by email **or** phone (HMAC keys, claimed
+  before sending, released if the send fails). Forms carry `data-submit-once`. CI4
+  gotcha: inside `transBegin()` a duplicate key insert returns -1 instead of throwing.
+
+## Profile setup service (`/profile-setup`)
+
+We build the profile for a once off fee: R250 on co.za (`Config\Directory::$profileSetupAmount`,
+3 days), `profile_setup_usd` on .app (charged in rand). `ProfileSetupService`, orders in
+`xs_directory_profile_setup_orders` (reference `ps-…`), PayFast once off checkout, its own
+ITN at `POST /payfast/setup-notify` (`ProfileSetupNotify`, the same four checks as the
+subscription ITN), queue at `/admin/profile-setup`. If a paid order never shows as paid,
+look at the ITN rejection table and `Profile setup ITN:` log lines first.
+
+## Content pages and analytics
+
+- `/resources`: the list is hardcoded in `Contact::resources()`; PDFs in
+  `public/assets/documents/` and `public/assets/playbook/`, linked with `?v=<filemtime>`.
+  Two PDFs have no builder in the repo: replace the file by hand.
+- `/media`: logo downloads (`public/assets/brand/`), embed snippet, usage rules. The
+  Verified badge is shown but never offered as a file; Terms §20 covers misuse.
+- `/compare`, `/faq`, `/company`, `/verified`, `/plus`: see their sections.
+- **Analytics:** GA4 (`Config\Directory::$analyticsId`, per site through `Config\Sites`)
+  under Consent Mode, and Microsoft Clarity (`clarityId`), which is **not loaded at all
+  until the cookie banner's Accept** and never on `/admin`. Links with
+  `data-track="name"` send a GA4 `{name}_click` event with `data-track-label` as its `cta`
+  parameter, e.g. the pricing cards' `pricing_cta_click`.
+
 ## Verified Business — the one paid feature
 
 A monthly badge on an otherwise free listing — R29.99 at the time of writing, but the live
@@ -551,7 +737,9 @@ what is about to happen.
 `store()` says why: *a rejected document must never cost someone their listing.* Keep any
 new validation out of that path — tell the person, don't block the save.
 
-What the badge actually gates:
+What the badge actually gates. On .app the same premium rows are unlocked by **Plus**
+instead (`listing_has_premium()` = badge or Plus, see `two-sites`); the green badge and
+the profile video stay badge only:
 
 | | Free | Verified |
 |---|---|---|
@@ -560,6 +748,7 @@ What the badge actually gates:
 | Team members (`TeamMemberService::MAX_MEMBERS`, 12) | — | yes |
 | Extra branches (`PracticeLocationService::MAX_LOCATIONS`, 6) | — | yes |
 | Matching a search for a team member's name/role/qualification/specialisation, and the typeahead's "Person" rows | — | yes |
+| Profile video (YouTube or Vimeo, `ListingVideoService`) | — | yes |
 | Posting job vacancies (and renewing them) on the Jobs board | — | yes |
 | Replying to service requests | — | yes |
 | Lead alerts for service requests | teaser ("Get verified to reply") | yes, alerted first |
@@ -567,9 +756,12 @@ What the badge actually gates:
 | Customer reviews, and replying to them | yes | yes |
 | **A higher position in results** | **no** | **no** |
 
-That last row is load-bearing. Only `is_featured` affects ordering, and only in
-`DirectoryService::featured()`. Nothing in any view may hint that paying moves a business
-up — it would be false today and a promise we'd then have to keep. (The plan cards used to
+That last row is load-bearing. Discovery results are ordered by `is_featured` (admin
+only), then `quality_score` (profile completeness, `ListingQualityService`), then newest;
+near me puts distance first. **Nothing behind the badge or Plus may score**
+(`ListingQualityTest::testPayingForTheBadgeDoesNotMoveTheScore`), and ratings are not a
+key either. Nothing in any view may hint that paying moves a business up — it would be
+false today and a promise we'd then have to keep. (The plan cards used to
 carry a ✗/✗ "A higher position in the search results" row saying so; the owner removed it
 on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" row, ✓ on
 **both** cards, because every listing gets the Jobs board.)
@@ -595,37 +787,41 @@ on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" ro
   `_plan_cards.php` (the ✓/✗ matrix on the signup form). Deliberately not merged; each
   docblock points at the other. Caps come from the service constants in both, never typed.
 
-### Settings precedence: DB → `.env` → config default
+### Settings precedence: DB (`name@app` on .app) → `.env` → config default
 
-`DirectorySettings::badgePrice()` / `badgeEnabled()` read `xs_directory_settings` first,
-then `directory.verifiedMonthlyAmount` / `directory.verifiedBadgeEnabled` in `.env`, then
-the committed default in `app/Config/Directory.php`. **A DB row silently wins**, so editing
+`DirectorySettings::badgePrice()` / `badgeEnabled()` read `xs_directory_settings` first
+(on .app a `{name}@app` row wins over `{name}`), then `directory.verifiedMonthlyAmount` /
+`directory.verifiedBadgeEnabled` in `.env`, then the committed default in
+`app/Config/Directory.php`. The table's columns are `name` and `value`. **A DB row silently wins**, so editing
 `.env` does nothing once `/admin/settings` has ever been saved. `/admin/settings` renders
 `priceSource()` specifically to answer "I changed it and nothing happened".
 
 ### Signup form: one form, three modes: Verified leads
 
-Verified Business is the offer we lead with. `/add-listing` and `/add-listing/verified` are
-the **same view, the same fields and the same POST target**. `Listing::renderForm($plan,
+Verified Business is the offer we lead with (on co.za). `/add-profile` and
+`/add-profile/verified` are the **same view, the same fields and the same POST target**
+(`/add-listing*` 301s to them).
+On .app the badge is off, so the form is the plain free form plus the Plus comparison
+(`_plus_compare.php`). `Listing::renderForm($plan,
 $verifiedOnly)` serves every mode:
 
 | Visit | Mode |
 |---|---|
-| `/add-listing/verified`, or any `/add-listing*` with a campaign source in the session | **verified-only**: the Verified card alone, documents open, no Free card, no "Remove" link, no `data-plan-cards` (so the picker JS is off) |
-| `/add-listing` with no source (typed, or any of the site's own buttons) | both cards, **Verified first and preselected** |
-| `/add-listing?plan=free` (direct only) | both cards, Free picked |
+| `/add-profile/verified`, or any `/add-profile*` with a campaign source in the session | **verified-only**: the Verified card alone, documents open, no Free card, no "Remove" link, no `data-plan-cards` (so the picker JS is off) |
+| `/add-profile` with no source (typed, or any of the site's own buttons) | both cards, **Verified first and preselected** |
+| `/add-profile?plan=free` (direct only) | both cards, Free picked |
 
 - **The Free Listing must stay available to anyone who came straight to the site.** The
   site's own buttons (header "Get verified", footer, home/landing/province/venue/categories/
-  404/contact/jobs) all say "Get verified" but point at **`/add-listing`**, which decides the
+  404/contact/jobs) point at **`/add-profile`**, which decides the
   mode itself. A direct visitor gets both cards, Verified first. A visitor with a campaign
   source gets verified-only. They all use `signup_cta()` in `directory_ui_helper.php`,
   which also falls back to the "free" wording when the badge is off. Do not point them at
-  `/add-listing/verified`: that would hide Free from direct visitors, which the owner
-  explicitly does not want.
+  `/add-profile/verified`: that would hide Free from direct visitors, which the owner
+  explicitly does not want. The header button reads "Add your business" on both sites.
 - **Only our outbound links go straight to verified-only**: referral invites
-  (`add-listing/verified?invite=`) and the marketing-site footer (`?via=marketing-site`).
-- **Text that talks about listing *for free* keeps `/add-listing`**: the FAQ answers,
+  (`add-profile/verified?invite=`) and the marketing-site footer (`?via=marketing-site`).
+- **Text that talks about listing *for free* keeps `/add-profile`**: the FAQ answers,
   Terms, privacy policy and the "is it free?" line on `/verified`. Pointing those at a page
   with no Free card would contradict the sentence around the link.
 - **The verified-only page must keep the card's small print** ("A South African listing is
@@ -638,8 +834,9 @@ $verifiedOnly)` serves every mode:
   `xs_directory_listings.signup_source`. It is always overwritten server-side and never
   taken from the form. It is admin-visible (edit page) and never owner-editable.
 - **After publishing**, `Directory::verify()` lands a listing with no application on
-  `manage/edit#get-verified` (the id on `_verification_panel.php`). The confirm email's
-  badge section says so; it has deliberately no second button.
+  `manage/edit#get-verified` (the id on `_verification_panel.php`) while the badge is on
+  sale, and a profile abroad without Plus on `manage/edit#get-plus` (`_plus_panel.php`).
+  The confirm email's badge section says so; it has deliberately no second button.
 - An unverified profile shows "Is this your business? Get the Verified Business badge",
   linking to `/verified`, while the badge is on sale. It is worded as an offer to the owner,
   never as a warning that the business is unchecked.
@@ -649,8 +846,8 @@ Three rules from the original two-state design still hold:
 
 1. **Never render both variants.** `_verification_fields.php` would appear twice, giving the
    form two inputs named `verify_doc_registration` and two elements sharing an id.
-2. **The card buttons are real links** carrying `data-plan-pick`: `/add-listing`
-   (Verified) and `/add-listing?plan=free`. The picker in `public/assets/directory.js`
+2. **The card buttons are real links** carrying `data-plan-pick`: `/add-profile`
+   (Verified) and `/add-profile?plan=free`. The picker in `public/assets/directory.js`
    intercepts them, swaps in place, and on `popstate` reads the `plan` query parameter
    (default Verified).
 3. **`applyPlan()` writes the hidden `plan` input before setting `details.open`.** The
@@ -704,6 +901,28 @@ are the ones that ride along silently. Checked against `.env.production.example`
 | `encryption.key` | **present** — `php spark key:generate` |
 | `CI_ENVIRONMENT` | `production` (locally it must be `development`, see above) |
 
+Production `.env` also carries `sites.app.enabled = true` and `sites.app.analyticsId`
+(the .app switch, see `two-sites`) and `directory.indexMinDescription = 0`.
+
+### Worktrees, ports and databases
+
+Another session may be using the main checkout (port 8095): never `git switch` there.
+Work in a worktree under `../marketing-worktrees/` and give it its own everything:
+
+1. `git worktree add ../marketing-worktrees/<name> -b <branch> origin/main`
+2. **Copy** `vendor/` (`cp -R ../../marketing/vendor vendor`), never symlink it: a
+   symlinked vendor makes Composer autoload the main checkout's `app/`. Symlinking
+   `node_modules` is fine.
+3. Copy `.env`, then change `app.baseURL` to a free port, and `database.default.database`
+   / `database.tests.database` to new databases (create them `utf8mb4`), then `php spark
+   migrate --all` and seed.
+4. Copy the gitignored uploads (`public/assets/hero/uploads`, `public/assets/listings`)
+   if you need photos and videos.
+
+Ports in use: 8095 main checkout, 8096 marketing `site:serve`, 8097 `site:preview`, 8098
+the `international-app` worktree (co.za on `localhost:8098`, .app on
+`app.localhost:8098`). Check with `lsof -i :<port>` before picking one.
+
 ## Commands
 
 | Command | Does |
@@ -714,6 +933,30 @@ are the ones that ride along silently. Checked against `.env.production.example`
 | `npm run list:watch` | The file watcher alone, to pair with an existing `list:serve` |
 | `npm run list:build` | `list:css` + assembles the deploy bundle in `dist/listing/` |
 | `npm run mail:dev` | Mailpit (idempotent adopt-or-spawn) — SMTP :1025, inbox http://localhost:8025 |
+
+Spark commands (run from the app root; `--dry-run` where offered):
+
+| Command | Does | Cron (UTC) |
+|---|---|---|
+| `directory:verifications:sweep` | lapse expired badge and Plus subscriptions, renewal reminders | 03:00 |
+| `directory:quality:recalculate [--stale]` | rescore profiles | 03:15 |
+| `directory:insights:build` | rebuild the description hints | 03:20 |
+| `jobs:expire` | expire posts, renew reminders, retention, report digest | 03:30 |
+| `referrals:prune` | referral retention | 03:45 |
+| `partners:sweep` | release held commission, rebuild missed ones | 03:50 |
+| `careers:purge` | CVs and applicant retention | 03:55 |
+| `reviews:prune` | unconfirmed reviews, reviewer retention, digest | 04:00 |
+| `directory:quality:nudge` | the one off "improve your profile" email | 07:00 |
+| `directory:holidays:remind [--refresh-only]` | roll holiday dates, remind owners | 07:05 |
+| `directory:geocode [--status failed,stale] [--limit 100]` | pin profiles (billed lookups) | Sun 04:10 |
+| `directory:countries:backfill` | fill `country_code` from `country` | once per release that needs it |
+| `directory:audit-text [--all]` | report names and descriptions that break the rules | |
+| `directory:venue-assign` | put shops into a venue | |
+| `mautic:sync` | resend every owner's marketing state to Mautic | |
+| `directory:adminhash` | hash for `directory.adminPasswordHash` | |
+
+The cron template is `deploy/cron/webscheduler`; the live copy is
+`/etc/cron.d/webscheduler`, installed by hand. A new scheduled command needs both.
 
 `npm run list:hot` is the one-command version of `list:serve` + `list:dev`, and adds
 hot reload: save a view, helper or controller and the browser reloads itself; save
@@ -737,6 +980,25 @@ Two things worth knowing about it:
 Pair `list:serve` with `list:dev` in a second terminal if you want the old
 two-terminal split without hot reload.
 
+## Tests
+
+- `php vendor/bin/phpunit` runs everything (about 1,480 tests). It is DDL bound: every
+  test class re-runs the migrations, so a full run takes 10 to 20+ minutes and a slow run
+  is not a hung run. Iterate with `--filter` or a single file.
+- **Never run two suites against the same test database.** Worktrees that share
+  `database.tests.database` corrupt each other's migration state (`Can't DROP …`,
+  `Unknown column …`, "gap in the migration sequence"). Killing a run mid migration does
+  the same: drop and recreate that test database. Check `pgrep -f vendor/bin/phpunit`.
+- `tests/database/` needs the `tests` DB group; `tests/unit/` does not.
+- 404s are responses (`assertStatus(404)`), feature POSTs meet the real CSRF filter
+  (send `csrf_token() => csrf_hash()`), the settings cache must be dropped in setUp
+  (`(new DirectorySettings())->forget()`), and mocks injected with `Services::injectMock`
+  must be reset in tearDown.
+- Admin pages in tests: `withSession(['dir_admin' => true, AdminFilter::SEEN_KEY => time()])`.
+- `SmartSearchTest::testTheHomeExamplesComeFromRealListings` fails on `main` (stale
+  heading assertion); every other test should pass before a release.
+- New migrations: omit `'after' => …` (it forces a table copy per test run).
+
 ## Verify workflow
 
 - **Listing detail page**: `list:serve` + `list:dev`, visit
@@ -747,16 +1009,23 @@ two-terminal split without hot reload.
   at phone width and scrolled, and the home hero — those are the two places the dropdown
   has been clipped. `curl 'localhost:8095/directory/suggest?q=plu'` answers the endpoint
   on its own.
-- **Signup flow**: submit `/add-listing`, open Mailpit
+- **Signup flow**: submit `/add-profile`, open Mailpit
   (http://localhost:8025), click the verification link, confirm the listing is now live at
   its slug.
 - **Owner self-service**: `/manage` → enter email → Mailpit link → `/manage/edit` → save →
   confirm the edit shows on the public page and that `status`/`slug`/`email` are unchanged.
 - **Admin**: `php spark directory:adminhash`, set `directory.adminPasswordHash` in `.env`,
   log in at `/admin` (throttled 5 attempts / 15 min by IP).
-- **Verified Business**: apply from `/add-listing/verified` or the owner dashboard, approve
+- **Verified Business**: apply from `/add-profile/verified` or the owner dashboard, approve
   at `/admin/verifications`, then check `verified_until` on the listing and that the badge
   renders on the profile *and* in search results.
+- **Both sites**: with `.app` enabled locally (see `two-sites`), check the page on
+  `localhost:<port>` **and** `app.localhost:<port>`: no South African profile, town, rand
+  figure or badge copy on .app, and co.za unchanged. Plus: sign up abroad on .app, confirm
+  in Mailpit, land on `#get-plus`, check out with `?plan=plus`, and see the row at
+  `/admin/plus`.
+- **Production**: the release checks are in `deploy-production`. Pages that differ per
+  site must be checked on both hosts.
 
 ### Three things that make a working change look broken
 

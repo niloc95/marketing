@@ -1,6 +1,6 @@
 ---
 name: deploy-production
-description: Release the WebScheduler marketing site and/or the directory app to production — the manual release procedure (git pull and build on the server), how to verify a release actually landed, and how to roll back. Use when deploying, cutting a release, shipping a migration, or investigating why a change is not visible on the live site.
+description: Release the WebScheduler marketing site and/or WebScheduler Local (local.webscheduler.co.za and local.webscheduler.app) to production — the manual release procedure (git pull and build on the server, run over `ssh lightsail`), migrations, how to verify a release actually landed on both hosts, the .app switch, Cloudflare (origin certificates, Access, redirect rules) and how to roll back. Use when deploying, cutting a release, shipping a migration, reading production data, or investigating why a change is not visible on the live site.
 ---
 
 # Releasing to production
@@ -8,7 +8,12 @@ description: Release the WebScheduler marketing site and/or the directory app to
 | App | Live at | Docroot |
 |---|---|---|
 | Marketing site | `https://webscheduler.co.za` | `/var/www/marketing` |
-| Directory app | `https://local.webscheduler.co.za` | `/var/www/listing/public_html` |
+| WebScheduler Local, South Africa | `https://local.webscheduler.co.za` | `/var/www/listing/public_html` |
+| WebScheduler Local, every other country | `https://local.webscheduler.app` (since 25 Oct 2026) | the **same** docroot and app |
+
+The two Local hosts are one PHP app and one database; the request's host picks the site
+(the `two-sites` skill). A release ships both at once. The app root is
+`/var/www/listing/directory-app`; the database is `webscheduler_directory`.
 
 The app's former hostname, `listing.webscheduler.co.za`, is its own vhost. It 301s
 to `local.` and still **serves** `POST /payfast/notify` for subscriptions created
@@ -18,17 +23,18 @@ before the move. A release never touches it, and nobody should disable it. See
 Both run on **one AWS Lightsail instance** (Ubuntu 24.04, Apache 2.4 + PHP 8.3-FPM +
 MySQL 8.0), behind Cloudflare in Full (strict) mode.
 
-**The directory hostname is `listing.`, not `directory.`** A
-`directory.webscheduler.co.za` DNS record exists in Cloudflare with nothing behind it
-and answers `526` to everything. It is a leftover. Probing it and concluding the app is
-down is a mistake that has already been made once — check `listing.` first, and treat
-`/health` as the source of truth.
+**The app's hostname is `local.`.** `directory.webscheduler.co.za` has no DNS record of
+its own: it falls into the wildcard `*.webscheduler.co.za` (the booking app server, which
+answers `526` for unknown hosts), and since 18 Oct 2026 a Cloudflare redirect rule
+("Directory Rule") 301s it to `local.`. Never delete that wildcard: `dental.`, `demo.` and
+the other booking app hosts depend on it. Treat `/health` as the source of truth.
 
 **Nothing deploys automatically. There is no CI deploy.** Pushing to `main` ships
 nothing; `.github/workflows/deploy.yml` is dormant (manual dispatch only, and the
-`SSH_*` secrets it needs do not exist). Releases are typed by hand in the **Lightsail
-browser terminal**: `git pull` in the server's own clone, build there, `cp -a` into
-`/var/www`. If you find instructions describing an rsync pipeline or an auto-deploy on
+`SSH_*` secrets it needs do not exist). Releases are typed by hand: `git pull` in the server's own clone, build there, `cp -a`
+into `/var/www`. From the Mac, `ssh lightsail` (an SSH config alias: Lightsail default
+key, `ubuntu` user, passwordless sudo) runs the same commands as the Lightsail browser
+terminal; the old `webscheduler_deploy` key is dead. If you find instructions describing an rsync pipeline or an auto-deploy on
 push, they are stale.
 
 The instance was provisioned by hand too — no `provision.sh`. `deploy/LAMP-SETUP.md` is
@@ -50,6 +56,10 @@ recurring release procedure.
    together. See "The contact/privacy coupling".
 
 ## Release
+
+**Only on the owner's explicit go ahead**, and step by step: say what the next step does
+to production and wait for a yes before each one that changes it (copy, migration, `.env`,
+Cloudflare). "Commit and release" in one message covers the routine code release below.
 
 Lightsail console → the instance → **Connect using SSH**. Work in `tmux` — the browser
 session drops when idle and takes the build with it.
@@ -78,9 +88,26 @@ cd /var/www/listing/directory-app && sudo -u deploy php spark migrate --all
 sudo systemctl reload php8.3-fpm
 ```
 
-Then purge the Cloudflare cache (*Caching → Configuration → Purge Everything*) and run
-the verification below. Marketing-only change? The listing `cp -a` lines, the migration
+Over SSH from the Mac the same block runs as `ssh lightsail '…'`; keep `set -e` so a
+failed copy stops before the reload. Then purge the Cloudflare cache if needed and run
+the verification below. **When a purge is needed:** HTML is never edge cached, and
+`directory.css`, `directory.js` and brand images carry `?v=` stamps that bust themselves.
+`og:image` files and other bare asset URLs still need *Caching → Configuration → Purge*
+(both zones if both serve it). Marketing-only change? The listing `cp -a` lines, the migration
 and the FPM reload are all skippable — but re-running them is harmless.
+
+## Production `.env` and settings you may need to touch
+
+| What | Where | Note |
+|---|---|---|
+| `sites.app.enabled = true` | `/var/www/listing/directory-app/.env` | **the .app switch**. `false` + `sudo systemctl reload php8.3-fpm` is the rollback: .app 302s to co.za and co.za serves every country again |
+| `sites.app.analyticsId = G-PNNB92FLC0` | same | .app GA4; `sites.app.clarityId` unset (no project yet) |
+| `directory.indexMinDescription = 0` | same | since 25 Oct 2026, so imported profiles can be indexed |
+| prices, Plus, rate, badge on/off | `/admin/settings` (rows in `xs_directory_settings`, `name`/`value`, `name@app` for .app) | a DB row beats `.env`; editing a row by hand needs `php spark cache:clear` |
+
+Back up `.env` before editing (`sudo cp .env .env.bak-YYYYMMDD-reason`). Read data with
+`sudo -u deploy mysql --defaults-file=/home/deploy/.my.cnf webscheduler_directory -e "…"`.
+Never change rows without the owner's OK, and prefer an admin screen when one exists.
 
 ## `cp -a` copies, it does not mirror
 
@@ -117,8 +144,12 @@ Nothing checks this for you. A build that exited 0 is necessary, not sufficient:
 #    cf-cache-status: HIT on a page you just changed = purge did not happen
 curl -sI https://webscheduler.co.za | grep -i cf-cache-status
 
-# 2. Is the app healthy, not merely responding?
+# 2. Is the app healthy, not merely responding? (both hosts)
 curl -s https://local.webscheduler.co.za/health            # {"status":"ok"}
+curl -s -o /dev/null -w '%{http_code}\n' https://local.webscheduler.app/   # 200
+
+# 2b. Any errors since the release? (today's log; none is good)
+ssh lightsail 'sudo grep -c "CRITICAL\|ERROR" /var/www/listing/directory-app/writable/logs/log-$(date +%F).log'
 
 # 3. Did the developer portal survive the marketing deploy?
 curl -sI https://webscheduler.co.za/developer/               # 200, not 404
@@ -193,7 +224,11 @@ column has a real window and needs expand → migrate code → contract across t
 **As `deploy`, never as root or `ubuntu`.** Spark writes to `writable/logs/`, and a
 root-owned log file shows up much later as a log that silently stopped updating.
 
-**Do not run `migrate:rollback` against production.** Migrations here are forward-only
+A migration that adds data the code derives (like `country_code`) may need its backfill
+command right after it (`php spark directory:countries:backfill --dry-run`, then for real).
+
+**Do not run `migrate:rollback` against production.** (Locally too, mind that
+`migrate:rollback -b N` rolls back *to* batch N, not N batches: dump first.) Migrations here are forward-only
 in practice; several drop or rewrite columns, and a rollback against live listing data
 loses it. To undo a bad migration, write a new one that reverses it.
 
@@ -210,6 +245,11 @@ loses it. To undo a bad migration, write a new one that reverses it.
 | Every page 500s, static files fine | `.env` not readable by `www-data` — must be `640 deploy:www-data`, not `600` |
 | Contact form submits, nothing arrives | `.ws-contact.env` missing from `/var/www/`, or not readable by `www-data` |
 | Apache will not start after a config edit | `php_admin_flag` used somewhere — mod_php only, invalid under FPM |
+| Every `local.webscheduler.app` URL 302s to co.za | `sites.app.enabled` is false (or not reloaded), or a Cloudflare redirect rule on the .app zone is back |
+| South African profiles show on .app (or the reverse) | a public query skips `DirectoryService::published()` scope or a cache key skips `site_cache_key()` (see `two-sites`) |
+| Admin PIN login succeeds but lands on the co.za home page | a `local.webscheduler.app` destination was added to the co.za Access application |
+| 403 with nothing in the app log | the Cloudflare scanner block rule |
+| 526 on a made up `*.webscheduler.co.za` host | expected: the wildcard points at the booking app server |
 
 ## The release is only as reliable as the person typing it
 
@@ -226,10 +266,26 @@ relevant.
 
 ## Cloudflare
 
-Both hostnames are proxied (orange cloud); DNS is on Cloudflare nameservers. TLS to the
-origin uses a **Cloudflare Origin Certificate** at
-`/etc/ssl/cloudflare/webscheduler.co.za.{pem,key}` — 15-year, no renewal cron, which is
-exactly why `deploy/cron/webscheduler` carries a monthly expiry warning.
+Two zones, `webscheduler.co.za` and `webscheduler.app`; every hostname is proxied (orange
+cloud). TLS to the origin uses **Cloudflare Origin Certificates**:
+`/etc/ssl/cloudflare/webscheduler.co.za.{pem,key}` and
+`/etc/ssl/cloudflare/webscheduler.app.{pem,key}` (root, 644/600, SAN `*.webscheduler.app`
+and the apex, valid to 2041). 15 year, no renewal; `deploy/cron/webscheduler` carries a
+monthly expiry warning for the co.za one. The .app vhost is
+`deploy/apache/local.webscheduler.app.conf` (same docroot). The .app key was once pasted
+in chat: rotate it (revoke, reissue, send the files, swap on the server, `apache2ctl
+configtest`, reload).
+
+- **Admin is behind Cloudflare Access** (email PIN) on `local.webscheduler.co.za/admin*`,
+  plus a JWT check in the app (`CloudflareAccessFilter`, `directory.accessAud`). **Never
+  add a `local.webscheduler.app` destination to that Access application**: a multi
+  domain Access app bounces through every host to set cookies, which once dropped the
+  admin on the co.za home page after a good login. .app's `/admin*` redirects to co.za;
+  protect `local.webscheduler.app/admin*` with its own separate Access application.
+- **Scanner block rule** (since 29 Sep 2026) blocks probes at the edge: a 403 with nothing
+  in the app logs may be that rule, not the app.
+- `/admin*` through `curl` returns a 302 to `webscheduler.cloudflareaccess.com`; that is
+  the expected answer, not a fault.
 
 - **Cache**: asset filenames are not content-hashed, so a correct release can still
   leave visitors on the old build. Nothing purges for you — do it by hand at *Caching →
@@ -255,7 +311,8 @@ exactly why `deploy/cron/webscheduler` carries a monthly expiry warning.
 | `/var/www/.ws-contact.env` | marketing contact-form SMTP config. One level **above** `/var/www/marketing`, because `contact.php` resolves `__DIR__ . '/../.ws-contact.env'`. Also `640 deploy:www-data` |
 | `/home/deploy/.my.cnf` | credentials for the nightly `mysqldump`, chmod 600 |
 | `/etc/ssl/cloudflare/` | origin certificate |
-| `/etc/cron.d/webscheduler` | verification sweep, nightly dump, cert warning |
+| `/etc/cron.d/webscheduler` | every scheduled spark command (see `listing-service` → Commands), nightly dump, cert warning. Installed by hand from `deploy/cron/webscheduler`: a new cron line needs a manual reinstall |
+| `/etc/apache2/sites-available/` | the co.za, legacy `listing.`, and `local.webscheduler.app` vhosts |
 
 Changing any of these is a separate hand edit on the box. `deploy/` carries the
 templates; the two `.env` files exist only on the server.
@@ -283,7 +340,10 @@ saying out loud.
 - **Directory app**: code rolls back the same way. **Schema does not.** If the bad
   release included a migration, roll the code back to a commit whose code still matches
   the migrated schema, and fix forward with a new migration.
-- **Whole-instance**: restore the most recent Lightsail snapshot. Blunt — it reverts
+- **.app only**: `sites.app.enabled = false` in the server `.env`, then reload PHP FPM.
+  No code change, no DNS change needed.
+- **Whole-instance**: restore the most recent Lightsail snapshot. Ask the owner to take a
+  manual snapshot before a release with a migration or server config change. Blunt — it reverts
   uploads and database together — but it is the only rollback that covers a bad
   migration plus data loss at once.
 - If the app must go down, point the subdomain at a holding page in Cloudflare rather
