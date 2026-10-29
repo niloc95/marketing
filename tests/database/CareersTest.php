@@ -7,9 +7,9 @@ use App\Services\CareersService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\HTTP\Files\UploadedFile;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
+use Tests\Support\FreshDatabase;
 
 /**
  * /careers: our own roles and applications for them.
@@ -30,13 +30,8 @@ use Config\Services;
  */
 final class CareersTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private CareersService $svc;
     private CareerRoleModel $roles;

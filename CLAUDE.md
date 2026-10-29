@@ -58,13 +58,17 @@ they hold the rules that are not obvious from the code.
 - Big changes go on a feature branch, run on local dev only, and are merged or released
   only on the owner's explicit go ahead. Release step by step, confirming before each
   production change.
-- Another session may be using the main checkout (port 8095): use a git worktree under
-  `../marketing-worktrees/`, never `git switch` there. A worktree needs a **copied**
-  `vendor/` (a symlink autoloads the main checkout's `app/`), its own port, its own dev and
-  test databases (`listing-service` → Worktrees). Push to `main` from the worktree.
-- Tests: `php vendor/bin/phpunit`, slow by design (10 to 20+ minutes). Never run two
-  suites against one test database. `SmartSearchTest::testTheHomeExamplesComeFromRealListings`
-  is a known stale failure; everything else must pass before a release.
+- **One checkout, one dev server, one dev DB, one test DB.** Work in this checkout: make
+  the feature branch here, switch back to `main` when done. Sessions take turns. No git
+  worktrees, no second port, no extra databases.
+  - Dev site: always http://localhost:8095, kept running by launchd (`npm run dev:install`
+    once; `dev:status`, `dev:restart` after a composer or `.env` change). It serves whatever
+    branch is checked out. Never start another server.
+  - Dev DB `webscheduler_directory`, test DB `webscheduler_directory_tests`.
+- Tests: `php vendor/bin/phpunit`, about 30 seconds for the full suite. The schema is
+  built once per run and every DB test class uses `Tests\Support\FreshDatabase`, which
+  empties the tables before each test (never `DatabaseTestTrait` directly). Use the id
+  an insert returns, never assume 1. All tests must pass before a release.
 - Check a change on **both** sites when it touches public pages, emails, prices or links:
   co.za must not change by accident and .app must show nothing South African.
 - Production is reached with `ssh lightsail`. Reading is fine; any change to production

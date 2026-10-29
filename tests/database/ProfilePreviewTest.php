@@ -6,9 +6,9 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Services\ServiceMenuService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * The private preview of a profile: the admin sends it for one we built, the
@@ -23,14 +23,9 @@ use Tests\Support\ValidListingInput;
  */
 final class ProfilePreviewTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
     use ValidListingInput;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $categoryId;

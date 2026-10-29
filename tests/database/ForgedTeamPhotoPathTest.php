@@ -6,9 +6,9 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * A hand-typed team[i][photo_path] must never reach unlink() or the database.
@@ -27,13 +27,8 @@ use Tests\Support\ValidListingInput;
 final class ForgedTeamPhotoPathTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private int $categoryId;
 

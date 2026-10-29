@@ -5,9 +5,9 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * The private "Your details" pair — title and contact person — is compulsory
@@ -37,13 +37,8 @@ use Tests\Support\ValidListingInput;
 final class PrivateDetailsRequiredTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingMutationService $svc;
     private DirectoryListingModel $listings;

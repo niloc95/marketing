@@ -6,10 +6,10 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryService;
 use App\Services\ListingVideoService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * The profile video is part of the paid badge: the owner form only draws the
@@ -23,13 +23,8 @@ use Tests\Support\ValidListingInput;
 final class ListingVideoTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private int $categoryId;
 

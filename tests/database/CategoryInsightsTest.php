@@ -6,8 +6,8 @@ use App\Models\DirectoryListingServiceModel;
 use App\Models\DirectoryTagModel;
 use App\Services\Description\CategoryInsightsService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The hints under the description field ("Others in Dentist often mention")
@@ -23,13 +23,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class CategoryInsightsTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
 

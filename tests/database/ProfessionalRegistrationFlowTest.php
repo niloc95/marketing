@@ -6,9 +6,9 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Registration number, ORCID and ResearchGate on the owner and admin write
@@ -22,13 +22,8 @@ use Tests\Support\ValidListingInput;
 final class ProfessionalRegistrationFlowTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $doctorCat;

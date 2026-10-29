@@ -5,8 +5,8 @@ use App\Services\DirectorySettings;
 use App\Services\PracticeLocationService;
 use App\Services\TeamMemberService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The home page's Free vs Verified section (_pricing_compare.php).
@@ -17,13 +17,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class HomePricingTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     protected function setUp(): void
     {

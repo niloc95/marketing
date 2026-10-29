@@ -8,10 +8,10 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\DirectorySettings;
 use App\Services\VerificationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Countries;
 use Tests\Support\ValidListingInput;
 use Tests\Support\WithEnv;
+use Tests\Support\FreshDatabase;
 
 /**
  * The International Listing plan: a listing outside South Africa publishes
@@ -39,14 +39,9 @@ use Tests\Support\WithEnv;
 final class InternationalListingTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use \CodeIgniter\Test\FeatureTestTrait;
     use WithEnv;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private VerificationService $svc;
     private DirectoryListingMutationService $mutations;

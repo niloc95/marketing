@@ -3,8 +3,8 @@
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The per-vertical treatment, end to end on the pages that carry it.
@@ -18,13 +18,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class VerticalHeroTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private int $medicalId;
 

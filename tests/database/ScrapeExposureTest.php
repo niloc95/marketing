@@ -7,8 +7,8 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryPracticeLocationModel;
 use CodeIgniter\Config\Services;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * What a scraper can lift without opening a profile, after the Oct 2026
@@ -25,13 +25,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ScrapeExposureTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private int $listingId;
 

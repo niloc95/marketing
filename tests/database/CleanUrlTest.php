@@ -2,8 +2,8 @@
 
 use CodeIgniter\Config\Services;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The app never builds an /index.php/ URL.
@@ -17,13 +17,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class CleanUrlTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     protected function setUp(): void
     {

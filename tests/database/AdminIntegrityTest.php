@@ -4,7 +4,7 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use App\Services\DirectoryAdminService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Admin writes that used to report success while doing something else.
@@ -20,12 +20,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class AdminIntegrityTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private DirectoryAdminService $svc;
     private DirectoryListingModel $listings;

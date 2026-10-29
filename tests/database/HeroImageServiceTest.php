@@ -3,7 +3,7 @@
 use App\Models\DirectoryHeroImageModel;
 use App\Services\HeroImageService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The home page hero rotation: what the public page is handed, and what happens
@@ -21,12 +21,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class HeroImageServiceTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private DirectoryHeroImageModel $model;
 

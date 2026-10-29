@@ -7,9 +7,9 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectorySettings;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Verified Business first: the three signup modes and the places that push the badge.
@@ -33,13 +33,8 @@ use Tests\Support\ValidListingInput;
 final class SignupModesTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     protected function setUp(): void
     {

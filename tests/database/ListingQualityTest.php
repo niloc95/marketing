@@ -13,9 +13,9 @@ use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
 use App\Services\TeamMemberService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Profile completeness as a ranking signal: that it is written on every path
@@ -42,13 +42,8 @@ use Tests\Support\ValidListingInput;
 final class ListingQualityTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private ListingQualityService $quality;

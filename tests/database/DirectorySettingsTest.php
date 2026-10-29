@@ -3,8 +3,8 @@
 use App\Models\DirectorySettingModel;
 use App\Services\DirectorySettings;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Directory as DirectoryConfig;
+use Tests\Support\FreshDatabase;
 
 /**
  * The admin-editable settings store: what wins, what is rejected, and what
@@ -21,12 +21,7 @@ use Config\Directory as DirectoryConfig;
  */
 final class DirectorySettingsTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private DirectorySettingModel $model;
 

@@ -1,8 +1,8 @@
 <?php
 
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Qualifications on a profile, in the Terms and the privacy policy.
@@ -16,13 +16,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class LegalQualificationsTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private function text(string $uri): string
     {

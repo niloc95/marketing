@@ -3,8 +3,8 @@
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The search typeahead endpoint, /directory/suggest.
@@ -25,13 +25,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class SearchSuggestTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $categoryId;

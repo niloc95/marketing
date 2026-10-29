@@ -28,7 +28,7 @@ cp env .env          # then fill in DB, directory.*, email.*
 php spark migrate
 php spark db:seed DirectoryCategoriesSeeder
 npm install && npm run list:css
-php spark serve --port 8095
+npm run dev:install     # the one dev server, http://localhost:8095, always on
 ```
 
 `CI_ENVIRONMENT` is **required** in `.env`. CodeIgniter defaults it to `production`, which
@@ -87,18 +87,21 @@ database.tests.DBDriver = MySQLi
 database.tests.DBPrefix = xs_
 ```
 
-The schema is created and dropped by the tests themselves — nothing to migrate by hand.
+The schema is built by the tests themselves, nothing to migrate by hand. Each run drops
+every table in the test database and migrates once (`tests/_support/TestSchema.php`), then
+every DB test starts from empty tables (`Tests\Support\FreshDatabase`). The full suite
+takes about 30 seconds. Switching branches needs nothing: the next run rebuilds the schema
+from that branch's migrations.
 
-If a run is killed mid-migration, two runs overlap, or you switch to a branch that lacks a
-migration the test database has already applied ("There is a gap in the migration
-sequence"), every database test errors in setUp. `php scripts/reset-test-db.php` drops and
-recreates the test database; it refuses any database whose name does not end in `_tests`.
+`php scripts/reset-test-db.php` drops and recreates the test database if it is ever
+damaged; it refuses any database whose name does not end in `_tests`.
 
 ## Local servers (visual testing)
 
 | Command | Serves | URL |
 |---|---|---|
-| `npm run list:serve` | the directory app | http://localhost:8095 |
+| `npm run dev:install` | the directory app, **always on** (launchd runs `list:hot` at login and restarts it) | http://localhost:8095 |
+| `npm run list:serve` | the directory app, by hand (only if the launchd service is not installed) | http://localhost:8095 |
 | `npm run site:serve` | marketing **source** (`marketing-site/`) | http://localhost:8096 |
 | `npm run site:preview` | marketing **build output** (`dist/site/`) | http://localhost:8097 |
 

@@ -9,9 +9,9 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\ReferralService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
+use Tests\Support\FreshDatabase;
 
 /**
  * "Recommend a business", end to end.
@@ -34,13 +34,8 @@ use Config\Services;
  */
 final class ReferralFlowTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private ReferralService $svc;
     private DirectoryReferralModel $referrals;

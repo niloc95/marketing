@@ -69,8 +69,8 @@ country on the .app signup form.
    host's `add-profile?handover=…` instead of saving. Pinned by `CrossHostSignupTest`.
 5. **co.za stays as it was.** Anything .app needs is added behind `site()->isApp()`,
    `site_copy()` or an `@app` setting, so co.za's HTML does not change. Before releasing
-   site plumbing, diff co.za pages against production (the `intl-baseline` worktree
-   approach: render both, `diff`).
+   site plumbing, diff co.za pages against production (render the page on `main` and on
+   the branch, then `diff`).
 6. **The admin is on co.za only**, for both sites. Admin links to a profile use
    `listing_url()`. Never add a `local.webscheduler.app` destination to the co.za Access
    application: it breaks admin login (see the `deploy-production` skill).
@@ -168,16 +168,15 @@ country on the .app signup form.
 
 ## Local dev for both hosts
 
-- The `international-app` worktree (`../marketing-worktrees/international-app`, port
-  8098) has `sites.app.host = app.localhost` and `sites.app.enabled = true` in `.env`:
-  co.za is `http://localhost:8098`, .app is `http://app.localhost:8098` (browsers resolve
-  `*.localhost` themselves). Its databases are `webscheduler_directory_intl` and
-  `webscheduler_directory_tests_intl`; nine `sample-*` profiles abroad live there.
-- Any checkout can do the same: add those two `.env` lines, and `app.localhost` to
-  `app.devHostnames` if `base_url()` does not follow.
-- Uploaded images are gitignored: copy `public/assets/hero/uploads` and
-  `public/assets/listings` from the main checkout into a new worktree, or videos and
-  photos are missing.
+- One checkout, one server (see `listing-service` → One checkout, one server, one
+  database). To see .app locally, set `sites.app.enabled = true` and
+  `sites.app.host = app.localhost` in `.env` (and add `app.localhost` to
+  `app.devHostnames` if `base_url()` does not follow), then `npm run dev:restart`. co.za
+  is `http://localhost:8095`, .app is `http://app.localhost:8095` (browsers resolve
+  `*.localhost` themselves). Put both lines back when done.
+- The dev DB is a copy of production, so .app shows the real foreign profiles. The old
+  `international-app` worktree, its port 8098 and its `_intl` databases were removed on
+  29 Oct 2026.
 
 ## Tests
 

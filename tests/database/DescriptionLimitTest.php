@@ -6,8 +6,8 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * The editorial cap on the business description.
@@ -32,12 +32,7 @@ use Tests\Support\ValidListingInput;
 final class DescriptionLimitTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private DirectoryListingModel $listings;
 

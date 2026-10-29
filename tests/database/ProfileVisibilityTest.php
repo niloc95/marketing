@@ -5,8 +5,8 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryService;
 use App\Services\ProfileNudgeService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * What the quality score does besides order search results: keep thin
@@ -30,13 +30,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ProfileVisibilityTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     /** Comfortably over Config\Directory::$indexMinDescription. */
     private const DESCRIPTION = 'A small yoga studio in the city centre, with classes for beginners every weekday evening.';

@@ -1,8 +1,8 @@
 <?php
 
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The branded 404 (Controllers\Errors, the router's 404 override).
@@ -16,13 +16,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class NotFoundPageTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     public function testAnUnknownRouteGetsTheBrandedPage(): void
     {

@@ -8,10 +8,10 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\MarketingConsentService;
 use CodeIgniter\Config\Factories;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * The consent record: terms acceptance, and whether the owner wants the monthly
@@ -39,13 +39,8 @@ use Tests\Support\ValidListingInput;
 final class MarketingConsentTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $categoryId;

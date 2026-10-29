@@ -3,7 +3,7 @@
 use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Verification and manage-link redemption, against a real schema.
@@ -22,18 +22,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class TokenFlowTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    // 'App' rather than the trait's default of 'Tests\Support' — the schema
-    // under test is the real one, built by the real migrations.
-    protected $namespace = 'App';
-
-    // Rebuilt per test. The backfill case below runs an unscoped UPDATE, the
-    // same one the migration runs, so it must not see rows another test left
-    // behind — it would hash an already-hashed value and prove nothing.
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private DirectoryListingMutationService $svc;
     private DirectoryListingModel $listings;

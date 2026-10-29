@@ -7,8 +7,8 @@ use App\Models\DirectoryPracticeLocationModel;
 use App\Models\DirectoryTagModel;
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * A business is discovered where its branches are, and by what it does.
@@ -26,13 +26,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class BranchDiscoveryTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private int $categoryId;
 

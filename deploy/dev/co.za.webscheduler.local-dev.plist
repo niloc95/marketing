@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The one local dev server, always on: launchd runs `npm run list:hot` (php -S on
+  :8095, Tailwind watch, live reload) at login and starts it again if it stops.
+  A template: scripts/dev-service.js fills in __REPO__ and __HOME__ and installs
+  it as ~/Library/LaunchAgents/co.za.webscheduler.local-dev.plist.
+  Install with `npm run dev:install`, never by hand.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>co.za.webscheduler.local-dev</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/npm</string>
+        <string>run</string>
+        <string>list:hot</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO__</string>
+
+    <!-- launchd starts with a bare PATH; npm, node and php live in Homebrew. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- dev-hot.js exits when any of its three processes dies; this brings the
+         whole group back. ThrottleInterval stops a broken checkout (say, a PHP
+         syntax error in a config file) from being restarted in a tight loop. -->
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/webscheduler-dev.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/webscheduler-dev.log</string>
+</dict>
+</plist>

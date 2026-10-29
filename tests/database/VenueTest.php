@@ -7,9 +7,9 @@ use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Venues — the complex, mall or building a set of listings shares.
@@ -33,13 +33,8 @@ use Tests\Support\ValidListingInput;
 final class VenueTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private DirectoryVenueModel $venues;

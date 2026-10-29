@@ -4,8 +4,8 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Services\DirectoryListingMutationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * What the public signup form does when the address is already in the table.
@@ -28,12 +28,7 @@ use Tests\Support\ValidListingInput;
 final class SignupDuplicateTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private DirectoryListingMutationService $svc;
     private DirectoryListingModel $listings;

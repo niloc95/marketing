@@ -8,8 +8,8 @@ use App\Services\DirectoryService;
 use App\Services\ListingBrandService;
 use CodeIgniter\HTTP\Files\UploadedFile;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * "Brands we carry": the logo strip under a profile's description.
@@ -24,13 +24,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class BrandGalleryTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingBrandModel $brands;
     private ListingBrandService $service;

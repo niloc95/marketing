@@ -16,6 +16,10 @@
     "list:serve": "php -S '[::]:8095' -t public vendor/codeigniter4/framework/system/rewrite.php",
     "list:watch": "node scripts/dev-reload.js",
     "list:hot": "node scripts/dev-hot.js",
+    "dev:install": "node scripts/dev-service.js install",
+    "dev:restart": "node scripts/dev-service.js restart",
+    "dev:status": "node scripts/dev-service.js status",
+    "dev:uninstall": "node scripts/dev-service.js uninstall",
     "mail:dev": "node scripts/mailpit.js",
     "list:build": "npm run list:css && node scripts/build-listing-app.js"
   },

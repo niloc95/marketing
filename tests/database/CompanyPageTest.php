@@ -1,8 +1,8 @@
 <?php
 
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * /company, the directory's own company page, and our social links.
@@ -15,13 +15,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class CompanyPageTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     public function testTheAboutPageRenders(): void
     {

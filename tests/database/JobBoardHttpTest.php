@@ -10,9 +10,9 @@ use App\Services\JobBoardService;
 use CodeIgniter\Config\Services;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use CodeIgniter\Test\StreamFilterTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The Jobs board through its real routes and forms: CSRF, the honeypot and
@@ -29,14 +29,9 @@ use CodeIgniter\Test\StreamFilterTrait;
  */
 final class JobBoardHttpTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
     use StreamFilterTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private JobPostModel $posts;
     private int $categoryId;

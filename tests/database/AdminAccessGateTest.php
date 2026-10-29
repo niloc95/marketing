@@ -2,9 +2,9 @@
 
 use App\Libraries\CloudflareAccess;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
+use Tests\Support\FreshDatabase;
 
 /**
  * The admin gate as wired: CloudflareAccessFilter on every /admin* route, and
@@ -17,13 +17,8 @@ use Config\Services;
  */
 final class AdminAccessGateTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private const TEAM = 'webscheduler.cloudflareaccess.com';
     private const AUD  = 'test-aud-tag';

@@ -3,12 +3,12 @@
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Config\Sites;
 use Tests\Support\ValidListingInput;
 use Tests\Support\WithEnv;
+use Tests\Support\FreshDatabase;
 
 /**
  * A signup on the wrong site is handed to the right one, with what was typed.
@@ -24,15 +24,10 @@ use Tests\Support\WithEnv;
  */
 final class CrossHostSignupTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
     use ValidListingInput;
     use WithEnv;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private const APP_HOST = 'local.webscheduler.app';
 

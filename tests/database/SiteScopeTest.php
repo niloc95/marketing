@@ -3,11 +3,11 @@
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Config\Sites;
 use Tests\Support\WithEnv;
+use Tests\Support\FreshDatabase;
 
 /**
  * Each site shows its own countries, and nothing changes until .app is live.
@@ -23,14 +23,9 @@ use Tests\Support\WithEnv;
  */
 final class SiteScopeTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
     use WithEnv;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     /** Not the app host, so za. Redirects go to Sites::host(ZA), the baseURL's host. */
     private const ZA_HOST  = 'example.com';

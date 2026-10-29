@@ -6,8 +6,8 @@ use App\Models\DirectoryListingServiceModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * "What are you looking for?" — a typed search read into category, place and
@@ -24,13 +24,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class SmartSearchTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
 

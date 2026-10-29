@@ -1,8 +1,8 @@
 <?php
 
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The sitemap's lastmod for its fixed pages.
@@ -17,13 +17,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class SitemapLastmodTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private string $manifest = ROOTPATH . 'view-lastmod.json';
 

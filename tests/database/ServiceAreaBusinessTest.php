@@ -8,9 +8,9 @@ use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Mobile / service-area businesses: "address required" and "address publicly
@@ -29,13 +29,8 @@ use Tests\Support\ValidListingInput;
 final class ServiceAreaBusinessTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private const LAT = '-26.0920';
     private const LNG = '27.9810';

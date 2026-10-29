@@ -6,8 +6,8 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryService;
 use App\Services\ListingFacetService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Facets — the structured facts a listing states, and the filters built on them.
@@ -36,13 +36,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ListingFacetTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private DirectoryListingFacetModel $facets;

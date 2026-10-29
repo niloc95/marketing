@@ -6,9 +6,9 @@ use App\Services\DirectorySettings;
 use App\Services\PracticeLocationService;
 use App\Services\TeamMemberService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Comparison;
+use Tests\Support\FreshDatabase;
 
 /**
  * /compare and its editor at /admin/comparison.
@@ -24,13 +24,8 @@ use Config\Comparison;
  */
 final class ComparisonPageTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     protected function setUp(): void
     {

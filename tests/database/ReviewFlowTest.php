@@ -8,8 +8,8 @@ use App\Models\DirectoryReviewModel;
 use App\Services\DirectoryService;
 use App\Services\ReviewService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Customer reviews end to end, against the real schema.
@@ -37,13 +37,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ReviewFlowTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private ReviewService $svc;
     private DirectoryReviewModel $reviews;

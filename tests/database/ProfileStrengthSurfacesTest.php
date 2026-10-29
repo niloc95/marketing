@@ -7,10 +7,10 @@ use App\Services\DirectoryListingMutationService;
 use App\Services\ListingQualityService;
 use App\Services\ProfileNudgeService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Profile strength beyond the owner's own page: the live bar on /add-profile
@@ -32,13 +32,8 @@ use Tests\Support\ValidListingInput;
 final class ProfileStrengthSurfacesTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private ListingQualityService $quality;

@@ -4,8 +4,8 @@ use App\Controllers\Manage;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Deleting a gallery photo in place, from the edit pages' script.
@@ -23,13 +23,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class PhotoDeleteAjaxTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingPhotoModel $photos;
 

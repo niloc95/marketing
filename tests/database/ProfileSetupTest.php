@@ -6,10 +6,10 @@ use App\Models\ProfileSetupOrderModel;
 use App\Services\ProfileSetupService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Directory as DirectoryConfig;
 use Config\Services;
+use Tests\Support\FreshDatabase;
 
 /**
  * /profile-setup: we complete a profile for a single PayFast payment.
@@ -31,13 +31,8 @@ use Config\Services;
  */
 final class ProfileSetupTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private ProfileSetupService $svc;
     private ProfileSetupOrderModel $orders;

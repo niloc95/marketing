@@ -5,7 +5,7 @@ use App\Models\DirectoryListingTeamModel;
 use App\Services\DirectoryAdminService;
 use App\Services\TeamMemberService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Team members: what one form submission does to a listing's stored rows.
@@ -24,12 +24,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class TeamMemberServiceTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private TeamMemberService $service;
     private DirectoryListingTeamModel $members;

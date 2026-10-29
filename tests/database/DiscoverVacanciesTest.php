@@ -4,8 +4,8 @@ use App\Models\JobPostModel;
 use App\Services\JobBoardService;
 use CodeIgniter\Config\Services;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Jobs in the site's own Discover box. Until Oct 2026 Discover read business
@@ -18,13 +18,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class DiscoverVacanciesTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     protected function setUp(): void
     {

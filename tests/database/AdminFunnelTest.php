@@ -3,8 +3,8 @@
 use App\Filters\AdminFilter;
 use App\Services\FunnelService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * /admin/funnel and the FunnelService behind it.
@@ -20,13 +20,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class AdminFunnelTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private string $now;
 

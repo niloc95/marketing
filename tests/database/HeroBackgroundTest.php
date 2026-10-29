@@ -6,8 +6,8 @@ use App\Models\DirectorySettingModel;
 use App\Services\DirectorySettings;
 use App\Services\HeroImageService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The home hero's optional background video: an uploaded file or a YouTube
@@ -19,13 +19,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class HeroBackgroundTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     /** Files written under FCPATH by a test, removed again in tearDown(). */
     private array $written = [];

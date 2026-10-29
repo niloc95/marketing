@@ -2,7 +2,7 @@
 
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The branch form and the branch profile panels actually render.
@@ -22,12 +22,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class LocationFormRenderTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private function renderForm(array $rows = []): string
     {

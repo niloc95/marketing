@@ -7,7 +7,7 @@ use App\Models\DirectoryPracticeLocationModel;
 use App\Services\DirectoryService;
 use App\Services\PracticeLocationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Extra branches, reconciled from one form submission.
@@ -25,12 +25,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
  */
 final class PracticeLocationServiceTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private PracticeLocationService $service;
     private DirectoryPracticeLocationModel $locations;

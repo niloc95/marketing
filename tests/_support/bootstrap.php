@@ -17,3 +17,11 @@ foreach (['sites.app.enabled' => 'false', 'sites.app.host' => 'local.webschedule
     $_ENV[$key] = $_SERVER[$key] = $value;
     putenv($key . '=' . $value);
 }
+
+// The index gates go back to Config\Directory's defaults. The dev .env mirrors
+// production's (indexMinDescription = 0 since 25 Oct 2026), and ProfileVisibilityTest
+// pins the defaults, so it failed on any machine whose .env followed prod.
+foreach (['directory.indexMinDescription', 'directory.indexMinQuality'] as $key) {
+    unset($_ENV[$key], $_SERVER[$key]);
+    putenv($key);
+}

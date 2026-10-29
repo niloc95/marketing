@@ -5,8 +5,8 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Finding a business by the people in it — search results and the typeahead.
@@ -21,13 +21,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class TeamSearchTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $categoryId;

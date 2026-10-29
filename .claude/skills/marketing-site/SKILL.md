@@ -46,7 +46,7 @@ site's config, if a brand-wide change is needed.
 |---|---|
 | `npm run site:css` | Compile Tailwind once → `marketing-site/assets/styles.css` |
 | `npm run site:dev` | Same, `--watch`, for live editing |
-| `npm run site:serve` | Serve the **source** at http://localhost:8096 (8095 is the Local app, 8098 the `international-app` worktree) |
+| `npm run site:serve` | Serve the **source** at http://localhost:8096 (8095 is the Local app) |
 | `npm run site:build` | Assemble the deployable site → `dist/site/` (runs the guards below) |
 | `npm run site:preview` | Serve the **build output** at http://localhost:8097 |
 | `npm run site:shots` | Capture real product screenshots → `assets/screenshots/` |

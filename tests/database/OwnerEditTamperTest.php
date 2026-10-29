@@ -6,9 +6,9 @@ use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPracticeLocationModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * A signed in owner who hand crafts the manage/edit POST.
@@ -29,13 +29,8 @@ use Tests\Support\ValidListingInput;
 final class OwnerEditTamperTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     /** Columns an owner must never be able to set, with the forged value posted for each. */
     private const FORGED = [

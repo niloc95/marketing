@@ -10,8 +10,8 @@ use App\Services\DirectoryAdminService;
 use App\Services\DirectorySettings;
 use App\Services\VerificationService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Directory as DirectoryConfig;
+use Tests\Support\FreshDatabase;
 
 /**
  * The Verified Business state machine and, above all, the money.
@@ -29,12 +29,7 @@ use Config\Directory as DirectoryConfig;
  */
 final class VerificationFlowTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
+    use FreshDatabase;
 
     private VerificationService $svc;
     private DirectoryVerificationModel $verifications;

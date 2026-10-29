@@ -8,8 +8,8 @@ use App\Models\JobPostModel;
 use App\Models\JobResponseModel;
 use App\Services\JobBoardService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * The Jobs board end to end, against the real schema.
@@ -32,13 +32,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class JobBoardFlowTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private JobBoardService $svc;
     private JobPostModel $posts;

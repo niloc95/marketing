@@ -6,9 +6,9 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
 use App\Services\DirectorySettings;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * A signup with an address that is already listed must not touch that listing.
@@ -37,13 +37,8 @@ use Tests\Support\ValidListingInput;
 final class DuplicateSignupUploadsTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private const EMAIL = 'owner@known-business.test';
 

@@ -10,9 +10,9 @@ use App\Services\HolidayHoursService;
 use App\Services\ListingQualityService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Tests\Support\ValidListingInput;
+use Tests\Support\FreshDatabase;
 
 /**
  * Public holiday hours through the real write paths, search, the profile
@@ -26,13 +26,8 @@ use Tests\Support\ValidListingInput;
 final class HolidayHoursTest extends CIUnitTestCase
 {
     use ValidListingInput;
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $categoryId;

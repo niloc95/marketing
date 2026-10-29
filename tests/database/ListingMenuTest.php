@@ -7,8 +7,8 @@ use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
 use CodeIgniter\HTTP\Files\UploadedFile;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * A food listing's uploaded menu — ListingMenuService and Directory::menu().
@@ -30,13 +30,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class ListingMenuTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private string $tmp;
     private int $restaurantId;

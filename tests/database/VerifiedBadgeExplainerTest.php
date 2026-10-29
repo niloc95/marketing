@@ -3,8 +3,8 @@
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Every Verified Business pill says what was checked, and only a live badge
@@ -16,13 +16,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class VerifiedBadgeExplainerTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $categoryId;

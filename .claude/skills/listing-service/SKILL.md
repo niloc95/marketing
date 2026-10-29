@@ -904,24 +904,26 @@ are the ones that ride along silently. Checked against `.env.production.example`
 Production `.env` also carries `sites.app.enabled = true` and `sites.app.analyticsId`
 (the .app switch, see `two-sites`) and `directory.indexMinDescription = 0`.
 
-### Worktrees, ports and databases
+### One checkout, one server, one database
 
-Another session may be using the main checkout (port 8095): never `git switch` there.
-Work in a worktree under `../marketing-worktrees/` and give it its own everything:
+Since 29 Oct 2026 there is exactly one of each. Sessions take turns.
 
-1. `git worktree add ../marketing-worktrees/<name> -b <branch> origin/main`
-2. **Copy** `vendor/` (`cp -R ../../marketing/vendor vendor`), never symlink it: a
-   symlinked vendor makes Composer autoload the main checkout's `app/`. Symlinking
-   `node_modules` is fine.
-3. Copy `.env`, then change `app.baseURL` to a free port, and `database.default.database`
-   / `database.tests.database` to new databases (create them `utf8mb4`), then `php spark
-   migrate --all` and seed.
-4. Copy the gitignored uploads (`public/assets/hero/uploads`, `public/assets/listings`)
-   if you need photos and videos.
+- **Code:** this checkout. `git switch -c <branch>` for a change, back to `main` when it
+  is merged. No git worktrees.
+- **Server:** http://localhost:8095, run by launchd (`deploy/dev/`,
+  `scripts/dev-service.js`). It runs `npm run list:hot`: `php -S`, Tailwind watch and
+  live reload. `npm run dev:install` once per machine, `dev:status` to check,
+  `dev:restart` after `composer install` or a `.env` edit, logs in
+  `~/Library/Logs/webscheduler-dev.log`. It serves whatever branch is checked out. Never
+  start a second server or port.
+- **Databases:** dev `webscheduler_directory`, tests `webscheduler_directory_tests`.
+  A branch's migration runs against the dev DB with `php spark migrate --all`.
+- **.app locally:** set `sites.app.enabled = true` and `sites.app.host = app.localhost`
+  in `.env` and `npm run dev:restart`. co.za stays `localhost:8095`, .app is
+  `app.localhost:8095`. Put it back when done.
 
-Ports in use: 8095 main checkout, 8096 marketing `site:serve`, 8097 `site:preview`, 8098
-the `international-app` worktree (co.za on `localhost:8098`, .app on
-`app.localhost:8098`). Check with `lsof -i :<port>` before picking one.
+Other ports: 8096 marketing `site:serve`, 8097 `site:preview` (marketing site only,
+started on demand).
 
 ## Commands
 
@@ -982,22 +984,26 @@ two-terminal split without hot reload.
 
 ## Tests
 
-- `php vendor/bin/phpunit` runs everything (about 1,480 tests). It is DDL bound: every
-  test class re-runs the migrations, so a full run takes 10 to 20+ minutes and a slow run
-  is not a hung run. Iterate with `--filter` or a single file.
-- **Never run two suites against the same test database.** Worktrees that share
-  `database.tests.database` corrupt each other's migration state (`Can't DROP …`,
-  `Unknown column …`, "gap in the migration sequence"). Killing a run mid migration does
-  the same: drop and recreate that test database. Check `pgrep -f vendor/bin/phpunit`.
+- `php vendor/bin/phpunit` runs everything (about 1,600 tests) in about 30 seconds.
+  Iterate with `--filter` anyway.
+- **DB test classes use `Tests\Support\FreshDatabase`, never `DatabaseTestTrait`
+  directly.** `TestSchema` drops every table and migrates once per run (refusing any
+  database whose name does not end in `_tests`), then empties every table before each
+  test in one transaction, and the throttler service is reset (it otherwise keeps its
+  buckets across tests). AUTO_INCREMENT is not reset: use the id an insert returns.
+  Until 29 Oct 2026 every test re-ran all migrations and a run took 20 to 40+ minutes.
+- The bootstrap (`tests/_support/bootstrap.php`) pins `sites.app.*` and resets the index
+  gates (`directory.indexMin*`) to their code defaults, so the dev `.env` cannot change
+  test results.
 - `tests/database/` needs the `tests` DB group; `tests/unit/` does not.
 - 404s are responses (`assertStatus(404)`), feature POSTs meet the real CSRF filter
   (send `csrf_token() => csrf_hash()`), the settings cache must be dropped in setUp
   (`(new DirectorySettings())->forget()`), and mocks injected with `Services::injectMock`
   must be reset in tearDown.
 - Admin pages in tests: `withSession(['dir_admin' => true, AdminFilter::SEEN_KEY => time()])`.
-- `SmartSearchTest::testTheHomeExamplesComeFromRealListings` fails on `main` (stale
-  heading assertion); every other test should pass before a release.
-- New migrations: omit `'after' => …` (it forces a table copy per test run).
+- Every test must pass before a release. `--order-by=random` must pass too: it is how
+  leaks between tests show up.
+- New migrations: omit `'after' => …` (it forces a full table copy).
 
 ## Verify workflow
 

@@ -9,8 +9,8 @@ use App\Services\JobBoardService;
 use CodeIgniter\Config\Services;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Screening questions on Jobs board vacancies (App\Libraries\Screening),
@@ -27,13 +27,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class JobScreeningTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private JobPostModel $posts;
     private JobBoardService $svc;

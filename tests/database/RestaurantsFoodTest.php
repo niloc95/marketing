@@ -5,8 +5,8 @@ use App\Models\DirectoryListingFacetModel;
 use App\Models\DirectoryListingModel;
 use App\Services\DirectoryService;
 use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\FreshDatabase;
 
 /**
  * Restaurants & Food — the first group whose facets come from the GROUP tier of
@@ -30,13 +30,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  */
 final class RestaurantsFoodTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait;
+    use FreshDatabase;
     use FeatureTestTrait;
-
-    protected $namespace   = 'App';
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
 
     private DirectoryListingModel $listings;
     private int $pizzaId;
