@@ -2633,6 +2633,13 @@
            focus:border-primary-300 focus:ring-primary-300;
   }
 
+  /* Jobs matching a Discover search, above the business results. */
+  .discover-vacancies         { @apply mb-8; }
+  .discover-vacancies-head    { @apply mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1; }
+  .discover-vacancies-head h2 { @apply text-base font-semibold text-slate-900; }
+  .discover-vacancies-head a  { @apply text-sm font-medium text-primary-500 hover:underline; }
+  .dark .discover-vacancies-head h2 { @apply text-slate-100; }
+  .dark .discover-vacancies-head a  { @apply text-primary-300; }
   .posting-list { @apply border-t border-slate-200; }
   .posting-list > li { @apply border-b border-slate-200; }
   .posting-row { @apply relative flex items-center gap-4 py-5 transition-colors sm:gap-8; }

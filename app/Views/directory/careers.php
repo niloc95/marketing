@@ -90,7 +90,7 @@ $faqs = [
                 <div class="posting-filter-search">
                     <?= lucide('search', 'posting-filter-icon h-4 w-4 shrink-0') ?>
                     <label class="sr-only" for="cf-q">Discover roles</label>
-                    <input type="search" id="cf-q" name="q" maxlength="100" placeholder="Search roles" value="<?= esc($filters['q'], 'attr') ?>">
+                    <input type="search" id="cf-q" name="q" maxlength="100" placeholder="Discover roles" value="<?= esc($filters['q'], 'attr') ?>">
                 </div>
                 <label class="sr-only" for="cf-team">Team</label>
                 <select id="cf-team" name="team">

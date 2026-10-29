@@ -236,6 +236,41 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             <?php endif; ?>
 
             <div>
+                <?php // Jobs found by the words as typed (Directory::index()),
+                      // in the /jobs and /careers row style, above the business
+                      // results on page 1. ?>
+                <?php if (($vacancies ?? []) !== [] || ($roles ?? []) !== []): ?>
+                    <section class="discover-vacancies" aria-labelledby="discover-vacancies-heading">
+                        <div class="discover-vacancies-head">
+                            <h2 id="discover-vacancies-heading">Jobs matching &ldquo;<?= esc($filters['q']) ?>&rdquo;</h2>
+                            <?php if ($vacancies !== []): ?>
+                                <a href="<?= esc(base_url('jobs') . '?' . http_build_query(['kind' => 'job', 'q' => $filters['q']])) ?>">All matching jobs</a>
+                            <?php endif; ?>
+                        </div>
+                        <ul class="posting-list">
+                            <?php foreach ($vacancies as $p): ?>
+                                <?= view('jobs/_row', ['p' => $p, 'svc' => $jobs], ['saveData' => false]) ?>
+                            <?php endforeach; ?>
+                            <?php foreach ($roles as $r): ?>
+                                <li>
+                                    <a class="posting-row" href="<?= esc($careers->url($r), 'attr') ?>">
+                                        <span class="posting-row-main">
+                                            <span class="badge badge-category cat-tint-blue gap-1"><?= lucide('briefcase', 'h-3 w-3 shrink-0') ?>Careers at WebScheduler</span>
+                                            <span class="posting-row-title mt-1.5"><?= esc($r['title']) ?></span>
+                                            <span class="posting-row-summary line-clamp-1"><?= esc($r['summary']) ?></span>
+                                            <span class="posting-row-sub"><?= esc(implode(' or ', $careers->locationsOf($r)) ?: 'South Africa') ?></span>
+                                        </span>
+                                        <span class="posting-row-meta">
+                                            <span><?= esc(implode(' or ', $careers->locationsOf($r)) ?: 'South Africa') ?></span>
+                                        </span>
+                                        <?= lucide('chevron-right', 'posting-row-arrow h-5 w-5 shrink-0') ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </section>
+                <?php endif; ?>
+
                 <div class="results-head">
                     <p class="text-sm text-slate-500 dark:text-slate-400"><?= (int) $result['total'] ?> result<?= $result['total'] === 1 ? '' : 's' ?></p>
                     <?php // Not offered on a near-me search: that list is ordered by
@@ -318,7 +353,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
 
                 <?php if (empty($result['items'])): ?>
                     <div class="empty">
-                        <p class="mb-4">Nothing to discover for that yet.</p>
+                        <p class="mb-4"><?= ($vacancies ?? []) !== [] || ($roles ?? []) !== [] ? 'No business profiles match that yet.' : 'Nothing to discover for that yet.' ?></p>
                         <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
                         <?php // The moment someone knows a business we are missing. Carries
                               // the category and province over, but only as the controller

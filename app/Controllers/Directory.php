@@ -9,6 +9,7 @@ use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryPracticeLocationModel;
 use App\Services\DirectoryListingMutationService;
+use App\Services\CareersService;
 use App\Services\DirectoryService;
 use App\Services\DirectorySettings;
 use App\Services\JobBoardService;
@@ -165,8 +166,20 @@ class Directory extends BaseController
             $filters['group'] = '';
         }
 
+        // Vacancies matching the words as typed, above the business results
+        // on the first page only. $filters['q'], not $effective['q']: the
+        // interpreter takes "medical" out of "Junior Medical Admin Assistant"
+        // as a category, and the job is found by its whole title.
+        $jobs     = new JobBoardService();
+        $careers  = new CareersService();
+        $typed    = $page <= 1 ? (string) $filters['q'] : '';
+
         return view('directory/index', [
             'result'      => $result,
+            'vacancies'   => $typed === '' ? [] : $jobs->discover($typed, 3),
+            'roles'       => $typed === '' || service('site')->isApp() ? [] : $careers->discover($typed, 2),
+            'jobs'        => $jobs,
+            'careers'     => $careers,
             'filters'     => $filters,
             // What the words were read as, or null for a literal search. The
             // view names each part, with a link to take it away.
@@ -303,7 +316,46 @@ class Directory extends BaseController
         // page it belongs to.
         $q = $this->searchFilters()['q'];
 
-        return $this->response->setJSON(['items' => (new DirectoryService())->suggest($q)]);
+        // Vacancies take up to three of the eight rows, after the businesses
+        // and people: a job title typed in full ("Junior Medical Admin
+        // Assistant") otherwise offered nothing at all.
+        $vacancies = $this->vacancySuggestions($q);
+        $items     = (new DirectoryService())->suggest($q, 8 - count($vacancies));
+
+        return $this->response->setJSON(['items' => array_merge($items, $vacancies)]);
+    }
+
+    /**
+     * Rows for suggest(): live jobs, then our own open careers roles on the
+     * .co.za site (careers is South African hiring only).
+     *
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function vacancySuggestions(string $q): array
+    {
+        $jobs = new JobBoardService();
+        $out  = [];
+        foreach ($jobs->discover($q, 2) as $post) {
+            $out[] = [
+                'type'  => 'job',
+                'label' => (string) $post['title'],
+                'sub'   => implode(' · ', array_filter([$jobs->hiringName($post), $jobs->placeText($post)])),
+                'url'   => $jobs->url($post),
+            ];
+        }
+        if (! service('site')->isApp()) {
+            $careers = new CareersService();
+            foreach ($careers->discover($q, 1) as $role) {
+                $out[] = [
+                    'type'  => 'job',
+                    'label' => (string) $role['title'],
+                    'sub'   => 'WebScheduler careers · ' . (implode(' or ', $careers->locationsOf($role)) ?: 'South Africa'),
+                    'url'   => $careers->url($role),
+                ];
+            }
+        }
+
+        return $out;
     }
 
     /**
