@@ -44,6 +44,11 @@ class DirectoryListingModel extends Model
         'job_alerts', 'job_alerts_token',
         // Owner's reviews switch. Service-written only (ReviewService::setEnabled), never OWNER_EDITABLE.
         'reviews_enabled',
+        // Registration number, ORCID, ResearchGate and the owner's switch for
+        // showing them. Written through ProfessionalRegistration::columns()
+        // behind its marker, never OWNER_EDITABLE; reg_checked_at by the admin
+        // service only.
+        'reg_number', 'orcid', 'researchgate_url', 'registration_visible', 'reg_checked_at',
         // Set once at signup by DirectoryListingMutationService::submitPublic().
         'signup_source',
         // Derived from trading_hours by deriveHolidayColumns() below, and the

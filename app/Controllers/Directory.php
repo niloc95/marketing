@@ -800,6 +800,9 @@ class Directory extends BaseController
 
         return view('directory/show', [
             'l'       => $listing,
+            // Explicit, not omitted: the renderer keeps data between renders,
+            // and a public page must never inherit a preview's approve bar.
+            'preview' => null,
             'related' => $svc->relatedListings(
                 (int) $listing['id'],
                 $listing['category_id'] !== null ? (int) $listing['category_id'] : null,
@@ -916,6 +919,82 @@ class Directory extends BaseController
      * page with outbound links to leak through Referer — the concern noted on
      * Manage::redeem(), handled here the same way.
      */
+    /**
+     * The owner's private preview of a profile we set up for them, before it
+     * is live: the real profile page, rendered from the pending row the token
+     * belongs to, with an approve bar on top. See sendPreview().
+     *
+     * The token is a credential in the URL, so the page is kept out of
+     * everything that would copy it somewhere: noindex, no caching, no
+     * referrer on outbound links, and no analytics (layouts/public.php).
+     */
+    public function preview(string $token)
+    {
+        $row = (new DirectoryListingMutationService())->findByPreviewToken($token);
+        if ($row === null) {
+            return $this->previewGone();
+        }
+        if (($moved = $this->redirectToOwningSite($row)) !== null) {
+            return $moved;
+        }
+
+        $svc     = new DirectoryService();
+        $listing = $svc->profileFor($row);
+        hours_context($listing);
+
+        $this->privatePage();
+
+        return view('directory/show', [
+            'l'       => $listing,
+            'related' => [],
+            'preview' => ['token' => $token],
+        ]);
+    }
+
+    /**
+     * Approve = verify: the same transition, sign in and next step as the
+     * link in the usual verification email, by handing over to verify().
+     */
+    public function previewApprove(string $token)
+    {
+        if ((new DirectoryListingMutationService())->findByPreviewToken($token) === null) {
+            return $this->previewGone();
+        }
+
+        return $this->verify($token);
+    }
+
+    public function previewChanges(string $token)
+    {
+        $sent = (new DirectoryListingMutationService())
+            ->requestPreviewChanges($token, (string) $this->request->getPost('message'));
+        if (! $sent && (new DirectoryListingMutationService())->findByPreviewToken($token) === null) {
+            return $this->previewGone();
+        }
+
+        return redirect()->to(base_url('preview/' . $token))->with(
+            $sent ? 'success' : 'error',
+            $sent ? 'Thanks, we have your note. We will make the changes and let you know.' : 'Please tell us what you would like changed.'
+        );
+    }
+
+    /** No caching, no indexing, no referrer: for a page whose URL is a secret. */
+    private function privatePage(): void
+    {
+        $this->response->setHeader('Cache-Control', 'no-store, private');
+        $this->response->setHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->response->setHeader('Referrer-Policy', 'no-referrer');
+    }
+
+    /** An unknown, expired or already approved preview link. */
+    private function previewGone()
+    {
+        $this->privatePage();
+        $this->response->setStatusCode(410);
+
+        return view('directory/preview_gone');
+    }
+
     public function verify(string $token)
     {
         $mut     = new DirectoryListingMutationService();

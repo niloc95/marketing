@@ -406,6 +406,19 @@ class Admin extends BaseController
         );
     }
 
+    /**
+     * Email the owner a private preview to approve: the "we set up your
+     * profile" hand over. Pending only; see sendPreview().
+     */
+    public function sendPreview(int $id)
+    {
+        return $this->outcome(
+            (new DirectoryListingMutationService())->sendPreview($id),
+            'Preview sent. The profile goes live when the owner approves it.',
+            'Could not send. The profile must be pending and have a valid email.'
+        );
+    }
+
     public function remove(int $id)
     {
         return $this->outcome(

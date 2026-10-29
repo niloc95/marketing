@@ -799,7 +799,21 @@ if (! function_exists('schema_local_business')) {
             $sameAs[] = (string) social_profile_url($field, $l[$field] ?? '');
         }
         $sameAs[] = listing_website_url($l['website'] ?? '');
-        $sameAs   = array_values(array_filter($sameAs));
+
+        // The registration number and research profiles, only when the owner
+        // has switched them on for a regulated category — the same reading the
+        // credentials panel renders, so the page and the markup never disagree.
+        // The number is a PropertyValue named by its regulator, not a
+        // credential: it identifies the professional, it does not certify them.
+        $identifier = null;
+        if (($reg = \App\Libraries\ProfessionalRegistration::forDisplay($l)) !== null) {
+            if ($reg['number'] !== '') {
+                $identifier = ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']];
+            }
+            $sameAs[] = (string) $reg['orcid'];
+            $sameAs[] = (string) $reg['researchgate'];
+        }
+        $sameAs = array_values(array_filter($sameAs));
 
         $hours = array_merge(
             schema_opening_hours($l['trading_hours'] ?? null),
@@ -986,6 +1000,7 @@ if (! function_exists('schema_local_business')) {
             'address'                  => schema_postal_address($l),
             'geo'                      => schema_geo($l),
             'openingHoursSpecification' => $hours !== [] ? $hours : null,
+            'identifier'               => $identifier,
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
             'department'               => $branches !== [] ? $branches : null,

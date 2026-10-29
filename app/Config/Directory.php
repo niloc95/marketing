@@ -267,6 +267,14 @@ class Directory extends BaseConfig
     public int $verifyTtl = 172800; // 48h
 
     /**
+     * How long a "preview and approve" link stays valid (seconds). It is the
+     * verify token by another route (see sendPreview()), so it publishes the
+     * same way; longer than verifyTtl because a customer we built a profile
+     * for may want a few days to read it and ask for changes.
+     */
+    public int $previewTtl = 1209600; // 14 days
+
+    /**
      * How long an owner "manage my listing" magic link stays valid (seconds).
      * Much shorter than verifyTtl — that is a one-off welcome link, this one
      * grants edit access on demand and can be re-requested at any time.

@@ -1459,9 +1459,20 @@ class DirectoryService
     public function getProfile(string $slug): ?array
     {
         $listing = $this->listings->findPublishedBySlug($slug);
-        if ($listing === null) {
-            return null;
-        }
+
+        return $listing === null ? null : $this->profileFor($listing);
+    }
+
+    /**
+     * Everything the profile page renders, for a listing row already in hand.
+     * getProfile() for the public page; the owner's private preview passes a
+     * pending row it found by token, so the preview is the real page.
+     *
+     * @param array<string,mixed> $listing
+     * @return array<string,mixed>
+     */
+    public function profileFor(array $listing): array
+    {
         $listing['category'] = ($listing['category_id'] ?? null)
             ? $this->categories->find((int) $listing['category_id'])
             : null;

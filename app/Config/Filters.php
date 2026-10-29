@@ -137,7 +137,13 @@ class Filters extends BaseFilters
             // only what its own fields score. It is exempt because the token is
             // regenerated on every POST, and the background call would rotate
             // it under the signup form. Listing::score() throttles it per IP.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score']],
+            //
+            // preview/* (approve, ask for changes) is exempt like unsubscribe/*:
+            // the 64 hex secret in the path is the authority, and whoever
+            // can forge the POST already holds the link. The owner may read the
+            // preview for hours, past the two hour CSRF cookie, and a stale
+            // form token cost them their note (29 Oct 2026).
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

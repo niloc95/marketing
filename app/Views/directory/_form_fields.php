@@ -153,7 +153,7 @@ helper('directory_hours');
                       // ages/curriculum one. The second cannot be derived from the
                       // first: a preschool and a driving school share a group and
                       // are asked completely different questions. ?>
-                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" data-menu="<?= \App\Services\ListingMenuService::offersMenu($p['group_name'] ?? null, $p['slug'] ?? null) ? '1' : '' ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" data-menu="<?= \App\Services\ListingMenuService::offersMenu($p['group_name'] ?? null, $p['slug'] ?? null) ? '1' : '' ?>" data-regulator="<?= esc(\App\Libraries\ProfessionalRegistration::regulatorFor($p['slug'] ?? null, $p['group_name'] ?? null)['key'] ?? '', 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
             <?php endforeach; ?>
             <?= $cur !== null ? '</optgroup>' : '' ?>
         </select>
@@ -748,6 +748,8 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 </div>
     </div>
 </details>
+
+<?= view('directory/_registration_fields', ['v' => $v, 'err' => $err, 'categories' => $categories], ['saveData' => false]) ?>
 </section>
 
 <?php if ($showConsent): ?>
