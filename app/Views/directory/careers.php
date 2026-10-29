@@ -50,7 +50,7 @@ $faqs = [
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Careers | ' . $siteName,
-    'description' => 'Work at ' . $siteName . ' and help South African businesses get found. See our open roles in sales, customer support and engineering.',
+    'description' => 'Work at ' . $siteName . ' and help South African businesses get discovered. See our open roles in sales, customer support and engineering.',
     'canonical'   => $canonical,
     // A filtered list is the same page narrowed; only the plain one is indexed.
     'robots'      => ! $filtered,
@@ -62,7 +62,7 @@ $faqs = [
 <section class="hero">
     <div class="container">
         <span class="eyebrow text-white/80">Careers</span>
-        <h1 class="mt-2 text-2xl sm:text-3xl">Help South African businesses get found</h1>
+        <h1 class="mt-2 text-2xl sm:text-3xl">Help South African businesses get discovered</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
             <?= esc($siteName) ?> is a local business discovery and visibility platform. We are a small team building
             something useful for the businesses in our own towns, and we are looking for people who care about them too.

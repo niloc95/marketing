@@ -337,7 +337,7 @@ $metaDesc = listing_meta_description($l);
                       // Worded as an offer to the owner, so it never reads as a warning
                       // that this business is unchecked. ?>
                 <?php if (signup_cta()['verified'] && ! listing_is_verified_business($l)): ?>
-                    <a class="contact-suggest" href="<?= base_url('verified') ?>" rel="nofollow"><?= lucide('badge-check') ?>Is this your business? Get the Verified Business badge</a>
+                    <a class="contact-suggest" href="<?= base_url('verified') ?>"><?= lucide('badge-check') ?>Is this your business? Get the Verified Business badge</a>
                 <?php endif; ?>
 
                 <?= view('directory/_service_area_panel', ['l' => $l, 'class' => 'mt-5'], ['saveData' => false]) ?>

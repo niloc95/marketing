@@ -1242,6 +1242,7 @@
   .home-cta { @apply mt-10 h-14 px-8 text-base; }
   .home-fine { @apply mx-auto mt-6 max-w-xl text-sm leading-relaxed text-slate-500; }
   .dark .home-fine { @apply text-slate-400; }
+  .home-close-links { @apply mx-auto mt-10 flex max-w-2xl flex-wrap justify-center gap-x-6 gap-y-3 text-sm; }
 
   /* ---- scroll reveal */
   /* Visible by default. Only once directory.js has put .js-reveal on <html>

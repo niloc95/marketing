@@ -442,6 +442,19 @@ $moments = [
                     A free business profile covers your business information, services, contact details, address
                     and map location, photos and opening hours. No monthly fee. No subscription. No obligation.
                 </p>
+                <?php // The pages the footer alone linked to, so the home page passes
+                      // them its weight too. Most are co.za's (Config\Sites::$zaOnlyPaths). ?>
+                <ul class="home-close-links">
+                    <?php if (! site()->isApp()): ?>
+                        <li><a class="home-link" href="<?= base_url('profile-setup') ?>">We set up your profile for you</a></li>
+                        <li><a class="home-link" href="<?= base_url('compare') ?>">How we compare</a></li>
+                        <li><a class="home-link" href="<?= base_url('resources') ?>">Free guides and reports</a></li>
+                    <?php endif; ?>
+                    <li><a class="home-link" href="<?= base_url('jobs') ?>">Jobs and services needed</a></li>
+                    <?php if (! site()->isApp()): ?>
+                        <li><a class="home-link" href="<?= base_url('careers') ?>">Work with us</a></li>
+                    <?php endif; ?>
+                </ul>
             </div>
         </div>
     </section>

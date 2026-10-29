@@ -1019,46 +1019,68 @@ class Directory extends BaseController
     {
         $xml = cache(site_cache_key('directory_sitemap_xml'));
         if ($xml === null) {
-            $svc  = new DirectoryService();
+            $svc      = new DirectoryService();
+            $min      = (int) config('Directory')->landingMinListings;
+            $profiles = $svc->sitemapUrls();
+            $jobs     = (new JobBoardService())->sitemapUrls();
+            // Our own open roles; drafts and closed roles are left out.
+            // co.za's, like every page in Config\Sites::$zaOnlyPaths.
+            $roles = service('site')->isApp() ? [] : (new \App\Services\CareersService())->sitemapUrls();
+            $app   = service('site')->isApp();
+
+            // A lastmod that is always today tells a crawler nothing, and it
+            // learns to ignore it. Fixed pages date from their view's last
+            // change; pages that show profiles, vacancies or roles date from
+            // the newest of those too.
+            $fixed = [
+                ''                     => [['directory/home'], $profiles],
+                'directory'            => [['directory/index'], $profiles],
+                'directory/categories' => [['directory/categories'], $profiles],
+                'add-profile'          => [['directory/form']],
+                'faq'                  => [['directory/faq']],
+                'company'              => [['directory/company']],
+                'verified'             => [['directory/verified']],
+                'compare'              => [['directory/compare']],
+                'resources'            => [['directory/resources', 'public/assets/documents']],
+                'media'                => [['directory/media']],
+                'profile-setup'        => [['directory/profile_setup']],
+                'partners'             => [['directory/partners']],
+                'careers'              => [['directory/careers'], $roles],
+                'jobs'                 => [['jobs/index'], $jobs],
+                'contact'              => [['directory/contact']],
+                'privacy'              => [[$app ? 'legal/app/privacy' : 'legal/privacy']],
+                'terms'                => [[$app ? 'legal/app/terms' : 'legal/terms']],
+                'cookie-policy'        => [['legal/cookies']],
+            ];
+            if ($app) {
+                // .app's twin of /verified, which the filter below takes out.
+                $fixed['plus'] = [['directory/plus']];
+            }
+
+            $pages = [];
+            foreach ($fixed as $path => $entry) {
+                [$views, $rows] = $entry + [1 => []];
+                $dates   = array_column($rows, 'lastmod');
+                $dates[] = $this->viewLastmod($views);
+                $pages[] = ['loc' => base_url($path === '' ? '/' : $path), 'lastmod' => max($dates)];
+            }
+
             $urls = array_merge(
-                [
-                    ['loc' => base_url('/'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('directory'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('directory/categories'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('add-profile'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('faq'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('company'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('verified'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('compare'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('resources'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('media'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('profile-setup'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('partners'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('careers'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('jobs'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('contact'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('privacy'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('terms'), 'lastmod' => date('Y-m-d')],
-                    ['loc' => base_url('cookie-policy'), 'lastmod' => date('Y-m-d')],
-                ],
-                $svc->sitemapLandingUrls((int) config('Directory')->landingMinListings),
-                $svc->sitemapProvinceUrls((int) config('Directory')->landingMinListings),
-                $svc->sitemapCountryUrls((int) config('Directory')->landingMinListings),
-                $svc->sitemapVenueUrls((int) config('Directory')->landingMinListings),
-                $svc->sitemapUrls(),
+                $pages,
+                $svc->sitemapLandingUrls($min),
+                $svc->sitemapProvinceUrls($min),
+                $svc->sitemapCountryUrls($min),
+                $svc->sitemapVenueUrls($min),
+                $profiles,
                 // Live vacancies only; service requests are noindex.
-                (new JobBoardService())->sitemapUrls(),
-                // Our own open roles; drafts and closed roles are left out.
-                // co.za's, like every page in Config\Sites::$zaOnlyPaths.
-                service('site')->isApp() ? [] : (new \App\Services\CareersService())->sitemapUrls()
+                $jobs,
+                $roles
             );
 
             // A sitemap lists its own host's pages only: on local.webscheduler.app,
             // co.za's pages would be URLs that 301 elsewhere.
-            if (service('site')->isApp()) {
-                // .app's twin of /verified, which the filter below takes out.
-                $urls[] = ['loc' => base_url('plus'), 'lastmod' => date('Y-m-d')];
-                $sites  = config(Sites::class);
+            if ($app) {
+                $sites = config(Sites::class);
                 $urls  = array_values(array_filter($urls, static fn (array $u): bool => ! $sites->isZaOnly(
                     ltrim((string) parse_url($u['loc'], PHP_URL_PATH), '/')
                 )));
@@ -1082,5 +1104,48 @@ class Directory extends BaseController
             ->setHeader('ETag', md5($xml))
             ->setContentType('application/xml')
             ->setBody($xml);
+    }
+
+    /** view-lastmod.json, read once per request by viewLastmod(). */
+    private ?array $viewLastmods = null;
+
+    /**
+     * The newest last-change date of these views (names as view() takes them)
+     * or public/ paths, files or folders. The release bundle's
+     * view-lastmod.json holds each file's last commit date, since every file in
+     * it carries the build's mtime; without one (local dev) filemtime() stands in.
+     *
+     * @param list<string> $paths
+     */
+    private function viewLastmod(array $paths): string
+    {
+        if ($this->viewLastmods === null) {
+            $file               = ROOTPATH . 'view-lastmod.json';
+            $this->viewLastmods = is_file($file) ? (array) json_decode((string) file_get_contents($file), true) : [];
+        }
+        $manifest = $this->viewLastmods;
+
+        $dates = [];
+        foreach ($paths as $p) {
+            $public = str_starts_with($p, 'public/');
+            $rel    = $public ? $p : 'app/Views/' . $p . '.php';
+            if ($manifest !== []) {
+                foreach ($manifest as $f => $d) {
+                    if ($f === $rel || str_starts_with($f, $rel . '/')) {
+                        $dates[] = $d;
+                    }
+                }
+                continue;
+            }
+            $abs   = $public ? FCPATH . substr($rel, 7) : ROOTPATH . $rel;
+            $files = is_dir($abs) ? (glob($abs . '/*') ?: []) : [$abs];
+            foreach ($files as $f) {
+                if (is_file($f)) {
+                    $dates[] = date('Y-m-d', (int) filemtime($f));
+                }
+            }
+        }
+
+        return $dates === [] ? date('Y-m-d') : max($dates);
     }
 }

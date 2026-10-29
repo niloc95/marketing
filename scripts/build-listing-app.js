@@ -129,6 +129,24 @@ if (fs.existsSync(docsFrom)) {
   console.log('  • resources/documents/ (' + fs.readdirSync(docsFrom).filter((f) => f.endsWith('.pdf')).length + ' documents)');
 }
 
+// 2a'') Sitemap lastmod for the fixed pages (Directory::sitemap). Every file in
+//       this bundle carries the build's mtime, so the app cannot tell from disk
+//       when a view last changed. Each view's last commit date goes in a manifest
+//       instead; without one (local dev) the sitemap falls back to filemtime().
+const lastmod = {};
+const log = execFileSync('git', ['log', '--format=%cs', '--name-only', '--', 'app/Views', 'public/assets/documents'], {
+  cwd: projectRoot,
+  encoding: 'utf8',
+  maxBuffer: 64 * 1024 * 1024,
+});
+let commitDate = null;
+for (const line of log.split('\n')) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(line)) commitDate = line;
+  else if (line && commitDate && !(line in lastmod)) lastmod[line] = commitDate;
+}
+fs.writeFileSync(path.join(appOut, 'view-lastmod.json'), JSON.stringify(lastmod, null, 1) + '\n');
+console.log('  • view-lastmod.json (' + Object.keys(lastmod).length + ' files)');
+
 // 2b) writable/ skeleton: the directory structure and its deny rules, never the
 //     local cache/logs/session contents.
 const writableOut = path.join(appOut, 'writable');
