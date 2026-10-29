@@ -169,6 +169,37 @@ class CareersService
     }
 
     /**
+     * Our own open roles for a Discover search on the site's main box, every
+     * word in the title or summary in any order. Same few rows as
+     * filterOpen(), so PHP rather than SQL.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function discover(string $q, int $limit = 2): array
+    {
+        $words = array_filter(
+            preg_split('/\s+/u', mb_strtolower(trim($q))) ?: [],
+            static fn (string $w): bool => mb_strlen($w) >= 2
+        );
+        if ($words === [] || mb_strlen(trim($q)) < 3) {
+            return [];
+        }
+
+        $hits = array_filter($this->roles->open(), static function (array $r) use ($words): bool {
+            $text = mb_strtolower($r['title'] . ' ' . $r['summary']);
+            foreach ($words as $w) {
+                if (! str_contains($text, $w)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        return array_slice(array_values($hits), 0, $limit);
+    }
+
+    /**
      * What the Team and Location selects offer: only values some open role
      * has, so no choice ever leads to an empty list.
      *

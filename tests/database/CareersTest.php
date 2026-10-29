@@ -199,7 +199,7 @@ final class CareersTest extends CIUnitTestCase
 
         $result->assertStatus(200);
         $html = html_entity_decode((string) $result->response()->getBody());
-        $this->assertStringContainsString('Help South African businesses get found', $html);
+        $this->assertStringContainsString('Help South African businesses get discovered', $html);
         $this->assertStringContainsString('<link rel="canonical" href="' . base_url('careers') . '"', $html);
         $this->assertStringContainsString('"FAQPage"', $html);
         $this->assertStringContainsString('We have no open roles right now', $html);

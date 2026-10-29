@@ -236,7 +236,7 @@ final class SmartSearchTest extends CIUnitTestCase
         $result->assertOK();
         $body = $result->getBody();
 
-        $this->assertStringContainsString('What are you looking for?', $body);
+        $this->assertStringContainsString('Discover local.', $body);
         $this->assertStringContainsString('Dentist in Sandton', $body);
         $this->assertStringContainsString('data-rotate-placeholders', $body);
     }

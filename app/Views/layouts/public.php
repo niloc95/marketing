@@ -154,7 +154,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                   // role, so this is currently the only search landmark on the site —
                   // but it is the one that is on every page, and it is the one that
                   // appears and disappears under the reader, so it is worth naming. ?>
-            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Search local businesses">
+            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Discover local businesses">
                 <?php // No value, deliberately — see the comment above: this bar is the
                       // "fresh search from anywhere" gesture, so it starts empty even on
                       // a results page, where the hero form holds the current query. ?>

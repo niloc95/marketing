@@ -75,12 +75,7 @@ class JobBoardService
     public function browse(array $filters, int $page = 1, int $perPage = 20): array
     {
         $t = 'xs_directory_job_posts';
-        $b = $this->posts->live()
-            ->select($t . '.*, c.name AS category_name, c.slug AS category_slug,'
-                . ' l.display_name AS listing_name, l.slug AS listing_slug,'
-                . ' l.logo_path AS listing_logo, l.verified_until AS listing_verified_until')
-            ->join('xs_directory_categories AS c', 'c.id = ' . $t . '.category_id', 'left')
-            ->join('xs_directory_listings AS l', 'l.id = ' . $t . '.listing_id', 'left');
+        $b = $this->liveWithListing();
 
         if (in_array($filters['kind'] ?? '', JobPostModel::KINDS, true)) {
             $b->where($t . '.kind', $filters['kind']);
@@ -95,7 +90,7 @@ class JobBoardService
             $b->where($t . '.employment_type', $filters['type']);
         }
         if (($filters['q'] ?? '') !== '') {
-            $b->like($t . '.title', $filters['q']);
+            $this->matchWords($b, $filters['q']);
         }
 
         $items = $b->orderBy($t . '.published_at', 'DESC')->paginate($perPage, 'default', $page);
@@ -105,6 +100,78 @@ class JobBoardService
             'pager' => $this->posts->pager,
             'total' => $this->posts->pager->getTotal('default'),
         ];
+    }
+
+    /**
+     * Live vacancies for a Discover search, so typing "Junior Medical Admin
+     * Assistant" in the site's own box finds the job and not just businesses.
+     *
+     * Jobs only: a service request is someone asking for work to be done, not
+     * something a person discovering local businesses is looking for. Fed the
+     * words as typed, never the interpreted search: the interpreter reads
+     * "medical" as a category and drops it, and no job is called "Junior Admin
+     * Assistant".
+     *
+     * @return list<array<string,mixed>> newest first, joined like browse()
+     */
+    public function discover(string $q, int $limit = 3): array
+    {
+        if (mb_strlen(trim($q)) < 3) {
+            return [];
+        }
+
+        $t = 'xs_directory_job_posts';
+        $b = $this->liveWithListing()->where($t . '.kind', JobPostModel::KIND_JOB);
+        if (! $this->matchWords($b, $q)) {
+            return [];
+        }
+
+        return $b->orderBy($t . '.published_at', 'DESC')->findAll($limit);
+    }
+
+    /** Live posts with the category and listing joined, for lists of rows. */
+    private function liveWithListing(): JobPostModel
+    {
+        $t = 'xs_directory_job_posts';
+
+        return $this->posts->live()
+            ->select($t . '.*, c.name AS category_name, c.slug AS category_slug,'
+                . ' l.display_name AS listing_name, l.slug AS listing_slug,'
+                . ' l.logo_path AS listing_logo, l.verified_until AS listing_verified_until')
+            ->join('xs_directory_categories AS c', 'c.id = ' . $t . '.category_id', 'left')
+            ->join('xs_directory_listings AS l', 'l.id = ' . $t . '.listing_id', 'left');
+    }
+
+    /**
+     * Every word must appear in the title, the company or the business name,
+     * in any order: "medical assistant" finds "Junior Medical Admin
+     * Assistant", and "assistant Dr Bertus" finds it by who is hiring. One
+     * LIKE on the whole phrase found neither.
+     *
+     * Words under two characters are skipped and at most six are used, so a
+     * pasted paragraph cannot build a huge query.
+     *
+     * @return bool false when no usable word was given (nothing was added)
+     */
+    private function matchWords(JobPostModel $b, string $q): bool
+    {
+        $words = array_slice(array_values(array_filter(
+            preg_split('/\s+/u', mb_strtolower(trim($q))) ?: [],
+            static fn (string $w): bool => mb_strlen($w) >= 2
+        )), 0, 6);
+        if ($words === []) {
+            return false;
+        }
+
+        foreach ($words as $w) {
+            $b->groupStart()
+                ->like('xs_directory_job_posts.title', $w)
+                ->orLike('xs_directory_job_posts.company_name', $w)
+                ->orLike('l.display_name', $w)
+                ->groupEnd();
+        }
+
+        return true;
     }
 
     /**
