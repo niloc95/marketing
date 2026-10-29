@@ -183,20 +183,7 @@ $schema = schema_page(
                     </div>
                 <?php endif; ?>
 
-                <?php if ($result['totalPages'] > 1): ?>
-                    <nav class="pager">
-                        <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                            <?php if ($i === $result['page']): ?>
-                                <span class="current"><?= $i ?></span>
-                            <?php else: ?>
-                                <?php // http_build_query nests ?f[curriculum][]=ieb correctly;
-                                      // without it page 2 of a narrowed list is the whole
-                                      // category again. ?>
-                                <a href="<?= esc($canonical . '?' . http_build_query(array_filter(['f' => $facets, 'sort' => $sort, 'page' => $i], static fn ($v): bool => $v !== [] && $v !== ''))) ?>"><?= $i ?></a>
-                            <?php endif; ?>
-                        <?php endfor; ?>
-                    </nav>
-                <?php endif; ?>
+                <?= view('directory/_pager', ['result' => $result, 'baseUrl' => $canonical, 'query' => ['f' => $facets, 'sort' => $sort]], ['saveData' => false]) ?>
             </div>
         </div>
 

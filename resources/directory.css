@@ -3793,13 +3793,39 @@
   .dark .pill-verified    { @apply bg-emerald-500/15 text-emerald-300; }
 
   /* ---------------------------------------------------------------- pager */
-  .pager        { @apply mt-6 flex flex-wrap justify-center gap-1.5; }
-  .pager a      { @apply inline-flex h-8 items-center rounded-control px-3.5 text-sm text-slate-600 hover:bg-slate-100; }
-  .pager .current { @apply inline-flex h-8 items-center rounded-control bg-primary-500 px-3.5 text-sm font-semibold text-white; }
-  .dark .pager a { @apply text-slate-300 hover:bg-slate-800; }
+  /* app/Views/directory/_pager.php. Controls on their own centred row, the
+     "Showing 13 to 24 of 1,924" line and Go to page under it. Phones see
+     Previous, "Page 5 of 161" and Next; the numbered window joins from sm. */
+  .pager          { @apply mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 border-t border-slate-200 pt-6; }
+  .pager-controls { @apply order-first flex basis-full items-center justify-center gap-1; }
+  .pager-summary  { @apply text-sm text-slate-500; }
+  .pager-summary b { @apply font-semibold tabular-nums text-slate-900; }
+  .pager-step     { @apply inline-flex h-10 items-center gap-1 rounded-control border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700
+                           hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500; }
+  .pager-step[aria-disabled] { @apply pointer-events-none opacity-40; }
+  .pager-status   { @apply px-3 text-sm tabular-nums text-slate-600 sm:hidden; }
+  .pager-pages    { @apply hidden items-center gap-1 sm:flex; }
+  .pager-page     { @apply inline-flex h-10 min-w-10 items-center justify-center rounded-control px-2 text-sm tabular-nums text-slate-600
+                           hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500; }
+  .pager-page.current { @apply bg-primary-500 font-semibold text-white hover:bg-primary-500; }
+  .pager-gap      { @apply inline-flex h-10 w-6 items-center justify-center text-slate-400; }
+  .pager-jump     { @apply flex items-center gap-2 text-sm text-slate-500; }
+  .pager-jump input  { @apply h-10 w-20 rounded-control border-slate-200 text-center text-sm tabular-nums focus:border-primary-500 focus:ring-primary-500; }
+  .pager-jump button { @apply h-10 rounded-control border border-slate-200 bg-white px-3 font-medium text-slate-700 hover:bg-slate-50
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500; }
+  .dark .pager          { @apply border-slate-800; }
+  .dark .pager-summary  { @apply text-slate-400; }
+  .dark .pager-summary b { @apply text-slate-100; }
+  .dark .pager-step,
+  .dark .pager-jump button { @apply border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800; }
+  .dark .pager-status   { @apply text-slate-300; }
+  .dark .pager-page     { @apply text-slate-300 hover:bg-slate-800; }
   /* primary-500 is near-black — invisible as a "current page" chip on a dark
      page. primary-300 with dark text is the readable inversion. */
-  .dark .pager .current { @apply bg-primary-300 text-surface-page; }
+  .dark .pager-page.current { @apply bg-primary-300 text-surface-page hover:bg-primary-300; }
+  .dark .pager-gap      { @apply text-slate-500; }
+  .dark .pager-jump     { @apply text-slate-400; }
+  .dark .pager-jump input { @apply border-slate-700 bg-transparent text-slate-100; }
 
   /* --------------------------------------------------- description editor */
   /* Quill's Snow theme, fitted to the form and taught about dark mode. It is

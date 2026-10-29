@@ -140,21 +140,7 @@ $schema = schema_page(
             </div>
         <?php endif; ?>
 
-        <?php if ($result['totalPages'] > 1): ?>
-            <nav class="pager">
-                <?php
-                $params = array_filter(['category' => $category, 'q' => $q]);
-                $base   = $canonical . '?' . ($params !== [] ? http_build_query($params) . '&amp;' : '');
-                ?>
-                <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                    <?php if ($i === $result['page']): ?>
-                        <span class="current"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="<?= esc($base . 'page=' . $i) ?>"><?= $i ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-            </nav>
-        <?php endif; ?>
+        <?= view('directory/_pager', ['result' => $result, 'baseUrl' => $canonical, 'query' => ['category' => $category, 'q' => $q]], ['saveData' => false]) ?>
 
         <?php // One pin for the building — see the note at the top of this file. ?>
         <?= view('directory/_map_panel', [

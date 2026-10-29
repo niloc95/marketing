@@ -92,17 +92,7 @@ $schema = schema_page(
             </div>
         <?php endif; ?>
 
-        <?php if ($result['totalPages'] > 1): ?>
-            <nav class="pager">
-                <?php for ($i = 1; $i <= $result['totalPages']; $i++): ?>
-                    <?php if ($i === $result['page']): ?>
-                        <span class="current"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="<?= esc($canonical . '?page=' . $i) ?>"><?= $i ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-            </nav>
-        <?php endif; ?>
+        <?= view('directory/_pager', ['result' => $result, 'baseUrl' => $canonical, 'query' => []], ['saveData' => false]) ?>
 
         <?php // Down to the regions: the country page is their parent, as a
               // province page is the parent of its category pages on co.za. ?>

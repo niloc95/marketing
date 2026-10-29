@@ -1539,3 +1539,39 @@ if (! function_exists('profile_location_label')) {
         return 'Main location';
     }
 }
+
+if (! function_exists('pager_window')) {
+    /**
+     * The page numbers a pager shows: the first, the last, and the current
+     * page with $siblings either side, with '…' for each run left out.
+     *
+     * Every pager used to print one link per page, which at 12 profiles a page
+     * was 161 links for 1,924 profiles and would be over 400 at 5,000. This
+     * always returns 2 × $siblings + 5 entries once there are more pages than
+     * that, so the pager keeps one width while you page through it: near either
+     * end the run slides over to fill the slots a gap would have taken.
+     *
+     * A gap of a single page is shown as that page, never as '…': "1 … 3" hides
+     * one link behind a symbol the same width as the link.
+     *
+     * @return list<int|string> page numbers, and '…' where a run is left out
+     */
+    function pager_window(int $page, int $totalPages, int $siblings = 2): array
+    {
+        $totalPages = max(1, $totalPages);
+        $page       = min(max(1, $page), $totalPages);
+
+        if ($totalPages <= 2 * $siblings + 5) {
+            return range(1, $totalPages);
+        }
+
+        $from = max(min($page - $siblings, $totalPages - 2 * $siblings - 2), 3);
+        $to   = min(max($page + $siblings, 2 * $siblings + 3), $totalPages - 2);
+
+        return array_merge(
+            [1, $from > 3 ? '…' : 2],
+            range($from, $to),
+            [$to < $totalPages - 2 ? '…' : $totalPages - 1, $totalPages],
+        );
+    }
+}
