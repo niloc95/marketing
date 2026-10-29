@@ -14,7 +14,7 @@ class DirectoryListingServiceModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = true;
-    protected $allowedFields = ['listing_id', 'name', 'price_label', 'sort_order'];
+    protected $allowedFields = ['listing_id', 'name', 'price_label', 'link_url', 'sort_order'];
 
     /** @return array<int,array<string,mixed>> */
     public function forListing(int $listingId): array

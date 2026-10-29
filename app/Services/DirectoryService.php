@@ -1468,10 +1468,16 @@ class DirectoryService
      * getProfile() for the public page; the owner's private preview passes a
      * pending row it found by token, so the preview is the real page.
      *
+     * $overrides replaces what would be read from the child tables, for the
+     * preview of unsaved edits (Manage::preview()): any of 'tags', 'services',
+     * 'attributes' and 'facets', already in the shape this method builds.
+     * Keys left out are read as usual.
+     *
      * @param array<string,mixed> $listing
+     * @param array<string,mixed> $overrides
      * @return array<string,mixed>
      */
-    public function profileFor(array $listing): array
+    public function profileFor(array $listing, array $overrides = []): array
     {
         $listing['category'] = ($listing['category_id'] ?? null)
             ? $this->categories->find((int) $listing['category_id'])
@@ -1495,7 +1501,7 @@ class DirectoryService
                 $this->locations->forListing((int) $listing['id'])
             )
             : [];
-        $listing['tags']           = $this->tags->namesForListing((int) $listing['id']);
+        $listing['tags']           = $overrides['tags'] ?? $this->tags->namesForListing((int) $listing['id']);
         // The complex this business sits in, and how many others are in it, so
         // the profile can offer "what else is in this building?".
         $listing['venue'] = ($listing['venue_id'] ?? null)
@@ -1518,8 +1524,8 @@ class DirectoryService
 
         // Free for every listing — see ServiceMenuService.
         $menu                   = new ServiceMenuService();
-        $listing['services']    = $menu->servicesFor((int) $listing['id']);
-        $listing['attributes']  = $menu->attributeLabelsFor((int) $listing['id']);
+        $listing['services']    = $overrides['services'] ?? $menu->servicesFor((int) $listing['id']);
+        $listing['attributes']  = $overrides['attributes'] ?? $menu->attributeLabelsFor((int) $listing['id']);
         // The public holiday answer is read from the same JSON before the
         // days are decoded out of it (directory_hours_helper).
         $listing['holiday_rule']   = hours_holiday_rule($listing['trading_hours'] ?? null);
@@ -1528,7 +1534,7 @@ class DirectoryService
         // Also free, and resolved against the listing's *current* category, so
         // a school later re-filed as a tutor stops showing the grades it used
         // to offer rather than showing them under the wrong labels.
-        $listing['facets'] = (new ListingFacetService())->displayFor(
+        $listing['facets'] = $overrides['facets'] ?? (new ListingFacetService())->displayFor(
             (int) $listing['id'],
             $listing['category']['group_name'] ?? null,
             $listing['category']['slug'] ?? null,

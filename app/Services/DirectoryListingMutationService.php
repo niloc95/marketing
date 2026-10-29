@@ -686,24 +686,21 @@ class DirectoryListingMutationService
     }
 
     /**
-     * Apply an owner's edit. Only DirectoryListingModel::OWNER_EDITABLE fields
-     * are read from $input — status, is_featured, is_verified, email and slug
-     * are never taken from the request, so a crafted POST cannot publish or
-     * feature a listing or change a live URL.
+     * The pure half of updateOwn(): the owner's input validated and turned
+     * into the columns a save would write, with no network call beyond
+     * validate()'s DNS check and nothing written. The data is built even when
+     * there are errors (every normaliser falls back to blank), so the preview
+     * of unsaved edits (Manage::preview()) can still show the rest of the form.
      *
-     * The listing keeps its current status: a typo fix must not take a live
-     * listing offline. The admin is notified so edits remain reviewable.
+     * Geocoding and the video check are not here: they cost money or a
+     * request, and only a real save needs them.
      *
+     * @param array<string,mixed> $listing the stored row
      * @param array<string,mixed> $input
-     * @return array{ok:bool,errors:array<string,string>,message:string}
+     * @return array{errors:array<string,string>,data:array<string,mixed>}
      */
-    public function updateOwn(int $id, array $input): array
+    public function prepareOwnEdit(array $listing, array $input): array
     {
-        $listing = $this->listings->find($id);
-        if (! is_array($listing)) {
-            return ['ok' => false, 'errors' => [], 'message' => 'That profile no longer exists.'];
-        }
-
         // Reuse the signup rules, but the email is fixed to the stored one.
         //
         // Third argument false: the compulsory-address rule applies to new
@@ -728,9 +725,6 @@ class DirectoryListingMutationService
             $listing
         );
         unset($errors['consent']);
-        if ($errors !== []) {
-            return ['ok' => false, 'errors' => $errors, 'message' => 'Please correct the highlighted fields.'];
-        }
 
         $data = [];
         foreach (DirectoryListingModel::OWNER_EDITABLE as $field) {
@@ -836,6 +830,34 @@ class DirectoryListingMutationService
         if ((string) ($data['booking_url'] ?? $listing['booking_url'] ?? '') !== '') {
             $data['offers_online_booking'] = 1;
         }
+
+        return ['errors' => $errors, 'data' => $data];
+    }
+
+    /**
+     * Apply an owner's edit. Only DirectoryListingModel::OWNER_EDITABLE fields
+     * are read from $input — status, is_featured, is_verified, email and slug
+     * are never taken from the request, so a crafted POST cannot publish or
+     * feature a listing or change a live URL.
+     *
+     * The listing keeps its current status: a typo fix must not take a live
+     * listing offline. The admin is notified so edits remain reviewable.
+     *
+     * @param array<string,mixed> $input
+     * @return array{ok:bool,errors:array<string,string>,message:string}
+     */
+    public function updateOwn(int $id, array $input): array
+    {
+        $listing = $this->listings->find($id);
+        if (! is_array($listing)) {
+            return ['ok' => false, 'errors' => [], 'message' => 'That profile no longer exists.'];
+        }
+
+        $prepared = $this->prepareOwnEdit($listing, $input);
+        if ($prepared['errors'] !== []) {
+            return ['ok' => false, 'errors' => $prepared['errors'], 'message' => 'Please correct the highlighted fields.'];
+        }
+        $data = $prepared['data'];
 
         // ListingGeocoder decides whether this save needs a lookup at all — an
         // edit that only touches hours or the description shouldn't spend a
@@ -1425,11 +1447,12 @@ class DirectoryListingMutationService
 
     /**
      * Normalise the specializations field, which arrives either as an array of
-     * checkbox values or as one comma-separated string.
+     * checkbox values or as one comma-separated string. Public for the
+     * preview of unsaved edits, which shows the tags a save would write.
      *
      * @return array<int,string>
      */
-    private function tagNames(mixed $raw): array
+    public function tagNames(mixed $raw): array
     {
         if ($raw === null || $raw === '' || $raw === []) {
             return [];
@@ -1617,9 +1640,15 @@ class DirectoryListingMutationService
         return TokenHash::hash($token);
     }
 
+    /**
+     * The link opens the private preview (Directory::preview()), so the owner
+     * sees their profile and approves it rather than publishing it on the
+     * click. Same token, so directory/verify/{token} in emails sent before
+     * this change still publishes.
+     */
     private function sendVerificationEmail(string $to, string $name, string $token): void
     {
-        $link = base_url('directory/verify/' . $token);
+        $link = base_url('preview/' . $token);
         $body = view('emails/verify', [
             'name'       => $name,
             'link'       => $link,

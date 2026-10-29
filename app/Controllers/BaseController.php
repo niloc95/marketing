@@ -12,4 +12,14 @@ use CodeIgniter\Controller;
  */
 abstract class BaseController extends Controller
 {
+    /**
+     * No caching, no indexing, no referrer: for a profile preview, whose page
+     * is private (preview/{token}, manage/preview, admin/preview/{id}).
+     */
+    protected function privatePage(): void
+    {
+        $this->response->setHeader('Cache-Control', 'no-store, private');
+        $this->response->setHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->response->setHeader('Referrer-Policy', 'no-referrer');
+    }
 }

@@ -1,7 +1,8 @@
 <?php
-// A private preview is never measured: its URL is the owner's preview token,
-// and GA's page_location or a Clarity recording would keep a copy of it.
-$untracked   = str_starts_with(trim(uri_string(), '/'), 'preview/');
+// A private preview is never measured: preview/{token} carries the owner's
+// token, which GA's page_location or a Clarity recording would keep a copy of,
+// and the owner's draft and the admin's preview are not pages anyone visits.
+$untracked   = (bool) preg_match('#^(preview/|manage/preview|admin/preview/)#', trim(uri_string(), '/'));
 $analyticsId = $untracked ? '' : config('Directory')->analyticsId();
 // Admin screens are never recorded: they show applicants, payments and owner details.
 $clarityId = $untracked || str_starts_with(trim(uri_string(), '/'), 'admin') ? '' : config('Directory')->clarityId();

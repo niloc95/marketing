@@ -34,7 +34,8 @@ $blanks = min($blanks, max(0, $max - count($rows)));
 
 $hasError = $err('services') !== '';
 foreach (array_keys($rows) as $i) {
-    $hasError = $hasError || $err('services.' . $i . '.name') !== '' || $err('services.' . $i . '.price_label') !== '';
+    $hasError = $hasError || $err('services.' . $i . '.name') !== '' || $err('services.' . $i . '.price_label') !== ''
+        || $err('services.' . $i . '.link_url') !== '';
 }
 
 $row = function ($i, array $m = []) use ($err): string {
@@ -52,10 +53,20 @@ $row = function ($i, array $m = []) use ($err): string {
         </div>
         <div class="field">
             <label class="sr-only" for="service-<?= $i ?>-price">Price</label>
+            <?php // The link's width, not the price's: a URL pasted here moves to the
+                  // link box on save (ServiceMenuService), so the browser must not
+                  // cut it at 40 first. A real price over 40 is refused on save. ?>
             <input type="text" id="service-<?= $i ?>-price" name="services[<?= $i ?>][price_label]"
-                   maxlength="<?= ServiceMenuService::MAX_PRICE_LENGTH ?>"
+                   maxlength="<?= ServiceMenuService::MAX_LINK_LENGTH ?>"
                    value="<?= esc($val('price_label'), 'attr') ?>" placeholder="Price">
             <?php if ($e('price_label')): ?><div class="err"><?= esc($e('price_label')) ?></div><?php endif; ?>
+        </div>
+        <div class="field service-link-field">
+            <label class="sr-only" for="service-<?= $i ?>-link">Link</label>
+            <input type="url" inputmode="url" id="service-<?= $i ?>-link" name="services[<?= $i ?>][link_url]"
+                   maxlength="<?= ServiceMenuService::MAX_LINK_LENGTH ?>"
+                   value="<?= esc($val('link_url'), 'attr') ?>" placeholder="Link (optional)">
+            <?php if ($e('link_url')): ?><div class="err"><?= esc($e('link_url')) ?></div><?php endif; ?>
         </div>
         <label class="repeat-remove">
             <input type="checkbox" name="services[<?= $i ?>][_remove]" value="1"
@@ -80,7 +91,8 @@ $row = function ($i, array $m = []) use ($err): string {
         <p class="hint">
             <?php // Examples in the local currency; .app's owners price in their own. ?>
             One line per service or class, e.g. &ldquo;Beginner yoga class&rdquo;. Prices are optional: &ldquo;<?= site()->isApp() ? '$25' : 'R250' ?>&rdquo;,
-            &ldquo;from <?= site()->isApp() ? '$15' : 'R150' ?>&rdquo; or &ldquo;POA&rdquo; all work.
+            &ldquo;from <?= site()->isApp() ? '$15' : 'R150' ?>&rdquo;, &ldquo;POA&rdquo; or &ldquo;Medical aid rates apply&rdquo; all work.
+            Add a link if a page on your website says more; the service name then opens it.
         </p>
         <?php if ($err('services')): ?><div class="err"><?= esc($err('services')) ?></div><?php endif; ?>
 

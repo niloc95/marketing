@@ -868,6 +868,7 @@ if (! function_exists('schema_local_business')) {
                 '@type'       => 'Offer',
                 'itemOffered' => ['@type' => 'Service', 'name' => $name],
                 'description' => trim((string) ($service['price_label'] ?? '')),
+                'url'         => safe_external_url($service['link_url'] ?? ''),
             ], static fn ($v) => $v !== '');
         }
         $catalog = $offers === [] ? null : [

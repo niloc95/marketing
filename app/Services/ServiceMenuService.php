@@ -31,9 +31,10 @@ class ServiceMenuService
     /** Past this it is a price list, not a profile section. */
     public const MAX_SERVICES = 30;
 
-    /** Column widths — see CreateDirectoryListingServices. */
+    /** Column widths — see CreateDirectoryListingServices and AddLinkToListingServices. */
     public const MAX_NAME_LENGTH  = 120;
     public const MAX_PRICE_LENGTH = 40;
+    public const MAX_LINK_LENGTH  = 500;
 
     /** Hidden inputs that say "this section was on the form". */
     public const SERVICES_MARKER   = 'services_present';
@@ -42,6 +43,7 @@ class ServiceMenuService
     private DirectoryListingServiceModel $services;
     private DirectoryListingAttributeModel $attributes;
     private ListingAttributes $config;
+    private ?DirectoryListingMutationService $mutation = null;
 
     public function __construct()
     {
@@ -72,9 +74,19 @@ class ServiceMenuService
      */
     public function attributeLabelsFor(int $listingId): array
     {
-        $stored = array_flip($this->attributes->keysForListing($listingId));
+        return $this->attributeLabels($this->attributes->keysForListing($listingId));
+    }
 
-        return array_intersect_key($this->config->allLabels(), $stored);
+    /**
+     * Feature keys resolved to labels the same way, for keys nothing has
+     * saved yet (Manage::preview() passes allowedKeys() of the form).
+     *
+     * @param array<int,string> $keys
+     * @return array<string,string>
+     */
+    public function attributeLabels(array $keys): array
+    {
+        return array_intersect_key($this->config->allLabels(), array_flip($keys));
     }
 
     // ----------------------------------------------------------------- writes
@@ -105,7 +117,15 @@ class ServiceMenuService
                     self::MAX_PRICE_LENGTH + 1
                 );
             }
-            if ($row['name'] === '' && $row['price_label'] !== '') {
+            if (mb_strlen($row['link_url']) > self::MAX_LINK_LENGTH) {
+                $errors[sprintf('services.%d.link_url', $index)] = sprintf(
+                    'Keep the link under %d characters.',
+                    self::MAX_LINK_LENGTH + 1
+                );
+            } elseif ($row['link_url'] !== '' && $this->link($row['link_url']) === '') {
+                $errors[sprintf('services.%d.link_url', $index)] = 'That link does not look right. Paste the full web address.';
+            }
+            if ($row['name'] === '' && ($row['price_label'] !== '' || $row['link_url'] !== '')) {
                 $errors[sprintf('services.%d.name', $index)] = 'Give this price a service name, or clear it.';
             }
         }
@@ -142,6 +162,7 @@ class ServiceMenuService
                     'listing_id'  => $listingId,
                     'name'        => $row['name'],
                     'price_label' => $row['price_label'] !== '' ? $row['price_label'] : null,
+                    'link_url'    => $this->link($row['link_url']) ?: null,
                     'sort_order'  => $position++,
                 ]);
             }
@@ -176,6 +197,30 @@ class ServiceMenuService
     }
 
     /**
+     * The services a submission would store, as sync() would write them but
+     * without writing anything: the shape servicesFor() returns. The preview of
+     * unsaved edits (Manage::preview()) renders from it.
+     *
+     * @return array<int,array{name:string,price_label:?string,link_url:?string}>
+     */
+    public function servicesFromInput(mixed $raw): array
+    {
+        $out = [];
+        foreach ($this->serviceRows($raw) as $row) {
+            if ($row['name'] === '') {
+                continue;
+            }
+            $out[] = [
+                'name'        => $row['name'],
+                'price_label' => $row['price_label'] !== '' ? $row['price_label'] : null,
+                'link_url'    => $this->link($row['link_url']) ?: null,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * How many services a submission would store: the rows sync() keeps,
      * counted without writing anything. The live score on /add-profile uses it.
      */
@@ -193,7 +238,10 @@ class ServiceMenuService
      * Trimmed rows with a blank or ticked-Remove row reduced to empty strings,
      * keeping the submitted index so errors land on the right inputs.
      *
-     * @return array<int|string,array{name:string,price_label:string}>
+     * A URL typed into the price box moves to an empty link box: that is what
+     * an owner who did it meant, and the price column is too narrow to hold it.
+     *
+     * @return array<int|string,array{name:string,price_label:string,link_url:string}>
      */
     private function serviceRows(mixed $raw): array
     {
@@ -207,16 +255,33 @@ class ServiceMenuService
                 continue;
             }
             if (! empty($row['_remove'])) {
-                $rows[$index] = ['name' => '', 'price_label' => ''];
+                $rows[$index] = ['name' => '', 'price_label' => '', 'link_url' => ''];
                 continue;
+            }
+            $price = $this->clean($row['price_label'] ?? '');
+            $link  = $this->clean($row['link_url'] ?? '');
+            if ($link === '' && preg_match('#^(https?://|www\.)\S+$#i', $price)) {
+                [$link, $price] = [$price, ''];
             }
             $rows[$index] = [
                 'name'        => $this->clean($row['name'] ?? ''),
-                'price_label' => $this->clean($row['price_label'] ?? ''),
+                'price_label' => $price,
+                'link_url'    => $link,
             ];
         }
 
         return $rows;
+    }
+
+    /** A link made safe for an href, or '' when it cannot be. */
+    private function link(string $url): string
+    {
+        if ($url === '') {
+            return '';
+        }
+        $this->mutation ??= new DirectoryListingMutationService();
+
+        return (string) $this->mutation->normaliseUrl($url);
     }
 
     private function groupFor(?int $categoryId): ?string

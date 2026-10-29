@@ -61,7 +61,29 @@ class ListingFacetService
      */
     public function displayFor(int $listingId, ?string $group, ?string $categorySlug): array
     {
-        $stored = $this->facets->forListing($listingId);
+        return $this->displayRows($this->facets->forListing($listingId), $group, $categorySlug);
+    }
+
+    /**
+     * displayFor() for a submission nothing has saved yet: the preview of
+     * unsaved edits (Manage::preview()). Through groupedFromInput(), so only
+     * values the category offers reach the page.
+     *
+     * @return list<array{key:string,label:string,type:string,unit:?string,values:list<string>,num_low:?int,num_high:?int}>
+     */
+    public function displayFromInput(?int $categoryId, mixed $raw): array
+    {
+        [$group, $slug] = $this->groupAndSlugFor($categoryId);
+
+        return $this->displayRows($this->groupedFromInput($categoryId, $raw), $group, $slug);
+    }
+
+    /**
+     * @param array<string,list<array{value:string,num_low:?int,num_high:?int}>> $stored
+     * @return list<array{key:string,label:string,type:string,unit:?string,values:list<string>,num_low:?int,num_high:?int}>
+     */
+    private function displayRows(array $stored, ?string $group, ?string $categorySlug): array
+    {
         if ($stored === []) {
             return [];
         }

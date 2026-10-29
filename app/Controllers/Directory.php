@@ -906,23 +906,11 @@ class Directory extends BaseController
     }
 
     /**
-     * Confirm the emailed signup link: publish the listing, and sign the owner in.
-     *
-     * The sign-in is deliberate. This token proves control of the listing's email
-     * address — the identical proof a manage token gives — it is single use, and
-     * MutationService::verify() has already cleared it by the time we get here.
-     * Without it an owner who wanted the verified badge had to go straight back
-     * out to the inbox for a manage link, having just clicked a link from that
-     * same inbox.
-     *
-     * The redirect fires before anything renders, so the token never sits on a
-     * page with outbound links to leak through Referer — the concern noted on
-     * Manage::redeem(), handled here the same way.
-     */
-    /**
-     * The owner's private preview of a profile we set up for them, before it
-     * is live: the real profile page, rendered from the pending row the token
-     * belongs to, with an approve bar on top. See sendPreview().
+     * The owner's private preview of a pending profile, before it is live: the
+     * real profile page, rendered from the pending row the token belongs to,
+     * with an approve bar on top. Reached from a preview we sent (see
+     * sendPreview()) and from the usual verification email, which links here
+     * rather than publishing on the click.
      *
      * The token is a credential in the URL, so the page is kept out of
      * everything that would copy it somewhere: noindex, no caching, no
@@ -947,7 +935,14 @@ class Directory extends BaseController
         return view('directory/show', [
             'l'       => $listing,
             'related' => [],
-            'preview' => ['token' => $token],
+            'preview' => [
+                'mode'    => 'approve',
+                'token'   => $token,
+                // "Ask for changes" is for a profile we built: an owner who
+                // filled in the form themselves edits it after approving. Only
+                // the public signup records accepted terms.
+                'changes' => empty($row['terms_accepted_at']),
+            ],
         ]);
     }
 
@@ -978,14 +973,6 @@ class Directory extends BaseController
         );
     }
 
-    /** No caching, no indexing, no referrer: for a page whose URL is a secret. */
-    private function privatePage(): void
-    {
-        $this->response->setHeader('Cache-Control', 'no-store, private');
-        $this->response->setHeader('X-Robots-Tag', 'noindex, nofollow');
-        $this->response->setHeader('Referrer-Policy', 'no-referrer');
-    }
-
     /** An unknown, expired or already approved preview link. */
     private function previewGone()
     {
@@ -995,6 +982,20 @@ class Directory extends BaseController
         return view('directory/preview_gone');
     }
 
+    /**
+     * Confirm the emailed signup link: publish the listing, and sign the owner in.
+     *
+     * The sign-in is deliberate. This token proves control of the listing's email
+     * address — the identical proof a manage token gives — it is single use, and
+     * MutationService::verify() has already cleared it by the time we get here.
+     * Without it an owner who wanted the verified badge had to go straight back
+     * out to the inbox for a manage link, having just clicked a link from that
+     * same inbox.
+     *
+     * The redirect fires before anything renders, so the token never sits on a
+     * page with outbound links to leak through Referer — the concern noted on
+     * Manage::redeem(), handled here the same way.
+     */
     public function verify(string $token)
     {
         $mut     = new DirectoryListingMutationService();

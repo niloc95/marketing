@@ -2254,9 +2254,12 @@
            text-sm last:border-0;
   }
   .service-name    { @apply min-w-0 break-words text-slate-800; }
+  a.service-name   { @apply font-medium text-primary-500 underline-offset-2 hover:underline; }
+  .service-name svg { @apply ml-1 inline-block align-[-2px]; }
   .service-price   { @apply shrink-0 font-semibold text-slate-600; }
   .dark .service-list li { @apply border-slate-800; }
   .dark .service-name    { @apply text-slate-200; }
+  .dark a.service-name   { @apply text-primary-300; }
   .dark .service-price   { @apply text-slate-300; }
 
   .feature-list    { @apply m-0 grid list-none gap-x-6 gap-y-2 p-0 sm:grid-cols-2; }
@@ -3171,13 +3174,14 @@
 
   /* ---------------------------------------------- services & features (form) */
   /* One line per service: name and price side by side at every width, with
-     Remove dropping under them on a phone. Stacking all three made a
-     three-row menu a full screen tall. */
+     the optional link and Remove dropping under them on a phone. Stacking
+     every box made a three-row menu a full screen tall. */
   .service-row {
     @apply mb-2 grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-2
-           sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto];
+           sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_auto];
   }
   .service-row .field   { @apply mb-0; }
+  .service-row .service-link-field { @apply col-span-2 sm:col-span-1; }
   .service-row .repeat-remove { @apply col-span-2 ml-0 sm:col-span-1 sm:mt-2.5; }
   .service-row.is-removed { @apply opacity-50; }
   .service-row.is-removed .repeat-remove { @apply text-brand-crimson opacity-100; }
