@@ -103,6 +103,37 @@ final class ProfilePreviewTest extends CIUnitTestCase
         }
     }
 
+    /**
+     * The owner may read the preview for hours before answering, longer than
+     * the CSRF cookie lives. The token in the path stands in for CSRF, so a
+     * stale form token must not cost them their note or their approval.
+     */
+    public function testAStaleFormTokenStillReachesUs(): void
+    {
+        $prev                         = $_ENV['directory.adminEmail'] ?? null;
+        $_ENV['directory.adminEmail'] = 'admin@example.test';
+
+        try {
+            $id    = $this->listing();
+            $token = $this->sendPreview($id);
+            service('email')->archive = [];
+
+            $stale = csrf_token();
+            $this->post('preview/' . $token . '/changes', [$stale => 'expired-token', 'message' => 'Please add our Sunday hours.'])
+                ->assertRedirectTo(base_url('preview/' . $token));
+            $this->assertStringContainsString('Please add our Sunday hours.', html_entity_decode((string) (service('email')->archive['body'] ?? '')));
+
+            $this->post('preview/' . $token . '/approve', [$stale => 'expired-token'])->assertRedirect();
+            $this->assertSame('published', $this->listings->find($id)['status']);
+        } finally {
+            if ($prev === null) {
+                unset($_ENV['directory.adminEmail']);
+            } else {
+                $_ENV['directory.adminEmail'] = $prev;
+            }
+        }
+    }
+
     public function testUnknownTokensAndPublishedProfilesGetNoPreview(): void
     {
         $this->get('preview/not-a-real-token-at-all')->assertStatus(410);
