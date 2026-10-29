@@ -39,7 +39,13 @@ if (! is_array($old['hours'] ?? null)) {
         <div class="form-card">
             <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New profile' : 'Edit profile' ?></h1>
-                <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>"><?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?>Back to profiles</a>
+                <div class="flex flex-wrap gap-2">
+                    <?php if (! $isNew): ?>
+                        <?php // The saved profile, whatever its status. Save first to see an edit. ?>
+                        <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/preview/' . (int) $listing['id']) ?>" target="_blank" rel="noopener"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Preview</a>
+                    <?php endif; ?>
+                    <a class="btn btn-ghost btn-xs" href="<?= base_url('admin') ?>"><?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?>Back to profiles</a>
+                </div>
             </div>
             <?php // Read-only: which channel brought this signup (Listing::store()).
                   // Blank for listings from before it was recorded. ?>

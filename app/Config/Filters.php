@@ -143,7 +143,11 @@ class Filters extends BaseFilters
             // can forge the POST already holds the link. The owner may read the
             // preview for hours, past the two hour CSRF cookie, and a stale
             // form token cost them their note (29 Oct 2026).
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*']],
+            //
+            // manage/preview renders the owner's unsaved form and writes
+            // nothing; its POST would otherwise rotate the token under the
+            // edit tab. Manage::preview() refuses cross site requests itself.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

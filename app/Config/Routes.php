@@ -125,6 +125,8 @@ $routes->get('manage', 'Manage::index');
 $routes->post('manage', 'Manage::request');
 $routes->get('manage/edit', 'Manage::edit');
 $routes->post('manage/edit', 'Manage::update');
+// The edit form's "Preview changes" button: renders, never saves.
+$routes->post('manage/preview', 'Manage::preview');
 $routes->get('manage/signout', 'Manage::signout');
 $routes->post('manage/photo-delete/(:num)', 'Manage::deletePhoto/$1');
 $routes->post('manage/brand-delete/(:num)', 'Manage::deleteBrand/$1');
@@ -241,6 +243,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // is to already be an admin.
     $routes->post('resend-verify/(:num)', 'Admin::resendVerification/$1');
     $routes->post('send-preview/(:num)', 'Admin::sendPreview/$1');
+    $routes->get('preview/(:num)', 'Admin::preview/$1');
 
     // Taxonomy
     $routes->get('categories', 'Admin::categories');

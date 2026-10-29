@@ -282,6 +282,98 @@ class Manage extends BaseController
     }
 
     /**
+     * The profile as the edit form holds it right now, saved or not: the form's
+     * "Preview changes" button posts here into a new tab.
+     *
+     * Nothing is written, and that is the whole design. updateOwn() is not run
+     * and rolled back, because around its transaction it geocodes (billed),
+     * checks the video over the network, sends consent to Mautic and emails
+     * the admin. prepareOwnEdit() is its pure half, and the child rows the
+     * page shows (services, features, facets, tags) are built from the form by
+     * the same services that would save them. Uploads are ignored: photos,
+     * logo, team and branches show as saved, and the bar says so.
+     *
+     * Exempt from CSRF (Config\Filters): with token regeneration on, this POST
+     * would rotate the token and the edit tab's Save would then fail. It
+     * changes nothing and reads only the signed in owner's own profile. A
+     * forged cross site POST could still paint someone else's text on our page
+     * as the owner's draft, so a browser that says the request came from
+     * another site (Sec-Fetch-Site, else Origin) is refused.
+     *
+     * Errors never redirect, since that would take over the owner's edit tab:
+     * the page renders anyway with the problems listed in the bar.
+     */
+    public function preview()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        if (! $this->sameSiteRequest()) {
+            return $this->response->setStatusCode(403)->setBody('Open the preview from your edit page.');
+        }
+
+        $post               = $this->request->getPost();
+        $post['logo_path']  = '';
+        $post['_has_photo'] = $this->hasPhoto('', $listing);
+
+        $mutation = new DirectoryListingMutationService();
+        $prepared = $mutation->prepareOwnEdit($listing, $post);
+        $row      = array_merge($listing, $prepared['data']);
+        $category = $row['category_id'] !== null ? (int) $row['category_id'] : null;
+
+        $menu      = new ServiceMenuService();
+        $overrides = [];
+        if (array_key_exists(ServiceMenuService::SERVICES_MARKER, $post)) {
+            $overrides['services'] = $menu->servicesFromInput($post['services'] ?? null);
+        }
+        if (array_key_exists(ServiceMenuService::ATTRIBUTES_MARKER, $post)) {
+            $overrides['attributes'] = $menu->attributeLabels($menu->allowedKeys($category, $post['attributes'] ?? null));
+        }
+        if (array_key_exists(ListingFacetService::FACETS_MARKER, $post)) {
+            $overrides['facets'] = (new ListingFacetService())->displayFromInput($category, $post['facets'] ?? null);
+        }
+        if (array_key_exists('specializations', $post)) {
+            $tags = $mutation->tagNames($post['specializations']);
+            sort($tags, SORT_NATURAL | SORT_FLAG_CASE);
+            $overrides['tags'] = $tags;
+        }
+
+        helper('directory_hours');
+        $profile = (new DirectoryService())->profileFor($row, $overrides);
+        hours_context($profile);
+
+        $this->privatePage();
+
+        return view('directory/show', [
+            'l'       => $profile,
+            'related' => [],
+            'preview' => ['mode' => 'draft', 'errors' => $prepared['errors']],
+        ]);
+    }
+
+    /**
+     * Whether the browser says this request came from our own pages. Browsers
+     * without Sec-Fetch-Site still send Origin on a POST; a client sending
+     * neither is not a browser a forged form could drive.
+     */
+    private function sameSiteRequest(): bool
+    {
+        $fetchSite = $this->request->getHeaderLine('Sec-Fetch-Site');
+        if ($fetchSite !== '') {
+            return in_array($fetchSite, ['same-origin', 'none'], true);
+        }
+        $origin = $this->request->getHeaderLine('Origin');
+        if ($origin === '') {
+            return true;
+        }
+
+        return strcasecmp((string) parse_url($origin, PHP_URL_HOST), $this->request->getUri()->getHost()) === 0;
+    }
+
+    /**
      * Remove one gallery photo. The owner session grants authority over exactly
      * one listing, so a photo belonging to any other one must be refused —
      * the id in the URL is attacker-controlled.

@@ -173,7 +173,12 @@ $quality = new \App\Services\ListingQualityService();
                                     <form method="post" action="<?= base_url('admin/purge/' . $id) ?>" data-confirm="Permanently delete this profile? This cannot be undone."><?= csrf_field() ?><button class="icon-act is-danger" title="Delete forever" aria-label="Delete <?= esc($l['display_name'], 'attr') ?> forever"><?= lucide('trash-2', 'h-4 w-4') ?></button></form>
                                 <?php else: ?>
                                     <a class="icon-act" href="<?= base_url('admin/edit/' . $id) ?>" title="Edit" aria-label="Edit <?= esc($l['display_name'], 'attr') ?>"><?= lucide('square-pen', 'h-4 w-4') ?></a>
-                                    <a class="icon-act" href="<?= esc(base_url('directory/' . $l['slug'])) ?>" target="_blank" rel="noopener" title="View profile" aria-label="View <?= esc($l['display_name'], 'attr') ?>"><?= lucide('external-link', 'h-4 w-4') ?></a>
+                                    <?php // The public page 404s until a profile is published, so anything else opens the admin preview. ?>
+                                    <?php if ($l['status'] === 'published'): ?>
+                                        <a class="icon-act" href="<?= esc(base_url('directory/' . $l['slug'])) ?>" target="_blank" rel="noopener" title="View profile" aria-label="View <?= esc($l['display_name'], 'attr') ?>"><?= lucide('external-link', 'h-4 w-4') ?></a>
+                                    <?php else: ?>
+                                        <a class="icon-act" href="<?= base_url('admin/preview/' . $id) ?>" target="_blank" rel="noopener" title="Preview profile" aria-label="Preview <?= esc($l['display_name'], 'attr') ?>"><?= lucide('external-link', 'h-4 w-4') ?></a>
+                                    <?php endif; ?>
                                     <?php if ($l['status'] !== 'published'): ?>
                                         <form method="post" action="<?= base_url('admin/publish/' . $id) ?>"><?= csrf_field() ?><button class="icon-act is-primary" title="Publish" aria-label="Publish <?= esc($l['display_name'], 'attr') ?>"><?= lucide('eye', 'h-4 w-4') ?></button></form>
                                     <?php else: ?>

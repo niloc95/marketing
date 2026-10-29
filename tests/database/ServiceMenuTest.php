@@ -138,6 +138,50 @@ final class ServiceMenuTest extends CIUnitTestCase
         $this->assertSame(['free_wifi'], $menu->attributeKeysFor($id));
     }
 
+    public function testALinkIsSavedSafeAndTheServiceNameOpensIt(): void
+    {
+        $id     = $this->publishedListing();
+        $result = $this->owner($id, [
+            'services' => [['name' => 'Mammograms', 'price_label' => 'Medical aid rates apply', 'link_url' => 'pinkdrive.org/mammograms/']],
+        ]);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $row = (new ServiceMenuService())->servicesFor($id)[0];
+        $this->assertSame('Medical aid rates apply', $row['price_label']);
+        $this->assertSame('https://pinkdrive.org/mammograms/', $row['link_url']);
+
+        $html = $this->get('directory/flow-yoga')->getBody();
+        $this->assertMatchesRegularExpression('#<a class="service-name" href="https://pinkdrive.org/mammograms/" target="_blank" rel="noopener nofollow">Mammograms#', $html);
+        $this->assertStringContainsString('<span class="service-price">Medical aid rates apply</span>', $html);
+        // The Offer carries the link too.
+        $this->assertMatchesRegularExpression('#"url":"https:(\\\\)?/(\\\\)?/pinkdrive\.org#', $html);
+    }
+
+    public function testAUrlTypedIntoThePriceMovesToTheLink(): void
+    {
+        $id     = $this->publishedListing();
+        $long   = 'https://pinkdrive.org/more-balls-than-most/';
+        $result = $this->owner($id, ['services' => [['name' => 'Prostate Cancer Awareness', 'price_label' => $long]]]);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $row = (new ServiceMenuService())->servicesFor($id)[0];
+        $this->assertNull($row['price_label']);
+        $this->assertSame($long, $row['link_url']);
+    }
+
+    public function testAnUnsafeLinkIsAFieldError(): void
+    {
+        $id     = $this->publishedListing();
+        $result = $this->owner($id, ['services' => [
+            ['name' => 'Consultation', 'link_url' => 'javascript:alert(1)'],
+            ['name' => '', 'link_url' => 'https://example.co.za/'],
+        ]]);
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('services.0.link_url', $result['errors']);
+        $this->assertArrayHasKey('services.1.name', $result['errors']);
+    }
+
     public function testAnAbsentSectionIsLeftAlone(): void
     {
         $id = $this->publishedListing();

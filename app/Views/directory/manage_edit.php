@@ -194,12 +194,23 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                       // halfway down need not scroll to the end. Hidden until
                       // directory.js runs, like the score bar; the button at the
                       // end is the one that always works. ?>
+                <?php // Preview changes posts this same form to manage/preview in a new
+                      // tab, which renders it and saves nothing (Manage::preview()).
+                      // formnovalidate: a half finished form is still worth seeing,
+                      // and the preview lists what Save would refuse. ?>
                 <div class="form-steps-dock" data-form-steps-dock hidden>
                     <?= view('directory/_form_steps_nav', [], ['saveData' => false]) ?>
-                    <button type="submit" class="btn btn-accent btn-xs">Save changes</button>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <button type="submit" class="btn btn-ghost btn-xs" formaction="<?= base_url('manage/preview') ?>" formtarget="_blank" formnovalidate data-preview-submit>Preview</button>
+                        <button type="submit" class="btn btn-accent btn-xs">Save changes</button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-accent btn-block">Save changes</button>
+                <button type="submit" class="btn btn-ghost btn-block mt-2" formaction="<?= base_url('manage/preview') ?>" formtarget="_blank" formnovalidate data-preview-submit>Preview changes</button>
+                <?php if (($listing['status'] ?? '') === 'published'): ?>
+                    <p class="mt-2 text-center text-sm"><a class="underline" href="<?= esc(base_url('directory/' . $listing['slug']), 'attr') ?>" target="_blank" rel="noopener">View my live profile</a></p>
+                <?php endif; ?>
             </form>
 
             <?= view('directory/_jobs_panel', [

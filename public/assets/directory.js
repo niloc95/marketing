@@ -4656,10 +4656,13 @@
     setInterval(check, 3000);
     window.addEventListener('pagehide', check);
 
-    form.addEventListener('submit', function () {
-      leaving = true;
+    form.addEventListener('submit', function (e) {
       check();
-      try { window.sessionStorage.setItem(SUBMITTED, KEY); } catch (e) { /* see above */ }
+      // "Preview changes" posts to a new tab and saves nothing: this page
+      // stays, still unsaved, so the draft and the leave warning must too.
+      if (e.submitter && e.submitter.hasAttribute('data-preview-submit')) return;
+      leaving = true;
+      try { window.sessionStorage.setItem(SUBMITTED, KEY); } catch (e2) { /* see above */ }
     });
 
     // Signing out on a shared computer should not leave the business's details

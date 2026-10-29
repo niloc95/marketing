@@ -4,7 +4,8 @@
  *
  * The heading is the single clearest signal that a page belongs to its vertical:
  * a restaurant calls this "Menu", a practice "Treatments & fees", a lodge
- * "Packages & rates". price_label is free text by design ("from R150", "POA").
+ * "Packages & rates". price_label is free text by design ("from R150", "POA");
+ * link_url, when set, turns the service name into a link.
  *
  * A food listing's uploaded menu (ListingMenuService) sits at the top of the
  * same panel: it answers the same question as the typed list, and a restaurant
@@ -57,8 +58,14 @@ $size  = $bytes <= 0 ? '' : ($bytes >= 1_048_576
     <?php if (! empty($l['services'])): ?>
         <ul class="service-list<?= $menu !== [] ? ' mt-4' : '' ?>">
             <?php foreach ($l['services'] as $svc): ?>
+                <?php // safe_external_url() again at render, for the reason _contact_panel.php gives. ?>
+                <?php $svcUrl = safe_external_url($svc['link_url'] ?? ''); ?>
                 <li>
-                    <span class="service-name"><?= esc($svc['name']) ?></span>
+                    <?php if ($svcUrl !== ''): ?>
+                        <a class="service-name" href="<?= esc($svcUrl) ?>" target="_blank" rel="noopener nofollow"><?= esc($svc['name']) ?><?= lucide('external-link', 'h-3.5 w-3.5') ?></a>
+                    <?php else: ?>
+                        <span class="service-name"><?= esc($svc['name']) ?></span>
+                    <?php endif; ?>
                     <?php if (! empty($svc['price_label'])): ?><span class="service-price"><?= esc($svc['price_label']) ?></span><?php endif; ?>
                 </li>
             <?php endforeach; ?>

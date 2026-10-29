@@ -439,7 +439,7 @@ class Listing extends BaseController
     private function fakeSuccess()
     {
         return redirect()->to(base_url('/'))
-            ->with('success', 'Almost done. Check your email to verify and publish your profile.');
+            ->with('success', 'Almost done. Check your email to preview your profile and publish it.');
     }
 
     /**

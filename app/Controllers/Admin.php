@@ -160,6 +160,36 @@ class Admin extends BaseController
         return $this->form($listing);
     }
 
+    /**
+     * Any profile as its page would look live, whatever its status, without
+     * emailing anyone: the admin's own check before sending a preview or
+     * publishing. Same page as Directory::preview(), with an admin bar.
+     */
+    public function preview(int $id)
+    {
+        $row = (new DirectoryAdminService())->find($id);
+        if ($row === null) {
+            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+        }
+
+        helper('directory_hours');
+        $listing = (new DirectoryService())->profileFor($row);
+        hours_context($listing);
+
+        $this->privatePage();
+
+        return view('directory/show', [
+            'l'       => $listing,
+            'related' => [],
+            'preview' => [
+                'mode'    => 'admin',
+                'status'  => (string) $row['status'],
+                'editUrl' => base_url('admin/edit/' . $id),
+                'liveUrl' => $row['status'] === 'published' ? listing_site_url($row, 'directory/' . $row['slug']) : '',
+            ],
+        ]);
+    }
+
     public function store()
     {
         return $this->save(null);
