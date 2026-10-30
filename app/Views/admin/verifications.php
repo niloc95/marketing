@@ -118,6 +118,11 @@ $prettyDate = static function (?string $date): string {
                                 <?php if (empty($r['listing_email_verified'])): ?>
                                     <span class="pill pill-pending" title="The owner has not clicked their verification email yet">email unconfirmed</span>
                                 <?php endif; ?>
+                                <?php // How an admin who verified it directly checked it (grantByAdmin()). ?>
+                                <?php $latestNote = (string) ($submissions->latestForVerification((int) $r['id'])['admin_note'] ?? ''); ?>
+                                <?php if ($latestNote !== ''): ?>
+                                    <div class="text-xs text-slate-600 dark:text-slate-300">Admin note: <?= esc($latestNote) ?></div>
+                                <?php endif; ?>
                                 <?php if (! empty($r['rejection_reason'])): ?>
                                     <div class="text-xs text-brand-crimson">Rejected: <?= esc($r['rejection_reason']) ?></div>
                                 <?php endif; ?>
@@ -186,6 +191,9 @@ $prettyDate = static function (?string $date): string {
                                                         <?= $sub['reviewed_at'] ? ' on ' . esc($prettyDate($sub['reviewed_at'])) : '' ?>
                                                         <?php if (! empty($sub['rejection_reason'])): ?>
                                                             <br><em><?= esc($sub['rejection_reason']) ?></em>
+                                                        <?php endif; ?>
+                                                        <?php if (! empty($sub['admin_note'])): ?>
+                                                            <br>Admin note: <?= esc($sub['admin_note']) ?>
                                                         <?php endif; ?>
                                                     <?php else: ?>
                                                         An earlier application

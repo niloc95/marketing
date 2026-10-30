@@ -393,6 +393,14 @@ class DirectoryAdminService
             $data['venue_id'] = (int) ($input['venue_id'] ?? 0) ?: null;
         }
 
+        // Free or Verified, the admin's choice for a profile built for a
+        // customer. Only when posted: the radio is not on every admin form.
+        // Verified opens the paid sections for the build (asBuilt()); it is
+        // not the badge and never writes verified_until.
+        if (array_key_exists('admin_plan', $input)) {
+            $data['admin_plan'] = in_array($input['admin_plan'], ['free', 'verified'], true) ? $input['admin_plan'] : 'free';
+        }
+
         // A booking link implies the flag, on the same terms as the public and
         // owner paths in DirectoryListingMutationService. The stored row fills
         // in when this request leaves the link alone.
@@ -441,8 +449,11 @@ class DirectoryAdminService
         //
         // So is the profile video's check, for the same reason. Badge-gated on
         // the stored row inside prepare(), so a new listing never gets one.
+        // A Verified build (asBuilt()) may add one from the first save, with
+        // the plan as this request sets it.
         $videoSvc = service('listingVideo');
-        $video    = $old !== null ? $videoSvc->prepare($old, $input) : null;
+        $built    = $this->asBuilt(array_merge($old ?? [], array_intersect_key($data, ['admin_plan' => true])));
+        $video    = $old !== null || ! empty($built['verified_until']) ? $videoSvc->prepare($built, $input) : null;
 
         $db = db_connect();
         $db->transBegin();
@@ -489,12 +500,11 @@ class DirectoryAdminService
             $menu->sync($id, $categoryId, $input);
             $facets->sync($id, $categoryId, $input);
 
-            // Team and branches. The admin form is privileged over everything
-            // else on a listing, but not over this: both sections are part of
-            // the paid badge, and syncChildRows() checks the stored row. An
-            // operator who wants to populate a team first activates the badge.
+            // Team and branches. Part of the paid badge, and syncChildRows()
+            // checks the stored row: an admin fills them on a profile with a
+            // live badge, or one being built as Verified (asBuilt()).
             $mutations = new DirectoryListingMutationService();
-            $stored    = $this->listings->find($id) ?? [];
+            $stored    = $this->asBuilt($this->listings->find($id) ?? []);
             $sync      = $mutations->syncChildRows($id, $stored, $input, $video);
             if ($sync['errors'] !== []) {
                 $db->transRollback();
@@ -633,6 +643,32 @@ class DirectoryAdminService
         $this->tags->syncListingTags($id, []);
 
         return $this->listings->delete($id, true);
+    }
+
+    /**
+     * The row as the admin is building it. A profile the admin picked as
+     * Verified (admin_plan) gets the paid sections, team, branches and video,
+     * on the admin form, its saves and the two previews, before the customer
+     * has paid: the row comes back with verified_until set in memory, so every
+     * existing badge gate says yes.
+     *
+     * Never saved, and never used for a public page, card, schema or /manage:
+     * those read the real row, so nothing paid shows publicly until the badge
+     * is live (payment, or Activate on the badge panel).
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return array<string,mixed>
+     */
+    public function asBuilt(array $listing): array
+    {
+        if (($listing['admin_plan'] ?? null) !== 'verified' || listing_is_verified_business($listing)) {
+            return $listing;
+        }
+
+        $listing['verified_until'] = date('Y-m-d', strtotime('+1 year'));
+
+        return $listing;
     }
 
     /**

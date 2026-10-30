@@ -24,6 +24,8 @@
  * @var array    $vTeam       team rows (old input wins), rendered by _team_fields.php
  * @var array    $vLocations  branch rows (old input wins), rendered by _location_fields.php
  * @var bool     $showExtras  render the team and location sections at all
+ * @var bool     $extrasHidden admin form only: drawn but hidden until the Free/Verified
+ *                            switch says Verified ([data-admin-plan-extras], directory.js)
  * @var array    $vServices   service rows (old input wins), rendered by _service_fields.php
  * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
  * @var array    $vFacets     stored facet rows keyed by facet (old input wins), rendered by _facet_fields.php
@@ -58,6 +60,7 @@ $gallerySlots = $gallerySlots ?? \App\Controllers\Listing::GALLERY_MAX;
 $vTeam      = $vTeam      ?? [];
 $vLocations = $vLocations ?? [];
 $showExtras = $showExtras ?? false;
+$extrasWrap = '<div data-admin-plan-extras' . (! empty($extrasHidden) ? ' class="hidden"' : '') . '>';
 $vServices   = $vServices   ?? [];
 $vAttributes = $vAttributes ?? [];
 $photos      = $photos      ?? [];
@@ -115,9 +118,63 @@ helper('directory_hours');
 <?php $stepNum = static fn (int $i): string => '<span class="form-step-num" aria-hidden="true">' . $i . '</span><span class="sr-only">Step ' . $i . ' of ' . count($formSteps) . ': </span>'; ?>
 <?= $stepOpen(1) ?>
 <div class="form-section-head form-section-head-first">
-    <h3><?= $stepNum(1) ?>What you do</h3>
-    <p class="hint">Choose the kind of profile and the category customers would look for.</p>
+    <h3><?= $stepNum(1) ?>What you do and who you are</h3>
+    <p class="hint">Tell us who you are, then choose the kind of profile and the category customers would look for.</p>
 </div>
+<?php // Title and contact person name a private individual, so they are kept for
+      // administration only — _contact_panel.php does not render either. The
+      // fieldset says so up front rather than leaving owners to guess. ?>
+<fieldset class="form-private">
+    <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
+    <?php
+    // Two fixed lists (DirectoryListingModel::TITLES / POSITIONS). A title
+    // stored before the dropdown existed is offered as one more option, so the
+    // owner sees what is on file and saving without touching it keeps it —
+    // validate() accepts an unchanged legacy value.
+    $titleOptions    = \App\Models\DirectoryListingModel::TITLES;
+    $positionOptions = \App\Models\DirectoryListingModel::POSITIONS;
+    $curTitle        = $v('title');
+    $curPosition     = $v('position');
+    if ($curTitle !== '' && ! in_array($curTitle, $titleOptions, true)) {
+        array_unshift($titleOptions, $curTitle);
+    }
+    if ($curPosition !== '' && ! in_array($curPosition, $positionOptions, true)) {
+        array_unshift($positionOptions, $curPosition);
+    }
+    $req = $privateDetailsRequired ? ' *' : '';
+    ?>
+    <div class="form-row">
+        <div class="field">
+            <label for="field-title">Title<?= $req ?></label>
+            <select id="field-title" name="title" <?= $privateDetailsRequired ? 'required' : '' ?>>
+                <option value="">Choose…</option>
+                <?php foreach ($titleOptions as $opt): ?>
+                    <option value="<?= esc($opt, 'attr') ?>" <?= $curTitle === $opt ? 'selected' : '' ?>><?= esc($opt) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
+        </div>
+        <div class="field">
+            <label for="field-position">Position<?= $req ?></label>
+            <select id="field-position" name="position" <?= $privateDetailsRequired ? 'required' : '' ?>>
+                <option value="">Choose…</option>
+                <?php foreach ($positionOptions as $opt): ?>
+                    <option value="<?= esc($opt, 'attr') ?>" <?= $curPosition === $opt ? 'selected' : '' ?>><?= esc($opt) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php if ($err('position')): ?><div class="err"><?= esc($err('position')) ?></div><?php endif; ?>
+        </div>
+    </div>
+    <?php // Filling it in is what opens every "stand out" section below,
+          // without scrolling (it is the first thing asked): see data-standout
+          // in directory.js. ?>
+    <div class="field">
+        <label for="field-contact-person">Contact person<?= $req ?></label>
+        <input type="text" id="field-contact-person" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" autocomplete="name" <?= $privateDetailsRequired ? 'required' : '' ?> data-standout-trigger>
+        <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
+    </div>
+    <div class="hint">For our records, and so we know who to address when we contact you about this profile.</div>
+</fieldset>
 <div class="form-row">
     <div class="field">
         <label>Profile type</label>
@@ -166,7 +223,9 @@ helper('directory_hours');
       // kind of business are you" reading straight into "who works here" is one
       // thought rather than two. ?>
 <?php if ($showExtras): ?>
+    <?= $extrasWrap ?>
     <?= view('directory/_team_fields', ['rows' => $vTeam, 'err' => $err]) ?>
+    </div>
 <?php endif; ?>
 </section>
 
@@ -481,59 +540,6 @@ $showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
     </div>
 </fieldset>
 
-<?php // Title and contact person name a private individual, so they are kept for
-      // administration only — _contact_panel.php does not render either. The
-      // fieldset says so up front rather than leaving owners to guess. ?>
-<fieldset class="form-private">
-    <legend>Your details <span class="form-private-note">not shown on your profile</span></legend>
-    <?php
-    // Two fixed lists (DirectoryListingModel::TITLES / POSITIONS). A title
-    // stored before the dropdown existed is offered as one more option, so the
-    // owner sees what is on file and saving without touching it keeps it —
-    // validate() accepts an unchanged legacy value.
-    $titleOptions    = \App\Models\DirectoryListingModel::TITLES;
-    $positionOptions = \App\Models\DirectoryListingModel::POSITIONS;
-    $curTitle        = $v('title');
-    $curPosition     = $v('position');
-    if ($curTitle !== '' && ! in_array($curTitle, $titleOptions, true)) {
-        array_unshift($titleOptions, $curTitle);
-    }
-    if ($curPosition !== '' && ! in_array($curPosition, $positionOptions, true)) {
-        array_unshift($positionOptions, $curPosition);
-    }
-    $req = $privateDetailsRequired ? ' *' : '';
-    ?>
-    <div class="form-row">
-        <div class="field">
-            <label for="field-title">Title<?= $req ?></label>
-            <select id="field-title" name="title" <?= $privateDetailsRequired ? 'required' : '' ?>>
-                <option value="">Choose…</option>
-                <?php foreach ($titleOptions as $opt): ?>
-                    <option value="<?= esc($opt, 'attr') ?>" <?= $curTitle === $opt ? 'selected' : '' ?>><?= esc($opt) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <?php if ($err('title')): ?><div class="err"><?= esc($err('title')) ?></div><?php endif; ?>
-        </div>
-        <div class="field">
-            <label for="field-position">Position<?= $req ?></label>
-            <select id="field-position" name="position" <?= $privateDetailsRequired ? 'required' : '' ?>>
-                <option value="">Choose…</option>
-                <?php foreach ($positionOptions as $opt): ?>
-                    <option value="<?= esc($opt, 'attr') ?>" <?= $curPosition === $opt ? 'selected' : '' ?>><?= esc($opt) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <?php if ($err('position')): ?><div class="err"><?= esc($err('position')) ?></div><?php endif; ?>
-        </div>
-    </div>
-    <?php // Last in the fieldset on purpose: filling it in is what opens every
-          // "stand out" section below — see data-standout in directory.js. ?>
-    <div class="field">
-        <label for="field-contact-person">Contact person<?= $req ?></label>
-        <input type="text" id="field-contact-person" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" autocomplete="name" <?= $privateDetailsRequired ? 'required' : '' ?> data-standout-trigger>
-        <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
-    </div>
-    <div class="hint">For our records, and so we know who to address when we contact you about this profile.</div>
-</fieldset>
 </section>
 
 <?php // data-standout: directory.js opens every section in here once the
@@ -632,11 +638,13 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
       // Asking for a second location before the first one has been given reads
       // backwards, and it used to sit above the address block. ?>
 <?php if ($showExtras): ?>
+    <?= $extrasWrap ?>
     <?= view('directory/_location_fields', [
         'rows'      => $vLocations,
         'provinces' => $provinces,
         'err'       => $err,
     ]) ?>
+    </div>
 <?php endif; ?>
 
 <?php // Open by default: photos do more for a profile than anything else on
@@ -699,7 +707,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
       // the team and branches. Not drawing it is what keeps it out of the POST;
       // ListingVideoService::prepare() re-checks the badge on the stored row. ?>
 <?php if ($showExtras): ?>
-    <div class="field">
+    <div class="field<?= ! empty($extrasHidden) ? ' hidden' : '' ?>" data-admin-plan-extras>
         <label for="video_url">Your video</label>
         <?php $videoThumb = $v('video_thumb_path'); ?>
         <?php if ($v('video_url') !== '' && ! $err('video_url')): ?>

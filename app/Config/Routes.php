@@ -228,6 +228,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Emails the owner their top profile strength steps. Admin only, so the
     // app can only be made to mail an owner by someone already signed in here.
     $routes->post('edit/(:num)/nudge', 'Admin::nudgeOwner/$1');
+    $routes->post('edit/(:num)/verify-badge', 'Admin::grantVerification/$1');
 
     // Moderation
     $routes->post('feature/(:num)', 'Admin::feature/$1');

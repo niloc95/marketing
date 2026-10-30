@@ -344,60 +344,7 @@ class VerificationService
         $db->transBegin();
 
         try {
-            $submittedAt = date('Y-m-d H:i:s');
-
-            if ($existing !== null) {
-                // Re-submission after a rejection or a lapse. The previous
-                // evidence is closed off, not deleted: the verification row
-                // below is about to lose its decision fields, and the documents
-                // plus the submission row are the only remaining answer to "how
-                // was this business verified in the first place". They stay for
-                // the life of the listing.
-                $previous = $this->submissions->latestForVerification((int) $existing['id']);
-                if ($previous !== null) {
-                    $this->submissions->supersede((int) $previous['id']);
-                }
-                $this->documents->supersedeForVerification((int) $existing['id']);
-
-                $this->verifications->update((int) $existing['id'], [
-                    'state'            => DirectoryVerificationModel::STATE_SUBMITTED,
-                    'amount'           => $this->monthlyAmount(),
-                    'rejection_reason' => null,
-                    'reviewed_at'      => null,
-                    'reviewed_by'      => null,
-                    'submitted_at'     => $submittedAt,
-                ]);
-                $verificationId = (int) $existing['id'];
-            } else {
-                $verificationId = (int) $this->verifications->insert([
-                    'listing_id'   => $listingId,
-                    'state'        => DirectoryVerificationModel::STATE_SUBMITTED,
-                    'amount'       => $this->monthlyAmount(),
-                    'submitted_at' => $submittedAt,
-                ], true);
-
-                if ($verificationId === 0) {
-                    throw new \RuntimeException('verification row not created');
-                }
-            }
-
-            $submissionId = $this->submissions->open($verificationId, $submittedAt);
-            if ($submissionId === 0) {
-                throw new \RuntimeException('verification submission row not created');
-            }
-
-            foreach (DirectoryVerificationDocumentModel::KINDS as $kind) {
-                $this->documents->insert([
-                    'verification_id' => $verificationId,
-                    'submission_id'   => $submissionId,
-                    'kind'            => $kind,
-                    'path'            => $listingId . '/' . $documents[$kind]['name'],
-                    'original_name'   => $documents[$kind]['original_name'] ?? null,
-                    'mime'            => $documents[$kind]['mime'],
-                    'bytes'           => $documents[$kind]['bytes'],
-                    'sha256'          => $documents[$kind]['sha256'] ?? null,
-                ]);
-            }
+            $this->openApplication($listingId, $existing, $documents);
 
             $db->transCommit();
         } catch (\Throwable $e) {
@@ -415,6 +362,184 @@ class VerificationService
             'message' => 'Thanks, your documents are with us. We’ll email you once they have been reviewed, '
                 . 'and you’ll only be asked to pay after they are approved.',
         ];
+    }
+
+    /**
+     * Put a listing's badge row into review with a fresh submission and the
+     * documents that came with it. Shared by the owner's application and an
+     * admin verifying directly, so the history rules below hold for both.
+     * Runs inside the caller's transaction and throws on failure.
+     *
+     * @param array<string,mixed>|null $existing the badge row, if there is one
+     * @param array<string,array<string,mixed>> $documents keyed by kind; an
+     *        admin may attach fewer than both
+     *
+     * @return int the verification id
+     */
+    private function openApplication(int $listingId, ?array $existing, array $documents): int
+    {
+        $submittedAt = date('Y-m-d H:i:s');
+
+        if ($existing !== null) {
+            // Re-submission after a rejection or a lapse. The previous
+            // evidence is closed off, not deleted: the verification row
+            // below is about to lose its decision fields, and the documents
+            // plus the submission row are the only remaining answer to "how
+            // was this business verified in the first place". They stay for
+            // the life of the listing.
+            $previous = $this->submissions->latestForVerification((int) $existing['id']);
+            if ($previous !== null) {
+                $this->submissions->supersede((int) $previous['id']);
+            }
+            $this->documents->supersedeForVerification((int) $existing['id']);
+
+            $this->verifications->update((int) $existing['id'], [
+                'state'            => DirectoryVerificationModel::STATE_SUBMITTED,
+                'amount'           => $this->monthlyAmount(),
+                'rejection_reason' => null,
+                'reviewed_at'      => null,
+                'reviewed_by'      => null,
+                'submitted_at'     => $submittedAt,
+            ]);
+            $verificationId = (int) $existing['id'];
+        } else {
+            $verificationId = (int) $this->verifications->insert([
+                'listing_id'   => $listingId,
+                'state'        => DirectoryVerificationModel::STATE_SUBMITTED,
+                'amount'       => $this->monthlyAmount(),
+                'submitted_at' => $submittedAt,
+            ], true);
+
+            if ($verificationId === 0) {
+                throw new \RuntimeException('verification row not created');
+            }
+        }
+
+        $submissionId = $this->submissions->open($verificationId, $submittedAt);
+        if ($submissionId === 0) {
+            throw new \RuntimeException('verification submission row not created');
+        }
+
+        foreach (DirectoryVerificationDocumentModel::KINDS as $kind) {
+            if (! isset($documents[$kind])) {
+                continue;
+            }
+            $this->documents->insert([
+                'verification_id' => $verificationId,
+                'submission_id'   => $submissionId,
+                'kind'            => $kind,
+                'path'            => $listingId . '/' . $documents[$kind]['name'],
+                'original_name'   => $documents[$kind]['original_name'] ?? null,
+                'mime'            => $documents[$kind]['mime'],
+                'bytes'           => $documents[$kind]['bytes'],
+                'sha256'          => $documents[$kind]['sha256'] ?? null,
+            ]);
+        }
+
+        return $verificationId;
+    }
+
+    /**
+     * An admin verifies a profile directly from its edit page: for a customer
+     * who emailed the documents in, or a Verified profile we built for them.
+     * Skips the owner's application, not the check: it needs both documents
+     * or a note saying how the admin checked the business, and the note is
+     * kept with the decision.
+     *
+     * $mode 'owner_pays' leaves the row approved and sends the usual
+     * "approved, activate and pay" email. 'activate' also grants $months
+     * through activateManually() (EFT, or given), so the badge is live now.
+     *
+     * Refused until the profile's email is confirmed, which for a profile we
+     * built is the customer approving the preview: nobody is asked to pay for,
+     * or given a badge on, a profile they have not seen and accepted.
+     *
+     * @param array<string,array<string,mixed>> $documents as returned by
+     *        HandlesVerificationUploads::resolveVerificationDocuments()
+     *
+     * @return array{ok:bool,message:string}
+     */
+    public function grantByAdmin(int $listingId, array $documents, string $note, string $mode, int $months, string $by): array
+    {
+        $note    = mb_substr(trim($note), 0, 500);
+        $listing = $this->listings->find($listingId);
+        $refuse  = function (string $message) use ($listingId, $documents): array {
+            $this->discardStoredFiles($listingId, $documents);
+
+            return ['ok' => false, 'message' => $message];
+        };
+
+        if (! is_array($listing)) {
+            return $refuse('That profile no longer exists.');
+        }
+        if (! $this->isEnabled()) {
+            return $refuse('The Verified Business badge is switched off.');
+        }
+        if (! config('Countries')->isLocal((string) ($listing['country'] ?? ''))) {
+            return $refuse('The badge is for South African profiles only.');
+        }
+        if (empty($listing['is_verified'])) {
+            return $refuse('The customer has not approved the preview yet. Send it, and verify once they approve.');
+        }
+        if (! in_array($mode, ['owner_pays', 'activate'], true)) {
+            return $refuse('Choose approve or activate.');
+        }
+        $bothDocuments = array_diff(DirectoryVerificationDocumentModel::KINDS, array_keys($documents)) === [];
+        if (! $bothDocuments && $note === '') {
+            return $refuse('Attach both documents, or write a note saying how you checked the business.');
+        }
+
+        $existing = $this->verifications->forListing($listingId);
+        if ($existing !== null && $existing['state'] === DirectoryVerificationModel::STATE_ACTIVE) {
+            return $refuse('This profile is already verified. Extend it with Activate on the verifications page.');
+        }
+        if ($existing !== null && $existing['state'] === DirectoryVerificationModel::STATE_SUBMITTED) {
+            return $refuse('The owner has an application waiting. Approve or reject it on the verifications page.');
+        }
+
+        $db = db_connect();
+        $db->transBegin();
+
+        try {
+            $verificationId = $this->openApplication($listingId, $existing, $documents);
+
+            $this->verifications->update($verificationId, [
+                'state'       => DirectoryVerificationModel::STATE_APPROVED,
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'reviewed_by' => $by,
+            ]);
+            $this->recordDecision(
+                $verificationId,
+                DirectoryVerificationSubmissionModel::OUTCOME_APPROVED,
+                $by,
+                null,
+                $note !== '' ? $note : null
+            );
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Admin verification failed and was rolled back: ' . Mailer::oneLine($e->getMessage()));
+
+            return $refuse('Could not save the verification. Nothing was changed.');
+        }
+
+        if ($mode === 'activate') {
+            // Its own transaction, after the approval is safely written: a
+            // failure here leaves an approved row the admin can Activate from
+            // the verifications page, never a half granted badge.
+            if (! $this->activateManually($verificationId, $by, $months)) {
+                return ['ok' => false, 'message' => 'Approved, but the badge could not be activated. Use Activate on the verifications page.'];
+            }
+            $months = max(1, min(24, $months));
+
+            return ['ok' => true, 'message' => sprintf('Verified and active for %d month%s. The owner has been emailed.', $months, $months === 1 ? '' : 's')];
+        }
+
+        $row = $this->verifications->find($verificationId);
+        $this->mailOwner($listingId, 'approved', ['amount' => $row['amount'] ?? $this->monthlyAmount()]);
+
+        return ['ok' => true, 'message' => 'Verified. The owner has been emailed a link to pay and switch the badge on.'];
     }
 
     /**
@@ -1151,14 +1276,14 @@ class VerificationService
      * missing history row is not a reason to fail a decision the admin has
      * already made and the owner has already been emailed about.
      */
-    private function recordDecision(int $verificationId, string $outcome, string $by, ?string $reason = null): void
+    private function recordDecision(int $verificationId, string $outcome, string $by, ?string $reason = null, ?string $note = null): void
     {
         $submission = $this->submissions->latestForVerification($verificationId);
         if ($submission === null) {
             return;
         }
 
-        $this->submissions->recordDecision((int) $submission['id'], $outcome, $by, $reason);
+        $this->submissions->recordDecision((int) $submission['id'], $outcome, $by, $reason, $note);
     }
 
     private function discardStoredFiles(int $listingId, array $documents): void

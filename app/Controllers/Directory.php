@@ -8,6 +8,8 @@ use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryPracticeLocationModel;
+use App\Models\DirectoryVerificationModel;
+use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\CareersService;
 use App\Services\DirectoryService;
@@ -1024,8 +1026,11 @@ class Directory extends BaseController
             return $moved;
         }
 
+        // A profile we built as Verified previews with its team, branches
+        // and video (DirectoryAdminService::asBuilt()), so the customer
+        // approves what they are getting. Public pages wait for the badge.
         $svc     = new DirectoryService();
-        $listing = $svc->profileFor($row);
+        $listing = $svc->profileFor((new DirectoryAdminService())->asBuilt($row));
         hours_context($listing);
 
         $this->privatePage();
@@ -1034,7 +1039,8 @@ class Directory extends BaseController
             'l'       => $listing,
             'related' => [],
             'preview' => [
-                'mode'    => 'approve',
+                'mode'     => 'approve',
+                'verified' => ($row['admin_plan'] ?? null) === 'verified' && ! listing_is_verified_business($row),
                 'token'   => $token,
                 // "Ask for changes" is for a profile we built: an owner who
                 // filled in the form themselves edits it after approving. Only
@@ -1144,7 +1150,17 @@ class Directory extends BaseController
             // live. With the badge on sale and no application yet (none attached
             // at signup), go straight to the badge panel on the dashboard instead
             // of the profile. Someone who already applied goes to their profile.
-            if ($verification->isEnabled() && $verification->forListing((int) $listing['id']) === null) {
+            $badge = $verification->forListing((int) $listing['id']);
+
+            // Verified by an admin while the profile was being built: the
+            // documents are approved, only the payment is left.
+            if ($verification->isEnabled() && ($badge['verification']['state'] ?? '') === DirectoryVerificationModel::STATE_APPROVED) {
+                return redirect()->to(base_url('manage/edit') . '#get-verified')
+                    ->with('success', 'Your business profile is live and your documents are approved. '
+                        . 'Activate your Verified Business badge below.');
+            }
+
+            if ($verification->isEnabled() && $badge === null) {
                 return redirect()->to(base_url('manage/edit') . '#get-verified')
                     ->with('success', 'Your business profile is live. Next: Get Verified. '
                         . 'Send your company registration and the owner\'s ID below. There is nothing '

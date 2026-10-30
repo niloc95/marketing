@@ -831,6 +831,22 @@
     }
   });
 
+  // ------------------------------------------------- admin Free / Verified
+  // The admin edit form's profile type (admin/edit.php): Verified shows the
+  // team, branches and video ([data-admin-plan-extras]) without a save. The
+  // server decides what is kept (DirectoryAdminService::asBuilt()).
+  document.querySelectorAll('[data-admin-plan]').forEach(function (box) {
+    var form = box.closest('form');
+    if (!form) return;
+    box.addEventListener('change', function () {
+      var picked = box.querySelector('input[name="admin_plan"]:checked');
+      var on = picked && picked.value === 'verified';
+      form.querySelectorAll('[data-admin-plan-extras]').forEach(function (el) {
+        el.classList.toggle('hidden', !on);
+      });
+    });
+  });
+
   // ------------------------------------------------------- brand logo strip
   // The scrolling "Brands we carry" strip on a profile (_panel_brands.php).
   // The speed follows the count so every strip moves at about the same pace,
@@ -3529,11 +3545,9 @@
   // ------------------------------------------------------- stand-out sections
   // Most owners never opened the collapsed "Make your profile stand out"
   // sections, so their profiles went live with no hours, photos or services.
-  // Once the contact person is filled in — the last question of the basics —
-  // every section below opens and the page scrolls to them, once.
-  //
-  // A contact person already there on load (the owner edit, or a signup sent
-  // back with errors) opens them straight away, without the scroll.
+  // Once the contact person is filled in, every section below opens. No
+  // scroll: the contact person is the first question of step 1 now, and
+  // jumping to step 5 would skip the rest of the basics.
   // Branches (data-standout-skip) are a Verified extra and stay as they were.
   (function () {
     var wrap    = document.querySelector('[data-standout]');
@@ -3541,25 +3555,20 @@
     if (!wrap || !trigger) return;
 
     var done = false;
-    function openAll(scroll) {
+    function openAll() {
       if (done) return;
       done = true;
       wrap.querySelectorAll('details.disclosure:not([data-standout-skip])').forEach(function (d) {
         d.open = true;
       });
-      var head = document.getElementById('standout-head');
-      if (scroll && head) {
-        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        head.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-      }
     }
 
     if (trigger.value.trim() !== '') {
-      openAll(false);
+      openAll();
       return;
     }
     trigger.addEventListener('change', function () {
-      if (trigger.value.trim() !== '') openAll(true);
+      if (trigger.value.trim() !== '') openAll();
     });
   })();
 

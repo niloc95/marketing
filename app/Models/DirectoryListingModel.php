@@ -34,6 +34,9 @@ class DirectoryListingModel extends Model
         'video_provider', 'video_id', 'video_hash', 'video_title', 'video_thumb_path',
         'video_autoplay', 'video_sound',
         'venue_id',
+        // Free or Verified, picked by an admin building the profile. Admin
+        // only, never OWNER_EDITABLE (see DirectoryAdminService::asBuilt()).
+        'admin_plan',
         'customer_location', 'show_address', 'service_areas',
         'quality_score', 'quality_scored_at',
         // Written by ProfileNudgeService only, never OWNER_EDITABLE.

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesListingUploads;
+use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Controllers\Concerns\LocksDownDocumentCsp;
 use App\Filters\AdminFilter;
 use App\Libraries\LogReader;
@@ -43,6 +44,7 @@ use App\Services\VerificationService;
 class Admin extends BaseController
 {
     use HandlesListingUploads;
+    use HandlesVerificationUploads;
     use LocksDownDocumentCsp;
 
     /**
@@ -173,7 +175,8 @@ class Admin extends BaseController
         }
 
         helper('directory_hours');
-        $listing = (new DirectoryService())->profileFor($row);
+        // As built: a Verified build shows its team, branches and video.
+        $listing = (new DirectoryService())->profileFor((new DirectoryAdminService())->asBuilt($row));
         hours_context($listing);
 
         $this->privatePage();
@@ -205,6 +208,17 @@ class Admin extends BaseController
     {
         $dir = new DirectoryService();
         $id  = $listing ? (int) $listing['id'] : 0;
+
+        // Free or Verified (DirectoryAdminService::asBuilt()): offered on a
+        // South African profile while the badge is on sale. A new profile has
+        // no country yet, so it is offered and the save checks it.
+        $verification = new VerificationService();
+        $badge        = $listing ? $verification->forListing($id) : null;
+        $badgeOffer   = $verification->isEnabled()
+            && ($listing === null || config('Countries')->isLocal((string) ($listing['country'] ?? '')));
+        $adminPlan    = ($listing['admin_plan'] ?? null) === 'verified' || $badge !== null ? 'verified' : 'free';
+        $extrasOpen   = $listing !== null
+            && (new TeamMemberService())->canManage((new DirectoryAdminService())->asBuilt($listing));
 
         $tags       = $listing ? $dir->tagsForListing($id) : [];
         $services   = $listing ? (new ServiceMenuService())->servicesFor($id) : [];
@@ -257,7 +271,14 @@ class Admin extends BaseController
             'locations'  => $listing
                 ? (new PracticeLocationService())->forListing((int) $listing['id'])
                 : [],
-            'showExtras' => $listing !== null && (new TeamMemberService())->canManage($listing),
+            // Rendered whenever this profile could be Verified, and hidden
+            // by the Free/Verified switch until Verified is picked (asBuilt()).
+            'showExtras' => $badgeOffer || $extrasOpen,
+            'extrasOpen' => $extrasOpen,
+            // The Free/Verified switch and the badge panel (grantVerification()).
+            'badge'      => $badge,
+            'badgeOffer' => $badgeOffer,
+            'adminPlan'  => $adminPlan,
         ]);
     }
 
@@ -380,6 +401,35 @@ class Admin extends BaseController
             'no_email'     => $back->with('error', 'This profile has no email address.'),
             default        => $back->with('error', 'The email could not be sent. Check the mail log and try again.'),
         };
+    }
+
+    /**
+     * Verify a profile from its edit page (VerificationService::grantByAdmin()),
+     * for a customer who emailed their documents in. The documents are
+     * optional when the note says how the business was checked.
+     */
+    public function grantVerification(int $id)
+    {
+        $listing = (new DirectoryAdminService())->find($id);
+        if ($listing === null) {
+            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+        }
+
+        $resolved = $this->resolveVerificationDocuments($id);
+        $result   = (new VerificationService())->grantByAdmin(
+            $id,
+            $resolved['docs'],
+            (string) $this->request->getPost('note'),
+            (string) $this->request->getPost('mode'),
+            (int) ($this->request->getPost('months') ?? 1),
+            $this->adminActor()
+        );
+
+        return $this->withUploadErrors(
+            redirect()->to(base_url('admin/edit/' . $id) . '#badge')
+                ->with($result['ok'] ? 'success' : 'error', $result['message']),
+            $resolved['errors']
+        );
     }
 
     // ------------------------------------------------------------------ actions

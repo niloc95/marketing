@@ -90,12 +90,94 @@ if (! is_array($old['hours'] ?? null)) {
                 <?php endif; ?>
             <?php endif; ?>
 
+            <?php // Verify this profile directly (Admin::grantVerification()), for a
+                  // customer who emailed their documents in. Only for a Verified
+                  // build. Outside the main form, like the nudge, because forms
+                  // cannot nest. ?>
+            <?php if (! $isNew && $badgeOffer && $adminPlan === 'verified'): ?>
+                <?php
+                $badgeRow   = $badge['verification'] ?? null;
+                $badgeState = (string) ($badgeRow['state'] ?? '');
+                $canGrant   = ! in_array($badgeState, [
+                    \App\Models\DirectoryVerificationModel::STATE_ACTIVE,
+                    \App\Models\DirectoryVerificationModel::STATE_SUBMITTED,
+                ], true);
+                ?>
+                <?php $confirmed = ! empty($listing['is_verified']); ?>
+                <details class="panel -mt-2 mb-6" id="badge" open>
+                    <summary class="cursor-pointer text-sm text-slate-600 dark:text-slate-300">
+                        <strong>Verified Business badge.</strong>
+                        <?php if ($badgeState === ''): ?>
+                            Not verified.
+                        <?php elseif ($badgeState === \App\Models\DirectoryVerificationModel::STATE_ACTIVE): ?>
+                            Active until <?= esc(date('j M Y', strtotime((string) $badgeRow['paid_until']))) ?>.
+                        <?php elseif ($badgeState === \App\Models\DirectoryVerificationModel::STATE_APPROVED): ?>
+                            Approved, waiting for the owner to pay.
+                        <?php elseif ($badgeState === \App\Models\DirectoryVerificationModel::STATE_SUBMITTED): ?>
+                            The owner applied: decide it in the queue.
+                        <?php else: ?>
+                            <?= esc(ucfirst($badgeState)) ?>.
+                        <?php endif; ?>
+                        <?php if ($badgeState !== ''): ?>
+                            <a class="ml-1 underline" href="<?= base_url('admin/verifications?state=' . $badgeState) ?>">Verifications</a>
+                        <?php endif; ?>
+                    </summary>
+                    <?php if ($canGrant): ?>
+                        <form method="post" action="<?= base_url('admin/edit/' . (int) $listing['id'] . '/verify-badge') ?>"
+                              enctype="multipart/form-data" class="mt-4 grid gap-3 text-sm">
+                            <?= csrf_field() ?>
+                            <p class="hint">Verify without an owner application: attach the documents the customer sent, or
+                                write how you checked the business. The note is kept with the decision.</p>
+                            <label class="grid gap-1">Company registration document
+                                <input type="file" name="verify_doc_registration" accept=".pdf,application/pdf,image/jpeg,image/png">
+                            </label>
+                            <label class="grid gap-1">Owner's ID
+                                <input type="file" name="verify_doc_id" accept=".pdf,application/pdf,image/jpeg,image/png">
+                            </label>
+                            <label class="grid gap-1">Note (required without both documents)
+                                <textarea name="note" rows="2" maxlength="500" placeholder="e.g. Documents received by email, CIPC number checked"></textarea>
+                            </label>
+                            <?php // Usable once the customer has approved the preview (is_verified);
+                                  // grantByAdmin() refuses before that either way. ?>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button class="btn btn-primary btn-xs" name="mode" value="owner_pays" <?= $confirmed ? '' : 'disabled' ?>>Approve, owner pays</button>
+                                <span class="text-slate-400">or</span>
+                                <?php // w-16, not an inline width: CSP enforces style-src-attr. ?>
+                                <input type="number" name="months" value="1" min="1" max="24" class="text-xs w-16" title="Months" <?= $confirmed ? '' : 'disabled' ?>>
+                                <button class="btn btn-ghost btn-xs" name="mode" value="activate" <?= $confirmed ? '' : 'disabled' ?>
+                                        data-confirm="Activate the badge now without PayFast? Only once payment has arrived, or if it is given free.">Activate now (EFT or free)</button>
+                            </div>
+                            <?php if (! $confirmed): ?>
+                                <p class="hint">Waiting for the customer to approve the preview. Send it, then come back here once they approve.</p>
+                            <?php endif; ?>
+                        </form>
+                    <?php endif; ?>
+                </details>
+            <?php endif; ?>
+
             <?php // Unsaved-draft backup — see manage_edit.php. ?>
             <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
             <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data"
                   data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] ?>"
                   data-draft-version="<?= esc((string) ($base['updated_at'] ?? ''), 'attr') ?>">
                 <?= csrf_field() ?>
+
+                <?php // Free or Verified, for a profile built for a customer
+                      // (DirectoryAdminService::asBuilt()). Verified opens team,
+                      // branches and video here and in the preview; the public page
+                      // shows them once the badge is live. directory.js shows and
+                      // hides [data-admin-plan-extras] as it changes. ?>
+                <?php if ($badgeOffer): ?>
+                    <?php $planNow = in_array($v('admin_plan'), ['free', 'verified'], true) && array_key_exists('admin_plan', $old) ? $v('admin_plan') : $adminPlan; ?>
+                    <fieldset class="panel mb-6" data-admin-plan>
+                        <legend class="text-sm font-semibold text-slate-900 dark:text-white">Profile type</legend>
+                        <div class="mt-2 flex flex-wrap gap-4 text-sm">
+                            <label class="attr-option"><input type="radio" name="admin_plan" value="free" <?= $planNow === 'free' ? 'checked' : '' ?>> Free</label>
+                            <label class="attr-option"><input type="radio" name="admin_plan" value="verified" <?= $planNow === 'verified' ? 'checked' : '' ?>> Verified (team, branches and video)</label>
+                        </div>
+                        <p class="hint mt-1">Verified opens the paid sections for the build and the preview. They show publicly once the badge is active: after the customer approves the preview, use the badge panel to approve (owner pays) or activate.</p>
+                    </fieldset>
+                <?php endif; ?>
 
                 <?= view('directory/_form_fields', [
                     'v'            => $v,
@@ -127,8 +209,10 @@ if (! is_array($old['hours'] ?? null)) {
                             $old['facets'] ?? null,
                         )
                         : $facets,
-                    // A new profile has no id yet, so nothing to hang child rows on.
-                    'showExtras'   => ! $isNew && $showExtras,
+                    // Child rows are saved after the insert, so a new Verified
+                    // build can carry them from its first save.
+                    'showExtras'   => $showExtras,
+                    'extrasHidden' => ! $extrasOpen && ($planNow ?? 'free') !== 'verified',
                     'photos'       => $photos,
                     'deleteBase'   => base_url('admin/photo-delete'),
                     'brands'       => $brands ?? [],

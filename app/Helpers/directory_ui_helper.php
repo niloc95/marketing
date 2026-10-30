@@ -1502,7 +1502,7 @@ if (! function_exists('listing_form_steps')) {
     function listing_form_steps(): array
     {
         return [
-            1 => ['title' => 'What you do', 'class' => 'form-step-blue'],
+            1 => ['title' => 'What you do and who you are', 'class' => 'form-step-blue'],
             2 => ['title' => 'How customers reach you', 'class' => 'form-step-teal'],
             3 => ['title' => 'Tell people about you', 'class' => 'form-step-violet'],
             4 => ['title' => 'Where you are', 'class' => 'form-step-amber'],

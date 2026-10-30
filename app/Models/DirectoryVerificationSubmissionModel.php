@@ -27,7 +27,7 @@ class DirectoryVerificationSubmissionModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'verification_id', 'attempt_no', 'outcome',
-        'submitted_at', 'reviewed_at', 'reviewed_by', 'rejection_reason',
+        'submitted_at', 'reviewed_at', 'reviewed_by', 'rejection_reason', 'admin_note',
     ];
 
     public const OUTCOME_SUBMITTED  = 'submitted';
@@ -94,14 +94,16 @@ class DirectoryVerificationSubmissionModel extends Model
      * Freeze the decision an admin made on an application.
      *
      * @param string|null $reason the rejection sentence, when there is one
+     * @param string|null $note   how an admin who verified it directly checked it
      */
-    public function recordDecision(int $submissionId, string $outcome, string $by, ?string $reason = null): void
+    public function recordDecision(int $submissionId, string $outcome, string $by, ?string $reason = null, ?string $note = null): void
     {
         $this->update($submissionId, [
             'outcome'          => $outcome,
             'reviewed_at'      => date('Y-m-d H:i:s'),
             'reviewed_by'      => $by,
             'rejection_reason' => $reason,
+            'admin_note'       => $note,
         ]);
     }
 
