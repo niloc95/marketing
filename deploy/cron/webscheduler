@@ -68,6 +68,11 @@ MAILTO=""
 # privacy policy, so keep it installed.
 30 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark jobs:expire --quiet
 
+# --- Profile statistics retention ---------------------------------------------
+# Deletes daily profile totals (views, appearances, contact taps) older than
+# 25 months. Load-bearing for the retention promise in the privacy policy.
+40 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark directory:stats --quiet
+
 # --- Recommend-a-business retention -------------------------------------------
 # Wipes business and referrer contact details from referrals 12 months after
 # submission, or 30 days after dismissal. Load-bearing for the retention

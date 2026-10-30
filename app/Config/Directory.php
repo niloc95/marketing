@@ -485,6 +485,13 @@ class Directory extends BaseConfig
     public bool $analyticsEmailsLive = false;
 
     /**
+     * Count profile views, appearances and contact taps per day
+     * (ListingStatsService). Off stops new counts; nothing already counted
+     * is touched.
+     */
+    public bool $profileStats = true;
+
+    /**
      * Mautic REST API, for syncing listing owners who want the analytics report
      * (MarketingConsentService::syncToMautic()).
      *

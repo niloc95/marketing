@@ -152,8 +152,10 @@ class Filters extends BaseFilters
             // which cannot carry the token. It writes one anonymous row, at most
             // 30 a minute per IP, into data that only counts once per query,
             // profile and day, under thresholds, and never orders profiles
-            // (Discovery::opened()).
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened']],
+            // (Discovery::opened()). stats/tap is the same kind of beacon from a
+            // profile: one more on a daily count, 30 a minute per IP, that orders
+            // nothing (Stats::tap()).
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

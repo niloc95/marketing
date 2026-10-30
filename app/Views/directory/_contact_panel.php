@@ -94,23 +94,23 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
 
     <?php if ($bookingUrl !== ''): ?>
         <?php // id="book" keeps any old "#book" link landing on the right spot. ?>
-        <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl) ?>" target="_blank" rel="noopener nofollow"><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
+        <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl) ?>" data-stat="booking" target="_blank" rel="noopener nofollow"><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
     <?php endif; ?>
 
     <?php if ($whatsappUrl !== ''): ?>
-        <a class="btn btn-whatsapp btn-block contact-book" href="<?= esc($whatsappUrl) ?>" target="_blank" rel="noopener nofollow"><?= brand_icon('whatsapp', 'h-5 w-5 shrink-0') ?>Chat on WhatsApp</a>
+        <a class="btn btn-whatsapp btn-block contact-book" href="<?= esc($whatsappUrl) ?>" data-stat="whatsapp" target="_blank" rel="noopener nofollow"><?= brand_icon('whatsapp', 'h-5 w-5 shrink-0') ?>Chat on WhatsApp</a>
     <?php endif; ?>
 
     <?php if ($websiteUrl !== ''): ?>
         <div class="contact-row">
-            <a href="<?= esc($websiteUrl) ?>" target="_blank" rel="noopener nofollow"><?= esc($websiteLabel) ?></a>
+            <a href="<?= esc($websiteUrl) ?>" data-stat="website" target="_blank" rel="noopener nofollow"><?= esc($websiteLabel) ?></a>
             <?= lucide('external-link') ?>
         </div>
     <?php endif; ?>
 
     <?php foreach ($phones as $phone): ?>
         <div class="contact-row">
-            <a href="<?= esc($telHref($phone)) ?>"><?= esc($phone) ?></a>
+            <a href="<?= esc($telHref($phone)) ?>" data-stat="call"><?= esc($phone) ?></a>
             <?= lucide('phone') ?>
         </div>
     <?php endforeach; ?>
@@ -129,8 +129,8 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
     <?php if ($addr !== ''): ?>
         <div class="contact-row">
             <span class="min-w-0">
-                <?php if ($dirUrl !== ''): ?><a href="<?= esc($dirUrl) ?>" target="_blank" rel="noopener nofollow">Get directions</a><?php endif; ?>
-                <?php if ($wazeUrl !== ''): ?><span aria-hidden="true">&middot;</span> <a href="<?= esc($wazeUrl) ?>" target="_blank" rel="noopener nofollow">Waze</a><?php endif; ?>
+                <?php if ($dirUrl !== ''): ?><a href="<?= esc($dirUrl) ?>" data-stat="directions" target="_blank" rel="noopener nofollow">Get directions</a><?php endif; ?>
+                <?php if ($wazeUrl !== ''): ?><span aria-hidden="true">&middot;</span> <a href="<?= esc($wazeUrl) ?>" data-stat="directions" target="_blank" rel="noopener nofollow">Waze</a><?php endif; ?>
                 <span class="contact-sub"><?= esc($addr) ?></span>
             </span>
             <?= lucide('map-pin') ?>

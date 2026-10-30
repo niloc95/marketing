@@ -1716,6 +1716,27 @@
     });
   });
 
+  // ------------------------------------------------------------ contact taps
+  // On a public profile (show.php, [data-stat-slug]), count a tap on call,
+  // WhatsApp, website, directions or booking ([data-stat], _contact_panel.php)
+  // for the owner's statistics. The profile and the kind of tap only: no
+  // cookie, nothing about the visitor. Email is counted by the server when the
+  // address is fetched. sendBeacon never delays the tap; without it, nothing
+  // is sent.
+  document.querySelectorAll('[data-stat-slug]').forEach(function (root) {
+    if (!navigator.sendBeacon) return;
+    var url = root.getAttribute('data-stat-url');
+    var slug = root.getAttribute('data-stat-slug');
+    root.addEventListener('click', function (e) {
+      var link = e.target.closest ? e.target.closest('a[data-stat]') : null;
+      if (!link || !root.contains(link)) return;
+      var data = new FormData();
+      data.append('slug', slug);
+      data.append('kind', link.getAttribute('data-stat'));
+      navigator.sendBeacon(url, data);
+    });
+  });
+
   // ------------------------------------------------------------ showcase
   // The home page's featured carousel (home.php, "featured carousel" in the
   // CSS). The track is an ordinary scroll container, so swiping, trackpads and
