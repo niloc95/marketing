@@ -74,7 +74,7 @@ class Referral extends BaseController
     {
         // Honeypot, same field name as the other public forms. Reported as
         // success so a bot learns nothing.
-        if (trim((string) $this->request->getPost('company_website_hp')) !== '') {
+        if (honeypot_tripped('recommend')) {
             return $this->fakeSuccess();
         }
 

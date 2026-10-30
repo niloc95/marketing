@@ -101,7 +101,7 @@ final class ReferralFlowTest extends CIUnitTestCase
     public function testTheHoneypotAndTimingFloorFakeSuccessAndStoreNothing(): void
     {
         $this->withSession(['recommend_form_rendered_at' => time() - 30])
-            ->post('recommend', $this->input(['company_website_hp' => 'x']) + $this->csrf())
+            ->post('recommend', $this->input([HONEYPOT_FIELD => 'x']) + $this->csrf())
             ->assertRedirect();
         $this->withSession(['recommend_form_rendered_at' => time()])
             ->post('recommend', $this->input() + $this->csrf())

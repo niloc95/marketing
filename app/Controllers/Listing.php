@@ -258,7 +258,7 @@ class Listing extends BaseController
         // Honeypot: real users never fill this hidden field. (The framework's
         // own Honeypot filter runs on every POST as well — two traps under
         // different names cost nothing and catch more than one does.)
-        if (trim((string) $this->request->getPost('company_website_hp')) !== '') {
+        if (honeypot_tripped('add-profile')) {
             return $this->fakeSuccess();
         }
 
@@ -472,7 +472,7 @@ class Listing extends BaseController
     private static function typedFields(array $post): array
     {
         return array_diff_key($post, array_flip([
-            csrf_token(), 'company_website_hp', 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
+            csrf_token(), HONEYPOT_FIELD, 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
         ]));
     }
 }

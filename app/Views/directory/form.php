@@ -105,7 +105,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
             <form method="post" action="<?= base_url('add-profile') ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <!-- honeypot -->
-                <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                <?= honeypot_field() ?>
                 <?php // From a "Recommend a business" invite; closes that referral. See Listing::renderForm(). ?>
                 <?php // Tells store() a site-button arrival ('site') from a typed /add-profile
                       // ('direct') for signup_source. Attribution only; changes nothing saved. ?>

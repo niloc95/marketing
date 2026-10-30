@@ -4480,7 +4480,7 @@
       return Array.prototype.filter.call(form.elements, function (el) {
         return el.name && !el.disabled
           && el.type !== 'file' && el.type !== 'submit' && el.type !== 'button'
-          && !/csrf/i.test(el.name) && el.name !== 'company_website_hp';
+          && !/csrf/i.test(el.name) && el.name !== 'hp_leave_empty';
       });
     }
 

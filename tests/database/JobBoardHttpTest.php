@@ -173,7 +173,7 @@ final class JobBoardHttpTest extends CIUnitTestCase
             ->assertSessionHas('applied');
         // Or with the hidden field filled in.
         $this->withSession(['job_page_rendered_at' => time() - 30])
-            ->post('jobs/' . $id . '/apply', $form + ['company_website_hp' => 'x'] + $this->csrf())
+            ->post('jobs/' . $id . '/apply', $form + [HONEYPOT_FIELD => 'x'] + $this->csrf())
             ->assertSessionHas('applied');
 
         $this->assertSame([], $this->sent);

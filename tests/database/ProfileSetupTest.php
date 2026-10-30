@@ -247,9 +247,14 @@ final class ProfileSetupTest extends CIUnitTestCase
         }
 
         $this->withSession(['profile_setup_form_rendered_at' => time() - 30])
-            ->post('profile-setup', $this->form() + ['company_website_hp' => 'http://spam.test', csrf_token() => csrf_hash()])
+            ->post('profile-setup', $this->form() + [HONEYPOT_FIELD => 'http://spam.test', csrf_token() => csrf_hash()])
             ->assertRedirectTo(base_url('profile-setup') . '#order');
         $this->assertSame(0, $this->orders->countAllResults(), 'the honeypot saves nothing');
+        // Never a silent bounce: a real person caught by autofill must be told,
+        // and keep what they typed (29 Oct 2026).
+        $this->assertStringContainsString('press Order again', (string) session('error'));
+        $this->assertSame($this->form()['email'], session('old')['email'] ?? null);
+        $this->assertArrayNotHasKey(HONEYPOT_FIELD, (array) session('old'));
 
         $this->withSession(['profile_setup_form_rendered_at' => time() - 30])
             ->post('profile-setup', $this->form() + [csrf_token() => csrf_hash()])
@@ -261,7 +266,7 @@ final class ProfileSetupTest extends CIUnitTestCase
         $html = (string) $res->response()->getBody();
         $this->assertStringContainsString('name="m_payment_id" value="' . $order['reference'] . '"', $html);
         $this->assertStringContainsString('Pay R250 with PayFast', $html);
-        $this->assertStringNotContainsString('company_website_hp', $html, 'no honeypot field is posted to PayFast');
+        $this->assertStringNotContainsString(HONEYPOT_FIELD, $html, 'no honeypot field is posted to PayFast');
     }
 
     public function testCheckoutWithoutAnOrderGoesBackToTheForm(): void

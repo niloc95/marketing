@@ -157,7 +157,7 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
                     </p>
                     <form method="post" action="<?= base_url('jobs/' . (int) $post['id'] . '/apply') ?>" data-submit-once>
                         <?= csrf_field() ?>
-                        <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                        <?= honeypot_field() ?>
                         <div class="form-row">
                             <div class="field">
                                 <label for="apply-name">Your name<?= $star ?></label>

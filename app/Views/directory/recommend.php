@@ -42,7 +42,7 @@ $err = fn (string $f) => $errors[$f] ?? '';
             <form method="post" action="<?= base_url('recommend') ?>">
                 <?= csrf_field() ?>
                 <!-- honeypot -->
-                <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                <?= honeypot_field() ?>
 
                 <h2 class="mb-3 text-base font-bold text-slate-900 dark:text-white">The business</h2>
 

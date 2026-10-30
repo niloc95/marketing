@@ -125,7 +125,7 @@ final class SignupFailureRecoveryTest extends CIUnitTestCase
         $this->submit(['email' => '', 'signup_source' => 'forged', 'logo_path' => 'x.webp']);
 
         $old = session()->getFlashdata('old');
-        foreach ([csrf_token(), 'signup_source', 'logo_path', '_has_photo', 'company_website_hp'] as $field) {
+        foreach ([csrf_token(), 'signup_source', 'logo_path', '_has_photo', HONEYPOT_FIELD] as $field) {
             $this->assertArrayNotHasKey($field, $old, $field);
         }
     }

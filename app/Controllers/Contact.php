@@ -342,7 +342,7 @@ class Contact extends BaseController
         // Honeypot, same field name as the signup form. (The framework's own
         // Honeypot filter runs on every POST as well — two traps under
         // different names cost nothing and catch more than one does.)
-        if (trim((string) $this->request->getPost('company_website_hp')) !== '') {
+        if (honeypot_tripped('contact')) {
             return $this->fakeSuccess();
         }
 

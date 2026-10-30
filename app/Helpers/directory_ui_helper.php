@@ -1575,3 +1575,39 @@ if (! function_exists('pager_window')) {
         );
     }
 }
+
+if (! function_exists('honeypot_field')) {
+    // The hidden field every public form carries. Until 30 Oct 2026 it was
+    // "company_website_hp" labelled "Company website", and browser autofill
+    // (Edge, Chrome) ignores autocomplete="off" and filled it from the saved
+    // company name: a real customer pressed Order on /profile-setup three
+    // times and was bounced each time. Neither the name nor the label may look
+    // like anything a browser or password manager offers to fill (company,
+    // website, url, name, email, phone, address).
+    // define() rather than const: const is not allowed inside this guard.
+    define('HONEYPOT_FIELD', 'hp_leave_empty');
+
+    /** The trap's markup, hidden by `.hp` (off screen, not display:none, so bots still fill it). */
+    function honeypot_field(): string
+    {
+        return '<div class="hp" aria-hidden="true"><label>Leave this empty'
+            . '<input type="text" name="' . HONEYPOT_FIELD . '" value="" tabindex="-1" autocomplete="off"'
+            . ' data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other"></label></div>';
+    }
+
+    /**
+     * Whether this POST filled the trap. Logs which form, never what was typed,
+     * so a real person caught by it shows up in writable/logs/ instead of
+     * nowhere, as on 29 Oct 2026.
+     */
+    function honeypot_tripped(string $form): bool
+    {
+        $value = service('request')->getPost(HONEYPOT_FIELD);
+        if (! is_string($value) || trim($value) === '') {
+            return false;
+        }
+        log_message('notice', 'Honeypot tripped on {form}', ['form' => $form]);
+
+        return true;
+    }
+}

@@ -48,12 +48,17 @@ class ProfileSetup extends BaseController
     {
         $back = base_url('profile-setup') . '#order';
 
-        // Honeypot and timing floor, as on /careers. A bot is sent back with
-        // nothing saved and nothing said.
+        // Honeypot and timing floor, as on /careers. Nothing is saved, but the
+        // form comes back filled in with a message: a fake success is not
+        // possible here (it would be a checkout), and the old silent bounce
+        // left a real customer pressing Order three times on 29 Oct 2026. A
+        // bot learns only that the form came back.
         $renderedAt = (int) session(self::FORM_KEY);
-        if (trim((string) $this->request->getPost('company_website_hp')) !== ''
+        if (honeypot_tripped('profile-setup')
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
-            return redirect()->to($back);
+            return redirect()->to($back)
+                ->with('old', array_diff_key((array) $this->request->getPost(), [HONEYPOT_FIELD => true]))
+                ->with('error', 'We could not start your order. Please check your details and press Order again. If it keeps happening, contact us and we will help you directly.');
         }
 
         $svc = new ProfileSetupService();

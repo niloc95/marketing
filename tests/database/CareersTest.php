@@ -537,7 +537,7 @@ final class CareersTest extends CIUnitTestCase
     public function testTheHoneypotLooksLikeSuccessAndStoresNothing(): void
     {
         $result = $this->withSession(['careers_form_rendered_at' => time() - 30])
-            ->post('careers/apply', $this->application(['company_website_hp' => 'spam']) + [csrf_token() => csrf_hash()]);
+            ->post('careers/apply', $this->application([HONEYPOT_FIELD => 'spam']) + [csrf_token() => csrf_hash()]);
 
         $result->assertRedirectTo(base_url('careers') . '#apply');
         $result->assertSessionHas('applied', CareersService::APPLIED_MESSAGE);

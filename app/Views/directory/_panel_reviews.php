@@ -100,7 +100,7 @@ $date   = static function (?string $d): string {
         <form method="post" action="<?= base_url('reviews/' . $l['slug']) ?>" class="disclosure-body" novalidate>
             <?= csrf_field() ?>
             <input type="hidden" name="review_form" value="<?= esc(Reviews::formStamp((int) $l['id']), 'attr') ?>">
-            <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+            <?= honeypot_field() ?>
 
             <fieldset class="field">
                 <legend class="mb-1 text-sm font-medium">Your rating</legend>

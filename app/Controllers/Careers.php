@@ -66,7 +66,7 @@ class Careers extends BaseController
         // bot learns nothing. 'applied', not 'success': the form section shows
         // it where the #apply redirect lands, not the layout's top of page.
         $renderedAt = (int) session(self::SESSION_KEY);
-        if (trim((string) $this->request->getPost('company_website_hp')) !== ''
+        if (honeypot_tripped('careers')
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
             return redirect()->to($back)->with('applied', CareersService::APPLIED_MESSAGE);
         }

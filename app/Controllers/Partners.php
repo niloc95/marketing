@@ -48,7 +48,7 @@ class Partners extends BaseController
         // Honeypot and timing floor, as on /recommend. Reported as success so
         // a bot learns nothing.
         $renderedAt = (int) session('partner_form_rendered_at');
-        if (trim((string) $this->request->getPost('company_website_hp')) !== ''
+        if (honeypot_tripped('partners')
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
             return redirect()->to(base_url('partners#apply'))->with('success', PartnerService::APPLIED_MESSAGE);
         }

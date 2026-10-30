@@ -37,7 +37,7 @@ $already  = session()->getFlashdata('already_applied');
 <form method="post" action="<?= base_url('careers/apply') ?>" enctype="multipart/form-data" data-submit-once>
     <?= csrf_field() ?>
     <!-- honeypot -->
-    <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+    <?= honeypot_field() ?>
 
     <?php if ($role !== null): ?>
         <input type="hidden" name="role_id" value="<?= (int) $role['id'] ?>">

@@ -128,7 +128,7 @@ $faqs = [
             <form method="post" action="<?= base_url('partners') ?>">
                 <?= csrf_field() ?>
                 <!-- honeypot -->
-                <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                <?= honeypot_field() ?>
 
                 <div class="form-row">
                     <div class="field">

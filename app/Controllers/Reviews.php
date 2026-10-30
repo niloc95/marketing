@@ -198,7 +198,7 @@ class Reviews extends BaseController
      */
     private function formCheck(int $listingId): string
     {
-        if (trim((string) $this->request->getPost('company_website_hp')) !== '') {
+        if (honeypot_tripped('reviews')) {
             return 'bot';
         }
 

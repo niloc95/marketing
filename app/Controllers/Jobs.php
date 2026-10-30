@@ -719,7 +719,7 @@ class Jobs extends BaseController
      */
     private function looksLikeABot(string $stampKey): bool
     {
-        if (trim((string) $this->request->getPost('company_website_hp')) !== '') {
+        if (honeypot_tripped('jobs')) {
             return true;
         }
         $renderedAt = (int) session($stampKey);

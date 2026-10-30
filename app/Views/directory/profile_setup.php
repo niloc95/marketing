@@ -180,7 +180,7 @@ $faqs = [
             <form method="post" action="<?= base_url('profile-setup') ?>">
                 <?= csrf_field() ?>
                 <!-- honeypot -->
-                <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                <?= honeypot_field() ?>
 
                 <div class="grid gap-x-6 sm:grid-cols-2">
                     <div class="field">

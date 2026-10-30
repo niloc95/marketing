@@ -67,7 +67,7 @@ $base     = $mode === 'listed' ? base_url('manage/jobs/new') : base_url('jobs/po
 
             <form method="post" action="<?= esc($action) ?>">
                 <?= csrf_field() ?>
-                <div class="hp" aria-hidden="true"><label>Company website<input type="text" name="company_website_hp" tabindex="-1" autocomplete="off"></label></div>
+                <?= honeypot_field() ?>
                 <?= $this->include('jobs/_fields') ?>
                 <button type="submit" class="btn btn-accent btn-block"><?= $isJob ? 'Post the job' : 'Post my request' ?></button>
             </form>
