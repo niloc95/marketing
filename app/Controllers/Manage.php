@@ -15,6 +15,7 @@ use App\Services\ListingFacetService;
 use App\Services\ListingBrandService;
 use App\Services\ListingMenuService;
 use App\Services\ListingQualityService;
+use App\Services\ListingStatsService;
 use App\Services\PracticeLocationService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
@@ -159,6 +160,20 @@ class Manage extends BaseController
         $facets     = (new ListingFacetService())->storedFor((int) $listing['id']);
         $menuFiles  = (new ListingMenuService())->forListing((int) $listing['id']);
 
+        // The five collections above are exactly what the rubric counts, so
+        // the strength meter costs no extra queries — that is what
+        // evaluate()'s optional $counts argument exists for. Facets are a
+        // map of facet key => rows, so the count the rubric wants is the
+        // number of stated values, not the number of facets answered.
+        $strength = (new ListingQualityService())->strength($listing, [
+            'photos'     => count($photos),
+            'services'   => count($services),
+            'attributes' => count($attributes),
+            'tags'       => count($tags),
+            'facets'     => array_sum(array_map('count', $facets)),
+            'menu'       => count($menuFiles),
+        ]);
+
         return view('directory/manage_edit', [
             'listing'    => $listing,
             'old'        => session()->getFlashdata('old') ?? [],
@@ -174,19 +189,12 @@ class Manage extends BaseController
             'brands'     => (new ListingBrandService())->forListing((int) $listing['id']),
             'menuFiles'  => $menuFiles,
 
-            // The five collections above are exactly what the rubric counts, so
-            // the strength meter costs no extra queries — that is what
-            // evaluate()'s optional $counts argument exists for. Facets are a
-            // map of facet key => rows, so the count the rubric wants is the
-            // number of stated values, not the number of facets answered.
-            'strength' => (new ListingQualityService())->strength($listing, [
-                'photos'     => count($photos),
-                'services'   => count($services),
-                'attributes' => count($attributes),
-                'tags'       => count($tags),
-                'facets'     => array_sum(array_map('count', $facets)),
-                'menu'       => count($menuFiles),
-            ]),
+            'strength' => $strength,
+            // Basic for everyone, full with the badge or Plus. Nothing to show
+            // until the profile is public.
+            'stats' => $listing['status'] === 'published'
+                ? (new ListingStatsService())->forOwner($listing, $strength['items'], listing_has_premium($listing))
+                : null,
             'strengthFloor' => (int) config('Directory')->recentMinQuality,
             'strengthTarget' => (int) config('Directory')->qualityTarget,
             'slots'      => $this->gallerySlots((int) $listing['id']),

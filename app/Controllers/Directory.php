@@ -16,6 +16,7 @@ use App\Services\DirectoryService;
 use App\Services\DirectorySettings;
 use App\Services\JobBoardService;
 use App\Services\HeroImageService;
+use App\Services\ListingStatsService;
 use App\Services\Search\DiscoveryEventService;
 use App\Services\Search\SearchIntent;
 use App\Services\ListingMenuService;
@@ -213,6 +214,8 @@ class Directory extends BaseController
         $jobs     = new JobBoardService();
         $careers  = new CareersService();
         $typed    = $page <= 1 ? (string) $filters['q'] : '';
+
+        $this->countShown($result);
 
         return view('directory/index', [
             'result'      => $result,
@@ -696,6 +699,8 @@ class Directory extends BaseController
         $min       = (int) config('Directory')->landingMinListings;
         $indexable = (int) $result['total'] >= $min && $page === 1;
 
+        $this->countShown($result);
+
         return view('directory/province', [
             'province'   => $province,
             'result'     => $result,
@@ -720,6 +725,8 @@ class Directory extends BaseController
         $page   = (int) ($this->request->getGet('page') ?? 1);
         $result = $svc->browse(['country' => $code, 'region' => $region ?? ''], $page);
         $min    = (int) config('Directory')->landingMinListings;
+
+        $this->countShown($result);
 
         return view('directory/country', [
             'code'       => $code,
@@ -776,6 +783,8 @@ class Directory extends BaseController
         // duplicate of the venue page itself.
         $min       = (int) config('Directory')->landingMinListings;
         $indexable = (int) $result['total'] >= $min && $page === 1 && $category === '' && $q === '';
+
+        $this->countShown($result);
 
         return view('directory/venue', [
             'venue'      => $venue,
@@ -866,6 +875,8 @@ class Directory extends BaseController
         $min        = (int) config('Directory')->landingMinListings;
         $indexable  = (int) $result['total'] >= $min && $page === 1 && $facets === [] && $sort === '';
 
+        $this->countShown($result);
+
         return view('directory/landing', [
             'category'       => $category,
             'province'       => $province,
@@ -883,6 +894,17 @@ class Directory extends BaseController
         ]);
     }
 
+    /**
+     * One appearance for each profile on this page of results or landing
+     * page (ListingStatsService), for the owner's statistics.
+     *
+     * @param array{items:list<array<string,mixed>>} $result browse()
+     */
+    private function countShown(array $result): void
+    {
+        (new ListingStatsService())->countAppearances($this->request, $result['items'] ?? []);
+    }
+
     protected function show(string $slug)
     {
         $svc     = new DirectoryService();
@@ -897,6 +919,8 @@ class Directory extends BaseController
 
         // "Open now", "Today" and the holiday line on this business's clock.
         hours_context($listing);
+
+        (new ListingStatsService())->countView($this->request, (int) $listing['id']);
 
         return view('directory/show', [
             'l'       => $listing,
@@ -995,6 +1019,9 @@ class Directory extends BaseController
             } elseif (ctype_digit($branch) && listing_has_premium($listing)) {
                 $row   = (new DirectoryPracticeLocationModel())->findForListing((int) $branch, (int) $listing['id']);
                 $email = (string) ($row['email'] ?? '');
+            }
+            if ($email !== '') {
+                (new ListingStatsService())->countTap($this->request, (int) $listing['id'], 'email');
             }
         }
 

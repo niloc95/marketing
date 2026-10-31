@@ -317,6 +317,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Profile setup orders (the paid /profile-setup service).
     // What the discovery model learned, and what people asked for.
     $routes->get('discovery', 'AdminDiscovery::index');
+    $routes->get('stats', 'AdminStats::index');
     $routes->post('discovery/block', 'AdminDiscovery::block');
     $routes->get('profile-setup', 'AdminProfileSetup::index');
     $routes->post('profile-setup/(:num)', 'AdminProfileSetup::update/$1');
@@ -382,6 +383,8 @@ $routes->get('directory/map', 'Directory::map');
 $routes->get('directory/suggest', 'Directory::suggest');
 // A result opened from a Discover results page (sendBeacon, CSRF exempt).
 $routes->post('discovery/opened', 'Discovery::opened');
+// A contact tap on a profile, for its statistics (sendBeacon, CSRF exempt).
+$routes->post('stats/tap', 'Stats::tap');
 // Province landing page — /directory/province/{province}. "province" is a
 // literal first segment, so the same ordering rule applies: below the
 // two-segment route it would resolve as a category named "province" and 404.

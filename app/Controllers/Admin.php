@@ -242,6 +242,10 @@ class Admin extends BaseController
 
         return view('admin/edit', [
             'strength'       => $strength,
+            // The owner's stats panel, always the full view for the admin.
+            'stats'          => $listing !== null && $strength !== null && $listing['status'] === 'published'
+                ? (new \App\Services\ListingStatsService())->forOwner($listing, $strength['items'], true)
+                : null,
             'strengthFloor'  => (int) config('Directory')->recentMinQuality,
             'strengthTarget' => (int) config('Directory')->qualityTarget,
             'listing'    => $listing,

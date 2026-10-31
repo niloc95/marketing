@@ -56,6 +56,10 @@ if (! is_array($old['hours'] ?? null)) {
             <?php // The owner's profile strength meter, so an admin can see what is
                   // missing and pass it on. Outside the form: the email button is a
                   // form of its own, and forms cannot nest. ?>
+            <?php if (! empty($stats)): ?>
+                <?= view('directory/_stats_panel', ['stats' => $stats, 'audience' => 'admin']) ?>
+            <?php endif; ?>
+
             <?php if (! $isNew && $strength !== null): ?>
                 <?= view('directory/_strength_panel', [
                     'strength' => $strength,

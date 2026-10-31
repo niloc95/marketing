@@ -8,6 +8,7 @@ use App\Libraries\Geocoding\MapboxGeocoder;
 use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\CloudflareAccess;
 use App\Libraries\DomainChecker;
+use App\Libraries\GoogleApi;
 use App\Libraries\MauticClient;
 use App\Services\Description\DescriptionDraftService;
 use App\Services\Description\DescriptionWriter;
@@ -170,6 +171,20 @@ class Services extends BaseService
         }
 
         return new DomainChecker();
+    }
+
+    /**
+     * Search Console and GA4 for the profile statistics (GoogleDataService).
+     * Tests inject a fake with Services::injectMock('google'), so the suite
+     * never calls Google.
+     */
+    public static function google(bool $getShared = true): GoogleApi
+    {
+        if ($getShared) {
+            return static::getSharedInstance('google');
+        }
+
+        return new GoogleApi();
     }
 
     /**

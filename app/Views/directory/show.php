@@ -94,7 +94,9 @@ $metaDesc = listing_meta_description($l);
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="section">
+<?php // Contact taps (data-stat in _contact_panel.php) are counted for the owner's
+      // statistics by directory.js. Never on a preview: nobody is visiting yet. ?>
+<section class="section"<?php if (empty($preview)): ?> data-stat-url="<?= esc(base_url('stats/tap'), 'attr') ?>" data-stat-slug="<?= esc((string) $l['slug'], 'attr') ?>"<?php endif; ?>>
     <?php // vertical-scope plus the group's tint class is the whole per-category
           // treatment on this page: the tint class sets custom properties, and
           // .vertical-scope .panel h3 reads them, so every panel heading below —

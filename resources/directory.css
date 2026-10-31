@@ -2886,6 +2886,61 @@
   .dark .strength-step-points,
   .dark .strength-step-hint   { @apply text-slate-400; }
 
+  /* Profile statistics (_stats_panel.php), above the strength panel and in
+     the same chrome. The chart is SVG coloured by class: CSP blocks style="". */
+  .stats-panel          { @apply mb-6; }
+  .stats-tiles          { @apply mt-4 grid gap-3 sm:grid-cols-3; }
+  .stats-tile           { @apply rounded-xl bg-slate-50 p-4; }
+  .stats-tile-label     { @apply text-xs font-medium text-slate-500; }
+  .stats-tile-value     { @apply mt-1 text-2xl font-extrabold tabular-nums text-slate-900; }
+  .stats-tile-change    { @apply mt-1 text-xs text-slate-500; }
+  .stats-heading        { @apply mb-2 mt-6 text-sm font-semibold text-slate-900; }
+  .stats-tips           { @apply grid gap-3; }
+  .stats-tip            { @apply rounded-xl border border-amber-200 bg-amber-50 p-4; }
+  .stats-tip-title      { @apply text-sm font-semibold text-slate-900; }
+  .stats-tip-text       { @apply mt-1 text-sm text-slate-600; }
+  .stats-tip-steps      { @apply mt-2 flex flex-wrap gap-x-2 gap-y-1 text-sm text-slate-500; }
+  .stats-chart          { @apply block h-32 w-full; }
+  /* One span per bar, blank ones included, so each label sits under its bar. */
+  .stats-chart-labels   { @apply mt-1 flex text-xs text-slate-500; }
+  .stats-chart-labels span { @apply min-w-0 flex-1 overflow-visible whitespace-nowrap text-center; }
+  .stats-chart-labels span:first-child { @apply text-left; }
+  .stats-chart-axis     { @apply stroke-slate-300; stroke-width: 1; }
+  .stats-chart-bar      { @apply fill-primary-500; }
+  .stats-chart-hit      { @apply fill-transparent; }
+  .stats-chart-hit:hover + .stats-chart-bar { @apply fill-primary-600; }
+  .stats-table-toggle   { @apply mt-2 text-xs text-slate-500; }
+  .stats-table-toggle summary { @apply cursor-pointer; }
+  .stats-table          { @apply mt-2 w-full text-left text-sm tabular-nums; }
+  .stats-table th,
+  .stats-table td       { @apply border-b border-slate-100 py-1.5 pr-3 font-normal; }
+  .stats-table thead th { @apply text-xs font-semibold text-slate-500; }
+  .stats-columns        { @apply grid gap-x-6 sm:grid-cols-2; }
+  .stats-list           { @apply divide-y divide-slate-100 text-sm; }
+  .stats-list li        { @apply flex justify-between gap-3 py-1.5 text-slate-700; }
+  .stats-list-n         { @apply shrink-0 tabular-nums text-slate-500; }
+  .stats-empty          { @apply text-sm text-slate-500; }
+  .dark .stats-tile          { @apply bg-white/5; }
+  .dark .stats-tile-value,
+  .dark .stats-heading,
+  .dark .stats-tip-title     { @apply text-white; }
+  .dark .stats-tile-label,
+  .dark .stats-tile-change,
+  .dark .stats-tip-steps,
+  .dark .stats-list-n,
+  .dark .stats-empty,
+  .dark .stats-table-toggle  { @apply text-slate-400; }
+  .dark .stats-tip           { @apply border-amber-500/30 bg-amber-500/10; }
+  .dark .stats-tip-text,
+  .dark .stats-list li       { @apply text-slate-300; }
+  .dark .stats-list,
+  .dark .stats-table th,
+  .dark .stats-table td      { @apply divide-slate-800 border-slate-800; }
+  .dark .stats-chart-axis    { @apply stroke-slate-700; }
+  .dark .stats-chart-bar     { @apply fill-primary-300; }
+  .dark .stats-chart-hit:hover + .stats-chart-bar { @apply fill-primary-200; }
+  .dark .stats-chart-labels  { @apply text-slate-400; }
+
   /* The live score bar on /add-profile (form.php). Last element in the form
      and sticky to the bottom of the screen, so it rides along the whole way
      down without fighting the fixed header, then settles above the submit

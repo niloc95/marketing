@@ -65,6 +65,7 @@ $more = [
         ['Documents', 'admin/documents'],
         ['Badge funnel', 'admin/funnel'],
         ['Discovery', 'admin/discovery'],
+        ['Stats', 'admin/stats'],
     ],
     'System' => [
         ['Settings', 'admin/settings'],

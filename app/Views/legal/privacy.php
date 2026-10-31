@@ -240,6 +240,11 @@ $contact   = config('Directory')->adminEmail();
             <p>When you use Discover, we keep the words you typed, how many results they found and, if you open a result, which profile you opened and its place in the list. We do not keep your IP address, a cookie or anything else with it that says who typed the words.</p>
             <p>We use this to improve discovery, for example to learn which kinds of business people mean by a word and which searches find nothing. We delete it after 180 days.</p>
 
+            <h3>Profile statistics</h3>
+            <p>For each business profile we count, per day, how often it was opened, how often it was shown in discovery results and on category and area pages, and how often visitors tapped to call, chat on WhatsApp, visit the website, get directions, book or show the email address. These are totals only. We do not keep your IP address, a cookie or anything else with them that says who you are.</p>
+            <p>We also receive from Google Search Console how often each profile appeared and was clicked in Google search results, and the search words that led to it. Google provides these as totals and leaves out rare searches; nothing in them says who searched.</p>
+            <p>We use the totals to show business owners how their profile is doing and to improve the platform. We delete them after 25 months.</p>
+
             <h2>14. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">
