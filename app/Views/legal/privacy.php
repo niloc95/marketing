@@ -242,6 +242,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Profile statistics</h3>
             <p>For each business profile we count, per day, how often it was opened, how often it was shown in discovery results and on category and area pages, and how often visitors tapped to call, chat on WhatsApp, visit the website, get directions, book or show the email address. These are totals only. We do not keep your IP address, a cookie or anything else with them that says who you are.</p>
+            <p>We also receive from Google Search Console how often each profile appeared and was clicked in Google search results, and the search words that led to it. Google provides these as totals and leaves out rare searches; nothing in them says who searched.</p>
             <p>We use the totals to show business owners how their profile is doing and to improve the platform. We delete them after 25 months.</p>
 
             <h2>14. Why we process personal information</h2>

@@ -46,8 +46,8 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 |---|---|
 | `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (owner magic link, dashboard, badge and Plus checkout), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` |
 | `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
-| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
-| `app/Libraries/` | `Mailer` (the only mail path), `MauticClient`, `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input` |
+| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
+| `app/Libraries/` | `Mailer` (the only mail path), `MauticClient`, `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
 | `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
 | `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
 | `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `AdminDocuments`, `Hostnames`, `ContentSecurityPolicy` |
@@ -778,8 +778,19 @@ and never throws. Switch: `directory.profileStats`.
   profile's own owner. The session is read only when one already exists, so counting
   never starts a session or sets a cookie.
 - Retention 25 months (`directory:stats`, Privacy "Profile statistics" on both sites).
-- Tests: `tests/database/ProfileStatsTest.php`. The owner dashboard, Google data and
-  admin stats are later phases (plan in memory `profile-stats-plan`).
+- Tests: `tests/database/ProfileStatsTest.php`.
+- **Google data** (`GoogleDataService`, `App\Libraries\GoogleApi`, `Config\Google`,
+  `service('google')`): `directory:stats` pulls each settled day once (Search Console 3
+  days back, GA4 1 day back, `catchUpDays` 10, `--backfill 480` on the first run) into
+  `xs_directory_listing_search` (per profile per day), `_listing_search_queries` (per
+  profile per month), `_site_daily` and `_site_breakdown` (admin), with
+  `_google_pulls` as the once per day guard. A day is written in one transaction after
+  every call answered; a failure writes nothing and is retried next night. Off until
+  `google.credentialsPath` is set. `GoogleApi` signs the service account JWT itself
+  (no google/apiclient); tests override `send()` or inject a fake. GA4 is admin only.
+  Tests: `tests/database/GoogleDataTest.php`.
+- The owner dashboard and admin stats are later phases (plan in memory
+  `profile-stats-plan`).
 
 ## Verified Business — the one paid feature
 
@@ -1007,7 +1018,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `directory:insights:build` | rebuild the description hints | 03:20 |
 | `discovery:learn [--show <word>]` | rebuild the discovery model (categories, related words, vocabulary, clicks; per site) and purge old searches | 03:25 |
 | `jobs:expire` | expire posts, renew reminders, retention, report digest | 03:30 |
-| `directory:stats` | delete profile statistics older than 25 months | 03:40 |
+| `directory:stats [--backfill 480] [--no-google]` | delete statistics older than 25 months, pull Search Console and GA4 | 03:40 |
 | `referrals:prune` | referral retention | 03:45 |
 | `partners:sweep` | release held commission, rebuild missed ones | 03:50 |
 | `careers:purge` | CVs and applicant retention | 03:55 |
