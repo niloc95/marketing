@@ -201,7 +201,9 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 <div class="form-steps-dock" data-form-steps-dock hidden>
                     <?= view('directory/_form_steps_nav', [], ['saveData' => false]) ?>
                     <div class="flex shrink-0 items-center gap-2">
-                        <button type="submit" class="btn btn-ghost btn-xs" formaction="<?= base_url('manage/preview') ?>" formtarget="_blank" formnovalidate data-preview-submit>Preview</button>
+                        <?php // Not on a phone: five dots and two buttons do not fit in
+                              // 390px, and Preview changes is under the form anyway. ?>
+                        <button type="submit" class="btn btn-ghost btn-xs max-sm:hidden" formaction="<?= base_url('manage/preview') ?>" formtarget="_blank" formnovalidate data-preview-submit>Preview</button>
                         <button type="submit" class="btn btn-accent btn-xs">Save changes</button>
                     </div>
                 </div>

@@ -3402,7 +3402,7 @@
 
   /* The step tracker (_form_steps_nav.php): five numbered dots in the sticky
      bar. The current step is filled with its accent; the rest are outlines. */
-  .form-steps-nav  { @apply flex items-center gap-1.5; }
+  .form-steps-nav  { @apply flex min-w-0 items-center gap-1.5; }
   .form-steps-dot {
     @apply inline-flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold no-underline transition-colors;
     border-color: var(--step);
