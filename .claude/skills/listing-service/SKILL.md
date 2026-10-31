@@ -44,7 +44,7 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 
 | Where | What lives there |
 |---|---|
-| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (owner magic link, dashboard, badge and Plus checkout), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` |
+| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (owner magic link, dashboard, badge and Plus checkout), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
 | `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
 | `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
 | `app/Libraries/` | `Mailer` (the only mail path), `MauticClient`, `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
@@ -789,8 +789,23 @@ and never throws. Switch: `directory.profileStats`.
   `google.credentialsPath` is set. `GoogleApi` signs the service account JWT itself
   (no google/apiclient); tests override `send()` or inject a fake. GA4 is admin only.
   Tests: `tests/database/GoogleDataTest.php`.
-- The owner dashboard and admin stats are later phases (plan in memory
-  `profile-stats-plan`).
+- **Owner panel** (`_stats_panel.php`, data `ListingStatsService::forOwner()`): on
+  `/manage/edit` above the strength panel, published profiles only. Everyone: last 30
+  days of views, appearances and taps against the 30 before (only once counting covers
+  them) and tips (`tips()`: rarely shown, shown but rarely opened, opened but few
+  contacts; none before 14 days of counting; each names only empty parts of the
+  profile and is left out when nothing is empty; never anything paid).
+  `listing_has_premium()` (Verified on co.za, Plus on .app) adds the monthly chart,
+  taps by kind, Discover words (`DiscoveryEventService::wordsFor()`) and Search
+  Console numbers. A free owner gets one line naming the plan and linking `/verified`
+  or `/plus`, never a price. Admin edit shows the full panel (`audience` admin).
+- **Admin** `GET /admin/stats` (`AdminStats`, view `admin/stats.php`, "More" → Stats):
+  `?site=app`, `?days=7|30|90|365`; own counters per day, most viewed, published
+  profiles with no views, then Search Console and GA4 from the stored tables.
+- Charts are `directory/_bar_chart.php`: inline SVG with classes only (CSP), `<title>`
+  per bar, a table copy under it.
+- Tests: `tests/database/OwnerStatsTest.php`. Tests that touch Google blank
+  `credentialsPath`, because a dev `.env` may hold the real key path.
 
 ## Verified Business — the one paid feature
 

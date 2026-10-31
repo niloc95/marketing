@@ -55,6 +55,28 @@ class DiscoveryEventService
         return $this->grouped('results > 0', $days, $limit, $site);
     }
 
+    /**
+     * The Discover words people typed before opening this profile, most used
+     * first: the owner's stats panel.
+     *
+     * @return list<array{query:string,opens:int}>
+     */
+    public function wordsFor(int $listingId, string $site, int $days = 90, int $limit = 10): array
+    {
+        $rows = db_connect()->table(self::TABLE)
+            ->select('query, COUNT(*) AS opens')
+            ->where('site', $site)
+            ->where('listing_id', $listingId)
+            ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-' . $days . ' days')))
+            ->groupBy('query')
+            ->orderBy('opens', 'DESC')
+            ->orderBy('query', 'ASC')
+            ->limit($limit)
+            ->get()->getResultArray();
+
+        return array_map(static fn (array $r): array => ['query' => (string) $r['query'], 'opens' => (int) $r['opens']], $rows);
+    }
+
     /** Delete rows older than KEEP_DAYS. */
     public function purge(): int
     {

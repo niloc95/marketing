@@ -331,6 +331,31 @@ class GoogleDataService
         ], $rows);
     }
 
+    /**
+     * One site's profiles most shown on Google search from $from to $to.
+     *
+     * @return list<array{id:int,display_name:string,impressions:int,clicks:int,position:?float}>
+     */
+    public function topListings(string $site, string $from, string $to, int $limit = 25): array
+    {
+        $builder = db_connect()->table('directory_listing_search s')
+            ->select('l.id, l.display_name, SUM(s.impressions) AS impressions, SUM(s.clicks) AS clicks, SUM(s.position * s.impressions) / NULLIF(SUM(s.impressions), 0) AS position', false)
+            ->join('directory_listings l', 'l.id = s.listing_id')
+            ->where('s.day >=', $from)
+            ->where('s.day <=', $to)
+            ->where('l.deleted_at', null);
+        $scope = (new SiteContext(config(Sites::class)->host($site)))->scopeSql('l.country_code');
+        if ($scope !== '') {
+            $builder->where($scope, null, false);
+        }
+        $rows = $builder->groupBy('l.id')->orderBy('impressions', 'DESC')->orderBy('clicks', 'DESC')->limit($limit)->get()->getResultArray();
+
+        return array_map(static fn (array $r): array => [
+            'id' => (int) $r['id'], 'display_name' => (string) $r['display_name'], 'impressions' => (int) $r['impressions'],
+            'clicks' => (int) $r['clicks'], 'position' => $r['position'] === null ? null : round((float) $r['position'], 1),
+        ], $rows);
+    }
+
     /** The newest day pulled for a source and site, or null. */
     public function lastPulled(string $source, string $site): ?string
     {

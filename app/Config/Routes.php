@@ -317,6 +317,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Profile setup orders (the paid /profile-setup service).
     // What the discovery model learned, and what people asked for.
     $routes->get('discovery', 'AdminDiscovery::index');
+    $routes->get('stats', 'AdminStats::index');
     $routes->post('discovery/block', 'AdminDiscovery::block');
     $routes->get('profile-setup', 'AdminProfileSetup::index');
     $routes->post('profile-setup/(:num)', 'AdminProfileSetup::update/$1');

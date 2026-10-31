@@ -125,6 +125,16 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                   // closest to the fields it is talking about — and below the
                   // two that can be telling the owner their listing is offline,
                   // which outranks anything about completeness. ?>
+            <?php // Before the strength panel: the numbers say what is wrong, the
+                  // strength panel says what is left to fill in. ?>
+            <?php if (! empty($stats)): ?>
+                <?= view('directory/_stats_panel', [
+                    'stats'       => $stats,
+                    'upgradeUrl'  => $stats['full'] ? '' : (! empty($plusShown) ? base_url('plus') : (! $hostingRequired && $verificationOffered ? base_url('verified') : '')),
+                    'upgradeName' => ! empty($plusShown) ? 'Plus' : 'Verified',
+                ]) ?>
+            <?php endif; ?>
+
             <?= view('directory/_strength_panel', [
                 'strength' => $strength,
                 'floor'    => $strengthFloor,
