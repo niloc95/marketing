@@ -187,7 +187,14 @@ class JobBoardService
             ->select($t . '.*, c.name AS category_name, c.slug AS category_slug,'
                 . ' l.display_name AS listing_name, l.slug AS listing_slug, l.logo_path AS listing_logo,'
                 . ' l.verified_until AS listing_verified_until, l.status AS listing_status,'
-                . ' l.email AS listing_email, l.description AS listing_description')
+                . ' l.email AS listing_email, l.description AS listing_description,'
+                // For listingAddress(): prefixed so they never shadow the
+                // post's own city and province.
+                . ' l.address_line AS listing_address_line, l.address_line_2 AS listing_address_line_2,'
+                . ' l.suburb AS listing_suburb, l.city AS listing_city, l.province AS listing_province,'
+                . ' l.region AS listing_region, l.postal_code AS listing_postal_code,'
+                . ' l.country_code AS listing_country_code, l.customer_location AS listing_customer_location,'
+                . ' l.show_address AS listing_show_address')
             ->join('xs_directory_categories AS c', 'c.id = ' . $t . '.category_id', 'left')
             ->join('xs_directory_listings AS l', 'l.id = ' . $t . '.listing_id', 'left')
             ->where($t . '.id', $id)
@@ -629,7 +636,8 @@ class JobBoardService
             return ['ok' => false, 'errors' => $errors, 'data' => $d];
         }
 
-        $d['company_name'] = (string) $listing['display_name'];
+        $d['company_name']       = (string) $listing['display_name'];
+        $d['at_listing_address'] = $this->atListingAddress($in, $d);
         if ($d['kind'] === JobPostModel::KIND_JOB && $d['apply_url'] === null && $d['apply_email'] === null) {
             $d['apply_email'] = (string) $listing['email'];
         }
@@ -892,8 +900,11 @@ class JobBoardService
         unset($d['kind']);
 
         // A listed post always shows the listing's name, as when it was made.
+        // Only its form has the business address box; the unlisted poster's
+        // edit leaves the column alone.
         if ($listing !== null) {
-            $d['company_name'] = (string) $listing['display_name'];
+            $d['company_name']       = (string) $listing['display_name'];
+            $d['at_listing_address'] = $this->atListingAddress($in, $d);
         }
         if ($post['kind'] === JobPostModel::KIND_JOB && $d['apply_url'] === null && $d['apply_email'] === null) {
             $d['apply_email'] = $listing !== null ? (string) $listing['email'] : $post['poster_email'];
@@ -1440,7 +1451,13 @@ class JobBoardService
             $schema['jobLocationType']               = 'TELECOMMUTE';
             $schema['applicantLocationRequirements'] = ['@type' => 'Country', 'name' => 'South Africa'];
         }
-        if (! empty($post['province']) || ! empty($post['city'])) {
+        $at = $this->listingAddress($post);
+        if ($at !== null) {
+            // The profile's own address, as addressText() shows it on the page.
+            $address = schema_postal_address($at) ?? [];
+            $address['addressCountry'] = (string) $at['country_code'];
+            $schema['jobLocation'] = ['@type' => 'Place', 'address' => $address];
+        } elseif (! empty($post['province']) || ! empty($post['city'])) {
             $schema['jobLocation'] = [
                 '@type'   => 'Place',
                 'address' => array_filter([
@@ -1525,6 +1542,58 @@ class JobBoardService
     public function employmentLabel(array $post): string
     {
         return $this->cfg->employmentTypes[$post['employment_type'] ?? '']['label'] ?? '';
+    }
+
+    /**
+     * The hiring profile's address for a vacancy marked "at our business
+     * address", as a plain address row (address_line, suburb, city, ...), or
+     * null when the post shows its town and province only: not a job, the box
+     * not ticked, remote, no listing, no street line, or a business that
+     * travels to customers and hides its address (listing_address_public()).
+     *
+     * Reads the listing_* columns find() joins in.
+     *
+     * @return array<string,string>|null
+     */
+    public function listingAddress(array $post): ?array
+    {
+        if (($post['kind'] ?? '') !== JobPostModel::KIND_JOB || empty($post['at_listing_address'])
+            || ! empty($post['is_remote']) || empty($post['listing_id'])) {
+            return null;
+        }
+
+        $row = [];
+        foreach (['address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
+            'country_code', 'customer_location', 'show_address'] as $col) {
+            $row[$col] = (string) ($post['listing_' . $col] ?? '');
+        }
+        if (trim($row['address_line']) === '' || ! listing_address_public($row)) {
+            return null;
+        }
+
+        return $row;
+    }
+
+    /** The full street address for the job page's Where line, or '' for placeText(). */
+    public function addressText(array $post): string
+    {
+        $at = $this->listingAddress($post);
+
+        return $at === null ? '' : map_address_text($at);
+    }
+
+    /**
+     * 1 when a listed business's vacancy is at its own address: the form's
+     * box is ticked and the job is not remote. A service request never is.
+     *
+     * @param array<string,mixed> $in the posted form
+     * @param array<string,mixed> $d  validate()'s cleaned data
+     */
+    private function atListingAddress(array $in, array $d): int
+    {
+        $kind = $d['kind'] ?? $in['kind'] ?? '';
+
+        return $kind === JobPostModel::KIND_JOB && empty($d['is_remote']) && ! empty($in['at_listing_address']) ? 1 : 0;
     }
 
     /** "Durban, KwaZulu-Natal", "Remote", or both. */

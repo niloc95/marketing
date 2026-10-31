@@ -23,7 +23,7 @@ class JobPostModel extends Model
         'country_code',
         'kind', 'slug', 'listing_id',
         'poster_name', 'poster_email', 'poster_phone', 'company_name',
-        'title', 'description', 'good_fit', 'strong_candidates', 'projects', 'logistics', 'category_id', 'province', 'city', 'is_remote',
+        'title', 'description', 'good_fit', 'strong_candidates', 'projects', 'logistics', 'category_id', 'province', 'city', 'is_remote', 'at_listing_address',
         'employment_type', 'salary_min', 'salary_max', 'salary_period', 'apply_url', 'apply_email', 'screening_level',
         'budget_text', 'needed_by',
         'status', 'reject_reason', 'flagged_reason',

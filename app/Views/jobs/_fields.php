@@ -136,6 +136,20 @@ $error = static fn (string $f) => $err($f) !== '' ? '<div class="err">' . esc($e
         <label class="font-medium"><input type="checkbox" name="is_remote" value="1" <?= $v('is_remote') ? 'checked' : '' ?>> This job can be done remotely</label>
     </div>
 
+    <?php
+    // A listed business with a public street address: the job page and the
+    // JobPosting markup can carry it (JobBoardService::listingAddress()).
+    // Ticked on a new post, which has no old values yet.
+    $bizAddress = isset($listing) && $listing !== null && trim((string) ($listing['address_line'] ?? '')) !== ''
+        && listing_address_public($listing) ? map_address_text($listing) : '';
+    ?>
+    <?php if ($bizAddress !== ''): ?>
+        <div class="field">
+            <label class="font-medium"><input type="checkbox" name="at_listing_address" value="1" <?= $old === [] || $v('at_listing_address') ? 'checked' : '' ?>> This job is at our business address</label>
+            <p class="hint"><?= esc($bizAddress) ?>. Shown on the job page, and given to Google so job seekers nearby find it. Leave it unticked if the work is somewhere else.</p>
+        </div>
+    <?php endif; ?>
+
     <div class="form-row">
         <div class="field">
             <label for="f-type">Job type</label>

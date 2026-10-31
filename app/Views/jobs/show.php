@@ -16,7 +16,8 @@ $siteName  = config('Directory')->siteName();
 $isJob     = $post['kind'] === App\Models\JobPostModel::KIND_JOB;
 $canonical = $svc->url($post);
 $isLive    = $svc->isLive($post);
-$place     = $svc->placeText($post);
+// The full address when the job is at the business (JobPosting says the same).
+$place     = $svc->addressText($post) ?: $svc->placeText($post);
 $salary    = $isJob ? $svc->salaryText($post) : '';
 $type      = $isJob ? $svc->employmentLabel($post) : '';
 $employer  = $svc->hiringName($post);

@@ -62,6 +62,38 @@ final class JobBoardRulesTest extends CIUnitTestCase
         $this->assertSame(['@type' => 'QuantitativeValue', 'unitText' => 'MONTH', 'minValue' => 15000, 'maxValue' => 18000], $schema['baseSalary']['value']);
     }
 
+    public function testAJobAtTheBusinessAddressCarriesItsStreetAndPostalCode(): void
+    {
+        $schema  = $this->svc->jobPostingSchema($this->job($this->atBusiness()));
+        $address = $schema['jobLocation']['address'];
+
+        $this->assertSame('34 Collins Road, Birnam Park', $address['streetAddress']);
+        $this->assertSame('2196', $address['postalCode']);
+        $this->assertSame('Johannesburg', $address['addressLocality'], 'the profile\'s town, as the page shows it');
+        $this->assertSame('Gauteng', $address['addressRegion']);
+        $this->assertSame('ZA', $address['addressCountry']);
+        $this->assertSame('34 Collins Road, Birnam Park, Johannesburg, Gauteng, 2196', $this->svc->addressText($this->job($this->atBusiness())));
+    }
+
+    public function testTheBusinessAddressStaysOutUnlessTickedPublicAndOnSite(): void
+    {
+        $cases = [
+            'not ticked' => ['at_listing_address' => 0],
+            'remote'     => ['is_remote' => 1],
+            'hidden'     => ['listing_customer_location' => 'travel', 'listing_show_address' => 0],
+            'no street'  => ['listing_address_line' => ''],
+            'unlisted'   => ['listing_id' => null],
+        ];
+        foreach ($cases as $case => $overrides) {
+            $post   = $this->job($overrides + $this->atBusiness());
+            $schema = $this->svc->jobPostingSchema($post);
+
+            $this->assertSame('', $this->svc->addressText($post), $case);
+            $this->assertArrayNotHasKey('streetAddress', $schema['jobLocation']['address'] ?? [], $case);
+        }
+        $this->assertSame('Durban', $this->svc->jobPostingSchema($this->job(['at_listing_address' => 0] + $this->atBusiness()))['jobLocation']['address']['addressLocality']);
+    }
+
     public function testTheDescriptionIsEscaped(): void
     {
         $schema = $this->svc->jobPostingSchema($this->job(['description' => "Line one\n<script>x</script>"]));
@@ -95,6 +127,23 @@ final class JobBoardRulesTest extends CIUnitTestCase
         $this->assertSame('R15 000 – R18 000 per month', $this->svc->salaryText($this->job()));
         $this->assertSame('From R200 per hour', $this->svc->salaryText($this->job(['salary_max' => null, 'salary_min' => 200, 'salary_period' => 'hour'])));
         $this->assertSame('', $this->svc->salaryText($this->job(['salary_min' => null, 'salary_max' => null])));
+    }
+
+    /** A listed vacancy at its profile's public address, as find() joins it. */
+    private function atBusiness(): array
+    {
+        return [
+            'listing_id'                => 12,
+            'at_listing_address'        => 1,
+            'listing_address_line'      => '34 Collins Road',
+            'listing_suburb'            => 'Birnam Park',
+            'listing_city'              => 'Johannesburg',
+            'listing_province'          => 'Gauteng',
+            'listing_postal_code'       => '2196',
+            'listing_country_code'      => 'ZA',
+            'listing_customer_location' => 'visit',
+            'listing_show_address'      => 1,
+        ];
     }
 
     /** @param array<string,mixed> $overrides */

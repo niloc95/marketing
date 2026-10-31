@@ -147,6 +147,44 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('href="' . esc($this->svc->url($post)) . '"', $profile);
     }
 
+    public function testAJobAtTheBusinessAddressShowsItOnThePageAndInTheMarkup(): void
+    {
+        $listing = $this->listing([
+            'address_line' => '34 Collins Road', 'suburb' => 'Birnam Park', 'city' => 'Johannesburg',
+            'province' => 'Gauteng', 'postal_code' => '2196',
+        ]);
+        $session = [Manage::SESSION_KEY => (int) $listing['id']];
+
+        $form = (string) $this->withSession($session)->get('manage/jobs/new?kind=job')->response()->getBody();
+        $this->assertMatchesRegularExpression('/name="at_listing_address" value="1" checked/', $form, 'ticked on a new post');
+        $this->assertStringContainsString('34 Collins Road, Birnam Park, Johannesburg, Gauteng, 2196', $form);
+
+        $id   = $this->svc->submitForListing($listing, $this->jobInput(['at_listing_address' => '1']))['id'];
+        $post = $this->posts->find($id);
+        $this->assertSame(1, (int) $post['at_listing_address']);
+
+        $html = (string) $this->get('jobs/' . $id . '-' . $post['slug'])->response()->getBody();
+        $this->assertStringContainsString('34 Collins Road, Birnam Park, Johannesburg, Gauteng, 2196', $html);
+        $this->assertStringContainsString('"streetAddress":"34 Collins Road, Birnam Park"', $html);
+        $this->assertStringContainsString('"postalCode":"2196"', $html);
+
+        // Unticking on edit, or a remote job, goes back to the town only.
+        $this->svc->updatePost($id, $this->jobInput(), $listing);
+        $this->assertSame(0, (int) $this->posts->find($id)['at_listing_address']);
+        $remote = $this->svc->submitForListing($listing, $this->jobInput(['at_listing_address' => '1', 'is_remote' => '1']))['id'];
+        $this->assertSame(0, (int) $this->posts->find($remote)['at_listing_address']);
+    }
+
+    public function testABusinessThatHidesItsAddressIsNotOfferedTheBox(): void
+    {
+        $listing = $this->listing([
+            'address_line' => '34 Collins Road', 'customer_location' => 'travel', 'show_address' => 0,
+        ]);
+
+        $form = (string) $this->withSession([Manage::SESSION_KEY => (int) $listing['id']])->get('manage/jobs/new?kind=job')->response()->getBody();
+        $this->assertStringNotContainsString('at_listing_address', $form);
+    }
+
     public function testTheHiringNoticeLinksToThePanelForSeveralJobs(): void
     {
         $listing = $this->listing();
