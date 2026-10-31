@@ -2900,12 +2900,15 @@
   .stats-tip-title      { @apply text-sm font-semibold text-slate-900; }
   .stats-tip-text       { @apply mt-1 text-sm text-slate-600; }
   .stats-tip-steps      { @apply mt-2 flex flex-wrap gap-x-2 gap-y-1 text-sm text-slate-500; }
-  .stats-chart          { @apply block h-auto w-full; }
+  .stats-chart          { @apply block h-32 w-full; }
+  /* One span per bar, blank ones included, so each label sits under its bar. */
+  .stats-chart-labels   { @apply mt-1 flex text-xs text-slate-500; }
+  .stats-chart-labels span { @apply min-w-0 flex-1 overflow-visible whitespace-nowrap text-center; }
+  .stats-chart-labels span:first-child { @apply text-left; }
   .stats-chart-axis     { @apply stroke-slate-300; stroke-width: 1; }
   .stats-chart-bar      { @apply fill-primary-500; }
   .stats-chart-hit      { @apply fill-transparent; }
   .stats-chart-hit:hover + .stats-chart-bar { @apply fill-primary-600; }
-  .stats-chart-label    { @apply fill-slate-500; font-size: 12px; }
   .stats-table-toggle   { @apply mt-2 text-xs text-slate-500; }
   .stats-table-toggle summary { @apply cursor-pointer; }
   .stats-table          { @apply mt-2 w-full text-left text-sm tabular-nums; }
@@ -2917,7 +2920,7 @@
   .stats-list li        { @apply flex justify-between gap-3 py-1.5 text-slate-700; }
   .stats-list-n         { @apply shrink-0 tabular-nums text-slate-500; }
   .stats-empty          { @apply text-sm text-slate-500; }
-  .dark .stats-tile          { @apply bg-slate-900; }
+  .dark .stats-tile          { @apply bg-white/5; }
   .dark .stats-tile-value,
   .dark .stats-heading,
   .dark .stats-tip-title     { @apply text-white; }
@@ -2936,7 +2939,7 @@
   .dark .stats-chart-axis    { @apply stroke-slate-700; }
   .dark .stats-chart-bar     { @apply fill-primary-300; }
   .dark .stats-chart-hit:hover + .stats-chart-bar { @apply fill-primary-200; }
-  .dark .stats-chart-label   { @apply fill-slate-400; }
+  .dark .stats-chart-labels  { @apply text-slate-400; }
 
   /* The live score bar on /add-profile (form.php). Last element in the form
      and sticky to the bottom of the screen, so it rides along the whole way
