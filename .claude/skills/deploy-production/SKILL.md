@@ -7,9 +7,16 @@ description: Release the WebScheduler marketing site and/or WebScheduler Local (
 
 | App | Live at | Docroot |
 |---|---|---|
-| Marketing site | `https://webscheduler.co.za` | `/var/www/marketing` |
+| Brand site (**not from this repo** since 1 Nov 2026) | `https://webscheduler.co.za` | `/var/www/marketing` |
 | WebScheduler Local, South Africa | `https://local.webscheduler.co.za` | `/var/www/listing/public_html` |
 | WebScheduler Local, every other country | `https://local.webscheduler.app` (since 25 Oct 2026) | the **same** docroot and app |
+
+**webscheduler.co.za is no longer released from this repo.** Since 1 Nov 2026 it is built
+from `niloc95/webscheduler-site` (see that repo's CLAUDE.md), still served from
+`/var/www/marketing` on this box until it moves to Cloudflare Pages. `marketing-site/`
+here is the OLD site: never build it and copy `dist/site/` into `/var/www/marketing`, or
+the old site replaces the new one. The vhost's clean URL rules (`/pricing` serves
+`pricing.html`) are in `deploy/apache/webscheduler.co.za.conf`.
 
 The two Local hosts are one PHP app and one database; the request's host picks the site
 (the `two-sites` skill). A release ships both at once. The app root is
@@ -46,7 +53,7 @@ recurring release procedure.
 
 1. Push to `main` first — the server releases from its own clone, so an unpushed commit
    cannot ship.
-2. `npm run site:build` and `npm run list:build` locally — both must exit 0. Each has
+2. `npm run list:build` locally — it must exit 0. Each has
    guards (banned phrases, `mailto:` form actions, missing PHPMailer, CSRF filter
    disabled, `http://` downgrade in `.htaccess`, missing seeder) that fail loudly. They
    run again on the server, but finding a guard failure there means a half-finished
@@ -69,14 +76,13 @@ tmux new -s release        # or: tmux attach -t release
 
 sudo -u deploy -H bash -lc 'cd ~/src && git pull \
   && composer install --no-dev --optimize-autoloader \
-  && npm ci --ignore-scripts && npm run list:build && npm run site:build'
+  && npm ci --ignore-scripts && npm run list:build'
 
-sudo cp -a /home/deploy/src/dist/site/.                       /var/www/marketing/
 sudo cp -a /home/deploy/src/dist/listing/directory-app/.      /var/www/listing/directory-app/
 sudo cp -a /home/deploy/src/dist/listing/docroot/.            /var/www/listing/public_html/
 
 # ALWAYS — cp -a under sudo leaves everything root-owned
-sudo chown -R deploy:www-data /var/www/listing /var/www/marketing
+sudo chown -R deploy:www-data /var/www/listing
 sudo chmod -R 2775 /var/www/listing/directory-app/writable
 sudo chmod 2770 /var/www/listing/directory-app/writable/verification
 sudo chmod 2770 /var/www/listing/directory-app/writable/careers   # CVs, like verification
