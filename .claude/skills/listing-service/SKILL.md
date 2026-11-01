@@ -757,7 +757,7 @@ look at the ITN rejection table and `Profile setup ITN:` log lines first.
   `data-track="name"` send a GA4 `{name}_click` event with `data-track-label` as its `cta`
   parameter, e.g. the pricing cards' `pricing_cta_click`.
 
-## Form health (`FormHealthService`, branch feat/form-health, unreleased)
+## Form health (`FormHealthService`, released 1 Nov 2026 at 547818c)
 
 What every form submission did, after 14 to 27 Oct 2026 lost about 18 signups to a
 404 with nobody noticing. Table `xs_directory_form_events` (no IP, email, session or
