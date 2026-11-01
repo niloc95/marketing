@@ -44,6 +44,22 @@ class ProfileSetupOrderModel extends Model
         'amount', 'status', 'pf_payment_id', 'paid_at', 'terms_at', 'admin_notes',
     ];
 
+    /**
+     * Orders per status, every status present as a key even at zero. The
+     * queue tabs and the admin dashboard both read it.
+     *
+     * @return array<string,int>
+     */
+    public function statusCounts(): array
+    {
+        $counts = array_fill_keys(array_keys(self::STATUSES), 0);
+        foreach ($this->select('status, COUNT(*) AS n')->groupBy('status')->findAll() as $r) {
+            $counts[(string) $r['status']] = (int) $r['n'];
+        }
+
+        return $counts;
+    }
+
     public function findByReference(string $reference): ?array
     {
         $reference = trim($reference);

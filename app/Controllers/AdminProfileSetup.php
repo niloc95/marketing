@@ -25,11 +25,7 @@ class AdminProfileSetup extends BaseController
             $status = ProfileSetupOrderModel::STATUS_PAID;
         }
 
-        $model = new ProfileSetupOrderModel();
-        $counts = [];
-        foreach ($model->select('status, COUNT(*) AS n')->groupBy('status')->findAll() as $r) {
-            $counts[(string) $r['status']] = (int) $r['n'];
-        }
+        $counts = (new ProfileSetupOrderModel())->statusCounts();
 
         $query = new ProfileSetupOrderModel();
         if ($status !== '') {

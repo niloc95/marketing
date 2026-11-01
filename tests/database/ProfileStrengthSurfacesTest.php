@@ -157,12 +157,12 @@ final class ProfileStrengthSurfacesTest extends CIUnitTestCase
         $this->published('thin-studio', 20);
         $this->published('full-studio', 90);
 
-        $page = $this->asAdmin()->get('admin?sort=score_asc');
+        $page = $this->asAdmin()->get('admin/profiles?sort=score_asc');
         $page->assertSee('Score');
         $body = (string) $page->response()->getBody();
         $this->assertLessThan(strpos($body, 'full-studio@'), strpos($body, 'thin-studio@'));
 
-        $body = (string) $this->asAdmin()->get('admin?sort=score_desc')->response()->getBody();
+        $body = (string) $this->asAdmin()->get('admin/profiles?sort=score_desc')->response()->getBody();
         $this->assertLessThan(strpos($body, 'thin-studio@'), strpos($body, 'full-studio@'));
     }
 

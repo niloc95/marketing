@@ -160,7 +160,7 @@ class Admin extends BaseController
     {
         $listing = (new DirectoryAdminService())->find($id);
         if ($listing === null) {
-            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+            return redirect()->to(base_url('admin/profiles'))->with('error', 'That profile no longer exists.');
         }
         return $this->form($listing);
     }
@@ -174,7 +174,7 @@ class Admin extends BaseController
     {
         $row = (new DirectoryAdminService())->find($id);
         if ($row === null) {
-            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+            return redirect()->to(base_url('admin/profiles'))->with('error', 'That profile no longer exists.');
         }
 
         helper('directory_hours');
@@ -353,7 +353,7 @@ class Admin extends BaseController
         if ($listingId === null) {
             return $ajax
                 ? $this->brandDeleteJson(false, 'That brand could not be found.', 404)
-                : redirect()->to(base_url('admin'))->with('error', 'That brand could not be found.');
+                : redirect()->to(base_url('admin/profiles'))->with('error', 'That brand could not be found.');
         }
 
         return $ajax
@@ -373,7 +373,7 @@ class Admin extends BaseController
         if (! is_array($photo)) {
             return $ajax
                 ? $this->photoDeleteJson(false, 'That photo could not be found.', 404)
-                : redirect()->to(base_url('admin'))->with('error', 'That photo could not be found.');
+                : redirect()->to(base_url('admin/profiles'))->with('error', 'That photo could not be found.');
         }
 
         $listingId = (int) $photo['listing_id'];
@@ -395,7 +395,7 @@ class Admin extends BaseController
     {
         $listing = (new DirectoryAdminService())->find($id);
         if ($listing === null) {
-            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+            return redirect()->to(base_url('admin/profiles'))->with('error', 'That profile no longer exists.');
         }
 
         $result = (new ProfileNudgeService())->sendNow($listing, (int) config('Directory')->qualityTarget);
@@ -419,7 +419,7 @@ class Admin extends BaseController
     {
         $listing = (new DirectoryAdminService())->find($id);
         if ($listing === null) {
-            return redirect()->to(base_url('admin'))->with('error', 'That profile no longer exists.');
+            return redirect()->to(base_url('admin/profiles'))->with('error', 'That profile no longer exists.');
         }
 
         $resolved = $this->resolveVerificationDocuments($id);
@@ -1414,7 +1414,7 @@ class Admin extends BaseController
         $root     = rtrim(base_url(), '/');
         $safe     = ($previous !== '' && str_starts_with($previous, $root . '/'))
             ? $previous
-            : base_url('admin');
+            : base_url('admin/profiles');
 
         return redirect()->to($safe)->with('success', $message);
     }

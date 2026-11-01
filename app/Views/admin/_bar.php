@@ -18,40 +18,20 @@
 // The count is the point of the link: a verification queue nobody is reminded
 // of is a queue people wait in. Counted here rather than passed in by each
 // controller, so the pages that render this bar do not each have to remember
-// to fetch it.
-$awaitingReview = (new App\Models\DirectoryVerificationModel())
-    ->where('state', App\Models\DirectoryVerificationModel::STATE_SUBMITTED)
-    ->countAllResults();
-$jobsPending = (new App\Models\JobPostModel())
-    ->where('status', App\Models\JobPostModel::STATUS_PENDING)
-    ->countAllResults();
-$reviewsPending = (new App\Models\DirectoryReviewModel())
-    ->where('status', App\Models\DirectoryReviewModel::STATUS_PENDING)
-    ->countAllResults();
-$referralsPending = (new App\Models\DirectoryReferralModel())
-    ->where('status', App\Models\DirectoryReferralModel::STATUS_PENDING)
-    ->countAllResults();
-$partnersPending = (new App\Models\DirectoryPartnerModel())
-    ->where('status', App\Models\DirectoryPartnerModel::STATUS_APPLIED)
-    ->countAllResults();
-$setupPaid = (new App\Models\ProfileSetupOrderModel())
-    ->where('status', App\Models\ProfileSetupOrderModel::STATUS_PAID)
-    ->countAllResults();
-$careersNew = (new App\Models\CareerApplicationModel())
-    ->where('status', App\Models\CareerApplicationModel::STATUS_NEW)
-    ->where('purged_at', null)
-    ->countAllResults();
+// to fetch it. The dashboard's "Needs action" tiles read the same counts.
+$waiting = App\Services\AdminDashboardService::queueCounts();
 
 // [label, path, waiting count, path prefixes that make it the current page]
 $queues = [
-    ['Profiles', 'admin', 0, ['admin/edit', 'admin/new']],
-    ['Verification', 'admin/verifications', $awaitingReview, ['admin/verification']],
-    ['Jobs', 'admin/jobs', $jobsPending, []],
-    ['Reviews', 'admin/reviews', $reviewsPending, []],
-    ['Referrals', 'admin/referrals', $referralsPending, []],
-    ['Partners', 'admin/partners', $partnersPending, []],
-    ['Careers', 'admin/careers', $careersNew, []],
-    ['Setup orders', 'admin/profile-setup', $setupPaid, []],
+    ['Dashboard', 'admin', 0, []],
+    ['Profiles', 'admin/profiles', 0, ['admin/edit', 'admin/new', 'admin/preview']],
+    ['Verification', 'admin/verifications', $waiting['verifications'], ['admin/verification']],
+    ['Jobs', 'admin/jobs', $waiting['jobs'], []],
+    ['Reviews', 'admin/reviews', $waiting['reviews'], []],
+    ['Referrals', 'admin/referrals', $waiting['referrals'], []],
+    ['Partners', 'admin/partners', $waiting['partners'], []],
+    ['Careers', 'admin/careers', $waiting['careers'], []],
+    ['Setup orders', 'admin/profile-setup', $waiting['setup'], []],
 ];
 
 // Lost form submissions (FormHealthService, cached a minute) get a tab of
@@ -86,7 +66,7 @@ $isCurrent = static function (string $path, array $prefixes = []) use ($current)
     if ($current === $path) {
         return true;
     }
-    // "admin" itself is only ever an exact match, or every page would be Profiles.
+    // "admin" itself is only ever an exact match, or every page would be the Dashboard.
     foreach ($path === 'admin' ? $prefixes : array_merge([$path], $prefixes) as $prefix) {
         if ($current === $prefix || str_starts_with($current, $prefix . '/')) {
             return true;

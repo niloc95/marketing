@@ -2941,6 +2941,55 @@
   .dark .stats-chart-hit:hover + .stats-chart-bar { @apply fill-primary-200; }
   .dark .stats-chart-labels  { @apply text-slate-400; }
 
+  /* Series colours for _stacked_bar_chart.php, fill on the SVG and
+     background on the legend key. A fixed order (blue, orange), never by
+     rank; checked with the dataviz palette validator in light and dark
+     (adjacent CVD ΔE 9.2 / 9.4). The table view is the contrast relief. */
+  .chart-s1             { fill: #2a78d6; background-color: #2a78d6; }
+  .chart-s2             { fill: #eb6834; background-color: #eb6834; }
+  .dark .chart-s1       { fill: #3987e5; background-color: #3987e5; }
+  .dark .chart-s2       { fill: #d95926; background-color: #d95926; }
+  .chart-stack:hover path { opacity: .8; }
+  .chart-legend         { @apply mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600; }
+  .chart-legend li      { @apply flex items-center gap-1.5; }
+  .chart-key            { @apply inline-block h-2.5 w-2.5 rounded-sm; }
+  .dark .chart-legend   { @apply text-slate-300; }
+
+  /* Horizontal bars (_meter_rows.php): label, bar, number on one line. */
+  .meter-rows           { @apply mt-3 grid gap-2 text-sm; }
+  .meter-row            { @apply grid grid-cols-[minmax(0,9rem)_1fr_auto] items-center gap-3; }
+  .meter-label          { @apply truncate text-slate-700; }
+  a.meter-label:hover   { @apply underline; }
+  .meter-track          { @apply block h-2 w-full overflow-hidden rounded-full; }
+  .meter-rail           { @apply fill-slate-100; }
+  .meter-value          { @apply min-w-8 text-right tabular-nums text-slate-500; }
+  .dark .meter-label    { @apply text-slate-300; }
+  .dark .meter-rail     { @apply fill-white/10; }
+  .dark .meter-value    { @apply text-slate-400; }
+
+  /* The admin dashboard (admin/dashboard.php). */
+  .dash-health          { @apply mb-6 flex flex-wrap gap-2; }
+  .dash-pill            { @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium; }
+  .dash-pill.is-ok      { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .dash-pill.is-bad     { @apply border-red-200 bg-red-50 text-red-800; }
+  .dash-pill.is-warn    { @apply border-amber-200 bg-amber-50 text-amber-800; }
+  .dark .dash-pill.is-ok   { @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-200; }
+  .dark .dash-pill.is-bad  { @apply border-red-500/30 bg-red-500/10 text-red-200; }
+  .dark .dash-pill.is-warn { @apply border-amber-500/30 bg-amber-500/10 text-amber-200; }
+  .dash-heading         { @apply mb-2 text-sm font-semibold text-slate-900; }
+  .dark .dash-heading   { @apply text-white; }
+  .dash-queues          { @apply grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7; }
+  .dash-queue           { @apply flex flex-col rounded-xl border border-amber-200 bg-amber-50 p-3 hover:border-amber-400; }
+  .dark .dash-queue     { @apply border-amber-500/30 bg-amber-500/10 hover:border-amber-400/60; }
+  .dash-tiles           { @apply mb-6 grid-cols-2 lg:grid-cols-6; }
+  .dash-grid            { @apply mb-6 grid gap-6 lg:grid-cols-2; }
+  .dash-grid > .panel   { @apply min-w-0; }
+  .dash-panel-head      { @apply mb-3 flex items-baseline justify-between gap-3; }
+  .dash-more            { @apply shrink-0 text-xs font-medium text-primary-600 hover:underline; }
+  /* A long status line wraps under the name instead of squeezing it to "M…". */
+  .dash-list li         { @apply flex-wrap gap-y-0; }
+  .dark .dash-more      { @apply text-primary-300; }
+
   /* The live score bar on /add-profile (form.php). Last element in the form
      and sticky to the bottom of the screen, so it rides along the whole way
      down without fighting the fixed header, then settles above the submit
