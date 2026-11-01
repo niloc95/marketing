@@ -163,11 +163,15 @@ class DirectoryService
         // an unknown slug is ignored rather than returning nothing.
         $groupName = $this->groupNameFor($filters);
 
-        // The venue join is two columns and a LEFT JOIN: the result card renders
-        // its chip from them, and a listing without a venue is untouched.
-        // mapPoints() deliberately does not join it — the map JSON has no chip.
-        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
-            . ', v.name AS venue_name, v.slug AS venue_slug';
+        // Two passes. This one filters, counts, sorts and pages on the id and
+        // the two computed sort keys only; pageRows() then reads the full rows
+        // for the page alone. Sorting every match with all its columns (the
+        // description and hours are long) cost the Gauteng page 13 ms where
+        // the ids take under 1, and every discovery result paid it too.
+        $select = 'xs_directory_listings.id';
+        // Card columns that need the filters but not the sort: worked out in
+        // pageRows() for the page's rows only, never for every match.
+        $pageSelects = [];
         if ($near !== null) {
             // Metres from the visitor. Bound as a value rather than interpolated
             // — this comes off a query string.
@@ -208,7 +212,7 @@ class DirectoryService
         if (! empty($filters['province'])) {
             $cond = '= ' . $this->listings->db->escape((string) $filters['province']);
             $builder->where($this->ownOrBranch('province', $cond), null, false);
-            $builder->select($this->branchPlace('province', $cond) . ' AS branch_place', false);
+            $pageSelects[] = $this->branchPlace('province', $cond) . ' AS branch_place';
         }
         // local.webscheduler.app's country and region pages. Both arrive
         // already checked against Config\Countries (Directory::index(),
@@ -223,7 +227,7 @@ class DirectoryService
             $cond = 'LIKE ' . $this->likePattern(trim((string) $filters['city'])) . " ESCAPE '!'";
             $builder->where($this->ownOrBranch('city', $cond), null, false);
             if (empty($filters['province'])) {
-                $builder->select($this->branchPlace('city', $cond) . ' AS branch_place', false);
+                $pageSelects[] = $this->branchPlace('city', $cond) . ' AS branch_place';
             }
         }
         if (! empty($filters['place'])) {
@@ -318,8 +322,14 @@ class DirectoryService
                 ->orderBy('xs_directory_listings.quality_score', 'DESC')
                 ->orderBy('xs_directory_listings.published_at', 'DESC');
         }
+        // The id settles every tie, in all three orders. Imports publish
+        // hundreds of profiles with one timestamp and one score, and with the
+        // tie left to MySQL a profile could show on page 1 and again on page 2
+        // while another never showed at all. Free for the index: InnoDB ends
+        // every secondary index with the id.
+        $builder->orderBy('xs_directory_listings.id', 'DESC');
 
-        $items = $builder->limit($perPage, ($page - 1) * $perPage)->findAll();
+        $items = $this->pageRows($builder->limit($perPage, ($page - 1) * $perPage)->findAll(), $pageSelects);
 
         // The card's facet line — "Ages 18 months – 6 years · Montessori" — in
         // one indexed query for the whole page. Asking per card would be twelve
@@ -340,6 +350,51 @@ class DirectoryService
             'totalPages' => $totalPages,
             'near'       => $near,
         ];
+    }
+
+    /**
+     * browse()'s second pass: the full rows for one page of ids, in the
+     * order the first pass sorted them, keeping its computed columns
+     * (distance_m, relevance).
+     *
+     * The joins are the card's: the venue chip, the category name. A row
+     * unpublished between the two passes simply drops out of the page.
+     *
+     * @param list<array<string,mixed>> $sorted the first pass, id first
+     * @param list<string>              $selects card columns from the filters
+     * @return list<array<string,mixed>>
+     */
+    private function pageRows(array $sorted, array $selects): array
+    {
+        if ($sorted === []) {
+            return [];
+        }
+
+        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+            . ', v.name AS venue_name, v.slug AS venue_slug';
+        foreach ($selects as $s) {
+            $select .= ', ' . $s;
+        }
+
+        $byId = [];
+        foreach ($this->listings
+            ->select($select, false)
+            ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
+            ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
+            ->where($this->published('xs_directory_listings.'), null, false)
+            ->whereIn('xs_directory_listings.id', array_map('intval', array_column($sorted, 'id')))
+            ->findAll() as $row) {
+            $byId[(int) $row['id']] = $row;
+        }
+
+        $out = [];
+        foreach ($sorted as $s) {
+            if (isset($byId[(int) $s['id']])) {
+                $out[] = $byId[(int) $s['id']] + $s;
+            }
+        }
+
+        return $out;
     }
 
     /**
