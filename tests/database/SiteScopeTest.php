@@ -105,6 +105,24 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertStringContainsString('Thames Loaf Bakery', $this->page(self::APP_HOST, '/directory'));
     }
 
+    public function testOnceLiveTheDiscoveryFilterOffersEachSitesOwnPlaces(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $za = $this->page(self::ZA_HOST, '/directory');
+        $this->assertStringContainsString('name="province"', $za);
+        $this->assertStringContainsString('>Gauteng</option>', $za);
+        $this->assertStringNotContainsString('name="country"', $za);
+
+        // .app offered South Africa's nine provinces here until 1 Nov 2026.
+        $app = $this->page(self::APP_HOST, '/directory?country=GB&region=England&q=bread');
+        $this->assertStringNotContainsString('name="province"', $app);
+        $this->assertStringNotContainsString('Gauteng', $app);
+        $this->assertMatchesRegularExpression('/<option value="GB"\s+selected>United Kingdom<\/option>/', $app);
+        $this->assertStringNotContainsString('value="ZA"', $app);
+        $this->assertStringContainsString('<input type="hidden" name="region" value="England">', $app);
+    }
+
     public function testOnceLiveTheDropdownFindsDescriptionsOnlyOnItsOwnSite(): void
     {
         $this->setEnv('sites.app.enabled', 'true');
