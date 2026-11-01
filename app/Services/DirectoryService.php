@@ -38,6 +38,9 @@ class DirectoryService
     private DirectoryListingTeamModel $team;
     private DirectoryVenueModel $venues;
 
+    /** @var array<string,array> remember() results already read in this request */
+    private array $remembered = [];
+
     /**
      * The "published" condition every public read uses, limited to the
      * request's site (co.za: South Africa, .app: everywhere else) once
@@ -52,6 +55,58 @@ class DirectoryService
         $scope = service('site')->scopeSql($prefix . 'country_code');
 
         return $prefix . "status = 'published'" . ($scope !== '' ? ' AND ' . $scope : '');
+    }
+
+    /**
+     * $build(), cached for Config\Directory::$publicCacheSeconds and kept for
+     * the rest of the request.
+     *
+     * For the counts and strips the home, province and country pages are built
+     * from. They scan every published profile, the home page ran 27 of them per
+     * view (twice over for province and category counts), and it served 14 pages
+     * a second on production when the profiles answered 58 (load test, 1 Nov
+     * 2026). A new profile showing in a count a minute late costs nothing.
+     *
+     * Per site through site_cache_key(), because published() is. Never for
+     * anything a visitor's own input shapes beyond the few arguments in the key.
+     * 0 seconds (phpunit.dist.xml) reads through every time; so does a cache
+     * that fails. ENVIRONMENT is in the key because the dev server and the
+     * tests share writable/cache: a page opened during a test run would
+     * otherwise hand the test the dev database's counts.
+     *
+     * @param list<scalar|null> $args
+     * @param callable():array  $build
+     */
+    private function remember(string $name, array $args, callable $build): array
+    {
+        $ttl = (int) config('Directory')->publicCacheSeconds;
+        if ($ttl <= 0) {
+            return $build();
+        }
+
+        $key = site_cache_key('public_' . ENVIRONMENT . '_' . $name . '_' . md5(json_encode($args)));
+        if (isset($this->remembered[$key])) {
+            return $this->remembered[$key];
+        }
+
+        try {
+            $cached = cache()->get($key);
+            if (is_array($cached)) {
+                return $this->remembered[$key] = $cached;
+            }
+        } catch (\Throwable $e) {
+            log_message('warning', 'Public data cache unavailable, reading through: ' . $e->getMessage());
+        }
+
+        $value = $build();
+
+        try {
+            cache()->save($key, $value, $ttl);
+        } catch (\Throwable $e) {
+            log_message('warning', 'Could not cache public data: ' . $e->getMessage());
+        }
+
+        return $this->remembered[$key] = $value;
     }
 
     public function __construct()
@@ -875,6 +930,11 @@ class DirectoryService
      * @return list<string> e.g. "Dentist in Sandton"
      */
     public function searchExamples(int $limit = 6): array
+    {
+        return $this->remember('search_examples', [$limit], fn (): array => $this->searchExamplesUncached($limit));
+    }
+
+    private function searchExamplesUncached(int $limit = 6): array
     {
         // On local.webscheduler.app a profile with no town still makes an
         // example from its country ("Attorney in Portugal"): discovery reads
@@ -1813,6 +1873,11 @@ class DirectoryService
      */
     public function featured(int $limit = 8): array
     {
+        return $this->remember('featured', [$limit], fn (): array => $this->featuredUncached($limit));
+    }
+
+    private function featuredUncached(int $limit = 8): array
+    {
         $rows = $this->listings
             ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
                 . ', v.name AS venue_name, v.slug AS venue_slug')
@@ -1925,6 +1990,11 @@ class DirectoryService
      */
     public function categoryListingCounts(): array
     {
+        return $this->remember('category_counts', [], fn (): array => $this->categoryListingCountsUncached());
+    }
+
+    private function categoryListingCountsUncached(): array
+    {
         $rows = $this->listings
             ->select('category_id, COUNT(*) AS c')
             ->where($this->published(), null, false)
@@ -1996,6 +2066,11 @@ class DirectoryService
      * @return array<string,int> province name => count, busiest first
      */
     public function provinceCounts(): array
+    {
+        return $this->remember('province_counts', [], fn (): array => $this->provinceCountsUncached());
+    }
+
+    private function provinceCountsUncached(): array
     {
         $rows = $this->listings
             ->select('province, COUNT(*) AS c')
@@ -2091,6 +2166,11 @@ class DirectoryService
      */
     public function topCategoriesIn(string $countryCode, ?string $region = null, int $limit = 8): array
     {
+        return $this->remember('categories_in', [$countryCode, $region, $limit], fn (): array => $this->topCategoriesInUncached($countryCode, $region, $limit));
+    }
+
+    private function topCategoriesInUncached(string $countryCode, ?string $region = null, int $limit = 8): array
+    {
         $builder = $this->listings
             ->select('category_id, COUNT(*) AS c')
             ->where($this->published(), null, false)
@@ -2150,6 +2230,11 @@ class DirectoryService
     /** @return array<string,int> */
     private function countsBy(string $column, string $countryCode, ?string $region, int $limit): array
     {
+        return $this->remember('counts_by', [$column, $countryCode, $region, $limit], fn (): array => $this->countsByUncached($column, $countryCode, $region, $limit));
+    }
+
+    private function countsByUncached(string $column, string $countryCode, ?string $region, int $limit): array
+    {
         $builder = $this->listings
             ->select($column . ', COUNT(*) AS c')
             ->where($this->published(), null, false)
@@ -2177,6 +2262,11 @@ class DirectoryService
      * @return array<string,int> city => count
      */
     public function cityCountsForProvince(string $province, int $limit = 8): array
+    {
+        return $this->remember('province_cities', [$province, $limit], fn (): array => $this->cityCountsForProvinceUncached($province, $limit));
+    }
+
+    private function cityCountsForProvinceUncached(string $province, int $limit = 8): array
     {
         if ($province === '') {
             return [];
@@ -2213,6 +2303,11 @@ class DirectoryService
      * @return array<int,array<string,mixed>>
      */
     public function topCategoriesInProvince(string $province, int $limit = 8): array
+    {
+        return $this->remember('province_categories', [$province, $limit], fn (): array => $this->topCategoriesInProvinceUncached($province, $limit));
+    }
+
+    private function topCategoriesInProvinceUncached(string $province, int $limit = 8): array
     {
         if ($province === '') {
             return [];
@@ -2268,6 +2363,11 @@ class DirectoryService
      * @return array{listings:int,categories:int,provinces:int,countries:int}
      */
     public function stats(): array
+    {
+        return $this->remember('stats', [], fn (): array => $this->statsUncached());
+    }
+
+    private function statsUncached(): array
     {
         $counts = $this->categoryListingCounts();
 

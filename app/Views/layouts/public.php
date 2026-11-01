@@ -301,8 +301,8 @@ foreach (config('Countries')->profiles as $code => $profile) {
     <?php endif; ?>
 
     <?php foreach (['success' => 'alert-success', 'error' => 'alert-error', 'info' => 'alert-info'] as $key => $cls): ?>
-        <?php if (session()->getFlashdata($key)): ?>
-            <div class="container mt-5"><div class="alert <?= $cls ?>"><?= esc(session()->getFlashdata($key)) ?></div></div>
+        <?php if (flash($key)): ?>
+            <div class="container mt-5"><div class="alert <?= $cls ?>"><?= esc(flash($key)) ?></div></div>
         <?php endif; ?>
     <?php endforeach; ?>
 
@@ -314,7 +314,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
 
     <?php // Upload problems are a list, and they accompany rather than replace the
           // success message: a save can succeed while some photos are rejected. ?>
-    <?php if ($uploadErrors = session()->getFlashdata('upload_errors')): ?>
+    <?php if ($uploadErrors = flash('upload_errors')): ?>
         <div class="container mt-5">
             <div class="alert alert-warning">
                 <strong><?= count($uploadErrors) === 1 ? 'One image was not added:' : count($uploadErrors) . ' images were not added:' ?></strong>
