@@ -245,6 +245,8 @@ class Directory extends BaseController
             'categories' => $svc->categories(),
             'groups'      => $svc->categoriesGrouped(),
             'provinces'   => $svc->provinces(),
+            // local.webscheduler.app filters by country, never by province.
+            'countries'   => $svc->discoveryCountries(),
             'radii'       => DirectoryService::RADIUS_OPTIONS,
         ]);
     }

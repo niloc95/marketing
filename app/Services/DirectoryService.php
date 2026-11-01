@@ -2191,6 +2191,40 @@ class DirectoryService
     }
 
     /**
+     * The countries local.webscheduler.app's discovery filter offers: those
+     * with published profiles that ?country= accepts (Config\Countries
+     * supported, never ZA), as code => name, busiest first. Empty on co.za,
+     * which filters by province.
+     *
+     * @return array<string,string>
+     */
+    public function discoveryCountries(): array
+    {
+        if (! service('site')->isApp()) {
+            return [];
+        }
+
+        return $this->remember('discovery_countries', [], function (): array {
+            $countries = config('Countries');
+            $out       = [];
+            foreach ($this->listings
+                ->select('country_code, COUNT(*) AS c')
+                ->where($this->published(), null, false)
+                ->where('country_code IS NOT NULL')
+                ->groupBy('country_code')
+                ->orderBy('c', 'DESC')
+                ->findAll() as $r) {
+                $code = (string) $r['country_code'];
+                if ($code !== 'ZA' && $countries->isSupported($code)) {
+                    $out[$code] = (string) $countries->nameForCode($code);
+                }
+            }
+
+            return $out;
+        });
+    }
+
+    /**
      * Published profiles per region of one country, busiest first: the
      * region chips on a local.webscheduler.app country page. The
      * counterpart of provinceCounts() for every country but South Africa,

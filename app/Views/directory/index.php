@@ -141,12 +141,28 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                         </optgroup>
                     <?php endforeach; ?>
                 </select>
+                <?php if (site()->isApp()): ?>
+                    <?php // Countries, not South Africa's provinces. The region
+                          // rides along from a region page's city chips; a
+                          // region of another country is dropped by the
+                          // controller, so changing the country is safe. ?>
+                    <select name="country" aria-label="Country">
+                        <option value="">All countries</option>
+                        <?php foreach ($countries as $code => $name): ?>
+                            <option value="<?= esc($code, 'attr') ?>" <?= ($filters['country'] === $code) ? 'selected' : '' ?>><?= esc($name) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if ($filters['region'] !== ''): ?>
+                        <input type="hidden" name="region" value="<?= esc($filters['region'], 'attr') ?>">
+                    <?php endif; ?>
+                <?php else: ?>
                 <select name="province" aria-label="Province">
                     <option value="">All provinces</option>
                     <?php foreach ($provinces as $prov): ?>
                         <option value="<?= esc($prov, 'attr') ?>" <?= ($filters['province'] === $prov) ? 'selected' : '' ?>><?= esc($prov) ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php endif; ?>
                 <?php // The map writes lat/lng/radius into the URL, and this form
                       // rebuilds the query string from scratch on submit — without
                       // these, refining a "near me" search by category would
