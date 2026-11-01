@@ -217,7 +217,10 @@ $routes->post('admin/login', 'Admin::attemptLogin');
 // POST, not GET: a GET sign-out can be fired by any page that embeds the URL.
 $routes->post('admin/logout', 'Admin::logout');
 $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
-    $routes->get('', 'Admin::index');
+    // The dashboard is the landing page; the profiles list moved to
+    // /admin/profiles (AdminDashboard sends old ?status= links there).
+    $routes->get('', 'AdminDashboard::index');
+    $routes->get('profiles', 'Admin::index');
 
     // Create / edit
     $routes->get('new', 'Admin::create');

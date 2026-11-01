@@ -18,7 +18,7 @@ $tabs   = [
 /** Preserve the active filters when linking to another tab or page. */
 $link = function (array $overrides = []) use ($status, $filters) {
     $q = array_filter(array_merge(['status' => $status], $filters, $overrides), fn ($v) => $v !== '' && $v !== null);
-    return base_url('admin') . ($q ? '?' . http_build_query($q) : '');
+    return base_url('admin/profiles') . ($q ? '?' . http_build_query($q) : '');
 };
 $isTrash = $status === 'trashed';
 $quality = new \App\Services\ListingQualityService();
@@ -56,7 +56,7 @@ $quality = new \App\Services\ListingQualityService();
             <a class="btn btn-accent btn-xs" href="<?= base_url('admin/new') ?>">+ New profile</a>
         </div>
 
-        <form method="get" action="<?= base_url('admin') ?>" class="mb-4 flex flex-wrap items-end gap-2">
+        <form method="get" action="<?= base_url('admin/profiles') ?>" class="mb-4 flex flex-wrap items-end gap-2">
             <?php if ($status !== ''): ?><input type="hidden" name="status" value="<?= esc($status, 'attr') ?>"><?php endif; ?>
             <div class="field mb-0">
                 <label class="text-xs">Search</label>
