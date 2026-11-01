@@ -143,6 +143,9 @@ class Admin extends BaseController
             // still say "check your email". The uptime monitor pages you via
             // /health; this tells you what happened once you're here looking.
             'mailError'  => MailHealth::lastError(),
+            // Lost form submissions are as invisible from the front as a
+            // mail outage (FormHealthService).
+            'formsLost'  => (new \App\Services\FormHealthService())->recentLost(),
         ]);
     }
 
@@ -1338,6 +1341,9 @@ class Admin extends BaseController
                 'checks'       => $checks = $health->checks(),
                 'allOk'        => $health->allOk($checks),
                 'mailError'    => MailHealth::lastError(),
+                // Shown with the checks but not one of them: form trouble is
+                // reported here and by email, and never pages via /health.
+                'formsLost'    => (new \App\Services\FormHealthService())->recentLost(),
                 'mailFailures' => MailHealth::consecutiveFailures(),
                 'mailLastOk'   => MailHealth::lastSuccessAt(),
                 'counts'       => (new DirectoryAdminService())->counts(),

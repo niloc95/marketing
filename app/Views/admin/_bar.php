@@ -54,6 +54,13 @@ $queues = [
     ['Setup orders', 'admin/profile-setup', $setupPaid, []],
 ];
 
+// Lost form submissions (FormHealthService, cached a minute) get a tab of
+// their own while there are any, so nobody has to open More to notice.
+$formsLost = (new App\Services\FormHealthService())->recentLost()['count'];
+if ($formsLost > 0) {
+    $queues[] = ['Form health', 'admin/forms', $formsLost, [], 'lost in the last 24 hours'];
+}
+
 $more = [
     'Content' => [
         ['Categories', 'admin/categories'],
@@ -70,6 +77,7 @@ $more = [
     'System' => [
         ['Settings', 'admin/settings'],
         ['Status and health', 'admin/status'],
+        ['Form health', 'admin/forms'],
     ],
 ];
 
@@ -103,13 +111,14 @@ foreach ($more as $items) {
 
         <div class="admin-bar-scroll">
             <ul class="admin-tabs">
-                <?php foreach ($queues as [$label, $path, $count, $prefixes]): ?>
+                <?php foreach ($queues as $queue): ?>
+                    <?php [$label, $path, $count, $prefixes] = $queue; $countLabel = $queue[4] ?? 'waiting'; ?>
                     <?php $active = $isCurrent($path, $prefixes); ?>
                     <li>
                         <a class="admin-tab<?= $active ? ' is-active' : '' ?>" href="<?= base_url($path) ?>"<?= $active ? ' aria-current="page"' : '' ?>>
                             <?= esc($label) ?>
                             <?php if ($count > 0): ?>
-                                <span class="admin-count" title="<?= (int) $count ?> waiting"><?= $count > 99 ? '99+' : (int) $count ?><span class="sr-only"> waiting</span></span>
+                                <span class="admin-count" title="<?= (int) $count ?> <?= esc($countLabel, 'attr') ?>"><?= $count > 99 ? '99+' : (int) $count ?><span class="sr-only"> <?= esc($countLabel) ?></span></span>
                             <?php endif; ?>
                         </a>
                     </li>

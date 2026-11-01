@@ -39,6 +39,16 @@ $quality = new \App\Services\ListingQualityService();
     </div>
 <?php endif; ?>
 
+<?php if (! empty($formsLost['count'])): ?>
+    <div class="container mt-5">
+        <div class="alert alert-error">
+            <strong><?= (int) $formsLost['count'] ?> form submission<?= $formsLost['count'] === 1 ? ' was' : 's were' ?> lost in the last 24 hours.</strong>
+            Last one on <?= esc(config('Forms')->label((string) $formsLost['form'])) ?> at <?= esc(date('j M H:i', strtotime((string) $formsLost['last']))) ?> UTC.
+            <a class="underline" href="<?= esc(base_url('admin/forms?outcome=lost&days=1') . '#events') ?>">Open form health</a>
+        </div>
+    </div>
+<?php endif; ?>
+
 <section class="section">
     <div class="container">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">

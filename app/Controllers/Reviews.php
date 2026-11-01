@@ -46,11 +46,15 @@ class Reviews extends BaseController
 
         $form = $this->formCheck((int) $listing['id']);
         if ($form === 'bot') {
+            form_outcome('bot');
+
             return redirect()->to($back)->with('success', self::SENT_MESSAGE);
         }
         if ($form === 'stale') {
             // A tab left open overnight is a person, not a bot: keep their words.
-            return redirect()->to($back)->with('review_old', $this->request->getPost())
+            form_outcome('expired');
+
+            return redirect()->to($back)->with('review_old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'This page was open for a long time. Please check your review and send it again.');
         }
 
@@ -63,14 +67,16 @@ class Reviews extends BaseController
         $throttler = service('throttler');
         if ($throttler->check('review-ip-' . md5($ip), 3, HOUR) === false
             || ($email !== '' && $throttler->check('review-to-' . md5($email), 2, DAY) === false)) {
-            return redirect()->to($back)->with('review_old', $this->request->getPost())
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('review_old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Too many reviews. Please wait a little while and try again.');
         }
 
         $result = (new ReviewService())->submit($listing, $this->request->getPost(), $ip);
         if (! $result['ok']) {
             return redirect()->to($back)
-                ->with('review_old', $this->request->getPost())
+                ->with('review_old', form_typed_fields($this->request->getPost()))
                 ->with('review_errors', $result['errors'])
                 ->with('error', 'Please correct the highlighted fields in your review.');
         }
@@ -229,6 +235,10 @@ class Reviews extends BaseController
     {
         $id = (int) (session(Manage::SESSION_KEY) ?? 0);
         if ($id <= 0) {
+            // Signed out (the session ended while the page was open): form
+            // health counts it, since whatever was typed is gone.
+            form_outcome('expired');
+
             return null;
         }
         $row = (new DirectoryListingModel())->find($id);

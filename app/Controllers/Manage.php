@@ -95,6 +95,8 @@ class Manage extends BaseController
 
         if ($throttler->check($ipKey, 5, MINUTE * 10) === false
             || ($email !== '' && $throttler->check($mailKey, 3, MINUTE * 10) === false)) {
+            form_outcome('throttled');
+
             return redirect()->to(base_url('manage'))
                 ->with('error', 'Too many requests. Please wait a few minutes and try again.');
         }
@@ -264,7 +266,7 @@ class Manage extends BaseController
             return $this->withUploadErrors(
                 redirect()->to(base_url('manage/edit'))
                     ->with('errors', $result['errors'])
-                    ->with('old', $post)
+                    ->with('old', form_typed_fields($post))
                     ->with('error', $result['message']),
                 array_filter(array_merge([$logo['error']], $headshots['errors']))
             );
@@ -464,6 +466,8 @@ class Manage extends BaseController
 
         $service = new VerificationService();
         if (! $service->isEnabled()) {
+            form_outcome('unavailable');
+
             return redirect()->to(base_url('manage/edit'))
                 ->with('error', 'Verification is not available at the moment.');
         }
@@ -474,6 +478,8 @@ class Manage extends BaseController
         // already listing-scoped, and an owner on a shared office connection
         // should not be blocked by a neighbour's uploads.
         if (service('throttler')->check('verify-doc-' . (int) $listing['id'], 5, HOUR) === false) {
+            form_outcome('throttled');
+
             return redirect()->to(base_url('manage/edit'))
                 ->with('error', 'Too many upload attempts. Please wait a while and try again.');
         }
@@ -760,6 +766,10 @@ class Manage extends BaseController
     {
         $id = (int) (session()->get(self::SESSION_KEY) ?? 0);
         if ($id <= 0) {
+            // Signed out (the session ended while the page was open): form
+            // health counts it, since whatever was typed is gone.
+            form_outcome('expired');
+
             return null;
         }
         $row = model('App\Models\DirectoryListingModel')->find($id);

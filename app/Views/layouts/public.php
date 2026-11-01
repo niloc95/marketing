@@ -124,7 +124,8 @@ foreach (config('Countries')->profiles as $code => $profile) {
 ?>
 <body data-site-map-view="<?= esc(json_encode(site()->profile()['mapView']), 'attr') ?>"
       data-country-views="<?= esc(json_encode($countryViews, JSON_UNESCAPED_UNICODE), 'attr') ?>"
-      data-country-bboxes="<?= esc(json_encode($countryBoxes, JSON_UNESCAPED_UNICODE), 'attr') ?>">
+      data-country-bboxes="<?= esc(json_encode($countryBoxes, JSON_UNESCAPED_UNICODE), 'attr') ?>"
+      data-form-events="<?= esc(base_url('forms/event'), 'attr') ?>">
     <header class="site-header">
         <div class="container">
             <a class="brand" href="<?= base_url('/') ?>" aria-label="WebScheduler Local">

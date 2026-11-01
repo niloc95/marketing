@@ -38,6 +38,13 @@ class BotTrap implements FilterInterface
             return null;
         }
 
+        // Counted on /admin/forms, so a rise in caught bots (or a real
+        // person's autofill filling the trap) is visible.
+        $key = config('Forms')->keyFor($request->getPath());
+        if ($key !== null) {
+            (new \App\Services\FormHealthService())->record($key, 'bot', 'honeypot_filter');
+        }
+
         return service('response')
             ->setStatusCode(403)
             ->setBody('Forbidden');

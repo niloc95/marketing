@@ -267,6 +267,8 @@ class Listing extends BaseController
         // success so an attacker can't tune around it.
         $renderedAt = (int) session('listing_form_rendered_at');
         if ($renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            form_outcome('bot');
+
             return $this->fakeSuccess();
         }
 
@@ -284,6 +286,8 @@ class Listing extends BaseController
 
         if ($throttler->check($ipKey, 3, HOUR) === false
             || ($email !== '' && $throttler->check($mailKey, 2, HOUR) === false)) {
+            form_outcome('throttled');
+
             return redirect()->to(self::formUrl($post))
                 ->with('old', self::typedFields($post))
                 ->with('error', 'Too many submissions. Please wait a little while and try again.');
@@ -471,8 +475,6 @@ class Listing extends BaseController
      */
     private static function typedFields(array $post): array
     {
-        return array_diff_key($post, array_flip([
-            csrf_token(), HONEYPOT_FIELD, 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
-        ]));
+        return form_typed_fields($post);
     }
 }

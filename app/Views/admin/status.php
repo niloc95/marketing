@@ -41,6 +41,11 @@ $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : 'n/a';
                         <p class="mt-1 text-xs text-brand-crimson dark:text-red-400"><?= esc($c['detail']) ?></p>
                     <?php endif; ?>
                 <?php endforeach; ?>
+                <div class="kv">
+                    <span class="k"><a class="hover:underline" href="<?= base_url('admin/forms') ?>">Forms</a></span>
+                    <span class="<?= $pill($formsLost['count'] === 0) ?>"><?= $formsLost['count'] === 0 ? 'OK' : (int) $formsLost['count'] . ' LOST' ?></span>
+                </div>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Lost submissions and crashes in the last 24 hours. Not part of <code>/health</code>.</p>
             </div>
 
             <!-- ------------------------------------------------------ mail -->

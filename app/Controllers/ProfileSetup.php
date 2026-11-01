@@ -56,19 +56,25 @@ class ProfileSetup extends BaseController
         $renderedAt = (int) session(self::FORM_KEY);
         if (honeypot_tripped('profile-setup')
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            form_outcome('bot');
+
             return redirect()->to($back)
-                ->with('old', array_diff_key((array) $this->request->getPost(), [HONEYPOT_FIELD => true]))
+                ->with('old', form_typed_fields((array) $this->request->getPost()))
                 ->with('error', 'We could not start your order. Please check your details and press Order again. If it keeps happening, contact us and we will help you directly.');
         }
 
         $svc = new ProfileSetupService();
         if (! $svc->canTakePayment()) {
-            return redirect()->to($back)->with('old', $this->request->getPost())
+            form_outcome('unavailable');
+
+            return redirect()->to($back)->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Card payments are not available at the moment. Please contact us and we will help you directly.');
         }
 
         if (service('throttler')->check('profile-setup-' . md5((string) $this->request->getIPAddress()), 5, HOUR) === false) {
-            return redirect()->to($back)->with('old', $this->request->getPost())
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Too many orders from your connection. Please wait a little while and try again.');
         }
 
@@ -76,7 +82,7 @@ class ProfileSetup extends BaseController
         if (! $result['ok']) {
             return redirect()->to($back)
                 ->with('errors', $result['errors'])
-                ->with('old', $this->request->getPost())
+                ->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Please correct the highlighted fields.');
         }
 

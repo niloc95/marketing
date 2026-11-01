@@ -351,6 +351,8 @@ class Contact extends BaseController
         // success so an attacker can't tune around it.
         $renderedAt = (int) session('contact_form_rendered_at');
         if ($renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            form_outcome('bot');
+
             return $this->fakeSuccess();
         }
 
@@ -379,6 +381,8 @@ class Contact extends BaseController
 
         if ($throttler->check($ipKey, 3, HOUR) === false
             || $throttler->check($mailKey, 2, HOUR) === false) {
+            form_outcome('throttled');
+
             return redirect()->to(base_url('contact'))->with('old', $post)
                 ->with('error', 'Too many messages. Please wait a little while and try again.');
         }
@@ -389,6 +393,7 @@ class Contact extends BaseController
             // a message that went in the bin — the visitor can still email us
             // some other way, but only if they know it failed.
             log_message('error', 'Contact form submitted but directory.adminEmail is unset, message discarded.');
+            form_outcome('send_failed');
 
             return redirect()->to(base_url('contact'))->with('old', $post)
                 ->with('error', 'Sorry, we could not send your message just now. Please try again later.');
@@ -413,6 +418,8 @@ class Contact extends BaseController
         );
 
         if (! $sent) {
+            form_outcome('send_failed');
+
             return redirect()->to(base_url('contact'))->with('old', $post)
                 ->with('error', 'Sorry, we could not send your message just now. Please try again in a few minutes.');
         }

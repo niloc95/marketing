@@ -68,6 +68,8 @@ class Careers extends BaseController
         $renderedAt = (int) session(self::SESSION_KEY);
         if (honeypot_tripped('careers')
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            form_outcome('bot');
+
             return redirect()->to($back)->with('applied', CareersService::APPLIED_MESSAGE);
         }
 
@@ -75,7 +77,9 @@ class Careers extends BaseController
         $throttler = service('throttler');
         if ($throttler->check('careers-ip-' . md5((string) $this->request->getIPAddress()), 3, HOUR) === false
             || ($email !== '' && $throttler->check('careers-to-' . md5($email), 2, DAY) === false)) {
-            return redirect()->to($back)->with('old', $this->request->getPost())
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Too many applications. Please wait a little while and try again.');
         }
 
@@ -88,7 +92,7 @@ class Careers extends BaseController
         if (! $result['ok']) {
             return redirect()->to($back)
                 ->with('errors', $result['errors'])
-                ->with('old', $this->request->getPost())
+                ->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Please correct the highlighted fields. Your CV needs attaching again.');
         }
 

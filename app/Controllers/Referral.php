@@ -80,6 +80,8 @@ class Referral extends BaseController
 
         $renderedAt = (int) session('recommend_form_rendered_at');
         if ($renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            form_outcome('bot');
+
             return $this->fakeSuccess();
         }
 
@@ -93,7 +95,9 @@ class Referral extends BaseController
 
         if ($throttler->check($ipKey, 3, HOUR) === false
             || ($referrer !== '' && $throttler->check($mailKey, 2, HOUR) === false)) {
-            return redirect()->to(base_url('recommend'))->with('old', $this->request->getPost())
+            form_outcome('throttled');
+
+            return redirect()->to(base_url('recommend'))->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Too many recommendations. Please wait a little while and try again.');
         }
 
@@ -105,7 +109,7 @@ class Referral extends BaseController
         if (! $result['ok']) {
             return redirect()->to(base_url('recommend'))
                 ->with('errors', $result['errors'])
-                ->with('old', $this->request->getPost())
+                ->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Please correct the highlighted fields.');
         }
 

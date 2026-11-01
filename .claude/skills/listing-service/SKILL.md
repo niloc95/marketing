@@ -757,6 +757,39 @@ look at the ITN rejection table and `Profile setup ITN:` log lines first.
   `data-track="name"` send a GA4 `{name}_click` event with `data-track-label` as its `cta`
   parameter, e.g. the pricing cards' `pricing_cta_click`.
 
+## Form health (`FormHealthService`, branch feat/form-health, unreleased)
+
+What every form submission did, after 14 to 27 Oct 2026 lost about 18 signups to a
+404 with nobody noticing. Table `xs_directory_form_events` (no IP, email, session or
+typed value; `detail` = field keys, exception class or script error; 180 days).
+
+- **Registry `Config\Forms`:** form key → POST route patterns → the URL a failure goes
+  back to (`match()`), plus `$notForms`. `FormHealthServiceTest::testEveryNonAdminPostRouteIsKnown`
+  fails when a new POST route is in neither, so **a new form needs an entry**.
+- **Server outcomes** (`ok, invalid, throttled, bot, csrf, expired, unavailable,
+  send_failed, exception, lost`): the global after filter `FormOutcome` classifies
+  from the response and the flash (`errors`/`review_errors` keys → invalid). What the
+  response cannot show, controllers tag with `form_outcome()` (bot traps, throttles,
+  failed sends, ended owner sessions; `honeypot_tripped()` tags itself). A redirect into
+  `/index.php/` or off our hosts is `lost` on the POST itself. Before filters and
+  errors record themselves: `CsrfGuard`, `BotTrap`, `Errors::notFound` (a 404 on a
+  form's own page opened from it), `Config\Exceptions::handler()` (500 on a form POST).
+- **`CsrfGuard` replaces the framework `csrf` alias:** a stale token on a registered
+  form goes back to that form with `old` and `CsrfGuard::MESSAGE`, never bare `back()`.
+- **Flashed `old` goes through `form_typed_fields()`** (drops CSRF, traps, server fields).
+- **Browser:** `directory.js` sendBeacons `POST /forms/event` (`FormEvents`, CSRF
+  exempt, 30/min/IP, 204): `attempt`, `blocked` (field names), `js_error`. The form is
+  named by its action path. Headless browsers count as bots, so e2e scripts need a
+  normal user agent.
+- **Alerts:** `lost`, `exception`, `send_failed`, or 5 `csrf` on one form in an hour
+  email the admin at once (one per site, form and outcome per hour; recorded as
+  `source = 'alert'`). `forms:digest` (cron 04:05) sends yesterday's summary, nothing
+  on a quiet day, and purges. Never part of `/health`.
+- **Admin:** `/admin/forms` (`AdminForms`), a "Form health" tab with a count while
+  anything was lost in 24 h, a banner on `/admin`, a line on `/admin/status`.
+- Tests: `FormFailureLandingTest`, `FormHealthServiceTest`, `AdminFormsTest`. File
+  cache persists between tests: `cache()->deleteMatching('form-*')` in setUp.
+
 ## Profile statistics (`ListingStatsService`, since 30 Oct 2026, unreleased)
 
 Daily totals per profile in `xs_directory_listing_stats` (primary key listing_id + day,

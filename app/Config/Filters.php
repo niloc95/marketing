@@ -4,7 +4,6 @@ namespace Config;
 
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
-use CodeIgniter\Filters\CSRF;
 use CodeIgniter\Filters\DebugToolbar;
 use CodeIgniter\Filters\ForceHTTPS;
 use CodeIgniter\Filters\Honeypot;
@@ -24,7 +23,9 @@ class Filters extends BaseFilters
      * or [filter_name => [classname1, classname2, ...]]
      */
     public array $aliases = [
-        'csrf'          => CSRF::class,
+        // App\Filters\CsrfGuard: the framework check, but a failure on one of
+        // our forms goes back to that form with the typing kept. See the class.
+        'csrf'          => \App\Filters\CsrfGuard::class,
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
@@ -44,6 +45,7 @@ class Filters extends BaseFilters
         'siteresolver'        => \App\Filters\SiteResolver::class,
         'cfaccess'      => \App\Filters\CloudflareAccessFilter::class,
         'scrapeguard'   => \App\Filters\ScrapeGuard::class,
+        'formoutcome'   => \App\Filters\FormOutcome::class,
     ];
 
     /**
@@ -154,8 +156,10 @@ class Filters extends BaseFilters
             // profile and day, under thresholds, and never orders profiles
             // (Discovery::opened()). stats/tap is the same kind of beacon from a
             // profile: one more on a daily count, 30 a minute per IP, that orders
-            // nothing (Stats::tap()).
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap']],
+            // nothing (Stats::tap()). forms/event is the form health beacon:
+            // one anonymous row for a known form, 30 a minute per IP, that
+            // changes nothing anyone sees but /admin/forms (FormEvents::store()).
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',
@@ -183,6 +187,9 @@ class Filters extends BaseFilters
             // Sets the Partner Program cookie for a ?ref= arrival. See the class.
             'partnerref',
             'secureheaders',
+            // Records what each form POST in Config\Forms did (form health,
+            // /admin/forms). Reads the response and the flash only.
+            'formoutcome',
             // Strips the body from a HEAD response, which Config\Routes now
             // routes to the same controllers as GET. Last on purpose: every
             // filter above still sees the finished page, and this one only

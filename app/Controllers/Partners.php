@@ -50,6 +50,8 @@ class Partners extends BaseController
         $renderedAt = (int) session('partner_form_rendered_at');
         if (honeypot_tripped('partners')
             || $renderedAt === 0 || (time() - $renderedAt) < self::MIN_FORM_SECONDS) {
+            form_outcome('bot');
+
             return redirect()->to(base_url('partners#apply'))->with('success', PartnerService::APPLIED_MESSAGE);
         }
 
@@ -57,7 +59,9 @@ class Partners extends BaseController
         $throttler = service('throttler');
         if ($throttler->check('partner-ip-' . md5((string) $this->request->getIPAddress()), 3, HOUR) === false
             || ($email !== '' && $throttler->check('partner-to-' . md5($email), 2, HOUR) === false)) {
-            return redirect()->to(base_url('partners#apply'))->with('old', $this->request->getPost())
+            form_outcome('throttled');
+
+            return redirect()->to(base_url('partners#apply'))->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Too many applications. Please wait a little while and try again.');
         }
 
@@ -65,7 +69,7 @@ class Partners extends BaseController
         if (! $result['ok']) {
             return redirect()->to(base_url('partners#apply'))
                 ->with('errors', $result['errors'])
-                ->with('old', $this->request->getPost())
+                ->with('old', form_typed_fields($this->request->getPost()))
                 ->with('error', 'Please correct the highlighted fields.');
         }
 
@@ -110,6 +114,8 @@ class Partners extends BaseController
 
         if ($throttler->check('partner-login-ip-' . md5((string) $this->request->getIPAddress()), 5, MINUTE * 10) === false
             || ($email !== '' && $throttler->check('partner-login-to-' . md5(strtolower($email)), 3, MINUTE * 10) === false)) {
+            form_outcome('throttled');
+
             return redirect()->to(base_url('partners/login'))
                 ->with('error', 'Too many requests. Please wait a few minutes and try again.');
         }

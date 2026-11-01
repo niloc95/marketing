@@ -96,6 +96,10 @@ MAILTO=""
 # of the day's review reports.
 0 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark reviews:prune --quiet
 
+# Form health: yesterday's summary for every form to the admin (nothing on a
+# quiet day), and form events older than 180 days deleted.
+5 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark forms:digest --quiet
+
 # --- Map pin retry -------------------------------------------------------------
 # Weekly retry of listings whose address lookup failed at save time (a Mapbox
 # outage or a bad token, like the 401s of Sep 2026) and of 'stale' pins kept

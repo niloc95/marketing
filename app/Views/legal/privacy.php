@@ -245,6 +245,10 @@ $contact   = config('Directory')->adminEmail();
             <p>We also receive from Google Search Console how often each profile appeared and was clicked in Google search results, and the search words that led to it. Google provides these as totals and leaves out rare searches; nothing in them says who searched.</p>
             <p>We use the totals to show business owners how their profile is doing and to improve the platform. We delete them after 25 months.</p>
 
+            <h3>Form diagnostics</h3>
+            <p>When you send one of our forms, we record what happened to it: for example that it was saved, that it came back because a field needed fixing (and which field), that the page had been open too long, or that something went wrong on our side. Your browser also tells us when you pressed send, when it stopped a send because a required field was empty, and when a script on the page failed. We keep the names of the fields only, never what you typed, and we do not keep your IP address, a cookie or anything else with it that says who you are.</p>
+            <p>We use this to find and fix problems with our forms, so that nobody loses what they typed. We delete it after 180 days.</p>
+
             <h2>14. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
             <table class="table">

@@ -359,6 +359,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
 
     // Badge conversion funnel. Read-only.
     $routes->get('funnel', 'Admin::funnel');
+
+    // Form health: what every form submission did (FormHealthService). Read-only.
+    $routes->get('forms', 'AdminForms::index');
     $routes->post('status/clear-mail', 'Admin::clearMailStatus');
 });
 
@@ -385,6 +388,9 @@ $routes->get('directory/suggest', 'Directory::suggest');
 $routes->post('discovery/opened', 'Discovery::opened');
 // A contact tap on a profile, for its statistics (sendBeacon, CSRF exempt).
 $routes->post('stats/tap', 'Stats::tap');
+// Form health from the browser: submit pressed, blocked field, script error
+// (sendBeacon, CSRF exempt). See FormEvents.
+$routes->post('forms/event', 'FormEvents::store');
 // Province landing page — /directory/province/{province}. "province" is a
 // literal first segment, so the same ordering rule applies: below the
 // two-segment route it would resolve as a category named "province" and 404.

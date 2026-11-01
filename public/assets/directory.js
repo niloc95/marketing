@@ -5085,4 +5085,85 @@
       });
     });
   });
+
+  // ------------------------------------------------------------ form health
+  // What the browser sees of a form (FormHealthService, /admin/forms): a
+  // submit that went (attempt), one the browser's required field check or
+  // our own script stopped (blocked, with the field names), and script
+  // errors on a page with a form. The server maps the form's action to a
+  // known form and ignores anything else. Field names only, never values.
+  // From 14 to 27 Oct 2026 failed signups were lost without trace; pressed
+  // against arrived is what shows a submit that never reached us.
+  //
+  // Registered last on document, like submit once, so a send another
+  // handler cancelled is seen as cancelled.
+  (function () {
+    var url = document.body.getAttribute('data-form-events');
+    if (!url || !navigator.sendBeacon || /^\/admin(\/|$)/.test(location.pathname)) return;
+
+    function send(action, outcome, detail) {
+      var data = new FormData();
+      data.append('action', action);
+      data.append('outcome', outcome);
+      data.append('page', location.pathname);
+      if (detail) data.append('detail', detail);
+      navigator.sendBeacon(url, data);
+    }
+    function isPostForm(form) {
+      return form && form.tagName === 'FORM' && (form.getAttribute('method') || '').toLowerCase() === 'post';
+    }
+    function actionOf(form, submitter) {
+      return submitter && submitter.hasAttribute('formaction') ? submitter.formAction : form.action;
+    }
+    function fieldName(el) {
+      return (el.getAttribute('name') || el.id || '').toLowerCase().replace(/\[.*$/, '').replace(/[^a-z0-9_]/g, '');
+    }
+
+    var pending = new Map();
+    document.addEventListener('invalid', function (e) {
+      var el = e.target;
+      var form = el && el.form;
+      if (!isPostForm(form)) return;
+      if (!pending.has(form)) {
+        pending.set(form, []);
+        setTimeout(function () {
+          var names = pending.get(form) || [];
+          pending.delete(form);
+          send(form.action, 'blocked', names.filter(Boolean).join(','));
+        }, 0);
+      }
+      pending.get(form).push(fieldName(el));
+    }, true);
+
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!isPostForm(form)) return;
+      if (!e.defaultPrevented) {
+        send(actionOf(form, e.submitter), 'attempt');
+        return;
+      }
+      // Stopped by one of our own checks: report it only when that check
+      // marked fields (an AJAX save also cancels the submit, and is fine).
+      var bad = Array.prototype.map.call(form.querySelectorAll('[aria-invalid="true"]'), fieldName).filter(Boolean);
+      if (bad.length) send(actionOf(form, e.submitter), 'blocked', bad.join(','));
+    });
+
+    var errors = 0;
+    window.addEventListener('error', function (e) {
+      if (!e || !e.message || errors >= 3) return;
+      var form = Array.prototype.find.call(document.forms, isPostForm);
+      if (!form) return;
+      errors += 1;
+      var file = (e.filename || '').split('?')[0].split('/').pop();
+      send(form.action, 'js_error', String(e.message).slice(0, 150) + (file ? ' @ ' + file + ':' + (e.lineno || 0) : ''));
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      if (errors >= 3) return;
+      var form = Array.prototype.find.call(document.forms, isPostForm);
+      if (!form) return;
+      errors += 1;
+      var reason = e && e.reason ? (e.reason.message || String(e.reason)) : 'unhandled rejection';
+      send(form.action, 'js_error', String(reason).slice(0, 150));
+    });
+  })();
 })();

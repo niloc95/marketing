@@ -149,6 +149,22 @@ class Exceptions extends BaseConfig
             ]);
         }
 
+        // A crash during a form POST is a submission someone lost: recorded
+        // on /admin/forms and emailed to the admin (FormHealthService).
+        if ($statusCode >= 500) {
+            try {
+                $request = service('request');
+                $key     = $request instanceof \CodeIgniter\HTTP\IncomingRequest && $request->getMethod() === 'POST'
+                    ? config('Forms')->keyFor($request->getPath())
+                    : null;
+                if ($key !== null) {
+                    (new \App\Services\FormHealthService())->record($key, 'exception', (new \ReflectionClass($exception))->getShortName());
+                }
+            } catch (Throwable) {
+                // Never let tracking change how an error is shown.
+            }
+        }
+
         return new ExceptionHandler($this);
     }
 }

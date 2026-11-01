@@ -1607,8 +1607,39 @@ if (! function_exists('honeypot_field')) {
             return false;
         }
         log_message('notice', 'Honeypot tripped on {form}', ['form' => $form]);
+        form_outcome('bot');
 
         return true;
+    }
+}
+
+if (! function_exists('form_outcome')) {
+    /**
+     * Tell form health what this submission really was, when the response
+     * alone would read wrong: a fake success for a bot, a throttle, a send
+     * that failed, a session that had ended. See FormHealthService::tag().
+     *
+     * @param 'bot'|'throttled'|'send_failed'|'unavailable'|'expired' $outcome
+     */
+    function form_outcome(string $outcome): void
+    {
+        \App\Services\FormHealthService::tag($outcome);
+    }
+}
+
+if (! function_exists('form_typed_fields')) {
+    /**
+     * What a visitor typed, safe to flash back into their form: without the
+     * CSRF token, both honeypot fields and the fields only the server sets.
+     *
+     * @param array<string,mixed> $post
+     * @return array<string,mixed>
+     */
+    function form_typed_fields(array $post): array
+    {
+        return array_diff_key($post, array_flip([
+            csrf_token(), HONEYPOT_FIELD, 'honeypot', 'review_form', '_has_photo', 'logo_path', 'signup_source',
+        ]));
     }
 }
 
