@@ -790,6 +790,28 @@ typed value; `detail` = field keys, exception class or script error; 180 days).
 - Tests: `FormFailureLandingTest`, `FormHealthServiceTest`, `AdminFormsTest`. File
   cache persists between tests: `cache()->deleteMatching('form-*')` in setUp.
 
+## Admin dashboard (`/admin`, released 1 Nov 2026 at 7bea0c0)
+
+The landing page after sign in (`AdminDashboard`, view `admin/dashboard.php`). The
+profiles list moved to **`/admin/profiles`**; `/admin` with any list key (`status`, `q`,
+`category`, `province`, `sort`, `page`) 301s there, and every redirect that meant the
+list points there now.
+
+- **`AdminDashboardService::overview($site, $days)`** owns no table and is not cached:
+  it reads `SystemHealth`, `MailHealth`, `FormHealthService::recentLost()/dashboard()`,
+  `ListingStatsService::siteDays()/topProfiles()`, `DirectoryVerificationModel::counts()`
+  and `ProfileSetupOrderModel::statusCounts()`. Its only own SQL is new profiles per day
+  (site scoped like `unseen()`; "paid" = a verification row for the site's plan, plus
+  `admin_plan = 'verified'` for the badge).
+- **`queueCounts()`** is the one source of the admin bar's tab counts and the
+  dashboard's "Needs action" tiles. A new queue goes there.
+- `?site=app`, `?days=7|30|90`. The plan follows the site (Verified on co.za, Plus on
+  .app). Health, queues and setup orders cover both sites.
+- Charts: `_bar_chart.php`, `_stacked_bar_chart.php` (series `.chart-s1`, `.chart-s2`,
+  written out in full in the partial: a concatenated class is purged and draws black) and
+  `_meter_rows.php`. Colours validated with the dataviz validator, light and dark.
+- Tests: `tests/database/AdminDashboardTest.php`.
+
 ## Profile statistics (`ListingStatsService`, since 30 Oct 2026, unreleased)
 
 Daily totals per profile in `xs_directory_listing_stats` (primary key listing_id + day,
