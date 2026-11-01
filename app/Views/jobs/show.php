@@ -136,12 +136,12 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Apply</h2>
                 <?php // Set by Jobs::apply. Shown here, in place of the form, because
                       // the redirect lands on #apply and a top of page alert would be off screen. ?>
-                <?php if ($applied = session()->getFlashdata('applied')): ?>
+                <?php if ($applied = flash('applied')): ?>
                     <div class="alert alert-success" role="status">
                         <p class="font-semibold">Application submitted</p>
                         <p class="mt-1"><?= esc($applied) ?></p>
                     </div>
-                <?php elseif ($already = session()->getFlashdata('already_applied')): ?>
+                <?php elseif ($already = flash('already_applied')): ?>
                     <?php // Jobs::apply, for a second application from the same email or
                           // phone (ApplicationOnceService). In place of the form, like 'applied'. ?>
                     <div class="alert alert-info" role="status">

@@ -233,6 +233,15 @@ class Directory extends BaseConfig
     public int $scrapeGuardPerHour = 1500;
 
     /**
+     * Seconds the counts and strips behind the home, province and country
+     * pages are cached (DirectoryService::remember()). 0 reads them from the
+     * database on every view, as phpunit.dist.xml does for the suite.
+     *
+     * Overridable as directory.publicCacheSeconds.
+     */
+    public int $publicCacheSeconds = 60;
+
+    /**
      * Shared secret Cloudflare's Transform rule puts in X-WS-Verified-Bot for
      * verified search bots (cf.client.bot), so Googlebot and Bingbot never
      * meet ScrapeGuard. Empty means no request is exempt.

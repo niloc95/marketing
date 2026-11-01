@@ -1611,3 +1611,36 @@ if (! function_exists('honeypot_field')) {
         return true;
     }
 }
+
+if (! function_exists('session_exists')) {
+    /**
+     * Whether this request already has a session: a session cookie came with
+     * it, or something earlier in the request started one.
+     *
+     * Calling session() starts a session, which writes a file on the server
+     * and sets a cookie. Public pages used to do that for every visitor and
+     * crawler just to look for a flash message (67,873 session files on
+     * production on 1 Nov 2026), and a page that sets a cookie can never be
+     * cached at the edge. A flash message only exists after a redirect that
+     * itself started the session, so the cookie is always there when one is.
+     */
+    function session_exists(): bool
+    {
+        $request = service('request');
+
+        return isset($_SESSION)
+            || ($request instanceof \CodeIgniter\HTTP\IncomingRequest
+                && $request->getCookie(config('Session')->cookieName) !== null);
+    }
+}
+
+if (! function_exists('flash')) {
+    /**
+     * session()->getFlashdata($key), without starting a session for a visitor
+     * who has none (see session_exists()). Null when there is nothing.
+     */
+    function flash(string $key): mixed
+    {
+        return session_exists() ? session()->getFlashdata($key) : null;
+    }
+}

@@ -38,8 +38,8 @@ if (! $enabled && $l['reviews']['items'] === []) {
 
 $r      = $l['reviews'];
 $cfg    = config('Reviews');
-$old    = session()->getFlashdata('review_old') ?? [];
-$errors = session()->getFlashdata('review_errors') ?? [];
+$old    = flash('review_old') ?? [];
+$errors = flash('review_errors') ?? [];
 $err    = static fn (string $f): string => (string) ($errors[$f] ?? '');
 $val    = static fn (string $f): string => is_scalar($old[$f] ?? null) ? (string) $old[$f] : '';
 $open   = $old !== [] || $errors !== [];

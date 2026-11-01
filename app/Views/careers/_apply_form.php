@@ -17,10 +17,10 @@ $months   = (int) $svc->config()->retentionMonths;
 $picked   = $v('role_id');
 // Set by Careers::apply on success. Shown here, in place of the form, because
 // the redirect lands on #apply and a top of page alert would be off screen.
-$applied  = session()->getFlashdata('applied');
+$applied  = flash('applied');
 // Careers::apply, for a second application to the same role from the same
 // email or phone (ApplicationOnceService). Also in place of the form.
-$already  = session()->getFlashdata('already_applied');
+$already  = flash('already_applied');
 ?>
 <?php if ($already): ?>
 <div class="alert alert-info" role="status" tabindex="-1" id="apply-done">
