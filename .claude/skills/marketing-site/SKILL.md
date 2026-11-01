@@ -6,7 +6,7 @@ description: Build, preview, and verify changes to the static WebScheduler marke
 # Marketing site (`marketing-site/`)
 
 > **Superseded 1 Nov 2026.** webscheduler.co.za is now built from `niloc95/webscheduler-site`
-> (/Volumes/Nilo_512GB/projects/webscheduler-site) and is live from there. `marketing-site/`
+> (/Volumes/Nilo_512GB/projects/webscheduler-site) and released with its `npm run site:release`. `marketing-site/`
 > below is the OLD site, kept only until the cleanup (Phase 5): do not edit it, build it
 > or copy it to the server. Make site changes in the new repo.
 

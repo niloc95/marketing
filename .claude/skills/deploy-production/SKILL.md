@@ -12,8 +12,10 @@ description: Release the WebScheduler marketing site and/or WebScheduler Local (
 | WebScheduler Local, every other country | `https://local.webscheduler.app` (since 25 Oct 2026) | the **same** docroot and app |
 
 **webscheduler.co.za is no longer released from this repo.** Since 1 Nov 2026 it is built
-from `niloc95/webscheduler-site` (see that repo's CLAUDE.md), still served from
-`/var/www/marketing` on this box until it moves to Cloudflare Pages. `marketing-site/`
+from `niloc95/webscheduler-site` (see that repo's CLAUDE.md) and released with its own
+`npm run site:release` into `/var/www/marketing` on this box, where it stays (owner's
+decision, 1 Nov 2026: no move to Cloudflare Pages). Its `contact.php` ships from there;
+`lib/phpmailer/` and `/var/www/.ws-contact.env` stay hand placed on the server. `marketing-site/`
 here is the OLD site: never build it and copy `dist/site/` into `/var/www/marketing`, or
 the old site replaces the new one. The vhost's clean URL rules (`/pricing` serves
 `pricing.html`) are in `deploy/apache/webscheduler.co.za.conf`.
