@@ -314,6 +314,13 @@ class Listing extends BaseController
         $errors = $mut->validatePublic($post);
         if ($errors !== []) {
             $this->discardLogo($logo['path']);
+            // The browser check (directory.js, required sections) keeps the
+            // common misses on the page. Anything only the server can judge
+            // still comes back here, without the files.
+            if ($this->choseFiles()) {
+                $errors['_files'] = 'Your logo, photos, brand logos and documents need choosing again: '
+                    . 'a browser cannot keep files when a form comes back.';
+            }
 
             return $this->withUploadErrors(
                 redirect()->to(self::formUrl($post))

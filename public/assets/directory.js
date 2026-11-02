@@ -4448,6 +4448,158 @@
     }
   })();
 
+  // ------------------------------------------------------- required sections
+  // Browsers never refill a file input, so a save the server sends back costs
+  // the owner every logo, photo, brand logo and document they chose. On 2 Nov
+  // 2026 a missed category and photo meant choosing all of them again. The
+  // compulsory parts with no browser check of their own (category,
+  // description, hours, a picture, a service) are checked here first, so
+  // those misses never leave the page. Same messages and marks as a server error (failed-save errors
+  // below). A guide only: the server checks all of it again.
+  //
+  // Only where the form carries Required chips (signup, owner edit). Before
+  // the draft backup, whose submit handler skips a send this one cancels.
+  (function () {
+    var form = document.querySelector('[data-form-step]');
+    form = form && form.closest('form');
+    if (!form || !form.querySelector('.required-chip')) return;
+
+    function filled(el) {
+      return !el.disabled && (el.value || '').trim() !== '';
+    }
+
+    function hoursProblem() {
+      if (!form.querySelector('#field-hours')) return '';
+      var appt = form.querySelector('input[name="by_appointment"]');
+      if (appt && appt.checked) return '';
+      // As DirectoryListingMutationService::hoursComplete(): every day either
+      // ticked Closed or given both times, and at least one day open.
+      var days = {};
+      form.querySelectorAll('input[name^="hours["]').forEach(function (el) {
+        var m = /^hours\[([^\]]+)\]\[(open|close|closed)\]$/.exec(el.name);
+        if (!m) return;
+        days[m[1]] = days[m[1]] || {};
+        days[m[1]][m[2]] = m[2] === 'closed' ? el.checked : (el.value || '').trim();
+      });
+      var open = 0;
+      var complete = Object.keys(days).every(function (k) {
+        var d = days[k];
+        if (d.closed) return true;
+        if (!d.open || !d.close) return false;
+        open += 1;
+        return true;
+      });
+      return complete && open > 0 ? '' : 'Please add your opening hours: times for each day, or tick Closed. '
+        + 'If you only see people by booking, tick “By appointment only”.';
+    }
+
+    function photoProblem() {
+      var section = form.querySelector('#field-photos');
+      if (!section) return '';
+      var chosen = Array.prototype.some.call(section.querySelectorAll('input[type="file"]'), function (el) {
+        return !el.disabled && el.files && el.files.length > 0;
+      });
+      // A logo or gallery photo already on the profile counts, as on the server.
+      var stored = Array.prototype.some.call(section.querySelectorAll('[data-image-current] img, [data-gallery-upload] img'), function (img) {
+        return !img.closest('[data-image-preview]');
+      });
+      return chosen || stored ? '' : 'Please add your logo or at least one photo. Profiles with a picture get far more attention.';
+    }
+
+    function serviceProblem() {
+      var section = form.querySelector('#field-services');
+      if (!section) return '';
+      var named = Array.prototype.some.call(section.querySelectorAll('input[name^="services["][name$="[name]"]'), function (el) {
+        var row = el.closest('[data-repeat-item]');
+        var gone = row && row.querySelector('[data-repeat-remove]');
+        return filled(el) && !(gone && gone.checked);
+      });
+      return named ? '' : 'Please list at least one service you offer. A price is optional.';
+    }
+
+    function descriptionProblem(el) {
+      if (!el || el.disabled) return '';
+      // The editor has already written its HTML back (syncTextarea runs first).
+      var text = (el.value || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+      return text === '' ? 'Please describe your business: what you do, who it’s for, and why people choose you.' : '';
+    }
+
+    function checks() {
+      var category = form.querySelector('select[name="category_id"]');
+      var describe = form.querySelector('textarea[name="description"]');
+      var editor   = describe && describe.parentNode.querySelector('.ql-editor');
+      var group    = category && category.parentNode.querySelector('[data-category-group]');
+      var services = form.querySelector('#field-services');
+      return [
+        {
+          el: category && category.disabled && group ? group : category,
+          slot: category,
+          message: category && !filled(category) ? 'Please choose a category.' : '',
+        },
+        { el: editor || describe, slot: describe, message: descriptionProblem(describe) },
+        { el: form.querySelector('#logo-input'), slot: form.querySelector('#logo-input'), message: photoProblem() },
+        { el: form.querySelector('input[name="by_appointment"]'), slot: form.querySelector('#field-hours .disclosure-body > .field'), message: hoursProblem() },
+        { el: services && services.querySelector('input[name$="[name]"]'), slot: services && services.querySelector('[data-repeat-list]'), message: serviceProblem() },
+      ].filter(function (c) { return c.el && c.slot && c.message; });
+    }
+
+    function clearMarks() {
+      form.querySelectorAll('[data-precheck-err]').forEach(function (err) { err.remove(); });
+      form.querySelectorAll('[data-precheck-invalid]').forEach(function (el) {
+        el.classList.remove('is-invalid');
+        el.removeAttribute('aria-invalid');
+        el.removeAttribute('data-precheck-invalid');
+      });
+    }
+
+    form.addEventListener('submit', function (e) {
+      // "Preview changes" saves nothing, so it may go with gaps.
+      if (e.submitter && e.submitter.hasAttribute('data-preview-submit')) return;
+      clearMarks();
+      var wrong = checks();
+      if (!wrong.length) return;
+      e.preventDefault();
+
+      wrong.forEach(function (c, i) {
+        for (var d = c.slot.parentElement; d && d !== form; d = d.parentElement) {
+          if (d.tagName === 'DETAILS') d.open = true;
+        }
+        var err = document.createElement('div');
+        err.className = 'err';
+        err.id = 'precheck-err-' + i;
+        err.setAttribute('data-precheck-err', '');
+        err.textContent = c.message;
+        c.slot.insertAdjacentElement(c.slot.tagName === 'INPUT' || c.slot.tagName === 'SELECT' ? 'afterend' : 'beforebegin', err);
+        c.el.classList.add('is-invalid');
+        c.el.setAttribute('aria-invalid', 'true');
+        c.el.setAttribute('aria-describedby', err.id);
+        c.el.setAttribute('data-precheck-invalid', '');
+      });
+
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      wrong[0].el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+      wrong[0].el.focus({ preventScroll: true });
+    });
+
+    // A section put right loses its message as soon as it is.
+    form.addEventListener('change', function () {
+      if (!form.querySelector('[data-precheck-err]')) return;
+      var still = checks().map(function (c) { return c.message; });
+      form.querySelectorAll('[data-precheck-err]').forEach(function (err) {
+        if (still.indexOf(err.textContent) === -1) {
+          var el = form.querySelector('[aria-describedby="' + err.id + '"]');
+          if (el) {
+            el.classList.remove('is-invalid');
+            el.removeAttribute('aria-invalid');
+            el.removeAttribute('aria-describedby');
+            el.removeAttribute('data-precheck-invalid');
+          }
+          err.remove();
+        }
+      });
+    });
+  })();
+
   // ------------------------------------------------------------ draft backup
   // A browser-side copy of unsaved edits on the two edit pages (owner and
   // admin), put back automatically after any reload.
@@ -4713,6 +4865,8 @@
 
     form.addEventListener('submit', function (e) {
       check();
+      // Stopped by the required sections check: still here, still unsaved.
+      if (e.defaultPrevented) return;
       // "Preview changes" posts to a new tab and saves nothing: this page
       // stays, still unsaved, so the draft and the leave warning must too.
       if (e.submitter && e.submitter.hasAttribute('data-preview-submit')) return;

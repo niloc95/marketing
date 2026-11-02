@@ -363,6 +363,28 @@ trait HandlesListingUploads
     }
 
     /**
+     * Did this request carry any file at all? A form sent back loses every one
+     * (browsers never refill a file input), and the owner should be told so.
+     */
+    protected function choseFiles(): bool
+    {
+        $walk = static function (mixed $node) use (&$walk): bool {
+            if ($node instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
+                return $node->getError() !== UPLOAD_ERR_NO_FILE;
+            }
+            foreach (is_array($node) ? $node : [] as $child) {
+                if ($walk($child)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        return $walk($this->request->getFiles());
+    }
+
+    /**
      * Attach collected upload problems to a redirect without hiding the fact
      * that the rest of the save succeeded.
      *
