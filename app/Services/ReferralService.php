@@ -454,8 +454,9 @@ class ReferralService
         $stop         = ["Don't contact me again", row_site_url($r, 'recommend/stop/' . $token)];
         $verification = new VerificationService();
 
-        // With the badge on sale, the invite leads with it and lands on the
-        // verified-only form. The free-listing line stays: the Terms promise a
+        // With the badge on sale, the invite leads with it and lands on
+        // /add-profile/verified (Verified picked, Free beside it). The
+        // free-listing line stays: the Terms promise a
         // South African listing is free, and an invite that implied otherwise
         // would be misleading. With the badge off, it is the plain free invite.
         if ($verification->isEnabled()) {

@@ -50,19 +50,17 @@ use App\Services\TeamMemberService;
  * @var string      $amount   monthly price, already formatted to two decimals
  * @var bool        $offered  VerificationService::isEnabled()
  * @var string      $selected 'free' or 'verified' — which card wears the ring
- * @var bool        $verifiedOnly render the Verified card alone (see below)
  *
- * 5. Verified comes first. It is the offer we lead with everywhere. In
- *    verified-only mode (every link we control, see Listing::create()) the Free
- *    card is not rendered at all. The Verified card's small print still says a
- *    South African listing is free: the Terms and FAQ promise that, so it must
- *    stay on this page even when the Free card does not.
+ * 5. Verified comes first. It is the offer we lead with everywhere, and Free is
+ *    always beside it, on every signup page (the verified-only mode with no Free
+ *    card was retired on 2 Nov 2026, see Listing::create()). The Verified card's
+ *    small print says a South African listing is free: the Terms and FAQ promise
+ *    that.
  */
 if (empty($offered)) {
     return;
 }
 
-$verifiedOnly = ! empty($verifiedOnly);
 
 $team      = TeamMemberService::MAX_MEMBERS;
 $locations = PracticeLocationService::MAX_LOCATIONS;
@@ -104,9 +102,7 @@ $row = static function (array $r, string $col): string {
         . '<span>' . $r['label'] . $note . '</span></li>';
 };
 ?>
-<?php // No data-plan-cards in verified-only mode: with one card there is nothing
-      // to pick, and without the hook the plan picker in directory.js stays off. ?>
-<div class="plan-grid<?= $verifiedOnly ? ' plan-grid-single' : '' ?>"<?= $verifiedOnly ? '' : ' data-plan-cards' ?>>
+<div class="plan-grid" data-plan-cards>
 
     <div class="plan-card plan-card-featured<?= $selected === 'verified' ? ' plan-card-picked' : '' ?>" data-plan-card="verified">
         <?php // The card names itself with the actual badge, rather than repeating
@@ -132,17 +128,10 @@ $row = static function (array $r, string $col): string {
             for payment if they check out. Cancel any time. A South African business profile
             is free either way, and stays free.
         </p>
-        <?php // Alone on the page there is nothing to switch between, so the
-              // button just takes them down to the form. ?>
-        <?php if ($verifiedOnly): ?>
-            <a class="btn btn-accent btn-block plan-cta" href="#listing-form">Get Verified</a>
-        <?php else: ?>
-            <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
-               href="<?= base_url('add-profile') ?>">Get Verified</a>
-        <?php endif; ?>
+        <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
+           href="<?= base_url('add-profile') ?>">Get Verified</a>
     </div>
 
-    <?php if (! $verifiedOnly): ?>
     <div class="plan-card<?= $selected === 'free' ? ' plan-card-picked' : '' ?>" data-plan-card="free">
         <p class="plan-name">Free Business Profile</p>
         <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
@@ -174,7 +163,6 @@ $row = static function (array $r, string $col): string {
         <a class="btn btn-ghost btn-block plan-cta" data-plan-pick="free"
            href="<?= base_url('add-profile?plan=free') ?>">Start free</a>
     </div>
-    <?php endif; ?>
 
 </div>
 <p class="hint mt-3 text-center">

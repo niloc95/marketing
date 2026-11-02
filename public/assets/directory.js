@@ -135,11 +135,10 @@
   })();
 
   // ------------------------------------------------------------- plan picker
-  // The Verified Business / Free comparison cards on the signup form, shown only
-  // to a visitor who came straight to /add-profile. Their buttons are real links,
+  // The Verified Business / Free comparison cards on the signup form, on
+  // /add-profile and /add-profile/verified alike. Their buttons are real links,
   // /add-profile (Verified, the default) and /add-profile?plan=free, which is what
-  // makes them work with JS off. The verified-only page, where every link of ours
-  // points, has one card and no [data-plan-cards], so this module stays off there.
+  // makes them work with JS off.
   //
   // Followed as links, though, choosing a plan costs a full page load to swap
   // between two renderings of the same form: the scroll resets to the top of a

@@ -36,9 +36,8 @@ use App\Services\TeamMemberService;
  *    is no annual plan, so it must never read as one, or as a saving.
  *
  * The three links carry data-track for the GA4 click events in directory.js.
- * Clicks are not upgrades; those are counted in /admin/verifications. Never
- * add ?via= to these links: a campaign source switches /add-profile to
- * verified-only and would hide the Free card the first button promises.
+ * Clicks are not upgrades; those are counted in /admin/verifications. No
+ * ?via= on these links: it would credit our own home page as a campaign.
  *
  * @var string $amount  monthly price, already formatted to two decimals
  * @var bool   $offered DirectorySettings::badgeEnabled()

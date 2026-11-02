@@ -29,6 +29,19 @@ class Listing extends BaseController
     public const SOURCE_SITE   = 'site';
 
     /**
+     * The hidden form_mode: which page the form was opened on. Only decides
+     * where a failed submit goes back to and the 'site' / 'direct' source.
+     * 'verified-only' is what the page posted before 2 Nov 2026 (open tabs).
+     */
+    public const MODE_VERIFIED_PAGE = 'verified-page';
+    public const MODE_BOTH          = 'both';
+
+    public static function isVerifiedPageMode(mixed $mode): bool
+    {
+        return $mode === self::MODE_VERIFIED_PAGE || $mode === 'verified-only';
+    }
+
+    /**
      * /add-listing and /add-listing/verified, the signup's address until
      * 6 Oct 2026: a permanent redirect to the same page under /add-profile,
      * query string and all. The invite token and the ?via= tag ride on it, and
@@ -48,40 +61,34 @@ class Listing extends BaseController
     /**
      * /add-profile, where every button on the site points (signup_cta()).
      *
-     * A visitor who came straight to the site (typed the address, Google, a
-     * bookmark) gets both options, Verified first and preselected. The Free
-     * Listing must stay available to them. A visitor who arrived through one of
-     * our links (an invite or a ?via= tag, see SignupChannel) gets the
-     * verified-only form instead.
+     * Both options, always: Verified first and preselected, Free picked with
+     * ?plan=free. A ?via= tag or invite (SignupChannel) is recorded as the
+     * signup's source and never changes the form. Until 2 Nov 2026 it switched
+     * the whole visit to a verified-only form with no Free card, which the
+     * owner retired: Free must be one click away for everyone.
      */
     public function create()
     {
-        if (self::campaignSource() !== null) {
-            return $this->renderForm('verified', true);
-        }
-
         $plan = $this->request->getGet('plan') === 'free' ? 'free' : 'verified';
 
-        return $this->renderForm($plan, false);
+        return $this->renderForm($plan, self::MODE_BOTH);
     }
 
     /**
-     * The verified-only form, where every link we control points.
-     *
-     * Nothing here is a second signup path: it renders the identical fields and
-     * posts to the identical endpoint. It shows only the Verified card, with the
-     * documents panel open. The listing is still saved if nothing is attached
-     * (see store()), and the card's small print says so: the Terms and FAQ
-     * promise a South African listing is free, so no page may imply otherwise.
+     * /add-profile/verified, where "Get Verified" links point (the brand site,
+     * referral invites). The same form with Verified preselected and the Free
+     * card beside it. Nothing here is a second signup path: identical fields,
+     * identical endpoint.
      */
     public function createVerified()
     {
-        return $this->renderForm('verified', true);
+        return $this->renderForm('verified', self::MODE_VERIFIED_PAGE);
     }
 
     /**
      * The ?via= value or 'invite' SignupChannel stored for this visit, or null
-     * for a visitor who came straight to the site.
+     * for a visitor who came straight to the site. Recorded on the listing
+     * only (store()).
      */
     public static function campaignSource(): ?string
     {
@@ -94,10 +101,10 @@ class Listing extends BaseController
      * @param string $plan         'free' or 'verified': which card starts picked.
      *                             Presentation only; store() saves the same
      *                             listing either way.
-     * @param bool   $verifiedOnly render the Verified card alone, with no way
-     *                             to pick Free on the page.
+     * @param string $mode         MODE_BOTH or MODE_VERIFIED_PAGE: which page
+     *                             the form is on, posted back as form_mode.
      */
-    private function renderForm(string $plan, bool $verifiedOnly)
+    private function renderForm(string $plan, string $mode)
     {
         $svc = new DirectoryService();
 
@@ -136,9 +143,7 @@ class Listing extends BaseController
         // submission returns to (formUrl()) can disagree with the card last
         // picked. The posted value is what the person actually picked, so it
         // outranks the route.
-        //
-        // Not in verified-only mode, which has no Free card to have picked.
-        if (! $verifiedOnly && isset($old['plan']) && in_array($old['plan'], ['free', 'verified'], true)) {
+        if (isset($old['plan']) && in_array($old['plan'], ['free', 'verified'], true)) {
             $plan = $old['plan'];
         }
 
@@ -167,9 +172,8 @@ class Listing extends BaseController
             // off falls back to the free form rather than rendering an upload for
             // a badge nobody can buy.
             'plan' => $offered ? $plan : 'free',
-            // Same fallback as the plan: with the badge off there is nothing to
-            // show alone, so every mode is the plain free form.
-            'verifiedOnly' => $offered && $verifiedOnly,
+            // Which page the form is on, posted back as form_mode.
+            'formMode' => $mode,
             'invite' => ctype_xdigit($invite) && strlen($invite) === 64 ? $invite : '',
             // The live score bar's first paint, so it is right after a failed
             // submit and still says something with scripts off. Files are not
@@ -306,7 +310,7 @@ class Listing extends BaseController
         // visit to /add-profile/verified with no tag ('site') from the both-
         // options page ('direct'), which is where the site's own buttons go.
         $post['signup_source'] = self::campaignSource()
-            ?? ($this->request->getPost('form_mode') === 'verified-only' ? self::SOURCE_SITE : self::SOURCE_DIRECT);
+            ?? (self::isVerifiedPageMode($this->request->getPost('form_mode')) ? self::SOURCE_SITE : self::SOURCE_DIRECT);
         $post['logo_path'] = $logo['path'];
         $post['_has_photo'] = $this->hasPhoto($logo['path']);
 
@@ -459,7 +463,7 @@ class Listing extends BaseController
      */
     private static function formUrl(array $post): string
     {
-        if (($post['form_mode'] ?? '') === 'verified-only') {
+        if (self::isVerifiedPageMode($post['form_mode'] ?? '')) {
             return base_url('add-profile/verified');
         }
 

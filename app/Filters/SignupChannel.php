@@ -12,12 +12,12 @@ use CodeIgniter\HTTP\ResponseInterface;
  * `?via=<tag>` on any page (campaign links on WhatsApp, social, flyers, QR
  * codes, the marketing site) or `?invite=<token>` (a referral invite) is stored
  * in the session for the visit. The first one wins, so browsing about first
- * still credits the link that brought them. Two things read it:
+ * still credits the link that brought them. Listing::store() records it as
+ * the new listing's signup_source, for the admin funnel.
  *
- *   - Listing::create(), which shows the verified-only signup form to anyone
- *     with a source. A visitor who came straight to the site sees both options
- *     on /add-profile, Free included, even after clicking our own buttons.
- *   - Listing::store(), which records it as the new listing's signup_source.
+ * It never changes what the signup form shows. Until 2 Nov 2026 a source
+ * switched the whole visit to a verified-only form with no Free card; the
+ * owner retired that, so Free is on every signup page for everyone.
  *
  * GET only, and it never redirects or changes the page. The canonical URL
  * already drops the query string (current_url()), so a tagged link is never

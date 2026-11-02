@@ -207,9 +207,8 @@ foreach (config('Countries')->profiles as $code => $profile) {
                       // gets its own spacing without a literal one.
                       //
                       // While the badge is on sale this is "Add your business", not "Get
-                      // verified": it goes to /add-profile, which shows a visitor who came
-                      // straight here both options (Verified first, Free still there) and a
-                      // campaign visitor the verified-only form. See signup_cta(). Naming
+                      // verified": it goes to /add-profile, which shows both options
+                      // (Verified first, Free still there). See signup_cta(). Naming
                       // only the paid path told free-profile visitors the button wasn't
                       // for them; the upsell is the page's job. "Add business" is the
                       // phone's ~110px version. Each width's phrase is one element, all

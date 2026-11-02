@@ -939,43 +939,35 @@ on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" ro
 `.env` does nothing once `/admin/settings` has ever been saved. `/admin/settings` renders
 `priceSource()` specifically to answer "I changed it and nothing happened".
 
-### Signup form: one form, three modes: Verified leads
+### Signup form: one form, Free always beside Verified
 
 Verified Business is the offer we lead with (on co.za). `/add-profile` and
 `/add-profile/verified` are the **same view, the same fields and the same POST target**
-(`/add-listing*` 301s to them).
-On .app the badge is off, so the form is the plain free form plus the Plus comparison
-(`_plus_compare.php`). `Listing::renderForm($plan,
-$verifiedOnly)` serves every mode:
+(`/add-listing*` 301s to them). On .app the badge is off, so the form is the plain free
+form plus the Plus comparison (`_plus_compare.php`). `Listing::renderForm($plan, $mode)`
+serves both pages; `$mode` (`Listing::MODE_BOTH` / `MODE_VERIFIED_PAGE`) is posted back
+as `form_mode` and only decides where a failed submit returns and the `site`/`direct`
+source. `isVerifiedPageMode()` also accepts the old `verified-only` value.
 
-| Visit | Mode |
+| Visit | What it shows |
 |---|---|
-| `/add-profile/verified`, or any `/add-profile*` with a campaign source in the session | **verified-only**: the Verified card alone, documents open, no Free card, no "Remove" link, no `data-plan-cards` (so the picker JS is off) |
-| `/add-profile` with no source (typed, or any of the site's own buttons) | both cards, **Verified first and preselected** |
-| `/add-profile?plan=free` (direct only) | both cards, Free picked |
+| `/add-profile` (every button on the site, `signup_cta()`) | both cards, **Verified first and preselected** |
+| `/add-profile/verified` ("Get Verified" from the brand site, referral invites) | the same: both cards, Verified picked |
+| `/add-profile?plan=free` | both cards, Free picked |
 
-- **The Free Listing must stay available to anyone who came straight to the site.** The
-  site's own buttons (header "Get verified", footer, home/landing/province/venue/categories/
-  404/contact/jobs) point at **`/add-profile`**, which decides the
-  mode itself. A direct visitor gets both cards, Verified first. A visitor with a campaign
-  source gets verified-only. They all use `signup_cta()` in `directory_ui_helper.php`,
-  which also falls back to the "free" wording when the badge is off. Do not point them at
-  `/add-profile/verified`: that would hide Free from direct visitors, which the owner
-  explicitly does not want. The header button reads "Add your business" on both sites.
-- **Only our outbound links go straight to verified-only**: referral invites
-  (`add-profile/verified?invite=`) and the marketing-site footer (`?via=marketing-site`).
-- **Text that talks about listing *for free* keeps `/add-profile`**: the FAQ answers,
-  Terms, privacy policy and the "is it free?" line on `/verified`. Pointing those at a page
-  with no Free card would contradict the sentence around the link.
-- **The verified-only page must keep the card's small print** ("A South African listing is
-  free either way, and stays free"). The Terms and FAQ promise it, and `store()` still saves
-  the listing when no documents are attached. That line is what keeps the mode honest
-  (Consumer Protection Act, misleading representations). Do not remove it.
+- **Free is on every signup page, for everyone** (owner, 2 Nov 2026). Until then a
+  verified-only mode (no Free card) served `/add-profile/verified` and every visit with a
+  `?via=` or invite in the session, so one tagged link hid Free for the whole visit. It
+  is retired; do not bring back a page without the Free card.
+- **The Verified card keeps its small print** ("A South African business profile is free
+  either way, and stays free"): the Terms and FAQ promise it, and `store()` saves the
+  listing when no documents are attached.
 - **Campaign source:** `App\Filters\SignupChannel` (global, GET) stores `?via=<a-z0-9->`
-  or `invite` in the session (`signup_via`). The first one wins for the visit. `store()`
-  writes it, or `site` / `direct` from the posted `form_mode`, to
-  `xs_directory_listings.signup_source`. It is always overwritten server-side and never
-  taken from the form. It is admin-visible (edit page) and never owner-editable.
+  or `invite` in the session (`signup_via`). The first one wins for the visit. It never
+  changes the form. `store()` writes it, or `site` / `direct` from the posted
+  `form_mode`, to `xs_directory_listings.signup_source`. It is always overwritten
+  server-side and never taken from the form. It is admin-visible (edit page) and never
+  owner-editable.
 - **After publishing**, `Directory::verify()` lands a listing with no application on
   `manage/edit#get-verified` (the id on `_verification_panel.php`) while the badge is on
   sale, and a profile abroad without Plus on `manage/edit#get-plus` (`_plus_panel.php`).
@@ -987,7 +979,7 @@ $verifiedOnly)` serves every mode:
 
 Three rules from the original two-state design still hold:
 
-1. **Never render both variants.** `_verification_fields.php` would appear twice, giving the
+1. **Never render the verification fields twice.** `_verification_fields.php` would appear twice, giving the
    form two inputs named `verify_doc_registration` and two elements sharing an id.
 2. **The card buttons are real links** carrying `data-plan-pick`: `/add-profile`
    (Verified) and `/add-profile?plan=free`. The picker in `public/assets/directory.js`
@@ -1002,8 +994,7 @@ Markup contract: `data-plan-cards`, `data-plan-card="free|verified"`, `data-plan
 another `data-plan-pick="free"` link, so it cannot drift from the Free card.
 
 After a failed submission `redirect()->back()` uses the **Referer**, which a `pushState`
-plan switch does not change. So `renderForm()` lets a posted `plan` outrank the route
-(except in verified-only mode, which has nothing to pick).
+plan switch does not change. So `renderForm()` lets a posted `plan` outrank the route.
 
 ## Local environment
 
