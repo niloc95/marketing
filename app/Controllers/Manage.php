@@ -212,6 +212,7 @@ class Manage extends BaseController
             'verificationOffered' => $verification->isEnabled(),
             'verificationPayable' => $verification->canTakePayment(),
             'verificationAmount'  => $verification->monthlyAmount(),
+            'verificationYearly'  => $verification->amountFor(DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::CYCLE_YEARLY),
             'verification'        => $verificationRow,
             'verificationPending' => $this->paymentPending($verificationRow),
 
@@ -224,6 +225,7 @@ class Manage extends BaseController
             'plusShown'       => $verification->plusMode()
                 && ($verification->plusAvailableFor($listing) || listing_subscription_active($listing)),
             'plusUsd'         => $verification->plusPriceUsd(),
+            'plusUsdYearly'   => $verification->yearlyOffered(DirectoryVerificationModel::PLAN_INTERNATIONAL) ? $verification->plusYearlyPriceUsd() : null,
             'hostingAmount'   => $verification->internationalAmount(),
             'hosting'         => $hostingRow,
             'hostingPending'  => $this->paymentPending($hostingRow),
@@ -582,17 +584,18 @@ class Manage extends BaseController
 
         $verification = $current['verification'];
 
-        // Plus has no quote to honour: nobody approved a price for it, it is
-        // just on sale. So a row that was never paid, or has lapsed, takes
-        // today's price (VerificationService::internationalAmount()), and only
-        // a live subscription keeps the rand it started at. The badge keeps
-        // the price an admin's approval quoted, as the settings page says.
-        if ($plan === DirectoryVerificationModel::PLAN_INTERNATIONAL && $service->plusMode()) {
-            $today = $service->internationalAmount();
-            if ($verification['amount'] !== $today) {
-                (new DirectoryVerificationModel())->update((int) $verification['id'], ['amount' => $today]);
-                $verification['amount'] = $today;
-            }
+        // Monthly or yearly, picked on this page (?cycle=yearly) before
+        // anything is signed: the cycle decides the amount and the PayFast
+        // frequency. Plus has no quote to honour: nobody approved a price for
+        // it, it is just on sale. So a row that was never paid, or has lapsed,
+        // takes today's price, and only a live subscription keeps the rand it
+        // started at. The badge keeps the monthly price an admin's approval
+        // quoted, as the settings page says (priceForCheckout()).
+        $cycle = DirectoryVerificationModel::normaliseCycle(
+            $this->request->getGet('cycle') ?? DirectoryVerificationModel::cycleOf($verification)
+        );
+        if ($plan === DirectoryVerificationModel::PLAN_BADGE || $service->plusMode()) {
+            $verification = $service->priceForCheckout($verification, $plan, $cycle);
         }
 
         // The correlation id is minted on first use rather than at application
@@ -611,25 +614,43 @@ class Manage extends BaseController
             // prefix is for humans reading a PayFast dashboard — the lookup is
             // on the whole string — but a support question that starts "what
             // is vb-41?" is worth one character to answer.
-            $verification['pf_m_payment_id'] = sprintf(
-                '%s-%d-%s',
-                $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL ? 'il' : 'vb',
-                (int) $verification['id'],
-                bin2hex(random_bytes(4))
-            );
+            $verification['pf_m_payment_id'] = $service->newPaymentId($plan, (int) $verification['id']);
             (new DirectoryVerificationModel())->update(
                 (int) $verification['id'],
                 ['pf_m_payment_id' => $verification['pf_m_payment_id']]
             );
         }
 
+        return $this->renderCheckout($listing, $service, $plan, $verification);
+    }
+
+    /**
+     * The checkout page for a priced row: a first payment, a renewal after a
+     * lapse, or a monthly to yearly switch ($switch, which shows no cycle
+     * choice: the switch is to yearly).
+     *
+     * @param array<string,mixed> $listing
+     * @param array<string,mixed> $verification
+     */
+    private function renderCheckout(array $listing, VerificationService $service, string $plan, array $verification, bool $switch = false)
+    {
         $payfast = new PayFast();
+        $yearly  = DirectoryVerificationModel::cycleOf($verification) === DirectoryVerificationModel::CYCLE_YEARLY;
+        $product = $plan === DirectoryVerificationModel::PLAN_BADGE ? 'badge' : ($service->plusMode() ? 'plus' : 'international');
 
         return view('directory/verification_checkout', [
             'listing'    => $listing,
             // Which plan the page is selling: 'badge', 'international' or 'plus'.
-            'product'    => $plan === DirectoryVerificationModel::PLAN_BADGE ? 'badge' : ($service->plusMode() ? 'plus' : 'international'),
-            'plusUsd'    => $service->plusPriceUsd(),
+            'product'    => $product,
+            'plusUsd'    => $yearly ? $service->plusYearlyPriceUsd() : $service->plusPriceUsd(),
+            'cycle'      => $yearly ? DirectoryVerificationModel::CYCLE_YEARLY : DirectoryVerificationModel::CYCLE_MONTHLY,
+            'switch'     => $switch,
+            // The two choices, for the cycle cards: what each costs today,
+            // in the currency the page quotes (dollars for Plus).
+            'choices'    => $switch || ! $service->yearlyOffered($plan) ? [] : [
+                DirectoryVerificationModel::CYCLE_MONTHLY => $product === 'plus' ? $service->plusPriceUsd() : $service->amountFor($plan, DirectoryVerificationModel::CYCLE_MONTHLY),
+                DirectoryVerificationModel::CYCLE_YEARLY  => $product === 'plus' ? $service->plusYearlyPriceUsd() : $service->amountFor($plan, DirectoryVerificationModel::CYCLE_YEARLY),
+            ],
             'amount'     => $verification['amount'],
             'processUrl' => $payfast->processUrl(),
             'fields'     => $payfast->subscriptionFields($listing, $verification),
@@ -640,8 +661,49 @@ class Manage extends BaseController
             // lands — today, from the point of view of someone about to press
             // the button — and every month from there.
             'firstCharge' => date('j F Y'),
-            'renewsOn'    => date('j F Y', strtotime('+1 month')),
+            'renewsOn'    => date('j F Y', strtotime($yearly ? '+1 year' : '+1 month')),
+            // A switch adds the year on top of the month already paid.
+            'paidUntil'   => $switch && ! empty($verification['paid_until']) ? date('j F Y', strtotime((string) $verification['paid_until'])) : null,
         ]);
+    }
+
+    /**
+     * Switch an active monthly badge or Plus subscription to yearly: a new
+     * yearly PayFast subscription, paid now; the monthly one is cancelled
+     * when that payment lands (VerificationService::recordPayment()).
+     */
+    public function switchToYearly()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        $service = new VerificationService();
+        if (! $service->canTakePayment()) {
+            return redirect()->to(base_url('manage/edit'))
+                ->with('error', 'Card payments are not available at the moment. We will be in touch about payment.');
+        }
+
+        $plan = $this->request->getPost('plan') === DirectoryVerificationModel::PLAN_INTERNATIONAL && $service->plusMode()
+            ? DirectoryVerificationModel::PLAN_INTERNATIONAL
+            : DirectoryVerificationModel::PLAN_BADGE;
+
+        $result = $service->startYearlySwitch((int) $listing['id'], $plan);
+        if (! $result['ok']) {
+            return redirect()->to(base_url('manage/edit'))->with('error', $result['message']);
+        }
+
+        // The switch row as PayFast should see it: the yearly reference,
+        // amount and cycle. The stored row keeps the monthly ones until the
+        // yearly payment lands.
+        $row = $result['verification'];
+        $row['pf_m_payment_id'] = $row['switch_m_payment_id'];
+        $row['amount']          = $row['switch_amount'];
+        $row['billing_cycle']   = DirectoryVerificationModel::CYCLE_YEARLY;
+
+        return $this->renderCheckout($listing, $service, $plan, $row, true);
     }
 
     /**

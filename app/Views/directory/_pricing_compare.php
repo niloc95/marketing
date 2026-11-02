@@ -31,9 +31,9 @@ use App\Services\TeamMemberService;
  * 5. Free comes first and is never made to look lesser. It is the offer the
  *    rest of the home page leads with; Verified gets the visual weight, not a
  *    "most popular" ribbon or crossed out rows on the Free card.
- * 6. Billing is monthly with no end date (PayFast cycles = 0). The 12 month
- *    figure is the monthly price times twelve, said as "billed monthly". There
- *    is no annual plan, so it must never read as one, or as a saving.
+ * 6. Billing is monthly or yearly with no end date (PayFast cycles = 0). The
+ *    yearly line is the real yearly price (badge_yearly_price()), and the
+ *    saving is against twelve monthly payments at today's monthly price.
  *
  * The three links carry data-track for the GA4 click events in directory.js.
  * Clicks are not upgrades; those are counted in /admin/verifications. Never
@@ -50,7 +50,8 @@ if (empty($offered) || ($amount ?? '') === '') {
 $team      = TeamMemberService::MAX_MEMBERS;
 $locations = PracticeLocationService::MAX_LOCATIONS;
 $gallery   = Listing::GALLERY_MAX;
-$yearly    = number_format((float) $amount * 12, 2, '.', '');
+$yearly    = badge_yearly_price();
+$saving    = $yearly === null ? 0.0 : round((float) $amount * 12 - (float) $yearly, 2);
 
 $free = [
     'Your business information and description',
@@ -122,7 +123,9 @@ $benefits = [
                     <div>
                         <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
                         <p class="plan-price"><?= esc(money($amount)) ?><span class="plan-price-unit">per month</span></p>
-                        <p class="pricing-yearly"><?= esc(money($yearly)) ?> over 12 months, billed monthly</p>
+                        <?php if ($yearly !== null): ?>
+                            <p class="pricing-yearly">or <?= esc(money($yearly)) ?> a year, paid yearly<?= $saving > 0 ? ' (save ' . esc(money(number_format($saving, 2, '.', ''))) . ')' : '' ?></p>
+                        <?php endif; ?>
                     </div>
                     <?= verified_seal('verified-seal pricing-seal') ?>
                 </div>

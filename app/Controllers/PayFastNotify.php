@@ -96,6 +96,14 @@ class PayFastNotify extends Controller
         $verifications = new DirectoryVerificationModel();
         $verification  = $verifications->findByPaymentId((string) ($fields['m_payment_id'] ?? ''));
 
+        // The first payment of a monthly to yearly switch carries the switch's
+        // own reference (VerificationService::startYearlySwitch()).
+        $isSwitch = false;
+        if ($verification === null) {
+            $verification = $verifications->findBySwitchPaymentId((string) ($fields['m_payment_id'] ?? ''));
+            $isSwitch     = $verification !== null;
+        }
+
         if ($verification === null && ! empty($fields['custom_str2'])) {
             $row          = $verifications->find((int) $fields['custom_str2']);
             $verification = is_array($row) ? $row : null;
@@ -111,12 +119,19 @@ class PayFastNotify extends Controller
 
         // Only a completed payment has to match an amount. A cancellation
         // carries no money and would fail a comparison that means nothing.
-        if ($status === 'COMPLETE' && ! $payfast->amountMatches($amountGross, (string) $verification['amount'])) {
+        $expected = (string) ($isSwitch ? $verification['switch_amount'] : $verification['amount']);
+        if ($status === 'COMPLETE' && ! $payfast->amountMatches($amountGross, $expected)) {
             return $this->done(sprintf(
                 'Notification rejected: amount %s does not match the expected %s.',
                 $amountGross === null ? 'missing' : (string) $amountGross,
-                (string) $verification['amount']
+                $expected
             ), $fields, $ip, 'warning', (int) $verification['id']);
+        }
+
+        // A cancellation of the yearly mandate before it ever paid says
+        // nothing about the monthly one still running on this row.
+        if ($isSwitch && $status !== 'COMPLETE') {
+            return $this->done(sprintf('Notification ignored: %s on a pending yearly switch.', $status), $fields, $ip, 'info');
         }
 
         $outcome = (new VerificationService())->recordPayment(

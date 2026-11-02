@@ -3,6 +3,7 @@
 namespace App\Commands;
 
 use App\Models\DirectoryVerificationDocumentModel;
+use App\Models\DirectoryVerificationModel;
 use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Services\VerificationService;
 use CodeIgniter\CLI\BaseCommand;
@@ -42,6 +43,9 @@ class VerificationSweep extends BaseCommand
     /** Days before renewal that the reminder goes out. */
     private const REMIND_DAYS = 3;
 
+    /** A yearly charge is a bigger one: two weeks' notice. */
+    private const REMIND_DAYS_YEARLY = 14;
+
     /**
      * How long a refused PayFast notification is kept. Long enough to answer
      * "you say I paid in March" a year later, short enough that payer details
@@ -73,7 +77,11 @@ class VerificationSweep extends BaseCommand
         $lapsed = $service->lapseExpired();
 
         $reminded = 0;
-        foreach ($service->dueForRenewalReminder(self::REMIND_DAYS) as $verification) {
+        $due = array_merge(
+            $service->dueForRenewalReminder(self::REMIND_DAYS),
+            $service->dueForRenewalReminder(self::REMIND_DAYS_YEARLY, DirectoryVerificationModel::CYCLE_YEARLY)
+        );
+        foreach ($due as $verification) {
             $service->sendRenewalReminder($verification);
             $reminded++;
         }

@@ -106,6 +106,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     'subscription' => $hosting,
                     'amount'       => $hostingAmount,
                     'usd'          => $plusUsd ?? null,
+                    'usdYearly'    => $plusUsdYearly ?? null,
                     'payable'      => $verificationPayable,
                     'pending'      => $hostingPending,
                 ]) ?>
@@ -115,6 +116,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 <?= view('directory/_verification_panel', [
                     'verification' => $verification,
                     'amount'       => $verificationAmount,
+                    'yearly'       => $verificationYearly ?? null,
                     'payable'      => $verificationPayable,
                     'pending'      => $verificationPending,
                 ]) ?>

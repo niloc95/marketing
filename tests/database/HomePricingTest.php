@@ -32,15 +32,17 @@ final class HomePricingTest extends CIUnitTestCase
         parent::tearDown();
     }
 
-    public function testTheSectionShowsTheLivePriceAndItsTwelveMonthFigure(): void
+    public function testTheSectionShowsTheLiveMonthlyAndYearlyPrices(): void
     {
-        // Not the 29.99 default, so a hard coded price would fail here.
+        // Not the defaults, so a hard coded price would fail here.
         $this->setting(DirectorySettingModel::BADGE_PRICE, '31.50');
+        $this->setting(DirectorySettingModel::BADGE_PRICE_YEARLY, '315.00');
 
         $html = $this->section();
 
         $this->assertStringContainsString('R31.50<span class="plan-price-unit">per month', $html);
-        $this->assertStringContainsString('R378.00 over 12 months, billed monthly', $html);
+        // The saving is against twelve monthly payments: 378.00 - 315.00.
+        $this->assertStringContainsString('or R315.00 a year, paid yearly (save R63.00)', $html);
         $this->assertStringContainsString('Nothing to pay until your documents are approved.', $html);
         $this->assertStringContainsString('Cancel any time.', $html);
     }
@@ -85,7 +87,9 @@ final class HomePricingTest extends CIUnitTestCase
 
         $this->assertStringContainsString('as you state them', $text, 'qualifications are not checked');
         $this->assertStringContainsString("registration document and the owner's id", $text);
-        foreach (['—', 'rank', 'higher', 'guarantee', 'more customers', 'most popular', 'save'] as $banned) {
+        // "save" is allowed since yearly billing (2 Nov 2026): the yearly line
+        // states a real saving against twelve monthly payments.
+        foreach (['—', 'rank', 'higher', 'guarantee', 'more customers', 'most popular'] as $banned) {
             $this->assertStringNotContainsString($banned, $text, "the section must not say \"{$banned}\"");
         }
     }

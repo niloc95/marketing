@@ -29,6 +29,20 @@ $sourceNote = static function (string $source): string {
     };
 };
 
+// What a yearly price saves against twelve monthly payments, or a warning
+// when it saves nothing: an operator typo here would sell the year at a loss
+// to the customer, which nobody notices until a complaint.
+$yearlyNote = static function (?string $monthly, ?string $yearly, string $currency): string {
+    if ($monthly === null || $yearly === null || (float) $monthly <= 0 || (float) $yearly <= 0) {
+        return '';
+    }
+    $saving = round((float) $monthly * 12 - (float) $yearly, 2);
+
+    return $saving > 0
+        ? 'Saves ' . money(number_format($saving, 2, '.', ''), $currency) . ' against paying monthly for a year.'
+        : 'Warning: this is not cheaper than paying monthly for a year.';
+};
+
 $changeNote = static function (?array $change): string {
     if ($change === null || empty($change['at'])) {
         return '';
@@ -68,6 +82,20 @@ $changeNote = static function (?array $change): string {
                               // silently read "29,99" as 29. ?>
                         You can type it as <strong>29.99</strong> or <strong>R29,99</strong>.
                         <?php if ($n = $changeNote($lastPrice)): ?><br><?= esc($n) ?><?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="badge-price-yearly">Verified Business price (rand per year)</label>
+                    <input type="text" id="badge-price-yearly" name="badge_price_yearly" inputmode="decimal"
+                           value="<?= esc($v('badge_price_yearly', $priceYearly), 'attr') ?>">
+                    <?php if ($err('badge_price_yearly')): ?>
+                        <div class="err"><?= esc($err('badge_price_yearly')) ?></div>
+                    <?php endif; ?>
+                    <div class="hint">
+                        <?= esc($sourceNote($priceYearlySource)) ?>
+                        <?= esc($yearlyNote($price, $priceYearly, 'ZAR')) ?>
+                        <?php if ($n = $changeNote($lastPriceYearly)): ?><br><?= esc($n) ?><?php endif; ?>
                     </div>
                 </div>
 
@@ -126,6 +154,18 @@ $changeNote = static function (?array $change): string {
                                value="<?= esc($v('usd_zar_rate', $usdRate ?? ''), 'attr') ?>" placeholder="18.20">
                         <?php if ($err('usd_zar_rate')): ?><div class="err"><?= esc($err('usd_zar_rate')) ?></div><?php endif; ?>
                         <?php if ($n = $changeNote($lastUsdRate)): ?><div class="hint"><?= esc($n) ?></div><?php endif; ?>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="plus-usd-yearly">Plus price (US dollars per year)</label>
+                    <input type="text" id="plus-usd-yearly" name="plus_price_usd_yearly" inputmode="decimal"
+                           value="<?= esc($v('plus_price_usd_yearly', $plusUsdYearly ?? ''), 'attr') ?>" placeholder="89.90">
+                    <?php if ($err('plus_price_usd_yearly')): ?><div class="err"><?= esc($err('plus_price_usd_yearly')) ?></div><?php endif; ?>
+                    <div class="hint">
+                        Blank means Plus is sold monthly only.
+                        <?= esc($yearlyNote($plusUsd, $plusUsdYearly, 'USD')) ?>
+                        <?php if ($plusRandYearly !== null): ?>Charged <strong><?= esc(money($plusRandYearly)) ?></strong> a year at the rate above.<?php endif; ?>
+                        <?php if ($n = $changeNote($lastPlusPriceYearly)): ?><br><?= esc($n) ?><?php endif; ?>
                     </div>
                 </div>
                 <div class="field">

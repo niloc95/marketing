@@ -102,7 +102,7 @@ $faqs = [
             <div class="panel mt-6">
                 <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Get Plus</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
-                    Plus is <strong><?= esc(money($usd, 'USD')) ?> a month</strong>, added from
+                    Plus is <strong><?= esc(price_terms($usd, plus_yearly_usd(), 'USD')) ?></strong>, added from
                     <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">your dashboard</a>
                     once your profile is live. Your business profile stays free either way.
                 </p>

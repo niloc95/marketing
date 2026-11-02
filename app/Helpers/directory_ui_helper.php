@@ -205,6 +205,29 @@ if (! function_exists('verified_badge_pill')) {
     }
 }
 
+if (! function_exists('badge_yearly_price')) {
+    /** The badge's yearly price in rand, or null while yearly is not on sale. */
+    function badge_yearly_price(): ?string
+    {
+        return (new \App\Services\VerificationService())->amountFor(
+            \App\Models\DirectoryVerificationModel::PLAN_BADGE,
+            \App\Models\DirectoryVerificationModel::CYCLE_YEARLY
+        );
+    }
+}
+
+if (! function_exists('plus_yearly_usd')) {
+    /** Plus's yearly price in US dollars, or null while yearly Plus is not on sale. */
+    function plus_yearly_usd(): ?string
+    {
+        $service = new \App\Services\VerificationService();
+
+        return $service->yearlyOffered(\App\Models\DirectoryVerificationModel::PLAN_INTERNATIONAL)
+            ? $service->plusYearlyPriceUsd()
+            : null;
+    }
+}
+
 if (! function_exists('listing_has_plus')) {
     /**
      * Does this listing have Plus right now?

@@ -172,7 +172,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                             <summary>
                                 <span class="verify-cta-heading">Want the Verified Business badge?</span>
                                 <span class="hint">
-                                    <?= esc(money($verificationAmount)) ?> a month. We review your documents first and
+                                    <?= esc(price_terms($verificationAmount, badge_yearly_price())) ?>. We review your documents first and
                                     only ask for payment if they check out. Nothing to pay now. Cancel any
                                     time, and your business profile is free either way.
                                 </span>
@@ -183,7 +183,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                             <div>
                                 <p class="verify-chosen">
                                     <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span>
-                                    added, <?= esc(money($verificationAmount)) ?> a month once we have approved you
+                                    added, <?= esc(price_terms($verificationAmount, badge_yearly_price())) ?> once we have approved you
                                 </p>
                                 <p class="hint verify-offer-docs">
                                     <?php // Careful not to contradict _verification_fields.php below,

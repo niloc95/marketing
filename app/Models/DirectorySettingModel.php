@@ -40,6 +40,13 @@ class DirectorySettingModel extends Model
     public const USD_ZAR_RATE   = 'usd_zar_rate';
 
     /**
+     * Yearly prices, beside the monthly ones: the badge in rand, Plus in US
+     * dollars (charged in rand at USD_ZAR_RATE like the monthly price).
+     */
+    public const BADGE_PRICE_YEARLY    = 'verified_badge_price_yearly';
+    public const PLUS_PRICE_USD_YEARLY = 'plus_price_usd_yearly';
+
+    /**
      * The profile setup service's price on local.webscheduler.app, in US
      * dollars, charged in rand at USD_ZAR_RATE. co.za keeps its rand price
      * (Config\Directory::profileSetupAmount()).
@@ -75,6 +82,8 @@ class DirectorySettingModel extends Model
         self::INTERNATIONAL_ENABLED,
         self::PLUS_PRICE_USD,
         self::USD_ZAR_RATE,
+        self::BADGE_PRICE_YEARLY,
+        self::PLUS_PRICE_USD_YEARLY,
         self::PROFILE_SETUP_USD,
         self::HERO_MEDIA,
         self::HERO_VIDEO_PATH,

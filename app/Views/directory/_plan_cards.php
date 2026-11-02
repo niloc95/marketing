@@ -117,6 +117,9 @@ $row = static function (array $r, string $col): string {
         <?= verified_seal('verified-seal mx-auto mb-2 w-14') ?>
         <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
         <p class="plan-price"><?= esc(money($amount)) ?><span class="plan-price-unit">per month</span></p>
+        <?php if (($badgeYearly = badge_yearly_price()) !== null): ?>
+            <p class="pricing-yearly">or <?= esc(money($badgeYearly)) ?> a year, paid yearly</p>
+        <?php endif; ?>
         <p class="plan-blurb">
             Everything in the free profile, plus a checked badge, your other locations,
             your people and your job vacancies.

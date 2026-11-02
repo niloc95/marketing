@@ -53,7 +53,7 @@ class Forms extends BaseConfig
         'manage_link'      => ['label' => 'Manage sign in link', 'posts' => ['manage' => 'manage']],
         'manage_edit'      => ['label' => 'Edit profile', 'posts' => ['manage/edit' => 'manage/edit']],
         'manage_media'     => ['label' => 'Remove photo or brand', 'posts' => ['manage/photo-delete/(:num)' => 'manage/edit', 'manage/brand-delete/(:num)' => 'manage/edit']],
-        'verification'     => ['label' => 'Verified or Plus application', 'posts' => ['manage/verification' => 'manage/edit', 'manage/verification/cancel' => 'manage/edit']],
+        'verification'     => ['label' => 'Verified or Plus application', 'posts' => ['manage/verification' => 'manage/edit', 'manage/verification/cancel' => 'manage/edit', 'manage/verification/yearly' => 'manage/edit']],
         'preview'          => ['label' => 'Preview approval', 'posts' => ['preview/(:segment)/approve' => 'preview/$1', 'preview/(:segment)/changes' => 'preview/$1']],
     ];
 

@@ -152,6 +152,129 @@ class VerificationService
         return $this->settings->plusPriceUsd();
     }
 
+    /** Plus's yearly price in US dollars, or null while yearly Plus is not priced. */
+    public function plusYearlyPriceUsd(): ?string
+    {
+        return $this->settings->plusYearlyPriceUsd();
+    }
+
+    /**
+     * Today's price of a plan on a billing cycle, in rand, or null when that
+     * cycle is not on sale. Yearly International exists only as Plus: the
+     * co.za International Profile before .app was monthly and stays so.
+     */
+    public function amountFor(string $plan, string $cycle): ?string
+    {
+        $yearly = $cycle === DirectoryVerificationModel::CYCLE_YEARLY;
+
+        if ($plan !== DirectoryVerificationModel::PLAN_INTERNATIONAL) {
+            return $yearly ? $this->settings->badgeYearlyPrice() : $this->monthlyAmount();
+        }
+
+        if (! $yearly) {
+            return $this->internationalAmount();
+        }
+
+        return $this->plusMode() ? $this->settings->plusYearlyRandAmount() : null;
+    }
+
+    /** Can this plan be bought yearly right now? */
+    public function yearlyOffered(string $plan): bool
+    {
+        return $this->amountFor($plan, DirectoryVerificationModel::CYCLE_YEARLY) !== null;
+    }
+
+    /**
+     * Price an unpaid (approved or lapsed) row for the cycle the owner picked
+     * on the checkout page, and return the row as it now stands.
+     *
+     * Monthly badge keeps the amount an admin's approval quoted, as it always
+     * has, unless the row was last priced yearly (then today's monthly price).
+     * Yearly takes today's yearly price: nobody was quoted one. A cycle that is
+     * not on sale falls back to monthly.
+     *
+     * A change of cycle or amount mints a fresh m_payment_id, because the
+     * owner may already have opened PayFast with the old one and PayFast
+     * refuses a reference it has seen with different terms.
+     *
+     * @param array<string,mixed> $verification
+     *
+     * @return array<string,mixed>
+     */
+    public function priceForCheckout(array $verification, string $plan, string $cycle): array
+    {
+        if (! $this->yearlyOffered($plan)) {
+            $cycle = DirectoryVerificationModel::CYCLE_MONTHLY;
+        }
+        $was = DirectoryVerificationModel::cycleOf($verification);
+
+        $amount = (string) $verification['amount'];
+        if ($cycle === DirectoryVerificationModel::CYCLE_YEARLY
+            || $was === DirectoryVerificationModel::CYCLE_YEARLY
+            || $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL) {
+            $amount = (string) $this->amountFor($plan, $cycle);
+        }
+
+        if ($cycle === $was && $amount === (string) $verification['amount']) {
+            return $verification;
+        }
+
+        $update = [
+            'billing_cycle'   => $cycle,
+            'amount'          => $amount,
+            'pf_m_payment_id' => $this->newPaymentId($plan, (int) $verification['id']),
+        ];
+        $this->verifications->update((int) $verification['id'], $update);
+
+        return array_merge($verification, $update);
+    }
+
+    /**
+     * Start switching an active monthly subscription to yearly.
+     *
+     * A PayFast mandate cannot change its frequency, so the switch is a new
+     * yearly subscription, paid now. Its reference goes in switch_m_payment_id
+     * while the monthly mandate keeps running on pf_m_payment_id; when the
+     * yearly payment's notification lands, recordPayment() swaps them over and
+     * cancels the monthly one. The year is added on top of what is already
+     * paid, so no paid days are lost.
+     *
+     * @return array{ok:bool,message:string,verification?:array<string,mixed>}
+     */
+    public function startYearlySwitch(int $listingId, string $plan): array
+    {
+        $row = $this->verifications->forListing($listingId, $plan);
+        if ($row === null || $row['state'] !== DirectoryVerificationModel::STATE_ACTIVE || ! empty($row['cancelled_at'])) {
+            return ['ok' => false, 'message' => 'There is no active monthly subscription to switch.'];
+        }
+        if (DirectoryVerificationModel::cycleOf($row) === DirectoryVerificationModel::CYCLE_YEARLY) {
+            return ['ok' => false, 'message' => 'You are already paying yearly.'];
+        }
+        $amount = $this->amountFor($plan, DirectoryVerificationModel::CYCLE_YEARLY);
+        if ($amount === null) {
+            return ['ok' => false, 'message' => 'Yearly billing is not available at the moment.'];
+        }
+
+        $update = [
+            'switch_m_payment_id' => $this->newPaymentId($plan, (int) $row['id']) . '-y',
+            'switch_amount'       => $amount,
+        ];
+        $this->verifications->update((int) $row['id'], $update);
+
+        return ['ok' => true, 'message' => '', 'verification' => array_merge($row, $update)];
+    }
+
+    /** 'il-' for an International Listing (Plus), 'vb-' for the badge: for humans reading PayFast. */
+    public function newPaymentId(string $plan, int $verificationId): string
+    {
+        return sprintf(
+            '%s-%d-%s',
+            $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL ? 'il' : 'vb',
+            $verificationId,
+            bin2hex(random_bytes(4))
+        );
+    }
+
     /**
      * May this listing buy Plus? A business outside South Africa, while Plus
      * is on sale.
@@ -537,7 +660,7 @@ class VerificationService
         }
 
         $row = $this->verifications->find($verificationId);
-        $this->mailOwner($listingId, 'approved', ['amount' => $row['amount'] ?? $this->monthlyAmount()]);
+        $this->mailOwner($listingId, 'approved', ['amount' => $row['amount'] ?? $this->monthlyAmount(), 'yearlyAmount' => $this->yearlyAmountForEmail()]);
 
         return ['ok' => true, 'message' => 'Verified. The owner has been emailed a link to pay and switch the badge on.'];
     }
@@ -569,7 +692,7 @@ class VerificationService
                 DirectoryVerificationSubmissionModel::OUTCOME_APPROVED,
                 $by
             );
-            $this->mailOwner((int) $row['listing_id'], 'approved', ['amount' => $row['amount']]);
+            $this->mailOwner((int) $row['listing_id'], 'approved', ['amount' => $row['amount'], 'yearlyAmount' => $this->yearlyAmountForEmail()]);
         }
 
         return $ok;
@@ -893,6 +1016,11 @@ class VerificationService
         $verificationId = (int) $verification['id'];
         $listingId      = (int) $verification['listing_id'];
 
+        // The first payment of a monthly to yearly switch (startYearlySwitch()).
+        $switchId = trim((string) ($verification['switch_m_payment_id'] ?? ''));
+        $isSwitch = $switchId !== '' && trim((string) ($payload['m_payment_id'] ?? '')) === $switchId;
+        $oldToken = trim((string) ($verification['pf_subscription_token'] ?? ''));
+
         $db = db_connect();
         $db->transBegin();
 
@@ -936,7 +1064,26 @@ class VerificationService
                     }
                 }
 
-                $paidUntil            = $this->nextPaidUntil($verification['paid_until'] ?? null, 1, $anchorDay);
+                $yearly = $isSwitch || DirectoryVerificationModel::cycleOf($verification) === DirectoryVerificationModel::CYCLE_YEARLY;
+
+                if ($isSwitch) {
+                    $update['billing_cycle']       = DirectoryVerificationModel::CYCLE_YEARLY;
+                    $update['amount']              = (string) $verification['switch_amount'];
+                    $update['pf_m_payment_id']     = $switchId;
+                    $update['switch_m_payment_id'] = null;
+                    $update['switch_amount']       = null;
+                    $update['cancelled_at']        = null;
+                }
+
+                // A switch keeps the days left on the month already paid: the
+                // year runs on from paid_until on its own day, not the new
+                // mandate's, the first time. Renewals after that follow the
+                // yearly mandate's billing day like any other.
+                $paidUntil = $this->nextPaidUntil(
+                    $verification['paid_until'] ?? null,
+                    $yearly ? 12 : 1,
+                    $isSwitch ? null : $anchorDay
+                );
                 $update['paid_until'] = $paidUntil;
 
                 if (empty($verification['activated_at'])) {
@@ -972,7 +1119,21 @@ class VerificationService
         }
 
         if ($status === 'COMPLETE' && empty($verification['activated_at'])) {
-            $this->mailOwner($listingId, 'activated', ['product' => $this->productOf($verification)]);
+            $this->mailOwner($listingId, 'activated', [
+                'product' => $this->productOf($verification),
+                'cycle'   => DirectoryVerificationModel::cycleOf($verification),
+            ]);
+        }
+
+        // The yearly mandate is live, so the monthly one must stop. After the
+        // commit, like the mail: the year is banked whatever PayFast answers,
+        // and a failed cancel goes to a human, as a failed owner cancel does.
+        if ($status === 'COMPLETE' && $isSwitch && $oldToken !== '' && $oldToken !== trim((string) ($payload['token'] ?? ''))) {
+            if (! $this->payfast->cancelSubscription($oldToken)) {
+                $this->notifyAdminOfCancellation($listingId, 'SWITCHED TO YEARLY but the monthly PayFast subscription could not be cancelled. Cancel it by hand in the PayFast dashboard');
+            } else {
+                $this->notifyAdminOfCancellation($listingId, 'switched to yearly; the monthly PayFast subscription was cancelled');
+            }
         }
 
         // Partner commission, after the commit like the mail above: the
@@ -1061,10 +1222,11 @@ class VerificationService
      *
      * @return array<int,array<string,mixed>>
      */
-    public function dueForRenewalReminder(int $days = 3): array
+    public function dueForRenewalReminder(int $days = 3, string $cycle = DirectoryVerificationModel::CYCLE_MONTHLY): array
     {
         return $this->verifications
             ->where('state', DirectoryVerificationModel::STATE_ACTIVE)
+            ->where('billing_cycle', $cycle)
             ->where('paid_until', date('Y-m-d', strtotime("+{$days} days")))
             ->findAll();
     }
@@ -1074,7 +1236,7 @@ class VerificationService
         $this->mailOwner(
             (int) $verification['listing_id'],
             'renewing',
-            ['paid_until' => $verification['paid_until'], 'amount' => $verification['amount'], 'product' => $this->productOf($verification)]
+            ['paid_until' => $verification['paid_until'], 'amount' => $verification['amount'], 'product' => $this->productOf($verification), 'cycle' => DirectoryVerificationModel::cycleOf($verification)]
         );
     }
 
@@ -1321,6 +1483,12 @@ class VerificationService
             . '<p>' . esc($detail) . '</p>'
             . '<p><a href="' . esc(site_url_for(Sites::ZA, 'admin/verifications?state=active'), 'attr') . '">Open the queue</a></p>'
         );
+    }
+
+    /** The badge's yearly price for the approval email, '' when yearly is not on sale. */
+    private function yearlyAmountForEmail(): string
+    {
+        return (string) ($this->amountFor(DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::CYCLE_YEARLY) ?? '');
     }
 
     private function prettyDate(?string $date): string

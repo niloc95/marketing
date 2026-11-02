@@ -41,6 +41,9 @@ class PayFast
     /** PayFast's own code for a monthly recurring cycle. */
     public const FREQUENCY_MONTHLY = 3;
 
+    /** PayFast's code for a yearly recurring cycle ("annual"). */
+    public const FREQUENCY_ANNUAL = 6;
+
     private DirectoryConfig $config;
 
     public function __construct(?DirectoryConfig $config = null)
@@ -104,6 +107,10 @@ class PayFast
         $isInternational = ($verification['plan'] ?? DirectoryVerificationModel::PLAN_BADGE)
             === DirectoryVerificationModel::PLAN_INTERNATIONAL;
         $plus = $isInternational && service('site')->scoping();
+        // Off the row like the plan: absent means monthly, as every row before
+        // yearly billing was.
+        $yearly = DirectoryVerificationModel::cycleOf($verification) === DirectoryVerificationModel::CYCLE_YEARLY;
+        $every  = $yearly ? 'Yearly ' : 'Monthly ';
 
         $fields = [
             'merchant_id'  => $this->config->payfastMerchantId(),
@@ -129,7 +136,7 @@ class PayFast
             // Truncated because PayFast caps this field and silently rejects
             // the whole request rather than trimming it for us.
             'item_description' => mb_substr(
-                ($isInternational ? ($plus ? 'Monthly WebScheduler Local Plus for ' : 'Monthly International Profile for ') : 'Monthly Verified Business badge for ') . $name,
+                $every . ($isInternational ? ($plus ? 'WebScheduler Local Plus for ' : 'International Profile for ') : 'Verified Business badge for ') . $name,
                 0,
                 200
             ),
@@ -150,7 +157,7 @@ class PayFast
             // response names, which is the expensive part — the shape of the
             // error points at the signature, and the signature is fine.
             'recurring_amount' => $amount,
-            'frequency'        => (string) self::FREQUENCY_MONTHLY,
+            'frequency'        => (string) ($yearly ? self::FREQUENCY_ANNUAL : self::FREQUENCY_MONTHLY),
             'cycles'           => '0',
         ];
 

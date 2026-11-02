@@ -363,7 +363,15 @@ class Directory extends BaseConfig
      * and PayFast wants 29.99; the getter below converts one to the other
      * rather than letting a comma silently cast to R29.00.
      */
-    public string $verifiedMonthlyAmount = '29.99';
+    public string $verifiedMonthlyAmount = '30.00';
+
+    /**
+     * Yearly price of the badge, in rand: ten months for twelve. Everything
+     * the monthly docblock says applies (a string, a POINT, snapshotted on the
+     * row with billing_cycle). Override with directory.verifiedYearlyAmount in
+     * .env, or on /admin/settings.
+     */
+    public string $verifiedYearlyAmount = '300.00';
 
     /**
      * The once-off price of the profile setup service at /profile-setup,
@@ -753,6 +761,14 @@ class Directory extends BaseConfig
     {
         $env = env('directory.verifiedMonthlyAmount');
         $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->verifiedMonthlyAmount;
+
+        return $this->normaliseAmount($raw);
+    }
+
+    public function verifiedYearlyAmount(): string
+    {
+        $env = env('directory.verifiedYearlyAmount');
+        $raw = is_string($env) && trim($env) !== '' ? trim($env) : $this->verifiedYearlyAmount;
 
         return $this->normaliseAmount($raw);
     }

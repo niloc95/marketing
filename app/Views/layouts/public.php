@@ -443,7 +443,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <p class="site-footer-tagline">
                         Show customers you're a real, checked business, with your team and your
                         other branches on your profile. The Verified Business badge is
-                        <?= esc(money((new App\Services\VerificationService())->monthlyAmount())) ?> a month, and there is
+                        <?= esc(price_terms((new App\Services\VerificationService())->monthlyAmount(), badge_yearly_price())) ?>, and there is
                         nothing to pay until we've checked your documents.
                     </p>
                     <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your business verified</a>
@@ -452,7 +452,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <h3>Get Plus</h3>
                     <p class="site-footer-tagline">
                         Your business profile is free. Plus adds your other locations, your team and the
-                        Jobs board, for <?= esc(money($footerPlus, 'USD')) ?> a month, billed in South African rand.
+                        Jobs board, for <?= esc(price_terms($footerPlus, plus_yearly_usd(), 'USD')) ?>, billed in South African rand.
                     </p>
                     <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your business</a>
                 <?php else: ?>

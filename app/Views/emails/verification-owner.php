@@ -14,8 +14,13 @@
  * @var string $paidUntil  renewing only
  * @var string $product    activated and renewing: badge|international|plus
  *                         (VerificationService::productOf())
+ * @var string $cycle      activated and renewing: monthly|yearly
+ * @var string $yearlyAmount approved only: the yearly price, '' when not offered
  */
 $product   = $product ?? 'badge';
+$yearly    = ($cycle ?? '') === 'yearly';
+$period    = $yearly ? 'year' : 'month';
+$yearlyAmount = $yearlyAmount ?? '';
 $amount    = $amount ?? '';
 $reason    = $reason ?? '';
 $paidUntil = $paid_until ?? '';
@@ -31,7 +36,8 @@ $paidUntil = $paid_until ?? '';
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Your Verified Business badge is ready to switch on. It costs
-                <strong><?= esc(money($amount)) ?> a month</strong>, and it appears on your profile and
+                <strong><?= esc(money($amount)) ?> a month</strong><?php if ($yearlyAmount !== ''): ?>,
+                or <strong><?= esc(money($yearlyAmount)) ?> a year</strong> if you pay yearly<?php endif; ?>, and it appears on your profile and
                 everywhere your business is discovered on the platform.
             </p>
             <p style="margin:22px 0">
@@ -63,8 +69,8 @@ $paidUntil = $paid_until ?? '';
                 branches and your team, and post on the Jobs board, from your dashboard.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                It renews automatically each month, billed in South African rand. You can cancel any time
-                from your dashboard; Plus stays on until the month you've paid for runs out, and your
+                It renews automatically each <?= $period ?>, billed in South African rand. You can cancel any time
+                from your dashboard; Plus stays on until the <?= $period ?> you've paid for runs out, and your
                 profile stays published either way.
             </p>
             <p style="margin:22px 0">
@@ -76,8 +82,8 @@ $paidUntil = $paid_until ?? '';
                 Your payment came through and your <strong>International Profile</strong> is live.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                It renews automatically each month. You can cancel any time from your dashboard; your
-                profile stays live until the month you've paid for runs out.
+                It renews automatically each <?= $period ?>. You can cancel any time from your dashboard; your
+                profile stays live until the <?= $period ?> you've paid for runs out.
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'View my profile') ?>
@@ -88,8 +94,8 @@ $paidUntil = $paid_until ?? '';
                 Your payment came through and your <strong>Verified Business</strong> badge is now live on your profile.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                It renews automatically each month. You can cancel any time from your dashboard. The
-                badge stays up until the month you've paid for runs out.
+                It renews automatically each <?= $period ?>. You can cancel any time from your dashboard. The
+                badge stays up until the <?= $period ?> you've paid for runs out.
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'View my profile') ?>
@@ -97,24 +103,24 @@ $paidUntil = $paid_until ?? '';
 
         <?php elseif ($product === 'plus'): /* renewing */ ?>
             <p style="font-size:15px;line-height:1.6">
-                Just so there are no surprises: your Plus subscription renews on
+                Just so there are no surprises: your <?= $yearly ? 'yearly ' : '' ?>Plus subscription renews on
                 <strong><?= esc($paidUntil) ?></strong>, and PayFast will charge it in South African
                 rand as usual.
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Nothing to do if that's all fine. If you'd rather stop, cancel from your dashboard before
-                that date: Plus switches off when the month ends and your profile stays published.
+                that date: Plus switches off when the <?= $period ?> ends and your profile stays published.
             </p>
 
         <?php else: /* renewing */ ?>
             <p style="font-size:15px;line-height:1.6">
-                Just so there are no surprises: your Verified Business badge renews on
+                Just so there are no surprises: your <?= $yearly ? 'yearly ' : '' ?>Verified Business badge renews on
                 <strong><?= esc($paidUntil) ?></strong>, and PayFast will charge
                 <strong><?= esc(money($amount)) ?></strong> as usual.
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Nothing to do if that's all fine. If you'd rather stop, cancel from your PayFast
-                account before that date and the badge will simply come down when the month ends.
+                account before that date and the badge will simply come down when the <?= $period ?> ends.
             </p>
         <?php endif; ?>
 

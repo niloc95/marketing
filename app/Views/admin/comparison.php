@@ -59,7 +59,7 @@ if (! empty($lastChange['at'])) {
                 <?= esc($changed) ?>
             </p>
             <ul class="mb-6 list-disc pl-5 text-sm text-slate-500 dark:text-slate-400">
-                <li>Plain text only. <code>{gallery}</code>, <code>{locations}</code>, <code>{team}</code> and <code>{price}</code> are filled in from the live caps and price.</li>
+                <li>Plain text only. <code>{gallery}</code>, <code>{locations}</code>, <code>{team}</code>, <code>{price}</code> and <code>{yearly}</code> are filled in from the live caps and prices.</li>
                 <li>Every competitor claim should be something their own help pages say. Update the checked on date when you recheck.</li>
                 <li>The WebScheduler Local column must match what the site actually gates: staff, branches and vacancies are Verified Business.</li>
                 <li>Rows show in Position order. Clear a row's label to delete it.</li>

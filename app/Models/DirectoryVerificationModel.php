@@ -18,7 +18,29 @@ class DirectoryVerificationModel extends Model
         'listing_id', 'plan', 'state', 'paid_until', 'amount',
         'pf_subscription_token', 'billing_anchor_day', 'pf_m_payment_id', 'rejection_reason',
         'submitted_at', 'reviewed_at', 'reviewed_by', 'activated_at', 'cancelled_at',
+        'billing_cycle', 'switch_m_payment_id', 'switch_amount',
     ];
+
+    /**
+     * How often PayFast bills the row: snapshotted with `amount`. Monthly is
+     * the column's DEFAULT, so every row older than yearly billing reads right.
+     */
+    public const CYCLE_MONTHLY = 'monthly';
+    public const CYCLE_YEARLY  = 'yearly';
+
+    public const CYCLES = [self::CYCLE_MONTHLY, self::CYCLE_YEARLY];
+
+    /** A row's cycle, monthly when absent or unknown. */
+    public static function cycleOf(array $row): string
+    {
+        return ($row['billing_cycle'] ?? '') === self::CYCLE_YEARLY ? self::CYCLE_YEARLY : self::CYCLE_MONTHLY;
+    }
+
+    /** A posted cycle, monthly unless it says yearly. */
+    public static function normaliseCycle(mixed $cycle): string
+    {
+        return is_string($cycle) && strtolower(trim($cycle)) === self::CYCLE_YEARLY ? self::CYCLE_YEARLY : self::CYCLE_MONTHLY;
+    }
 
     /**
      * The state machine, as constants rather than the loose string literals the
@@ -84,6 +106,19 @@ class DirectoryVerificationModel extends Model
         }
 
         $row = $this->where('pf_m_payment_id', $mPaymentId)->first();
+
+        return is_array($row) ? $row : null;
+    }
+
+    /** The row with a pending monthly to yearly switch under this reference. */
+    public function findBySwitchPaymentId(string $mPaymentId): ?array
+    {
+        $mPaymentId = trim($mPaymentId);
+        if ($mPaymentId === '') {
+            return null;
+        }
+
+        $row = $this->where('switch_m_payment_id', $mPaymentId)->first();
 
         return is_array($row) ? $row : null;
     }

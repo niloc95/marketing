@@ -5,6 +5,17 @@
 // 'plus' (that plan on .app). Manage::checkout() decides; the wording follows.
 $product = $product ?? 'badge';
 $what    = ['badge' => 'Verified Business badge', 'international' => 'International Profile', 'plus' => 'WebScheduler Local Plus'][$product] ?? 'Verified Business badge';
+// Monthly or yearly (Manage::renderCheckout()). $choices is empty when there
+// is nothing to pick: yearly not on sale, or a switch, which is to yearly.
+$cycle     = $cycle ?? 'monthly';
+$yearly    = $cycle === 'yearly';
+$period    = $yearly ? 'year' : 'month';
+$choices   = $choices ?? [];
+$switch    = $switch ?? false;
+$paidUntil = $paidUntil ?? null;
+// Plus is quoted in dollars, everything else in rand.
+$quote     = $product === 'plus' && ! empty($plusUsd) ? money($plusUsd, 'USD') : money($amount);
+$quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 'plus' ? money($v, 'USD') : money($v));
 ?>
 
 <?= $this->section('head') ?>
@@ -28,6 +39,36 @@ $what    = ['badge' => 'Verified Business badge', 'international' => 'Internatio
                 <p class="alert alert-warning">Sandbox mode. No real money will move.</p>
             <?php endif; ?>
 
+            <?php if ($choices !== []):
+                $monthlyPrice = $choices['monthly'] ?? null;
+                $yearlyPrice  = $choices['yearly'] ?? null;
+                $saving       = ($monthlyPrice !== null && $yearlyPrice !== null) ? round((float) $monthlyPrice * 12 - (float) $yearlyPrice, 2) : 0.0;
+                $planQuery    = $product === 'plus' ? 'plan=plus&' : '';
+            ?>
+                <?php // Links, not a form: the PayFast fields below are signed for one
+                      // cycle, so picking the other reloads the page priced for it. ?>
+                <div class="cycle-cards" role="group" aria-label="How often to pay">
+                    <a class="cycle-card<?= $yearly ? '' : ' is-picked' ?>" href="<?= base_url('manage/verification/checkout?' . $planQuery . 'cycle=monthly') ?>" data-track="checkout_cycle" data-track-label="monthly"<?= $yearly ? '' : ' aria-current="true"' ?>>
+                        <span class="cycle-card-name">Monthly</span>
+                        <span class="cycle-card-price"><?= esc($quoteOf($monthlyPrice)) ?> <span class="hint">a month</span></span>
+                    </a>
+                    <a class="cycle-card<?= $yearly ? ' is-picked' : '' ?>" href="<?= base_url('manage/verification/checkout?' . $planQuery . 'cycle=yearly') ?>" data-track="checkout_cycle" data-track-label="yearly"<?= $yearly ? ' aria-current="true"' : '' ?>>
+                        <span class="cycle-card-name">Yearly</span>
+                        <span class="cycle-card-price"><?= esc($quoteOf($yearlyPrice)) ?> <span class="hint">a year</span></span>
+                        <?php if ($saving > 0): ?>
+                            <span class="cycle-card-save">Save <?= esc($quoteOf(number_format($saving, 2, '.', ''))) ?></span>
+                        <?php endif; ?>
+                    </a>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($switch): ?>
+                <p class="alert alert-info">
+                    <strong>Switching to yearly.</strong> You pay for the year today<?= $paidUntil ? ', and it starts after the time you have already paid for, which runs to ' . esc($paidUntil) : '' ?>.
+                    Your monthly payments stop as soon as this payment comes through.
+                </p>
+            <?php endif; ?>
+
             <?php // The order summary. Every figure comes from the verification row or
                   // from the fields being signed below, so the page cannot say one
                   // thing while PayFast is told another. ?>
@@ -42,9 +83,9 @@ $what    = ['badge' => 'Verified Business badge', 'international' => 'Internatio
                 <div class="checkout-line">
                     <span class="checkout-label">Price</span>
                     <?php if ($product === 'plus' && ! empty($plusUsd)): ?>
-                        <span><strong><?= esc(money($plusUsd, 'USD')) ?></strong> per month, billed in South African rand</span>
+                        <span><strong><?= esc($quote) ?></strong> per <?= $period ?>, billed in South African rand</span>
                     <?php else: ?>
-                        <span><strong><?= esc(money($amount)) ?></strong> per month</span>
+                        <span><strong><?= esc($quote) ?></strong> per <?= $period ?></span>
                     <?php endif; ?>
                 </div>
                 <div class="checkout-line">
@@ -53,11 +94,11 @@ $what    = ['badge' => 'Verified Business badge', 'international' => 'Internatio
                 </div>
                 <div class="checkout-line">
                     <span class="checkout-label">Then</span>
-                    <span><?= esc($product === 'plus' && ! empty($plusUsd) ? money($plusUsd, 'USD') : money($amount)) ?> on <?= esc($renewsOn) ?>, and monthly after that</span>
+                    <span><?= esc($quote) ?> on <?= esc($renewsOn) ?>, and <?= $yearly ? 'yearly' : 'monthly' ?> after that</span>
                 </div>
                 <div class="checkout-line checkout-total">
                     <span class="checkout-label">Due now</span>
-                    <span><strong><?= esc($product === 'plus' && ! empty($plusUsd) ? money($plusUsd, 'USD') : money($amount)) ?></strong></span>
+                    <span><strong><?= esc($quote) ?></strong></span>
                 </div>
             </div>
 
@@ -66,18 +107,18 @@ $what    = ['badge' => 'Verified Business badge', 'international' => 'Internatio
                       // PayFast charges rand only. See Legal terms section 4. ?>
                 <p class="alert alert-info">
                     <strong>Billed in South African rand.</strong> WebScheduler is a South African company,
-                    so PayFast charges it in rand every month and your bank converts it to your own currency. The amount on your statement may differ slightly from
+                    so PayFast charges it in rand every <?= $period ?> and your bank converts it to your own currency. The amount on your statement may differ slightly from
                     <?= esc(money((string) $plusUsd, 'USD')) ?>, and some banks add a foreign transaction fee.
                 </p>
             <?php endif; ?>
             <ul class="checkout-terms">
                 <?php if ($product === 'plus'): ?>
-                    <li>Cancel any time from your dashboard: Plus stays on until the month you have paid for ends.</li>
+                    <li>Cancel any time from your dashboard: Plus stays on until the <?= $period ?> you have paid for ends.</li>
                     <li>Your business profile is free and stays published whether or not you buy Plus.</li>
                 <?php elseif ($product === 'international'): ?>
-                    <li>Cancel any time from your dashboard: your profile stays live until the month you have paid for ends.</li>
+                    <li>Cancel any time from your dashboard: your profile stays live until the <?= $period ?> you have paid for ends.</li>
                 <?php else: ?>
-                    <li>Cancel any time from your dashboard: your badge stays up until the month you have paid for ends.</li>
+                    <li>Cancel any time from your dashboard: your badge stays up until the <?= $period ?> you have paid for ends.</li>
                     <li>Your business profile is free and stays free whether or not you buy this.</li>
                 <?php endif; ?>
                 <li>PayFast takes the payment. <strong>We never see your card details.</strong></li>

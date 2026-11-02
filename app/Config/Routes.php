@@ -151,6 +151,7 @@ $routes->post('manage/reviews/(:num)/report', 'Reviews::ownerReport/$1');
 $routes->post('manage/verification', 'Manage::submitVerification');
 $routes->get('manage/verification/checkout', 'Manage::checkout');
 $routes->post('manage/verification/cancel', 'Manage::cancelVerification');
+$routes->post('manage/verification/yearly', 'Manage::switchToYearly');
 $routes->get('manage/verification/done', 'Manage::verificationDone');
 $routes->get('manage/(:segment)', 'Manage::redeem/$1');
 
@@ -204,6 +205,8 @@ $routes->post('csp-report', 'Csp::report');
 // one doesn't. Deliberately unthrottled — a throttled health check reads as an
 // outage and would page you about itself.
 $routes->get('health', 'Health::index');
+// Sale prices for the brand site at webscheduler.co.za (co.za only).
+$routes->get('pricing.json', 'Pricing::json');
 
 // PayFast's server-to-server payment notification. Exempted from CSRF and the
 // honeypot in Config\Filters — there is no browser here to carry a token. The

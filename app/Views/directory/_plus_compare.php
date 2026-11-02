@@ -70,6 +70,9 @@ $benefits = [
             <div class="plan-card plan-card-featured pricing-card">
                 <p class="plan-name"><?= plus_badge_pill() ?></p>
                 <p class="plan-price"><?= esc(money($usd, 'USD')) ?><span class="plan-price-unit">per month</span></p>
+                <?php if (($plusYearly = plus_yearly_usd()) !== null): ?>
+                    <p class="pricing-yearly">or <?= esc(money($plusYearly, 'USD')) ?> a year, paid yearly</p>
+                <?php endif; ?>
                 <p class="plan-blurb">Everything in the free profile, plus:</p>
                 <ul class="pricing-benefits">
                     <?php foreach ($benefits as $b): ?>
@@ -83,7 +86,7 @@ $benefits = [
                     <?php endforeach; ?>
                 </ul>
                 <p class="hint plan-terms">
-                    Add Plus from your dashboard once your profile is live. Billed monthly in South African
+                    Add Plus from your dashboard once your profile is live. Billed <?= plus_yearly_usd() !== null ? 'monthly or yearly' : 'monthly' ?> in South African
                     rand: WebScheduler is a South African company and your bank converts the charge.
                     Cancel any time; your profile stays free.
                 </p>

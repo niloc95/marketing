@@ -69,6 +69,27 @@ class DirectorySettings
             : $this->config->normaliseAmount($stored);
     }
 
+    /** The badge's yearly price in rand, by the same precedence as badgePrice(). */
+    public function badgeYearlyPrice(): string
+    {
+        $stored = $this->stored(DirectorySettingModel::BADGE_PRICE_YEARLY);
+
+        return $stored === null
+            ? $this->config->verifiedYearlyAmount()
+            : $this->config->normaliseAmount($stored);
+    }
+
+    public function badgeYearlyPriceSource(): string
+    {
+        if ($this->stored(DirectorySettingModel::BADGE_PRICE_YEARLY) !== null) {
+            return self::SOURCE_DATABASE;
+        }
+
+        return env('directory.verifiedYearlyAmount') !== null
+            ? self::SOURCE_ENVIRONMENT
+            : self::SOURCE_DEFAULT;
+    }
+
     public function badgeEnabled(): bool
     {
         // local.webscheduler.app takes payment through Paddle, not PayFast, so
@@ -105,6 +126,23 @@ class DirectorySettings
         return $stored === null ? null : $this->config->normaliseAmount($stored);
     }
 
+    /**
+     * Plus's yearly price in US dollars, or null while unset: yearly Plus is
+     * not offered until the operator prices it, as monthly Plus is not.
+     */
+    public function plusYearlyPriceUsd(): ?string
+    {
+        $stored = $this->stored(DirectorySettingModel::PLUS_PRICE_USD_YEARLY);
+
+        return $stored === null ? null : $this->config->normaliseAmount($stored);
+    }
+
+    /** As plusRandAmount(), for the yearly price. */
+    public function plusYearlyRandAmount(): ?string
+    {
+        return $this->usdToRand($this->plusYearlyPriceUsd());
+    }
+
     /** How many rand one US dollar is at, as set on the settings page, or null. */
     public function usdZarRate(): ?string
     {
@@ -121,7 +159,12 @@ class DirectorySettings
      */
     public function plusRandAmount(): ?string
     {
-        $usd  = $this->plusPriceUsd();
+        return $this->usdToRand($this->plusPriceUsd());
+    }
+
+    /** A dollar price in rand at the operator's rate, to the cent; null without both. */
+    private function usdToRand(?string $usd): ?string
+    {
         $rate = $this->usdZarRate();
         if ($usd === null || $rate === null || (float) $usd <= 0 || (float) $rate <= 0) {
             return null;
@@ -265,6 +308,11 @@ class DirectorySettings
             $writes[DirectorySettingModel::BADGE_PRICE]   = static fn (): string => (string) $price;
             $writes[DirectorySettingModel::BADGE_ENABLED] = static fn (): string => empty($input['badge_enabled']) ? '0' : '1';
         }
+        if (array_key_exists('badge_price_yearly', $input)) {
+            $yearly = $this->validatePrice($input, 'badge_price_yearly', $errors, 'Enter a yearly price.');
+
+            $writes[DirectorySettingModel::BADGE_PRICE_YEARLY] = static fn (): string => (string) $yearly;
+        }
 
         // Plus (local.webscheduler.app): its dollar price and the rate it is
         // charged in rand at. Posted with the International section, whose
@@ -283,6 +331,12 @@ class DirectorySettings
 
             $writes[DirectorySettingModel::PLUS_PRICE_USD] = static fn (): string => (string) $usd;
             $writes[DirectorySettingModel::USD_ZAR_RATE]   = static fn (): string => number_format($rate, 4, '.', '');
+        }
+        // Yearly Plus is optional: blank leaves it unpriced, and so not offered.
+        if (trim((string) ($input['plus_price_usd_yearly'] ?? '')) !== '') {
+            $usdYearly = $this->validatePrice($input, 'plus_price_usd_yearly', $errors, 'Enter a yearly price.');
+
+            $writes[DirectorySettingModel::PLUS_PRICE_USD_YEARLY] = static fn (): string => (string) $usdYearly;
         }
         if (trim((string) ($input['profile_setup_usd'] ?? '')) !== '') {
             $setupUsd = $this->validatePrice($input, 'profile_setup_usd', $errors);
@@ -331,11 +385,11 @@ class DirectorySettings
      * @param array<string,mixed>   $input
      * @param array<string,string> &$errors collected by field name
      */
-    private function validatePrice(array $input, string $field, array &$errors): ?string
+    private function validatePrice(array $input, string $field, array &$errors, string $emptyMessage = 'Enter a monthly price.'): ?string
     {
         $raw = trim((string) ($input[$field] ?? ''));
         if ($raw === '') {
-            $errors[$field] = 'Enter a monthly price.';
+            $errors[$field] = $emptyMessage;
 
             return null;
         }

@@ -17,6 +17,7 @@
  * @var array<string,mixed>|null $subscription VerificationService::forListing(..., PLAN_INTERNATIONAL)
  * @var string                   $amount   the rand a new subscription is charged
  * @var string|null              $usd      the dollar price
+ * @var string|null              $usdYearly the yearly dollar price, null when yearly is not on sale
  * @var bool                     $payable  VerificationService::canTakePayment()
  * @var bool                     $pending  back from PayFast, payment not confirmed yet
  */
@@ -30,7 +31,12 @@ $prettyDate = static function (?string $date): string {
 
     return $ts === false ? '' : date('j F Y', $ts);
 };
+$usdYearly = $usdYearly ?? null;
 $price = $usd !== null && $usd !== '' ? money($usd, 'USD') . ' a month' : money($amount) . ' a month';
+if ($usdYearly !== null && $usd !== null && $usd !== '') {
+    $price .= ' or ' . money($usdYearly, 'USD') . ' a year';
+}
+$isYearly = \App\Models\DirectoryVerificationModel::cycleOf($row ?? []) === \App\Models\DirectoryVerificationModel::CYCLE_YEARLY;
 ?>
 <?php // #get-plus is where Directory::verify() lands a new profile abroad. ?>
 <div class="panel verify-panel" id="get-plus">
@@ -47,6 +53,15 @@ $price = $usd !== null && $usd !== '' ? money($usd, 'USD') . ' a month' : money(
                 <strong><?= esc($prettyDate($row['paid_until'] ?? null)) ?></strong>, and your profile stays published after that.
             </div>
         <?php else: ?>
+            <?php if (! $isYearly && $usdYearly !== null && $payable && ! empty($row['pf_subscription_token'])): ?>
+                <?= view('directory/_yearly_switch', [
+                    'plan'      => \App\Models\DirectoryVerificationModel::PLAN_INTERNATIONAL,
+                    'monthly'   => (string) $usd,
+                    'yearly'    => $usdYearly,
+                    'currency'  => 'USD',
+                    'paidUntil' => $prettyDate($row['paid_until'] ?? null),
+                ]) ?>
+            <?php endif; ?>
             <form method="post" action="<?= base_url('manage/verification/cancel') ?>"
                   data-confirm="Cancel Plus? It stays on until <?= esc($prettyDate($row['paid_until'] ?? null), 'attr') ?>. Your profile stays published.">
                 <?= csrf_field() ?>
@@ -76,7 +91,7 @@ $price = $usd !== null && $usd !== '' ? money($usd, 'USD') . ' a month' : money(
         <?php if ($payable): ?>
             <a class="btn btn-accent mt-4" href="<?= base_url('manage/verification/checkout?plan=plus') ?>">Get Plus</a>
             <p class="hint mt-2">
-                Billed monthly in South African rand: WebScheduler is a South African company and your
+                Billed <?= $usdYearly !== null ? 'monthly or yearly' : 'monthly' ?> in South African rand: WebScheduler is a South African company and your
                 bank converts the charge. Cancel any time.
             </p>
         <?php else: ?>

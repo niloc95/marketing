@@ -3130,6 +3130,21 @@
   .dark .checkout-label   { @apply text-slate-400; }
   .dark .checkout-total   { @apply text-white; }
   .dark .checkout-terms   { @apply text-slate-400; }
+
+  /* Monthly or yearly, above the receipt. Links that reload the page priced
+     for the other cycle (the PayFast fields are signed for one). */
+  .cycle-cards { @apply mt-5 grid grid-cols-2 gap-3; }
+  .cycle-card  { @apply flex flex-col gap-1 rounded-surface border-2 border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 no-underline transition hover:border-primary-300; }
+  .cycle-card.is-picked { @apply border-primary-500 bg-primary-50; }
+  .cycle-card-name  { @apply font-semibold text-slate-900; }
+  .cycle-card-price { @apply text-base font-bold text-slate-900; }
+  .cycle-card-save  { @apply w-fit rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800; }
+  .dark .cycle-card { @apply border-slate-700 bg-slate-900/40 text-slate-300; }
+  .dark .cycle-card.is-picked { @apply border-primary-400 bg-primary-900/30; }
+  .dark .cycle-card-name, .dark .cycle-card-price { @apply text-white; }
+  .dark .cycle-card-save { @apply bg-emerald-900/50 text-emerald-200; }
+  .yearly-switch { @apply my-4 rounded-surface border border-dashed border-slate-300 px-4 py-3; }
+  .dark .yearly-switch { @apply border-slate-700; }
   /* brand-crimson is too dark to read on #1a202c. */
   .dark .err  { @apply text-red-400; }
   .dark .has-error > label { @apply text-red-400; }

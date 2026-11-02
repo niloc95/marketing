@@ -57,7 +57,7 @@ class ComparisonService
         return $this->defaults() + ['custom' => false];
     }
 
-    /** The table with {gallery}, {locations}, {team} and {price} filled in, for /compare. */
+    /** The table with {gallery}, {locations}, {team}, {price} and {yearly} filled in, for /compare. */
     public function forPage(): array
     {
         $fill = [
@@ -65,6 +65,7 @@ class ComparisonService
             '{locations}' => (string) PracticeLocationService::MAX_LOCATIONS,
             '{team}'      => (string) TeamMemberService::MAX_MEMBERS,
             '{price}'     => (new VerificationService())->monthlyAmount(),
+            '{yearly}'    => (string) badge_yearly_price(),
         ];
 
         $table = $this->table();

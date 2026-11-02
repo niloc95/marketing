@@ -17,7 +17,7 @@
  * @var array       $shared    co.za's group of the same name
  * @var string|null $plusUsd   Plus's dollar price, or null while it is not on sale
  */
-$plusPrice = $plusUsd !== null ? esc(money($plusUsd, 'USD')) . ' a month' : 'a monthly fee';
+$plusPrice = $plusUsd !== null ? esc(price_terms($plusUsd, plus_yearly_usd(), 'USD')) : 'a monthly fee';
 $zaSite    = esc(site_url_for(\Config\Sites::ZA), 'attr');
 
 return [

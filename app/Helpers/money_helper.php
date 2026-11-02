@@ -59,3 +59,17 @@ if (! function_exists('money')) {
         return $format['symbol'] . $value;
     }
 }
+
+if (! function_exists('price_terms')) {
+    /**
+     * "R30.00 a month or R300.00 a year", or just the monthly half when there
+     * is no yearly price. One wording for every page that quotes the badge or
+     * Plus, so the two cycles never drift apart in copy.
+     */
+    function price_terms(string $monthly, ?string $yearly, string $currency = 'ZAR'): string
+    {
+        $text = money($monthly, $currency) . ' a month';
+
+        return $yearly === null || $yearly === '' ? $text : $text . ' or ' . money($yearly, $currency) . ' a year';
+    }
+}

@@ -81,7 +81,7 @@ class Comparison extends BaseConfig
 
     /** @var array<string,array{label:string,sub:string}> */
     public array $columns = [
-        'local'    => ['label' => 'WebScheduler Local', 'sub' => 'Free profile, Verified Business R{price}/month'],
+        'local'    => ['label' => 'WebScheduler Local', 'sub' => 'Free profile, Verified Business R{price} a month or R{yearly} a year'],
         'google'   => ['label' => 'Google Business Profile', 'sub' => 'Free'],
         'linkedin' => ['label' => 'LinkedIn', 'sub' => 'Company Pages and member profiles'],
         'sa'       => ['label' => 'SA directories', 'sub' => 'Brabys, Snupit, Cylex, Medpages'],

@@ -1371,8 +1371,8 @@ class JobBoardService
             $this->cfg->maxResponses
         );
         if (! $canReply) {
-            $paragraphs[] = 'Replying to requests is part of the Verified Business badge: R'
-                . (new DirectorySettings())->badgePrice() . ' a month, and nothing to pay until we have '
+            $paragraphs[] = 'Replying to requests is part of the Verified Business badge: '
+                . price_terms((new DirectorySettings())->badgePrice(), badge_yearly_price()) . ', and nothing to pay until we have '
                 . 'checked your company registration and the owner\'s ID.';
             $paragraphs[] = 'See the request: ' . $this->url($post);
         }

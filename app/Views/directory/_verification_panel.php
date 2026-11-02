@@ -13,6 +13,7 @@
  *
  * @var array{verification:array<string,mixed>,documents:array<int,array<string,mixed>>}|null $verification
  * @var string $amount
+ * @var string|null $yearly  today's yearly price, null when yearly is not on sale
  * @var bool   $payable  whether PayFast is configured — see VerificationService::canTakePayment()
  * @var bool   $pending  owner is back from PayFast, ITN not in yet — see Manage::paymentPending()
  */
@@ -26,6 +27,9 @@ $state     = $row['state'] ?? null;
 $payable   = $payable ?? false;
 $pending   = $pending ?? false;
 $cancelled = ! empty($row['cancelled_at']);
+$yearly    = $yearly ?? null;
+$isYearly  = DirectoryVerificationModel::cycleOf($row ?? []) === DirectoryVerificationModel::CYCLE_YEARLY;
+$priceLine = money($amount) . ' a month' . ($yearly !== null ? ' or ' . money($yearly) . ' a year' : '');
 
 $prettyDate = static function (?string $date): string {
     if ($date === null || $date === '') {
@@ -61,8 +65,17 @@ $prettyDate = static function (?string $date): string {
         <?php else: ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your badge is live on your profile and in discovery results.
-                Paid through <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?= empty($row['pf_subscription_token']) ? '.' : ', and it renews automatically.' ?>
+                Paid through <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?= empty($row['pf_subscription_token']) ? '.' : ', and it renews automatically ' . ($isYearly ? 'each year' : 'each month') . ' at ' . esc(money($row['amount'])) . '.' ?>
             </p>
+            <?php if (! $isYearly && $yearly !== null && $payable && ! empty($row['pf_subscription_token'])): ?>
+                <?= view('directory/_yearly_switch', [
+                    'plan'      => DirectoryVerificationModel::PLAN_BADGE,
+                    'monthly'   => (string) $row['amount'],
+                    'yearly'    => $yearly,
+                    'currency'  => 'ZAR',
+                    'paidUntil' => $prettyDate($row['paid_until']),
+                ]) ?>
+            <?php endif; ?>
             <?php if (! empty($row['pf_subscription_token'])): ?>
                 <?php // Only offered when there is a real recurring subscription to stop.
                       // A badge activated by hand has nothing to cancel — it simply runs out. ?>
@@ -117,7 +130,7 @@ $prettyDate = static function (?string $date): string {
         <?php elseif ($payable): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your documents check out. Switch the badge on for
-                <strong><?= esc(money($amount)) ?> a month</strong>: it appears on your profile and
+                <strong><?= esc($priceLine) ?></strong>: it appears on your profile and
                 everywhere your business is discovered on the platform.
             </p>
             <p class="mt-4">
@@ -170,7 +183,7 @@ $prettyDate = static function (?string $date): string {
                 We still have your approved documents, so starting again really is one step.
             </p>
             <p class="mt-4">
-                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge, <?= esc(money($amount)) ?> a month</a>
+                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge, <?= esc($priceLine) ?></a>
             </p>
         <?php else: ?>
             <p class="hint">
