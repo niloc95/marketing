@@ -59,7 +59,7 @@ $faqs = [
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <?php // The seal, not the pill: this page IS the badge's explanation, so
               // the mark itself opens it. The <h1> beneath already names it, which

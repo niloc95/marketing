@@ -15,7 +15,7 @@ $contact   = config('Directory')->adminEmail();
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Privacy policy</h1>
         <p class="mt-2 text-sm text-white/80">Last updated <?= esc(date('j F Y', strtotime($lastUpdated))) ?></p>
@@ -251,7 +251,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h2>14. Why we process personal information</h2>
             <p>We process personal information for purposes including:</p>
-            <table class="table">
+            <div class="table-scroll"><table class="table">
                 <thead><tr><th>Purpose</th><th>Basis for processing</th></tr></thead>
                 <tbody>
                     <tr><td>Creating and publishing a business profile</td><td>Consent provided when you submit and verify the profile</td></tr>
@@ -269,7 +269,7 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Sending the newsletter to people who signed up for it</td><td>Your consent, confirmed by clicking the link we email you, which you can withdraw at any time</td></tr>
                     <tr><td>Analytics</td><td>Consent, where applicable</td></tr>
                 </tbody>
-            </table>
+            </table></div>
             <p>We do not sell personal information.</p>
 
             <h2>15. Who we share information with</h2>

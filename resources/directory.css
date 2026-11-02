@@ -488,6 +488,20 @@
   .hero p { @apply mt-4 max-w-2xl text-lg text-slate-600 sm:text-xl; }
   .dark .hero h1 { @apply text-white; }
   .dark .hero p  { @apply text-slate-400; }
+  /* The content pages (FAQ, pricing, verified, legal…) centre their opening,
+     as webscheduler.co.za does. Discovery pages (province, landing, venue,
+     jobs) keep theirs on the left, over the results below them. */
+  .hero-center { @apply text-center; }
+  .hero-center p,
+  .hero-center h1 { @apply mx-auto; }
+  .hero-center .flex { @apply justify-center; }
+  .hero-center .verified-seal { @apply mx-auto; }
+  /* /pricing puts the home page's plan cards straight under its hero: there
+     the head and links follow the centred opening; the home page keeps its
+     own left set. */
+  .hero-center + .home-pricing .home-pricing-head,
+  .hero-center + .home-pricing .home-pricing-lede { @apply mx-auto text-center; }
+  .hero-center + .home-pricing .pricing-foot { @apply items-center sm:justify-center; }
 
   /* The contained photo band every .hero can carry: the width of .container's
      content, rounded, after the copy — the same frame as the home media band. */
@@ -887,11 +901,12 @@
     @apply mb-0 mt-0 rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-10 sm:py-14;
   }
   .page-flow > .panel:first-child { @apply border-t-0 pt-0; }
-  /* A document set on the canvas starts where the heading above it starts,
-     as on the home page, rather than in a centred column: the container keeps
-     its full width and the reading measure moves to its children. */
+  /* A document set on the canvas sits in a centred reading column under a
+     centred .hero-center heading, as the brand site's pages do (owner, 2 Nov
+     2026): the container keeps its full width so a wide child (plan cards)
+     can still use it, and the measure and centring move to the children. */
   .container.prose-legal.page-flow { @apply max-w-7xl; }
-  .prose-legal.page-flow > * { @apply max-w-3xl; }
+  .prose-legal.page-flow > * { @apply mx-auto max-w-3xl; }
   .page-flow > .panel.text-center { @apply py-16 sm:py-20; }
   /* One class + child + element outranks the text-lg / text-slate-900 the
      views carry on these h2s; dark mode is restated because dark:text-white
@@ -1936,6 +1951,9 @@
     @apply rounded-inner bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
   }
   .prose-legal .table { @apply mb-6; }
+  /* A table wider than a phone scrolls inside its own box, never the page
+     (the cookie table's code names and nowrap headings ran to 510px). */
+  .table-scroll { @apply max-w-full overflow-x-auto; }
   .dark .prose-legal h2,
   .dark .prose-legal h3,
   .dark .prose-legal strong { @apply text-white; }
@@ -2854,6 +2872,17 @@
   .dark .verify-chosen  { @apply border-slate-800 text-slate-200; }
   .dark .verify-offer      { @apply border-slate-800 bg-slate-900/40; }
   .dark .verify-offer > summary  { @apply text-slate-200; }
+  /* The documents roll down when Verified is picked and up again for Free.
+     Browsers without ::details-content just open and close, as before. */
+  @media (prefers-reduced-motion: no-preference) {
+    .verify-offer { interpolate-size: allow-keywords; }
+    .verify-offer::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition: block-size 0.3s ease, content-visibility 0.3s allow-discrete;
+    }
+    .verify-offer[open]::details-content { block-size: auto; }
+  }
 
   /* Profile strength — the owner's view of what orders the search results.
      Same .panel chrome as the badge and hosting panels above it, deliberately:
@@ -3507,10 +3536,9 @@
   .dark .form-step input[type="file"]::file-selector-button { @apply bg-slate-800; color: var(--step-dark); }
 
   /* Accordions by state (directory.js, "form section states"): required and
-     not yet done gets an orange edge; done gets a tick chip in the summary
-     (no edge, owner's call 30 Oct 2026); optional and empty stays neutral. Without the script the
-     "Required" chip still says which are compulsory. */
-  .form-step .disclosure.is-todo { border-left: 4px solid theme(colors.orange.500); }
+     not yet done keeps its "Required" chip and no coloured edge (owner's call,
+     2 Nov 2026); done gets a tick chip in the summary in place of it; optional
+     and empty stays neutral. */
   .disclosure-done {
     @apply ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700;
   }

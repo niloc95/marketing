@@ -763,8 +763,9 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 </section>
 
 <?php if ($showConsent): ?>
-    <?php // New tab for both links, so reading the terms never costs a half-filled form. ?>
-    <div class="field">
+    <?php // New tab for both links, so reading the terms never costs a half-filled form.
+          // mt-10: clear of the last numbered section, so it reads as its own step. ?>
+    <div class="field mt-10">
         <label class="font-medium"><input type="checkbox" name="consent" value="1" <?= $v('consent') ? 'checked' : '' ?>> I confirm I'm authorised to publish these business details publicly on <?= esc(config('Directory')->siteName()) ?>, and I accept the <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>" target="_blank" rel="noopener">Terms of use</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>" target="_blank" rel="noopener">Privacy policy</a>.</label>
         <?php if ($err('consent')): ?><div class="err"><?= esc($err('consent')) ?></div><?php endif; ?>
     </div>

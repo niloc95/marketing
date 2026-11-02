@@ -48,7 +48,7 @@ $looking = [
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero hero-collage">
+<section class="hero hero-collage hero-center">
     <div class="hero-collage-grid" aria-hidden="true">
         <?php foreach ($collage as $photo): ?>
             <img src="<?= base_url('assets/categories/' . $photo . '-400.webp') ?>" alt="" width="400" height="267" decoding="async">

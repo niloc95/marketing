@@ -23,7 +23,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <p class="eyebrow">Error 404</p>
         <?php if ($wasListing): ?>
@@ -49,9 +49,9 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
 <section class="section">
     <div class="container page-flow">
         <?php if ($popular !== []): ?>
-            <div class="panel mb-6">
+            <div class="panel mb-6 text-center">
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Popular categories</h2>
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-wrap justify-center gap-2">
                     <?php foreach ($popular as $cat): ?>
                         <?= view('directory/_chip', [
                             'label' => $cat['name'],
@@ -66,7 +66,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
             </div>
         <?php endif; ?>
 
-        <div class="panel">
+        <div class="panel text-center">
             <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Or try one of these</h2>
             <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                 <li><a class="<?= $link ?>" href="<?= base_url('directory') ?>">Discover every business</a></li>

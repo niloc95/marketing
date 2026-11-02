@@ -88,7 +88,7 @@ $faqs = [
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <span class="eyebrow">Profile setup service</span>
         <h1 class="mt-3 max-w-3xl text-2xl sm:text-3xl">We set up your business profile for you</h1>
