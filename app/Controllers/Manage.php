@@ -262,12 +262,11 @@ class Manage extends BaseController
             // See Listing::store() — the update was rejected, so this file is
             // orphaned. The listing keeps whatever logo it already had.
             $this->discardLogo($logo['path']);
-            $post['logo_path'] = '';
             $this->discardTeamPhotos($headshots['team']);
 
             return $this->withUploadErrors(
                 redirect()->to(base_url('manage/edit'))
-                    ->with('errors', $result['errors'])
+                    ->with('errors', $this->withFilesNote($result['errors']))
                     ->with('old', form_typed_fields($post))
                     ->with('error', $result['message']),
                 array_filter(array_merge([$logo['error']], $headshots['errors']))
