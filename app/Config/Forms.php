@@ -227,7 +227,7 @@ class Forms extends BaseConfig
     private function returnUrl(string $key, string $template, string $capture, array $post): string
     {
         if ($key === 'signup') {
-            if (($post['form_mode'] ?? '') === 'verified-only') {
+            if (\App\Controllers\Listing::isVerifiedPageMode($post['form_mode'] ?? '')) {
                 return base_url('add-profile/verified');
             }
 

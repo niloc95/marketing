@@ -7,15 +7,13 @@ $siteName = config('Directory')->siteName();
 // endpoint and saves the same listing. See Listing::create() for the modes.
 $plan         = ($plan ?? 'free') === 'verified' ? 'verified' : 'free';
 $isVerified   = $plan === 'verified';
-$verifiedOnly = ! empty($verifiedOnly);
+// Which page the form is on (Listing::MODE_*), posted back as form_mode.
+$formMode     = $formMode ?? \App\Controllers\Listing::MODE_BOTH;
 
 // Written once, rendered in whichever of the two headings this page ends up with:
 // above the comparison cards normally, or on the form card itself when the badge
 // is switched off and there are no cards.
-if ($verifiedOnly) {
-    $eyebrow  = 'Verified Business';
-    $headline = 'Get your business verified';
-} elseif ($verificationOffered) {
+if ($verificationOffered) {
     $eyebrow  = 'Your business profile';
     $headline = 'Be discovered by local customers';
 } else {
@@ -74,7 +72,6 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     'amount'       => $verificationAmount,
                     'offered'      => $verificationOffered,
                     'selected'     => $plan,
-                    'verifiedOnly' => $verifiedOnly,
                 ]) ?>
             </div>
         <?php endif; ?>
@@ -109,7 +106,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <?php // From a "Recommend a business" invite; closes that referral. See Listing::renderForm(). ?>
                 <?php // Tells store() a site-button arrival ('site') from a typed /add-profile
                       // ('direct') for signup_source. Attribution only; changes nothing saved. ?>
-                <input type="hidden" name="form_mode" value="<?= $verifiedOnly ? 'verified-only' : 'both' ?>">
+                <input type="hidden" name="form_mode" value="<?= esc($formMode, 'attr') ?>">
                 <?php if (($invite ?? '') !== ''): ?>
                     <input type="hidden" name="invite" value="<?= esc($invite, 'attr') ?>">
                 <?php endif; ?>
@@ -202,13 +199,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                       // it does the identical thing as picking the Free card, so it
                                       // cannot drift from it; and with JS off it still works, where a
                                       // button would have been a dead control. ?>
-                                <?php // Not in verified-only mode, which offers no Free option on the
-                                      // page. The small print above still says the listing publishes
-                                      // without documents, which is what keeps that mode honest. ?>
-                                <?php if (! $verifiedOnly): ?>
-                                    <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
-                                       href="<?= base_url('add-profile?plan=free') ?>">Remove, keep my profile free</a>
-                                <?php endif; ?>
+                                <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
+                                   href="<?= base_url('add-profile?plan=free') ?>">Remove, keep my profile free</a>
                             </div>
                         </details>
                         <?php // Outside the <details>, because it has to be readable once the

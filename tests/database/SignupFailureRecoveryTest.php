@@ -52,7 +52,10 @@ final class SignupFailureRecoveryTest extends CIUnitTestCase
     {
         yield 'free'          => [['plan' => 'free'], 'add-profile?plan=free'];
         yield 'verified'      => [['plan' => 'verified'], 'add-profile'];
-        yield 'verified only' => [['plan' => 'verified', 'form_mode' => 'verified-only'], 'add-profile/verified'];
+        yield 'verified page' => [['plan' => 'verified', 'form_mode' => 'verified-page'], 'add-profile/verified'];
+        // What the page posted before 2 Nov 2026: a tab left open still goes home.
+        yield 'legacy verified only' => [['plan' => 'verified', 'form_mode' => 'verified-only'], 'add-profile/verified'];
+        yield 'free picked on the verified page' => [['plan' => 'free', 'form_mode' => 'verified-page'], 'add-profile/verified'];
     }
 
     /**

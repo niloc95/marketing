@@ -12,19 +12,18 @@ use Tests\Support\ValidListingInput;
 use Tests\Support\FreshDatabase;
 
 /**
- * Verified Business first: the three signup modes and the places that push the badge.
+ * Verified Business first: the signup form's two pages and the places that push the badge.
  *
  * Pinned:
  *
- * 1. **Links we control open the verified-only form.** That means
- *    /add-profile/verified, or any /add-profile visit with a ?via= / invite
- *    source. It has no Free card and no "keep my profile free" link, and it
- *    still says a South African listing is free (the Terms promise it).
- * 2. **A direct /add-profile shows both options**, with Verified first and
- *    preselected. ?plan=free picks Free.
- * 3. **With the badge off, every mode is the plain free form.**
- * 4. **A verified-only submit with no documents still saves the listing**, and
- *    signup_source records the channel, never the posted value.
+ * 1. **Free is on every signup page.** /add-profile/verified (where "Get
+ *    Verified" links point) preselects Verified with the Free card beside it.
+ *    The verified-only form with no Free card was retired on 2 Nov 2026.
+ * 2. **A ?via= or invite source never changes the form**: the Free card stays,
+ *    ?plan=free still picks Free, and the source is only recorded.
+ * 3. **With the badge off, every page is the plain free form.**
+ * 4. **A submit from the verified page with no documents still saves the
+ *    listing**, and signup_source records the channel, never the posted value.
  * 5. **Confirming a listing lands on the badge panel** only when no
  *    application exists yet.
  *
@@ -53,18 +52,18 @@ final class SignupModesTest extends CIUnitTestCase
 
     // ----------------------------------------------------------------- modes
 
-    public function testTheVerifiedOnlyFormHasNoFreeOption(): void
+    public function testTheVerifiedPagePicksVerifiedAndKeepsFreeBesideIt(): void
     {
         // Whitespace-normalised: the small print wraps across lines in the template.
-        $html = (string) preg_replace('/\s+/', ' ', $this->page('add-profile/verified'));
+        $html = (string) preg_replace('/\s+/', ' ', $this->page('add-profile/verified?via=marketing-site'));
 
-        $this->assertStringNotContainsString('data-plan-card="free"', $html);
-        $this->assertStringNotContainsString('keep my profile free', $html);
-        $this->assertStringNotContainsString('data-plan-cards', $html, 'the plan picker stays off');
-        $this->assertStringContainsString('data-plan-card="verified"', $html);
+        $this->assertStringContainsString('data-plan-cards', $html, 'the plan picker is on');
+        $this->assertStringContainsString('data-plan-card="free"', $html, 'Free is one click away');
+        $this->assertStringContainsString('keep my profile free', $html);
+        $this->assertLessThan(strpos($html, 'data-plan-card="free"'), strpos($html, 'data-plan-card="verified"'), 'Verified comes first');
         $this->assertStringContainsString('name="plan" value="verified"', $html);
-        $this->assertStringContainsString('value="verified-only"', $html);
-        $this->assertStringContainsString('A South African business profile is free either way', $html, 'the Terms promise must stay on the page');
+        $this->assertStringContainsString('name="form_mode" value="verified-page"', $html);
+        $this->assertStringContainsString('A South African business profile is free either way', $html);
     }
 
     /**
@@ -102,14 +101,16 @@ final class SignupModesTest extends CIUnitTestCase
         $this->assertStringContainsString('name="plan" value="free"', $this->page('add-profile?plan=free'));
     }
 
-    public function testACampaignSourceMakesEveryAddListingVerifiedOnly(): void
+    public function testACampaignSourceIsRememberedButNeverHidesFree(): void
     {
         $this->get('/?via=whatsapp');
         $this->assertSame('whatsapp', $_SESSION[SignupChannel::SESSION_KEY] ?? null, 'the filter remembers ?via=');
 
-        $this->withSession([SignupChannel::SESSION_KEY => 'whatsapp']);
-        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-profile'));
-        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-profile?plan=free'));
+        // The bug this replaced: one tagged link and Free was gone for the visit.
+        $this->withSession([SignupChannel::SESSION_KEY => 'marketing-site']);
+        $this->assertStringContainsString('data-plan-card="free"', $this->page('add-profile'));
+        $this->assertStringContainsString('data-plan-card="free"', $this->page('add-profile/verified'));
+        $this->assertStringContainsString('name="plan" value="free"', $this->page('add-profile?plan=free'));
     }
 
     public function testAMalformedViaIsIgnored(): void
@@ -123,10 +124,10 @@ final class SignupModesTest extends CIUnitTestCase
     {
         $this->badge(false);
 
-        foreach (['add-profile', 'add-profile/verified'] as $uri) {
+        foreach (['add-profile' => 'both', 'add-profile/verified' => 'verified-page'] as $uri => $mode) {
             $html = $this->page($uri);
             $this->assertStringNotContainsString('data-plan-card', $html, $uri);
-            $this->assertStringContainsString('name="form_mode" value="both"', $html, $uri);
+            $this->assertStringContainsString('name="form_mode" value="' . $mode . '"', $html, $uri);
         }
 
         $home = $this->page('/');
@@ -150,12 +151,12 @@ final class SignupModesTest extends CIUnitTestCase
 
         // The same button, for someone who came in on a campaign link.
         $this->withSession([SignupChannel::SESSION_KEY => 'flyer']);
-        $this->assertStringNotContainsString('data-plan-card="free"', $this->page('add-profile'));
+        $this->assertStringContainsString('data-plan-card="free"', $this->page('add-profile'));
     }
 
     // ------------------------------------------------------ saving and source
 
-    public function testAVerifiedOnlySubmitWithoutDocumentsStillSavesWithItsSource(): void
+    public function testAVerifiedPageSubmitWithoutDocumentsStillSavesWithItsSource(): void
     {
         $category = (int) (new DirectoryCategoryModel())->insert([
             'name' => 'Plumber', 'slug' => 'plumber', 'group_name' => 'Home Services', 'is_active' => 1,
@@ -194,7 +195,7 @@ final class SignupModesTest extends CIUnitTestCase
                 'consent'          => '1',
                 'marketing_opt_in' => '0',
                 'plan'           => 'verified',
-                'form_mode'      => 'verified-only',
+                'form_mode'      => 'verified-page',
                 'signup_source'  => 'forged-by-the-form',
                 csrf_token()     => csrf_hash(),
             ]));

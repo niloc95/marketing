@@ -1316,12 +1316,10 @@ if (! function_exists('signup_cta')) {
      *
      * Verified Business is the offer we lead with, so while the badge is on sale
      * every button says "Get verified". They all point at /add-profile, which
-     * decides the mode itself (Listing::create()): a visitor who came straight
-     * to the site gets both cards, Verified first and preselected, with the Free
-     * Listing one click away. A visitor who came through one of our links (an
-     * invite, a ?via= tag, the marketing site) gets the verified-only form. With
-     * the badge off, every button falls back to the free wording: never
-     * advertise a badge that cannot be sold.
+     * shows both cards, Verified first and preselected, with the Free Listing
+     * one click away, for every visitor (Listing::create()). With the badge
+     * off, every button falls back to the free wording: never advertise a
+     * badge that cannot be sold.
      *
      * Text that talks about listing *for free* (the FAQ, the Terms, the privacy
      * policy, the "is it free?" answer on /verified) links to /add-profile
