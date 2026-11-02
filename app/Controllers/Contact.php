@@ -98,6 +98,40 @@ class Contact extends BaseController
     }
 
     /**
+     * /pricing on both sites: what is free and what costs what. co.za sells
+     * the Verified Business badge in rand, .app sells Plus in US dollars (no
+     * rand figure: the rate moves). Both list the profile setup service. The
+     * cards are the home page's (_pricing_compare.php, _plus_compare.php), so
+     * the two pages can never quote different prices or promises.
+     */
+    public function pricing()
+    {
+        $app      = service('site')->isApp();
+        $verify   = new VerificationService();
+        $settings = new \App\Services\DirectorySettings();
+        $setup    = new \App\Services\ProfileSetupService();
+
+        $plusOnSale = $app && $verify->plusOffered();
+
+        return view('directory/pricing', [
+            'app'          => $app,
+            // co.za: the badge, which is off on .app.
+            'badgeOffered' => ! $app && $verify->isEnabled(),
+            'badgeMonthly' => $settings->badgePrice(),
+            'badgeYearly'  => badge_yearly_price(),
+            // .app: Plus, in dollars; the rand only decides it is on sale.
+            'plusUsd'       => $plusOnSale ? $settings->plusPriceUsd() : null,
+            'plusRand'      => $plusOnSale ? $settings->plusRandAmount() : null,
+            'plusYearlyUsd' => $plusOnSale ? plus_yearly_usd() : null,
+            // The setup service: rand on co.za, dollars on .app (null there
+            // while no rate is set, and the page then names no price).
+            'setupPrice'    => $app ? $setup->usdAmount() : $setup->amount(),
+            'setupCurrency' => $app ? 'USD' : 'ZAR',
+            'setupDays'     => $setup->days(),
+        ]);
+    }
+
+    /**
      * WebScheduler Local next to Google Business Profile, LinkedIn and the
      * South African directories. The table itself is ComparisonService's.
      */

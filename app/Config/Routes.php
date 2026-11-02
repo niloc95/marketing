@@ -52,6 +52,8 @@ $routes->get('plus', 'Contact::plus');
 // WebScheduler Local next to Google, LinkedIn and the SA directories. The
 // table is edited at /admin/comparison, so it changes without a deploy.
 $routes->get('compare', 'Contact::compare');
+// What is free and what costs what, on both sites (Contact::pricing).
+$routes->get('pricing', 'Contact::pricing');
 // Guides and reports: the playbook, Verified brochure, outlook and hiring guide.
 $routes->get('resources', 'Contact::resources');
 // Media resources: our logo to download, how to use it, and why the Verified

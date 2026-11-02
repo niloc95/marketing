@@ -32,7 +32,7 @@ final class SiteScopeTest extends CIUnitTestCase
     private const APP_HOST = 'local.webscheduler.app';
 
     /** Pages that list profiles. */
-    private const PAGES = ['/', '/directory', '/directory?q=bakery', '/directory/bakeries', '/sitemap.xml'];
+    private const PAGES = ['/', '/directory', '/directory?q=bakery', '/directory/bakeries', '/pricing', '/sitemap.xml'];
 
     protected function setUp(): void
     {

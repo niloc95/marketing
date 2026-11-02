@@ -1264,6 +1264,7 @@ class Directory extends BaseController
                 'company'              => [['directory/company']],
                 'verified'             => [['directory/verified']],
                 'compare'              => [['directory/compare']],
+                'pricing'              => [['directory/pricing', 'directory/_pricing_compare', 'directory/_plus_compare']],
                 'resources'            => [['directory/resources', 'public/assets/documents']],
                 'media'                => [['directory/media']],
                 'profile-setup'        => [['directory/profile_setup']],

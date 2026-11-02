@@ -179,6 +179,8 @@ foreach (config('Countries')->profiles as $code => $profile) {
                 <?php // Map drops to lg-and-up since Jobs arrived, keeping the md bar
                       // at three links. ?>
                 <a class="hidden lg:inline" href="<?= base_url('directory') ?>#map">Discovery map</a>
+                <?php // Fifth link, on the widest bar only. ?>
+                <a class="hidden xl:inline" href="<?= base_url('pricing') ?>">Pricing</a>
                 <?php // Both icons stay in the DOM and are swapped with dark:hidden /
                       // hidden dark:block — no JS icon logic, so they can't desync from
                       // the class the FOUC guard already set. aria-pressed is corrected
@@ -264,6 +266,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>
             <?php // co.za explains the badge, .app explains Plus. ?>
             <?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus businesses</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?>
+            <a href="<?= base_url('pricing') ?>">Pricing</a>
             <a href="<?= base_url('manage') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
             <a href="<?= site_url_for(\Config\Sites::ZA, 'careers') ?>">Careers</a>
@@ -420,6 +423,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                           // "Book a demo" form for the scheduling product, which is
                           // not what someone here is asking for. ?>
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
+                    <li><a href="<?= base_url('pricing') ?>">Pricing</a></li>
                     <li><?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus businesses</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?></li>
                     <?php // co.za's own pages (Config\Sites::$zaOnlyPaths) are not
                           // offered on local.webscheduler.app. ?>
