@@ -87,7 +87,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
             <?php endif; ?>
             <?php if ($isVerified): ?>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
-                    Tell us about your business, then attach your two documents at the bottom.
+                    Attach your two documents just below, then tell us about your business.
                     We'll email you a link to verify and publish your profile, and your
                     profile goes live either way, whatever the badge review decides.
                 </p>
@@ -111,31 +111,6 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     <input type="hidden" name="invite" value="<?= esc($invite, 'attr') ?>">
                 <?php endif; ?>
 
-                <?php // view() (not $this->include) — the partial needs $v/$err, which are
-                      // locals here and so are not in the view's shared data. ?>
-                <?= view('directory/_form_fields', [
-                    'v'           => $v,
-                    'err'         => $err,
-                    'categories'  => $categories,
-                    'provinces'   => $provinces,
-                    'showConsent' => true,
-                    'addressRequired' => true,
-                    'privateDetailsRequired' => true,
-                    'countries'   => $countries,
-                    // Signup picks its country freely; only the owner edit
-                    // locks it, because country is not in OWNER_EDITABLE.
-                    'lockCountry' => false,
-                    'vHours'      => $vHours,
-                    'vServices'   => is_array($old['services'] ?? null) ? $old['services'] : [],
-                    'vAttributes' => is_array($old['attributes'] ?? null) ? $old['attributes'] : [],
-                    // Nothing is stored yet, so there is no marker question to
-                    // ask here: whatever survives validation is all there is.
-                    'vFacets'     => (new App\Services\ListingFacetService())->groupedFromInput(
-                        ((int) ($old['category_id'] ?? 0)) ?: null,
-                        $old['facets'] ?? null,
-                    ),
-                ]) ?>
-
                 <?php if (! empty($verificationOffered)): ?>
                     <?php // ONE block in two states, not two blocks. The only difference
                           // between the free and verified paths is whether this <details>
@@ -150,6 +125,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                           //
                           // Open by default now: Verified is the option we lead with, so it
                           // arrives picked on every mode but ?plan=free. Picking Free closes it.
+                          //
+                          // First in the form (owner, 2 Nov 2026): the choice made on the
+                          // cards above is answered right under them, so Verified rolls the
+                          // documents down here and Free rolls them up again, instead of the
+                          // panel waiting at the foot of a long form.
                           //
                           // Open never means required. See Listing::store(): submitting with
                           // nothing attached saves the listing and says so. A missing or
@@ -210,6 +190,31 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                         </p>
                     </div>
                 <?php endif; ?>
+
+                <?php // view() (not $this->include) — the partial needs $v/$err, which are
+                      // locals here and so are not in the view's shared data. ?>
+                <?= view('directory/_form_fields', [
+                    'v'           => $v,
+                    'err'         => $err,
+                    'categories'  => $categories,
+                    'provinces'   => $provinces,
+                    'showConsent' => true,
+                    'addressRequired' => true,
+                    'privateDetailsRequired' => true,
+                    'countries'   => $countries,
+                    // Signup picks its country freely; only the owner edit
+                    // locks it, because country is not in OWNER_EDITABLE.
+                    'lockCountry' => false,
+                    'vHours'      => $vHours,
+                    'vServices'   => is_array($old['services'] ?? null) ? $old['services'] : [],
+                    'vAttributes' => is_array($old['attributes'] ?? null) ? $old['attributes'] : [],
+                    // Nothing is stored yet, so there is no marker question to
+                    // ask here: whatever survives validation is all there is.
+                    'vFacets'     => (new App\Services\ListingFacetService())->groupedFromInput(
+                        ((int) ($old['category_id'] ?? 0)) ?: null,
+                        $old['facets'] ?? null,
+                    ),
+                ]) ?>
 
                 <?php // Live profile strength. The rubric stays on the server: directory.js
                       // posts the unsaved form to add-profile/score as the visitor types and

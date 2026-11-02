@@ -2854,6 +2854,17 @@
   .dark .verify-chosen  { @apply border-slate-800 text-slate-200; }
   .dark .verify-offer      { @apply border-slate-800 bg-slate-900/40; }
   .dark .verify-offer > summary  { @apply text-slate-200; }
+  /* The documents roll down when Verified is picked and up again for Free.
+     Browsers without ::details-content just open and close, as before. */
+  @media (prefers-reduced-motion: no-preference) {
+    .verify-offer { interpolate-size: allow-keywords; }
+    .verify-offer::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition: block-size 0.3s ease, content-visibility 0.3s allow-discrete;
+    }
+    .verify-offer[open]::details-content { block-size: auto; }
+  }
 
   /* Profile strength — the owner's view of what orders the search results.
      Same .panel chrome as the badge and hosting panels above it, deliberately:
