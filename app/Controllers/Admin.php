@@ -313,14 +313,13 @@ class Admin extends BaseController
         if (! $result['ok']) {
             // See Listing::store() — nothing saved, so the file is orphaned.
             $this->discardLogo($logo['path']);
-            $post['logo_path'] = '';
             $this->discardTeamPhotos($headshots['team']);
 
             $target = $id === null ? base_url('admin/new') : base_url('admin/edit/' . $id);
             return $this->withUploadErrors(
                 redirect()->to($target)
-                    ->with('errors', $result['errors'])
-                    ->with('old', $post)
+                    ->with('errors', $this->withFilesNote($result['errors']))
+                    ->with('old', form_typed_fields($post))
                     ->with('error', $result['message']),
                 array_filter(array_merge([$logo['error']], $headshots['errors']))
             );

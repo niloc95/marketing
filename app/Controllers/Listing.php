@@ -276,11 +276,10 @@ class Listing extends BaseController
             return $this->fakeSuccess();
         }
 
-        $email     = strtolower(trim((string) $this->request->getPost('email')));
+        $post      = $this->request->getPost();
+        $email     = strtolower(trim((string) ($post['email'] ?? '')));
         $throttler = service('throttler');
         $ip        = md5((string) $this->request->getIPAddress());
-
-        $post = $this->request->getPost();
 
         // A loose cap on raw attempts, failed ones included: each can carry
         // uploads to process. Generous on purpose, because a real owner may
@@ -313,22 +312,7 @@ class Listing extends BaseController
         // photo and the category was locked out by their own corrections.
         $errors = $mut->validatePublic($post);
         if ($errors !== []) {
-            $this->discardLogo($logo['path']);
-            // The browser check (directory.js, required sections) keeps the
-            // common misses on the page. Anything only the server can judge
-            // still comes back here, without the files.
-            if ($this->choseFiles()) {
-                $errors['_files'] = 'Your logo, photos, brand logos and documents need choosing again: '
-                    . 'a browser cannot keep files when a form comes back.';
-            }
-
-            return $this->withUploadErrors(
-                redirect()->to(self::formUrl($post))
-                    ->with('errors', $errors)
-                    ->with('old', self::typedFields($post))
-                    ->with('error', 'Please correct the highlighted fields.'),
-                array_filter([$logo['error']])
-            );
+            return $this->sendBack($post, $logo, $errors, 'Please correct the highlighted fields.');
         }
 
         // A valid submission emails an address the caller supplies and, for a
@@ -337,27 +321,16 @@ class Listing extends BaseController
         // Manage::request does. The || short-circuits so a blocked IP does not
         // also burn the address's budget.
         if ($throttler->check('signup-ip-' . $ip, 3, HOUR) === false
-            || ($email !== '' && $throttler->check('signup-to-' . md5($email), 2, HOUR) === false)) {
+            || $throttler->check('signup-to-' . md5($email), 2, HOUR) === false) {
             $this->discardLogo($logo['path']);
 
             return $this->throttled($post);
         }
 
-        $result = $mut->submitPublic($post);
+        $result = $mut->submitPublic($post, validated: true);
 
         if (! $result['ok']) {
-            // Nothing was saved, so the file this upload produced is already
-            // unreachable. Bin it; typedFields() keeps its path out of the
-            // flashed input, or the redisplayed form would point at a dead file.
-            $this->discardLogo($logo['path']);
-
-            return $this->withUploadErrors(
-                redirect()->to(self::formUrl($post))
-                    ->with('errors', $result['errors'])
-                    ->with('old', self::typedFields($post))
-                    ->with('error', $result['message']),
-                array_filter([$logo['error']])
-            );
+            return $this->sendBack($post, $logo, $result['errors'], $result['message']);
         }
 
         // A known email answered with that listing's id. Nothing in this
@@ -430,6 +403,33 @@ class Listing extends BaseController
         return $this->withUploadErrors(
             redirect()->to(base_url('/'))->with('success', $this->signupMessage($message)),
             array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $verified['errors']))
+        );
+    }
+
+    /**
+     * Back to the form with the errors, typing kept, nothing saved.
+     *
+     * Nothing was saved, so the file this upload produced is already
+     * unreachable. Bin it; typedFields() keeps its path out of the flashed
+     * input, or the redisplayed form would point at a dead file.
+     *
+     * @param array<string,mixed>                $post
+     * @param array{path:string,error:string}    $logo from resolveLogo()
+     * @param array<string,mixed>                $errors
+     */
+    private function sendBack(array $post, array $logo, array $errors, string $message): \CodeIgniter\HTTP\RedirectResponse
+    {
+        $this->discardLogo($logo['path']);
+
+        // The browser check (directory.js, required sections) keeps the
+        // common misses on the page. Anything only the server can judge still
+        // comes back here, without the files.
+        return $this->withUploadErrors(
+            redirect()->to(self::formUrl($post))
+                ->with('errors', $this->withFilesNote($errors))
+                ->with('old', self::typedFields($post))
+                ->with('error', $message),
+            array_filter([$logo['error']])
         );
     }
 

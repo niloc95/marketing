@@ -77,11 +77,14 @@ class DirectoryListingMutationService
      * verification link.
      *
      * @param array<string,mixed> $input
+     * @param bool $validated true only when the caller has just had no errors
+     *                        from validatePublic() on this same input. Saves a
+     *                        second run, which includes the website's DNS lookup.
      * @return array{ok:bool,errors:array<string,string>,id?:int,slug?:string,duplicate?:bool,message:string}
      */
-    public function submitPublic(array $input): array
+    public function submitPublic(array $input, bool $validated = false): array
     {
-        $errors = $this->validatePublic($input);
+        $errors = $validated ? [] : $this->validatePublic($input);
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'message' => 'Please correct the highlighted fields.'];
         }

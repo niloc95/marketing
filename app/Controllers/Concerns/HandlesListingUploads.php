@@ -363,10 +363,26 @@ trait HandlesListingUploads
     }
 
     /**
-     * Did this request carry any file at all? A form sent back loses every one
-     * (browsers never refill a file input), and the owner should be told so.
+     * A rejected save's errors, plus a line saying the files need choosing
+     * again when any were sent: browsers never refill a file input, so a form
+     * that comes back has lost every one. Nothing is added when nothing was
+     * chosen, or there are no errors to send back.
+     *
+     * @param array<string,mixed> $errors
+     * @return array<string,mixed>
      */
-    protected function choseFiles(): bool
+    protected function withFilesNote(array $errors): array
+    {
+        if ($errors !== [] && $this->choseFiles()) {
+            $errors['_files'] = 'Your logo, photos, brand logos and documents need choosing again: '
+                . 'a browser cannot keep files when a form comes back.';
+        }
+
+        return $errors;
+    }
+
+    /** Did this request carry any file at all? */
+    private function choseFiles(): bool
     {
         $walk = static function (mixed $node) use (&$walk): bool {
             if ($node instanceof \CodeIgniter\HTTP\Files\UploadedFile) {

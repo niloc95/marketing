@@ -655,8 +655,10 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
         <span class="hint">Profiles with photos get far more attention</span>
     </summary>
     <div class="disclosure-body">
-<?php // A failed save cannot keep the files that were chosen — browsers never
-      // re-fill a file input — so this says plainly to pick them again. ?>
+<?php // A failed save cannot keep the files that were chosen: browsers never
+      // refill a file input. withFilesNote() says so in the error summary, and
+      // directory.js (required sections) stops the commonest misses before
+      // the form leaves the page. ?>
 <?php if ($err('photo')): ?><div class="err"><?= esc($err('photo')) ?></div><?php endif; ?>
 <?php // accept="image/*" on both is deliberate: it is what makes iOS offer the
       // photo library and transcode HEIC to JPEG on the way out. Narrowing it to

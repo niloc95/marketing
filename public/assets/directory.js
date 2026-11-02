@@ -4448,14 +4448,26 @@
     }
   })();
 
+  // How many service rows have a name and are not ticked for removal. The
+  // compulsory "one service" rule, shared by the required sections check and
+  // the section states below; the server's own is hasNamedService().
+  function namedServices(scope) {
+    return Array.prototype.filter.call(scope.querySelectorAll('input[name^="services["][name$="[name]"]'), function (el) {
+      var row  = el.closest('[data-repeat-item]');
+      var gone = row && row.querySelector('[data-repeat-remove]');
+      return !el.disabled && (el.value || '').trim() !== '' && !(gone && gone.checked);
+    }).length;
+  }
+
   // ------------------------------------------------------- required sections
   // Browsers never refill a file input, so a save the server sends back costs
   // the owner every logo, photo, brand logo and document they chose. On 2 Nov
   // 2026 a missed category and photo meant choosing all of them again. The
   // compulsory parts with no browser check of their own (category,
   // description, hours, a picture, a service) are checked here first, so
-  // those misses never leave the page. Same messages and marks as a server error (failed-save errors
-  // below). A guide only: the server checks all of it again.
+  // those misses never leave the page. Same messages and marks as a server
+  // error (failed-save errors, below). A guide only: the server checks all of
+  // it again.
   //
   // Only where the form carries Required chips (signup, owner edit). Before
   // the draft backup, whose submit handler skips a send this one cancels.
@@ -4463,10 +4475,6 @@
     var form = document.querySelector('[data-form-step]');
     form = form && form.closest('form');
     if (!form || !form.querySelector('.required-chip')) return;
-
-    function filled(el) {
-      return !el.disabled && (el.value || '').trim() !== '';
-    }
 
     function hoursProblem() {
       if (!form.querySelector('#field-hours')) return '';
@@ -4495,7 +4503,7 @@
 
     function photoProblem() {
       var section = form.querySelector('#field-photos');
-      if (!section) return '';
+      if (section === null) return '';
       var chosen = Array.prototype.some.call(section.querySelectorAll('input[type="file"]'), function (el) {
         return !el.disabled && el.files && el.files.length > 0;
       });
@@ -4508,13 +4516,8 @@
 
     function serviceProblem() {
       var section = form.querySelector('#field-services');
-      if (!section) return '';
-      var named = Array.prototype.some.call(section.querySelectorAll('input[name^="services["][name$="[name]"]'), function (el) {
-        var row = el.closest('[data-repeat-item]');
-        var gone = row && row.querySelector('[data-repeat-remove]');
-        return filled(el) && !(gone && gone.checked);
-      });
-      return named ? '' : 'Please list at least one service you offer. A price is optional.';
+      if (section === null) return '';
+      return namedServices(section) > 0 ? '' : 'Please list at least one service you offer. A price is optional.';
     }
 
     function descriptionProblem(el) {
@@ -4534,7 +4537,7 @@
         {
           el: category && category.disabled && group ? group : category,
           slot: category,
-          message: category && !filled(category) ? 'Please choose a category.' : '',
+          message: category && (category.disabled || category.value === '') ? 'Please choose a category.' : '',
         },
         { el: editor || describe, slot: describe, message: descriptionProblem(describe) },
         { el: form.querySelector('#logo-input'), slot: form.querySelector('#logo-input'), message: photoProblem() },
@@ -4543,19 +4546,32 @@
       ].filter(function (c) { return c.el && c.slot && c.message; });
     }
 
-    function clearMarks() {
-      form.querySelectorAll('[data-precheck-err]').forEach(function (err) { err.remove(); });
-      form.querySelectorAll('[data-precheck-invalid]').forEach(function (el) {
-        el.classList.remove('is-invalid');
-        el.removeAttribute('aria-invalid');
-        el.removeAttribute('data-precheck-invalid');
-      });
+    // Marks add to aria-describedby rather than replace it, and take away only
+    // their own id, so a server message on the same field stays linked.
+    function mark(el, err) {
+      var by = (el.getAttribute('aria-describedby') || '').split(' ').filter(Boolean);
+      if (by.indexOf(err.id) === -1) by.push(err.id);
+      el.setAttribute('aria-describedby', by.join(' '));
+      el.classList.add('is-invalid');
+      el.setAttribute('aria-invalid', 'true');
+      el.setAttribute('data-precheck-invalid', err.id);
+    }
+
+    function unmark(el) {
+      var id = el.getAttribute('data-precheck-invalid');
+      var by = (el.getAttribute('aria-describedby') || '').split(' ').filter(function (x) { return x && x !== id; });
+      if (by.length) el.setAttribute('aria-describedby', by.join(' ')); else el.removeAttribute('aria-describedby');
+      el.classList.remove('is-invalid');
+      el.removeAttribute('aria-invalid');
+      el.removeAttribute('data-precheck-invalid');
+      var err = id && document.getElementById(id);
+      if (err && err.hasAttribute('data-precheck-err')) err.remove();
     }
 
     form.addEventListener('submit', function (e) {
       // "Preview changes" saves nothing, so it may go with gaps.
       if (e.submitter && e.submitter.hasAttribute('data-preview-submit')) return;
-      clearMarks();
+      form.querySelectorAll('[data-precheck-invalid]').forEach(unmark);
       var wrong = checks();
       if (!wrong.length) return;
       e.preventDefault();
@@ -4564,16 +4580,21 @@
         for (var d = c.slot.parentElement; d && d !== form; d = d.parentElement) {
           if (d.tagName === 'DETAILS') d.open = true;
         }
-        var err = document.createElement('div');
-        err.className = 'err';
-        err.id = 'precheck-err-' + i;
-        err.setAttribute('data-precheck-err', '');
-        err.textContent = c.message;
-        c.slot.insertAdjacentElement(c.slot.tagName === 'INPUT' || c.slot.tagName === 'SELECT' ? 'afterend' : 'beforebegin', err);
-        c.el.classList.add('is-invalid');
-        c.el.setAttribute('aria-invalid', 'true');
-        c.el.setAttribute('aria-describedby', err.id);
-        c.el.setAttribute('data-precheck-invalid', '');
+        // The same message already there from a server bounce is reused,
+        // never shown twice.
+        var err = Array.prototype.filter.call(c.slot.parentElement.querySelectorAll('.err'), function (x) {
+          return x.textContent.trim() === c.message;
+        })[0];
+        if (!err) {
+          err = document.createElement('div');
+          err.className = 'err';
+          err.id = 'precheck-err-' + i;
+          err.setAttribute('data-precheck-err', '');
+          err.textContent = c.message;
+          c.slot.insertAdjacentElement(c.slot.tagName === 'INPUT' || c.slot.tagName === 'SELECT' ? 'afterend' : 'beforebegin', err);
+        }
+        if (!err.id) err.id = 'precheck-err-' + i;
+        mark(c.el, err);
       });
 
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4581,21 +4602,13 @@
       wrong[0].el.focus({ preventScroll: true });
     });
 
-    // A section put right loses its message as soon as it is.
+    // A section put right loses its mark as soon as it is.
     form.addEventListener('change', function () {
-      if (!form.querySelector('[data-precheck-err]')) return;
-      var still = checks().map(function (c) { return c.message; });
-      form.querySelectorAll('[data-precheck-err]').forEach(function (err) {
-        if (still.indexOf(err.textContent) === -1) {
-          var el = form.querySelector('[aria-describedby="' + err.id + '"]');
-          if (el) {
-            el.classList.remove('is-invalid');
-            el.removeAttribute('aria-invalid');
-            el.removeAttribute('aria-describedby');
-            el.removeAttribute('data-precheck-invalid');
-          }
-          err.remove();
-        }
+      var marked = form.querySelectorAll('[data-precheck-invalid]');
+      if (!marked.length) return;
+      var still = checks().map(function (c) { return c.el; });
+      marked.forEach(function (el) {
+        if (still.indexOf(el) === -1) unmark(el);
       });
     });
   })();
@@ -5049,7 +5062,7 @@
       // A service counts once it has a name; anything else once any field has
       // something in it, or an upload is already on the profile.
       if (details.closest('#field-services')) {
-        var n = Array.prototype.filter.call(body.querySelectorAll('input[name$="[name]"]'), filledControl).length;
+        var n = namedServices(body);
         return n > 0 ? '✓ ' + n + (n === 1 ? ' service' : ' services') : '';
       }
       var any = Array.prototype.some.call(body.querySelectorAll('input, select, textarea'), filledControl)
