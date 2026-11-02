@@ -277,6 +277,14 @@ final class YearlyBillingTest extends CIUnitTestCase
         $this->assertStringNotContainsString('rate', $raw);
     }
 
+    public function testTheBrandSiteDevServerMayReadTheFeedOutsideProduction(): void
+    {
+        $this->withHeaders(['Origin' => 'http://localhost:8096'])->get('pricing.json')
+            ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:8096');
+        $this->withHeaders(['Origin' => 'https://evil.example'])->get('pricing.json')
+            ->assertHeader('Access-Control-Allow-Origin', 'https://webscheduler.co.za');
+    }
+
     public function testThePricingFeedIsNotServedOnApp(): void
     {
         $this->goLiveWithPlus(yearly: null);

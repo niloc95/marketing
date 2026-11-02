@@ -25,6 +25,9 @@ class Pricing extends BaseController
     /** The one origin allowed to read this from a browser. */
     public const BRAND_ORIGIN = 'https://webscheduler.co.za';
 
+    /** The brand site's dev server (its site:dev), allowed outside production only. */
+    public const DEV_ORIGIN = 'http://localhost:8096';
+
     public function json()
     {
         if (site()->isApp()) {
@@ -62,7 +65,7 @@ class Pricing extends BaseController
         ];
 
         return $this->response
-            ->setHeader('Access-Control-Allow-Origin', self::BRAND_ORIGIN)
+            ->setHeader('Access-Control-Allow-Origin', $this->allowedOrigin())
             ->setHeader('Vary', 'Origin')
             // Five minutes: a price change shows on the brand site soon
             // enough, and the build plus every visitor do not hit PHP each time.
@@ -72,6 +75,17 @@ class Pricing extends BaseController
             ->setHeader('Cache-Control', 'public, max-age=300')
             ->setHeader('X-Robots-Tag', 'noindex')
             ->setJSON($body);
+    }
+
+    /**
+     * The brand site, or its dev server when that is who is asking and this is
+     * not production. One origin per response, so it is chosen, never a list.
+     */
+    private function allowedOrigin(): string
+    {
+        $origin = $this->request->getHeaderLine('Origin');
+
+        return ENVIRONMENT !== 'production' && $origin === self::DEV_ORIGIN ? self::DEV_ORIGIN : self::BRAND_ORIGIN;
     }
 
     /**
