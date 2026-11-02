@@ -4477,23 +4477,22 @@
     if (!form || !form.querySelector('.required-chip')) return;
 
     function hoursProblem() {
-      if (!form.querySelector('#field-hours')) return '';
+      var grid = form.querySelector('#field-hours [data-hours]');
+      if (grid === null) return '';
       var appt = form.querySelector('input[name="by_appointment"]');
       if (appt && appt.checked) return '';
       // As DirectoryListingMutationService::hoursComplete(): every day either
-      // ticked Closed or given both times, and at least one day open.
-      var days = {};
-      form.querySelectorAll('input[name^="hours["]').forEach(function (el) {
-        var m = /^hours\[([^\]]+)\]\[(open|close|closed)\]$/.exec(el.name);
-        if (!m) return;
-        days[m[1]] = days[m[1]] || {};
-        days[m[1]][m[2]] = m[2] === 'closed' ? el.checked : (el.value || '').trim();
-      });
+      // ticked Closed or given both times, and at least one day open. The
+      // seven day rows only: the public holiday answer is also named
+      // hours[holidays][open|close], and read as an eighth day it failed every
+      // form not ticked By appointment (2 Nov 2026).
       var open = 0;
-      var complete = Object.keys(days).every(function (k) {
-        var d = days[k];
-        if (d.closed) return true;
-        if (!d.open || !d.close) return false;
+      var complete = Array.prototype.every.call(grid.querySelectorAll('[data-hours-row]'), function (row) {
+        var closed = row.querySelector('input[name$="[closed]"]');
+        if (closed && closed.checked) return true;
+        var from = row.querySelector('input[name$="[open]"]');
+        var to   = row.querySelector('input[name$="[close]"]');
+        if (!from || !to || from.value === '' || to.value === '') return false;
         open += 1;
         return true;
       });
