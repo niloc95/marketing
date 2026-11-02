@@ -12,14 +12,18 @@ use Config\Directory as DirectoryConfig;
 use Config\Sites;
 
 /**
- * The profile setup service: a business pays a once-off fee through PayFast
+ * The profile setup service: a business pays a once-off fee through Paystack
  * and we complete its profile for it. /profile-setup sells it,
  * /admin/profile-setup is the queue we work it from.
  *
- * An order is saved before payment as awaiting_payment, and only a PayFast
- * notification that passes every check moves it to paid. The thank you page
- * PayFast returns the buyer to proves nothing (anyone can open it), so it
- * never changes an order.
+ * Always Paystack, whatever directory.paymentProvider says: a once-off
+ * payment has no subscription to carry over, so there is nothing to keep on
+ * PayFast. handleNotification() stays only for a PayFast checkout a buyer
+ * opened before the switch and pays afterwards.
+ *
+ * An order is saved before payment as awaiting_payment, and only a payment
+ * Paystack confirms (PaystackPayments: webhook or verify) moves it to paid.
+ * The buyer's return trip proves nothing on its own, so it only makes us ask.
  *
  * Paying for setup buys our time, nothing else: it does not move a profile up
  * the results and does not include the Verified Business badge. The page and
@@ -73,18 +77,10 @@ class ProfileSetupService
         return max(1, $this->site->profileSetupDays);
     }
 
-    /** Can we take a card payment right now, through whichever gateway takes new payments? */
-    public function canTakePayment(?PayFast $payfast = null, ?Paystack $paystack = null): bool
+    /** Can we take a card payment right now? Paystack, with its key set. */
+    public function canTakePayment(?Paystack $paystack = null): bool
     {
-        return $this->usesPaystack()
-            ? ($paystack ?? service('paystack'))->isConfigured()
-            : ($payfast ?? new PayFast())->isConfigured();
-    }
-
-    /** Does Paystack take new payments (Config\Directory::paymentProvider())? */
-    public function usesPaystack(): bool
-    {
-        return $this->site->paymentProvider() === 'paystack';
+        return ($paystack ?? service('paystack'))->isConfigured();
     }
 
     /**

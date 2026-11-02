@@ -186,11 +186,12 @@ class Filters extends BaseFilters
             // manage/verification/yearly renders the same checkout for a
             // monthly to yearly switch (Manage::switchToYearly()), so it is
             // exempt for the same reason.
-            // profile-setup/checkout is the same case: its only form posts the
-            // signed once-off fields to PayFast. payfast/setup-notify is the
+            // profile-setup/checkout is not exempt: its form posts to our own
+            // ProfileSetup::pay() (Paystack), so the trap helps there.
+            // payfast/setup-notify is the
             // profile setup ITN, with ProfileSetupService's four checks in
             // place of CSRF (see the csrf list above).
-            'honeypot' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'manage/verification/checkout', 'manage/verification/yearly', 'profile-setup/checkout']],
+            'honeypot' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'manage/verification/checkout', 'manage/verification/yearly']],
             // Sets the Partner Program cookie for a ?ref= arrival. See the class.
             'partnerref',
             'secureheaders',

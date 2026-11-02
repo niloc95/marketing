@@ -59,8 +59,9 @@ $routes->get('resources', 'Contact::resources');
 // Media resources: our logo to download, how to use it, and why the Verified
 // Business badge is deliberately not among the downloads.
 $routes->get('media', 'Contact::media');
-// Profile setup service: we complete a profile for a once-off PayFast fee.
-// checkout is also PayFast's cancel_url; payfast/setup-notify is its ITN.
+// Profile setup service: we complete a profile for a once-off Paystack fee.
+// pay opens Paystack's checkout, paystack is where it sends the buyer back.
+// payfast/setup-notify stays for a PayFast checkout opened before the switch.
 $routes->get('profile-setup', 'ProfileSetup::index');
 $routes->post('profile-setup', 'ProfileSetup::order');
 $routes->get('profile-setup/checkout', 'ProfileSetup::checkout');

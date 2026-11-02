@@ -767,10 +767,12 @@ renewing through `payfast/notify` until the owner moves.
 
 We build the profile for a once off fee: R250 on co.za (`Config\Directory::$profileSetupAmount`,
 3 days), `profile_setup_usd` on .app (charged in rand). `ProfileSetupService`, orders in
-`xs_directory_profile_setup_orders` (reference `ps-…`), PayFast once off checkout, its own
-ITN at `POST /payfast/setup-notify` (`ProfileSetupNotify`, the same four checks as the
-subscription ITN), queue at `/admin/profile-setup`. If a paid order never shows as paid,
-look at the ITN rejection table and `Profile setup ITN:` log lines first.
+`xs_directory_profile_setup_orders` (reference `ps-…`, fresh per attempt), **always Paystack**
+whatever `paymentProvider` says (no mandate to keep): `POST profile-setup/pay` → Paystack
+checkout → `GET profile-setup/paystack` (verify) and the Paystack webhook, both through
+`PaystackPayments`. `POST /payfast/setup-notify` stays only for a PayFast checkout opened
+before the switch. Queue at `/admin/profile-setup`. If a paid order never shows as paid,
+look at the rejection table and `Paystack:` / `Paystack return:` log lines first.
 
 ## Content pages and analytics
 
