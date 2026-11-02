@@ -114,7 +114,7 @@ class Filters extends BaseFilters
             // failure mode if one were ever chosen that PayFast also sends is
             // subscriptions silently going unpaid while PayFast retries into a
             // 403 forever. Cheap to rule out.
-            'bottrap' => ['except' => ['payfast/notify', 'payfast/setup-notify']],
+            'bottrap' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook']],
             // csp-report is exempt because a browser posting a violation report
             // has no CSRF token to send. Nothing is trusted from that endpoint —
             // it only writes a throttled, truncated log line (see Csp::report).
@@ -128,6 +128,10 @@ class Filters extends BaseFilters
             //
             // payfast/setup-notify has the same story: the profile setup ITN,
             // checked four ways by ProfileSetupService::handleNotification().
+            //
+            // paystack/webhook too: Paystack posts server to server. Its
+            // HMAC SHA512 signature, source address, Paystack's own verify
+            // answer and the amount stand in (PaystackPayments).
             //
             // unsubscribe/* has one: RFC 8058 one-click unsubscribe is posted by
             // the mail provider, not a browser, so there is no token to send.
@@ -159,7 +163,7 @@ class Filters extends BaseFilters
             // nothing (Stats::tap()). forms/event is the form health beacon:
             // one anonymous row for a known form, 30 a minute per IP, that
             // changes nothing anyone sees but /admin/forms (FormEvents::store()).
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event']],
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',
@@ -179,11 +183,14 @@ class Filters extends BaseFilters
             // This exemption is bound to the route path by string, so it MUST be
             // updated whenever the checkout route is renamed — there is nothing
             // that would fail loudly if it drifted.
+            // manage/verification/yearly renders the same checkout for a
+            // monthly to yearly switch (Manage::switchToYearly()), so it is
+            // exempt for the same reason.
             // profile-setup/checkout is the same case: its only form posts the
             // signed once-off fields to PayFast. payfast/setup-notify is the
             // profile setup ITN, with ProfileSetupService's four checks in
             // place of CSRF (see the csrf list above).
-            'honeypot' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'manage/verification/checkout', 'profile-setup/checkout']],
+            'honeypot' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'manage/verification/checkout', 'manage/verification/yearly', 'profile-setup/checkout']],
             // Sets the Partner Program cookie for a ?ref= arrival. See the class.
             'partnerref',
             'secureheaders',

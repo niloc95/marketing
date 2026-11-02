@@ -18,10 +18,10 @@ $canonical = base_url('profile-setup');
  * nothing else (no higher place in results, no badge), and branches, team
  * members and job posts stay Verified Business features (Plus on .app).
  *
- * @var string                $amount  "250.00", what PayFast charges in rand
+ * @var string                $amount  "250.00", what the gateway charges in rand
  * @var string|null           $usd     the dollar price on local.webscheduler.app
  * @var int                   $days    business days to finish
- * @var bool                  $canPay  PayFast is configured
+ * @var bool                  $canPay  card payments work (ProfileSetupService::canTakePayment())
  * @var array<string,string>  $errors
  * @var array<string,mixed>   $old
  */
@@ -32,7 +32,7 @@ $canonical = base_url('profile-setup');
 $usd      = $usd ?? null;
 $price    = $usd !== null ? money($usd, 'USD') : money(rtrim(rtrim($amount, '0'), '.'));
 $randNote = $usd !== null
-    ? ' WebScheduler is a South African company, so PayFast charges it in South African rand and your bank converts it.'
+    ? ' WebScheduler is a South African company, so Paystack charges it in South African rand and your bank converts it.'
     : '';
 $v     = fn (string $f) => (string) ($old[$f] ?? '');
 $err   = fn (string $f) => $errors[$f] ?? '';
@@ -72,7 +72,7 @@ $faqs = [
     ],
     [
         'q' => 'Is my payment safe?',
-        'a' => 'PayFast takes the payment. We never see your card details.',
+        'a' => 'Paystack takes the payment. We never see your card details.',
     ],
 ];
 ?>
@@ -132,7 +132,7 @@ $faqs = [
                 <span class="company-step-num">01</span>
                 <div>
                     <h3>Order and pay</h3>
-                    <p>Fill in the form below and pay <?= esc($price) ?> securely with PayFast.<?= esc($randNote) ?> You get a receipt by email.</p>
+                    <p>Fill in the form below and pay <?= esc($price) ?> securely with Paystack.<?= esc($randNote) ?> You get a receipt by email.</p>
                 </div>
             </li>
             <li>
@@ -227,7 +227,7 @@ $faqs = [
                 </div>
 
                 <button type="submit" class="btn btn-accent" <?= $canPay ? '' : 'disabled' ?>>Continue to payment</button>
-                <p class="hint mt-3">Nothing is charged until you confirm on the next page. PayFast takes the payment; we never see your card details.</p>
+                <p class="hint mt-3">Nothing is charged until you confirm on the next page. Paystack takes the payment; we never see your card details.</p>
             </form>
         </div>
     </div>
@@ -259,7 +259,7 @@ $faqs = [
             </div>
         </div>
         <ul class="checkout-terms">
-            <li>The fee is <?= esc($price) ?>, paid once through PayFast.<?= esc($randNote) ?> There is nothing further to pay for the service.</li>
+            <li>The fee is <?= esc($price) ?>, paid once through Paystack.<?= esc($randNote) ?> There is nothing further to pay for the service.</li>
             <li>We complete your profile within <?= (int) $days ?> business days of receiving your details, logo and photos.</li>
             <li>You may cancel for a full refund until we start work on your profile. Once we have started, the fee is not refundable.</li>
             <li>You confirm that the logo, photos and information you send us are yours to use, and accurate.</li>

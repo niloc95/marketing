@@ -14,8 +14,8 @@
  * @var array{verification:array<string,mixed>,documents:array<int,array<string,mixed>>}|null $verification
  * @var string $amount
  * @var string|null $yearly  today's yearly price, null when yearly is not on sale
- * @var bool   $payable  whether PayFast is configured — see VerificationService::canTakePayment()
- * @var bool   $pending  owner is back from PayFast, ITN not in yet — see Manage::paymentPending()
+ * @var bool   $payable  whether card payments work — see VerificationService::canTakePayment()
+ * @var bool   $pending  owner is back from checkout, payment not confirmed yet — see Manage::paymentPending()
  */
 
 use App\Models\DirectoryVerificationDocumentModel;
@@ -65,9 +65,10 @@ $prettyDate = static function (?string $date): string {
         <?php else: ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your badge is live on your profile and in discovery results.
-                Paid through <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?= empty($row['pf_subscription_token']) ? '.' : ', and it renews automatically ' . ($isYearly ? 'each year' : 'each month') . ' at ' . esc(money($row['amount'])) . '.' ?>
+                Paid through <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?= ! DirectoryVerificationModel::hasMandate($row) ? '.' : ', and it renews automatically ' . ($isYearly ? 'each year' : 'each month') . ' at ' . esc(money($row['amount'])) . '.' ?>
             </p>
-            <?php if (! $isYearly && $yearly !== null && $payable && ! empty($row['pf_subscription_token'])): ?>
+            <?= view('directory/_move_payment', ['row' => $row, 'payable' => $payable]) ?>
+            <?php if (! $isYearly && $yearly !== null && $payable && DirectoryVerificationModel::hasMandate($row)): ?>
                 <?= view('directory/_yearly_switch', [
                     'plan'      => DirectoryVerificationModel::PLAN_BADGE,
                     'monthly'   => (string) $row['amount'],
@@ -76,7 +77,7 @@ $prettyDate = static function (?string $date): string {
                     'paidUntil' => $prettyDate($row['paid_until']),
                 ]) ?>
             <?php endif; ?>
-            <?php if (! empty($row['pf_subscription_token'])): ?>
+            <?php if (DirectoryVerificationModel::hasMandate($row)): ?>
                 <?php // Only offered when there is a real recurring subscription to stop.
                       // A badge activated by hand has nothing to cancel — it simply runs out. ?>
                 <form method="post" action="<?= base_url('manage/verification/cancel') ?>" class="mt-4"
@@ -113,13 +114,13 @@ $prettyDate = static function (?string $date): string {
     <?php elseif ($state === DirectoryVerificationModel::STATE_APPROVED): ?>
 
         <?php if ($payable && $pending): ?>
-            <?php // Back from PayFast, ITN not in yet. Offering "Activate my badge"
+            <?php // Back from checkout, payment not confirmed yet. Offering "Activate my badge"
                   // here reads as "your payment failed" to someone who just paid,
                   // and invites them to pay a second time. Say what we are waiting
                   // for instead — and claim nothing, because the money is not
                   // confirmed until the ITN says so. ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                <strong>Thanks, we have your payment.</strong> PayFast is confirming it now.
+                <strong>Thanks, we have your payment.</strong> We are confirming it now.
             </p>
             <p class="hint">
                 Your badge goes live on your profile as soon as that clears, usually within a few
@@ -165,7 +166,7 @@ $prettyDate = static function (?string $date): string {
                   // paid must not be shown a button that reads as "that failed,
                   // try again". ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                <strong>Thanks, we have your payment.</strong> PayFast is confirming it now.
+                <strong>Thanks, we have your payment.</strong> We are confirming it now.
             </p>
             <p class="hint">
                 Your badge goes back up as soon as that clears, usually within a few minutes.

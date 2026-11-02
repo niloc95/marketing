@@ -60,7 +60,7 @@ return [
             ],
             [
                 'q' => 'What does Plus cost, and in which currency?',
-                'a' => 'Plus is ' . $plusPrice . '. <strong>WebScheduler is a South African company, so Plus is billed in South African rand</strong> through PayFast, and your bank converts the charge to your own currency. The amount on your statement may therefore differ slightly from the dollar price, and some banks add a foreign transaction fee. The rand amount is fixed for your subscription when it starts.',
+                'a' => 'Plus is ' . $plusPrice . '. <strong>WebScheduler is a South African company, so Plus is billed in South African rand</strong> through Paystack, and your bank converts the charge to your own currency. The amount on your statement may therefore differ slightly from the dollar price, and some banks add a foreign transaction fee. The rand amount is fixed for your subscription when it starts.',
             ],
             [
                 'q' => 'Does Plus mean my business has been checked?',

@@ -233,7 +233,7 @@ $prettyDate = static function (?string $date): string {
                                         </form>
                                     <?php elseif ($r['state'] === DirectoryVerificationModel::STATE_ACTIVE): ?>
                                         <form method="post" action="<?= base_url('admin/verifications/' . $r['id'] . '/revoke') ?>"
-                                              data-confirm="Remove this <?= esc($rowWord, 'attr') ?> now? You must also cancel the subscription in PayFast. This does not do that.">
+                                              data-confirm="Remove this <?= esc($rowWord, 'attr') ?> now? This also stops the subscription at PayFast or Paystack; you are emailed if that fails.">
                                             <?= csrf_field() ?>
                                             <button class="btn btn-ghost btn-xs text-brand-crimson">Revoke <?= esc($rowWord) ?></button>
                                         </form>
@@ -247,7 +247,7 @@ $prettyDate = static function (?string $date): string {
                                     <?php if ($r['state'] !== DirectoryVerificationModel::STATE_SUBMITTED): ?>
                                         <form method="post" action="<?= base_url('admin/verifications/' . $r['id'] . '/activate') ?>"
                                               class="flex items-center gap-1"
-                                              data-confirm="Activate this <?= esc($rowWord, 'attr') ?> without PayFast? Only do this once payment has actually arrived.">
+                                              data-confirm="Activate this <?= esc($rowWord, 'attr') ?> without a card payment? Only do this once payment has actually arrived.">
                                             <?= csrf_field() ?>
                                             <?php // w-16, not an inline width: CSP enforces style-src-attr. ?>
                                             <input type="number" name="months" value="1" min="1" max="24" class="text-xs w-16"

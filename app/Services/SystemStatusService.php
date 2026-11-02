@@ -199,6 +199,24 @@ class SystemStatusService
             ],
             ['label' => 'Map tile host', 'value' => (string) parse_url($c->mapTileUrl(), PHP_URL_HOST), 'env' => true, 'warn' => false],
 
+            // Which gateway takes new payments, and whether Paystack's key is a
+            // live one. A test key in production takes no money, like the
+            // PayFast sandbox below.
+            [
+                'label' => 'Payments taken by',
+                'value' => $c->paymentProvider() === 'paystack'
+                    ? 'Paystack (PayFast keeps the subscriptions not moved yet)'
+                    : 'PayFast' . (strtolower(trim((string) env('directory.paymentProvider'))) === 'paystack' ? '. Paystack was asked for but has no secret key' : ''),
+                'env'   => true,
+                'warn'  => $c->paymentProvider() !== 'paystack' && strtolower(trim((string) env('directory.paymentProvider'))) === 'paystack',
+            ],
+            [
+                'label' => 'Paystack key',
+                'value' => $c->paystackSecretKey() === '' ? 'not set' : (str_starts_with($c->paystackSecretKey(), 'sk_test_') ? 'TEST key, no real payments' : 'live key configured'),
+                'env'   => true,
+                'warn'  => $c->paystackSecretKey() !== '' && str_starts_with($c->paystackSecretKey(), 'sk_test_') && ENVIRONMENT === 'production',
+            ],
+
             // PayFast. Credentials are reported as present or not, never shown,
             // for the same reason as the two above. Sandbox is called out as a
             // warning in its own right: a production site quietly running

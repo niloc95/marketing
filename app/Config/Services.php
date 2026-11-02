@@ -151,6 +151,20 @@ class Services extends BaseService
     }
 
     /**
+     * The Paystack API client (App\Libraries\Paystack). A service so tests
+     * can swap in a fake whose request() never leaves the machine, with
+     * Services::injectMock('paystack').
+     */
+    public static function paystack(bool $getShared = true): \App\Libraries\Paystack
+    {
+        if ($getShared) {
+            return static::getSharedInstance('paystack');
+        }
+
+        return new \App\Libraries\Paystack();
+    }
+
+    /**
      * The DNS check behind "we couldn't find that website". Answers yes to
      * everything under the testing environment, so the suite never makes a
      * network call; a test that wants a "no" injects its own.

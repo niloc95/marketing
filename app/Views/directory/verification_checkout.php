@@ -12,7 +12,11 @@ $yearly    = $cycle === 'yearly';
 $period    = $yearly ? 'year' : 'month';
 $choices   = $choices ?? [];
 $switch    = $switch ?? false;
+$move      = $move ?? false;
 $paidUntil = $paidUntil ?? null;
+// Who takes the payment: 'Paystack' (the button posts to Manage::pay()) or
+// 'PayFast' (the signed fields post straight to PayFast).
+$gateway   = $gateway ?? 'PayFast';
 // Plus is quoted in dollars, everything else in rand.
 $quote     = $product === 'plus' && ! empty($plusUsd) ? money($plusUsd, 'USD') : money($amount);
 $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 'plus' ? money($v, 'USD') : money($v));
@@ -36,7 +40,7 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
             </p>
 
             <?php if ($sandbox): ?>
-                <p class="alert alert-warning">Sandbox mode. No real money will move.</p>
+                <p class="alert alert-warning"><?= $gateway === 'Paystack' ? 'Test mode' : 'Sandbox mode' ?>. No real money will move.</p>
             <?php endif; ?>
 
             <?php if ($choices !== []):
@@ -62,7 +66,12 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
                 </div>
             <?php endif; ?>
 
-            <?php if ($switch): ?>
+            <?php if ($move): ?>
+                <p class="alert alert-info">
+                    <strong>Moving your payment to Paystack.</strong> You pay for your next <?= $period ?> today<?= $paidUntil ? ', and it starts after the time you have already paid for, which runs to ' . esc($paidUntil) : '' ?>.
+                    Your PayFast payments stop as soon as this payment comes through, so you are never charged twice.
+                </p>
+            <?php elseif ($switch): ?>
                 <p class="alert alert-info">
                     <strong>Switching to yearly.</strong> You pay for the year today<?= $paidUntil ? ', and it starts after the time you have already paid for, which runs to ' . esc($paidUntil) : '' ?>.
                     Your monthly payments stop as soon as this payment comes through.
@@ -104,10 +113,10 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
 
             <?php if ($product === 'plus'): ?>
                 <?php // Said before the card form, not discovered on a statement:
-                      // PayFast charges rand only. See Legal terms section 4. ?>
+                      // the gateway charges rand only. See Legal terms section 4. ?>
                 <p class="alert alert-info">
                     <strong>Billed in South African rand.</strong> WebScheduler is a South African company,
-                    so PayFast charges it in rand every <?= $period ?> and your bank converts it to your own currency. The amount on your statement may differ slightly from
+                    so <?= esc($gateway) ?> charges it in rand every <?= $period ?> and your bank converts it to your own currency. The amount on your statement may differ slightly from
                     <?= esc(money((string) $plusUsd, 'USD')) ?>, and some banks add a foreign transaction fee.
                 </p>
             <?php endif; ?>
@@ -121,7 +130,7 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
                     <li>Cancel any time from your dashboard: your badge stays up until the <?= $period ?> you have paid for ends.</li>
                     <li>Your business profile is free and stays free whether or not you buy this.</li>
                 <?php endif; ?>
-                <li>PayFast takes the payment. <strong>We never see your card details.</strong></li>
+                <li><?= esc($gateway) ?> takes the payment. <strong>We never see your card details.</strong></li>
             </ul>
 
             <?php
@@ -130,14 +139,21 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
                 // submission order, so a hand-written form that happened to differ
                 // would fail with nothing but "signature mismatch" to go on.
                 //
+                // For Paystack the form posts to our own Manage::pay(), so it
+                // carries the CSRF token; a PayFast form must not, or the
+                // signature would not cover it.
+                //
                 // No auto-submit script: the button is the control. That also means
                 // this page needs no inline JavaScript and so no CSP nonce.
             ?>
             <form method="post" action="<?= esc($processUrl) ?>">
+                <?php if ($gateway === 'Paystack'): ?>
+                    <?= csrf_field() ?>
+                <?php endif; ?>
                 <?php foreach ($fields as $name => $value): ?>
                     <input type="hidden" name="<?= esc($name, 'attr') ?>" value="<?= esc($value, 'attr') ?>">
                 <?php endforeach; ?>
-                <button type="submit" class="btn btn-accent btn-block"><?= $product === 'plus' ? 'Pay with PayFast' : 'Pay ' . esc(money($amount)) . ' with PayFast' ?></button>
+                <button type="submit" class="btn btn-accent btn-block"><?= $product === 'plus' ? 'Pay with ' . esc($gateway) : 'Pay ' . esc(money($amount)) . ' with ' . esc($gateway) ?></button>
             </form>
 
             <p class="mt-4 text-center text-sm">

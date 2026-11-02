@@ -734,6 +734,35 @@ overridable in `.env` as `directory.*`:
   before sending, released if the send fails). Forms carry `data-submit-once`. CI4
   gotcha: inside `transBegin()` a duplicate key insert returns -1 instead of throwing.
 
+## Paystack (new payments since Nov 2026) beside PayFast
+
+`directory.paymentProvider = paystack` plus `directory.paystackSecretKey` sends every
+**new** checkout (badge, Plus, monthly or yearly, profile setup) through Paystack; `payfast`
+is the rollback. A row's `provider` column says who holds its mandate, so PayFast rows keep
+renewing through `payfast/notify` until the owner moves.
+
+- `App\Libraries\Paystack` = `service('paystack')` (tests: `Services::injectMock('paystack',
+  new Tests\Support\FakePaystack())`, and the bootstrap blanks both keys). Checkout is a
+  POST to our own `manage/verification/pay` / `profile-setup/pay` (CSRF on), which calls
+  `initialize` and redirects to `checkout.paystack.com` (in CSP `form-action` and
+  `FormOutcome::PAYMENT_HOSTS`). A fresh reference per attempt; metadata carries the row id.
+- Plans are fixed amount, so `VerificationService::paystackPlanCode()` makes one per
+  product, cycle and amount, cached in `xs_paystack_plans`. Plan names carry no amount (no
+  rand on .app).
+- `PaystackPayments` handles `POST paystack/webhook` (co.za, CSRF/honeypot/bottrap exempt)
+  and the browser returns (`manage/verification/paystack`, `profile-setup/paystack`):
+  signature HMAC SHA512, Paystack IPs, `verify`, amount + ZAR. Renewals match on
+  `paystack_customer_code` + `paystack_plan_code`; `subscription.create` stores the code and
+  email token (needed to cancel); `not_renew`/`disable` set `cancelled_at`;
+  `invoice.payment_failed` emails the owner the card update link. A `retry` outcome answers
+  500 so Paystack resends. Replay key `paystack:{id}` in `pf_payment_id`.
+- `recordPayment($row, $id, $status, $amount, $payload, $facts)`: one path for both
+  gateways; `cancelMandate()` stops whichever gateway holds a row (cancel, Plus, revoke,
+  after a switch). `startMove()` + `switch_cycle` = the PayFast to Paystack move (pay once on
+  Paystack, period added after the paid days, PayFast cancelled when it lands);
+  `php spark directory:payments:move-to-paystack [--dry-run]` emails the links.
+- Tests: `tests/database/PaystackPaymentsTest.php`.
+
 ## Profile setup service (`/profile-setup`)
 
 We build the profile for a once off fee: R250 on co.za (`Config\Directory::$profileSetupAmount`,

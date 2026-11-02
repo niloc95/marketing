@@ -3,7 +3,7 @@
  * The owner's view of Plus, on local.webscheduler.app.
  *
  * Plus is the International plan once .app is live (VerificationService::
- * plusMode()): optional, sold in US dollars, charged in rand by PayFast, and
+ * plusMode()): optional, sold in US dollars, charged in rand by the gateway, and
  * unlocking branches, team members and the Jobs board (listing_has_premium()).
  * Unlike _hosting_panel.php, nothing here can say the profile is down: a
  * profile abroad is published free, and Plus lapsing only takes away the
@@ -53,7 +53,8 @@ $isYearly = \App\Models\DirectoryVerificationModel::cycleOf($row ?? []) === \App
                 <strong><?= esc($prettyDate($row['paid_until'] ?? null)) ?></strong>, and your profile stays published after that.
             </div>
         <?php else: ?>
-            <?php if (! $isYearly && $usdYearly !== null && $payable && ! empty($row['pf_subscription_token'])): ?>
+            <?= view('directory/_move_payment', ['row' => $row, 'payable' => $payable]) ?>
+            <?php if (! $isYearly && $usdYearly !== null && $payable && \App\Models\DirectoryVerificationModel::hasMandate($row)): ?>
                 <?= view('directory/_yearly_switch', [
                     'plan'      => \App\Models\DirectoryVerificationModel::PLAN_INTERNATIONAL,
                     'monthly'   => (string) $usd,

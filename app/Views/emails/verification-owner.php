@@ -7,7 +7,7 @@
  *
  * @var string $site
  * @var string $name
- * @var string $event      approved|rejected|activated|renewing
+ * @var string $event      approved|rejected|activated|renewing|payment_failed|move
  * @var string $manageLink
  * @var string $reason     rejected only
  * @var string $amount     approved and renewing only
@@ -16,6 +16,9 @@
  *                         (VerificationService::productOf())
  * @var string $cycle      activated and renewing: monthly|yearly
  * @var string $yearlyAmount approved only: the yearly price, '' when not offered
+ * @var string $gateway    renewing: PayFast or Paystack, whoever holds the subscription
+ * @var string|null $cardLink payment_failed: Paystack's page for updating the card
+ * @var string $paidUntil  payment_failed and move: already formatted
  */
 $product   = $product ?? 'badge';
 $yearly    = ($cycle ?? '') === 'yearly';
@@ -23,7 +26,10 @@ $period    = $yearly ? 'year' : 'month';
 $yearlyAmount = $yearlyAmount ?? '';
 $amount    = $amount ?? '';
 $reason    = $reason ?? '';
-$paidUntil = $paid_until ?? '';
+$paidUntil = $paid_until ?? ($paidUntil ?? '');
+$gateway   = $gateway ?? 'PayFast';
+$cardLink  = $cardLink ?? null;
+$what      = ['plus' => 'Plus', 'international' => 'International Profile'][$product] ?? 'Verified Business badge';
 ?>
 <?= $this->extend('emails/_layout') ?>
 <?= $this->section('content') ?>
@@ -101,10 +107,42 @@ $paidUntil = $paid_until ?? '';
                 <?= email_button($manageLink, 'View my profile') ?>
             </p>
 
+        <?php elseif ($event === 'payment_failed'): ?>
+            <p style="font-size:15px;line-height:1.6">
+                We tried to renew your <?= $yearly ? 'yearly ' : '' ?><?= esc($what) ?>, but the payment did not go through.
+                Paystack will try your card again over the next few days.
+            </p>
+            <p style="font-size:15px;line-height:1.6">
+                If your card has expired or changed, update it now so nothing switches off. Everything stays on until
+                <strong><?= esc($paidUntil) ?></strong>.
+            </p>
+            <p style="margin:22px 0">
+                <?= email_button($cardLink ?: $manageLink, $cardLink ? 'Update my card' : 'Open my dashboard') ?>
+            </p>
+
+        <?php elseif ($event === 'move'): ?>
+            <p style="font-size:15px;line-height:1.6">
+                We have moved our payments from PayFast to Paystack, which handles monthly and yearly
+                subscriptions for customers everywhere. Your <?= esc($what) ?> is still paid through PayFast,
+                so we need you to set it up again on Paystack. It takes a minute.
+            </p>
+            <p style="font-size:15px;line-height:1.6">
+                You pay <?php if ($product === 'plus'): ?>for your next <?= $period ?> of Plus<?php else: ?><strong><?= esc(money($amount)) ?></strong>, the same <?= $yearly ? 'yearly' : 'monthly' ?> price as now<?php endif; ?>,
+                and it starts after <strong><?= esc($paidUntil) ?></strong>, so you lose none of the time you have already paid for.
+                Your PayFast payments stop as soon as this payment comes through, so you are never charged twice.
+            </p>
+            <p style="margin:22px 0">
+                <?= email_button($manageLink, 'Move my payment') ?>
+            </p>
+            <p style="font-size:13px;color:#64748b">
+                That button signs you in and opens the payment page. It works once, and expires in 7 days.
+                Nothing changes until you pay.
+            </p>
+
         <?php elseif ($product === 'plus'): /* renewing */ ?>
             <p style="font-size:15px;line-height:1.6">
                 Just so there are no surprises: your <?= $yearly ? 'yearly ' : '' ?>Plus subscription renews on
-                <strong><?= esc($paidUntil) ?></strong>, and PayFast will charge it in South African
+                <strong><?= esc($paidUntil) ?></strong>, and <?= esc($gateway) ?> will charge it in South African
                 rand as usual.
             </p>
             <p style="font-size:15px;line-height:1.6">
@@ -115,12 +153,12 @@ $paidUntil = $paid_until ?? '';
         <?php else: /* renewing */ ?>
             <p style="font-size:15px;line-height:1.6">
                 Just so there are no surprises: your <?= $yearly ? 'yearly ' : '' ?>Verified Business badge renews on
-                <strong><?= esc($paidUntil) ?></strong>, and PayFast will charge
+                <strong><?= esc($paidUntil) ?></strong>, and <?= esc($gateway) ?> will charge
                 <strong><?= esc(money($amount)) ?></strong> as usual.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                Nothing to do if that's all fine. If you'd rather stop, cancel from your PayFast
-                account before that date and the badge will simply come down when the <?= $period ?> ends.
+                Nothing to do if that's all fine. If you'd rather stop, cancel from your dashboard
+                before that date and the badge will simply come down when the <?= $period ?> ends.
             </p>
         <?php endif; ?>
 

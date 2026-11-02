@@ -9,8 +9,9 @@
 
 <?php
 /**
- * The profile setup checkout: what is being bought, then the button that
- * posts the signed fields to PayFast. Same shape as
+ * The profile setup checkout: what is being bought, then the pay button:
+ * PayFast's signed fields posted straight to PayFast, or (Paystack) a post
+ * to ProfileSetup::pay(), which opens Paystack's checkout. Same shape as
  * verification_checkout.php, and exempt from the honeypot filter for the
  * same reason (see Config\Filters).
  *
@@ -19,8 +20,10 @@
  * @var string               $processUrl
  * @var array<string,string> $fields
  * @var bool                 $sandbox
+ * @var string               $gateway  'PayFast' or 'Paystack'
  */
-// On .app: the dollar price, then the rand PayFast actually charges.
+// On .app: the dollar price, then the rand the gateway actually charges.
+$gateway = $gateway ?? 'PayFast';
 $usd   = $usd ?? null;
 $rand  = money(rtrim(rtrim((string) $order['amount'], '0'), '.'));
 $price = $usd !== null ? money($usd, 'USD') : $rand;
@@ -37,7 +40,7 @@ $price = $usd !== null ? money($usd, 'USD') : $rand;
             </p>
 
             <?php if ($sandbox): ?>
-                <p class="alert alert-warning">Sandbox mode. No real money will move.</p>
+                <p class="alert alert-warning"><?= $gateway === 'Paystack' ? 'Test mode' : 'Sandbox mode' ?>. No real money will move.</p>
             <?php endif; ?>
 
             <div class="checkout-summary">
@@ -61,23 +64,27 @@ $price = $usd !== null ? money($usd, 'USD') : $rand;
             <ul class="checkout-terms">
                 <li>We email you to collect your details, then complete your profile within <?= (int) $days ?> business days of having them.</li>
                 <li>Your profile stays free and yours. Paying does not change where it appears in discovery results.</li>
-                <li>PayFast takes the payment. <strong>We never see your card details.</strong></li>
+                <li><?= esc($gateway) ?> takes the payment. <strong>We never see your card details.</strong></li>
             </ul>
 
             <?php // Emitted from PayFast::onceOffFields() in order: the signature
-                  // covers the fields in submission order. ?>
+                  // covers the fields in submission order. Only our own pay()
+                  // gets a CSRF token; PayFast's signature would not cover it. ?>
             <form method="post" action="<?= esc($processUrl) ?>">
+                <?php if ($gateway === 'Paystack'): ?>
+                    <?= csrf_field() ?>
+                <?php endif; ?>
                 <?php foreach ($fields as $name => $value): ?>
                     <input type="hidden" name="<?= esc($name, 'attr') ?>" value="<?= esc($value, 'attr') ?>">
                 <?php endforeach; ?>
                 <?php if ($usd !== null): ?>
                     <p class="alert alert-info">
                         <strong>Billed in South African rand.</strong> WebScheduler is a South African company,
-                        so PayFast charges it in rand and your bank converts it to your own currency. The amount on your statement may differ slightly from <?= esc($price) ?>,
+                        so <?= esc($gateway) ?> charges it in rand and your bank converts it to your own currency. The amount on your statement may differ slightly from <?= esc($price) ?>,
                         and some banks add a foreign transaction fee.
                     </p>
                 <?php endif; ?>
-                <button type="submit" class="btn btn-accent btn-block"><?= $usd !== null ? 'Pay with PayFast' : 'Pay ' . esc($rand) . ' with PayFast' ?></button>
+                <button type="submit" class="btn btn-accent btn-block"><?= $usd !== null ? 'Pay with ' . esc($gateway) : 'Pay ' . esc($rand) . ' with ' . esc($gateway) ?></button>
             </form>
 
             <p class="mt-4 text-center text-sm">

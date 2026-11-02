@@ -122,7 +122,8 @@ country on the .app signup form.
 - **`money($amount, $currency = 'ZAR')`** formats every price. ZAR output is byte
   identical to the old hand typed `R` prefixes. USD reads `$8.99`.
 - **No rand figures in .app customer copy** (owner rule): the rate moves. Copy says Plus
-  is billed in South African rand by a South African company through PayFast. Admin
+  is billed in South African rand by a South African company through Paystack (PayFast
+  for subscriptions not yet moved). A South African Paystack account charges ZAR only. Admin
   screens may show rand.
 - **Plus is the International plan once .app is live.** `VerificationService::plusMode()`
   = `site()->scoping()`. `PLAN_INTERNATIONAL` rows are Plus; nobody pays to be published
@@ -141,7 +142,8 @@ country on the .app signup form.
     `cancelPlus()`: a lapse keeps the profile and takes the extras.
   - Admin: `/admin/verifications?plan=plus` (or `/admin/plus`).
   - PayFast: return and cancel URLs go to the listing's own site; **the ITN `notify_url`
-    always stays on co.za**. Item name "WebScheduler Local Plus".
+    always stays on co.za**. Item name "WebScheduler Local Plus". Paystack likewise: the
+    callback goes to the listing's own site, the one webhook URL is co.za's.
 - The badge is off on .app unless a `verified_badge_enabled@app` settings row exists.
 - Profile setup service: `ProfileSetupService::amount()` / `usdAmount()`: R250 on co.za,
   `profile_setup_usd` (US$29.99) on .app, charged in rand.

@@ -105,7 +105,7 @@ $changeNote = static function (?array $change): string {
                       // emails — or worse, an expectation of back-charging. ?>
                 <div class="alert alert-info">
                     <strong>A price change applies to new applications only.</strong>
-                    Businesses already paying keep the amount they signed up at. PayFast
+                    Businesses already paying keep the amount they signed up at. PayFast or Paystack
                     keeps billing their existing subscription at that figure, and we cannot change
                     it from here. A business you have already approved but who has not paid yet
                     also keeps the price they were quoted.
@@ -189,7 +189,7 @@ $changeNote = static function (?array $change): string {
                     <?php else: ?>
                         Plus is not on sale until both the dollar price and the rate are set.
                     <?php endif; ?>
-                    PayFast charges rand only, so the rand figure is what the card is charged. It is fixed
+                    Payments are charged in rand only, so the rand figure is what the card is charged. It is fixed
                     for each subscription when it starts: changing the rate later only changes it for new ones.
                     Update the rate now and then, for example monthly.
                 </div>
@@ -206,7 +206,7 @@ $changeNote = static function (?array $change): string {
                         <?php // Worth saying out loud on the page that sets it: PayFast
                               // settles in rand, so this is what a foreign card is charged
                               // and it is subject to that card accepting a ZA merchant. ?>
-                        Charged in rand: PayFast settles in ZAR, so the subscriber's card
+                        Charged in rand: payments settle in ZAR, so the subscriber's card
                         has to accept a South African merchant.
                         <?php if ($n = $changeNote($lastIntlPrice)): ?><br><?= esc($n) ?><?php endif; ?>
                     </div>

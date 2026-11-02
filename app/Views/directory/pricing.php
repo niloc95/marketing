@@ -49,7 +49,7 @@ if ($paid) {
     $faqs[] = [
         'q' => 'What does ' . $product . ' cost?',
         'a' => esc($priceLine) . '.' . ($app
-            ? ' WebScheduler is a South African company, so Plus is billed in South African rand through PayFast and your bank converts it to your own currency.'
+            ? ' WebScheduler is a South African company, so Plus is billed in South African rand through Paystack and your bank converts it to your own currency.'
             : ' You pay only once we have checked your company registration document and the owner\'s ID.'),
     ];
     if ($hasYearly) {
@@ -125,7 +125,7 @@ if ($paid) {
                     <li>Already paying monthly? Switch to yearly from your dashboard. The year starts after the time you have paid for.</li>
                     <li>Cancel any time. You keep <?= esc($product) ?> until the month or year you paid for ends.</li>
                     <?php if ($app): ?>
-                        <li>Billed in South African rand by a South African company, through PayFast. Your bank converts it to your own currency.</li>
+                        <li>Billed in South African rand by a South African company, through Paystack. Your bank converts it to your own currency.</li>
                     <?php else: ?>
                         <li>Nothing to pay until we have checked your company registration document and the owner's ID.</li>
                     <?php endif; ?>

@@ -16,14 +16,14 @@
  *   live      — paid, published, renews on a date
  *   due       — never paid, or lapsed. The listing is not public. This is the
  *               state that has to be unmissable.
- *   pending   — back from PayFast, waiting on the ITN
- *   no card   — PayFast unconfigured; we owe them an email, not a button
+ *   pending   — back from checkout, waiting on the confirmation
+ *   no card   — no gateway configured; we owe them an email, not a button
  *
  * @var array<string,mixed> $listing
  * @var array{verification:array<string,mixed>,documents:array<int,array<string,mixed>>}|null $subscription
  * @var string $amount
- * @var bool   $payable  PayFast is configured — VerificationService::canTakePayment()
- * @var bool   $pending  owner is back from PayFast, ITN not in yet
+ * @var bool   $payable  card payments work — VerificationService::canTakePayment()
+ * @var bool   $pending  owner is back from checkout, payment not confirmed yet
  */
 
 $row     = $subscription['verification'] ?? null;

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\PayFast;
+use App\Libraries\Paystack;
 use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\ProfileSetupOrderModel;
 use Config\Directory as DirectoryConfig;
@@ -72,10 +73,40 @@ class ProfileSetupService
         return max(1, $this->site->profileSetupDays);
     }
 
-    /** Can we take a card payment right now? */
-    public function canTakePayment(?PayFast $payfast = null): bool
+    /** Can we take a card payment right now, through whichever gateway takes new payments? */
+    public function canTakePayment(?PayFast $payfast = null, ?Paystack $paystack = null): bool
     {
-        return ($payfast ?? new PayFast())->isConfigured();
+        return $this->usesPaystack()
+            ? ($paystack ?? service('paystack'))->isConfigured()
+            : ($payfast ?? new PayFast())->isConfigured();
+    }
+
+    /** Does Paystack take new payments (Config\Directory::paymentProvider())? */
+    public function usesPaystack(): bool
+    {
+        return $this->site->paymentProvider() === 'paystack';
+    }
+
+    /**
+     * Open a Paystack checkout for an order and return its URL, or null.
+     *
+     * A fresh reference each time, because Paystack refuses one it has seen
+     * and a buyer may come back to try again; the order id in the metadata
+     * finds the order if an older tab is the one that pays.
+     */
+    public function paystackCheckoutUrl(array $order, ?Paystack $paystack = null): ?string
+    {
+        $reference = 'ps-' . bin2hex(random_bytes(6));
+        $this->orders->update((int) $order['id'], ['reference' => $reference, 'provider' => 'paystack']);
+
+        return ($paystack ?? service('paystack'))->initialize(
+            (string) $order['email'],
+            Paystack::cents((string) $order['amount']),
+            $reference,
+            base_url('profile-setup/paystack'),
+            null,
+            ['order_id' => (int) $order['id']]
+        );
     }
 
     /**
@@ -127,7 +158,8 @@ class ProfileSetupService
 
         $row = $d + [
             // 'ps' for profile setup, as the subscription ids start 'vb' and
-            // 'il': it tells a human reading the PayFast dashboard what it is.
+            // 'il': it tells a human reading the gateway's dashboard what it
+            // is, and PaystackPayments routes a 'ps-' charge to the orders.
             'reference' => 'ps-' . bin2hex(random_bytes(6)),
             'amount'    => $this->amount(),
             'status'    => ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT,

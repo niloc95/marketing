@@ -87,9 +87,16 @@ class FormOutcome implements FilterInterface
     }
 
     /**
+     * Hosts a form may hand the browser to on purpose: Paystack's hosted
+     * checkout, where the pay buttons send an owner or buyer
+     * (Manage::pay(), ProfileSetup::pay()).
+     */
+    public const PAYMENT_HOSTS = ['checkout.paystack.com'];
+
+    /**
      * Into /index.php/, or to a host that is neither this request's nor one
      * of our two sites (a signup abroad is handed to the other site on
-     * purpose).
+     * purpose) nor a payment page.
      */
     public static function badRedirect(string $location, IncomingRequest $request): bool
     {
@@ -103,7 +110,7 @@ class FormOutcome implements FilterInterface
         }
         $sites = config('Sites');
 
-        return ! in_array($host, [strtolower($request->getUri()->getHost()), $sites->host(Sites::ZA), $sites->host(Sites::APP)], true);
+        return ! in_array($host, [strtolower($request->getUri()->getHost()), $sites->host(Sites::ZA), $sites->host(Sites::APP), ...self::PAYMENT_HOSTS], true);
     }
 
     /**

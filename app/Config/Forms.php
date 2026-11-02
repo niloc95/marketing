@@ -32,7 +32,7 @@ class Forms extends BaseConfig
     public array $forms = [
         'signup'           => ['label' => 'Add your business', 'posts' => ['add-profile' => 'add-profile', 'add-listing' => 'add-profile']],
         'contact'          => ['label' => 'Contact us', 'posts' => ['contact' => 'contact']],
-        'profile_setup'    => ['label' => 'Profile setup order', 'posts' => ['profile-setup' => 'profile-setup#order']],
+        'profile_setup'    => ['label' => 'Profile setup order', 'posts' => ['profile-setup' => 'profile-setup#order', 'profile-setup/pay' => 'profile-setup/checkout']],
         'recommend'        => ['label' => 'Recommend a business', 'posts' => ['recommend' => 'recommend']],
         'recommend_stop'   => ['label' => 'Stop recommendation emails', 'posts' => ['recommend/stop/(:segment)' => 'recommend/stop/$1']],
         'partners_apply'   => ['label' => 'Partner application', 'posts' => ['partners' => 'partners#apply']],
@@ -53,7 +53,7 @@ class Forms extends BaseConfig
         'manage_link'      => ['label' => 'Manage sign in link', 'posts' => ['manage' => 'manage']],
         'manage_edit'      => ['label' => 'Edit profile', 'posts' => ['manage/edit' => 'manage/edit']],
         'manage_media'     => ['label' => 'Remove photo or brand', 'posts' => ['manage/photo-delete/(:num)' => 'manage/edit', 'manage/brand-delete/(:num)' => 'manage/edit']],
-        'verification'     => ['label' => 'Verified or Plus application', 'posts' => ['manage/verification' => 'manage/edit', 'manage/verification/cancel' => 'manage/edit', 'manage/verification/yearly' => 'manage/edit']],
+        'verification'     => ['label' => 'Verified or Plus application', 'posts' => ['manage/verification' => 'manage/edit', 'manage/verification/cancel' => 'manage/edit', 'manage/verification/yearly' => 'manage/edit', 'manage/verification/pay' => 'manage/edit']],
         'preview'          => ['label' => 'Preview approval', 'posts' => ['preview/(:segment)/approve' => 'preview/$1', 'preview/(:segment)/changes' => 'preview/$1']],
     ];
 
@@ -76,6 +76,7 @@ class Forms extends BaseConfig
         'csp-report',
         'payfast/notify',
         'payfast/setup-notify',
+        'paystack/webhook',
         'discovery/opened',
         'stats/tap',
         'forms/event',

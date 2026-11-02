@@ -118,7 +118,7 @@ $prettyDate = static function (?string $date): string {
             <?php else: ?>
                 <div class="tablewrap">
                     <table class="table">
-                        <thead><tr><th>Date</th><th>Profile</th><th>PayFast id</th><th>Payment</th><th>Rate</th><th>Commission</th><th>State</th><th></th></tr></thead>
+                        <thead><tr><th>Date</th><th>Profile</th><th>Payment id</th><th>Payment</th><th>Rate</th><th>Commission</th><th>State</th><th></th></tr></thead>
                         <tbody>
                         <?php foreach ($d['commissions'] as $c): ?>
                             <tr>

@@ -327,8 +327,15 @@ class ContentSecurityPolicy extends BaseConfig
         // without telling us, and the failure mode is silent lost revenue. A
         // violation now logs which directive the browser enforced (see
         // App\Controllers\Csp), so a further move is a minute's diagnosis.
+        //
+        // Paystack's pay buttons post to us ('self'), and we answer with a
+        // redirect to its hosted checkout. Chrome enforces form-action on that
+        // redirect too, for the reason above, so the checkout host is listed.
+        // The PayFast hosts stay while PayFast subscriptions are being moved
+        // and for the rollback (directory.paymentProvider = payfast).
         $this->formAction = [
             'self',
+            'https://checkout.paystack.com',
             'https://www.payfast.co.za',
             'https://sandbox.payfast.co.za',
             'https://payment.payfast.io',

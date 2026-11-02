@@ -467,6 +467,25 @@ class Directory extends BaseConfig
     public bool $payfastSandbox = true;
 
     /**
+     * Paystack, which takes every new payment once `paymentProvider` says so:
+     * the badge, Plus (monthly and yearly) and the profile setup service.
+     * PayFast stays for the subscriptions it already holds until their owners
+     * move (`php spark directory:payments:move-to-paystack`).
+     *
+     * The secret key signs every API call and every webhook, so it goes in
+     * .env and nowhere else. A `sk_test_` key is Paystack's test mode: the
+     * checkout says so, and /admin/status warns about one in production.
+     */
+    public string $paystackSecretKey = '';
+
+    /**
+     * Which gateway new checkouts use: 'payfast' or 'paystack'. Setting it
+     * back to 'payfast' is the rollback; payments already on Paystack keep
+     * renewing there and keep reaching paystack/webhook either way.
+     */
+    public string $paymentProvider = 'payfast';
+
+    /**
      * The footer newsletter form: a plain cross-origin POST to our Mautic
      * server (updates.webscheduler.co.za).
      *
@@ -855,6 +874,25 @@ class Directory extends BaseConfig
         }
 
         return ! in_array(strtolower(trim((string) $env)), ['false', '0', 'no', 'off', ''], true);
+    }
+
+    public function paystackSecretKey(): string
+    {
+        $env = env('directory.paystackSecretKey');
+        return is_string($env) && trim($env) !== '' ? trim($env) : $this->paystackSecretKey;
+    }
+
+    /**
+     * 'paystack' only when asked for and a secret key is set, so a half
+     * configured server keeps selling through PayFast rather than showing a
+     * button that cannot work.
+     */
+    public function paymentProvider(): string
+    {
+        $env    = env('directory.paymentProvider');
+        $choice = strtolower(trim(is_string($env) && trim($env) !== '' ? $env : $this->paymentProvider));
+
+        return $choice === 'paystack' && $this->paystackSecretKey() !== '' ? 'paystack' : 'payfast';
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\Concerns\LocksDownDocumentCsp;
 use App\Libraries\PayFast;
+use App\Services\PaystackPayments;
 use App\Services\ProfileSetupService;
 
 /**
@@ -11,12 +12,16 @@ use App\Services\ProfileSetupService;
  *
  * GET  profile-setup           the page and the order form
  * POST profile-setup           save the order, then on to checkout
- * GET  profile-setup/checkout  summary and the button that posts to PayFast
+ * GET  profile-setup/checkout  summary and the pay button (PayFast's signed
+ *                              form, or a post to pay() for Paystack)
+ * POST profile-setup/pay       open a Paystack checkout for the order
+ * GET  profile-setup/paystack  where Paystack sends the buyer back
  * GET  profile-setup/thanks    where PayFast sends the buyer back
  *
  * The order being paid for travels in the session, never in the URL, so
- * nobody can open someone else's checkout by changing a number. PayFast's
- * notification (ProfileSetupNotify) is what marks an order paid.
+ * nobody can open someone else's checkout by changing a number. The
+ * gateway's notification (ProfileSetupNotify, or the Paystack webhook and
+ * Paystack's own verify answer) is what marks an order paid.
  */
 class ProfileSetup extends BaseController
 {
@@ -105,20 +110,69 @@ class ProfileSetup extends BaseController
                 ->with('error', 'Please fill in the form to start your order.');
         }
 
-        $payfast = new PayFast();
-        if (! $payfast->isConfigured()) {
+        if (! $svc->canTakePayment()) {
             return redirect()->to(base_url('profile-setup') . '#order')
                 ->with('error', 'Card payments are not available at the moment. Please contact us and we will help you directly.');
         }
+
+        $paystack = $svc->usesPaystack() ? service('paystack') : null;
+        $payfast  = new PayFast();
 
         return view('directory/profile_setup_checkout', [
             'order'      => $order,
             'days'       => $svc->days(),
             'usd'        => $svc->usdAmount(),
-            'processUrl' => $payfast->processUrl(),
-            'fields'     => $payfast->onceOffFields($order),
-            'sandbox'    => $payfast->isSandbox(),
+            'gateway'    => $paystack !== null ? 'Paystack' : 'PayFast',
+            'processUrl' => $paystack !== null ? base_url('profile-setup/pay') : $payfast->processUrl(),
+            'fields'     => $paystack !== null ? [] : $payfast->onceOffFields($order),
+            'sandbox'    => $paystack !== null ? $paystack->isTestMode() : $payfast->isSandbox(),
         ]);
+    }
+
+    /** The Pay button when Paystack takes payments: off to Paystack's checkout. */
+    public function pay()
+    {
+        $svc   = new ProfileSetupService();
+        $order = $svc->payable((int) session(self::ORDER_KEY));
+        if ($order === null) {
+            return redirect()->to(base_url('profile-setup') . '#order')
+                ->with('error', 'Please fill in the form to start your order.');
+        }
+        if (! $svc->usesPaystack() || ! $svc->canTakePayment()) {
+            return redirect()->to(base_url('profile-setup/checkout'));
+        }
+
+        $url = $svc->paystackCheckoutUrl($order);
+        if ($url === null) {
+            return redirect()->to(base_url('profile-setup/checkout'))
+                ->with('error', 'We could not open the payment page just now. Please try again in a minute.');
+        }
+
+        return redirect()->to($url);
+    }
+
+    /**
+     * Paystack's return. Asks Paystack about the reference (the trip itself
+     * proves nothing) so a paid order is marked and receipted at once, then
+     * shows the thanks page; a payment that did not go through goes back to
+     * the checkout to try again.
+     */
+    public function paystackReturn()
+    {
+        $reference = (string) ($this->request->getGet('reference') ?? $this->request->getGet('trxref') ?? '');
+        $ip        = (string) $this->request->getIPAddress();
+        $outcome   = 'skipped: throttled';
+        if (service('throttler')->check('paystack-return-' . md5($ip), 10, MINUTE)) {
+            $outcome = (new PaystackPayments())->confirmReference($reference, $ip);
+            log_message(str_starts_with($outcome, 'rejected') || str_starts_with($outcome, 'retry') ? 'warning' : 'info', 'Paystack return: ' . $outcome);
+        }
+
+        if (str_starts_with($outcome, 'noted') && (new ProfileSetupService())->payable((int) session(self::ORDER_KEY)) !== null) {
+            return redirect()->to(base_url('profile-setup/checkout'))
+                ->with('error', 'Your payment did not go through, and nothing was charged. You can try again below.');
+        }
+
+        return $this->thanks();
     }
 
     /**
