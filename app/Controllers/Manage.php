@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Controllers\Concerns\AnswersPaystackCheckout;
 use App\Controllers\Concerns\HandlesListingUploads;
 use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Libraries\PayFast;
@@ -32,6 +33,7 @@ use App\Services\VerificationService;
  */
 class Manage extends BaseController
 {
+    use AnswersPaystackCheckout;
     use HandlesListingUploads;
     use HandlesVerificationUploads;
 
@@ -752,7 +754,8 @@ class Manage extends BaseController
     /**
      * The checkout page's Pay button when Paystack takes payments: open a
      * Paystack checkout for the row (or its pending switch) the reference
-     * names, and send the browser there.
+     * names: the card window over the page for our script, Paystack's
+     * hosted page without it (AnswersPaystackCheckout).
      *
      * The reference only picks the row; the amount comes from the row, and
      * the row must belong to the signed in listing.
@@ -761,14 +764,12 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your profile.');
+            return $this->checkoutFailed('Please request a link to manage your profile.', 'manage', 401);
         }
 
         $service = new VerificationService();
         if (! $service->canTakePayment() || $service->provider() !== DirectoryVerificationModel::PROVIDER_PAYSTACK) {
-            return redirect()->to(base_url('manage/edit'))
-                ->with('error', 'Card payments are not available at the moment. We will be in touch about payment.');
+            return $this->checkoutFailed('Card payments are not available at the moment. We will be in touch about payment.', 'manage/edit');
         }
 
         $reference = trim((string) $this->request->getPost('reference'));
@@ -784,17 +785,15 @@ class Manage extends BaseController
             ? $row['state'] === DirectoryVerificationModel::STATE_ACTIVE
             : in_array($row['state'], [DirectoryVerificationModel::STATE_APPROVED, DirectoryVerificationModel::STATE_LAPSED], true));
         if (! $payable) {
-            return redirect()->to(base_url('manage/edit'))
-                ->with('error', 'That payment page has expired. Please start again from your dashboard.');
+            return $this->checkoutFailed('That payment page has expired. Please start again from your dashboard.', 'manage/edit');
         }
 
-        $url = $service->paystackCheckoutUrl($listing, $row, $switch);
-        if ($url === null) {
-            return redirect()->to(base_url('manage/edit'))
-                ->with('error', 'We could not open the payment page just now. Please try again in a minute.');
+        $checkout = $service->paystackCheckout($listing, $row, $switch);
+        if ($checkout === null) {
+            return $this->checkoutFailed('We could not open the payment window just now. Please try again in a minute.', 'manage/edit', 502);
         }
 
-        return redirect()->to($url);
+        return $this->checkoutOpened($checkout, 'manage/verification/paystack');
     }
 
     /**

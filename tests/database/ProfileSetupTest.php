@@ -267,7 +267,8 @@ final class ProfileSetupTest extends CIUnitTestCase
         $res->assertStatus(200);
         $html = (string) $res->response()->getBody();
         $this->assertStringContainsString('action="' . base_url('profile-setup/pay') . '"', $html);
-        $this->assertStringContainsString('Pay R250 with Paystack', $html);
+        $this->assertStringContainsString('Pay R250', $html);
+        $this->assertStringContainsString('data-paystack-checkout', $html);
 
         $this->withSession(['profile_setup_order' => (int) $order['id']])
             ->post('profile-setup/pay', [csrf_token() => csrf_hash()])

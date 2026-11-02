@@ -84,13 +84,15 @@ class ProfileSetupService
     }
 
     /**
-     * Open a Paystack checkout for an order and return its URL, or null.
+     * Open a Paystack checkout for an order: the access code for the card
+     * window and the hosted page URL as the fallback, or null.
      *
      * A fresh reference each time, because Paystack refuses one it has seen
      * and a buyer may come back to try again; the order id in the metadata
      * finds the order if an older tab is the one that pays.
      */
-    public function paystackCheckoutUrl(array $order, ?Paystack $paystack = null): ?string
+    /** @return array{url:string,access_code:string}|null */
+    public function paystackCheckout(array $order, ?Paystack $paystack = null): ?array
     {
         $reference = 'ps-' . bin2hex(random_bytes(6));
         $this->orders->update((int) $order['id'], ['reference' => $reference, 'provider' => 'paystack']);

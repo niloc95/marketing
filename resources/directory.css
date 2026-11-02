@@ -3140,8 +3140,8 @@
   .dark .checkout-total   { @apply text-white; }
   .dark .checkout-terms   { @apply text-slate-400; }
 
-  /* Monthly or yearly, above the receipt. Links that reload the page priced
-     for the other cycle (the PayFast fields are signed for one). */
+  /* Monthly or yearly. Links that reload the page priced for the other cycle,
+     so the summary and the charge always agree. */
   .cycle-cards { @apply mt-5 grid grid-cols-2 gap-3; }
   .cycle-card  { @apply flex flex-col gap-1 rounded-surface border-2 border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 no-underline transition hover:border-primary-300; }
   .cycle-card.is-picked { @apply border-primary-500 bg-primary-50; }
@@ -3152,6 +3152,38 @@
   .dark .cycle-card.is-picked { @apply border-primary-400 bg-primary-900/30; }
   .dark .cycle-card-name, .dark .cycle-card-price { @apply text-white; }
   .dark .cycle-card-save { @apply bg-emerald-900/50 text-emerald-200; }
+  /* The checkout page (verification_checkout.php, profile_setup_checkout.php):
+     the choice and the button on the left, a sticky order summary on the
+     right, stacked on a phone. Paystack's card window opens over it. */
+  .checkout-layout { @apply mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-10; }
+  .checkout-main   { @apply min-w-0 rounded-surface border border-slate-200/80 bg-white p-6 sm:p-8; }
+  .checkout-side   { @apply min-w-0 rounded-surface border border-slate-200/80 bg-slate-50 p-6 lg:sticky lg:top-24; }
+  .checkout-title  { @apply mb-1.5 mt-2 text-2xl font-extrabold text-slate-900; }
+  .checkout-lead   { @apply mb-6 text-sm text-slate-500; }
+  .checkout-step   { @apply mb-2 mt-2 text-sm font-semibold text-slate-900; }
+  .checkout-side-title { @apply text-base font-bold text-slate-900; }
+  .checkout-item   { @apply mt-3 flex flex-col gap-0.5 text-sm text-slate-700; }
+  .checkout-side .checkout-summary { @apply mb-0 mt-4 bg-white; }
+  .checkout-form   { @apply mt-6; }
+  .checkout-secure { @apply mt-3 text-center text-xs text-slate-500; }
+  .checkout-status { @apply mt-3 text-center text-sm text-slate-600; }
+  .checkout-status.is-error { @apply text-brand-crimson; }
+  /* The cycle cards read as radio buttons here: a dot that fills when picked. */
+  .checkout-main .cycle-cards { @apply mt-0; }
+  .checkout-main .checkout-terms { @apply mt-5; }
+  .checkout-main .cycle-card  { @apply relative pl-10; }
+  .checkout-main .cycle-card-price .hint { @apply block text-xs font-medium; }
+  .cycle-radio { @apply absolute left-4 top-4 h-4 w-4 rounded-full border-2 border-slate-300 bg-white; }
+  .cycle-card.is-picked .cycle-radio { @apply border-primary-500 bg-primary-500 shadow-[inset_0_0_0_3px_#fff]; }
+  .dark .checkout-main  { @apply border-slate-800 bg-slate-900/60; }
+  .dark .checkout-side  { @apply border-slate-800 bg-slate-900/30; }
+  .dark .checkout-side .checkout-summary { @apply bg-slate-900/60; }
+  .dark .checkout-title, .dark .checkout-step, .dark .checkout-side-title { @apply text-white; }
+  .dark .checkout-lead, .dark .checkout-secure { @apply text-slate-400; }
+  .dark .checkout-item, .dark .checkout-status { @apply text-slate-300; }
+  .dark .checkout-status.is-error { @apply text-red-400; }
+  .dark .cycle-radio { @apply border-slate-600 bg-slate-900; }
+  .dark .cycle-card.is-picked .cycle-radio { @apply border-primary-400 bg-primary-400 shadow-[inset_0_0_0_3px_#0f172a]; }
   .yearly-switch { @apply my-4 rounded-surface border border-dashed border-slate-300 px-4 py-3; }
   .dark .yearly-switch { @apply border-slate-700; }
   /* brand-crimson is too dark to read on #1a202c. */

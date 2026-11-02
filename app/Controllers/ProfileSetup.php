@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Controllers\Concerns\AnswersPaystackCheckout;
 use App\Controllers\Concerns\LocksDownDocumentCsp;
 use App\Services\PaystackPayments;
 use App\Services\ProfileSetupService;
@@ -23,6 +24,7 @@ use App\Services\ProfileSetupService;
  */
 class ProfileSetup extends BaseController
 {
+    use AnswersPaystackCheckout;
     use LocksDownDocumentCsp;
 
     /** Nobody reads the page and fills the form this fast. */
@@ -122,26 +124,27 @@ class ProfileSetup extends BaseController
         ]);
     }
 
-    /** The Pay button: off to Paystack's checkout. */
+    /**
+     * The Pay button: Paystack's card window over the page for our script,
+     * its hosted page without it (AnswersPaystackCheckout).
+     */
     public function pay()
     {
         $svc   = new ProfileSetupService();
         $order = $svc->payable((int) session(self::ORDER_KEY));
         if ($order === null) {
-            return redirect()->to(base_url('profile-setup') . '#order')
-                ->with('error', 'Please fill in the form to start your order.');
+            return $this->checkoutFailed('Please fill in the form to start your order.', 'profile-setup#order');
         }
         if (! $svc->canTakePayment()) {
-            return redirect()->to(base_url('profile-setup/checkout'));
+            return $this->checkoutFailed('Card payments are not available at the moment. Please contact us and we will help you directly.', 'profile-setup/checkout');
         }
 
-        $url = $svc->paystackCheckoutUrl($order);
-        if ($url === null) {
-            return redirect()->to(base_url('profile-setup/checkout'))
-                ->with('error', 'We could not open the payment page just now. Please try again in a minute.');
+        $checkout = $svc->paystackCheckout($order);
+        if ($checkout === null) {
+            return $this->checkoutFailed('We could not open the payment window just now. Please try again in a minute.', 'profile-setup/checkout', 502);
         }
 
-        return redirect()->to($url);
+        return $this->checkoutOpened($checkout, 'profile-setup/paystack');
     }
 
     /**

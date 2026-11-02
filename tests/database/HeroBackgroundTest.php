@@ -218,9 +218,10 @@ final class HeroBackgroundTest extends CIUnitTestCase
     {
         // The CSP header itself is finalised outside the feature-test response,
         // so the policy is checked at its source.
-        // Vimeo's player joined for the profile video (ListingVideoService).
+        // Vimeo's player joined for the profile video (ListingVideoService),
+        // and Paystack's card window for the checkout pages.
         // Ordinary www.youtube.com must never be admitted.
-        $this->assertSame(['https://www.youtube-nocookie.com', 'https://player.vimeo.com'], (array) config('ContentSecurityPolicy')->frameSrc);
+        $this->assertSame(['https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://checkout.paystack.com'], (array) config('ContentSecurityPolicy')->frameSrc);
 
         $perms = $this->get('/')->response()->getHeaderLine('Permissions-Policy');
         $this->assertStringContainsString('autoplay=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com")', $perms);

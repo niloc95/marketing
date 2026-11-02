@@ -69,16 +69,19 @@ class ContentSecurityPolicy extends BaseConfig
     /**
      * Lists allowed scripts' URLs.
      *
+     * js.paystack.co is Paystack's InlineJS, which directory.js loads on the
+     * two checkout pages only, to open the card window over the page.
+     *
      * @var list<string>|string
      */
-    public $scriptSrc = ['self', 'https://www.googletagmanager.com', 'https://*.clarity.ms'];
+    public $scriptSrc = ['self', 'https://www.googletagmanager.com', 'https://*.clarity.ms', 'https://js.paystack.co'];
 
     /**
      * Specifies valid sources for JavaScript <script> elements.
      *
      * @var list<string>|string
      */
-    public array|string $scriptSrcElem = ['self', 'https://www.googletagmanager.com', 'https://*.clarity.ms'];
+    public array|string $scriptSrcElem = ['self', 'https://www.googletagmanager.com', 'https://*.clarity.ms', 'https://js.paystack.co'];
 
     /**
      * Specifies valid sources for JavaScript inline event
@@ -107,7 +110,15 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public array|string $styleSrcElem = ['self'];
+    public array|string $styleSrcElem = [
+        'self',
+        // Paystack InlineJS (the checkout card window) adds one <style> block of
+        // loading spinner keyframes. Allowed by its exact hash, so nothing else
+        // inline gets in. If Paystack changes the block, the checkout still
+        // works and the spinner just stops turning; a style-src-elem violation
+        // in writable/logs/ names the new hash (seen 2 Nov 2026, inline.js v2).
+        'sha256-LyplbSdrpL3QPNQlb+WhUCm0NCVrDLePyU9TQBL8KGo=',
+    ];
 
     /**
      * Specifies valid sources for stylesheets inline
@@ -203,6 +214,9 @@ class ContentSecurityPolicy extends BaseConfig
         // directory.js only when someone presses play. Vimeo's player host, run
         // with dnt=1.
         'https://player.vimeo.com',
+        // Paystack's card window, which InlineJS opens over the checkout page.
+        // The card details are typed into this frame and never reach us.
+        'https://checkout.paystack.com',
     ];
 
     /**

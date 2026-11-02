@@ -27,6 +27,8 @@ class FakePaystack extends Paystack
 
     public ?string $checkoutUrl = 'https://checkout.paystack.com/fake123';
 
+    public string $accessCode = 'fakeaccess123';
+
     /** @var list<array{name:string,interval:string,cents:int}> */
     public array $plans = [];
 
@@ -37,11 +39,11 @@ class FakePaystack extends Paystack
         parent::__construct($config);
     }
 
-    public function initialize(string $email, int $amountCents, string $reference, string $callbackUrl, ?string $planCode = null, array $metadata = []): ?string
+    public function initialize(string $email, int $amountCents, string $reference, string $callbackUrl, ?string $planCode = null, array $metadata = []): ?array
     {
         $this->calls[] = ['initialize', compact('email', 'amountCents', 'reference', 'callbackUrl', 'planCode', 'metadata')];
 
-        return $this->checkoutUrl;
+        return $this->checkoutUrl === null ? null : ['url' => $this->checkoutUrl, 'access_code' => $this->accessCode];
     }
 
     public function verify(string $reference): ?array

@@ -68,9 +68,14 @@ class Paystack
      * Start a checkout. With a plan code Paystack charges the plan's amount
      * and opens a subscription on the card; without one it charges once.
      *
+     * Paystack answers two ways in: the hosted page's URL, and the access
+     * code our checkout page hands to InlineJS to open the card window over
+     * the page (resumeTransaction). The URL is the fallback when the
+     * overlay cannot load, and the whole route without JavaScript.
+     *
      * @param array<string,mixed> $metadata a fallback to find the row by, like PayFast's custom_str2
      *
-     * @return string|null the checkout URL to send the browser to
+     * @return array{url:string,access_code:string}|null
      */
     public function initialize(
         string $email,
@@ -79,7 +84,7 @@ class Paystack
         string $callbackUrl,
         ?string $planCode = null,
         array $metadata = []
-    ): ?string {
+    ): ?array {
         $body = [
             'email'        => $email,
             'amount'       => $amountCents,
@@ -94,8 +99,9 @@ class Paystack
 
         $data = $this->request('POST', '/transaction/initialize', $body);
         $url  = is_array($data) ? (string) ($data['authorization_url'] ?? '') : '';
+        $code = is_array($data) ? (string) ($data['access_code'] ?? '') : '';
 
-        return str_starts_with($url, 'https://') ? $url : null;
+        return str_starts_with($url, 'https://') && $code !== '' ? ['url' => $url, 'access_code' => $code] : null;
     }
 
     /**

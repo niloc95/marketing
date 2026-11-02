@@ -243,7 +243,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
 
         // The checkout: same amount and cycle, a fresh '-m' reference.
         $listing = $this->listings->find((int) $move['verification']['listing_id']);
-        $this->assertNotNull($billing->paystackCheckoutUrl($listing, $this->verifications->find($id), true));
+        $this->assertNotNull($billing->paystackCheckout($listing, $this->verifications->find($id), true));
         $sent = $this->paystack->callsOf('initialize')[0][1];
         $this->assertSame(2999, $sent['amountCents']);
         $this->assertSame('switch', $sent['metadata']['purpose']);
@@ -279,7 +279,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
 
         $switch = $billing->startYearlySwitch((int) $row['listing_id'], DirectoryVerificationModel::PLAN_BADGE);
         $this->assertTrue($switch['ok'], $switch['message']);
-        $billing->paystackCheckoutUrl($this->listings->find((int) $row['listing_id']), $this->verifications->find((int) $row['id']), true);
+        $billing->paystackCheckout($this->listings->find((int) $row['listing_id']), $this->verifications->find((int) $row['id']), true);
         $ref = $this->verifications->find((int) $row['id'])['switch_m_payment_id'];
 
         $this->paystack->subscription = ['code' => 'SUB_yearly', 'email_token' => 'etok_yearly'];
@@ -300,8 +300,8 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $row     = $this->approvedBadge('30.00', 'vb-plan');
         $listing = $this->listings->find((int) $row['listing_id']);
 
-        $this->assertSame('https://checkout.paystack.com/fake123', $this->billing()->paystackCheckoutUrl($listing, $row, false));
-        $this->billing()->paystackCheckoutUrl($listing, $this->verifications->find((int) $row['id']), false);
+        $this->assertSame(['url' => 'https://checkout.paystack.com/fake123', 'access_code' => 'fakeaccess123'], $this->billing()->paystackCheckout($listing, $row, false));
+        $this->billing()->paystackCheckout($listing, $this->verifications->find((int) $row['id']), false);
 
         $this->assertCount(1, $this->paystack->plans, 'the second checkout reuses the cached plan');
         $this->assertSame('Verified Business badge, monthly', $this->paystack->plans[0]['name']);
@@ -321,6 +321,44 @@ final class PaystackPaymentsTest extends CIUnitTestCase
             ->post('manage/verification/pay', ['reference' => 'vb-button', csrf_token() => csrf_hash()]);
 
         $result->assertRedirectTo('https://checkout.paystack.com/fake123');
+    }
+
+    public function testOurCheckoutScriptGetsTheAccessCodeAndAFreshToken(): void
+    {
+        $row = $this->approvedBadge('30.00', 'vb-overlay');
+
+        $result = $this->withSession([Manage::SESSION_KEY => (int) $row['listing_id']])
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post('manage/verification/pay', ['reference' => 'vb-overlay', csrf_token() => csrf_hash()]);
+
+        $result->assertStatus(200);
+        $json = json_decode((string) $result->response()->getBody(), true);
+        $this->assertSame('fakeaccess123', $json['accessCode']);
+        $this->assertSame('https://checkout.paystack.com/fake123', $json['url'], 'the hosted page, if the window cannot load');
+        $this->assertSame(base_url('manage/verification/paystack'), $json['returnUrl']);
+        $this->assertSame(csrf_token(), $json['csrf']['name']);
+        $this->assertNotSame('', (string) $json['csrf']['hash'], 'a second press after closing the window needs it');
+    }
+
+    public function testOurCheckoutScriptIsToldWhyWhenAReferenceIsNotItsOwn(): void
+    {
+        $this->approvedBadge('30.00', 'vb-not-yours');
+
+        $result = $this->withSession([Manage::SESSION_KEY => $this->makeListing()])
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post('manage/verification/pay', ['reference' => 'vb-not-yours', csrf_token() => csrf_hash()]);
+
+        $result->assertStatus(422);
+        $this->assertStringContainsString('expired', json_decode((string) $result->response()->getBody(), true)['error']);
+        $this->assertSame([], $this->paystack->callsOf('initialize'));
+    }
+
+    public function testTheCheckoutPagesMayLoadPaystacksCardWindow(): void
+    {
+        $csp = new \Config\ContentSecurityPolicy();
+
+        $this->assertContains('https://js.paystack.co', (array) $csp->scriptSrcElem);
+        $this->assertContains('https://checkout.paystack.com', (array) $csp->frameSrc);
     }
 
     public function testThePayButtonRefusesAnotherListingsReference(): void
@@ -354,7 +392,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
             'status'    => ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT, 'terms_at' => date('Y-m-d H:i:s'),
         ], true);
 
-        $this->assertNotNull((new ProfileSetupService())->paystackCheckoutUrl($orders->find($id)));
+        $this->assertNotNull((new ProfileSetupService())->paystackCheckout($orders->find($id)));
         $order = $orders->find($id);
         $this->assertSame('paystack', $order['provider']);
         $this->assertNull($this->paystack->callsOf('initialize')[0][1]['planCode'], 'paid once, no plan');

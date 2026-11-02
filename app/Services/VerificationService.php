@@ -357,8 +357,9 @@ class VerificationService
     }
 
     /**
-     * Where to send the owner's browser to pay a row through Paystack, or
-     * null if Paystack would not open a checkout.
+     * A Paystack checkout for a row: the access code the checkout page opens
+     * the card window with, and the hosted page URL as the fallback. Null if
+     * Paystack would not open one.
      *
      * A fresh reference every time, because Paystack refuses a reference it
      * has already seen and an owner may come back to try again. A stale tab
@@ -368,8 +369,10 @@ class VerificationService
      * @param array<string,mixed> $listing
      * @param array<string,mixed> $row     the row as stored
      * @param bool                $switch  pay the pending switch (yearly, or a move), not the row
+     *
+     * @return array{url:string,access_code:string}|null
      */
-    public function paystackCheckoutUrl(array $listing, array $row, bool $switch): ?string
+    public function paystackCheckout(array $listing, array $row, bool $switch): ?array
     {
         $plan  = (string) ($row['plan'] ?? DirectoryVerificationModel::PLAN_BADGE);
         $id    = (int) $row['id'];
