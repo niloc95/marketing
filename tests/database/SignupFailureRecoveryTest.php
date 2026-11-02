@@ -123,6 +123,44 @@ final class SignupFailureRecoveryTest extends CIUnitTestCase
         $this->assertSame('Wood & Marble', session()->getFlashdata('old')['display_name'] ?? null);
     }
 
+    /**
+     * 2 Nov 2026: an owner who missed the photo and the category was told
+     * "Too many submissions" on the attempt that would have saved. Failed
+     * attempts now spend only the loose try budget, never the address's.
+     */
+    public function testFieldErrorsNeverSpendTheSignupBudget(): void
+    {
+        $throttler = new class () {
+            /** @var list<string> */
+            public array $keys = [];
+
+            public function check(string $key, int $capacity, int $seconds, int $cost = 1): bool
+            {
+                $this->keys[] = $key;
+
+                return true;
+            }
+
+            public function getTokenTime(): int
+            {
+                return 0;
+            }
+        };
+        Services::injectMock('throttler', $throttler);
+
+        foreach (range(1, 5) as $_) {
+            $this->submit(['category_id' => '']);
+            $this->assertArrayHasKey('photo', session()->getFlashdata('errors'));
+        }
+
+        // Other filters throttle every request too, so look only at signup keys.
+        $signup = array_values(array_filter($throttler->keys, static fn (string $k): bool => str_starts_with($k, 'signup-')));
+        $this->assertCount(5, $signup);
+        foreach ($signup as $key) {
+            $this->assertStringStartsWith('signup-try-', $key);
+        }
+    }
+
     public function testTokensAndTrapsAreNeverEchoedBack(): void
     {
         $this->submit(['email' => '', 'signup_source' => 'forged', 'logo_path' => 'x.webp']);

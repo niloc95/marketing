@@ -59,6 +59,20 @@ class DirectoryListingMutationService
     }
 
     /**
+     * The public form's field errors, with nothing saved, sent or looked up
+     * beyond the validation itself. Listing::store() calls this before it
+     * spends the sender's throttle budget, so correcting a missed field is
+     * never what locks someone out.
+     *
+     * @param array<string,mixed> $input
+     * @return array<string,string>
+     */
+    public function validatePublic(array $input): array
+    {
+        return $this->validate($input, null, true);
+    }
+
+    /**
      * Create a pending, unverified listing from the public form and email a
      * verification link.
      *
@@ -67,7 +81,7 @@ class DirectoryListingMutationService
      */
     public function submitPublic(array $input): array
     {
-        $errors = $this->validate($input, null, true);
+        $errors = $this->validatePublic($input);
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'message' => 'Please correct the highlighted fields.'];
         }

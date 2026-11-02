@@ -276,25 +276,17 @@ class Listing extends BaseController
             return $this->fakeSuccess();
         }
 
-        // This endpoint emails an address the caller supplies and, for a new
-        // address, runs a chain of geocoder lookups that can hold a worker for
-        // a minute. Throttle the sender's IP and the target address, exactly as
-        // Manage::request does. The || short-circuits so a blocked IP does not
-        // also burn the address's budget.
         $email     = strtolower(trim((string) $this->request->getPost('email')));
         $throttler = service('throttler');
-        $ipKey     = 'signup-ip-' . md5((string) $this->request->getIPAddress());
-        $mailKey   = 'signup-to-' . md5($email);
+        $ip        = md5((string) $this->request->getIPAddress());
 
         $post = $this->request->getPost();
 
-        if ($throttler->check($ipKey, 3, HOUR) === false
-            || ($email !== '' && $throttler->check($mailKey, 2, HOUR) === false)) {
-            form_outcome('throttled');
-
-            return redirect()->to(self::formUrl($post))
-                ->with('old', self::typedFields($post))
-                ->with('error', 'Too many submissions. Please wait a little while and try again.');
+        // A loose cap on raw attempts, failed ones included: each can carry
+        // uploads to process. Generous on purpose, because a real owner may
+        // bounce off a missed field several times.
+        if ($throttler->check('signup-try-' . $ip, 20, HOUR) === false) {
+            return $this->throttled($post);
         }
 
         // A business in another site's country is created on that site: hand
@@ -314,7 +306,36 @@ class Listing extends BaseController
         $post['logo_path'] = $logo['path'];
         $post['_has_photo'] = $this->hasPhoto($logo['path']);
 
-        $mut    = new DirectoryListingMutationService();
+        $mut = new DirectoryListingMutationService();
+
+        // Field errors first, and they never touch the budget below. Until 2
+        // Nov 2026 every press of Submit counted, so an owner who missed the
+        // photo and the category was locked out by their own corrections.
+        $errors = $mut->validatePublic($post);
+        if ($errors !== []) {
+            $this->discardLogo($logo['path']);
+
+            return $this->withUploadErrors(
+                redirect()->to(self::formUrl($post))
+                    ->with('errors', $errors)
+                    ->with('old', self::typedFields($post))
+                    ->with('error', 'Please correct the highlighted fields.'),
+                array_filter([$logo['error']])
+            );
+        }
+
+        // A valid submission emails an address the caller supplies and, for a
+        // new address, runs a chain of geocoder lookups that can hold a worker
+        // for a minute. Throttle the sender's IP and the target address, as
+        // Manage::request does. The || short-circuits so a blocked IP does not
+        // also burn the address's budget.
+        if ($throttler->check('signup-ip-' . $ip, 3, HOUR) === false
+            || ($email !== '' && $throttler->check('signup-to-' . md5($email), 2, HOUR) === false)) {
+            $this->discardLogo($logo['path']);
+
+            return $this->throttled($post);
+        }
+
         $result = $mut->submitPublic($post);
 
         if (! $result['ok']) {
@@ -403,6 +424,20 @@ class Listing extends BaseController
             redirect()->to(base_url('/'))->with('success', $this->signupMessage($message)),
             array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $verified['errors']))
         );
+    }
+
+    /**
+     * Back to the form with the throttle message, typing kept.
+     *
+     * @param array<string,mixed> $post
+     */
+    private function throttled(array $post): \CodeIgniter\HTTP\RedirectResponse
+    {
+        form_outcome('throttled');
+
+        return redirect()->to(self::formUrl($post))
+            ->with('old', self::typedFields($post))
+            ->with('error', 'Too many submissions. Please wait a little while and try again.');
     }
 
     /**
