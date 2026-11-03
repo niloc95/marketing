@@ -588,11 +588,10 @@ class Manage extends BaseController
 
         // Monthly or yearly, picked on this page (?cycle=yearly) before
         // anything is signed: the cycle decides the amount and the PayFast
-        // frequency. Plus has no quote to honour: nobody approved a price for
-        // it, it is just on sale. So a row that was never paid, or has lapsed,
-        // takes today's price, and only a live subscription keeps the rand it
-        // started at. The badge keeps the monthly price an admin's approval
-        // quoted, as the settings page says (priceForCheckout()).
+        // frequency. A row that was never paid, or has lapsed, takes today's
+        // price, badge and Plus alike, so the cycle cards, the summary and
+        // the charge always agree; only a live subscription keeps the amount
+        // it started at (priceForCheckout()).
         $cycle = DirectoryVerificationModel::normaliseCycle(
             $this->request->getGet('cycle') ?? DirectoryVerificationModel::cycleOf($verification)
         );

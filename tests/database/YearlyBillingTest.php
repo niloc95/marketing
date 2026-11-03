@@ -113,14 +113,25 @@ final class YearlyBillingTest extends CIUnitTestCase
         $this->assertSame('30.00', $monthly['amount']);
     }
 
-    public function testMonthlyCheckoutKeepsTheQuotedPriceAndTheReference(): void
+    public function testAnUnpaidRowQuotedAnOlderPriceChecksOutAtTodaysPrice(): void
     {
+        // Owner, 3 Nov 2026: an approval quoted at R29.99 showed a R30.00 card
+        // over a R29.99 summary. The cards, the summary and the charge agree now.
         $row = $this->approvedBadge('29.99', 'vb-quoted');
+
+        $priced = (new VerificationService())->priceForCheckout($row, DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::CYCLE_MONTHLY);
+
+        $this->assertSame('30.00', (string) $priced['amount']);
+        $this->assertSame('30.00', (string) $this->verifications->find((int) $row['id'])['amount']);
+    }
+
+    public function testATodaysPriceRowKeepsItsReference(): void
+    {
+        $row = $this->approvedBadge('30.00', 'vb-current');
 
         $same = (new VerificationService())->priceForCheckout($row, DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::CYCLE_MONTHLY);
 
-        $this->assertSame('29.99', (string) $same['amount']);
-        $this->assertSame('vb-quoted', $same['pf_m_payment_id']);
+        $this->assertSame('vb-current', $same['pf_m_payment_id'], 'nothing changed, so no new reference');
     }
 
     public function testPayFastIsAskedForAnAnnualSubscriptionOnAYearlyRow(): void

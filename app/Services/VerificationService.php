@@ -213,10 +213,12 @@ class VerificationService
      * Price an unpaid (approved or lapsed) row for the cycle the owner picked
      * on the checkout page, and return the row as it now stands.
      *
-     * Monthly badge keeps the amount an admin's approval quoted, as it always
-     * has, unless the row was last priced yearly (then today's monthly price).
-     * Yearly takes today's yearly price: nobody was quoted one. A cycle that is
-     * not on sale falls back to monthly.
+     * Always today's price for the cycle (owner, 3 Nov 2026): the cycle cards
+     * on the checkout show today's prices, so the summary and the charge must
+     * too. Until then a monthly badge kept the price its approval quoted, and
+     * an owner approved at R29.99 saw a R30.00 card over a R29.99 summary.
+     * Only a live subscription keeps the amount it started at. A cycle that
+     * is not on sale falls back to monthly.
      *
      * A change of cycle or amount mints a fresh reference for PayFast, because
      * the owner may already have opened PayFast with the old one and PayFast
@@ -235,12 +237,7 @@ class VerificationService
         }
         $was = DirectoryVerificationModel::cycleOf($verification);
 
-        $amount = (string) $verification['amount'];
-        if ($cycle === DirectoryVerificationModel::CYCLE_YEARLY
-            || $was === DirectoryVerificationModel::CYCLE_YEARLY
-            || $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL) {
-            $amount = (string) $this->amountFor($plan, $cycle);
-        }
+        $amount = (string) $this->amountFor($plan, $cycle);
 
         if ($cycle === $was && $amount === (string) $verification['amount']) {
             return $verification;
