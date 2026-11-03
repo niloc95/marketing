@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\Mailer;
 use App\Libraries\PayFast;
+use App\Libraries\PaymentReference;
 use App\Libraries\Paystack;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationDocumentModel;
@@ -217,9 +218,11 @@ class VerificationService
      * Yearly takes today's yearly price: nobody was quoted one. A cycle that is
      * not on sale falls back to monthly.
      *
-     * A change of cycle or amount mints a fresh m_payment_id, because the
-     * owner may already have opened PayFast with the old one and PayFast
-     * refuses a reference it has seen with different terms.
+     * A change of cycle or amount mints a fresh reference for PayFast, because
+     * the owner may already have opened PayFast with the old one and PayFast
+     * refuses a reference it has seen with different terms. Paystack gets its
+     * reference when Pay is pressed (paystackCheckout()), so nothing is used
+     * up here.
      *
      * @param array<string,mixed> $verification
      *
@@ -244,10 +247,12 @@ class VerificationService
         }
 
         $update = [
-            'billing_cycle'   => $cycle,
-            'amount'          => $amount,
-            'pf_m_payment_id' => $this->newPaymentId($plan, (int) $verification['id']),
+            'billing_cycle' => $cycle,
+            'amount'        => $amount,
         ];
+        if (! $this->referencesAtPay()) {
+            $update['pf_m_payment_id'] = $this->nextReference($verification, $cycle);
+        }
         $this->verifications->update((int) $verification['id'], $update);
 
         return array_merge($verification, $update);
@@ -280,7 +285,11 @@ class VerificationService
         }
 
         $update = [
-            'switch_m_payment_id' => $this->newPaymentId($plan, (int) $row['id']) . '-y',
+            // Paystack: the reference the Pay press will take, reserved, not
+            // used up; it marks the switch as pending until then.
+            'switch_m_payment_id' => $this->referencesAtPay()
+                ? $this->peekReference($row, DirectoryVerificationModel::CYCLE_YEARLY)
+                : $this->nextReference($row, DirectoryVerificationModel::CYCLE_YEARLY),
             'switch_amount'       => $amount,
             'switch_cycle'        => DirectoryVerificationModel::CYCLE_YEARLY,
         ];
@@ -318,7 +327,7 @@ class VerificationService
         }
 
         $update = [
-            'switch_m_payment_id' => $this->newPaymentId($plan, (int) $row['id']) . '-m',
+            'switch_m_payment_id' => $this->peekReference($row, DirectoryVerificationModel::cycleOf($row)),
             'switch_amount'       => (string) $row['amount'],
             'switch_cycle'        => DirectoryVerificationModel::cycleOf($row),
         ];
@@ -384,14 +393,10 @@ class VerificationService
             return null;
         }
 
-        if ($switch) {
-            $suffix    = str_ends_with((string) $row['switch_m_payment_id'], '-m') ? '-m' : '-y';
-            $reference = $this->newPaymentId($plan, $id) . $suffix;
-            $this->verifications->update($id, ['switch_m_payment_id' => $reference]);
-        } else {
-            $reference = $this->newPaymentId($plan, $id);
-            $this->verifications->update($id, ['pf_m_payment_id' => $reference]);
-        }
+        // A switch is known by switch_m_payment_id being set, not by the
+        // reference's text, so it takes the same kind of reference as the row.
+        $reference = $this->nextReference($row, $cycle);
+        $this->verifications->update($id, [$switch ? 'switch_m_payment_id' : 'pf_m_payment_id' => $reference]);
 
         return $this->paystack->initialize(
             (string) ($listing['email'] ?? ''),
@@ -441,15 +446,49 @@ class VerificationService
         return $code;
     }
 
-    /** 'il-' for an International Listing (Plus), 'vb-' for the badge: for humans reading PayFast. */
-    public function newPaymentId(string $plan, int $verificationId): string
+    /**
+     * The next payment reference for a row, used up: WSL-VER-M-000045, then
+     * WSL-VER-Y-000045-2 and so on (App\Libraries\PaymentReference). The
+     * attempt counter is raised in the database first, so two requests at
+     * once still get two references, and a row never repeats one, which both
+     * gateways would refuse.
+     *
+     * @param array<string,mixed> $row
+     */
+    public function nextReference(array $row, string $cycle): string
     {
-        return sprintf(
-            '%s-%d-%s',
-            $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL ? 'il' : 'vb',
-            $verificationId,
-            bin2hex(random_bytes(4))
-        );
+        $id = (int) $row['id'];
+        $this->verifications->builder()
+            ->set('payment_attempts', 'payment_attempts + 1', false)
+            ->where('id', $id)
+            ->update();
+        $attempts = (int) ($this->verifications->builder()->select('payment_attempts')->where('id', $id)->get()->getRow()->payment_attempts ?? 1);
+
+        return PaymentReference::forSubscription((string) ($row['plan'] ?? DirectoryVerificationModel::PLAN_BADGE), $cycle, $id, max(1, $attempts));
+    }
+
+    /**
+     * The reference the next nextReference() will give, without using it up:
+     * what a pending switch carries until Pay is pressed.
+     *
+     * @param array<string,mixed> $row
+     */
+    public function peekReference(array $row, string $cycle): string
+    {
+        $stored = $this->verifications->find((int) $row['id']);
+        $used   = (int) ($stored['payment_attempts'] ?? 0);
+
+        return PaymentReference::forSubscription((string) ($row['plan'] ?? DirectoryVerificationModel::PLAN_BADGE), $cycle, (int) $row['id'], $used + 1);
+    }
+
+    /**
+     * Does a reference get used up only when Pay is pressed? Yes for
+     * Paystack, which is handed it then (paystackCheckout()). PayFast's form
+     * is signed with it when the checkout page renders, so it is minted there.
+     */
+    public function referencesAtPay(): bool
+    {
+        return $this->provider() === DirectoryVerificationModel::PROVIDER_PAYSTACK;
     }
 
     /**

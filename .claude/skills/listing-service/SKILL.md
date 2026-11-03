@@ -746,6 +746,13 @@ renewing through `payfast/notify` until the owner moves.
   POST to our own `manage/verification/pay` / `profile-setup/pay` (CSRF on), which calls
   `initialize` and redirects to `checkout.paystack.com` (in CSP `form-action` and
   `FormOutcome::PAYMENT_HOSTS`). A fresh reference per attempt; metadata carries the row id.
+- **Payment references** (owner, 3 Nov 2026) come only from `App\Libraries\PaymentReference`:
+  `WSL-SETUP-000123`, `WSL-VER-M-`/`WSL-VER-Y-`, `WSL-PLUS-M-`/`WSL-PLUS-Y-` + the row's id,
+  `WSB-BOOK-` reserved for Bookings. A row's `payment_attempts` only goes up and a second
+  reference adds `-2`, `-3`…, because both gateways refuse a reference they have seen.
+  Paystack uses one up when Pay is pressed (`nextReference()`); before that a pending
+  switch carries `peekReference()`. The Pay button posts the row id, not a reference.
+  Old `vb-`/`il-`/`ps-` references on existing rows keep matching.
 - Plans are fixed amount, so `VerificationService::paystackPlanCode()` makes one per
   product, cycle and amount, cached in `xs_paystack_plans`. Plan names carry no amount (no
   rand on .app).
@@ -767,7 +774,7 @@ renewing through `payfast/notify` until the owner moves.
 
 We build the profile for a once off fee: R250 on co.za (`Config\Directory::$profileSetupAmount`,
 3 days), `profile_setup_usd` on .app (charged in rand). `ProfileSetupService`, orders in
-`xs_directory_profile_setup_orders` (reference `ps-…`, fresh per attempt), **always Paystack**
+`xs_directory_profile_setup_orders` (reference `WSL-SETUP-000123`, `-2` on a second try), **always Paystack**
 whatever `paymentProvider` says (no mandate to keep): `POST profile-setup/pay` → Paystack
 checkout → `GET profile-setup/paystack` (verify) and the Paystack webhook, both through
 `PaystackPayments`. `POST /payfast/setup-notify` stays only for a PayFast checkout opened

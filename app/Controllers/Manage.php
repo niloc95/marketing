@@ -610,13 +610,16 @@ class Manage extends BaseController
         // A stale tab paying against a superseded id still lands, because
         // PayFastNotify falls back to custom_str2 — the verification id, which
         // does not change — when m_payment_id matches nothing.
-        if (trim((string) ($verification['pf_m_payment_id'] ?? '')) === ''
-            || $state === DirectoryVerificationModel::STATE_LAPSED) {
-            // 'il-' for an International Listing, 'vb-' for the badge. The
-            // prefix is for humans reading a PayFast dashboard — the lookup is
-            // on the whole string — but a support question that starts "what
-            // is vb-41?" is worth one character to answer.
-            $verification['pf_m_payment_id'] = $service->newPaymentId($plan, (int) $verification['id']);
+        //
+        // PayFast only: Paystack is handed its reference when Pay is pressed
+        // (VerificationService::paystackCheckout()), so this page uses none up.
+        if (! $service->referencesAtPay()
+            && (trim((string) ($verification['pf_m_payment_id'] ?? '')) === ''
+                || $state === DirectoryVerificationModel::STATE_LAPSED)) {
+            // WSL-VER-M-000041 and friends (App\Libraries\PaymentReference):
+            // the row's own number, so "what is WSL-VER-M-000041?" is answered
+            // by the admin screen.
+            $verification['pf_m_payment_id'] = $service->nextReference($verification, DirectoryVerificationModel::cycleOf($verification));
             (new DirectoryVerificationModel())->update(
                 (int) $verification['id'],
                 ['pf_m_payment_id' => $verification['pf_m_payment_id']]
@@ -657,11 +660,12 @@ class Manage extends BaseController
             'move'       => $move,
             'amount'     => $verification['amount'],
             // Paystack: the button posts to our own pay(), which opens the
-            // checkout; the reference says which row (or pending switch) to pay.
+            // checkout; the row id and the switch flag say what to pay (the
+            // reference is minted there, when it is used).
             // PayFast: the signed fields post straight to PayFast.
             'gateway'    => $paystack ? 'Paystack' : 'PayFast',
             'processUrl' => $paystack ? base_url('manage/verification/pay') : $payfast->processUrl(),
-            'fields'     => $paystack ? ['reference' => (string) $verification['pf_m_payment_id']] : $payfast->subscriptionFields($listing, $verification),
+            'fields'     => $paystack ? ['verification' => (string) $verification['id'], 'switch' => $switch ? '1' : '0'] : $payfast->subscriptionFields($listing, $verification),
             'sandbox'    => $paystack ? $service->paystackTestMode() : $payfast->isSandbox(),
             // Both derived here rather than in the view, so the dates the page
             // promises are computed in one place. subscriptionFields() sends no
@@ -757,7 +761,7 @@ class Manage extends BaseController
      * names: the card window over the page for our script, Paystack's
      * hosted page without it (AnswersPaystackCheckout).
      *
-     * The reference only picks the row; the amount comes from the row, and
+     * The posted id only picks the row; the amount comes from the row, and
      * the row must belong to the signed in listing.
      */
     public function pay()
@@ -772,14 +776,10 @@ class Manage extends BaseController
             return $this->checkoutFailed('Card payments are not available at the moment. We will be in touch about payment.', 'manage/edit');
         }
 
-        $reference = trim((string) $this->request->getPost('reference'));
-        $model     = new DirectoryVerificationModel();
-        $row       = $model->findByPaymentId($reference);
-        $switch    = false;
-        if ($row === null) {
-            $row    = $model->findBySwitchPaymentId($reference);
-            $switch = $row !== null;
-        }
+        $found  = (new DirectoryVerificationModel())->find((int) $this->request->getPost('verification'));
+        $row    = is_array($found) ? $found : null;
+        $switch = $this->request->getPost('switch') === '1' && $row !== null
+            && trim((string) ($row['switch_m_payment_id'] ?? '')) !== '';
 
         $payable = $row !== null && (int) $row['listing_id'] === (int) $listing['id'] && ($switch
             ? $row['state'] === DirectoryVerificationModel::STATE_ACTIVE

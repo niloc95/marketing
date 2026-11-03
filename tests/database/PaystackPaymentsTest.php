@@ -239,9 +239,9 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->assertCount(1, $billing->payfastMandatesToMove());
         $move = $billing->startMove((int) $this->verifications->find($id)['listing_id'], DirectoryVerificationModel::PLAN_BADGE);
         $this->assertTrue($move['ok'], $move['message']);
-        $this->assertStringEndsWith('-m', $move['verification']['switch_m_payment_id']);
+        $this->assertSame(sprintf('WSL-VER-M-%06d', $id), $move['verification']['switch_m_payment_id'], 'reserved, not used up yet');
 
-        // The checkout: same amount and cycle, a fresh '-m' reference.
+        // The checkout: same amount and cycle, and Pay takes the reserved reference.
         $listing = $this->listings->find((int) $move['verification']['listing_id']);
         $this->assertNotNull($billing->paystackCheckout($listing, $this->verifications->find($id), true));
         $sent = $this->paystack->callsOf('initialize')[0][1];
@@ -249,6 +249,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->assertSame('switch', $sent['metadata']['purpose']);
         $ref = $this->verifications->find($id)['switch_m_payment_id'];
         $this->assertSame($sent['reference'], $ref);
+        $this->assertSame(sprintf('WSL-VER-M-%06d', $id), $ref);
 
         $this->charge($ref, 2999, 'CUS_m', 'PLN_monthly_2999', 9006);
         $this->assertStringContainsString('(switch)', (new PaystackPayments($this->paystack, $billing))->confirmReference($ref));
@@ -309,7 +310,8 @@ final class PaystackPaymentsTest extends CIUnitTestCase
 
         [$first, $second] = array_map(static fn (array $c) => $c[1], $this->paystack->callsOf('initialize'));
         $this->assertSame('PLN_monthly_3000', $first['planCode']);
-        $this->assertNotSame($first['reference'], $second['reference'], 'Paystack refuses a reference it has seen');
+        $this->assertSame(sprintf('WSL-VER-M-%06d', $row['id']), $first['reference']);
+        $this->assertSame(sprintf('WSL-VER-M-%06d-2', $row['id']), $second['reference'], 'Paystack refuses a reference it has seen');
         $this->assertStringContainsString('manage/verification/paystack', $first['callbackUrl']);
     }
 
@@ -318,7 +320,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $row = $this->approvedBadge('30.00', 'vb-button');
 
         $result = $this->withSession([Manage::SESSION_KEY => (int) $row['listing_id']])
-            ->post('manage/verification/pay', ['reference' => 'vb-button', csrf_token() => csrf_hash()]);
+            ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()]);
 
         $result->assertRedirectTo('https://checkout.paystack.com/fake123');
     }
@@ -329,7 +331,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
 
         $result = $this->withSession([Manage::SESSION_KEY => (int) $row['listing_id']])
             ->withHeaders(['Accept' => 'application/json'])
-            ->post('manage/verification/pay', ['reference' => 'vb-overlay', csrf_token() => csrf_hash()]);
+            ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()]);
 
         $result->assertStatus(200);
         $json = json_decode((string) $result->response()->getBody(), true);
@@ -340,13 +342,13 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->assertNotSame('', (string) $json['csrf']['hash'], 'a second press after closing the window needs it');
     }
 
-    public function testOurCheckoutScriptIsToldWhyWhenAReferenceIsNotItsOwn(): void
+    public function testOurCheckoutScriptIsToldWhyWhenARowIsNotItsOwn(): void
     {
-        $this->approvedBadge('30.00', 'vb-not-yours');
+        $row = $this->approvedBadge('30.00', 'vb-not-yours');
 
         $result = $this->withSession([Manage::SESSION_KEY => $this->makeListing()])
             ->withHeaders(['Accept' => 'application/json'])
-            ->post('manage/verification/pay', ['reference' => 'vb-not-yours', csrf_token() => csrf_hash()]);
+            ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()]);
 
         $result->assertStatus(422);
         $this->assertStringContainsString('expired', json_decode((string) $result->response()->getBody(), true)['error']);
@@ -367,7 +369,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $other = $this->makeListing();
 
         $this->withSession([Manage::SESSION_KEY => $other])
-            ->post('manage/verification/pay', ['reference' => 'vb-theirs', csrf_token() => csrf_hash()])
+            ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()])
             ->assertRedirectTo(base_url('manage/edit'));
 
         $this->assertSame([], $this->paystack->callsOf('initialize'));
@@ -379,6 +381,62 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->setEnv('directory.paystackSecretKey', '');
 
         $this->assertSame('payfast', (new \Config\Directory())->paymentProvider());
+    }
+
+    public function testARowNeverRepeatsAReferenceAcrossCyclesAndALapse(): void
+    {
+        $row     = $this->approvedBadge('30.00', 'vb-cycles');
+        $listing = $this->listings->find((int) $row['listing_id']);
+        $billing = $this->billing();
+        $seen    = [];
+
+        foreach (['monthly', 'yearly', 'monthly'] as $cycle) {
+            $priced = $billing->priceForCheckout($this->verifications->find((int) $row['id']), DirectoryVerificationModel::PLAN_BADGE, $cycle);
+            $billing->paystackCheckout($listing, $priced, false);
+        }
+        $this->verifications->update((int) $row['id'], ['state' => DirectoryVerificationModel::STATE_LAPSED]);
+        $billing->paystackCheckout($listing, $this->verifications->find((int) $row['id']), false);
+
+        foreach ($this->paystack->callsOf('initialize') as $call) {
+            $seen[] = $call[1]['reference'];
+        }
+        $id = sprintf('%06d', $row['id']);
+        $this->assertSame(['WSL-VER-M-' . $id, 'WSL-VER-Y-' . $id . '-2', 'WSL-VER-M-' . $id . '-3', 'WSL-VER-M-' . $id . '-4'], $seen);
+        $this->assertSame(count($seen), count(array_unique($seen)));
+    }
+
+    public function testPlusTakesItsOwnReference(): void
+    {
+        $id = (int) $this->verifications->insert([
+            'listing_id'   => $this->makeListing(),
+            'plan'         => DirectoryVerificationModel::PLAN_INTERNATIONAL,
+            'state'        => DirectoryVerificationModel::STATE_APPROVED,
+            'amount'       => '163.62',
+            'billing_cycle' => 'yearly',
+            'submitted_at' => date('Y-m-d H:i:s'),
+        ], true);
+        $row = $this->verifications->find($id);
+
+        $this->billing()->paystackCheckout($this->listings->find((int) $row['listing_id']), $row, false);
+
+        $this->assertSame(sprintf('WSL-PLUS-Y-%06d', $id), $this->paystack->callsOf('initialize')[0][1]['reference']);
+    }
+
+    public function testAnOrderMadeBeforeTheNewReferencesStillPays(): void
+    {
+        $orders = new ProfileSetupOrderModel();
+        $id     = (int) $orders->insert([
+            'reference' => 'ps-0123456789ab', 'name' => 'Old Order', 'business_name' => 'Old Order Co',
+            'email'     => 'old@example.test', 'phone' => '0821234567', 'amount' => '250.00',
+            'status'    => ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT, 'terms_at' => date('Y-m-d H:i:s'),
+        ], true);
+        $this->paystack->transactions['ps-0123456789ab'] = [
+            'id' => 9010, 'status' => 'success', 'reference' => 'ps-0123456789ab', 'amount' => 25000,
+            'currency' => 'ZAR', 'metadata' => [], 'customer' => ['customer_code' => 'CUS_o'], 'plan' => null,
+        ];
+
+        $this->assertStringStartsWith('paid', $this->webhook('charge.success', ['reference' => 'ps-0123456789ab']));
+        $this->assertSame(ProfileSetupOrderModel::STATUS_PAID, $orders->find($id)['status']);
     }
 
     // ---------------------------------------------------------- profile setup
@@ -395,7 +453,13 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->assertNotNull((new ProfileSetupService())->paystackCheckout($orders->find($id)));
         $order = $orders->find($id);
         $this->assertSame('paystack', $order['provider']);
+        $this->assertSame(sprintf('WSL-SETUP-%06d', $id), $order['reference']);
         $this->assertNull($this->paystack->callsOf('initialize')[0][1]['planCode'], 'paid once, no plan');
+
+        // The buyer closes the card window and presses Pay again.
+        (new ProfileSetupService())->paystackCheckout($orders->find($id));
+        $order = $orders->find($id);
+        $this->assertSame(sprintf('WSL-SETUP-%06d-2', $id), $order['reference']);
 
         $this->paystack->transactions[$order['reference']] = [
             'id' => 9008, 'status' => 'success', 'reference' => $order['reference'], 'amount' => 25000,

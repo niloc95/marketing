@@ -41,7 +41,7 @@ class ProfileSetupOrderModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'reference', 'name', 'business_name', 'email', 'phone', 'profile_url', 'notes',
-        'amount', 'status', 'pf_payment_id', 'paid_at', 'terms_at', 'admin_notes', 'provider',
+        'amount', 'status', 'pf_payment_id', 'paid_at', 'terms_at', 'admin_notes', 'provider', 'payment_attempts',
     ];
 
     /**

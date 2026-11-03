@@ -209,7 +209,7 @@ final class ProfileSetupTest extends CIUnitTestCase
         $order = $this->order();
 
         $this->assertSame(ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT, $order['status']);
-        $this->assertMatchesRegularExpression('/^ps-[0-9a-f]{12}$/', $order['reference']);
+        $this->assertSame(sprintf('WSL-SETUP-%06d', $order['id']), $order['reference'], 'the order\'s own number');
         $this->assertSame('250.00', $order['amount']);
         $this->assertNotEmpty($order['terms_at']);
         $this->assertNull($order['profile_url']);

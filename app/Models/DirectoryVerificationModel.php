@@ -20,7 +20,7 @@ class DirectoryVerificationModel extends Model
         'submitted_at', 'reviewed_at', 'reviewed_by', 'activated_at', 'cancelled_at',
         'billing_cycle', 'switch_m_payment_id', 'switch_amount',
         'provider', 'switch_cycle', 'paystack_customer_code', 'paystack_plan_code',
-        'paystack_subscription_code', 'paystack_email_token',
+        'paystack_subscription_code', 'paystack_email_token', 'payment_attempts',
     ];
 
     /**

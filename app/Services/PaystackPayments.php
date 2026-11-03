@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\Mailer;
+use App\Libraries\PaymentReference;
 use App\Libraries\Paystack;
 use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\DirectoryVerificationModel;
@@ -102,7 +103,7 @@ class PaystackPayments
         }
 
         $metadata = $this->metadataOf($tx);
-        if (str_starts_with((string) ($tx['reference'] ?? ''), 'ps-') || isset($metadata['order_id'])) {
+        if (PaymentReference::isSetup((string) ($tx['reference'] ?? '')) || isset($metadata['order_id'])) {
             return $this->profileSetupCharge($tx, $metadata, $fields, $ip);
         }
 
