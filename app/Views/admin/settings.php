@@ -104,11 +104,11 @@ $changeNote = static function (?array $change): string {
                       // a price rise into a pile of "why am I still paying the old amount?"
                       // emails — or worse, an expectation of back-charging. ?>
                 <div class="alert alert-info">
-                    <strong>A price change applies to new applications only.</strong>
+                    <strong>A price change applies to new payments only.</strong>
                     Businesses already paying keep the amount they signed up at. PayFast or Paystack
                     keeps billing their existing subscription at that figure, and we cannot change
-                    it from here. A business you have already approved but who has not paid yet
-                    also keeps the price they were quoted.
+                    it from here. A business you have approved but who has not paid yet, or whose
+                    badge lapsed, pays the price shown here when they check out.
                 </div>
 
                 <div class="field">
