@@ -479,28 +479,32 @@ class DirectoryListingMutationService
      * would, and the address is proven by the same fact, that the owner
      * received it. Minting it retires any earlier verify or preview link.
      *
-     * Pending only, for resendVerification()'s reasons. Returns whether an
-     * email went out.
+     * Pending only, for resendVerification()'s reasons. Returns the
+     * customer's preview link, or '' when nothing was sent. The admin is shown
+     * that link once so it can go by WhatsApp too: only the hash is stored,
+     * and the admin's own /admin/preview is behind Cloudflare Access, so it is
+     * no use to a customer.
      */
-    public function sendPreview(int $listingId): bool
+    public function sendPreview(int $listingId): string
     {
         $listing = $this->listings->find($listingId);
         if (! is_array($listing) || ($listing['status'] ?? '') !== 'pending'
             || ! filter_var((string) ($listing['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
-            return false;
+            return '';
         }
 
         $token = $this->mintVerifyToken($listingId, $this->config->previewTtl);
+        $link  = listing_site_url($listing, 'preview/' . $token);
         $body  = view('emails/preview', [
             'name' => (string) (($listing['contact_person'] ?? '') ?: $listing['display_name']),
             'business' => (string) $listing['display_name'],
-            'link' => listing_site_url($listing, 'preview/' . $token),
+            'link' => $link,
             'site' => $this->config->siteName(),
             'days' => (int) round($this->config->previewTtl / 86400),
         ]);
         $this->send((string) $listing['email'], 'Your business profile is ready for you to approve', $body);
 
-        return true;
+        return $link;
     }
 
     /**
