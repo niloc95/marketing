@@ -53,6 +53,16 @@ class FakePaystack extends Paystack
         return $this->transactions[$reference] ?? null;
     }
 
+    /** @var array<string,list<string>|null> what successfulCharges() answers, by customer code; absent = none */
+    public array $charges = [];
+
+    public function successfulCharges(string $customerCode, int $since): ?array
+    {
+        $this->calls[] = ['charges', $customerCode, $since];
+
+        return array_key_exists($customerCode, $this->charges) ? $this->charges[$customerCode] : [];
+    }
+
     public function createPlan(string $name, string $interval, int $amountCents): ?string
     {
         $this->plans[] = ['name' => $name, 'interval' => $interval, 'cents' => $amountCents];

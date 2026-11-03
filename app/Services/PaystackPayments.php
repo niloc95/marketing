@@ -33,6 +33,9 @@ use App\Models\ProfileSetupOrderModel;
  */
 class PaystackPayments
 {
+    /** How long after a term ends a late renewal is still looked for. */
+    private const LATE_RENEWAL_DAYS = 14;
+
     private Paystack $paystack;
     private VerificationService $billing;
     private DirectoryVerificationModel $verifications;
@@ -108,6 +111,54 @@ class PaystackPayments
         }
 
         return $this->subscriptionCharge($tx, $metadata, $fields, $ip);
+    }
+
+    /**
+     * Renewals the webhook should have told us about, asked for instead. A
+     * Paystack renewal has no browser return, so without this a missed
+     * webhook means a paid badge lapses on the next sweep.
+     *
+     * Rows on a Paystack mandate whose term ends by tomorrow, or ended in the
+     * last LATE_RENEWAL_DAYS (Paystack retries a declined card for days), not
+     * cancelled. Each charge since a few days before the term ended goes
+     * through confirmReference(), so every check the webhook makes still
+     * applies, and a charge already banked answers 'duplicate'.
+     *
+     * Runs in directory:verifications:sweep before lapseExpired(), and on its
+     * own as directory:paystack:catch-up.
+     *
+     * @return list<string> one outcome per charge, or per row Paystack would not answer for
+     */
+    public function catchUpRenewals(): array
+    {
+        if (! $this->paystack->isConfigured()) {
+            return [];
+        }
+
+        $rows = $this->verifications
+            ->where('provider', DirectoryVerificationModel::PROVIDER_PAYSTACK)
+            ->whereIn('state', [DirectoryVerificationModel::STATE_ACTIVE, DirectoryVerificationModel::STATE_LAPSED])
+            ->where('paystack_customer_code IS NOT NULL')
+            ->where('cancelled_at', null)
+            ->where('paid_until <=', date('Y-m-d', strtotime('+1 day')))
+            ->where('paid_until >=', date('Y-m-d', strtotime('-' . self::LATE_RENEWAL_DAYS . ' days')))
+            ->findAll();
+
+        $outcomes = [];
+        foreach ($rows as $row) {
+            $since      = strtotime((string) $row['paid_until'] . ' -3 days');
+            $references = $this->paystack->successfulCharges((string) $row['paystack_customer_code'], (int) $since);
+            if ($references === null) {
+                $outcomes[] = 'retry: Paystack did not list the charges for verification ' . (int) $row['id'];
+
+                continue;
+            }
+            foreach ($references as $reference) {
+                $outcomes[] = $this->confirmReference($reference);
+            }
+        }
+
+        return $outcomes;
     }
 
     // ------------------------------------------------------------ the charges
