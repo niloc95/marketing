@@ -149,7 +149,7 @@ if (! is_array($old['hours'] ?? null)) {
                                 <?php // w-16, not an inline width: CSP enforces style-src-attr. ?>
                                 <input type="number" name="months" value="1" min="1" max="24" class="text-xs w-16" title="Months" <?= $confirmed ? '' : 'disabled' ?>>
                                 <button class="btn btn-ghost btn-xs" name="mode" value="activate" <?= $confirmed ? '' : 'disabled' ?>
-                                        data-confirm="Activate the badge now without PayFast? Only once payment has arrived, or if it is given free.">Activate now (EFT or free)</button>
+                                        data-confirm="Activate the badge now without a card payment? Only once payment has arrived, or if it is given free.">Activate now (EFT or free)</button>
                             </div>
                             <?php if (! $confirmed): ?>
                                 <p class="hint">Waiting for the customer to approve the preview. Send it, then come back here once they approve.</p>

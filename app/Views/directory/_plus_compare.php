@@ -11,7 +11,7 @@ use App\Services\TeamMemberService;
  * and is billed in rand (Legal terms section 4 on .app).
  *
  * @var string|null $usd      Plus's dollar price; null renders nothing
- * @var string|null $rand     what PayFast charges a new subscription
+ * @var string|null $rand     what the gateway charges a new subscription
  * @var bool        $onSignup the signup form's version: the two cards only,
  *                            their buttons going down to the form on the page
  */

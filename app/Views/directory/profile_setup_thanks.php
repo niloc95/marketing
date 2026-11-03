@@ -9,9 +9,9 @@
 
 <?php
 /**
- * Where PayFast returns the buyer. Anyone can open this URL, so it claims
+ * Where the gateway returns the buyer. Anyone can open this URL, so it claims
  * nothing about payment: the receipt email is the confirmation, sent once
- * PayFast's own notification has been checked.
+ * the gateway's own notification has been checked.
  *
  * @var int $days
  */
@@ -24,7 +24,7 @@
             <span class="eyebrow">Profile setup</span>
             <h1 class="mb-1.5 mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">Thank you</h1>
             <p class="mb-4 text-slate-600 dark:text-slate-300">
-                As soon as PayFast confirms your payment, we email you a receipt. It usually arrives within a few minutes.
+                As soon as your payment is confirmed, we email you a receipt. It usually arrives within a few minutes.
             </p>
             <p class="mb-6 text-slate-600 dark:text-slate-300">
                 We will then be in touch to collect your logo, photos and details, and we complete your profile within

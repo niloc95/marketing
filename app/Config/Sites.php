@@ -49,14 +49,12 @@ class Sites extends BaseConfig
             'mapView'         => [-28.8, 24.7, 5],
             'locale'          => 'en-ZA',
             'currency'        => 'ZAR',
-            'paymentProvider' => 'payfast',
         ],
         self::APP => [
             'countries'       => null,
             'mapView'         => [25.0, 10.0, 2],
             'locale'          => 'en',
             'currency'        => 'USD',
-            'paymentProvider' => 'payfast',
             // Bing Webmaster Tools ownership tag (public by design: it is a
             // meta tag on every page). layouts/public.php prints it.
             'bingVerification' => 'DCE52B24BAE5E4896E636D6B6BD0A921',

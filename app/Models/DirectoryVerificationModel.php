@@ -19,6 +19,8 @@ class DirectoryVerificationModel extends Model
         'pf_subscription_token', 'billing_anchor_day', 'pf_m_payment_id', 'rejection_reason',
         'submitted_at', 'reviewed_at', 'reviewed_by', 'activated_at', 'cancelled_at',
         'billing_cycle', 'switch_m_payment_id', 'switch_amount',
+        'provider', 'switch_cycle', 'paystack_customer_code', 'paystack_plan_code',
+        'paystack_subscription_code', 'paystack_email_token', 'payment_attempts',
     ];
 
     /**
@@ -106,6 +108,77 @@ class DirectoryVerificationModel extends Model
         }
 
         $row = $this->where('pf_m_payment_id', $mPaymentId)->first();
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Who holds a row's recurring mandate. 'payfast' when absent: every row
+     * written before Paystack, and the column's DEFAULT.
+     */
+    public const PROVIDER_PAYFAST  = 'payfast';
+    public const PROVIDER_PAYSTACK = 'paystack';
+
+    public static function providerOf(array $row): string
+    {
+        return ($row['provider'] ?? '') === self::PROVIDER_PAYSTACK ? self::PROVIDER_PAYSTACK : self::PROVIDER_PAYFAST;
+    }
+
+    /**
+     * Is there a recurring mandate behind this row, something that bills a
+     * card on its own and so can be cancelled or switched? A PayFast token, or
+     * a Paystack customer on a plan. A badge activated by hand has neither.
+     */
+    public static function hasMandate(array $row): bool
+    {
+        if (self::providerOf($row) === self::PROVIDER_PAYSTACK) {
+            return trim((string) ($row['paystack_customer_code'] ?? '')) !== ''
+                && trim((string) ($row['paystack_plan_code'] ?? '')) !== '';
+        }
+
+        return trim((string) ($row['pf_subscription_token'] ?? '')) !== '';
+    }
+
+    /**
+     * The cycle a pending switch moves to: the row's own on a move between
+     * gateways, yearly on a monthly to yearly switch (and on every pending
+     * switch made before switch_cycle existed).
+     */
+    public static function switchCycleOf(array $row): string
+    {
+        return ($row['switch_cycle'] ?? '') === self::CYCLE_MONTHLY ? self::CYCLE_MONTHLY : self::CYCLE_YEARLY;
+    }
+
+    /**
+     * The Paystack row a renewal belongs to. A renewal's charge carries a
+     * reference Paystack made, not ours, so the customer and the plan are
+     * what identify it.
+     */
+    public function findByPaystackMandate(string $customerCode, string $planCode): ?array
+    {
+        $customerCode = trim($customerCode);
+        $planCode     = trim($planCode);
+        if ($customerCode === '' || $planCode === '') {
+            return null;
+        }
+
+        $row = $this->where('provider', self::PROVIDER_PAYSTACK)
+            ->where('paystack_customer_code', $customerCode)
+            ->where('paystack_plan_code', $planCode)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        return is_array($row) ? $row : null;
+    }
+
+    public function findByPaystackSubscription(string $subscriptionCode): ?array
+    {
+        $subscriptionCode = trim($subscriptionCode);
+        if ($subscriptionCode === '') {
+            return null;
+        }
+
+        $row = $this->where('paystack_subscription_code', $subscriptionCode)->first();
 
         return is_array($row) ? $row : null;
     }

@@ -215,7 +215,7 @@ $contact   = config('Directory')->adminEmail();
             <h2 id="profile-setup">12. Our profile setup service</h2>
             <p>If you order our <a href="<?= base_url('profile-setup') ?>">profile setup service</a>, we receive your name, business name, email address and phone number, and optionally a link to your existing profile and a note. We use them to take your payment, to contact you for the details, logo and photos we need, and to complete your profile.</p>
             <ul>
-                <li>Payment is taken by PayFast. We do not see or store your card details.</li>
+                <li>Payment is taken by Paystack (or by PayFast, for a subscription started before we moved to Paystack). We do not see or store your card details.</li>
                 <li>The logo, photos and details you send us are used on your business profile, as described in section 5.</li>
                 <li>We keep the order record, including when you accepted the terms of the service, as proof of the purchase.</li>
             </ul>
@@ -299,9 +299,9 @@ $contact   = config('Directory')->adminEmail();
             <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to businesses with a profile; the requester's contact details are not included.</p>
 
             <h3>Payment processing</h3>
-            <p>If you purchase a Verified Business badge or our profile setup service, payment processing is handled by <strong>PayFast</strong>. See <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
-            <p>Payment information is processed through PayFast's payment environment. We do not store your full card details on our servers.</p>
-            <p>Verification documents, including identity and company registration documents, are not provided to PayFast for payment processing.</p>
+            <p>If you purchase a Verified Business badge or our profile setup service, payment processing is handled by <strong>Paystack</strong>. See <a href="https://paystack.com/za/terms" rel="noopener">Paystack's terms and privacy notice</a>. A subscription started before we moved to Paystack is processed by <strong>PayFast</strong> until you move it; see <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
+            <p>Payment information is processed in Paystack's (or PayFast's) payment environment. We do not store your full card details on our servers.</p>
+            <p>Verification documents, including identity and company registration documents, are not provided to Paystack or PayFast for payment processing.</p>
 
             <h3>Legal requirements</h3>
             <p>We may disclose information where required or permitted by applicable law, including in response to a valid court order, legal process or lawful request from an authorised authority.</p>

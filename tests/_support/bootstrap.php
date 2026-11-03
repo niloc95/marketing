@@ -25,3 +25,12 @@ foreach (['directory.indexMinDescription', 'directory.indexMinQuality'] as $key)
     unset($_ENV[$key], $_SERVER[$key]);
     putenv($key);
 }
+
+// Paystack: no key and PayFast for new checkouts unless a test says otherwise,
+// so a developer's Paystack key can never send the suite to the real API.
+// Tests that need Paystack set both with WithEnv and inject a fake client
+// (Services::injectMock('paystack')).
+foreach (['directory.paystackSecretKey', 'directory.paymentProvider'] as $key) {
+    unset($_ENV[$key], $_SERVER[$key]);
+    putenv($key);
+}

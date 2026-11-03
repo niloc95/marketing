@@ -2,8 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Controllers\Concerns\AnswersPaystackCheckout;
 use App\Controllers\Concerns\LocksDownDocumentCsp;
-use App\Libraries\PayFast;
+use App\Services\PaystackPayments;
 use App\Services\ProfileSetupService;
 
 /**
@@ -11,15 +12,19 @@ use App\Services\ProfileSetupService;
  *
  * GET  profile-setup           the page and the order form
  * POST profile-setup           save the order, then on to checkout
- * GET  profile-setup/checkout  summary and the button that posts to PayFast
- * GET  profile-setup/thanks    where PayFast sends the buyer back
+ * GET  profile-setup/checkout  summary and the pay button, a post to pay()
+ * POST profile-setup/pay       open a Paystack checkout for the order
+ * GET  profile-setup/paystack  where Paystack sends the buyer back
+ * GET  profile-setup/thanks    the thank you page
  *
- * The order being paid for travels in the session, never in the URL, so
- * nobody can open someone else's checkout by changing a number. PayFast's
- * notification (ProfileSetupNotify) is what marks an order paid.
+ * Paystack only (ProfileSetupService). The order being paid for travels in
+ * the session, never in the URL, so nobody can open someone else's checkout
+ * by changing a number. A payment Paystack confirms (its webhook, or its
+ * verify answer on the way back) is what marks an order paid.
  */
 class ProfileSetup extends BaseController
 {
+    use AnswersPaystackCheckout;
     use LocksDownDocumentCsp;
 
     /** Nobody reads the page and fills the form this fast. */
@@ -93,8 +98,8 @@ class ProfileSetup extends BaseController
     }
 
     /**
-     * The summary and the PayFast button. Also PayFast's cancel_url, so a
-     * buyer who backs out lands here and can try again.
+     * The summary and the Pay button. A buyer who backs out of Paystack's
+     * page comes back here and can try again.
      */
     public function checkout()
     {
@@ -105,8 +110,7 @@ class ProfileSetup extends BaseController
                 ->with('error', 'Please fill in the form to start your order.');
         }
 
-        $payfast = new PayFast();
-        if (! $payfast->isConfigured()) {
+        if (! $svc->canTakePayment()) {
             return redirect()->to(base_url('profile-setup') . '#order')
                 ->with('error', 'Card payments are not available at the moment. Please contact us and we will help you directly.');
         }
@@ -115,15 +119,62 @@ class ProfileSetup extends BaseController
             'order'      => $order,
             'days'       => $svc->days(),
             'usd'        => $svc->usdAmount(),
-            'processUrl' => $payfast->processUrl(),
-            'fields'     => $payfast->onceOffFields($order),
-            'sandbox'    => $payfast->isSandbox(),
+            'processUrl' => base_url('profile-setup/pay'),
+            'sandbox'    => service('paystack')->isTestMode(),
         ]);
     }
 
     /**
-     * PayFast's return_url. Proves nothing about payment, so it changes
-     * nothing: the receipt email follows once PayFast's notification lands.
+     * The Pay button: Paystack's card window over the page for our script,
+     * its hosted page without it (AnswersPaystackCheckout).
+     */
+    public function pay()
+    {
+        $svc   = new ProfileSetupService();
+        $order = $svc->payable((int) session(self::ORDER_KEY));
+        if ($order === null) {
+            return $this->checkoutFailed('Please fill in the form to start your order.', 'profile-setup#order');
+        }
+        if (! $svc->canTakePayment()) {
+            return $this->checkoutFailed('Card payments are not available at the moment. Please contact us and we will help you directly.', 'profile-setup/checkout');
+        }
+
+        $checkout = $svc->paystackCheckout($order);
+        if ($checkout === null) {
+            return $this->checkoutFailed('We could not open the payment window just now. Please try again in a minute.', 'profile-setup/checkout', 502);
+        }
+
+        return $this->checkoutOpened($checkout, 'profile-setup/paystack');
+    }
+
+    /**
+     * Paystack's return. Asks Paystack about the reference (the trip itself
+     * proves nothing) so a paid order is marked and receipted at once, then
+     * shows the thanks page; a payment that did not go through goes back to
+     * the checkout to try again.
+     */
+    public function paystackReturn()
+    {
+        $reference = (string) ($this->request->getGet('reference') ?? $this->request->getGet('trxref') ?? '');
+        $ip        = (string) $this->request->getIPAddress();
+        $outcome   = 'skipped: throttled';
+        if (service('throttler')->check('paystack-return-' . md5($ip), 10, MINUTE)) {
+            $outcome = (new PaystackPayments())->confirmReference($reference, $ip);
+            log_message(str_starts_with($outcome, 'rejected') || str_starts_with($outcome, 'retry') ? 'warning' : 'info', 'Paystack return: ' . $outcome);
+        }
+
+        if (str_starts_with($outcome, 'noted') && (new ProfileSetupService())->payable((int) session(self::ORDER_KEY)) !== null) {
+            return redirect()->to(base_url('profile-setup/checkout'))
+                ->with('error', 'Your payment did not go through, and nothing was charged. You can try again below.');
+        }
+
+        return $this->thanks();
+    }
+
+    /**
+     * The thank you page, after paystackReturn(). Proves nothing about
+     * payment, so it changes nothing: the receipt email follows once the
+     * payment is confirmed.
      */
     public function thanks()
     {

@@ -59,11 +59,14 @@ $routes->get('resources', 'Contact::resources');
 // Media resources: our logo to download, how to use it, and why the Verified
 // Business badge is deliberately not among the downloads.
 $routes->get('media', 'Contact::media');
-// Profile setup service: we complete a profile for a once-off PayFast fee.
-// checkout is also PayFast's cancel_url; payfast/setup-notify is its ITN.
+// Profile setup service: we complete a profile for a once-off Paystack fee.
+// pay opens Paystack's checkout, paystack is where it sends the buyer back.
+// payfast/setup-notify stays for a PayFast checkout opened before the switch.
 $routes->get('profile-setup', 'ProfileSetup::index');
 $routes->post('profile-setup', 'ProfileSetup::order');
 $routes->get('profile-setup/checkout', 'ProfileSetup::checkout');
+$routes->post('profile-setup/pay', 'ProfileSetup::pay');
+$routes->get('profile-setup/paystack', 'ProfileSetup::paystackReturn');
 $routes->get('profile-setup/thanks', 'ProfileSetup::thanks');
 
 // "Recommend a business". Top-level for the same reason as contact. The form
@@ -155,6 +158,11 @@ $routes->get('manage/verification/checkout', 'Manage::checkout');
 $routes->post('manage/verification/cancel', 'Manage::cancelVerification');
 $routes->post('manage/verification/yearly', 'Manage::switchToYearly');
 $routes->get('manage/verification/done', 'Manage::verificationDone');
+// Paystack: the pay button, Paystack's return, and the move from PayFast
+// (the move email's magic link lands on it through ?to=move).
+$routes->post('manage/verification/pay', 'Manage::pay');
+$routes->get('manage/verification/paystack', 'Manage::paystackReturn');
+$routes->get('manage/verification/move', 'Manage::move');
 $routes->get('manage/(:segment)', 'Manage::redeem/$1');
 
 // Jobs board: vacancies and "service required" requests. Top-level, so it
@@ -215,6 +223,9 @@ $routes->get('pricing.json', 'Pricing::json');
 // controller's four validation checks are what stands in their place.
 $routes->post('payfast/notify', 'PayFastNotify::index');
 $routes->post('payfast/setup-notify', 'ProfileSetupNotify::index');
+// Paystack's webhook, for every payment it takes (PaystackWebhook). Exempt
+// like the two above; PaystackPayments' checks stand in for CSRF.
+$routes->post('paystack/webhook', 'PaystackWebhook::index');
 
 // Admin oversight
 $routes->get('admin/login', 'Admin::login');

@@ -165,14 +165,14 @@ _PAGES = [
             {"kind": "table", "widths": [0.42, 0.58],
              "header": ["ALL OF THESE MUST HOLD", "WHY"],
              "rows": [
-                 ["PayFast reports it COMPLETE", "Cancellations and failed payments earn nothing."],
+                 ["Paystack reports it paid", "Cancellations and failed payments earn nothing."],
                  ["The partner is approved at the time", "A suspended partner stops earning. What they "
                                                         "already earned is still theirs."],
                  ["It was paid after the profile was credited", "Crediting a profile by hand never pays "
                                                                "out for the past."],
                  [f"It is one of the first {MONTHS} monthly payments",
                   "Counted from the subscription's first payment, so the 13th never earns."],
-                 ["It has not earned before", "One commission per PayFast payment id, enforced by the "
+                 ["It has not earned before", "One commission per payment id, enforced by the "
                                               "database, so a repeated notification cannot pay twice."],
              ]},
             {"kind": "para",
@@ -282,11 +282,11 @@ _PAGES = [
              "rows": [
                  ["Customers A and B pay us (16 payments)", R(REVENUE), "100%"],
                  ["Partner A's commission", R(TOTAL), f"{TOTAL / REVENUE * 100:.0f}%"],
-                 ["We keep, before PayFast fees", R(REVENUE - TOTAL), f"{(REVENUE - TOTAL) / REVENUE * 100:.0f}%"],
+                 ["We keep, before payment fees", R(REVENUE - TOTAL), f"{(REVENUE - TOTAL) / REVENUE * 100:.0f}%"],
              ]},
             {"kind": "small",
              "text": f"{RATE}% of {R(PRICE)} is R{PRICE * RATE / 100:.3f}, which rounds to "
-                     f"{R(PER_PAYMENT)}. Commission is worked out on what PayFast reports as paid, so a "
+                     f"{R(PER_PAYMENT)}. Commission is worked out on what Paystack reports as paid, so a "
                      "price change shows up automatically."},
         ],
     },
@@ -345,7 +345,7 @@ _PAGES = [
                   "We cancel that commission at /admin/partners. It is never paid."],
                  ["A refund comes after the partner was already paid",
                   "A paid commission cannot be cancelled. We take it up with the partner directly."],
-                 ["PayFast sends the same payment notification twice",
+                 ["Paystack sends the same payment notification twice",
                   "The second is ignored, for the payment and for the commission."],
                  ["Recording a commission fails (database trouble)",
                   "The customer's payment still goes through. The nightly sweep rebuilds any commission "
@@ -413,7 +413,7 @@ _PAGES = [
                  "saved, and swallow their own errors. A partner problem never costs a business its "
                  "profile or its badge."),
                 ("02", "NO DOUBLE PAYING",
-                 "One commission per PayFast payment, enforced by the database. Payouts are all or "
+                 "One commission per payment, enforced by the database. Payouts are all or "
                  "nothing: either every Ready commission is marked paid, or none is."),
                 ("03", "NOTHING CLAIMED FROM A FORM",
                  "No form can set which partner a profile belongs to. Only the cookie at signup, or an "

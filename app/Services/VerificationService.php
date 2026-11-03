@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Libraries\Mailer;
 use App\Libraries\PayFast;
+use App\Libraries\PaymentReference;
+use App\Libraries\Paystack;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationEventModel;
 use App\Models\DirectoryVerificationModel;
 use App\Models\DirectoryVerificationSubmissionModel;
+use App\Models\PaystackPlanModel;
 use Config\Directory as DirectoryConfig;
 use Config\Sites;
 use Throwable;
@@ -37,15 +40,17 @@ class VerificationService
     private DirectoryListingModel $listings;
     private DirectoryConfig $config;
     private PayFast $payfast;
+    private Paystack $paystack;
     private DirectorySettings $settings;
 
     /**
      * PayFast is injectable for one reason: cancelSubscription() has a failure
      * branch that must never be mistaken for success, and the only way to prove
      * both branches behave is to be able to make the call fail on demand. The
-     * default keeps every caller in the app unchanged.
+     * default keeps every caller in the app unchanged. Paystack likewise, and
+     * tests hand in a double whose request() never leaves the machine.
      */
-    public function __construct(?PayFast $payfast = null)
+    public function __construct(?PayFast $payfast = null, ?Paystack $paystack = null)
     {
         $this->verifications = new DirectoryVerificationModel();
         $this->documents     = new DirectoryVerificationDocumentModel();
@@ -54,6 +59,7 @@ class VerificationService
         $this->listings      = new DirectoryListingModel();
         $this->config        = config('Directory');
         $this->payfast       = $payfast ?? new PayFast();
+        $this->paystack      = $paystack ?? service('paystack');
         $this->settings      = new DirectorySettings($this->config);
     }
 
@@ -82,7 +88,26 @@ class VerificationService
      */
     public function canTakePayment(): bool
     {
-        return $this->isEnabled() && $this->payfast->isConfigured();
+        return $this->isEnabled() && ($this->provider() === DirectoryVerificationModel::PROVIDER_PAYSTACK
+            ? $this->paystack->isConfigured()
+            : $this->payfast->isConfigured());
+    }
+
+    /**
+     * Which gateway new checkouts go through (Config\Directory::paymentProvider()).
+     * A row keeps the gateway it was paid through until it is paid again.
+     */
+    public function provider(): string
+    {
+        return $this->config->paymentProvider() === DirectoryVerificationModel::PROVIDER_PAYSTACK
+            ? DirectoryVerificationModel::PROVIDER_PAYSTACK
+            : DirectoryVerificationModel::PROVIDER_PAYFAST;
+    }
+
+    /** Paystack's test mode: the checkout says no real money moves. */
+    public function paystackTestMode(): bool
+    {
+        return $this->paystack->isTestMode();
     }
 
     /**
@@ -193,9 +218,11 @@ class VerificationService
      * Yearly takes today's yearly price: nobody was quoted one. A cycle that is
      * not on sale falls back to monthly.
      *
-     * A change of cycle or amount mints a fresh m_payment_id, because the
-     * owner may already have opened PayFast with the old one and PayFast
-     * refuses a reference it has seen with different terms.
+     * A change of cycle or amount mints a fresh reference for PayFast, because
+     * the owner may already have opened PayFast with the old one and PayFast
+     * refuses a reference it has seen with different terms. Paystack gets its
+     * reference when Pay is pressed (paystackCheckout()), so nothing is used
+     * up here.
      *
      * @param array<string,mixed> $verification
      *
@@ -220,10 +247,12 @@ class VerificationService
         }
 
         $update = [
-            'billing_cycle'   => $cycle,
-            'amount'          => $amount,
-            'pf_m_payment_id' => $this->newPaymentId($plan, (int) $verification['id']),
+            'billing_cycle' => $cycle,
+            'amount'        => $amount,
         ];
+        if (! $this->referencesAtPay()) {
+            $update['pf_m_payment_id'] = $this->nextReference($verification, $cycle);
+        }
         $this->verifications->update((int) $verification['id'], $update);
 
         return array_merge($verification, $update);
@@ -256,23 +285,210 @@ class VerificationService
         }
 
         $update = [
-            'switch_m_payment_id' => $this->newPaymentId($plan, (int) $row['id']) . '-y',
+            // Paystack: the reference the Pay press will take, reserved, not
+            // used up; it marks the switch as pending until then.
+            'switch_m_payment_id' => $this->referencesAtPay()
+                ? $this->peekReference($row, DirectoryVerificationModel::CYCLE_YEARLY)
+                : $this->nextReference($row, DirectoryVerificationModel::CYCLE_YEARLY),
             'switch_amount'       => $amount,
+            'switch_cycle'        => DirectoryVerificationModel::CYCLE_YEARLY,
         ];
         $this->verifications->update((int) $row['id'], $update);
 
         return ['ok' => true, 'message' => '', 'verification' => array_merge($row, $update)];
     }
 
-    /** 'il-' for an International Listing (Plus), 'vb-' for the badge: for humans reading PayFast. */
-    public function newPaymentId(string $plan, int $verificationId): string
+    /**
+     * Start moving an active PayFast subscription to Paystack.
+     *
+     * Paystack cannot take over a PayFast card mandate, so the owner pays
+     * again, once, through Paystack: the same snapshotted amount and cycle,
+     * and the new period starts after the days already paid for, exactly as
+     * a yearly switch does. The PayFast subscription keeps running until that
+     * payment lands, then recordPayment() cancels it. Nobody loses a day and
+     * nobody goes without a badge in between.
+     *
+     * @return array{ok:bool,message:string,verification?:array<string,mixed>}
+     */
+    public function startMove(int $listingId, string $plan): array
     {
-        return sprintf(
-            '%s-%d-%s',
-            $plan === DirectoryVerificationModel::PLAN_INTERNATIONAL ? 'il' : 'vb',
-            $verificationId,
-            bin2hex(random_bytes(4))
+        $row = $this->verifications->forListing($listingId, $plan);
+        if ($row === null || $row['state'] !== DirectoryVerificationModel::STATE_ACTIVE || ! empty($row['cancelled_at'])) {
+            return ['ok' => false, 'message' => 'There is no active subscription to move.'];
+        }
+        if (DirectoryVerificationModel::providerOf($row) === DirectoryVerificationModel::PROVIDER_PAYSTACK) {
+            return ['ok' => false, 'message' => 'Your payment is already with Paystack. There is nothing to do.'];
+        }
+        if (! DirectoryVerificationModel::hasMandate($row)) {
+            return ['ok' => false, 'message' => 'This subscription does not renew on its own, so there is nothing to move.'];
+        }
+        if ($this->provider() !== DirectoryVerificationModel::PROVIDER_PAYSTACK || ! $this->paystack->isConfigured()) {
+            return ['ok' => false, 'message' => 'Moving payments is not available at the moment.'];
+        }
+
+        $update = [
+            'switch_m_payment_id' => $this->peekReference($row, DirectoryVerificationModel::cycleOf($row)),
+            'switch_amount'       => (string) $row['amount'],
+            'switch_cycle'        => DirectoryVerificationModel::cycleOf($row),
+        ];
+        $this->verifications->update((int) $row['id'], $update);
+
+        return ['ok' => true, 'message' => '', 'verification' => array_merge($row, $update)];
+    }
+
+    /**
+     * Active PayFast subscriptions that still renew through PayFast: who the
+     * move command writes to.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function payfastMandatesToMove(): array
+    {
+        return array_values(array_filter(
+            $this->verifications
+                ->where('state', DirectoryVerificationModel::STATE_ACTIVE)
+                ->where('cancelled_at', null)
+                ->where('provider', DirectoryVerificationModel::PROVIDER_PAYFAST)
+                ->findAll(),
+            static fn (array $row): bool => DirectoryVerificationModel::hasMandate($row)
+        ));
+    }
+
+    /** Email the owner of a PayFast subscription the link to move it to Paystack. */
+    public function sendMoveInvitation(array $verification): void
+    {
+        $this->mailOwner((int) $verification['listing_id'], 'move', [
+            'product'   => $this->productOf($verification),
+            'cycle'     => DirectoryVerificationModel::cycleOf($verification),
+            'amount'    => (string) $verification['amount'],
+            'paidUntil' => $this->prettyDate($verification['paid_until'] ?? null),
+        ]);
+    }
+
+    /**
+     * A Paystack checkout for a row: the access code the checkout page opens
+     * the card window with, and the hosted page URL as the fallback. Null if
+     * Paystack would not open one.
+     *
+     * A fresh reference every time, because Paystack refuses a reference it
+     * has already seen and an owner may come back to try again. A stale tab
+     * paying an older reference still lands: the metadata carries the row id
+     * (PaystackPayments::rowForCharge()).
+     *
+     * @param array<string,mixed> $listing
+     * @param array<string,mixed> $row     the row as stored
+     * @param bool                $switch  pay the pending switch (yearly, or a move), not the row
+     *
+     * @return array{url:string,access_code:string}|null
+     */
+    public function paystackCheckout(array $listing, array $row, bool $switch): ?array
+    {
+        $plan  = (string) ($row['plan'] ?? DirectoryVerificationModel::PLAN_BADGE);
+        $id    = (int) $row['id'];
+        $cycle = $switch ? DirectoryVerificationModel::switchCycleOf($row) : DirectoryVerificationModel::cycleOf($row);
+
+        $amount   = (string) ($switch ? $row['switch_amount'] : $row['amount']);
+        $planCode = $this->paystackPlanCode($this->productOf($row), $cycle, $amount);
+        if ($planCode === null) {
+            return null;
+        }
+
+        // A switch is known by switch_m_payment_id being set, not by the
+        // reference's text, so it takes the same kind of reference as the row.
+        $reference = $this->nextReference($row, $cycle);
+        $this->verifications->update($id, [$switch ? 'switch_m_payment_id' : 'pf_m_payment_id' => $reference]);
+
+        return $this->paystack->initialize(
+            (string) ($listing['email'] ?? ''),
+            Paystack::cents($amount),
+            $reference,
+            row_site_url($listing, 'manage/verification/paystack'),
+            $planCode,
+            ['verification_id' => $id, 'listing_id' => (int) $row['listing_id'], 'purpose' => $switch ? 'switch' : 'new']
         );
+    }
+
+    /**
+     * The Paystack plan for a product, cycle and amount, made the first time
+     * it is sold. A Paystack plan has one fixed amount and ours are
+     * snapshotted per row, so there is one plan per amount, cached in
+     * xs_paystack_plans. Its name is what the subscriber sees in Paystack's
+     * emails, so it names what they bought, and no amount: a .app customer
+     * must never be shown a rand figure.
+     */
+    public function paystackPlanCode(string $product, string $cycle, string $amount): ?string
+    {
+        $cents  = Paystack::cents($amount);
+        $plans  = new PaystackPlanModel();
+        $cached = $plans->codeFor($product, $cycle, $cents);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $name = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile'][$product] ?? 'Verified Business badge';
+        $code = $this->paystack->createPlan(
+            $name . ($cycle === DirectoryVerificationModel::CYCLE_YEARLY ? ', yearly' : ', monthly'),
+            $cycle === DirectoryVerificationModel::CYCLE_YEARLY ? Paystack::INTERVAL_ANNUALLY : Paystack::INTERVAL_MONTHLY,
+            $cents
+        );
+        if ($code === null) {
+            return null;
+        }
+
+        try {
+            $plans->insert(['product' => $product, 'cycle' => $cycle, 'amount_cents' => $cents, 'currency' => 'ZAR', 'plan_code' => $code]);
+        } catch (Throwable $e) {
+            // Two checkouts made the same plan at once: the other's is stored,
+            // and this one still works on Paystack's side.
+            log_message('info', 'Paystack plan cache: ' . Mailer::oneLine($e->getMessage()));
+        }
+
+        return $code;
+    }
+
+    /**
+     * The next payment reference for a row, used up: WSL-VER-M-000045, then
+     * WSL-VER-Y-000045-2 and so on (App\Libraries\PaymentReference). The
+     * attempt counter is raised in the database first, so two requests at
+     * once still get two references, and a row never repeats one, which both
+     * gateways would refuse.
+     *
+     * @param array<string,mixed> $row
+     */
+    public function nextReference(array $row, string $cycle): string
+    {
+        $id = (int) $row['id'];
+        $this->verifications->builder()
+            ->set('payment_attempts', 'payment_attempts + 1', false)
+            ->where('id', $id)
+            ->update();
+        $attempts = (int) ($this->verifications->builder()->select('payment_attempts')->where('id', $id)->get()->getRow()->payment_attempts ?? 1);
+
+        return PaymentReference::forSubscription((string) ($row['plan'] ?? DirectoryVerificationModel::PLAN_BADGE), $cycle, $id, max(1, $attempts));
+    }
+
+    /**
+     * The reference the next nextReference() will give, without using it up:
+     * what a pending switch carries until Pay is pressed.
+     *
+     * @param array<string,mixed> $row
+     */
+    public function peekReference(array $row, string $cycle): string
+    {
+        $stored = $this->verifications->find((int) $row['id']);
+        $used   = (int) ($stored['payment_attempts'] ?? 0);
+
+        return PaymentReference::forSubscription((string) ($row['plan'] ?? DirectoryVerificationModel::PLAN_BADGE), $cycle, (int) $row['id'], $used + 1);
+    }
+
+    /**
+     * Does a reference get used up only when Pay is pressed? Yes for
+     * Paystack, which is handed it then (paystackCheckout()). PayFast's form
+     * is signed with it when the checkout page renders, so it is minted there.
+     */
+    public function referencesAtPay(): bool
+    {
+        return $this->provider() === DirectoryVerificationModel::PROVIDER_PAYSTACK;
     }
 
     /**
@@ -784,15 +1000,15 @@ class VerificationService
             ];
         }
 
-        $token = trim((string) ($row['pf_subscription_token'] ?? ''));
+        $gateway = $this->gatewayName($row);
 
-        // No token means the badge was activated by hand — there is no recurring
-        // mandate anywhere to stop, so calling PayFast would fail for a reason
-        // that has nothing to do with the owner. Record the intent and tell a
-        // human, since somebody may be invoicing them by EFT.
-        if ($token === '') {
+        // No mandate means the badge was activated by hand — there is no
+        // recurring subscription anywhere to stop, so calling the gateway would
+        // fail for a reason that has nothing to do with the owner. Record the
+        // intent and tell a human, since somebody may be invoicing them by EFT.
+        if (! DirectoryVerificationModel::hasMandate($row)) {
             $this->verifications->update((int) $row['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
-            $this->notifyAdminOfCancellation($listingId, 'manually activated ' . $what . ', no PayFast subscription to cancel');
+            $this->notifyAdminOfCancellation($listingId, 'manually activated ' . $what . ', no ' . $gateway . ' subscription to cancel');
 
             return [
                 'ok'      => true,
@@ -804,8 +1020,8 @@ class VerificationService
             ];
         }
 
-        if (! $this->payfast->cancelSubscription($token)) {
-            $this->notifyAdminOfCancellation($listingId, 'PAYFAST API CALL FAILED. Cancel this subscription by hand in the PayFast dashboard');
+        if (! $this->cancelMandate($row)) {
+            $this->notifyAdminOfCancellation($listingId, strtoupper($gateway) . ' API CALL FAILED. Cancel this subscription by hand in the ' . $gateway . ' dashboard');
 
             return [
                 'ok'      => false,
@@ -815,7 +1031,7 @@ class VerificationService
         }
 
         $this->verifications->update((int) $row['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
-        $this->notifyAdminOfCancellation($listingId, 'cancelled through PayFast successfully');
+        $this->notifyAdminOfCancellation($listingId, 'cancelled through ' . $gateway . ' successfully');
 
         return [
             'ok'      => true,
@@ -828,8 +1044,8 @@ class VerificationService
     }
 
     /**
-     * cancelSubscription() for Plus: the same PayFast call and the same
-     * failure rule (nothing recorded if PayFast will not confirm), with Plus's
+     * cancelSubscription() for Plus: the same gateway call and the same
+     * failure rule (nothing recorded if the gateway will not confirm), with Plus's
      * own words, because what the owner keeps differs: the profile always.
      *
      * @return array{ok:bool,message:string}
@@ -845,9 +1061,10 @@ class VerificationService
             return ['ok' => true, 'message' => 'Plus is already cancelled. It stays on until ' . $until . '.'];
         }
 
-        $token = trim((string) ($row['pf_subscription_token'] ?? ''));
-        if ($token !== '' && ! $this->payfast->cancelSubscription($token)) {
-            $this->notifyAdminOfCancellation($listingId, 'PAYFAST API CALL FAILED cancelling Plus. Cancel this subscription by hand in the PayFast dashboard');
+        $gateway = $this->gatewayName($row);
+        $mandate = DirectoryVerificationModel::hasMandate($row);
+        if ($mandate && ! $this->cancelMandate($row)) {
+            $this->notifyAdminOfCancellation($listingId, strtoupper($gateway) . ' API CALL FAILED cancelling Plus. Cancel this subscription by hand in the ' . $gateway . ' dashboard');
 
             return [
                 'ok'      => false,
@@ -857,7 +1074,7 @@ class VerificationService
         }
 
         $this->verifications->update((int) $row['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
-        $this->notifyAdminOfCancellation($listingId, $token === '' ? 'Plus cancelled (no PayFast subscription to stop)' : 'Plus cancelled through PayFast successfully');
+        $this->notifyAdminOfCancellation($listingId, $mandate ? 'Plus cancelled through ' . $gateway . ' successfully' : 'Plus cancelled (no ' . $gateway . ' subscription to stop)');
 
         return [
             'ok'      => true,
@@ -947,9 +1164,9 @@ class VerificationService
      * what its documents claimed. Separate from lapsing, which is just
      * non-payment and carries no judgement.
      *
-     * Deliberately does not cancel the PayFast subscription: we cannot, from
-     * here, and pretending otherwise would be worse than saying so. The admin
-     * has to cancel it in the PayFast dashboard, which the flash message says.
+     * Also stops the recurring subscription at whichever gateway holds it,
+     * after the commit: a revoked business must not keep being billed. If the
+     * gateway will not confirm, the admin is emailed to finish it by hand.
      */
     public function revoke(int $verificationId, string $by): bool
     {
@@ -990,19 +1207,41 @@ class VerificationService
             return false;
         }
 
+        if (DirectoryVerificationModel::hasMandate($row) && empty($row['cancelled_at'])) {
+            $gateway = $this->gatewayName($row);
+            if ($this->cancelMandate($row)) {
+                $this->verifications->update($verificationId, ['cancelled_at' => date('Y-m-d H:i:s')]);
+                $this->notifyAdminOfCancellation((int) $row['listing_id'], 'revoked; the ' . $gateway . ' subscription was cancelled');
+            } else {
+                $this->notifyAdminOfCancellation((int) $row['listing_id'], 'REVOKED but the ' . $gateway . ' subscription could not be cancelled. Cancel it by hand in the ' . $gateway . ' dashboard');
+            }
+        }
+
         return true;
     }
 
     /**
-     * Bank a confirmed PayFast payment.
+     * Bank a confirmed payment, from PayFast or Paystack.
      *
-     * Called only after PayFastNotify has run every validation it can; this
-     * method's own job is the part that must be atomic. The event row is
-     * inserted first and its unique index on pf_payment_id is what makes a
-     * repeat delivery harmless — see DirectoryVerificationEventModel::claim().
+     * Called only after PayFastNotify or PaystackPayments has run every
+     * validation it can; this method's own job is the part that must be
+     * atomic. The event row is inserted first and its unique index on
+     * pf_payment_id is what makes a repeat delivery harmless — see
+     * DirectoryVerificationEventModel::claim(). Paystack payments are claimed
+     * as 'paystack:{transaction id}', so the two gateways' ids never collide.
      *
-     * @param array<string,mixed> $verification
-     * @param array<string,mixed> $payload      the full POST, stored verbatim
+     * $facts is what the gateway told us, in our terms. PayFast's are read off
+     * its notification when it is null:
+     *   reference  our reference the payment carried
+     *   switch     whether it pays the pending switch; by reference when absent
+     *   mandate    columns to write when the payment opens a new recurring
+     *              mandate (a PayFast token, a Paystack customer and plan),
+     *              empty on a renewal
+     *   anchor_day the day of the month the new mandate bills on
+     *
+     * @param array<string,mixed>      $verification
+     * @param array<string,mixed>      $payload      the full notification, stored verbatim
+     * @param array<string,mixed>|null $facts
      *
      * @return 'applied'|'duplicate'|'failed'
      */
@@ -1011,15 +1250,19 @@ class VerificationService
         string $pfPaymentId,
         string $status,
         ?float $amountGross,
-        array $payload
+        array $payload,
+        ?array $facts = null
     ): string {
         $verificationId = (int) $verification['id'];
         $listingId      = (int) $verification['listing_id'];
+        $facts ??= $this->payfastFacts($payload);
+        $mandate = (array) ($facts['mandate'] ?? []);
 
-        // The first payment of a monthly to yearly switch (startYearlySwitch()).
+        // The first payment of a monthly to yearly switch (startYearlySwitch())
+        // or of a move from PayFast to Paystack (startMove()).
         $switchId = trim((string) ($verification['switch_m_payment_id'] ?? ''));
-        $isSwitch = $switchId !== '' && trim((string) ($payload['m_payment_id'] ?? '')) === $switchId;
-        $oldToken = trim((string) ($verification['pf_subscription_token'] ?? ''));
+        $isSwitch = $switchId !== '' && (bool) ($facts['switch'] ?? (trim((string) ($facts['reference'] ?? '')) === $switchId));
+        $isMove   = $isSwitch && DirectoryVerificationModel::providerOf($verification) !== ($mandate['provider'] ?? DirectoryVerificationModel::providerOf($verification));
 
         $db = db_connect();
         $db->transBegin();
@@ -1037,14 +1280,14 @@ class VerificationService
             if ($status === 'COMPLETE') {
                 $update = ['state' => DirectoryVerificationModel::STATE_ACTIVE];
 
-                // The recurring token arrives with the first payment of a
-                // subscription and is absent from later cycles; only write it
-                // when it is actually there, or a renewal would blank it.
-                $token = trim((string) ($payload['token'] ?? ''));
-
+                // The mandate (PayFast's recurring token, Paystack's customer
+                // and plan) arrives with the first payment of a subscription
+                // and is absent from later cycles; only write it when it is
+                // actually there, or a renewal would blank it.
+                //
                 // The billing day is captured in the same breath, and only here.
-                // A token means a new recurring mandate has begun, which is the
-                // one moment the day PayFast bills on can change.
+                // A new mandate is the one moment the day the gateway bills on
+                // can change.
                 //
                 // Reading it on every notification instead would undo the fix it
                 // exists for: if PayFast reports the current cycle's date rather
@@ -1054,24 +1297,28 @@ class VerificationService
                 $anchorDay = $verification['billing_anchor_day'] ?? null;
                 $anchorDay = $anchorDay === null ? null : (int) $anchorDay;
 
-                if ($token !== '') {
-                    $update['pf_subscription_token'] = $token;
+                if ($mandate !== []) {
+                    $update += $mandate;
 
-                    $fromPayload = $this->billingAnchorDay($payload);
-                    if ($fromPayload !== null) {
-                        $anchorDay                    = $fromPayload;
-                        $update['billing_anchor_day'] = $fromPayload;
+                    $fromGateway = isset($facts['anchor_day']) ? (int) $facts['anchor_day'] : null;
+                    if ($fromGateway !== null && $fromGateway >= 1 && $fromGateway <= 31) {
+                        $anchorDay                    = $fromGateway;
+                        $update['billing_anchor_day'] = $fromGateway;
                     }
                 }
 
-                $yearly = $isSwitch || DirectoryVerificationModel::cycleOf($verification) === DirectoryVerificationModel::CYCLE_YEARLY;
+                $switchCycle = DirectoryVerificationModel::switchCycleOf($verification);
+                $yearly      = $isSwitch
+                    ? $switchCycle === DirectoryVerificationModel::CYCLE_YEARLY
+                    : DirectoryVerificationModel::cycleOf($verification) === DirectoryVerificationModel::CYCLE_YEARLY;
 
                 if ($isSwitch) {
-                    $update['billing_cycle']       = DirectoryVerificationModel::CYCLE_YEARLY;
+                    $update['billing_cycle']       = $switchCycle;
                     $update['amount']              = (string) $verification['switch_amount'];
                     $update['pf_m_payment_id']     = $switchId;
                     $update['switch_m_payment_id'] = null;
                     $update['switch_amount']       = null;
+                    $update['switch_cycle']        = null;
                     $update['cancelled_at']        = null;
                 }
 
@@ -1125,14 +1372,20 @@ class VerificationService
             ]);
         }
 
-        // The yearly mandate is live, so the monthly one must stop. After the
-        // commit, like the mail: the year is banked whatever PayFast answers,
-        // and a failed cancel goes to a human, as a failed owner cancel does.
-        if ($status === 'COMPLETE' && $isSwitch && $oldToken !== '' && $oldToken !== trim((string) ($payload['token'] ?? ''))) {
-            if (! $this->payfast->cancelSubscription($oldToken)) {
-                $this->notifyAdminOfCancellation($listingId, 'SWITCHED TO YEARLY but the monthly PayFast subscription could not be cancelled. Cancel it by hand in the PayFast dashboard');
+        // The new mandate is live, so the old one must stop. After the
+        // commit, like the mail: the period is banked whatever the gateway
+        // answers, and a failed cancel goes to a human, as a failed owner
+        // cancel does. The old row goes in without its id, so a Paystack
+        // lookup cannot write the old subscription onto the new mandate.
+        if ($status === 'COMPLETE' && $isSwitch && DirectoryVerificationModel::hasMandate($verification)
+            && ! $this->sameMandate($verification, $mandate)) {
+            $old     = array_diff_key($verification, ['id' => true]);
+            $gateway = $this->gatewayName($verification);
+            $did     = $isMove ? 'moved to Paystack' : 'switched to yearly';
+            if (! $this->cancelMandate($old)) {
+                $this->notifyAdminOfCancellation($listingId, strtoupper($did) . ' but the old ' . $gateway . ' subscription could not be cancelled. Cancel it by hand in the ' . $gateway . ' dashboard');
             } else {
-                $this->notifyAdminOfCancellation($listingId, 'switched to yearly; the monthly PayFast subscription was cancelled');
+                $this->notifyAdminOfCancellation($listingId, $did . '; the old ' . $gateway . ' subscription was cancelled');
             }
         }
 
@@ -1148,6 +1401,50 @@ class VerificationService
         }
 
         return 'applied';
+    }
+
+    /**
+     * recordPayment()'s facts from a PayFast notification: the reference it
+     * carried, the recurring token on the first payment of a subscription,
+     * and the billing day PayFast sent with that token.
+     *
+     * @param array<string,mixed> $payload
+     *
+     * @return array<string,mixed>
+     */
+    private function payfastFacts(array $payload): array
+    {
+        $token = trim((string) ($payload['token'] ?? ''));
+
+        return [
+            'reference'  => trim((string) ($payload['m_payment_id'] ?? '')),
+            'mandate'    => $token === '' ? [] : [
+                'provider'              => DirectoryVerificationModel::PROVIDER_PAYFAST,
+                'pf_subscription_token' => $token,
+            ],
+            'anchor_day' => $token === '' ? null : $this->billingAnchorDay($payload),
+        ];
+    }
+
+    /**
+     * Is the mandate a payment opened the one the row already had? Then a
+     * switch has nothing old to cancel. No new mandate at all counts as
+     * different, as it always has for PayFast.
+     *
+     * @param array<string,mixed> $row
+     * @param array<string,mixed> $mandate
+     */
+    private function sameMandate(array $row, array $mandate): bool
+    {
+        if ($mandate === [] || ($mandate['provider'] ?? '') !== DirectoryVerificationModel::providerOf($row)) {
+            return false;
+        }
+        if ($mandate['provider'] === DirectoryVerificationModel::PROVIDER_PAYFAST) {
+            return ($mandate['pf_subscription_token'] ?? '') === trim((string) ($row['pf_subscription_token'] ?? ''));
+        }
+
+        return ($mandate['paystack_customer_code'] ?? '') === (string) ($row['paystack_customer_code'] ?? '')
+            && ($mandate['paystack_plan_code'] ?? '') === (string) ($row['paystack_plan_code'] ?? '');
     }
 
     /**
@@ -1236,8 +1533,30 @@ class VerificationService
         $this->mailOwner(
             (int) $verification['listing_id'],
             'renewing',
-            ['paid_until' => $verification['paid_until'], 'amount' => $verification['amount'], 'product' => $this->productOf($verification), 'cycle' => DirectoryVerificationModel::cycleOf($verification)]
+            ['paid_until' => $verification['paid_until'], 'amount' => $verification['amount'], 'product' => $this->productOf($verification), 'cycle' => DirectoryVerificationModel::cycleOf($verification), 'gateway' => $this->gatewayName($verification)]
         );
+    }
+
+    /**
+     * Tell the owner a Paystack renewal failed, with Paystack's page for
+     * updating the card (or their dashboard when Paystack gave none).
+     *
+     * @param array<string,mixed> $verification
+     */
+    public function sendPaymentFailed(array $verification, ?string $cardLink): void
+    {
+        $this->mailOwner((int) $verification['listing_id'], 'payment_failed', [
+            'product'   => $this->productOf($verification),
+            'cycle'     => DirectoryVerificationModel::cycleOf($verification),
+            'paidUntil' => $this->prettyDate($verification['paid_until'] ?? null),
+            'cardLink'  => $cardLink,
+        ]);
+    }
+
+    /** An operational alert about a listing's subscription, to the admin inbox. */
+    public function notifyAdmin(int $listingId, string $detail): void
+    {
+        $this->notifyAdminOfCancellation($listingId, $detail);
     }
 
     /**
@@ -1458,6 +1777,65 @@ class VerificationService
     }
 
     /**
+     * Stop the recurring mandate behind a row, through whichever gateway holds
+     * it. True only when the gateway confirmed it.
+     *
+     * A Paystack row may not know its subscription code yet (the subscription
+     * opens just after the first charge), so it is looked up from the
+     * customer and plan, and stored, on the way.
+     *
+     * @param array<string,mixed> $row
+     */
+    public function cancelMandate(array $row): bool
+    {
+        if (DirectoryVerificationModel::providerOf($row) !== DirectoryVerificationModel::PROVIDER_PAYSTACK) {
+            $token = trim((string) ($row['pf_subscription_token'] ?? ''));
+
+            return $token !== '' && $this->payfast->cancelSubscription($token);
+        }
+
+        $sub = $this->paystackSubscription($row);
+
+        return $sub !== null && $this->paystack->disableSubscription($sub['code'], $sub['email_token']);
+    }
+
+    /**
+     * A Paystack row's subscription code and email token, from the row or
+     * looked up and saved to it.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array{code:string,email_token:string}|null
+     */
+    public function paystackSubscription(array $row): ?array
+    {
+        $code  = trim((string) ($row['paystack_subscription_code'] ?? ''));
+        $token = trim((string) ($row['paystack_email_token'] ?? ''));
+        if ($code !== '' && $token !== '') {
+            return ['code' => $code, 'email_token' => $token];
+        }
+
+        $found = $this->paystack->findSubscription(
+            (string) ($row['paystack_customer_code'] ?? ''),
+            (string) ($row['paystack_plan_code'] ?? '')
+        );
+        if ($found !== null && ! empty($row['id'])) {
+            $this->verifications->update((int) $row['id'], [
+                'paystack_subscription_code' => $found['code'],
+                'paystack_email_token'       => $found['email_token'],
+            ]);
+        }
+
+        return $found;
+    }
+
+    /** 'PayFast' or 'Paystack', for admin alerts and owner emails. */
+    private function gatewayName(array $row): string
+    {
+        return DirectoryVerificationModel::providerOf($row) === DirectoryVerificationModel::PROVIDER_PAYSTACK ? 'Paystack' : 'PayFast';
+    }
+
+    /**
      * Tell the operator a subscription was cancelled — and, when the API call
      * failed, that they have to finish the job by hand.
      *
@@ -1524,7 +1902,7 @@ class VerificationService
     }
 
     /**
-     * @param 'approved'|'rejected'|'activated'|'renewing' $event
+     * @param 'approved'|'rejected'|'activated'|'renewing'|'payment_failed'|'move' $event
      * @param array<string,mixed>                          $extra
      */
     private function mailOwner(int $listingId, string $event, array $extra): void
@@ -1538,8 +1916,10 @@ class VerificationService
         $subjects = [
             'approved'  => 'Your documents are approved: activate your Verified Business badge',
             'rejected'  => 'We could not verify your business yet',
-            'activated' => 'Your ' . $what . ' is live',
-            'renewing'  => 'Your ' . $what . ' renews soon',
+            'activated'      => 'Your ' . $what . ' is live',
+            'renewing'       => 'Your ' . $what . ' renews soon',
+            'payment_failed' => 'We could not take your ' . $what . ' payment',
+            'move'           => 'Please move your ' . $what . ' payment to Paystack',
         ];
 
         $body = view('emails/verification-owner', array_merge([
@@ -1572,7 +1952,7 @@ class VerificationService
      */
     private function ownerLink(int $listingId, string $event): string
     {
-        if ($event !== 'approved' && $event !== 'rejected') {
+        if (! in_array($event, ['approved', 'rejected', 'move'], true)) {
             return listing_site_url($listingId, 'manage');
         }
 
@@ -1588,8 +1968,10 @@ class VerificationService
             return listing_site_url($listingId, 'manage');
         }
 
-        return $event === 'approved'
-            ? listing_site_url($listingId, 'manage/' . $token) . '?to=checkout'
-            : listing_site_url($listingId, 'manage/' . $token);
+        return match ($event) {
+            'approved' => listing_site_url($listingId, 'manage/' . $token) . '?to=checkout',
+            'move'     => listing_site_url($listingId, 'manage/' . $token) . '?to=move',
+            default    => listing_site_url($listingId, 'manage/' . $token),
+        };
     }
 }

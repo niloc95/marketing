@@ -4,21 +4,27 @@ namespace App\Services;
 
 use App\Libraries\Input;
 use App\Libraries\Mailer;
+use App\Libraries\PaymentReference;
 use App\Libraries\PayFast;
+use App\Libraries\Paystack;
 use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\ProfileSetupOrderModel;
 use Config\Directory as DirectoryConfig;
 use Config\Sites;
 
 /**
- * The profile setup service: a business pays a once-off fee through PayFast
+ * The profile setup service: a business pays a once-off fee through Paystack
  * and we complete its profile for it. /profile-setup sells it,
  * /admin/profile-setup is the queue we work it from.
  *
- * An order is saved before payment as awaiting_payment, and only a PayFast
- * notification that passes every check moves it to paid. The thank you page
- * PayFast returns the buyer to proves nothing (anyone can open it), so it
- * never changes an order.
+ * Always Paystack, whatever directory.paymentProvider says: a once-off
+ * payment has no subscription to carry over, so there is nothing to keep on
+ * PayFast. handleNotification() stays only for a PayFast checkout a buyer
+ * opened before the switch and pays afterwards.
+ *
+ * An order is saved before payment as awaiting_payment, and only a payment
+ * Paystack confirms (PaystackPayments: webhook or verify) moves it to paid.
+ * The buyer's return trip proves nothing on its own, so it only makes us ask.
  *
  * Paying for setup buys our time, nothing else: it does not move a profile up
  * the results and does not include the Verified Business badge. The page and
@@ -72,10 +78,38 @@ class ProfileSetupService
         return max(1, $this->site->profileSetupDays);
     }
 
-    /** Can we take a card payment right now? */
-    public function canTakePayment(?PayFast $payfast = null): bool
+    /** Can we take a card payment right now? Paystack, with its key set. */
+    public function canTakePayment(?Paystack $paystack = null): bool
     {
-        return ($payfast ?? new PayFast())->isConfigured();
+        return ($paystack ?? service('paystack'))->isConfigured();
+    }
+
+    /**
+     * Open a Paystack checkout for an order: the access code for the card
+     * window and the hosted page URL as the fallback, or null.
+     *
+     * Each press takes the order's next reference: WSL-SETUP-000123 the first
+     * time, WSL-SETUP-000123-2 after the buyer closes the card window and
+     * tries again, because Paystack refuses a reference it has seen. The
+     * order id in the metadata finds the order if an older tab pays.
+     */
+    /** @return array{url:string,access_code:string}|null */
+    public function paystackCheckout(array $order, ?Paystack $paystack = null): ?array
+    {
+        $id = (int) $order['id'];
+        $this->orders->builder()->set('payment_attempts', 'payment_attempts + 1', false)->where('id', $id)->update();
+        $attempt   = (int) ($this->orders->builder()->select('payment_attempts')->where('id', $id)->get()->getRow()->payment_attempts ?? 1);
+        $reference = PaymentReference::make(PaymentReference::SETUP, $id, max(1, $attempt));
+        $this->orders->update($id, ['reference' => $reference, 'provider' => 'paystack']);
+
+        return ($paystack ?? service('paystack'))->initialize(
+            (string) $order['email'],
+            Paystack::cents((string) $order['amount']),
+            $reference,
+            base_url('profile-setup/paystack'),
+            null,
+            ['order_id' => (int) $order['id']]
+        );
     }
 
     /**
@@ -126,9 +160,10 @@ class ProfileSetupService
         }
 
         $row = $d + [
-            // 'ps' for profile setup, as the subscription ids start 'vb' and
-            // 'il': it tells a human reading the PayFast dashboard what it is.
-            'reference' => 'ps-' . bin2hex(random_bytes(6)),
+            // A placeholder for the UNIQUE column: the real reference is the
+            // order's own number, WSL-SETUP-000123 (PaymentReference), set as
+            // soon as the insert gives us the id.
+            'reference' => 'tmp-' . bin2hex(random_bytes(8)),
             'amount'    => $this->amount(),
             'status'    => ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT,
             'terms_at'  => date('Y-m-d H:i:s'),
@@ -139,7 +174,12 @@ class ProfileSetupService
             }
         }
 
+        // No transaction around the two writes, deliberately: CI4's strict
+        // transactions roll back silently after any earlier failed query on the
+        // same connection. If the second write ever failed, the order would
+        // keep its unique placeholder, which still pays and still matches.
         $id = (int) $this->orders->insert($row);
+        $this->orders->update($id, ['reference' => PaymentReference::make(PaymentReference::SETUP, $id)]);
 
         return ['ok' => true, 'errors' => [], 'order' => $this->orders->find($id)];
     }

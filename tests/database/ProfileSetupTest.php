@@ -32,6 +32,7 @@ use Tests\Support\FreshDatabase;
 final class ProfileSetupTest extends CIUnitTestCase
 {
     use FreshDatabase;
+    use \Tests\Support\WithEnv;
     use FeatureTestTrait;
 
     private ProfileSetupService $svc;
@@ -67,6 +68,8 @@ final class ProfileSetupTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
+        $this->restoreEnv();
+        Services::resetSingle('paystack');
         Events::removeAllListeners('email');
         Services::resetSingle('throttler');
         Services::resetSingle('response');
@@ -206,7 +209,7 @@ final class ProfileSetupTest extends CIUnitTestCase
         $order = $this->order();
 
         $this->assertSame(ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT, $order['status']);
-        $this->assertMatchesRegularExpression('/^ps-[0-9a-f]{12}$/', $order['reference']);
+        $this->assertSame(sprintf('WSL-SETUP-%06d', $order['id']), $order['reference'], 'the order\'s own number');
         $this->assertSame('250.00', $order['amount']);
         $this->assertNotEmpty($order['terms_at']);
         $this->assertNull($order['profile_url']);
@@ -242,9 +245,8 @@ final class ProfileSetupTest extends CIUnitTestCase
 
     public function testThePostedFormGoesToCheckoutAndBotsSaveNothing(): void
     {
-        if (! (new PayFast())->isConfigured()) {
-            $this->markTestSkipped('PayFast credentials are not set in this environment.');
-        }
+        $this->setEnv('directory.paystackSecretKey', \Tests\Support\FakePaystack::SECRET);
+        \Config\Services::injectMock('paystack', new \Tests\Support\FakePaystack());
 
         $this->withSession(['profile_setup_form_rendered_at' => time() - 30])
             ->post('profile-setup', $this->form() + [HONEYPOT_FIELD => 'http://spam.test', csrf_token() => csrf_hash()])
@@ -264,9 +266,23 @@ final class ProfileSetupTest extends CIUnitTestCase
         $res = $this->withSession(['profile_setup_order' => (int) $order['id']])->get('profile-setup/checkout');
         $res->assertStatus(200);
         $html = (string) $res->response()->getBody();
-        $this->assertStringContainsString('name="m_payment_id" value="' . $order['reference'] . '"', $html);
-        $this->assertStringContainsString('Pay R250 with PayFast', $html);
-        $this->assertStringNotContainsString(HONEYPOT_FIELD, $html, 'no honeypot field is posted to PayFast');
+        $this->assertStringContainsString('action="' . base_url('profile-setup/pay') . '"', $html);
+        $this->assertStringContainsString('Pay R250', $html);
+        $this->assertStringContainsString('data-paystack-checkout', $html);
+
+        $this->withSession(['profile_setup_order' => (int) $order['id']])
+            ->post('profile-setup/pay', [csrf_token() => csrf_hash()])
+            ->assertRedirectTo('https://checkout.paystack.com/fake123');
+        $this->assertSame('paystack', $this->orders->find((int) $order['id'])['provider']);
+    }
+
+    public function testCheckoutIsPaystackWhateverNewSubscriptionsUse(): void
+    {
+        $this->setEnv('directory.paystackSecretKey', \Tests\Support\FakePaystack::SECRET);
+        $this->setEnv('directory.paymentProvider', 'payfast');
+        \Config\Services::injectMock('paystack', new \Tests\Support\FakePaystack());
+
+        $this->assertTrue((new \App\Services\ProfileSetupService())->canTakePayment());
     }
 
     public function testCheckoutWithoutAnOrderGoesBackToTheForm(): void

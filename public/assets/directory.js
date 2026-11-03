@@ -870,6 +870,121 @@
     });
   });
 
+  // ------------------------------------------------------- paystack checkout
+  // The Pay button on the two checkout pages (verification_checkout.php,
+  // profile_setup_checkout.php) opens Paystack's card window over the page,
+  // so nobody is sent away to pay. The server opens the transaction
+  // (Manage::pay(), ProfileSetup::pay(), answering JSON) and this hands its
+  // access code to Paystack's InlineJS, loaded here on the first press only.
+  //
+  // Every failure still ends somewhere a payment can be made: a request that
+  // never reached us submits the form normally (the server then redirects to
+  // Paystack's hosted page), and a card window that will not load, or errors,
+  // sends the browser to that hosted page. Paying itself is confirmed on our
+  // own return page (Paystack's verify), never by this script.
+  var PAYSTACK_JS = 'https://js.paystack.co/v2/inline.js';
+  var paystackLoading = null;
+
+  function loadPaystack() {
+    if (window.PaystackPop) return Promise.resolve(window.PaystackPop);
+    if (paystackLoading) return paystackLoading;
+    paystackLoading = new Promise(function (resolve, reject) {
+      var timer  = setTimeout(function () { reject(new Error('Paystack took too long')); }, 10000);
+      var script = document.createElement('script');
+      script.src = PAYSTACK_JS;
+      script.async = true;
+      script.onload = function () {
+        clearTimeout(timer);
+        if (window.PaystackPop) resolve(window.PaystackPop); else reject(new Error('PaystackPop missing'));
+      };
+      script.onerror = function () { clearTimeout(timer); reject(new Error('Paystack did not load')); };
+      document.head.appendChild(script);
+    }).catch(function (err) {
+      paystackLoading = null;
+      throw err;
+    });
+    return paystackLoading;
+  }
+
+  document.querySelectorAll('form[data-paystack-checkout]').forEach(function (form) {
+    var button = form.querySelector('[data-checkout-button]');
+    var status = form.querySelector('[data-checkout-status]');
+    var label  = button ? button.textContent : '';
+    var native = false;
+
+    function say(text, isError) {
+      if (!status) return;
+      status.textContent = text;
+      status.hidden = text === '';
+      status.classList.toggle('is-error', !!isError);
+    }
+    function ready() {
+      if (!button) return;
+      button.disabled = false;
+      button.textContent = label;
+    }
+
+    // Warm the script while the visitor reads the summary.
+    loadPaystack().catch(function () {});
+
+    form.addEventListener('submit', function (e) {
+      if (native || !window.fetch || !window.FormData || !window.Promise) return;
+      e.preventDefault();
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Opening secure payment\u2026';
+      }
+      say('', false);
+
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+      })
+        .catch(function () {
+          // Never reached us, so the token on the form is still good.
+          native = true;
+          form.submit();
+          return null;
+        })
+        .then(function (res) {
+          if (!res) return;
+          return res.json().catch(function () { return null; }).then(function (data) {
+            // Tokens rotate on every POST: the next press needs the new one.
+            if (data && data.csrf && data.csrf.name) {
+              form.querySelectorAll('input[name="' + data.csrf.name + '"]').forEach(function (input) {
+                input.value = data.csrf.hash;
+              });
+            }
+            if (!data || !data.accessCode) {
+              if (data && data.redirect && res.status === 401) {
+                location.assign(data.redirect);
+                return;
+              }
+              ready();
+              say((data && data.error) || 'We could not open the payment window. Please reload the page and try again.', true);
+              return;
+            }
+
+            return loadPaystack().then(function (Pop) {
+              new Pop().resumeTransaction(data.accessCode, {
+                onSuccess: function (tx) {
+                  say('Payment received. Confirming it now\u2026', false);
+                  location.assign(data.returnUrl + '?reference=' + encodeURIComponent(tx.reference));
+                },
+                onCancel: function () {
+                  ready();
+                  say('Payment cancelled. Nothing was charged.', false);
+                },
+                onError: function () { location.assign(data.url); }
+              });
+            }, function () { location.assign(data.url); });
+          });
+        });
+    });
+  });
+
   // ------------------------------------------------------------ photo delete
   // Deletes a gallery photo on the edit pages without leaving the page.
   //

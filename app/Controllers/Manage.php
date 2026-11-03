@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Controllers\Concerns\AnswersPaystackCheckout;
 use App\Controllers\Concerns\HandlesListingUploads;
 use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Libraries\PayFast;
@@ -32,6 +33,7 @@ use App\Services\VerificationService;
  */
 class Manage extends BaseController
 {
+    use AnswersPaystackCheckout;
     use HandlesListingUploads;
     use HandlesVerificationUploads;
 
@@ -46,6 +48,7 @@ class Manage extends BaseController
      */
     private const REDEEM_DESTINATIONS = [
         'checkout' => 'manage/verification/checkout',
+        'move'     => 'manage/verification/move',
     ];
 
     /**
@@ -607,13 +610,16 @@ class Manage extends BaseController
         // A stale tab paying against a superseded id still lands, because
         // PayFastNotify falls back to custom_str2 — the verification id, which
         // does not change — when m_payment_id matches nothing.
-        if (trim((string) ($verification['pf_m_payment_id'] ?? '')) === ''
-            || $state === DirectoryVerificationModel::STATE_LAPSED) {
-            // 'il-' for an International Listing, 'vb-' for the badge. The
-            // prefix is for humans reading a PayFast dashboard — the lookup is
-            // on the whole string — but a support question that starts "what
-            // is vb-41?" is worth one character to answer.
-            $verification['pf_m_payment_id'] = $service->newPaymentId($plan, (int) $verification['id']);
+        //
+        // PayFast only: Paystack is handed its reference when Pay is pressed
+        // (VerificationService::paystackCheckout()), so this page uses none up.
+        if (! $service->referencesAtPay()
+            && (trim((string) ($verification['pf_m_payment_id'] ?? '')) === ''
+                || $state === DirectoryVerificationModel::STATE_LAPSED)) {
+            // WSL-VER-M-000041 and friends (App\Libraries\PaymentReference):
+            // the row's own number, so "what is WSL-VER-M-000041?" is answered
+            // by the admin screen.
+            $verification['pf_m_payment_id'] = $service->nextReference($verification, DirectoryVerificationModel::cycleOf($verification));
             (new DirectoryVerificationModel())->update(
                 (int) $verification['id'],
                 ['pf_m_payment_id' => $verification['pf_m_payment_id']]
@@ -631,9 +637,10 @@ class Manage extends BaseController
      * @param array<string,mixed> $listing
      * @param array<string,mixed> $verification
      */
-    private function renderCheckout(array $listing, VerificationService $service, string $plan, array $verification, bool $switch = false)
+    private function renderCheckout(array $listing, VerificationService $service, string $plan, array $verification, bool $switch = false, bool $move = false)
     {
-        $payfast = new PayFast();
+        $payfast  = new PayFast();
+        $paystack = $service->provider() === DirectoryVerificationModel::PROVIDER_PAYSTACK;
         $yearly  = DirectoryVerificationModel::cycleOf($verification) === DirectoryVerificationModel::CYCLE_YEARLY;
         $product = $plan === DirectoryVerificationModel::PLAN_BADGE ? 'badge' : ($service->plusMode() ? 'plus' : 'international');
 
@@ -650,10 +657,16 @@ class Manage extends BaseController
                 DirectoryVerificationModel::CYCLE_MONTHLY => $product === 'plus' ? $service->plusPriceUsd() : $service->amountFor($plan, DirectoryVerificationModel::CYCLE_MONTHLY),
                 DirectoryVerificationModel::CYCLE_YEARLY  => $product === 'plus' ? $service->plusYearlyPriceUsd() : $service->amountFor($plan, DirectoryVerificationModel::CYCLE_YEARLY),
             ],
+            'move'       => $move,
             'amount'     => $verification['amount'],
-            'processUrl' => $payfast->processUrl(),
-            'fields'     => $payfast->subscriptionFields($listing, $verification),
-            'sandbox'    => $payfast->isSandbox(),
+            // Paystack: the button posts to our own pay(), which opens the
+            // checkout; the row id and the switch flag say what to pay (the
+            // reference is minted there, when it is used).
+            // PayFast: the signed fields post straight to PayFast.
+            'gateway'    => $paystack ? 'Paystack' : 'PayFast',
+            'processUrl' => $paystack ? base_url('manage/verification/pay') : $payfast->processUrl(),
+            'fields'     => $paystack ? ['verification' => (string) $verification['id'], 'switch' => $switch ? '1' : '0'] : $payfast->subscriptionFields($listing, $verification),
+            'sandbox'    => $paystack ? $service->paystackTestMode() : $payfast->isSandbox(),
             // Both derived here rather than in the view, so the dates the page
             // promises are computed in one place. subscriptionFields() sends no
             // billing_date, which means PayFast bills on the day the payment
@@ -661,7 +674,7 @@ class Manage extends BaseController
             // the button — and every month from there.
             'firstCharge' => date('j F Y'),
             'renewsOn'    => date('j F Y', strtotime($yearly ? '+1 year' : '+1 month')),
-            // A switch adds the year on top of the month already paid.
+            // A switch or a move adds the new period on top of the time already paid.
             'paidUntil'   => $switch && ! empty($verification['paid_until']) ? date('j F Y', strtotime((string) $verification['paid_until'])) : null,
         ]);
     }
@@ -703,6 +716,108 @@ class Manage extends BaseController
         $row['billing_cycle']   = DirectoryVerificationModel::CYCLE_YEARLY;
 
         return $this->renderCheckout($listing, $service, $plan, $row, true);
+    }
+
+    /**
+     * Move an active PayFast badge or Plus subscription to Paystack: the
+     * checkout for the same amount and cycle, paid now, starting after the
+     * days already paid for. The PayFast subscription is cancelled when the
+     * payment lands (VerificationService::startMove(), recordPayment()).
+     *
+     * GET, because the move email's magic link lands here (?to=move). It only
+     * notes a pending move on the row; nothing is charged until the owner
+     * presses Pay. The badge is moved first, then Plus.
+     */
+    public function move()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return redirect()->to(base_url('manage'))
+                ->with('error', 'Please request a link to manage your profile.');
+        }
+
+        $service = new VerificationService();
+        $result  = ['ok' => false, 'message' => 'There is no PayFast subscription to move.'];
+        foreach ([DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::PLAN_INTERNATIONAL] as $plan) {
+            $result = $service->startMove((int) $listing['id'], $plan);
+            if ($result['ok']) {
+                break;
+            }
+        }
+        if (! $result['ok']) {
+            return redirect()->to(base_url('manage/edit'))->with('info', $result['message']);
+        }
+
+        $row = $result['verification'];
+        $row['pf_m_payment_id'] = $row['switch_m_payment_id'];
+        $row['amount']          = $row['switch_amount'];
+
+        return $this->renderCheckout($listing, $service, $plan, $row, true, true);
+    }
+
+    /**
+     * The checkout page's Pay button when Paystack takes payments: open a
+     * Paystack checkout for the row (or its pending switch) the reference
+     * names: the card window over the page for our script, Paystack's
+     * hosted page without it (AnswersPaystackCheckout).
+     *
+     * The posted id only picks the row; the amount comes from the row, and
+     * the row must belong to the signed in listing.
+     */
+    public function pay()
+    {
+        $listing = $this->currentListing();
+        if ($listing === null) {
+            return $this->checkoutFailed('Please request a link to manage your profile.', 'manage', 401);
+        }
+
+        $service = new VerificationService();
+        if (! $service->canTakePayment() || $service->provider() !== DirectoryVerificationModel::PROVIDER_PAYSTACK) {
+            return $this->checkoutFailed('Card payments are not available at the moment. We will be in touch about payment.', 'manage/edit');
+        }
+
+        $found  = (new DirectoryVerificationModel())->find((int) $this->request->getPost('verification'));
+        $row    = is_array($found) ? $found : null;
+        $switch = $this->request->getPost('switch') === '1' && $row !== null
+            && trim((string) ($row['switch_m_payment_id'] ?? '')) !== '';
+
+        $payable = $row !== null && (int) $row['listing_id'] === (int) $listing['id'] && ($switch
+            ? $row['state'] === DirectoryVerificationModel::STATE_ACTIVE
+            : in_array($row['state'], [DirectoryVerificationModel::STATE_APPROVED, DirectoryVerificationModel::STATE_LAPSED], true));
+        if (! $payable) {
+            return $this->checkoutFailed('That payment page has expired. Please start again from your dashboard.', 'manage/edit');
+        }
+
+        $checkout = $service->paystackCheckout($listing, $row, $switch);
+        if ($checkout === null) {
+            return $this->checkoutFailed('We could not open the payment window just now. Please try again in a minute.', 'manage/edit', 502);
+        }
+
+        return $this->checkoutOpened($checkout, 'manage/verification/paystack');
+    }
+
+    /**
+     * Where Paystack sends the browser back after checkout, with the
+     * reference in the query string.
+     *
+     * The return trip proves nothing, so this asks Paystack (verify) and banks
+     * the payment if Paystack confirms it, which saves the owner waiting for
+     * the webhook. Whatever the answer, verificationDone() then reads the row
+     * as it stands. Asking does not need the session: the owner's own browser
+     * may have lost it, and nothing here trusts the caller.
+     */
+    public function paystackReturn()
+    {
+        $reference = (string) ($this->request->getGet('reference') ?? $this->request->getGet('trxref') ?? '');
+        $ip        = (string) $this->request->getIPAddress();
+        // Each visit costs a call to Paystack, so a stranger replaying the URL
+        // gets a few, then just the dashboard; the webhook still lands.
+        if (service('throttler')->check('paystack-return-' . md5($ip), 10, MINUTE)) {
+            $outcome = (new \App\Services\PaystackPayments())->confirmReference($reference, $ip);
+            log_message(str_starts_with($outcome, 'rejected') || str_starts_with($outcome, 'retry') ? 'warning' : 'info', 'Paystack return: ' . $outcome);
+        }
+
+        return $this->verificationDone();
     }
 
     /**
@@ -775,7 +890,7 @@ class Manage extends BaseController
 
         return redirect()->to(base_url('manage/edit'))->with(
             'info',
-            'Thanks, we have your payment and PayFast is confirming it. Your badge goes live within '
+            'Thanks, we have your payment and are confirming it. It goes live within '
                 . 'a few minutes; refresh this page to check.'
         );
     }

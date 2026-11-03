@@ -108,7 +108,7 @@ $faqs = [
                 </p>
                 <p class="hint mt-3">
                     WebScheduler is a South African company, so Plus is billed in South African rand through
-                    PayFast and your bank converts the charge to your own currency. Cancel any time; Plus stays
+                    Paystack and your bank converts the charge to your own currency. Cancel any time; Plus stays
                     on until the month you have paid for ends. See section 4 of our <a href="<?= base_url('terms#plus') ?>">terms</a>.
                 </p>
                 <p class="mt-5">

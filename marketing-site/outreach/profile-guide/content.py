@@ -545,7 +545,7 @@ _PAGES = [
                                              "up to 10 MB. The whole document must be readable in frame."),
                 ("02", "WE CHECK THEM FIRST", "There is nothing to pay until they check out. Your documents "
                                               "are stored privately and never shown on your profile."),
-                ("03", "PAY, AND THE BADGE GOES UP", "By PayFast, monthly. Apply when you sign up, or later "
+                ("03", "PAY, AND THE BADGE GOES UP", "By Paystack, monthly or yearly. Apply when you sign up, or later "
                                                       "from your Manage page."),
             ]},
             {"kind": "small",

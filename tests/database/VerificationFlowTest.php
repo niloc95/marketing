@@ -44,6 +44,10 @@ final class VerificationFlowTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // A suite before this one may leave the request, and so the site, on
+        // .app, where the badge is off (SiteScopeTest, then this, failed).
+        \Config\Services::resetSingle('request');
+        \Config\Services::resetSingle('site');
         (new DirectorySettings())->forget();
         $this->fixturePrefix = 'fixture_' . bin2hex(random_bytes(4)) . '_';
         $this->svc           = new VerificationService();
@@ -688,14 +692,31 @@ final class VerificationFlowTest extends CIUnitTestCase
 
     public function testRevokingRemovesTheBadgeImmediately(): void
     {
+        $this->svc = new VerificationService($this->payfast());
         $listingId = $this->makeListing();
         $row       = $this->applyAndApprove($listingId);
         $this->pay($row, 'PF-1');
 
         $this->assertTrue($this->svc->revoke((int) $row['id'], 'admin@test'));
 
-        $this->assertSame(DirectoryVerificationModel::STATE_LAPSED, $this->verifications->forListing($listingId)['state']);
+        $after = $this->verifications->forListing($listingId);
+        $this->assertSame(DirectoryVerificationModel::STATE_LAPSED, $after['state']);
         $this->assertNull($this->listings->find($listingId)['verified_until']);
+        $this->assertNotNull($after['cancelled_at'], 'a revoked business must not keep being billed');
+    }
+
+    public function testARevokeTheGatewayWillNotConfirmStillTakesTheBadgeDown(): void
+    {
+        $this->svc = new VerificationService($this->payfast(cancelSucceeds: false));
+        $listingId = $this->makeListing();
+        $row       = $this->applyAndApprove($listingId);
+        $this->pay($row, 'PF-1');
+
+        $this->assertTrue($this->svc->revoke((int) $row['id'], 'admin@test'));
+
+        $after = $this->verifications->forListing($listingId);
+        $this->assertSame(DirectoryVerificationModel::STATE_LAPSED, $after['state']);
+        $this->assertNull($after['cancelled_at'], 'nothing recorded that PayFast did not confirm; the admin is emailed');
     }
 
     // ------------------------------------------------- working without PayFast
