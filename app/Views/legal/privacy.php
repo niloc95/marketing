@@ -300,7 +300,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Payment processing</h3>
             <p>If you purchase a Verified Business badge or our profile setup service, payment processing is handled by <strong>Paystack</strong>. See <a href="https://paystack.com/za/terms" rel="noopener">Paystack's terms and privacy notice</a>. A subscription started before we moved to Paystack is processed by <strong>PayFast</strong> until you move it; see <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
-            <p>Payment information is processed in Paystack's (or PayFast's) payment environment. We do not store your full card details on our servers.</p>
+            <p>To take a payment we give Paystack your email address, the amount and the payment reference, so it can charge your card, run a monthly or yearly subscription and send your receipt. Payment information is processed in Paystack's (or PayFast's) payment environment. We do not store your full card details on our servers.</p>
             <p>Verification documents, including identity and company registration documents, are not provided to Paystack or PayFast for payment processing.</p>
 
             <h3>Legal requirements</h3>
