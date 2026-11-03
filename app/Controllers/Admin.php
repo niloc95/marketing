@@ -1048,9 +1048,10 @@ class Admin extends BaseController
         $svc = new DirectoryAdminService();
 
         return view('admin/categories', [
-            'categories' => $svc->allCategories(),
-            'usage'      => $svc->categoryUsage(),
-            'groups'     => $svc->categoryGroups(),
+            'categories'  => $svc->allCategories(),
+            'usage'       => $svc->categoryUsage(),
+            'groups'      => $svc->categoryGroups(),
+            'schemaTypes' => config('SchemaTypes')->allowed(),
         ]);
     }
 

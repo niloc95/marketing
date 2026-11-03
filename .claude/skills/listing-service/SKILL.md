@@ -300,6 +300,33 @@ compulsory and stored for everyone. Only what the public sees changes.
 - Fitness & Sport has the `sport` facet set (`facilities`, `access`) in `Config\ListingFacets`,
   which is how "padel courts" finds a club.
 
+## Structured data: types, Person pages, adding a category (since 3 Nov 2026)
+
+- **Types live in `Config\SchemaTypes`**, read by `schema_business_type()` in this order:
+  the category's `schema_type` column (set on `/admin/categories`, only from
+  `SchemaTypes::allowed()`, empty = automatic) → `$places` (worship, civic) → nonprofit
+  rule → `$bySlug` → `$byGroup` → `LocalBusiness`. Tables hold bare types; a type in
+  `$pairWithLocalBusiness` is published as `["LocalBusiness", Type]`. `$medicalSpecialty`
+  gives doctors schema.org MedicalSpecialty members, emitted only on types that take it.
+- **Individuals (`type = person`) publish a Person** (`schema_person()`, `#person`) as the
+  ProfilePage mainEntity, with `worksFor` the practice node (`#business`, which keeps
+  address, hours, geo, phone). Credentials, registration number, ORCID/ResearchGate and a
+  `/in/` LinkedIn move to the Person. A team card with the person's own name shares the
+  `#person` @id. The type alone decides it, never the name: a company filed as an
+  individual publishes as a Person until admin fixes its type.
+- ProfilePage carries `dateCreated` / `dateModified` (`created_at`, `updated_at`).
+- The Verified badge is **not** in JSON-LD: no schema.org property says it without
+  reading as accreditation. Our own socials (`Config\Directory::$socialLinks` +
+  `$ownSocialAliases`) are refused by `social_profile_url()`, so they never reach a
+  profile or its `sameAs`.
+- **Adding a category:** add the name to `DirectoryCategoriesSeeder` (or on
+  `/admin/categories`). It inherits its group's type at once. If schema.org has an exact
+  type, add the slug to `SchemaTypes::$bySlug` (and `$medicalSpecialty` for a doctor), or
+  pick it on `/admin/categories` without a release. A new type must exist in schema.org
+  and, if it is not a LocalBusiness subtype, go into `$pairWithLocalBusiness`.
+  `SchemaTypesTest` and `SchemaHelperTest::testEverySlugKeyIsASeededCategory` check the
+  tables; `ProfileEntitySchemaTest` checks the rendered page.
+
 ## Geocoding provider: Mapbox for lookup, Nominatim as fallback
 
 `Services::geocoder()` returns `MapboxGeocoder` when `directory.mapboxToken` is set and

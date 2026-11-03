@@ -748,6 +748,17 @@ class DirectoryAdminService
             'is_active'  => empty($input['is_active']) ? 0 : 1,
         ];
 
+        // The schema.org type, only when the row's form posts it (the add form
+        // does not), and only from Config\SchemaTypes::allowed(): this value is
+        // published as-is on every profile in the category. Empty = automatic.
+        if (array_key_exists('schema_type', $input)) {
+            $schemaType = trim((string) $input['schema_type']);
+            if ($schemaType !== '' && ! in_array($schemaType, config('SchemaTypes')->allowed(), true)) {
+                return ['ok' => false, 'message' => 'Choose a schema.org type from the list.'];
+            }
+            $data['schema_type'] = $schemaType !== '' ? $schemaType : null;
+        }
+
         // A group typed here for the first time gets its row now, placed by
         // DirectoryCategoryGroupModel::defaultSortFor() — last but one, until
         // someone moves it on the groups panel.

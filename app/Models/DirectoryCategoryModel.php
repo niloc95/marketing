@@ -10,7 +10,7 @@ class DirectoryCategoryModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = true;
-    protected $allowedFields = ['name', 'slug', 'group_name', 'is_active', 'sort_order'];
+    protected $allowedFields = ['name', 'slug', 'group_name', 'is_active', 'sort_order', 'schema_type'];
 
     protected $validationRules = [
         // See DirectoryListingModel: the slug rule's {id} placeholder needs a

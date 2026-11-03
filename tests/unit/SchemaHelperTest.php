@@ -138,20 +138,18 @@ final class SchemaHelperTest extends CIUnitTestCase
 
     public function testEverySlugKeyIsASeededCategory(): void
     {
-        // A typo in the table would silently cost that category its type, so
+        // A typo in the tables would silently cost that category its type, so
         // every key must be one the seeder can produce.
         helper('slug');
         $seeder = file_get_contents(APPPATH . 'Database/Seeds/DirectoryCategoriesSeeder.php');
         preg_match_all("/'([^'\\n]+)'/", $seeder, $m);
         $seeded = array_map('slugify', $m[1]);
 
-        $helper = file_get_contents(APPPATH . 'Helpers/schema_helper.php');
-        $start  = strpos($helper, '$bySlug = [');
-        $table  = substr($helper, $start, strpos($helper, '];', $start) - $start);
-        preg_match_all("/^\s*'([a-z0-9-]+)'\s*=>/m", $table, $keys);
+        $types = config('SchemaTypes');
+        $keys  = array_merge(array_keys($types->places), array_keys($types->bySlug), array_keys($types->medicalSpecialty));
 
-        $this->assertNotEmpty($keys[1]);
-        foreach ($keys[1] as $slug) {
+        $this->assertNotEmpty($keys);
+        foreach ($keys as $slug) {
             $this->assertContains($slug, $seeded, $slug . ' is not a seeded category slug');
         }
     }
