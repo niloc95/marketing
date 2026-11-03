@@ -41,8 +41,13 @@ if (! is_array($old['hours'] ?? null)) {
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= $isNew ? 'New profile' : 'Edit profile' ?></h1>
                 <div class="flex flex-wrap gap-2">
                     <?php if (! $isNew): ?>
-                        <?php // The saved profile, whatever its status. Save first to see an edit. ?>
-                        <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/preview/' . (int) $listing['id']) ?>" target="_blank" rel="noopener"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Preview</a>
+                        <?php // The saved profile, whatever its status. Save first to see an edit.
+                              // Admin only (Cloudflare Access): the customer gets the link from
+                              // "Send preview to customer". ?>
+                        <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/preview/' . (int) $listing['id']) ?>" target="_blank" rel="noopener" title="Only signed in admins can open this link"><?= lucide('external-link', 'h-4 w-4 shrink-0') ?>Admin preview</a>
+                        <?php if (($listing['status'] ?? '') === 'pending'): ?>
+                            <form method="post" action="<?= base_url('admin/send-preview/' . (int) $listing['id']) ?>" data-confirm="Email the owner a preview to approve? This replaces any verify or preview link already sent."><?= csrf_field() ?><button class="btn btn-primary btn-xs"><?= lucide('mail', 'h-4 w-4 shrink-0') ?>Send preview to customer</button></form>
+                        <?php endif; ?>
                     <?php endif; ?>
                     <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/profiles') ?>"><?= lucide('arrow-left', 'h-4 w-4 shrink-0') ?>Back to profiles</a>
                 </div>

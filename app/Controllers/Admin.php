@@ -498,11 +498,16 @@ class Admin extends BaseController
      */
     public function sendPreview(int $id)
     {
-        return $this->outcome(
-            (new DirectoryListingMutationService())->sendPreview($id),
-            'Preview sent. The profile goes live when the owner approves it.',
-            'Could not send. The profile must be pending and have a valid email.'
-        );
+        $link = (new DirectoryListingMutationService())->sendPreview($id);
+        if ($link === '') {
+            return redirect()->back()->with('error', 'Could not send. The profile must be pending and have a valid email.');
+        }
+
+        // Shown once in the admin bar (admin/_bar.php), for WhatsApp or when
+        // the email does not arrive. Never the /admin/preview address.
+        session()->setFlashdata('preview_link', $link);
+
+        return $this->back('Preview sent. The profile goes live when the owner approves it.');
     }
 
     public function remove(int $id)

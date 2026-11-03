@@ -127,3 +127,16 @@ foreach ($more as $items) {
         </details>
     </div>
 </nav>
+
+<?php // The customer's link from Admin::sendPreview(), shown once: only its hash
+      // is stored. The admin "Preview" button is behind Cloudflare Access and
+      // is no use to a customer, so this is the one to pass on. ?>
+<?php if (is_string($previewLink = session()->getFlashdata('preview_link')) && $previewLink !== ''): ?>
+    <div class="container mt-5">
+        <div class="alert alert-info">
+            <p>Customer preview link (also emailed). Share only with the owner:</p>
+            <p class="mt-2 break-all"><a href="<?= esc($previewLink, 'attr') ?>" target="_blank" rel="noopener noreferrer"><?= esc($previewLink) ?></a></p>
+            <button type="button" class="btn btn-ghost btn-xs mt-2" data-copy="<?= esc($previewLink, 'attr') ?>">Copy link</button>
+        </div>
+    </div>
+<?php endif; ?>

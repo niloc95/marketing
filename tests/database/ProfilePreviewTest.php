@@ -319,6 +319,40 @@ final class ProfilePreviewTest extends CIUnitTestCase
     }
 
     /** Send through the admin button and pull the raw token out of the email. */
+    /**
+     * The admin's own /admin/preview is behind Cloudflare Access, so the
+     * customer's link is shown once after sending, for WhatsApp too.
+     */
+    public function testTheAdminIsShownTheCustomersLinkAfterSending(): void
+    {
+        $id = $this->listing();
+
+        $edit = $this->asAdmin()->get('admin/edit/' . $id);
+        $edit->assertSee('Send preview to customer');
+        $edit->assertSee('Admin preview');
+
+        $token = $this->sendPreview($id);
+
+        $page = $this->withSession([
+            'dir_admin' => true, AdminFilter::SEEN_KEY => time(),
+            'preview_link' => site_url('preview/' . $token), '__ci_vars' => ['preview_link' => 'new'],
+        ])->get('admin/edit/' . $id);
+        $page->assertSee('Customer preview link');
+        $page->assertSee('/preview/' . $token);
+        $page->assertSee('Copy link');
+    }
+
+    public function testThePreviewLinkIsFlashedOnSend(): void
+    {
+        $id = $this->listing();
+        $response = $this->asAdmin()->post('admin/send-preview/' . $id, [csrf_token() => csrf_hash()]);
+        $response->assertRedirect();
+        $response->assertSessionHas('preview_link');
+        $link = (string) $_SESSION['preview_link'];
+        $this->assertMatchesRegularExpression('#/preview/[A-Za-z0-9_-]{20,}$#', $link);
+        $this->assertStringNotContainsString('/admin/', $link);
+    }
+
     private function sendPreview(int $id): string
     {
         service('email')->archive = [];
