@@ -154,7 +154,7 @@ if (! function_exists('schema_listing_item')) {
         return array_filter([
             // The same type the profile page publishes for this business —
             // the search query already selects both category columns.
-            '@type'     => schema_business_type((string) ($row['category_group'] ?? ''), (string) ($row['category_slug'] ?? ''), (string) ($row['type'] ?? '')),
+            '@type'     => schema_business_type((string) ($row['category_group'] ?? ''), (string) ($row['category_slug'] ?? ''), (string) ($row['type'] ?? ''), $row['category_schema_type'] ?? null),
             '@id'       => $url . '#business',
             'name'      => (string) ($row['display_name'] ?? ''),
             'url'       => $url,
@@ -272,224 +272,71 @@ if (! function_exists('schema_faq_page')) {
 
 if (! function_exists('schema_business_type')) {
     /**
-     * The directory covers every kind of service business, so LocalBusiness is
-     * the base type. Where a category group maps cleanly onto a schema.org
-     * subtype we emit that instead — richer, and safe to fall back from.
+     * The schema.org type a profile publishes, from its category.
      *
-     * "Education & Training" is the one entry that has to be a *pair*.
-     * EducationalOrganization subclasses Organization, not LocalBusiness, so
-     * emitting it alone (as this map used to) meant a driving school did not
-     * qualify as a local business entity at all and its address, geo and
-     * opening hours had no LocalBusiness to hang off. JSON-LD allows an array
-     * of types, which keeps both meanings.
+     * The tables and their order live in Config\SchemaTypes, whose docblock is
+     * the rule: the admin override, the worship and civic places, the nonprofit
+     * rule, the slug, the group, then LocalBusiness. A slug with no entry falls
+     * through to its group, so a renamed legacy row costs precision, never
+     * correctness, and a new category inherits its group's type until someone
+     * sets one on /admin/categories.
      *
-     * $slug is a second, narrower tier consulted first. The group alone cannot
-     * tell a nail bar from a spa, a GP from a pharmacy or an attorney from an
-     * accountant, and every one of them used to publish as its group's generic
-     * type. A category belongs in the slug tier only when schema.org has a
-     * type that is clearly what it is. A type that sits outside LocalBusiness
-     * (the schools, VeterinaryCare) goes in as a pair with LocalBusiness
-     * first, for the reason above. A slug with no entry falls through to its
-     * group, so a slug that does not match — a renamed legacy row, say — costs
-     * precision, never correctness.
-     *
-     * Keys are slugify() of the names in DirectoryCategoriesSeeder.
+     * A type that is not a LocalBusiness subtype (the schools, VeterinaryCare,
+     * NGO) comes back as ["LocalBusiness", Type]: emitted alone it left a
+     * driving school without a local business entity for its address, geo and
+     * hours to attach to. JSON-LD allows an array of types, which keeps both.
      *
      * $profileType is the listing's own type (DirectoryListingModel::TYPES).
-     * An NGO, community body, foundation or project is an NGO whatever category
-     * it filed under, so that tier wins outright, as a pair with LocalBusiness
-     * for the same reason the schools are. A Place falls through to its
-     * category: a sports club is still a SportsActivityLocation.
+     * $override is the category's schema_type column; one outside the allowed
+     * list is ignored, so a bad row can never publish an invented type.
      *
      * @return string|list<string>
      */
-    function schema_business_type(string $group, string $slug = '', string $profileType = '')
+    function schema_business_type(string $group, string $slug = '', string $profileType = '', ?string $override = null)
     {
-        // Places of worship first: schema.org names each one exactly, and a
-        // church filed as an NGO would be the wrong claim. Paired with
-        // LocalBusiness like the schools, so hours and address still validate.
-        $worship = [
-            'church'           => 'Church',
-            'mosque'           => 'Mosque',
-            'hindu-temple'     => 'HinduTemple',
-            'synagogue'        => 'Synagogue',
-            'buddhist-temple'  => 'BuddhistTemple',
-            'place-of-worship' => 'PlaceOfWorship',
-        ];
-        // Places & Venues. ShoppingCenter and StadiumOrArena are LocalBusiness
-        // types already; the civic ones (museum, park, hall, landmark) are not,
-        // so they pair like the worship rows.
-        $places = [
-            'stadium-arena'            => 'StadiumOrArena',
-            'community-hall-centre'    => 'EventVenue',
-            'theatre-arts-venue'       => 'PerformingArtsTheater',
-            'museum-gallery'           => 'Museum',
-            'heritage-site-landmark'   => 'LandmarksOrHistoricalBuildings',
-            'park-recreation-area'     => 'Park',
-        ];
-        $worship += $places;
-        if (isset($worship[$slug])) {
-            return ['LocalBusiness', $worship[$slug]];
+        $types = config('SchemaTypes');
+
+        $override = trim((string) $override);
+        if ($override !== '' && in_array($override, $types->allowed(), true)) {
+            return $types->publish($override);
         }
-        if ($slug === 'shopping-centre-mall') {
-            return 'ShoppingCenter';
+        if (isset($types->places[$slug])) {
+            return $types->publish($types->places[$slug]);
+        }
+        if (in_array($profileType, $types->nonprofitTypes, true) || $group === $types->nonprofitGroup) {
+            return $types->publish('NGO');
+        }
+        if (isset($types->bySlug[$slug])) {
+            return $types->publish($types->bySlug[$slug]);
         }
 
-        if (in_array($profileType, ['ngo', 'community', 'foundation', 'project'], true)
-            || $group === 'Community & Nonprofit') {
-            return ['LocalBusiness', 'NGO'];
+        return $types->publish($types->byGroup[$group] ?? 'LocalBusiness');
+    }
+}
+
+if (! function_exists('schema_medical_specialty')) {
+    /**
+     * medicalSpecialty for a node of $type in category $slug: schema.org
+     * MedicalSpecialty URLs, or null when the type does not take the property
+     * or the category has no fitting member (Config\SchemaTypes).
+     *
+     * @param string|list<string> $type
+     *
+     * @return string|list<string>|null
+     */
+    function schema_medical_specialty($type, string $slug)
+    {
+        $types = config('SchemaTypes');
+        if (array_intersect((array) $type, $types->medicalSpecialtyTypes) === []) {
+            return null;
         }
+        $out = array_map(static fn (string $s): string => 'https://schema.org/' . $s, $types->medicalSpecialty[$slug] ?? []);
 
-        $bySlug = [
-            // Fitness & Sport: the clubs and courts schema.org names exactly.
-            'sports-club'              => 'SportsClub',
-            'tennis-courts'            => 'TennisComplex',
-            'golf-club-driving-range'  => 'GolfCourse',
-            // Health & Medical
-            'general-practitioner'   => 'Physician',
-            'specialist-physician'   => 'Physician',
-            'paediatrician'          => 'Physician',
-            'cardiologist'           => 'Physician',
-            'dermatologist'          => 'Physician',
-            'gynaecologist'          => 'Physician',
-            'neurologist'            => 'Physician',
-            'oncologist'             => 'Physician',
-            'urologist'              => 'Physician',
-            'ent-specialist'         => 'Physician',
-            'ophthalmologist'        => 'Physician',
-            'general-surgeon'        => 'Physician',
-            'orthopaedic-surgeon'    => 'Physician',
-            'anaesthetist'           => 'Physician',
-            'radiologist'            => 'Physician',
-            'psychiatrist'           => 'Physician',
-            'dentist'                => 'Dentist',
-            'orthodontist'           => 'Dentist',
-            'optometrist'            => 'Optician',
-            'physiotherapist'        => 'Physiotherapy',
-            'pharmacy'               => 'Pharmacy',
-            'medical-clinic'         => 'MedicalClinic',
-            'hospital'               => 'Hospital',
-            // Beauty & Wellness (Hair folded in; its rows keep HairSalon)
-            'hair-salon'             => 'HairSalon',
-            'braiding-extensions'    => 'HairSalon',
-            'nail-bar'               => 'NailSalon',
-            'beauty-salon'           => 'BeautySalon',
-            'spa'                    => 'DaySpa',
-            'tattoo-piercing'        => 'TattooParlor',
-            'barber'                 => 'HairSalon',
-            // Motoring
-            'auto-repair'            => 'AutoRepair',
-            'auto-electrician'       => 'AutoRepair',
-            'motorcycle-service'     => 'MotorcycleRepair',
-            'panel-beater'           => 'AutoBodyShop',
-            'auto-body-paint'        => 'AutoBodyShop',
-            'car-wash-valet'         => 'AutoWash',
-            'tyres-exhaust'          => 'TireShop',
-            'vehicle-dealership'     => 'AutoDealer',
-            // Legal & Financial
-            'attorney'               => 'Attorney',
-            'notary'                 => 'Notary',
-            'conveyancer'            => 'LegalService',
-            'accountant'             => 'AccountingService',
-            'bookkeeper'             => 'AccountingService',
-            'tax-practitioner'       => 'AccountingService',
-            'auditor'                => 'AccountingService',
-            'financial-adviser'      => 'FinancialService',
-            'debt-counsellor'        => 'FinancialService',
-            'insurance-broker'       => 'InsuranceAgency',
-            // Home & Trades
-            'plumber'                => 'Plumber',
-            'electrician'            => 'Electrician',
-            'builder'                => 'GeneralContractor',
-            'painter-decorator'      => 'HousePainter',
-            'roofing'                => 'RoofingContractor',
-            'locksmith'              => 'Locksmith',
-            'air-conditioning-refrigeration' => 'HVACBusiness',
-            'removals-storage'       => 'MovingCompany',
-            // Professional Services
-            'estate-agent'           => 'RealEstateAgent',
-            'recruitment-agency'     => 'EmploymentAgency',
-            // Fitness & Sport
-            'gym-fitness-centre'     => 'ExerciseGym',
-            // Education & Training
-            'preschool-daycare'      => ['LocalBusiness', 'Preschool'],
-            'aftercare-holiday-care' => ['LocalBusiness', 'Preschool'],
-            'primary-school'         => ['LocalBusiness', 'ElementarySchool'],
-            'high-school'            => ['LocalBusiness', 'HighSchool'],
-            'combined-school'        => ['LocalBusiness', 'School'],
-            'special-needs-school'   => ['LocalBusiness', 'School'],
-            'remedial-school'        => ['LocalBusiness', 'School'],
-            'online-school'          => ['LocalBusiness', 'School'],
-            'training-college'       => ['LocalBusiness', 'CollegeOrUniversity'],
-            'university'             => ['LocalBusiness', 'CollegeOrUniversity'],
-            // Events & Hospitality
-            'florist'                => 'Florist',
-            // Restaurants & Food. Every one of these is already a LocalBusiness
-            // subtype (via FoodEstablishment), so unlike the schools no pair is
-            // needed. A cuisine is a Restaurant; the cuisine itself would be
-            // servesCuisine, not a type.
-            'restaurant'             => 'Restaurant',
-            'coffee-shop'            => 'CafeOrCoffeeShop',
-            'bakery'                 => 'Bakery',
-            'pizza'                  => 'Restaurant',
-            'italian-restaurant'     => 'Restaurant',
-            'chinese-restaurant'     => 'Restaurant',
-            'mexican-restaurant'     => 'Restaurant',
-            'indian-restaurant'      => 'Restaurant',
-            'sushi-asian'            => 'Restaurant',
-            'steakhouse-grill'       => 'Restaurant',
-            'fast-food-takeaway'     => 'FastFoodRestaurant',
-            'sports-bar-pub'         => 'BarOrPub',
-            // Travel & Tourism
-            'guest-house-accommodation' => 'LodgingBusiness',
-            'game-lodge-safari'      => 'LodgingBusiness',
-            'travel-agency'          => 'TravelAgency',
-            'car-rental'             => 'AutoRental',
-            // Pets & Animals — VeterinaryCare is a MedicalOrganization only.
-            'veterinarian'           => ['LocalBusiness', 'VeterinaryCare'],
-            'pet-shop'               => 'PetStore',
-            // Everyday Services
-            'laundry-dry-cleaning'   => 'DryCleaningOrLaundry',
-            // Retail & Other
-            'clothing-apparel'       => 'ClothingStore',
-            'jewellery'              => 'JewelryStore',
-            'furniture'              => 'FurnitureStore',
-            'hardware-store'         => 'HardwareStore',
-            'nursery-garden-centre'  => 'GardenStore',
-        ];
-
-        if (isset($bySlug[$slug])) {
-            return $bySlug[$slug];
-        }
-
-        $map = [
-            'Health & Medical'      => 'MedicalBusiness',
-            'Beauty & Wellness'     => 'HealthAndBeautyBusiness',
-            'Hair'                  => 'HairSalon',
-            'Motoring'              => 'AutomotiveBusiness',
-            'Legal & Financial'     => 'ProfessionalService',
-            'Home & Trades'         => 'HomeAndConstructionBusiness',
-            'Professional Services' => 'ProfessionalService',
-            'Fitness & Sport'       => 'SportsActivityLocation',
-            'Education & Training'  => ['LocalBusiness', 'EducationalOrganization'],
-            'Restaurants & Food'    => 'FoodEstablishment',
-            'Retail & Other'        => 'Store',
-        ];
-
-        // Deliberately absent: Travel & Tourism, Everyday Services, Events &
-        // Hospitality, Pets & Animals and Home Industry & Handmade. Each holds
-        // categories whose schema.org types diverge — a game lodge is a
-        // LodgingBusiness and the travel agent selling the stay is a TravelAgency
-        // — and this map only sees the group. LocalBusiness is true of all of
-        // them; a wrong subtype would not be. The categories in them that do
-        // have a clear type get it from the slug tier above.
-        //
-        // Everyday Services exists partly for this: laundry, tailoring, couriers
-        // and funeral parlours used to sit in Retail & Other and were published
-        // as schema.org/Store, which none of them are.
-
-
-        return $map[$group] ?? 'LocalBusiness';
+        return match (count($out)) {
+            0       => null,
+            1       => $out[0],
+            default => $out,
+        };
     }
 }
 
@@ -783,6 +630,12 @@ if (! function_exists('schema_local_business')) {
         // PostalAddress falls back to town and province, and there is no geo.
         $l = listing_public_view($l);
 
+        // An individual's profile publishes the person separately
+        // (schema_person()); what identifies them rather than the practice,
+        // the credentials, registration number and research profiles, goes on
+        // that node instead of this one.
+        $isPerson = schema_is_person_profile($l);
+
         // areaServed: the places a mobile business travels to, else the
         // province as before.
         $areas      = listing_service_areas($l);
@@ -796,7 +649,12 @@ if (! function_exists('schema_local_business')) {
         // panel renders through, so the two can never disagree.
         $sameAs = [];
         foreach (array_keys(listing_social_networks()) as $field) {
-            $sameAs[] = (string) social_profile_url($field, $l[$field] ?? '');
+            $url = (string) social_profile_url($field, $l[$field] ?? '');
+            // A personal LinkedIn (/in/) is the person, not the practice.
+            if ($isPerson && $field === 'social_linkedin' && schema_is_personal_linkedin($url)) {
+                continue;
+            }
+            $sameAs[] = $url;
         }
         $sameAs[] = listing_website_url($l['website'] ?? '');
 
@@ -806,7 +664,7 @@ if (! function_exists('schema_local_business')) {
         // The number is a PropertyValue named by its regulator, not a
         // credential: it identifies the professional, it does not certify them.
         $identifier = null;
-        if (($reg = \App\Libraries\ProfessionalRegistration::forDisplay($l)) !== null) {
+        if (! $isPerson && ($reg = \App\Libraries\ProfessionalRegistration::forDisplay($l)) !== null) {
             if ($reg['number'] !== '') {
                 $identifier = ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']];
             }
@@ -837,14 +695,22 @@ if (! function_exists('schema_local_business')) {
         // than a copy, and carries an @id of its own that is the card's anchor
         // on this page — so "who works where" survives a parser that reads the
         // Person node on its own.
-        $employees = [];
+        //
+        // On an individual's profile, the team card that is the person
+        // themselves takes the person's @id, so the two merge into one entity
+        // instead of a Person and their look-alike.
+        $employees  = [];
+        $personId   = $canonical . '#person';
+        $personSeen = false;
         foreach ($l['team'] ?? [] as $member) {
             $knowsAbout = \App\Services\TeamMemberService::splitSpecializations($member['specializations'] ?? null);
             $anchor     = team_member_anchor($member);
+            $isSelf     = $isPerson && ! $personSeen && schema_same_person((string) ($member['name'] ?? ''), $l);
+            $personSeen = $personSeen || $isSelf;
 
             $employees[] = array_filter([
                 '@type'         => 'Person',
-                '@id'           => $anchor !== '' ? $canonical . '#' . $anchor : '',
+                '@id'           => $isSelf ? $personId : ($anchor !== '' ? $canonical . '#' . $anchor : ''),
                 'name'          => trim((string) ($member['name'] ?? '')),
                 'jobTitle'      => trim((string) ($member['role'] ?? '')),
                 'image'         => listing_image_url($member['photo_path'] ?? null),
@@ -853,6 +719,9 @@ if (! function_exists('schema_local_business')) {
                 'hasCredential' => schema_member_credentials($member['credentials'] ?? null) ?: null,
                 'worksFor'      => ['@id' => $canonical . '#business'],
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
+        }
+        if ($isPerson && ! $personSeen) {
+            array_unshift($employees, ['@id' => $personId]);
         }
 
         // "Services & prices" as an offer catalogue. The price label is free
@@ -911,17 +780,10 @@ if (! function_exists('schema_local_business')) {
             array_merge([$l['category']['name'] ?? ($l['category_name'] ?? '')], $l['tags'] ?? [])
         ))));
 
-        // One credential per line of the free-text box, which is how owners
-        // list them ("BDS (Wits)" / "HPCSA registered"). Named only: the text
-        // is the owner's claim and there is nothing verified to add to it.
-        $credentials = [];
-        foreach (preg_split('/\R/', trim((string) ($l['credentials'] ?? ''))) ?: [] as $line) {
-            if (trim($line) !== '') {
-                $credentials[] = ['@type' => 'EducationalOccupationalCredential', 'name' => trim($line)];
-            }
-        }
+        // An individual's credentials are theirs, on the Person node.
+        $credentials = $isPerson ? [] : schema_listing_credentials($l);
 
-        $type = schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? ''), (string) ($l['type'] ?? ''));
+        $type = schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? ''), (string) ($l['type'] ?? ''), $l['category']['schema_type'] ?? null);
 
         // Other branches, each a business of the same type in its own right —
         // what a search for that suburb should find. Everything the branch
@@ -1001,6 +863,7 @@ if (! function_exists('schema_local_business')) {
             'address'                  => schema_postal_address($l),
             'geo'                      => schema_geo($l),
             'openingHoursSpecification' => $hours !== [] ? $hours : null,
+            'medicalSpecialty'         => schema_medical_specialty($type, (string) ($l['category']['slug'] ?? '')),
             'identifier'               => $identifier,
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
@@ -1013,6 +876,168 @@ if (! function_exists('schema_local_business')) {
             'additionalProperty'       => $properties !== [] ? $properties : null,
             'aggregateRating'          => $rating,
             'review'                   => $reviewList !== [] ? $reviewList : null,
+        ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
+    }
+}
+
+if (! function_exists('schema_listing_credentials')) {
+    /**
+     * One credential per line of the listing's free-text box, which is how
+     * owners list them ("BDS (Wits)" / "HPCSA registered"). Named only: the
+     * text is the owner's claim and there is nothing verified to add to it.
+     *
+     * @param array<string,mixed> $l
+     *
+     * @return list<array{'@type':string,name:string}>
+     */
+    function schema_listing_credentials(array $l): array
+    {
+        $out = [];
+        foreach (preg_split('/\R/', trim((string) ($l['credentials'] ?? ''))) ?: [] as $line) {
+            if (trim($line) !== '') {
+                $out[] = ['@type' => 'EducationalOccupationalCredential', 'name' => trim($line)];
+            }
+        }
+
+        return $out;
+    }
+}
+
+if (! function_exists('schema_is_person_profile')) {
+    /**
+     * Whether the profile is one person ("Individual or Sole Trader"), which
+     * publishes a Person beside the practice node. Only the owner's or admin's
+     * choice of type decides it, never a guess from the name.
+     *
+     * @param array<string,mixed> $l
+     */
+    function schema_is_person_profile(array $l): bool
+    {
+        return ($l['type'] ?? '') === 'person';
+    }
+}
+
+if (! function_exists('schema_same_person')) {
+    /**
+     * Whether a team member's $name is the profile's own person: the display
+     * name or the contact person, ignoring a leading title, case, spacing and
+     * the curly apostrophe ("Dr Gavin O’Brien" = "Gavin O'Brien").
+     *
+     * @param array<string,mixed> $l
+     */
+    function schema_same_person(string $name, array $l): bool
+    {
+        $norm = static function (string $n): string {
+            $n = mb_strtolower(str_replace(['’', '‘'], "'", trim($n)));
+            $n = preg_replace('/\s+/u', ' ', $n) ?? $n;
+
+            return preg_replace('/^(dr|prof|adv|mr|mrs|ms|miss)\.?\s+/u', '', $n) ?? $n;
+        };
+
+        $name = $norm($name);
+        if ($name === '') {
+            return false;
+        }
+        foreach ([(string) ($l['display_name'] ?? ''), (string) ($l['contact_person'] ?? '')] as $candidate) {
+            if ($candidate !== '' && $norm($candidate) === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (! function_exists('schema_is_personal_linkedin')) {
+    /** A LinkedIn member profile (/in/…), as opposed to a company page. */
+    function schema_is_personal_linkedin(string $url): bool
+    {
+        return $url !== '' && preg_match('#^/in/[^/]+#i', (string) parse_url($url, PHP_URL_PATH)) === 1;
+    }
+}
+
+if (! function_exists('schema_person')) {
+    /**
+     * The Person an individual's profile is about, or [] for any other profile.
+     *
+     * The practice stays a business node (#business) with the address, hours,
+     * phone and geo that only LocalBusiness types carry; this node is the
+     * person, linked to it with worksFor, and becomes the page's mainEntity
+     * (schema_page()). Google's profile page guidance asks for exactly that:
+     * a ProfilePage whose mainEntity is the Person it describes.
+     *
+     * What it says is what the page shows: the name, the title from the
+     * Title dropdown, the category as job title, the description, the areas
+     * of focus, the credentials box, the registration number and research
+     * profiles when the owner switched them on, a personal LinkedIn. No email
+     * or telephone, for the reasons on schema_local_business(), and nothing
+     * about our Verified badge: no schema.org property says "documents checked
+     * by a listing platform" without reading as a professional accreditation.
+     *
+     * @param array<string,mixed> $l
+     *
+     * @return array<string,mixed>
+     */
+    function schema_person(array $l, string $canonical): array
+    {
+        if (! schema_is_person_profile($l)) {
+            return [];
+        }
+        $l = listing_public_view($l);
+
+        $name    = trim((string) ($l['display_name'] ?? ''));
+        $contact = trim((string) ($l['contact_person'] ?? ''));
+        $title   = (string) ($l['title'] ?? '');
+        $job     = trim((string) ($l['category']['name'] ?? ($l['category_name'] ?? '')));
+
+        $sameAs     = [];
+        $identifier = null;
+        if (($reg = \App\Libraries\ProfessionalRegistration::forDisplay($l)) !== null) {
+            if ($reg['number'] !== '') {
+                $identifier = ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']];
+            }
+            $sameAs[] = (string) $reg['orcid'];
+            $sameAs[] = (string) $reg['researchgate'];
+        }
+        $linkedin = (string) social_profile_url('social_linkedin', $l['social_linkedin'] ?? '');
+        if (schema_is_personal_linkedin($linkedin)) {
+            $sameAs[] = $linkedin;
+        }
+        $sameAs = array_values(array_filter($sameAs));
+
+        $topics = array_values(array_unique(array_filter(array_map(
+            static fn ($t): string => trim((string) $t),
+            $l['tags'] ?? []
+        ))));
+
+        // Where they work: the practice, then each branch by the @id
+        // schema_local_business() gives it.
+        $workLocation = [['@id' => $canonical . '#business']];
+        foreach (array_keys(array_values($l['locations'] ?? [])) as $i) {
+            $workLocation[] = ['@id' => $canonical . '#branch-' . ($i + 2)];
+        }
+
+        $credentials = schema_listing_credentials($l);
+        $image       = listing_image_url($l['logo_path'] ?? null) ?: listing_image_url($l['photos'][0]['path'] ?? null);
+
+        return array_filter([
+            '@type'           => 'Person',
+            '@id'             => $canonical . '#person',
+            'name'            => $name,
+            // "Blaine Bloy" beside "Dr Blaine Bloy": both are how people search.
+            'alternateName'   => $contact !== '' && $contact !== $name ? $contact : '',
+            'honorificPrefix' => in_array($title, \App\Models\DirectoryListingModel::TITLES, true) ? $title : '',
+            'url'             => $canonical,
+            'image'           => $image,
+            'description'     => schema_plain_description($l),
+            'jobTitle'        => $job,
+            'hasOccupation'   => $job !== '' ? ['@type' => 'Occupation', 'name' => $job] : null,
+            'knowsAbout'      => count($topics) === 1 ? $topics[0] : $topics,
+            'hasCredential'   => $credentials !== [] ? $credentials : null,
+            'identifier'      => $identifier,
+            'sameAs'          => $sameAs !== [] ? $sameAs : null,
+            'worksFor'        => ['@id' => $canonical . '#business'],
+            'workLocation'    => count($workLocation) === 1 ? $workLocation[0] : $workLocation,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
     }
 }
@@ -1046,6 +1071,25 @@ if (! function_exists('schema_member_credentials')) {
     }
 }
 
+if (! function_exists('schema_datetime')) {
+    /**
+     * A stored DATETIME (UTC, Config\App::$appTimezone) as ISO 8601 with its
+     * offset, or '' when empty or unreadable.
+     */
+    function schema_datetime(?string $value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '' || str_starts_with($value, '0000')) {
+            return '';
+        }
+        try {
+            return (new DateTimeImmutable($value, new DateTimeZone('UTC')))->format(DATE_ATOM);
+        } catch (Exception) {
+            return '';
+        }
+    }
+}
+
 if (! function_exists('schema_page')) {
     /**
      * The single entry point. Wraps page nodes in @context + @graph, prepends
@@ -1059,7 +1103,8 @@ if (! function_exists('schema_page')) {
      * every page invites search engines to treat them as separate things.
      *
      * A BreadcrumbList in $nodes is auto-wired to WebPage.breadcrumb, and a
-     * business node to WebPage.mainEntity, so callers never repeat that.
+     * Person node (#person), else a business node, to WebPage.mainEntity, so
+     * callers never repeat that.
      *
      * $props are extra WebPage properties (description, mainEntity, hasPart…),
      * merged last so a caller can set what the auto-wiring cannot guess.
@@ -1091,12 +1136,20 @@ if (! function_exists('schema_page')) {
             $types = (array) ($node['@type'] ?? '');
             if (in_array('BreadcrumbList', $types, true) && isset($node['@id'])) {
                 $page['breadcrumb'] = ['@id' => $node['@id']];
+            } elseif (isset($node['@id']) && str_ends_with((string) $node['@id'], '#person')) {
+                $person = ['@id' => $node['@id']];
             } elseif (isset($node['@id']) && str_ends_with((string) $node['@id'], '#business')) {
                 $page['mainEntity'] = ['@id' => $node['@id']];
                 // A page whose subject is one business is about that business,
                 // not about the publisher.
                 $page['about'] = ['@id' => $node['@id']];
             }
+        }
+        // An individual's page is about the person (schema_person()); the
+        // practice is still in the graph, linked by worksFor.
+        if (isset($person)) {
+            $page['mainEntity'] = $person;
+            $page['about']      = $person;
         }
 
         $page = array_merge($page, $props);

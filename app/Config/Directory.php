@@ -39,6 +39,17 @@ class Directory extends BaseConfig
         'linkedin'  => 'https://www.linkedin.com/company/webscheduler-local/',
     ];
 
+    /**
+     * Other addresses of our own accounts, never accepted on a customer
+     * profile (social_is_platform_account()). Setup profiles were once saved
+     * with these as placeholders.
+     *
+     * @var list<string>
+     */
+    public array $ownSocialAliases = [
+        'https://www.instagram.com/WebScheduler',
+    ];
+
     /** Default Open Graph / Twitter share image, used when a page has none of its own. */
     public string $ogImage = 'assets/brand/social-1080.png';
 

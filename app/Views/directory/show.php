@@ -37,6 +37,9 @@ $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? sub
 // email) all live in schema_helper.php. aggregateRating and review appear only
 // when published reviews do, built from the same $l['reviews'] the panel shows.
 $business = schema_local_business($l, $canonical);
+// An individual's profile is about the person: a Person node, linked to the
+// practice above by worksFor, becomes the page's mainEntity. [] otherwise.
+$person = schema_person($l, $canonical);
 
 $catSlug  = $l['category']['slug'] ?? ($l['category_slug'] ?? '');
 $province = (string) ($l['province'] ?? '');
@@ -62,13 +65,20 @@ if ($catSlug !== '') {
 }
 $crumbs[] = ['name' => $name, 'url' => $canonical];
 
-// ProfilePage, not WebPage: the page exists to describe one business, and
-// schema_page() wires it to the business node as mainEntity.
+// ProfilePage, not WebPage: the page exists to describe one business or
+// person, and schema_page() wires it to that node as mainEntity. The dates are
+// the ones Google's profile page guidance asks for: when the profile was made
+// and last edited (a rescore does not touch updated_at).
 $schema = schema_page(
-    [$business, schema_breadcrumb($crumbs, $canonical)],
+    [$person, $business, schema_breadcrumb($crumbs, $canonical)],
     $canonical,
     'ProfilePage',
-    $name
+    $name,
+    false,
+    array_filter([
+        'dateCreated'  => schema_datetime($l['created_at'] ?? null),
+        'dateModified' => schema_datetime($l['updated_at'] ?? null),
+    ])
 );
 // Name, category, venue/place, then trading hours and which contact details the
 // page has: what people add to a business name when they search for it.

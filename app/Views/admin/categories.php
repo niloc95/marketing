@@ -84,6 +84,16 @@ $groupNames = array_keys($byGroup);
                                 <input type="text" name="group_name" value="<?= esc($c['group_name'], 'attr') ?>" list="groupnames" class="w-48">
                             </div>
                             <div class="field mb-0">
+                                <?php $auto = schema_business_type((string) $c['group_name'], (string) $c['slug']); ?>
+                                <label class="text-xs">Schema type</label>
+                                <select name="schema_type" class="w-48" title="What Google is told this kind of business is. Automatic uses the category, then its group.">
+                                    <option value="">Automatic (<?= esc(implode(' + ', (array) $auto)) ?>)</option>
+                                    <?php foreach ($schemaTypes as $t): ?>
+                                        <option value="<?= esc($t, 'attr') ?>" <?= ($c['schema_type'] ?? null) === $t ? 'selected' : '' ?>><?= esc($t) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="field mb-0">
                                 <label class="text-xs">Sort</label>
                                 <input type="text" name="sort_order" value="<?= (int) $c['sort_order'] ?>" class="w-16">
                             </div>

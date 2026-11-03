@@ -370,7 +370,7 @@ class DirectoryService
             return [];
         }
 
-        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+        $select = 'xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group, p.schema_type AS category_schema_type'
             . ', v.name AS venue_name, v.slug AS venue_slug';
         foreach ($selects as $s) {
             $select .= ', ' . $s;
@@ -1934,7 +1934,7 @@ class DirectoryService
     private function featuredUncached(int $limit = 8): array
     {
         $rows = $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group, p.schema_type AS category_schema_type'
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
@@ -1986,7 +1986,7 @@ class DirectoryService
         $floor = $minScore ?? (int) config('Directory')->recentMinQuality;
 
         return $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group, p.schema_type AS category_schema_type'
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')
@@ -2564,7 +2564,7 @@ class DirectoryService
         }
 
         $builder = $this->listings
-            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group'
+            ->select('xs_directory_listings.*, p.name AS category_name, p.slug AS category_slug, p.group_name AS category_group, p.schema_type AS category_schema_type'
                 . ', v.name AS venue_name, v.slug AS venue_slug')
             ->join('xs_directory_categories p', 'p.id = xs_directory_listings.category_id', 'left')
             ->join('xs_directory_venues v', 'v.id = xs_directory_listings.venue_id', 'left')

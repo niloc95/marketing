@@ -792,7 +792,9 @@ if (! function_exists('social_profile_url')) {
         // handle; without the @ a dot means the owner pasted a host.
         if ($handleUrl !== null && preg_match('/^@?([A-Za-z0-9._]{1,30})$/', $value, $m) === 1
             && (str_starts_with($value, '@') || ! str_contains($value, '.'))) {
-            return sprintf($handleUrl, $m[1]);
+            $url = sprintf($handleUrl, $m[1]);
+
+            return social_is_platform_account($url) ? '' : $url;
         }
 
         if (! preg_match('#^[a-z][a-z0-9+.\-]*:#i', $value)) {
@@ -806,11 +808,36 @@ if (! function_exists('social_profile_url')) {
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
         foreach ($hosts as $allowed) {
             if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
-                return $url;
+                // Our own accounts are never a customer's: on a profile they
+                // told Google, through sameAs, that the business is
+                // WebScheduler. Treated as empty, so a save clears them.
+                return social_is_platform_account($url) ? '' : $url;
             }
         }
 
         return null;
+    }
+}
+
+if (! function_exists('social_is_platform_account')) {
+    /**
+     * Whether $url is one of WebScheduler's own social profiles
+     * (Config\Directory::$socialLinks and $ownSocialAliases), whatever the
+     * case, www prefix, query or trailing slash.
+     */
+    function social_is_platform_account(string $url): bool
+    {
+        $key = static function (string $u): string {
+            $host = strtolower((string) parse_url($u, PHP_URL_HOST));
+            $host = preg_replace('/^(www|m|web)\./', '', $host) ?? $host;
+
+            return $host . '/' . strtolower(trim((string) parse_url($u, PHP_URL_PATH), '/'));
+        };
+
+        $config = config('Directory');
+        $ours   = array_map($key, array_merge(array_values($config->socialLinks), $config->ownSocialAliases));
+
+        return in_array($key($url), $ours, true);
     }
 }
 
