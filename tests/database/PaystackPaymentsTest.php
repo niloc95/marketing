@@ -168,6 +168,63 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->assertSame('SUB_kept', $after['paystack_subscription_code'], 'a renewal keeps the mandate it has');
     }
 
+    public function testARenewalWhoseWebhookNeverCameIsBankedBeforeTheLapse(): void
+    {
+        $row = $this->activePaystackBadge('-1 day', 'CUS_quiet', 'PLN_monthly_3000');
+        $this->charge('T_renewal_no_hook', 3000, 'CUS_quiet', 'PLN_monthly_3000', 9101);
+        $this->paystack->charges['CUS_quiet'] = ['T_renewal_no_hook'];
+
+        $outcomes = $this->payments()->catchUpRenewals();
+
+        $this->assertCount(1, $outcomes);
+        $this->assertStringContainsString('(renewal)', $outcomes[0]);
+        $this->assertSame(0, $this->billing()->lapseExpired(), 'the paid badge is not lapsed');
+        $after = $this->verifications->find((int) $row['id']);
+        $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $after['state']);
+        $this->assertGreaterThan(date('Y-m-d'), $after['paid_until']);
+    }
+
+    public function testCatchingUpTwiceBanksTheRenewalOnce(): void
+    {
+        $row = $this->activePaystackBadge('today', 'CUS_twice', 'PLN_monthly_3000');
+        $this->charge('T_renewal_twice', 3000, 'CUS_twice', 'PLN_monthly_3000', 9102);
+        $this->paystack->charges['CUS_twice'] = ['T_renewal_twice'];
+
+        $this->payments()->catchUpRenewals();
+        $paidUntil = $this->verifications->find((int) $row['id'])['paid_until'];
+
+        // Paid up now, so the next night does not even ask; and should the
+        // webhook turn up late after all, it banks nothing twice.
+        $this->assertSame([], $this->payments()->catchUpRenewals());
+        $this->assertStringStartsWith('duplicate', $this->webhook('charge.success', ['reference' => 'T_renewal_twice']));
+        $this->assertSame($paidUntil, $this->verifications->find((int) $row['id'])['paid_until']);
+    }
+
+    public function testCatchUpAsksOnlyAboutTermsEndingNow(): void
+    {
+        $this->activePaystackBadge('+20 days', 'CUS_later', 'PLN_monthly_3000');
+        $this->activePaystackBadge('-40 days', 'CUS_gone', 'PLN_monthly_3000');
+        $cancelled = $this->activePaystackBadge('today', 'CUS_cancelled', 'PLN_monthly_3000');
+        $this->verifications->update((int) $cancelled['id'], ['cancelled_at' => date('Y-m-d H:i:s')]);
+        $this->activePaystackBadge('today', 'CUS_due', 'PLN_monthly_3000');
+
+        $this->payments()->catchUpRenewals();
+
+        $asked = array_map(static fn (array $c): string => $c[1], $this->paystack->callsOf('charges'));
+        $this->assertSame(['CUS_due'], $asked);
+    }
+
+    public function testCatchUpWhenPaystackDoesNotAnswerChangesNothing(): void
+    {
+        $row = $this->activePaystackBadge('-1 day', 'CUS_down', 'PLN_monthly_3000');
+        $this->paystack->charges['CUS_down'] = null;
+
+        $outcomes = $this->payments()->catchUpRenewals();
+
+        $this->assertStringStartsWith('retry', $outcomes[0]);
+        $this->assertSame($row['paid_until'], $this->verifications->find((int) $row['id'])['paid_until']);
+    }
+
     public function testSubscriptionCreateStoresTheCodeAndToken(): void
     {
         $row = $this->activePaystackBadge('+30 days', 'CUS_s', 'PLN_monthly_3000', subscription: null);

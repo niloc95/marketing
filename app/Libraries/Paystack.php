@@ -119,6 +119,50 @@ class Paystack
         return $this->request('GET', '/transaction/verify/' . rawurlencode($reference));
     }
 
+    /**
+     * References of a customer's successful charges since $since, or null if
+     * Paystack could not be asked. How the daily sweep finds a renewal whose
+     * webhook never came: on 3 Nov 2026 the first live charge banked through
+     * the browser's return, and no webhook reached us at all.
+     *
+     * The transaction list filters by the customer's numeric id, not the
+     * code we keep, so that is looked up first.
+     *
+     * @return list<string>|null
+     */
+    public function successfulCharges(string $customerCode, int $since): ?array
+    {
+        if (trim($customerCode) === '') {
+            return [];
+        }
+
+        $customer = $this->request('GET', '/customer/' . rawurlencode($customerCode));
+        $id       = (int) ($customer['id'] ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+
+        $list = $this->request('GET', '/transaction?' . http_build_query([
+            'customer' => $id,
+            'status'   => 'success',
+            'from'     => gmdate('Y-m-d\TH:i:s\Z', $since),
+            'perPage'  => 50,
+        ]));
+        if ($list === null) {
+            return null;
+        }
+
+        $references = [];
+        foreach ($list as $tx) {
+            $reference = is_array($tx) ? (string) ($tx['reference'] ?? '') : '';
+            if ($reference !== '') {
+                $references[] = $reference;
+            }
+        }
+
+        return $references;
+    }
+
     /** Make a plan; its code, or null. */
     public function createPlan(string $name, string $interval, int $amountCents): ?string
     {
@@ -279,7 +323,7 @@ class Paystack
             log_message('error', sprintf(
                 'Paystack %s %s failed (HTTP %d)%s%s',
                 $method,
-                (string) preg_replace('/\/(?:PLN|SUB|CUS)_\w+|\/verify\/.+$/', '/…', $path),
+                (string) preg_replace('/\/(?:PLN|SUB|CUS)_\w+|\/verify\/.+$|\?.*$/', '/…', $path),
                 $status,
                 is_array($json) && isset($json['message']) ? ': ' . Mailer::oneLine((string) $json['message']) : '',
                 $error !== '' ? ': ' . $error : ''

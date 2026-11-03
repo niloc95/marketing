@@ -5,6 +5,7 @@ namespace App\Commands;
 use App\Models\DirectoryVerificationDocumentModel;
 use App\Models\DirectoryVerificationModel;
 use App\Models\DirectoryVerificationItnRejectionModel;
+use App\Services\PaystackPayments;
 use App\Services\VerificationService;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
@@ -74,6 +75,14 @@ class VerificationSweep extends BaseCommand
         $quiet   = array_key_exists('quiet', $params) || in_array('--quiet', $params, true);
         $service = new VerificationService();
 
+        // Paystack renewals whose webhook never came, asked for before
+        // anything is lapsed, so a paid badge is not taken down for a lost
+        // notification (directory:paystack:catch-up runs this on its own).
+        $caughtUp = count(array_filter(
+            (new PaystackPayments())->catchUpRenewals(),
+            static fn (string $outcome): bool => str_starts_with($outcome, 'applied')
+        ));
+
         $lapsed = $service->lapseExpired();
 
         $reminded = 0;
@@ -101,7 +110,9 @@ class VerificationSweep extends BaseCommand
             + $documents->purgeForEndedVerifications(self::ENDED_DOCUMENT_RETENTION_DAYS);
 
         $summary = sprintf(
-            'Verification sweep: %d lapsed, %d renewal reminder%s sent, %d old ITN rejection%s pruned, %d expired document%s purged.',
+            'Verification sweep: %d Paystack renewal%s caught up, %d lapsed, %d renewal reminder%s sent, %d old ITN rejection%s pruned, %d expired document%s purged.',
+            $caughtUp,
+            $caughtUp === 1 ? '' : 's',
             $lapsed,
             $reminded,
             $reminded === 1 ? '' : 's',
