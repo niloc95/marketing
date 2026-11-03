@@ -16,7 +16,7 @@ $clarityId   = config('Directory')->clarityId();
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Cookie policy</h1>
         <p class="mt-2 text-sm text-white/80">Last updated <?= esc(date('j F Y', strtotime($lastUpdated))) ?></p>
@@ -31,7 +31,7 @@ $clarityId   = config('Directory')->clarityId();
 
             <h2>Strictly necessary</h2>
             <p>These are set whatever you choose, because the site cannot function without them. They carry no advertising identifier and are not shared.</p>
-            <table class="table">
+            <div class="table-scroll"><table class="table">
                 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Lifetime</th></tr></thead>
                 <tbody>
                     <tr><td><code>ci_session</code></td><td>Cookie</td><td>Keeps you signed in while you edit your profile, and carries once off status messages between pages.</td><td>Session</td></tr>
@@ -39,37 +39,37 @@ $clarityId   = config('Directory')->clarityId();
                     <tr><td><code>xs-theme</code></td><td>Local storage</td><td>Remembers whether you chose light or dark mode. Shared with webscheduler.co.za so the choice carries across both sites.</td><td>Until cleared</td></tr>
                     <tr><td><code>ws-consent</code></td><td>Local storage</td><td>Remembers your answer to the cookie banner, so we stop asking.</td><td>Until cleared</td></tr>
                 </tbody>
-            </table>
+            </table></div>
 
             <h2 id="partners">Partner referral</h2>
             <p>Set only when you open a link from one of our <a href="<?= base_url('partners') ?>">partners</a>, so that if you create a business profile we know which partner to thank. It holds the partner's code and nothing about you, and it is not shared with the partner or anyone else.</p>
-            <table class="table">
+            <div class="table-scroll"><table class="table">
                 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Lifetime</th></tr></thead>
                 <tbody>
                     <tr><td><code>ws_partner</code></td><td>Cookie</td><td>Remembers which partner link you arrived through.</td><td><?= (int) config('Partners')->cookieDays ?> days</td></tr>
                 </tbody>
-            </table>
+            </table></div>
 
             <h2>Analytics</h2>
             <?php if ($analyticsId !== ''): ?>
                 <p>We use Google Analytics 4 to understand which pages people find useful. It is loaded with <strong>Google Consent Mode v2</strong> and every storage category defaults to <em>denied</em>, so no analytics cookie is written and no measurement data is stored until you press Accept.</p>
-                <table class="table">
+                <div class="table-scroll"><table class="table">
                     <thead><tr><th>Name</th><th>Provider</th><th>Purpose</th><th>Lifetime</th></tr></thead>
                     <tbody>
                         <tr><td><code>_ga</code></td><td>Google</td><td>Distinguishes one visitor from another.</td><td>2 years</td></tr>
                         <tr><td><code>_ga_&lt;id&gt;</code></td><td>Google</td><td>Keeps session state for the property.</td><td>2 years</td></tr>
                     </tbody>
-                </table>
+                </table></div>
                 <?php if ($clarityId !== ''): ?>
                     <p>We also use <strong>Microsoft Clarity</strong> to see how people move through our pages, through heatmaps and recordings of clicks, taps and scrolling. Clarity is not loaded at all until you press Accept. It hides what you type into forms, and it never runs on our admin pages. See <a href="https://privacy.microsoft.com/privacystatement" rel="noopener">Microsoft's privacy statement</a>.</p>
-                    <table class="table">
+                    <div class="table-scroll"><table class="table">
                         <thead><tr><th>Name</th><th>Provider</th><th>Purpose</th><th>Lifetime</th></tr></thead>
                         <tbody>
                             <tr><td><code>_clck</code></td><td>Microsoft</td><td>Recognises a returning visitor across visits.</td><td>1 year</td></tr>
                             <tr><td><code>_clsk</code></td><td>Microsoft</td><td>Joins the pages of one visit into a single recording.</td><td>1 day</td></tr>
                             <tr><td><code>CLID</code>, <code>MUID</code></td><td>Microsoft</td><td>Identify the same browser to Clarity and Microsoft.</td><td>1 year</td></tr>
                         </tbody>
-                    </table>
+                    </table></div>
                 <?php endif; ?>
                 <p>If you decline, these are never written. If you accept and change your mind, the same applies from that moment on, though cookies already set stay in your browser until you clear them.</p>
 

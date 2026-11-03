@@ -30,7 +30,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Privacy policy</h1>
         <p class="mt-2 text-sm text-white/80">Last updated <?= esc(date('j F Y', strtotime($lastUpdated))) ?></p>
@@ -113,7 +113,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
             </ul>
 
             <h2>8. Why we process personal information, and our lawful basis</h2>
-            <table class="table">
+            <div class="table-scroll"><table class="table">
                 <thead><tr><th>Purpose</th><th>Lawful basis</th></tr></thead>
                 <tbody>
                     <tr><td>Creating, verifying and publishing a business profile</td><td>Contract (providing the service you asked for), and your consent to publication when you submit and confirm it</td></tr>
@@ -130,7 +130,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                     <tr><td>Security, rate limiting and fraud prevention</td><td>Legitimate interests (keeping the service safe and available)</td></tr>
                     <tr><td>Analytics</td><td>Your consent</td></tr>
                 </tbody>
-            </table>
+            </table></div>
             <p>Where we rely on legitimate interests, we have weighed them against your rights, and you may object at any time (section 15).</p>
 
             <h2>9. Who we share information with</h2>

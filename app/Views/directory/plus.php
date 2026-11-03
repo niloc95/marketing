@@ -54,7 +54,7 @@ $faqs = [
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <?= plus_badge_pill() ?>
         <h1 class="mt-4 text-2xl sm:text-3xl">What Plus means</h1>

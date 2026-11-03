@@ -79,7 +79,7 @@ $otherCell = static function (string $status): string {
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">How <?= esc($siteName) ?> compares</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">

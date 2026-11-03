@@ -221,7 +221,7 @@ $schema = schema_page(
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <h1 class="text-2xl sm:text-3xl">Frequently asked questions</h1>
         <p class="mt-2 text-sm text-white/80">What it costs, what your business profile can include, and how to reach us.</p>

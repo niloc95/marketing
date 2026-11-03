@@ -61,7 +61,7 @@ $faqs = [
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<section class="hero">
+<section class="hero hero-center">
     <div class="container">
         <span class="eyebrow text-white/80">Partner Program</span>
         <h1 class="mt-2 text-2xl sm:text-3xl">Help local businesses get found, and earn while you do it</h1>

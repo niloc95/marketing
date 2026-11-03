@@ -488,6 +488,20 @@
   .hero p { @apply mt-4 max-w-2xl text-lg text-slate-600 sm:text-xl; }
   .dark .hero h1 { @apply text-white; }
   .dark .hero p  { @apply text-slate-400; }
+  /* The content pages (FAQ, pricing, verified, legal…) centre their opening,
+     as webscheduler.co.za does. Discovery pages (province, landing, venue,
+     jobs) keep theirs on the left, over the results below them. */
+  .hero-center { @apply text-center; }
+  .hero-center p,
+  .hero-center h1 { @apply mx-auto; }
+  .hero-center .flex { @apply justify-center; }
+  .hero-center .verified-seal { @apply mx-auto; }
+  /* /pricing puts the home page's plan cards straight under its hero: there
+     the head and links follow the centred opening; the home page keeps its
+     own left set. */
+  .hero-center + .home-pricing .home-pricing-head,
+  .hero-center + .home-pricing .home-pricing-lede { @apply mx-auto text-center; }
+  .hero-center + .home-pricing .pricing-foot { @apply items-center sm:justify-center; }
 
   /* The contained photo band every .hero can carry: the width of .container's
      content, rounded, after the copy — the same frame as the home media band. */
@@ -887,11 +901,12 @@
     @apply mb-0 mt-0 rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-10 sm:py-14;
   }
   .page-flow > .panel:first-child { @apply border-t-0 pt-0; }
-  /* A document set on the canvas starts where the heading above it starts,
-     as on the home page, rather than in a centred column: the container keeps
-     its full width and the reading measure moves to its children. */
+  /* A document set on the canvas sits in a centred reading column under a
+     centred .hero-center heading, as the brand site's pages do (owner, 2 Nov
+     2026): the container keeps its full width so a wide child (plan cards)
+     can still use it, and the measure and centring move to the children. */
   .container.prose-legal.page-flow { @apply max-w-7xl; }
-  .prose-legal.page-flow > * { @apply max-w-3xl; }
+  .prose-legal.page-flow > * { @apply mx-auto max-w-3xl; }
   .page-flow > .panel.text-center { @apply py-16 sm:py-20; }
   /* One class + child + element outranks the text-lg / text-slate-900 the
      views carry on these h2s; dark mode is restated because dark:text-white
@@ -1936,6 +1951,9 @@
     @apply rounded-inner bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700;
   }
   .prose-legal .table { @apply mb-6; }
+  /* A table wider than a phone scrolls inside its own box, never the page
+     (the cookie table's code names and nowrap headings ran to 510px). */
+  .table-scroll { @apply max-w-full overflow-x-auto; }
   .dark .prose-legal h2,
   .dark .prose-legal h3,
   .dark .prose-legal strong { @apply text-white; }
