@@ -60,6 +60,23 @@ class Bookings extends BaseConfig
     public array $settingDefaults = [
         'localization.time_format' => '24h',
         'localization.first_day'   => 'monday',
+        // Booking rules (Phase 3). Minutes unless the key says otherwise.
+        'booking.slot_step'        => '0',   // 0 = every service's own length
+        'booking.lead_minutes'     => '0',   // minimum notice
+        'business.buffer_time'     => '0',   // kept free after every appointment
+        'business.future_limit'    => '60',  // days ahead customers may book online
+    ];
+
+    /**
+     * Whole number settings and their allowed range, inclusive.
+     *
+     * @var array<string,array{0:int,1:int}>
+     */
+    public array $settingRanges = [
+        'booking.slot_step'     => [0, 240],
+        'booking.lead_minutes'  => [0, 20160],
+        'business.buffer_time'  => [0, 240],
+        'business.future_limit' => [1, 730],
     ];
 
     /** @var array<string,list<string>> */

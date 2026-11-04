@@ -16,7 +16,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Settings extends BaseController
 {
-    public const TABS = ['general' => 'General', 'localization' => 'Local time'];
+    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'localization' => 'Local time'];
 
     public function index()
     {
@@ -63,6 +63,34 @@ class Settings extends BaseController
         }
 
         return redirect()->to(base_url('business/settings/localization'))->with('success', 'Saved.');
+    }
+
+    public function saveBooking()
+    {
+        $context = service('businessContext');
+        $result  = BookingSettings::for($context->listingId())->save([
+            'booking.slot_step'     => (string) $this->request->getPost('slot_step'),
+            'booking.lead_minutes'  => (string) ((int) $this->request->getPost('lead_hours') * 60),
+            'business.buffer_time'  => (string) $this->request->getPost('buffer_time'),
+            'business.future_limit' => (string) $this->request->getPost('future_limit'),
+        ], $context->accountId());
+
+        if ($result['errors'] !== []) {
+            return redirect()->to(base_url('business/settings/booking'))->with('error', implode(' ', array_unique($result['errors'])));
+        }
+        if ($result['changed'] !== []) {
+            (new BookingAudit())->record(
+                $context->listingId(),
+                $context->accountId(),
+                'settings.saved',
+                'settings',
+                null,
+                array_map(static fn (array $c): string => $c[0], $result['changed']),
+                array_map(static fn (array $c): string => $c[1], $result['changed']),
+            );
+        }
+
+        return redirect()->to(base_url('business/settings/booking'))->with('success', 'Saved.');
     }
 
     public function turnOff()

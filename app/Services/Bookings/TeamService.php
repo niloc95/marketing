@@ -296,6 +296,9 @@ class TeamService
      */
     public function copyProfileHours(int $providerId, array $listing, ?int $accountId): void
     {
+        // Not an autoloaded helper: load it, or this only works on requests
+        // where something else already did.
+        helper('directory_hours');
         $profile = hours_decode($listing['trading_hours'] ?? null) ?? [];
         $input   = [];
         foreach (self::PROFILE_DAY_KEYS as $day => $key) {

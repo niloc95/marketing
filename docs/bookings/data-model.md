@@ -60,12 +60,12 @@ existing ones.
 holiday answers (`hours_holiday_rule()`) plus `xs_booking_blocked_times` rows with no
 provider. Provider hours are clipped to the business window for the day.
 
-## Appointments and customers (Phases 4 and 5)
+## Appointments and customers (appointments built in Phase 3, customers Phase 4)
 
 | Table | Columns | Notes |
 |---|---|---|
 | `xs_booking_customers` | id, listing_id, hash (64, unique), first_name, last_name, email, phone, address, notes, custom_fields (JSON), created_at, updated_at, purged_at | Unique (listing_id, email). The same person at two businesses is two customers, by design. |
-| `xs_booking_appointments` | id, listing_id, reference (`WSB-BOOK-…`, unique), hash (unique), provider_id, service_id, customer_id, location_id (nullable), start_at, end_at (UTC), stored_timezone, status, notes, source (business, public, api), delivery_mode, video_link, service_name, service_duration_min, price_cents, currency, provider_name, location_name, location_address, payment_status, payment_amount_cents, public_token_hash, public_token_expires, reminder_sent, created_by_member_id, created_at, updated_at, cancelled_at | Snapshot columns keep history readable after edits. Index (provider_id, start_at, end_at) for conflicts, (listing_id, start_at) for the calendar. |
+| `xs_booking_appointments` | id, listing_id, reference (`WSB-BOOK-…`, unique), hash (unique), provider_id, service_id, customer_id, location_id (nullable), start_at, end_at (UTC), stored_timezone, status, notes, source (business, public, api), delivery_mode, video_link, service_name, service_duration_min, price_cents, currency, provider_name, location_name, location_address, payment_status, payment_amount_cents, public_token_hash, public_token_expires, reminder_sent, created_by_member_id, created_at, updated_at, cancelled_at | Built 4 Nov 2026 (migration `2026-11-14-100000`), plus `hold_before_min` and `hold_after_min` (the gaps kept around it); `customer_id` gets its foreign key in Phase 4. Snapshot columns keep history readable after edits. Index (provider_id, start_at, end_at) for conflicts, (listing_id, start_at) for the calendar. |
 | `xs_booking_appointment_fields` | id, appointment_id, field_key, value | Unique (appointment_id, field_key), cascade on delete. |
 
 ## Notifications (Phase 6)

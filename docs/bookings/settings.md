@@ -29,10 +29,10 @@ already holds is read from the profile, never copied, so the two can't drift.
 | `booking.default_appointment_status` | `pending` | 4 | `pending` or `confirmed` for public bookings |
 | `booking.{first_names,surname,email,phone,address,notes}_{display,required}` | name, email, phone shown and required; address and notes off | 5 | email or phone must stay required (we need a way to reach the customer) |
 | `booking.custom_field_{1..6}_{enabled,title,type,required,sensitive}` | off | 4 | |
-| `booking.slot_step` (was `booking.time_resolution`) | service duration | 3 | renamed: Bookings used two keys for grid and slots |
-| `booking.lead_minutes` | `0` | 3 | new: minimum notice |
-| `business.buffer_time` | `0` | 3 | minutes after each appointment |
-| `business.future_limit` | `60` | 3 | days ahead the public can book |
+| `booking.slot_step` (was `booking.time_resolution`) | `0` = service length | 3 | built; 0 to 240 minutes |
+| `booking.lead_minutes` | `0` | 3 | built; minimum notice, customers only; entered in hours |
+| `business.buffer_time` | `0` | 3 | built; minutes after each appointment, added to the service's own gap |
+| `business.future_limit` | `60` | 3 | built; days ahead customers can book (1 to 730) |
 | `business.reschedule` | `24` | 5 | hours before; `0` = not allowed online |
 | `business.cancel` | `24` | 5 | hours before; `0` = not allowed online |
 | `business.statuses` | all five | 4 | which statuses the business uses |

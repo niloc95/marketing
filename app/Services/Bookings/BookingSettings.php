@@ -37,6 +37,12 @@ class BookingSettings
         return array_key_exists($key, $stored) ? $stored[$key] : $this->config->settingDefaults[$key];
     }
 
+    /** A whole number setting (see Config\Bookings::$settingRanges). */
+    public function int(string $key): int
+    {
+        return (int) $this->get($key);
+    }
+
     /** @return array<string,string> every known key with its current value */
     public function all(): array
     {
@@ -72,6 +78,16 @@ class BookingSettings
                 $errors[$key] = 'Choose one of the options.';
 
                 continue;
+            }
+            $range = $this->config->settingRanges[$key] ?? null;
+            if ($range !== null) {
+                $int = filter_var($value, FILTER_VALIDATE_INT);
+                if ($int === false || $int < $range[0] || $int > $range[1]) {
+                    $errors[$key] = 'Use a whole number from ' . $range[0] . ' to ' . $range[1] . '.';
+
+                    continue;
+                }
+                $value = (string) $int;
             }
             $old = $this->get($key);
             if ($old !== $value) {

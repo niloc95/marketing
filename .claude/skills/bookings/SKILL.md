@@ -16,7 +16,8 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 | 0 Specification | done 4 Nov 2026, branch `bookings` (docs/bookings/) |
 | 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (not merged): accounts, members, gate, settings, audit, /business shell, Vite |
 | 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, not merged): services, categories, providers, hours, reception, time off, invitations, setup check |
-| 3 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, not merged): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
+| 4 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -128,3 +129,46 @@ silently after any earlier failure on the connection (it broke the random order 
 **Colours:** the palette is `brand-ocean`, `primary-50..900`, `surface-*`
 (`tailwind.tokens.cjs`). `bg-ocean` does not exist and compiles to nothing.
 
+## Phase 3 in the code
+
+| Piece | Where |
+|---|---|
+| Appointments table | migration `2026-11-14-100000_CreateBookingAppointments`, `BookingAppointmentModel` (`HOLDS_TIME` = every status but cancelled). Customer FK arrives in Phase 4 |
+| Engine | `AvailabilityService($listing, ?$now)`: `slots()`, `slotsForAnyone()`, `problem()` (reason codes), `nextAvailable()`, `availableDates()`, `businessWindow()`, `holdMinutes()` |
+| Creating an appointment | `BookingLock::reserve($listing, $data, $public, ?$now)` only: transaction, `SELECT ... FOR UPDATE` on the provider row, `problem()` again, insert with snapshots, reference `WSB-BOOK-000123` |
+| Rules | `booking.slot_step` (0 = service length), `booking.lead_minutes`, `business.buffer_time`, `business.future_limit` (`Config\Bookings::$settingRanges`), tab "Booking rules" |
+| Pages | `Business\Availability` (`/business/availability`, JSON `/business/api/availability/slots`, scoped to the member's providers) |
+| Tests | `tests/database/BookingAvailabilityTest.php` (fixed clock 1 Jan 2030 Johannesburg) |
+
+**Engine rules (deliberate differences from Bookings):** half open intervals, so back to
+back bookings are fine; busy time is anything overlapping the day; gaps are the service's
+before and after plus the business buffer, kept on each appointment
+(`hold_before_min`, `hold_after_min`); the gaps must fit inside working time; the business
+window is the profile's hours per weekday and a public holiday needs the owner's answer
+(none means no online bookings); minimum notice, the horizon and the grid apply to
+customers, the business may book any free minute in working time; customers cannot book
+a person marked not bookable.
+
+**Helpers:** `directory_hours` is **not** autoloaded. Call `helper('directory_hours')`
+before `hours_decode()` and the holiday helpers (Phase 2 shipped without it and only
+worked when another test had loaded it).
+
+
+## Next: Phase 4 (appointments and customers)
+
+Branch `bookings-p4-appointments` off `bookings-p3-scheduling`. Scope from `parity.md` §4
+and §7 and `routes.md`:
+
+- `xs_booking_customers` (unique listing + email, 64 char hash) and the FK on
+  `xs_booking_appointments.customer_id`; `xs_booking_appointment_fields`.
+- `AppointmentService`: create (always through `BookingLock::reserve()`), edit, reschedule
+  (`problem()` with `$excludeAppointmentId`), status changes (pending, confirmed,
+  completed, cancelled, no show; port `AppointmentStatus`), notes. Scope every list by
+  `BusinessContext::providerScope()`.
+- `CustomerService`: create, edit, find, history, delete with impact preview, custom
+  fields 1 to 6 (`booking.custom_field_*` settings).
+- Calendar: port Bookings `app/Services/Calendar/*` (Day, Week, Month, TimeGrid,
+  EventLayout) with their tests first, then `resources/js/modules/scheduler/*` into
+  `resources/business/` (Vite), server mode only, drag to reschedule, details modal.
+  Routes `/business/calendar`, `/business/api/calendar/{view}`, `/business/customers`.
+- Not yet: notifications (Phase 6, enqueue only later), payments (Phase 8).

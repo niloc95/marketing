@@ -25,6 +25,9 @@ if ($listing !== null) {
         $nav[] = ['business/team', 'Team', 'users'];
         $nav[] = ['business/time-off', 'Time off', 'calendar-off'];
     }
+    if ($context->can('appointments.manage')) {
+        $nav[] = ['business/availability', 'Availability', 'calendar-days'];
+    }
     if ($context->can('settings.manage')) {
         $nav[] = ['business/settings', 'Settings', 'settings'];
     }

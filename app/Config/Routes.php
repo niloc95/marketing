@@ -276,10 +276,16 @@ $routes->get('business', 'Business\Home::index', ['filter' => 'businessauth']);
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.manage']], static function ($routes) {
     $routes->get('settings', 'Business\Settings::index');
     $routes->post('settings/localization', 'Business\Settings::saveLocalization');
+    $routes->post('settings/booking', 'Business\Settings::saveBooking');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
 });
 $routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
 $routes->get('business/audit', 'Business\Audit::index', ['filter' => ['businessauth', 'businesscan:audit.view']]);
+// Phase 3: the scheduling engine, for every member (scoped inside).
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
+    $routes->get('availability', 'Business\Availability::index');
+    $routes->get('api/availability/slots', 'Business\Availability::slots');
+});
 // Phase 2: the catalogue, the team and time off.
 $routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
     $routes->get('invite/(:segment)', 'Business\Invite::show/$1');
