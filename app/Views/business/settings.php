@@ -16,7 +16,7 @@ $labels = [
 <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
 <nav class="mb-5 flex gap-1 border-b border-slate-200 dark:border-slate-800" aria-label="Settings">
     <?php foreach ($tabs as $key => $label): ?>
-        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-ocean text-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
+        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-brand-ocean text-brand-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
     <?php endforeach ?>
 </nav>
 

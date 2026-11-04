@@ -18,6 +18,13 @@ $asset    = static fn (string $path): string => base_url($path) . '?v=' . (@file
 $nav      = [];
 if ($listing !== null) {
     $nav[] = ['business', 'Dashboard', 'layout-dashboard'];
+    if ($context->can('services.manage')) {
+        $nav[] = ['business/services', 'Services', 'list'];
+    }
+    if ($context->can('providers.manage')) {
+        $nav[] = ['business/team', 'Team', 'users'];
+        $nav[] = ['business/time-off', 'Time off', 'calendar-off'];
+    }
     if ($context->can('settings.manage')) {
         $nav[] = ['business/settings', 'Settings', 'settings'];
     }
@@ -57,7 +64,7 @@ $here = trim(uri_string(), '/');
       <?php if ($signedIn): ?>data-biz-session data-ping-url="<?= esc(base_url('business/ping'), 'attr') ?>" data-sign-in-url="<?= esc(base_url('business/sign-in?expired=1'), 'attr') ?>" data-idle-seconds="<?= (int) config('Bookings')->idleSeconds ?>"<?php endif ?>>
     <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
-            <a href="<?= base_url($signedIn ? 'business' : 'business/sign-in') ?>" class="flex items-center gap-2 font-bold text-ocean dark:text-white">
+            <a href="<?= base_url($signedIn ? 'business' : 'business/sign-in') ?>" class="flex items-center gap-2 font-bold text-brand-ocean dark:text-white">
                 <img class="brand-mark" src="<?= $asset('assets/brand/logo-64.png') ?>" alt="" width="28" height="28">
                 <span>WebScheduler Local</span>
             </a>
@@ -82,8 +89,8 @@ $here = trim(uri_string(), '/');
         <?php if ($nav !== []): ?>
             <nav class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Business">
                 <?php foreach ($nav as [$path, $label, $icon]): ?>
-                    <?php $active = $here === $path || str_starts_with($here, $path . '/'); ?>
-                    <a href="<?= base_url($path) ?>" class="<?= $active ? 'bg-ocean/10 text-ocean dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' ?> flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium"<?= $active ? ' aria-current="page"' : '' ?>>
+                    <?php $active = $here === $path || ($path !== 'business' && str_starts_with($here, $path . '/')); ?>
+                    <a href="<?= base_url($path) ?>" class="<?= $active ? 'bg-primary-50 text-brand-ocean dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' ?> flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium"<?= $active ? ' aria-current="page"' : '' ?>>
                         <?= lucide($icon, 'h-4 w-4') ?><?= esc($label) ?>
                     </a>
                 <?php endforeach ?>

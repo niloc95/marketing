@@ -14,10 +14,21 @@ $roles = config('BookingPermissions')->roleLabels;
 <h1 class="text-2xl font-bold text-slate-900 dark:text-white"><?= esc((string) $listing['display_name']) ?></h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">You are signed in as <?= esc($roles[$member['role']] ?? (string) $member['role']) ?>.</p>
 
+<?php $problems = App\Services\Bookings\SetupCheck::problems((int) $listing['id']); ?>
 <div class="mt-6 grid gap-4 sm:grid-cols-2">
     <div class="panel">
-        <h2 class="font-bold">Online bookings are being set up</h2>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Your services, team, calendar and the Book online button on your profile come next. Nothing is shown to customers yet.</p>
+        <?php if ($problems === []): ?>
+            <h2 class="font-bold">Ready for bookings</h2>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Your services, team and hours are set. The calendar and the Book online button on your profile come next. Nothing is shown to customers yet.</p>
+        <?php else: ?>
+            <h2 class="font-bold">To finish setting up</h2>
+            <ul class="mt-2 space-y-1 text-sm">
+                <?php foreach (array_slice($problems, 0, 6) as $p): ?>
+                    <li><a class="underline" href="<?= base_url($p['link']) ?>"><?= esc($p['text']) ?></a></li>
+                <?php endforeach ?>
+            </ul>
+            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Nothing is shown to customers yet.</p>
+        <?php endif ?>
     </div>
     <div class="panel">
         <h2 class="font-bold">Your business profile</h2>

@@ -280,6 +280,38 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
 });
 $routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
 $routes->get('business/audit', 'Business\Audit::index', ['filter' => ['businessauth', 'businesscan:audit.view']]);
+// Phase 2: the catalogue, the team and time off.
+$routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
+    $routes->get('invite/(:segment)', 'Business\Invite::show/$1');
+    $routes->post('invite/(:segment)', 'Business\Invite::accept/$1');
+});
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:services.manage']], static function ($routes) {
+    $routes->get('services', 'Business\Services::index');
+    $routes->get('services/new', 'Business\Services::new');
+    $routes->post('services/new', 'Business\Services::save');
+    $routes->post('services/categories', 'Business\Services::saveCategory');
+    $routes->post('services/categories/(:num)', 'Business\Services::saveCategory/$1');
+    $routes->post('services/categories/(:num)/delete', 'Business\Services::deleteCategory/$1');
+    $routes->get('services/(:num)', 'Business\Services::edit/$1');
+    $routes->post('services/(:num)', 'Business\Services::save/$1');
+    $routes->post('services/(:num)/archive', 'Business\Services::archive/$1');
+});
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:members.manage']], static function ($routes) {
+    $routes->post('team/invite', 'Business\Team::invite');
+    $routes->post('team/members/(:num)/role', 'Business\Team::changeRole/$1');
+    $routes->post('team/members/(:num)/remove', 'Business\Team::removeMember/$1');
+    $routes->post('team/(:num)/archive', 'Business\Team::archive/$1');
+});
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:providers.manage']], static function ($routes) {
+    $routes->get('team', 'Business\Team::index');
+    $routes->post('team', 'Business\Team::addProvider');
+    $routes->get('team/(:num)', 'Business\Team::provider/$1');
+    $routes->post('team/(:num)', 'Business\Team::saveProvider/$1');
+    $routes->post('team/(:num)/hours', 'Business\Team::saveHours/$1');
+    $routes->get('time-off', 'Business\TimeOff::index');
+    $routes->post('time-off', 'Business\TimeOff::add');
+    $routes->post('time-off/(:num)/delete', 'Business\TimeOff::delete/$1');
+});
 
 $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // The dashboard is the landing page; the profiles list moved to

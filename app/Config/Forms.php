@@ -65,6 +65,10 @@ class Forms extends BaseConfig
         'business_account'  => ['label' => 'Business account', 'posts' => ['business/account/name' => 'business/account', 'business/account/password' => 'business/account#password']],
         'business_choose'   => ['label' => 'Choose a business', 'posts' => ['business/choose' => 'business/choose']],
         'business_settings' => ['label' => 'Business settings', 'posts' => ['business/settings/localization' => 'business/settings/localization', 'business/turn-off' => 'business/settings/general']],
+        'business_invite'   => ['label' => 'Accept a business invitation', 'posts' => ['business/invite/(:segment)' => 'business/invite/$1']],
+        'business_services' => ['label' => 'Business services', 'posts' => ['business/services/new' => 'business/services/new', 'business/services/(:num)' => 'business/services/$1', 'business/services/(:num)/archive' => 'business/services', 'business/services/categories' => 'business/services#categories', 'business/services/categories/(:num)' => 'business/services#categories', 'business/services/categories/(:num)/delete' => 'business/services#categories']],
+        'business_team'     => ['label' => 'Business team', 'posts' => ['business/team' => 'business/team', 'business/team/(:num)' => 'business/team/$1', 'business/team/(:num)/hours' => 'business/team/$1#hours', 'business/team/(:num)/archive' => 'business/team', 'business/team/invite' => 'business/team#access', 'business/team/members/(:num)/role' => 'business/team#access', 'business/team/members/(:num)/remove' => 'business/team#access']],
+        'business_time_off' => ['label' => 'Business time off', 'posts' => ['business/time-off' => 'business/time-off', 'business/time-off/(:num)/delete' => 'business/time-off']],
     ];
 
     /**

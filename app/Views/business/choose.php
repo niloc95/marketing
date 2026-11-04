@@ -21,7 +21,7 @@ $roles = config('BookingPermissions')->roleLabels;
                     <form method="post" action="<?= base_url('business/choose') ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="listing_id" value="<?= (int) $b['listing_id'] ?>">
-                        <button type="submit" class="panel flex w-full items-center justify-between text-left hover:border-ocean">
+                        <button type="submit" class="panel flex w-full items-center justify-between text-left hover:border-brand-ocean">
                             <span>
                                 <span class="block font-semibold"><?= esc($b['display_name']) ?></span>
                                 <span class="text-sm text-slate-500 dark:text-slate-400"><?= esc($roles[$b['role']] ?? $b['role']) ?></span>

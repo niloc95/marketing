@@ -80,6 +80,25 @@ class BusinessContext
         return (int) $this->account()['id'];
     }
 
+    /** The business's own time zone (the profile's), never the server's. */
+    public function timezone(): string
+    {
+        $tz = (string) ($this->listing()['timezone'] ?? '');
+
+        return in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg';
+    }
+
+    /**
+     * Provider ids this member's rows are limited to: null for all (admin),
+     * otherwise the provider they are (provider) or look after (reception).
+     *
+     * @return list<int>|null
+     */
+    public function providerScope(): ?array
+    {
+        return (new BookingAuthorization())->providerScope($this->member());
+    }
+
     public function can(string $permission): bool
     {
         return $this->isSet() && (new BookingAuthorization())->can($this->member(), $permission);

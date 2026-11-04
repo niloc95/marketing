@@ -15,5 +15,5 @@ class BusinessMemberModel extends BookingScopedModel
     protected $table         = 'xs_business_members';
     protected $primaryKey    = 'id';
     protected $useTimestamps = true;
-    protected $allowedFields = ['account_id', 'listing_id', 'role', 'status', 'invited_by', 'notify_on_appointments'];
+    protected $allowedFields = ['account_id', 'listing_id', 'role', 'status', 'invited_by', 'notify_on_appointments', 'invite_token_hash', 'invite_expires'];
 }

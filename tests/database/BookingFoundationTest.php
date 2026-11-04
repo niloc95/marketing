@@ -150,7 +150,7 @@ final class BookingFoundationTest extends CIUnitTestCase
         $this->assertNull($account['password_hash']);
         $member = BusinessMemberModel::forBusiness($id)->where('account_id', $account['id'])->first();
         $this->assertSame('admin', $member['role']);
-        $this->assertSame('bookings.turned_on', BookingAuditLogModel::forBusiness($id)->first()['action']);
+        $this->assertSame(1, BookingAuditLogModel::forBusiness($id)->where('action', 'bookings.turned_on')->countAllResults());
     }
 
     public function testOnlyALiveSouthAfricanProfileCanTurnBookingsOn(): void

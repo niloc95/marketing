@@ -15,7 +15,8 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 |---|---|
 | 0 Specification | done 4 Nov 2026, branch `bookings` (docs/bookings/) |
 | 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (not merged): accounts, members, gate, settings, audit, /business shell, Vite |
-| 2 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, not merged): services, categories, providers, hours, reception, time off, invitations, setup check |
+| 3 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -106,4 +107,24 @@ Bookings rules that still hold after the port:
 `dev-owner@example.test` / `dev password 123` is admin of profile 2 in the dev DB.
 Emailed links land in Mailpit. Switch the flag off (and `npm run dev:restart`) when back
 on `main`.
+
+## Phase 2 in the code
+
+| Piece | Where |
+|---|---|
+| Tables | migration `2026-11-13-100000_CreateBookingCatalogue` (see data-model.md) |
+| Services and categories | `CatalogueService` (only writer of services, categories, provider_services; cents, 5 to 720 min in steps of 5, deposit needs a price, archive not delete) |
+| People, hours, reception, invitations, roles | `TeamService` (only writer of providers, provider hours, staff assignments, invitations and roles; hours rules from Bookings' ScheduleValidationService; last admin stays; `ensureDefaultProvider()` on turn on) |
+| Time off | `TimeOffService` (local input, UTC storage, whole business or one provider) |
+| Scope | `BookingAuthorization::providerScope()` / `canManageProvider()`, `BusinessContext::providerScope()` and `timezone()` |
+| What is missing | `SetupCheck::problems()`, shown on /business and by `php spark bookings:check [--business id]` |
+| Pages | `Business\{Services,Team,TimeOff,Invite}`, views `business/{services,service_form,team,provider,time_off,invite}.php`, email `emails/booking-invite.php` |
+| Tests | `tests/database/BookingCatalogueTest.php` |
+
+**Transactions:** call `$db->resetTransStatus()->transStart()` and throw when
+`transComplete()` is false. Without the reset, strict mode rolls a transaction back
+silently after any earlier failure on the connection (it broke the random order suite).
+
+**Colours:** the palette is `brand-ocean`, `primary-50..900`, `surface-*`
+(`tailwind.tokens.cjs`). `bg-ocean` does not exist and compiles to nothing.
 

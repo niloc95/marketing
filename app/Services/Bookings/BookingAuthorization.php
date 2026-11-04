@@ -31,6 +31,46 @@ class BookingAuthorization
         return in_array((string) ($member['role'] ?? ''), $roles, true);
     }
 
+    /**
+     * Which providers a member's calendar, customers and time off are
+     * limited to (Bookings' CalendarController and CustomerAppointmentService
+     * rules): null means every provider (admin); a provider gets their own;
+     * reception gets the providers assigned to them. Never trust a provider id
+     * from the request instead of this.
+     *
+     * @param array<string,mixed> $member
+     *
+     * @return list<int>|null
+     */
+    public function providerScope(array $member): ?array
+    {
+        $listingId = (int) $member['listing_id'];
+        $memberId  = (int) $member['id'];
+
+        return match ($member['role'] ?? '') {
+            BookingPermissions::ADMIN => null,
+            BookingPermissions::PROVIDER => array_map('intval', array_column(
+                \App\Models\Bookings\BookingProviderModel::forBusiness($listingId)->where('member_id', $memberId)->findAll(),
+                'id',
+            )),
+            default => array_map('intval', array_column(
+                \App\Models\Bookings\BookingStaffAssignmentModel::forBusiness($listingId)->where('member_id', $memberId)->findAll(),
+                'provider_id',
+            )),
+        };
+    }
+
+    /** May this member change this provider (profile, hours, time off)? @param array<string,mixed> $member */
+    public function canManageProvider(array $member, int $providerId): bool
+    {
+        if (! $this->can($member, 'providers.manage')) {
+            return false;
+        }
+        $scope = $this->providerScope($member);
+
+        return $scope === null || in_array($providerId, $scope, true);
+    }
+
     /** @param array<string,mixed> $member */
     public function hasRole(array $member, string ...$roles): bool
     {

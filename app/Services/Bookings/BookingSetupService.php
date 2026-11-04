@@ -77,7 +77,10 @@ class BookingSetupService
         $listingId = (int) $listing['id'];
         $name      = trim((string) ($listing['contact_person'] ?? '')) ?: (string) $listing['display_name'];
         $account   = $this->accounts->findOrCreate((string) $listing['email'], $name);
-        $this->members->ensureAdmin($listingId, (int) $account['id']);
+        $memberId  = $this->members->ensureAdmin($listingId, (int) $account['id']);
+        // Most small businesses are one person: they get a bookable provider
+        // named after the business, on the profile's opening hours, at once.
+        (new TeamService($listingId, $this->audit))->ensureDefaultProvider($listing, $memberId);
 
         if ((int) ($listing['bookings_enabled'] ?? 0) !== 1) {
             db_connect()->table('xs_directory_listings')->where('id', $listingId)->update([

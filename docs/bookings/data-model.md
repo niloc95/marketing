@@ -31,18 +31,23 @@ On `xs_directory_listings`: `bookings_enabled` (tinyint, default 0) and
 `bookings_enabled_at`. They are not in `OWNER_EDITABLE`, and only `BookingSetupService`
 writes them.
 
-## Catalogue (Phase 2)
+## Catalogue (Phase 2, built 4 Nov 2026)
+
+Migration `2026-11-13-100000_CreateBookingCatalogue`.
 
 | Table | Columns | Mirrors in Bookings | Notes |
 |---|---|---|---|
-| `xs_booking_categories` | id, listing_id, name, color, active, sort_order | `xs_categories` | |
-| `xs_booking_services` | id, listing_id, slug, name, description, duration_min, price_cents, currency, deposit_pct, buffer_before, buffer_after, category_id, delivery_modes (JSON), active, sort_order, profile_service_name | `xs_services` + payment columns | Unique (listing_id, slug). `profile_service_name` links by name to the public "Services and prices" row (decision D3). |
-| `xs_booking_providers` | id, listing_id, team_member_id (nullable), member_id (nullable → `xs_business_members`), slug, name, title, bio, photo_path, color, bookable, active, sort_order | `xs_users` with the provider role | A business with no team gets one provider named after the business. A provider tied to a team member reads name and photo from it while the link holds. |
-| `xs_booking_provider_services` | provider_id, service_id, created_at | `xs_providers_services` | PK both. |
-| `xs_booking_provider_hours` | id, provider_id, weekday (1 to 7), start_time, end_time, breaks (JSON), location_id (nullable) | `xs_business_hours` | Always filtered by provider. The deprecated `xs_provider_schedules` is not carried. |
-| `xs_booking_staff_assignments` | id, provider_id, member_id, assigned_by, status, created_at | `xs_provider_staff_assignments` | |
-| `xs_booking_blocked_times` | id, listing_id, provider_id (nullable = whole business), start_at, end_at, reason | `xs_blocked_times` | Gets a UI (Bookings had none). |
-| `xs_booking_location_days` | id, listing_id, location_id (nullable = main address), weekday | `xs_location_days` | Locations themselves are the profile's main address (`location_id` null) and `xs_directory_practice_locations` rows. |
+| `xs_booking_categories` | id, listing_id, name, color, sort_order | `xs_categories` | deleting one leaves its services without a category (FK SET NULL) |
+| `xs_booking_services` | id, listing_id, slug, name, description, duration_min, price_cents, currency, deposit_pct, buffer_before, buffer_after, category_id, delivery_modes (JSON), profile_service_name, sort_order, archived_at | `xs_services` + payment columns | Unique (listing_id, slug). Archived, never deleted. `profile_service_name` is reserved for D3. |
+| `xs_booking_providers` | id, listing_id, team_member_id (nullable, SET NULL), member_id (nullable, SET NULL), slug, name, title, bio, color, bookable, sort_order, archived_at | `xs_users` with the provider role | A new business gets one provider named after itself, on the profile's opening hours, linked to the owner. A provider made from a profile team card **copies** its name, title and bio once (changed from "reads while linked": simpler, and the card can be a lapsed paid feature). |
+| `xs_booking_provider_services` | listing_id, provider_id, service_id, created_at | `xs_providers_services` | PK (provider_id, service_id). Carries `listing_id` so it goes through BookingScopedModel like every other table. |
+| `xs_booking_provider_hours` | id, listing_id, provider_id, weekday (1 to 7), start_time, end_time, breaks (JSON), location_id (nullable, SET NULL) | `xs_business_hours` | Unique (provider_id, weekday). Local time. One break per day in the form; the JSON allows more later. |
+| `xs_booking_staff_assignments` | id, listing_id, provider_id, member_id, assigned_by | `xs_provider_staff_assignments` | Unique (provider_id, member_id). Only active reception members can be assigned. |
+| `xs_booking_blocked_times` | id, listing_id, provider_id (nullable = whole business), start_at, end_at (UTC), reason, created_by | `xs_blocked_times` | Gets a UI (Bookings had none). |
+
+`xs_booking_location_days` is **not built**: a branch is open on the days someone works
+there (`xs_booking_provider_hours.location_id`), which is the same fact stored once.
+`xs_business_members` gained `invite_token_hash` and `invite_expires`.
 
 **Locations.** Bookings' `xs_locations` is not recreated. `location_id` everywhere is
 either null (the profile's own address) or an `xs_directory_practice_locations.id`. Branch
