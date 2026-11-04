@@ -2341,6 +2341,10 @@
      rounded corners look like a rendering fault at that size. */
   .map-view:fullscreen { @apply aspect-auto rounded-none border-0; }
   .map-approx { @apply mt-2 text-xs text-slate-500; }
+  /* The address, above the map: the location panel is the one place it shows. */
+  .map-address { @apply mb-3 mt-1 flex items-start gap-2 text-sm text-slate-700; }
+  .map-address > svg { @apply mt-0.5 text-slate-400; }
+  .dark .map-address { @apply text-slate-300; }
   .dark .map-view   { @apply border-slate-800; }
   .dark .map-approx { @apply text-slate-400; }
 
@@ -3367,7 +3371,27 @@
   .repeat-row.is-removed { @apply opacity-50; }
   .repeat-row.is-removed .repeat-remove { @apply text-brand-crimson opacity-100; }
 
+  /* Small titles inside a form section: "Primary location" in section 4 and
+     "Location 2", "Location 3"… on each branch row. The branch numbers are a
+     counter (the primary is 1), so rows added in the browser number themselves. */
+  .form-subhead { @apply m-0 mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600; }
+  .dark .form-subhead { @apply text-slate-300; }
+  .repeat-row-head .form-subhead { @apply mb-0; }
+  .loc-fields { @apply mt-8; }
+  .loc-rows { counter-reset: loc 1; }
+  .loc-rows > .repeat-row { counter-increment: loc; }
+  .loc-row-title::before { content: "Location " counter(loc); }
+
   .dark .repeat-row    { @apply border-slate-700 bg-slate-900; }
+
+  /* A person's professional registration, inside their team row. Bare
+     fieldsets: the legend is the label, the browser's border is not wanted. */
+  .team-member-registration { @apply mt-1 space-y-0.5 text-sm text-slate-700; }
+  .dark .team-member-registration { @apply text-slate-300; }
+  .team-registration, .team-registration fieldset { @apply m-0 min-w-0 border-0 p-0; }
+  .team-registration { @apply mb-4; }
+  .team-registration > legend { @apply mb-2 p-0 text-sm font-medium text-slate-700; }
+  .dark .team-registration > legend { @apply text-slate-200; }
   .dark .repeat-remove { @apply text-slate-400; }
 
   /* ---------------------------------------------- services & features (form) */

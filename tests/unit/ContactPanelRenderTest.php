@@ -68,23 +68,23 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('data-reveal-url="https://example.test/directory/hana-nail/email"', $html);
     }
 
-    public function testDirectionsCarryTheAddress(): void
+    /**
+     * The address and its directions are the location panel's (_map_panel.php),
+     * so a profile shows Get directions and Waze once, not twice.
+     */
+    public function testTheAddressAndDirectionsAreLeftToTheLocationPanel(): void
     {
-        $html = $this->render([]);
-
-        $this->assertStringContainsString('Get directions', $html);
-        $this->assertStringContainsString('12 Main Road', $html);
-    }
-
-    public function testAHiddenAddressShowsTheMobileRowInstead(): void
-    {
-        // Even handed the full row (a caller that forgot listing_public_view()),
-        // the panel must not fall back to the town for directions.
-        $html = $this->render(['customer_location' => 'travel', 'show_address' => 0]);
+        $html = $this->render(['phone' => '021 555 0100']);
 
         $this->assertStringNotContainsString('12 Main Road', $html);
         $this->assertStringNotContainsString('Get directions', $html);
         $this->assertStringNotContainsString('waze.com', $html);
+    }
+
+    public function testAHiddenAddressShowsTheMobileRow(): void
+    {
+        $html = $this->render(['customer_location' => 'travel', 'show_address' => 0]);
+
         $this->assertStringContainsString('we travel to you', $html);
     }
 
@@ -92,16 +92,57 @@ final class ContactPanelRenderTest extends CIUnitTestCase
     {
         $html = $this->render(['customer_location' => 'both', 'show_address' => 0]);
 
-        $this->assertStringContainsString('12 Main Road', $html);
         $this->assertStringNotContainsString('we travel to you', $html);
     }
 
-    public function testWazeLinkSitsBesideDirections(): void
+    public function testABranchWithNothingToShowGetsNoEmptyCard(): void
     {
-        $html = $this->render([]);
+        $this->assertSame('', trim(preg_replace('/<!--.*?-->/s', '', $this->render([], false))));
+    }
 
+    // ------------------------------------------------------ the location panel
+
+    private function renderLocation(array $row): string
+    {
+        helper(['directory_ui', 'map']);
+
+        return html_entity_decode(view('directory/_map_panel', [
+            'row'     => $row + ['address_line' => '12 Main Road', 'city' => 'Cape Town'],
+            'name'    => 'Hana Nail',
+            'heading' => 'Location',
+            'class'   => '',
+        ], ['saveData' => false]), ENT_QUOTES | ENT_HTML5);
+    }
+
+    public function testTheLocationPanelShowsTheAddressWithOneSetOfDirections(): void
+    {
+        $html = $this->renderLocation(['latitude' => -33.9249, 'longitude' => 18.4241, 'geocode_precision' => 'exact']);
+
+        $this->assertStringContainsString('12 Main Road, Cape Town', $html);
+        $this->assertStringContainsString('data-map-view', $html);
+        $this->assertSame(1, substr_count($html, '>Get directions'));
+        $this->assertSame(1, substr_count($html, 'waze.com'));
+        $this->assertSame(2, substr_count($html, 'data-stat="directions"'), 'the owner statistics still count both');
+    }
+
+    public function testAnUnpinnedAddressStillGetsItsAddressAndDirections(): void
+    {
+        $html = $this->renderLocation([]);
+
+        $this->assertStringNotContainsString('data-map-view', $html);
+        $this->assertStringContainsString('12 Main Road', $html);
         $this->assertStringContainsString('https://waze.com/ul?q=' . rawurlencode('12 Main Road, Cape Town') . '&navigate=yes', $html);
-        $this->assertStringContainsString('>Waze</a>', $html);
+    }
+
+    public function testAHiddenAddressRendersNoLocationPanel(): void
+    {
+        // Even handed the full row (a caller that forgot listing_public_view()),
+        // nothing falls back to the town for directions.
+        $html = $this->renderLocation(['customer_location' => 'travel', 'show_address' => 0]);
+
+        $this->assertStringNotContainsString('12 Main Road', $html);
+        $this->assertStringNotContainsString('Get directions', $html);
+        $this->assertStringNotContainsString('waze.com', $html);
     }
 
     public function testSuggestAnEditIsBusinessWideOnly(): void

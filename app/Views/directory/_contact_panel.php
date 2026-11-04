@@ -8,8 +8,12 @@
  * the ExpandPracticeLocations migration for why that naming is load-bearing.
  *
  * Laid out as action rows — value on the left, icon on the right — in the order
- * a customer reaches for them: book, chat, visit the site, call, email, get
- * there.
+ * a customer reaches for them: book, chat, visit the site, call, email.
+ *
+ * No address and no directions: those live in the location panel
+ * (_map_panel.php) that every caller renders for the same row, so a profile
+ * shows Get directions and Waze once (owner, 4 Nov 2026). The mobile service
+ * row stays, since that panel renders nothing for a hidden address.
  *
  * title and contact_person are deliberately NOT rendered. They name a private
  * individual and are kept for administration only; the signup form tells the
@@ -30,27 +34,9 @@ $heading  = $heading ?? 'Contact';
 $showWeb  = $showWeb ?? true;
 $emailUrl = $emailUrl ?? '';
 
-// Two different intents, so two different Google Maps schemes. The address text
-// means "show me where this is" — /maps/search/ drops a pin. Get directions
-// means "take me there" — /maps/dir/ opens routing directly rather than making
-// the visitor tap Directions once they arrive. Neither needs an API key.
-//
-// Both take their destination from map_destination(), which only trusts our
-// coordinates when the pin was actually pinpointed — otherwise Google gets the
-// address text and does far better with it than our street-centroid guess would.
-//
-// map_address_text() is the one definition of the address, so the text shown
-// and the place the link navigates to can never disagree (an earlier inline
-// implode dropped address_line_2 and did exactly that).
-//
-// A mobile business that hides its address gets none of the three: the copy it
-// arrives as (listing_public_view()) has no street, but map_address_text()
-// would still fall back to "Randburg, Gauteng" and Get directions would route
-// to the town. The "we travel to you" row stands in for them instead.
+// A mobile business that hides its address gets the "we travel to you" row
+// instead; the location panel renders nothing for it.
 $addressPublic = listing_address_public($row);
-$addr    = $addressPublic ? map_address_text($row) : '';
-$dirUrl  = $addressPublic ? map_directions_url($row) : '';
-$wazeUrl = $addressPublic ? map_waze_url($row) : '';
 
 // social_profile_url() at render as well as on save, for the same reason as
 // safe_external_url() below — and it also refuses a link that is not to the
@@ -88,6 +74,14 @@ $telHref = static fn (string $p): string => 'tel:' . (str_starts_with($p, '+') ?
 $suggestUrl = $showWeb && ! empty($row['slug'])
     ? base_url('contact') . '?listing=' . rawurlencode((string) $row['slug'])
     : '';
+
+// A branch with no phone or email of its own has nothing left to show here now
+// the address lives in the location panel, so it gets no empty card.
+$hasEmail = ! empty($row['email']) && $emailUrl !== '';
+if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones === []
+    && ! $hasEmail && $addressPublic && $socials === [] && $suggestUrl === '') {
+    return;
+}
 ?>
 <div class="panel">
     <h3><?= esc($heading) ?></h3>
@@ -119,21 +113,10 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
           // scraper is actually after, and nobody needs it in one tap. The address
           // is not in the HTML at all; the click handler in directory.js fetches
           // it from $emailUrl (throttled per IP) and turns it into a mailto: link. ?>
-    <?php if (! empty($row['email']) && $emailUrl !== ''): ?>
+    <?php if ($hasEmail): ?>
         <div class="contact-row">
             <span><button type="button" class="reveal-btn" data-reveal data-reveal-url="<?= esc($emailUrl, 'attr') ?>">Show email</button></span>
             <?= lucide('mail') ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($addr !== ''): ?>
-        <div class="contact-row">
-            <span class="min-w-0">
-                <?php if ($dirUrl !== ''): ?><a href="<?= esc($dirUrl) ?>" data-stat="directions" target="_blank" rel="noopener nofollow">Get directions</a><?php endif; ?>
-                <?php if ($wazeUrl !== ''): ?><span aria-hidden="true">&middot;</span> <a href="<?= esc($wazeUrl) ?>" data-stat="directions" target="_blank" rel="noopener nofollow">Waze</a><?php endif; ?>
-                <span class="contact-sub"><?= esc($addr) ?></span>
-            </span>
-            <?= lucide('map-pin') ?>
         </div>
     <?php endif; ?>
 

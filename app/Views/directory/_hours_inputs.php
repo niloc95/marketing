@@ -18,19 +18,21 @@
  *                      for the listing and 'locations[0][hours][mon][open]' for
  *                      a branch.
  * @var array    $hours decoded hours, keyed mon..sun (old input wins on resubmit)
- * @var bool     $copy  render the "Copy Monday to every day" button
+ * @var bool     $copy  render the "Copy Monday to Friday" button
+ * @var bool     $copyPrimary render "Copy the primary location's hours" (branch rows)
  * @var string   $label the field label
  */
 helper('directory_hours');
 
 $hours = $hours ?? [];
 $copy  = $copy ?? true;
+$copyPrimary = $copyPrimary ?? false;
 $label = $label ?? 'Trading hours';
 ?>
 <div class="field">
     <label><?= esc($label) ?></label>
     <?php // Filling the same times seven times is the tedious part of this form,
-          // and most businesses trade the same hours Monday to Friday at least.
+          // and most businesses trade the same hours Monday to Friday.
           //
           // Above the grid, not below it. The seven rows stack on a phone and run
           // to roughly a screen and a half, so a button underneath them is only
@@ -45,12 +47,16 @@ $label = $label ?? 'Trading hours';
           // is worse than one that was never offered. The grid itself needs no
           // script — it is seven rows of plain inputs either way.
           //
-          // The label names Monday because that is what it copies: the first row,
-          // not "whichever row you last touched". Naming the source is what makes
-          // the result predictable before the click rather than after it. ?>
-    <?php if ($copy): ?>
+          // The label names Monday and Friday because that is what it copies:
+          // the first row onto the next four, never the weekend. Naming source
+          // and reach is what makes the result predictable before the click.
+          //
+          // A branch gets "Copy the primary location's hours" instead: most
+          // branches keep the same hours as the main address. ?>
+    <?php if ($copy || $copyPrimary): ?>
         <div class="hours-actions">
-            <button type="button" class="btn btn-ghost btn-xs" data-hours-copy hidden>Copy Monday to every day</button>
+            <?php if ($copy): ?><button type="button" class="btn btn-ghost btn-xs" data-hours-copy hidden>Copy Monday to Friday</button><?php endif; ?>
+            <?php if ($copyPrimary): ?><button type="button" class="btn btn-ghost btn-xs" data-hours-copy-primary hidden>Copy the primary location&rsquo;s hours</button><?php endif; ?>
             <span class="hint" role="status" data-hours-copy-note></span>
         </div>
     <?php endif; ?>

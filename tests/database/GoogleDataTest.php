@@ -97,8 +97,12 @@ final class GoogleDataTest extends CIUnitTestCase
         $this->assertCount(6, $first, 'three Search Console days and three GA4 days');
         $this->assertSame([], $service->catchUp(), 'every day already pulled');
 
-        $month = date('Y-m', strtotime('-3 days'));
-        $sum   = (int) db_connect()->table('xs_directory_listing_search_queries')->selectSum('impressions')->where('listing_id', $this->bakery)->get()->getRow()->impressions;
+        // The month of the first day pulled, and only that month's rows: near
+        // the start of a month the three days span two months (on 4 Nov they
+        // are 30 Oct to 1 Nov), and listingQueries() reads from one month on.
+        $month = date('Y-m', strtotime('-5 days'));
+        $sum   = (int) db_connect()->table('xs_directory_listing_search_queries')->selectSum('impressions')
+            ->where('listing_id', $this->bakery)->where('month >=', $month . '-01')->get()->getRow()->impressions;
         $this->assertGreaterThan(0, $sum);
         $this->assertSame($sum, array_sum(array_column($service->listingQueries($this->bakery, $month . '-01', 50), 'impressions')));
         $this->assertSame(date('Y-m-d', strtotime('-3 days')), $service->lastPulled('gsc', 'za'));

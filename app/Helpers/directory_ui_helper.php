@@ -1553,7 +1553,7 @@ if (! function_exists('listing_form_steps')) {
             1 => ['title' => 'What you do and who you are', 'class' => 'form-step-blue'],
             2 => ['title' => 'How customers reach you', 'class' => 'form-step-teal'],
             3 => ['title' => 'Tell people about you', 'class' => 'form-step-violet'],
-            4 => ['title' => 'Where you are', 'class' => 'form-step-amber'],
+            4 => ['title' => 'Where you are and hours', 'class' => 'form-step-amber'],
             5 => ['title' => 'Make your profile stand out', 'class' => 'form-step-pink'],
         ];
     }
@@ -1564,10 +1564,11 @@ if (! function_exists('profile_location_label')) {
      * What a profile calls one of the places a business works from: on the
      * location cards and in the header's list of locations.
      *
-     * A branch has its own name ("Netcare Sunninghill Hospital"). The listing's
-     * own address has none, so it is called by its suburb, else its city, which
-     * is what tells two sets of rooms apart. A nameless branch is numbered
-     * instead, because "Location 2" beats an empty heading.
+     * A branch has its own name ("Netcare Sunninghill Hospital"), and so may the
+     * listing's own address (`location_name`, "Branch or practice name" in
+     * section 4 of the form). An unnamed primary is called by its suburb, else
+     * its city, which is what tells two sets of rooms apart. A nameless branch
+     * is numbered instead, because "Location 2" beats an empty heading.
      *
      * @param int $number the location's place in the list, the primary being 1
      */
@@ -1578,7 +1579,7 @@ if (! function_exists('profile_location_label')) {
 
             return $name !== '' ? $name : 'Location ' . $number;
         }
-        foreach (['suburb', 'city'] as $field) {
+        foreach (['location_name', 'suburb', 'city'] as $field) {
             if (trim((string) ($row[$field] ?? '')) !== '') {
                 return trim((string) $row[$field]);
             }

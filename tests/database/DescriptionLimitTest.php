@@ -13,7 +13,7 @@ use Tests\Support\FreshDatabase;
  * The editorial cap on the business description.
  *
  * The number lives in RichText::MAX_PLAIN_LENGTH; the counter in
- * public/assets/directory.js reads it from the form. It went 2000 → 5000 → 1000 → 3000:
+ * public/assets/directory.js reads it from the form. It went 2000 → 5000 → 1000 → 3000 → 5000:
  * the cut to 1000 came with the structured Services and Features sections, and it
  * brought a second rule — a description saved under an older, larger cap is
  * not refused until its owner actually edits the text. The cap is enforced
@@ -51,16 +51,17 @@ final class DescriptionLimitTest extends CIUnitTestCase
         ], true);
     }
 
-    public function testTheCapIsThreeThousandPlainCharacters(): void
+    public function testTheCapIsFiveThousandPlainCharacters(): void
     {
-        $this->assertSame(3000, RichText::MAX_PLAIN_LENGTH);
+        $this->assertSame(5000, RichText::MAX_PLAIN_LENGTH);
     }
 
     // ------------------------------------------------------- grandfathering
 
     public function testAnOverLongDescriptionFromTheOldCapDoesNotBlockOtherEdits(): void
     {
-        $long = str_repeat('Old prose. ', 450); // ~5000 characters, the old cap
+        // Over today's cap, as a profile saved under an older, larger one is.
+        $long = str_repeat('Old prose. ', intdiv(RichText::MAX_PLAIN_LENGTH, 10) + 50);
         $id   = $this->listing(['description' => '<p>' . trim($long) . '</p>', 'description_text' => trim($long)]);
 
         // The form posts the stored description back untouched alongside a new
@@ -78,7 +79,7 @@ final class DescriptionLimitTest extends CIUnitTestCase
 
     public function testEditingAnOverLongDescriptionMustBringItUnderTheCap(): void
     {
-        $long = str_repeat('Old prose. ', 450);
+        $long = str_repeat('Old prose. ', intdiv(RichText::MAX_PLAIN_LENGTH, 10) + 50);
         $id   = $this->listing(['description' => '<p>' . trim($long) . '</p>', 'description_text' => trim($long)]);
 
         $result = (new DirectoryListingMutationService())->updateOwn($id, $this->post([
@@ -91,7 +92,7 @@ final class DescriptionLimitTest extends CIUnitTestCase
 
     public function testAdminIsGrandfatheredTheSameWay(): void
     {
-        $long = str_repeat('Old prose. ', 450);
+        $long = str_repeat('Old prose. ', intdiv(RichText::MAX_PLAIN_LENGTH, 10) + 50);
         $id   = $this->listing(['description' => '<p>' . trim($long) . '</p>', 'description_text' => trim($long)]);
 
         $same = (new DirectoryAdminService())->upsert($id, $this->post(['description' => '<p>' . trim($long) . '</p>']));

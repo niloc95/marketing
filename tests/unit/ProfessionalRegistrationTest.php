@@ -128,58 +128,78 @@ final class ProfessionalRegistrationTest extends CIUnitTestCase
         $this->assertNull($changed['reg_checked_at']);
     }
 
-    // ---- display and schema -----------------------------------------------
+    // ---- per person (since 4 Nov 2026) ----------------------------------------
 
     /** @param array<string,mixed> $over */
-    private function doctor(array $over = []): array
+    private function person(array $over = []): array
     {
         return $over + [
-            'display_name'         => 'Dr Test Surgeon',
-            'reg_number'           => 'MP0123456',
-            'orcid'                => '0000-0002-1825-0097',
-            'researchgate_url'     => 'https://www.researchgate.net/profile/Josiah-Carberry',
-            'registration_visible' => 1,
-            'category'             => ['slug' => 'orthopaedic-surgeon', 'group_name' => 'Health & Medical'],
+            'name'             => 'Dr Test Surgeon',
+            'reg_number'       => 'MP0123456',
+            'orcid'            => '0000-0002-1825-0097',
+            'researchgate_url' => 'https://www.researchgate.net/profile/Josiah-Carberry',
         ];
     }
 
-    public function testDisplayNeedsTheSwitchAndARegulatedCategory(): void
+    public function testAPersonShowsTheirRegistrationForARegulatedCategoryOnly(): void
     {
-        $shown = Reg::forDisplay($this->doctor());
+        $hpcsa = Reg::regulatorFor('orthopaedic-surgeon', 'Health & Medical');
+        $shown = Reg::forPerson($this->person(), $hpcsa);
         $this->assertSame('HPCSA', $shown['short']);
         $this->assertSame('MP0123456', $shown['number']);
         $this->assertFalse($shown['checked']);
         $this->assertSame('https://orcid.org/0000-0002-1825-0097', $shown['orcid']);
 
-        $this->assertNull(Reg::forDisplay($this->doctor(['registration_visible' => 0])));
-        $this->assertNull(Reg::forDisplay($this->doctor(['category' => ['slug' => 'plumber', 'group_name' => 'Home & Trades']])));
-        $this->assertNull(Reg::forDisplay($this->doctor(['reg_number' => null, 'orcid' => null, 'researchgate_url' => null])));
-        $this->assertTrue(Reg::forDisplay($this->doctor(['reg_checked_at' => '2026-10-28 10:00:00']))['checked']);
+        $this->assertNull(Reg::forPerson($this->person(), Reg::regulatorFor('plumber', 'Home & Trades')));
+        $this->assertNull(Reg::forPerson($this->person(['reg_number' => null, 'orcid' => null, 'researchgate_url' => null]), $hpcsa));
+        $this->assertTrue(Reg::forPerson($this->person(['reg_checked_at' => '2026-10-28 10:00:00']), $hpcsa)['checked']);
     }
 
     public function testAttorneysGetTheNumberButNoResearchLinks(): void
     {
-        $shown = Reg::forDisplay($this->doctor([
-            'reg_number' => '12345',
-            'category'   => ['slug' => 'attorney', 'group_name' => 'Legal & Financial'],
-        ]));
+        $shown = Reg::forPerson($this->person(['reg_number' => '12345']), Reg::regulatorFor('attorney', null));
         $this->assertSame('LPC', $shown['short']);
         $this->assertNull($shown['orcid']);
         $this->assertNull($shown['researchgate']);
     }
 
-    public function testSchemaCarriesIdentifierAndSameAsOnlyWhenShown(): void
+    public function testPersonColumnsNeedTheMarkerAndOnlyAnAdminSetsTheCheck(): void
     {
-        $url  = 'https://example.test/directory/dr-test-surgeon';
-        $node = schema_local_business($this->doctor(), $url);
+        $hpcsa  = Reg::regulatorFor('orthopaedic-surgeon', 'Health & Medical');
+        $stored = ['reg_number' => 'MP0123456', 'reg_checked_at' => '2026-10-28 10:00:00'];
 
-        $this->assertSame(['@type' => 'PropertyValue', 'propertyID' => 'HPCSA', 'value' => 'MP0123456'], $node['identifier']);
-        $this->assertContains('https://orcid.org/0000-0002-1825-0097', $node['sameAs']);
-        $this->assertContains('https://www.researchgate.net/profile/Josiah-Carberry', $node['sameAs']);
+        $this->assertSame(['columns' => [], 'errors' => []], Reg::personColumns(['reg_number' => 'MP0999999'], $stored, $hpcsa));
 
-        $off = schema_local_business($this->doctor(['registration_visible' => 0]), $url);
-        $this->assertArrayNotHasKey('identifier', $off);
-        $this->assertStringNotContainsString('MP0123456', json_encode($off));
-        $this->assertStringNotContainsString('orcid.org', json_encode($off));
+        $same = Reg::personColumns([Reg::MARKER => '1', 'reg_number' => 'mp0123456'], $stored, $hpcsa);
+        $this->assertSame('2026-10-28 10:00:00', $same['columns']['reg_checked_at'], 'unchanged number keeps the check');
+        $this->assertArrayNotHasKey('registration_visible', $same['columns']);
+
+        $changed = Reg::personColumns([Reg::MARKER => '1', 'reg_number' => 'MP0999999'], $stored, $hpcsa);
+        $this->assertNull($changed['columns']['reg_checked_at'], 'a new number was never checked');
+
+        $ticked = Reg::personColumns([Reg::MARKER => '1', 'reg_number' => 'MP0999999'], ['reg_number' => 'MP0999999'], $hpcsa, true);
+        $this->assertNotNull($ticked['columns']['reg_checked_at']);
+        $this->assertNull(Reg::personColumns([Reg::MARKER => '1', 'reg_number' => ''], $stored, $hpcsa, true)['columns']['reg_checked_at'], 'no number, nothing to check');
+
+        $bad = Reg::personColumns([Reg::MARKER => '1', 'reg_number' => '0123456'], null, $hpcsa);
+        $this->assertArrayHasKey('reg_number', $bad['errors']);
+        $this->assertSame([], $bad['columns']);
+    }
+
+    public function testSchemaPutsTheRegistrationOnThePersonNotTheBusiness(): void
+    {
+        $url  = 'https://example.test/directory/test-practice';
+        $node = schema_local_business([
+            'display_name' => 'Test Practice',
+            'type'         => 'practice',
+            'category'     => ['slug' => 'orthopaedic-surgeon', 'group_name' => 'Health & Medical'],
+            'team'         => [$this->person(['slug' => 'dr-test-surgeon'])],
+        ], $url);
+
+        $this->assertArrayNotHasKey('identifier', $node);
+        $person = $node['employee'][0] ?? null;
+        $this->assertIsArray($person, json_encode($node));
+        $this->assertSame(['@type' => 'PropertyValue', 'propertyID' => 'HPCSA', 'value' => 'MP0123456'], $person['identifier']);
+        $this->assertContains('https://orcid.org/0000-0002-1825-0097', $person['sameAs']);
     }
 }

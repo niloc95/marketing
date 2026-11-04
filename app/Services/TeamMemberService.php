@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Libraries\ProfessionalRegistration;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 
@@ -133,11 +134,17 @@ class TeamMemberService
      * commits — orphaning a file is recoverable, a row pointing at a file that
      * is gone is not.
      *
-     * @param mixed $rows the raw `team` array off the request
+     * Each person's professional registration (number, ORCID, ResearchGate)
+     * goes through ProfessionalRegistration::personColumns() against the
+     * listing's $regulator. Only $admin may set the "checked against the
+     * register" mark; an owner's change of number clears it.
+     *
+     * @param mixed                    $rows      the raw `team` array off the request
+     * @param array<string,mixed>|null $regulator the listing category's, or null
      *
      * @return array{errors:array<string,string>,orphans:array<int,string>}
      */
-    public function syncFromForm(int $listingId, mixed $rows): array
+    public function syncFromForm(int $listingId, mixed $rows, ?array $regulator = null, bool $admin = false): array
     {
         $rows = is_array($rows) ? $rows : [];
 
@@ -184,6 +191,16 @@ class TeamMemberService
                 $prefix . 'specializations'
             );
 
+            $registration = ProfessionalRegistration::personColumns(
+                $row,
+                $existing,
+                $regulator,
+                $admin && array_key_exists('reg_checked_present', $row) ? ! empty($row['reg_checked']) : null
+            );
+            foreach ($registration['errors'] as $field => $message) {
+                $errors[$prefix . $field] = $message;
+            }
+
             $submitted[] = [
                 'existing' => $existing,
                 'data'     => [
@@ -194,7 +211,7 @@ class TeamMemberService
                     'specializations' => $specializations ?: null,
                     'bio'             => $bio ?: null,
                     'sort_order'      => $position++,
-                ],
+                ] + $registration['columns'],
                 // resolveTeamPhotos() put this here if a new file was uploaded
                 // for this row. Empty means "keep whatever the row already has",
                 // the same convention resolveLogo() uses for the listing.

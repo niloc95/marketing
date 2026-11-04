@@ -2833,7 +2833,8 @@
   // blank row whose input names carry an "__i__" index placeholder.
   //
   // Everything here is enhancement. With this script absent the server still
-  // renders every stored row plus one blank slot, the native <details> still
+  // renders every stored row plus one blank slot (removed below when this script
+  // runs and rows are already saved), the native <details> still
   // opens, and the Remove checkbox is a plain checkbox that does exactly what it
   // says on save — so a person can still be added, edited and removed, just one
   // per submit.
@@ -2912,6 +2913,13 @@
         syncAddState();
       });
     }
+
+    // The blank row the server adds after saved ones, for browsers without
+    // this script (_team_fields.php). Here the add button does that job, so
+    // it goes before anyone sees it, and the next added row takes its index.
+    rows().forEach(function (row) {
+      if (row.hasAttribute('data-repeat-spare')) row.remove();
+    });
 
     rows().forEach(bindRemove);
     syncAddState();
@@ -3203,37 +3211,44 @@
   })();
 
   // -------------------------------------------- registration by category
-  // Regulated professions only. Each category <option> names its regulator as
-  // data-regulator ('' for none), and the panel carries every regulator's
-  // labels as data-regulators, so one fieldset serves the HPCSA, the LPC and
-  // the rest. Hidden AND disabled for none, as the menu field is, so the marker
-  // is not posted and a stored number survives a switch to "Plumber".
+  // Regulated professions only, on each person in "Add your people" (per
+  // person since 4 Nov 2026). Each category <option> names its regulator as
+  // data-regulator ('' for none), and the team section carries every
+  // regulator's labels as data-regulators, so one fieldset serves the HPCSA,
+  // the LPC and the rest. Hidden AND disabled for none, as the menu field is,
+  // so no marker is posted and stored numbers survive a switch to "Plumber".
+  // The <template> copy is relabelled too, since added rows clone it.
 
   (function () {
-    var panel  = document.querySelector('[data-registration]');
-    var select = document.querySelector('select[name="category_id"]');
-    if (!panel || !select) return;
+    var section = document.querySelector('[data-regulators]');
+    var select  = document.querySelector('select[name="category_id"]');
+    if (!section || !select) return;
 
-    var fieldset = panel.querySelector('fieldset');
-    var research = panel.querySelector('[data-reg-research]');
-    var number   = panel.querySelector('input[name="reg_number"]');
-    var labels   = {};
-    try { labels = JSON.parse(panel.getAttribute('data-regulators') || '{}'); } catch (e) {}
+    var labels = {};
+    try { labels = JSON.parse(section.getAttribute('data-regulators') || '{}'); } catch (e) {}
 
-    function text(sel, value) {
-      panel.querySelectorAll(sel).forEach(function (el) { el.textContent = value; });
+    function panels() {
+      var all = Array.prototype.slice.call(section.querySelectorAll('[data-registration]'));
+      section.querySelectorAll('template').forEach(function (t) {
+        all = all.concat(Array.prototype.slice.call(t.content.querySelectorAll('[data-registration]')));
+      });
+      return all;
     }
 
     function apply() {
       var opt = select.options[select.selectedIndex];
       var reg = labels[opt ? (opt.getAttribute('data-regulator') || '') : ''];
-      panel.hidden      = !reg;
-      fieldset.disabled = !reg;
-      if (!reg) return;
-      text('[data-reg-short]', reg.short);
-      text('[data-reg-name]', reg.name);
-      if (number) number.placeholder = reg.example;
-      if (research) research.hidden = research.disabled = !reg.research;
+      panels().forEach(function (panel) {
+        panel.hidden   = !reg;
+        panel.disabled = !reg;
+        if (!reg) return;
+        panel.querySelectorAll('[data-reg-short]').forEach(function (el) { el.textContent = reg.short; });
+        panel.querySelectorAll('[data-reg-name]').forEach(function (el) { el.textContent = reg.name; });
+        var number = panel.querySelector('input[name$="[reg_number]"]');
+        if (number) number.placeholder = reg.example;
+        var research = panel.querySelector('[data-reg-research]');
+        if (research) research.hidden = research.disabled = !reg.research;
+      });
     }
 
     select.addEventListener('change', apply);
@@ -3722,9 +3737,10 @@
   });
 
   // ------------------------------------------------------------ trading hours
-  // "Copy Monday to every day" on the three listing forms. Seven rows of the
-  // same opening time is the tedious part of this form, and most businesses
-  // keep at least Monday to Friday identical.
+  // "Copy Monday to Friday" on the three listing forms. Five rows of the same
+  // opening time is the tedious part of this form, and most businesses keep
+  // Monday to Friday identical. The weekend is left alone: it is the part that
+  // usually differs, and copying over it meant clearing two days by hand.
   //
   // Enhancement only: the button ships hidden and is unhidden here, so a browser
   // without this script never sees a control it could not honour. The grid is
@@ -3774,8 +3790,9 @@
         return;
       }
 
+      // Rows are mon..sun (hours_days()), so 1 to 4 are Tuesday to Friday.
       var copied = 0;
-      for (var i = 1; i < rows.length; i++) {
+      for (var i = 1; i < Math.min(rows.length, 5); i++) {
         var dst = fields(rows[i]);
         if (dst.open)  dst.open.value  = src.open.value;
         if (dst.close) dst.close.value = src.close.value;
@@ -3784,13 +3801,68 @@
         copied++;
       }
       // role="status" on the note, so this is announced rather than only seen.
-      say('Monday copied to the other ' + copied + ' days. Edit any of them below.');
+      say('Monday copied to Tuesday to Friday (' + copied + ' days). Edit any of them below.');
     });
 
     // The message describes a state the form is no longer in the moment anything
     // is typed, so it goes as soon as it stops being true.
     grid.addEventListener('input', function () { say(''); });
   });
+
+  // "Copy the primary location's hours" on each branch's hours. Delegated,
+  // because branch rows are cloned from a <template> after this runs. The
+  // buttons ship hidden for the same reason as the Monday one; the template's
+  // copy is unhidden too, since the repeat script clones its innerHTML.
+  (function () {
+    var primaryGrid = (function () {
+      var open = document.querySelector('input[name="hours[mon][open]"]');
+      return open ? open.closest('[data-hours]') : null;
+    })();
+    if (!primaryGrid) return;
+
+    document.querySelectorAll('[data-hours-copy-primary]').forEach(function (b) { b.hidden = false; });
+    document.querySelectorAll('template').forEach(function (t) {
+      t.content.querySelectorAll('[data-hours-copy-primary]').forEach(function (b) { b.hidden = false; });
+    });
+
+    // Field by field on the name's tail: "hours[mon][open]" on the primary is
+    // "locations[2][hours][mon][open]" on a branch.
+    var tail = /(?:^hours|\[hours\])(\[(?:mon|tue|wed|thu|fri|sat|sun)\]\[(?:open|close|closed|note)\]|\[holidays\]\[(?:mode|open|close|note)\])$/;
+
+    function bySuffix(scope) {
+      var out = {};
+      scope.querySelectorAll('input[name], select[name]').forEach(function (el) {
+        var m = el.name.match(tail);
+        if (m) out[m[1]] = el;
+      });
+      return out;
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('[data-hours-copy-primary]');
+      if (!btn) return;
+      var field = btn.closest('.field');
+      var note  = field && field.querySelector('[data-hours-copy-note]');
+      if (!field) return;
+
+      var src = bySuffix(primaryGrid.parentElement);
+      var dst = bySuffix(field);
+      var filled = Object.keys(src).some(function (k) {
+        var el = src[k];
+        return el.type === 'checkbox' ? el.checked : el.value !== '';
+      });
+      if (!filled) {
+        if (note) note.textContent = 'Fill in your primary location\u2019s hours first, then copy them here.';
+        return;
+      }
+      Object.keys(src).forEach(function (k) {
+        if (!dst[k]) return;
+        if (src[k].type === 'checkbox') dst[k].checked = src[k].checked;
+        else dst[k].value = src[k].value;
+      });
+      if (note) note.textContent = 'Primary location hours copied. Edit any day below.';
+    });
+  })();
 
   // ------------------------------------------------- description rich text
   // Turns the description textarea on the three listing forms into a Quill
@@ -3817,7 +3889,7 @@
     if (!textarea || !shell || !mount || !form) return;
 
     // RichText::MAX_PLAIN_LENGTH, rendered onto the field by the view. The
-    // server is the authority; this only stops someone writing 3000 characters
+    // server is the authority; this only stops someone writing 5000 characters
     // before being told. 1000 if the attribute is somehow missing.
     var MAX = parseInt(field.getAttribute('data-rich-text-max') || '', 10) || 1000;
 

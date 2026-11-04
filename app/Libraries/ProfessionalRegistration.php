@@ -6,8 +6,9 @@ use App\Models\DirectoryCategoryModel;
 
 /**
  * A regulated professional's registration number, ORCID and ResearchGate
- * link: the rules shared by signup, the owner's edit and admin intake, and the
- * one reading the profile and the JSON-LD render through.
+ * link: the rules for each person on a team (owner edit and admin edit), and
+ * the one reading the team card and the JSON-LD render through. Per person
+ * since 4 Nov 2026; the profile level columns it used to fill are unused.
  *
  * The regulator is never stored. Config\Registrations derives it from the
  * category, and a category with none gets no fields and shows nothing, even
@@ -191,26 +192,24 @@ final class ProfessionalRegistration
     }
 
     /**
-     * What the profile shows, or null when it shows nothing: the switch is
-     * off, the category is not regulated, or there is nothing filled in.
-     * $listing is a getProfile() row, which carries its category.
+     * What a person's card shows, or null when it shows nothing: the
+     * category is not regulated, or there is nothing filled in. Per person
+     * since 4 Nov 2026 (owner): $person is a team row, $regulator the
+     * listing's (regulatorFor() on its category). The team is a Verified
+     * feature, so its gate is the team's own (getProfile()).
      *
-     * @param array<string,mixed> $listing
+     * @param array<string,mixed> $person
      * @return array{short:string,name:string,number:string,register:string,checked:bool,orcid:?string,researchgate:?string}|null
      */
-    public static function forDisplay(array $listing): ?array
+    public static function forPerson(array $person, ?array $regulator): ?array
     {
-        if ((int) ($listing['registration_visible'] ?? 0) !== 1) {
-            return null;
-        }
-        $regulator = self::regulatorFor($listing['category']['slug'] ?? null, $listing['category']['group_name'] ?? null);
         if ($regulator === null) {
             return null;
         }
 
-        $number = self::normaliseNumber($listing['reg_number'] ?? '');
-        $orcid  = $regulator['research'] ? self::normaliseOrcid($listing['orcid'] ?? '') : '';
-        $rg     = $regulator['research'] ? self::normaliseResearchGate($listing['researchgate_url'] ?? '') : '';
+        $number = self::normaliseNumber($person['reg_number'] ?? '');
+        $orcid  = $regulator['research'] ? self::normaliseOrcid($person['orcid'] ?? '') : '';
+        $rg     = $regulator['research'] ? self::normaliseResearchGate($person['researchgate_url'] ?? '') : '';
         if ($number === '' && ! $orcid && ! $rg) {
             return null;
         }
@@ -220,9 +219,46 @@ final class ProfessionalRegistration
             'name'         => $regulator['name'],
             'number'       => $number,
             'register'     => $regulator['register'],
-            'checked'      => $number !== '' && ! empty($listing['reg_checked_at']),
+            'checked'      => $number !== '' && ! empty($person['reg_checked_at']),
             'orcid'        => $orcid ? 'https://orcid.org/' . $orcid : null,
             'researchgate' => $rg ?: null,
         ];
+    }
+
+    /**
+     * A team row's registration columns from its posted fields, or [] when
+     * the row did not carry them (an unregulated category posts none, so a
+     * stored number survives). Errors are keyed by field, for the caller to
+     * prefix with the row.
+     *
+     * The admin's check is kept while the number is unchanged; $adminCheck
+     * (admin form only: null = not posted) sets or clears it.
+     *
+     * @param array<string,mixed> $row
+     * @param array<string,mixed>|null $stored
+     * @return array{columns:array<string,mixed>,errors:array<string,string>}
+     */
+    public static function personColumns(array $row, ?array $stored, ?array $regulator, ?bool $adminCheck = null): array
+    {
+        if (! array_key_exists(self::MARKER, $row)) {
+            return ['columns' => [], 'errors' => []];
+        }
+        $errors = self::problems($row, $regulator);
+        if ($errors !== []) {
+            return ['columns' => [], 'errors' => $errors];
+        }
+
+        $columns = self::columns($row, $stored ?? []);
+        unset($columns['registration_visible']);
+        if (! array_key_exists('reg_checked_at', $columns)) {
+            $columns['reg_checked_at'] = $stored['reg_checked_at'] ?? null;
+        }
+        if ($adminCheck !== null) {
+            $columns['reg_checked_at'] = $adminCheck && $columns['reg_number'] !== null
+                ? ($columns['reg_checked_at'] ?? date('Y-m-d H:i:s'))
+                : null;
+        }
+
+        return ['columns' => $columns, 'errors' => []];
     }
 }

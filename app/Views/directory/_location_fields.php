@@ -22,10 +22,9 @@ use App\Services\PracticeLocationService;
  *     address autocomplete as the listing (each row passes its own listbox id),
  *     and is otherwise geocoded server-side on save:
  *     PracticeLocationService runs the same ListingGeocoder the listing does.
- *   - No "Copy Monday to every day" on the hours grid. That button is unhidden
- *     by directory.js per grid, but a cloned row's copy would be one more
- *     control inside an already-dense repeat row; the grid itself works either
- *     way, being plain inputs.
+ *   - No "Copy Monday to Friday" on the hours grid. A branch gets "Copy the
+ *     primary location's hours" instead, which is what most branches want;
+ *     directory.js handles it by delegation, so cloned rows work too.
  *
  * @var array    $rows      stored location rows, or flashed input after a failed save
  * @var array    $provinces DirectoryService::SA_PROVINCES
@@ -49,7 +48,7 @@ foreach ($rows as $i => $_) {
 }
 
 /** One row; $i = '__i__' builds the clone template. See _team_fields.php. */
-$row = function ($i, array $loc = []) use ($err, $provinces): string {
+$row = function ($i, array $loc = [], bool $spare = false) use ($err, $provinces): string {
     // The three accessors the shared partials expect. $n turns a bare field
     // into this row's name — 'city' becomes 'locations[2][city]' — and $e is
     // blank for the clone template, whose '__i__' index has no errors of its own.
@@ -64,12 +63,16 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
     $e   = static fn (string $k): string => is_string($i) ? '' : $err('locations.' . $i . '.' . $k);
 
     ob_start(); ?>
-    <div class="repeat-row" data-repeat-item>
+    <div class="repeat-row" data-repeat-item<?= $spare ? ' data-repeat-spare' : '' ?>>
         <?php if (! empty($loc['id'])): ?>
             <input type="hidden" name="locations[<?= $i ?>][id]" value="<?= (int) $loc['id'] ?>">
         <?php endif; ?>
 
         <div class="repeat-row-head">
+            <?php // "Location 2", "Location 3"…: numbered by a CSS counter on
+                  // .loc-rows (the primary is location 1), so a row the repeat
+                  // script adds is numbered without any script of its own. ?>
+            <h4 class="form-subhead loc-row-title"></h4>
             <label class="repeat-remove">
                 <input type="checkbox" name="locations[<?= $i ?>][_remove]" value="1"
                        data-repeat-remove aria-label="Remove this location">
@@ -141,6 +144,7 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
             'n'     => $n,
             'hours' => is_array($loc['hours'] ?? null) ? $loc['hours'] : (hours_decode($loc['trading_hours'] ?? null) ?? []) + ['holidays' => hours_holiday_rule($loc['trading_hours'] ?? null)],
             'copy'  => false,
+            'copyPrimary' => true,
             'label' => 'Trading hours at this branch',
         ]) ?>
     </div>
@@ -148,7 +152,7 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
     return (string) ob_get_clean();
 };
 ?>
-<details class="disclosure" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat data-standout-skip>
+<details class="disclosure loc-fields" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat data-standout-skip>
     <summary class="disclosure-summary">
         <span>Add another location</span>
         <span class="hint"><?= $used > 0 ? $used . ' of ' . $max : 'Branches, second rooms, satellite offices' ?></span>
@@ -156,17 +160,19 @@ $row = function ($i, array $loc = []) use ($err, $provinces): string {
 
     <div class="disclosure-body">
         <p class="hint">
-            Other places customers can find you. Your main address stays the one below.
+            Other places customers can find you. Your primary location stays the one above.
             These appear as &ldquo;Other locations&rdquo; on your profile. Up to <?= (int) $max ?>.
         </p>
         <?php if ($err('locations')): ?><div class="err"><?= esc($err('locations')) ?></div><?php endif; ?>
 
-        <div data-repeat-list>
+        <div class="loc-rows" data-repeat-list>
             <?php foreach ($rows as $i => $loc): ?>
                 <?= $row($i, is_array($loc) ? $loc : []) ?>
             <?php endforeach; ?>
+            <?php // One blank row while there are none, else only without
+                  // JavaScript (data-repeat-spare); see _team_fields.php. ?>
             <?php if ($slots > 0): ?>
-                <?= $row($used) ?>
+                <?= $row($used, [], $used > 0) ?>
             <?php endif; ?>
         </div>
 

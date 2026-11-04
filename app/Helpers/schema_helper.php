@@ -658,19 +658,8 @@ if (! function_exists('schema_local_business')) {
         }
         $sameAs[] = listing_website_url($l['website'] ?? '');
 
-        // The registration number and research profiles, only when the owner
-        // has switched them on for a regulated category — the same reading the
-        // credentials panel renders, so the page and the markup never disagree.
-        // The number is a PropertyValue named by its regulator, not a
-        // credential: it identifies the professional, it does not certify them.
-        $identifier = null;
-        if (! $isPerson && ($reg = \App\Libraries\ProfessionalRegistration::forDisplay($l)) !== null) {
-            if ($reg['number'] !== '') {
-                $identifier = ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']];
-            }
-            $sameAs[] = (string) $reg['orcid'];
-            $sameAs[] = (string) $reg['researchgate'];
-        }
+        // Registration numbers are per person (since 4 Nov 2026), so they sit
+        // on the team's Person nodes below, not on the business.
         $sameAs = array_values(array_filter($sameAs));
 
         $hours = array_merge(
@@ -702,8 +691,15 @@ if (! function_exists('schema_local_business')) {
         $employees  = [];
         $personId   = $canonical . '#person';
         $personSeen = false;
+        // Each person's registration number and research profiles: the same
+        // reading their card renders (ProfessionalRegistration::forPerson()),
+        // so the page and the markup never disagree. The number is a
+        // PropertyValue named by its regulator, not a credential: it
+        // identifies the professional, it does not certify them.
+        $regulator = \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null);
         foreach ($l['team'] ?? [] as $member) {
             $knowsAbout = \App\Services\TeamMemberService::splitSpecializations($member['specializations'] ?? null);
+            $reg        = \App\Libraries\ProfessionalRegistration::forPerson($member, $regulator);
             $anchor     = team_member_anchor($member);
             $isSelf     = $isPerson && ! $personSeen && schema_same_person((string) ($member['name'] ?? ''), $l);
             $personSeen = $personSeen || $isSelf;
@@ -717,6 +713,10 @@ if (! function_exists('schema_local_business')) {
                 'description'   => trim((string) ($member['bio'] ?? '')),
                 'knowsAbout'    => $knowsAbout !== [] ? $knowsAbout : null,
                 'hasCredential' => schema_member_credentials($member['credentials'] ?? null) ?: null,
+                'identifier'    => $reg !== null && $reg['number'] !== ''
+                    ? ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']]
+                    : null,
+                'sameAs'        => $reg !== null ? (array_values(array_filter([(string) $reg['orcid'], (string) $reg['researchgate']])) ?: null) : null,
                 'worksFor'      => ['@id' => $canonical . '#business'],
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
         }
@@ -864,7 +864,6 @@ if (! function_exists('schema_local_business')) {
             'geo'                      => schema_geo($l),
             'openingHoursSpecification' => $hours !== [] ? $hours : null,
             'medicalSpecialty'         => schema_medical_specialty($type, (string) ($l['category']['slug'] ?? '')),
-            'identifier'               => $identifier,
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
             'department'               => $branches !== [] ? $branches : null,
@@ -968,8 +967,8 @@ if (! function_exists('schema_person')) {
      *
      * What it says is what the page shows: the name, the title from the
      * Title dropdown, the category as job title, the description, the areas
-     * of focus, the credentials box, the registration number and research
-     * profiles when the owner switched them on, a personal LinkedIn. No email
+     * of focus, the credentials box, a personal LinkedIn. The registration
+     * number arrives through the person's own team card, which shares @id. No email
      * or telephone, for the reasons on schema_local_business(), and nothing
      * about our Verified badge: no schema.org property says "documents checked
      * by a listing platform" without reading as a professional accreditation.
@@ -990,15 +989,10 @@ if (! function_exists('schema_person')) {
         $title   = (string) ($l['title'] ?? '');
         $job     = trim((string) ($l['category']['name'] ?? ($l['category_name'] ?? '')));
 
-        $sameAs     = [];
-        $identifier = null;
-        if (($reg = \App\Libraries\ProfessionalRegistration::forDisplay($l)) !== null) {
-            if ($reg['number'] !== '') {
-                $identifier = ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']];
-            }
-            $sameAs[] = (string) $reg['orcid'];
-            $sameAs[] = (string) $reg['researchgate'];
-        }
+        // The registration number is on the team card that is this person
+        // (it shares the #person @id, see schema_local_business()), so it
+        // merges into this node there rather than being repeated here.
+        $sameAs = [];
         $linkedin = (string) social_profile_url('social_linkedin', $l['social_linkedin'] ?? '');
         if (schema_is_personal_linkedin($linkedin)) {
             $sameAs[] = $linkedin;
@@ -1034,7 +1028,6 @@ if (! function_exists('schema_person')) {
             'hasOccupation'   => $job !== '' ? ['@type' => 'Occupation', 'name' => $job] : null,
             'knowsAbout'      => count($topics) === 1 ? $topics[0] : $topics,
             'hasCredential'   => $credentials !== [] ? $credentials : null,
-            'identifier'      => $identifier,
             'sameAs'          => $sameAs !== [] ? $sameAs : null,
             'worksFor'        => ['@id' => $canonical . '#business'],
             'workLocation'    => count($workLocation) === 1 ? $workLocation[0] : $workLocation,

@@ -21,8 +21,11 @@ use App\Services\TeamMemberService;
  * @var array  $members     rows from DirectoryListingTeamModel::forListing()
  * @var string $teamHeading panel heading; the vertical's word for these people
  * @var string $business    the business's name, for the headshots' alt text
+ * @var array|null $regulator the listing category's regulator, for each person's registration
  */
 $teamHeading = $teamHeading ?? 'Our team';
+$regulator   = $regulator ?? null;
+$link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underline';
 ?>
 <div class="panel mb-5">
     <h3><?= esc($teamHeading) ?></h3>
@@ -49,6 +52,31 @@ $teamHeading = $teamHeading ?? 'Our team';
                     <?php endif; ?>
                     <?php if (! empty($m['credentials'])): ?>
                         <p class="team-member-credentials"><?= esc($m['credentials']) ?></p>
+                    <?php endif; ?>
+
+                    <?php // Self declared unless an admin ticked it, and always
+                          // beside the regulator's own lookup. ?>
+                    <?php $reg = \App\Libraries\ProfessionalRegistration::forPerson($m, $regulator); ?>
+                    <?php if ($reg !== null): ?>
+                        <ul class="team-member-registration" data-registration-line>
+                            <?php if ($reg['number'] !== ''): ?>
+                                <li>
+                                    <abbr title="<?= esc($reg['name'], 'attr') ?>" class="no-underline"><?= esc($reg['short']) ?></abbr> registration
+                                    <strong class="text-slate-900 dark:text-white"><?= esc($reg['number']) ?></strong>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">(<?= $reg['checked'] ? 'checked by ' . esc(config('Directory')->siteName()) : 'self declared' ?>)</span>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <a class="<?= $link ?>" href="<?= esc($reg['register'], 'attr') ?>" target="_blank" rel="noopener nofollow">Check on the <?= esc($reg['short']) ?> register</a>
+                                </li>
+                            <?php endif; ?>
+                            <?php if ($reg['orcid'] !== null || $reg['researchgate'] !== null): ?>
+                                <li>
+                                    Research profiles:
+                                    <?php if ($reg['orcid'] !== null): ?><a class="<?= $link ?>" href="<?= esc($reg['orcid'], 'attr') ?>" target="_blank" rel="noopener nofollow">ORCID</a><?php endif; ?>
+                                    <?php if ($reg['orcid'] !== null && $reg['researchgate'] !== null): ?><span aria-hidden="true">&middot;</span><?php endif; ?>
+                                    <?php if ($reg['researchgate'] !== null): ?><a class="<?= $link ?>" href="<?= esc($reg['researchgate'], 'attr') ?>" target="_blank" rel="noopener nofollow">ResearchGate</a><?php endif; ?>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
                     <?php endif; ?>
 
                     <?php $areas = TeamMemberService::splitSpecializations($m['specializations'] ?? null); ?>

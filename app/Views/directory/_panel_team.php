@@ -17,4 +17,10 @@ if (empty($l['team'])) {
     return;
 }
 ?>
-<?= view('directory/_team_panel', ['members' => $l['team'], 'teamHeading' => $v['headings']['team'], 'business' => (string) ($l['display_name'] ?? '')], ['saveData' => false]) ?>
+<?= view('directory/_team_panel', [
+    'members'     => $l['team'],
+    'teamHeading' => $v['headings']['team'],
+    'business'    => (string) ($l['display_name'] ?? ''),
+    // Each person's registration is read against the listing's regulator.
+    'regulator'   => \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null),
+], ['saveData' => false]) ?>

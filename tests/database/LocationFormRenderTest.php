@@ -160,17 +160,82 @@ final class LocationFormRenderTest extends CIUnitTestCase
     // ------------------------------------------------------------- the order
 
     /**
-     * "Add another location" belongs below every field describing the business's
-     * own location — its address, its pin and its hours — because a branch
-     * repeats all three. It used to render above the address block, so the form
-     * asked for a second location before it had asked for the first.
+     * Section 4 ("Where you are and hours") holds the whole primary location,
+     * its name, address, pin, how customers meet it and its hours, and
+     * "Add another location" closes it, because a branch repeats those fields.
+     * It used to render above the address block, then sat in section 5 after
+     * the hours (owner, 4 Nov 2026).
      */
-    public function testTheBranchSectionComesAfterEveryPrimaryLocationField(): void
+    public function testTheBranchSectionClosesTheWhereYouAreSection(): void
+    {
+        $html = $this->renderFormFields();
+
+        $branch = strpos($html, 'name="locations[0][name]"');
+        $this->assertNotFalse($branch, 'the branch section must render at all');
+
+        $step4 = strpos($html, 'id="form-step-4"');
+        $step5 = strpos($html, 'id="form-step-5"');
+        $this->assertNotFalse($step4);
+        $this->assertNotFalse($step5);
+        $this->assertGreaterThan($step4, $branch, 'branches belong to section 4');
+        $this->assertLessThan($step5, $branch, 'branches no longer sit in section 5');
+
+        foreach ([
+            'name="location_name"',       // the primary's own name
+            'name="address_line"',        // its address
+            'data-map-picker',            // its pin
+            'name="customer_location"',   // how customers meet it
+            'name="hours[mon][open]"',    // its hours
+        ] as $primaryField) {
+            $this->assertGreaterThan($step4, strpos($html, $primaryField), $primaryField . ' belongs to section 4');
+            $at = strpos($html, $primaryField);
+            $this->assertNotFalse($at, $primaryField . ' must render');
+            $this->assertLessThan($branch, $at, $primaryField . ' must come before the branch section');
+        }
+    }
+
+    /**
+     * The blank row after saved branches is marked spare, so directory.js drops
+     * it and the add button makes one instead (owner, 4 Nov 2026: a third,
+     * empty block always stood open). With no branches it stays a plain row.
+     */
+    public function testTheBlankRowIsSpareOnceBranchesAreSaved(): void
+    {
+        $this->assertStringNotContainsString('data-repeat-spare', $this->renderForm());
+
+        $saved = $this->renderForm([['id' => 7, 'name' => 'Claremont office'], ['id' => 8, 'name' => 'Sandton rooms']]);
+        $this->assertSame(1, substr_count($saved, 'data-repeat-spare'));
+        $this->assertStringContainsString('name="locations[2][name]"', $saved, 'still there without JavaScript');
+    }
+
+    /** The primary location can be named on every form, badge or not. */
+    public function testThePrimaryLocationNameRendersWithoutTheBadge(): void
+    {
+        $html = html_entity_decode($this->renderFormFields(['location_name' => 'Main practice'], false), ENT_QUOTES | ENT_HTML5);
+
+        $this->assertStringContainsString('name="location_name"', $html);
+        $this->assertStringContainsString('>Primary location</h4>', $html);
+        $this->assertStringContainsString('value="Main practice"', $html);
+        $this->assertStringNotContainsString('name="locations[0][name]"', $html);
+    }
+
+    /** A named primary location is called by its name, else by its suburb. */
+    public function testThePrimaryLocationLabelPrefersItsName(): void
+    {
+        helper('directory_ui');
+
+        $this->assertSame('Main practice', profile_location_label(['location_name' => 'Main practice', 'suburb' => 'Sandton'], true, 1));
+        $this->assertSame('Sandton', profile_location_label(['location_name' => '', 'suburb' => 'Sandton'], true, 1));
+        $this->assertSame('Sandton', profile_location_label(['location_name' => null, 'suburb' => 'Sandton'], true, 1));
+    }
+
+    /** @param array<string, string> $values */
+    private function renderFormFields(array $values = [], bool $showExtras = true): string
     {
         helper(['directory_hours', 'directory_ui', 'slug']);
 
-        $html = view('directory/_form_fields', [
-            'v'          => static fn (string $f, string $d = ''): string => $d,
+        return view('directory/_form_fields', [
+            'v'          => static fn (string $f, string $d = ''): string => $values[$f] ?? $d,
             'err'        => static fn (string $f): string => '',
             'categories' => [],
             'provinces'  => DirectoryService::SA_PROVINCES,
@@ -178,21 +243,8 @@ final class LocationFormRenderTest extends CIUnitTestCase
             'vTeam'      => [],
             'vLocations' => [],
             'vFacets'    => [],
-            'showExtras' => true,
-        ]);
-
-        $branch  = strpos($html, 'name="locations[0][name]"');
-        $this->assertNotFalse($branch, 'the branch section must render at all');
-
-        foreach ([
-            'name="address_line"',        // the primary's address
-            'data-map-picker',            // its pin
-            'name="hours[mon][open]"',    // its trading hours
-        ] as $primaryField) {
-            $at = strpos($html, $primaryField);
-            $this->assertNotFalse($at, $primaryField . ' must render');
-            $this->assertLessThan($branch, $at, $primaryField . ' must come before the branch section');
-        }
+            'showExtras' => $showExtras,
+        ], ['saveData' => false]);
     }
 
     // ---------------------------------------------------------- the profile
