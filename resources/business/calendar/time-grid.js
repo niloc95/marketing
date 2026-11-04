@@ -34,7 +34,8 @@ export function renderTimeGrid(model, view, ctx) {
   times.style.height = `${height}px`;
   grid.slots.forEach((slot) => {
     if (!slot.isHour) return;
-    const t = el('span', 'cal-time', slot.label);
+    // The top label sits below the line so the grid's edge does not cut it.
+    const t = el('span', `cal-time${slot.topPx === 0 ? ' translate-y-0' : ''}`, slot.label);
     t.style.top = `${slot.topPx}px`;
     times.append(t);
   });

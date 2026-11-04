@@ -71,6 +71,41 @@ $labels = [
         </div>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
+<?php elseif ($tab === 'questions'): ?>
+    <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
+        <?= csrf_field() ?>
+        <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">Up to six questions of your own, asked when you or a customer books. Answers stay with the appointment and with the customer for next time.</p>
+        <?php for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++): ?>
+            <?php $p = 'booking.custom_field_' . $n . '_'; ?>
+            <fieldset class="mb-5 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                <legend class="px-1 text-sm font-semibold">Question <?= $n ?></legend>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="field sm:col-span-2">
+                        <label for="q<?= $n ?>-title">Question</label>
+                        <input id="q<?= $n ?>-title" type="text" name="q[<?= $n ?>][title]" maxlength="<?= \Config\Bookings::CUSTOM_FIELD_TITLE_MAX ?>" value="<?= esc($settings[$p . 'title'], 'attr') ?>" placeholder="Any allergies we should know about?">
+                    </div>
+                    <div class="field">
+                        <label for="q<?= $n ?>-type">Answer</label>
+                        <select id="q<?= $n ?>-type" name="q[<?= $n ?>][type]">
+                            <?php foreach (['text' => 'A line', 'textarea' => 'A paragraph', 'select' => 'One of a list', 'checkbox' => 'A tick box'] as $v => $label): ?>
+                                <option value="<?= $v ?>"<?= $settings[$p . 'type'] === $v ? ' selected' : '' ?>><?= $label ?></option>
+                            <?php endforeach ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="q<?= $n ?>-options">Choices <span class="font-normal text-slate-500">(for "One of a list", one per line)</span></label>
+                    <textarea id="q<?= $n ?>-options" name="q[<?= $n ?>][options]" rows="3"><?= esc($settings[$p . 'options']) ?></textarea>
+                </div>
+                <div class="flex flex-wrap gap-5 text-sm">
+                    <label class="flex items-center gap-2"><input type="checkbox" name="q[<?= $n ?>][enabled]" value="1"<?= $settings[$p . 'enabled'] === '1' ? ' checked' : '' ?>> Ask this</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" name="q[<?= $n ?>][required]" value="1"<?= $settings[$p . 'required'] === '1' ? ' checked' : '' ?>> An answer is needed</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" name="q[<?= $n ?>][sensitive]" value="1"<?= $settings[$p . 'sensitive'] === '1' ? ' checked' : '' ?>> Private: never sent in an email</label>
+                </div>
+            </fieldset>
+        <?php endfor ?>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
 <?php else: ?>
     <form method="post" action="<?= base_url('business/settings/localization') ?>" class="form-card form-card-narrow">
         <?= csrf_field() ?>

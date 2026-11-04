@@ -282,7 +282,7 @@ class CustomerService
     /**
      * The questions this business asks, in order.
      *
-     * @return list<array{key:string,title:string,type:string,required:bool,sensitive:bool}>
+     * @return list<array{key:string,title:string,type:string,required:bool,sensitive:bool,options:list<string>}>
      */
     public function customFields(): array
     {
@@ -290,14 +290,18 @@ class CustomerService
         $out      = [];
         for ($n = 1; $n <= Bookings::CUSTOM_FIELDS; $n++) {
             $p     = 'booking.custom_field_' . $n . '_';
-            $title = trim($settings->get($p . 'title'));
-            if ($settings->get($p . 'enabled') === '1' && $title !== '') {
+            $title   = trim($settings->get($p . 'title'));
+            $type    = $settings->get($p . 'type');
+            $options = self::options($settings->get($p . 'options'));
+            // A list with nothing to choose is not asked.
+            if ($settings->get($p . 'enabled') === '1' && $title !== '' && ($type !== 'select' || $options !== [])) {
                 $out[] = [
                     'key'       => 'field_' . $n,
                     'title'     => $title,
                     'type'      => $settings->get($p . 'type'),
                     'required'  => $settings->get($p . 'required') === '1',
                     'sensitive' => $settings->get($p . 'sensitive') === '1',
+                    'options'   => $type === 'select' ? $options : [],
                 ];
             }
         }
@@ -349,7 +353,8 @@ class CustomerService
             $errors['email'] = 'Add an email or a phone number so you can reach them.';
         }
 
-        $errors += $this->answerErrors($input);
+        // Required questions are checked when booking (AppointmentService),
+        // not on the customer's own record.
         $data['custom_fields'] = $this->answers($input);
 
         return [$data, $errors];
@@ -367,12 +372,36 @@ class CustomerService
         $out = [];
         foreach ($this->customFields() as $field) {
             $value = trim(strip_tags((string) ($input[$field['key']] ?? '')));
+            if ($field['type'] === 'checkbox') {
+                // Ticked is "Yes"; not ticked is no answer.
+                $value = in_array(strtolower($value), ['1', 'yes', 'on', 'true'], true) ? 'Yes' : '';
+            } elseif ($field['type'] === 'select' && ! in_array($value, $field['options'], true)) {
+                $value = '';
+            }
             if ($value !== '') {
                 $out[$field['key']] = mb_substr($value, 0, Bookings::CUSTOM_FIELD_VALUE_MAX);
             }
         }
 
         return $out;
+    }
+
+    /**
+     * The choices of a select question, one per line in the setting.
+     *
+     * @return list<string>
+     */
+    public static function options(string $stored): array
+    {
+        $out = [];
+        foreach (preg_split('/\R/', $stored) ?: [] as $line) {
+            $line = mb_substr(trim(strip_tags($line)), 0, Bookings::CUSTOM_FIELD_OPTION_LENGTH);
+            if ($line !== '' && ! in_array($line, $out, true)) {
+                $out[] = $line;
+            }
+        }
+
+        return array_slice($out, 0, Bookings::CUSTOM_FIELD_OPTIONS_MAX);
     }
 
     /**
@@ -388,7 +417,11 @@ class CustomerService
         $errors  = [];
         foreach ($this->customFields() as $field) {
             if ($field['required'] && ! isset($answers[$field['key']])) {
-                $errors[$field['key']] = 'Please answer this.';
+                $errors[$field['key']] = match ($field['type']) {
+                    'checkbox' => 'Please tick this.',
+                    'select'   => 'Please choose one.',
+                    default    => 'Please answer this.',
+                };
             }
         }
 

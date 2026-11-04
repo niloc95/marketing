@@ -81,15 +81,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
 </fieldset>
 
 <?php foreach ($customFields as $f): ?>
-    <div class="field">
-        <label for="<?= $prefix ?>-<?= esc($f['key'], 'attr') ?>"><?= esc($f['title']) ?><?= $f['required'] ? '' : ' <span class="font-normal text-slate-500">(optional)</span>' ?></label>
-        <?php if ($f['type'] === 'textarea'): ?>
-            <textarea id="<?= $prefix ?>-<?= esc($f['key'], 'attr') ?>" name="<?= esc($f['key'], 'attr') ?>" rows="3" maxlength="2000"<?= $f['required'] ? ' required' : '' ?>><?= esc($val($f['key'])) ?></textarea>
-        <?php else: ?>
-            <input id="<?= $prefix ?>-<?= esc($f['key'], 'attr') ?>" type="text" name="<?= esc($f['key'], 'attr') ?>" maxlength="2000" value="<?= esc($val($f['key']), 'attr') ?>"<?= $f['required'] ? ' required' : '' ?>>
-        <?php endif ?>
-        <?= $err($f['key']) ?>
-    </div>
+    <?= view('business/_question', ['f' => $f, 'id' => $prefix . '-' . esc($f['key'], 'attr'), 'value' => $val($f['key']), 'error' => $err($f['key']), 'strict' => true]) ?>
 <?php endforeach ?>
 
 <div class="grid gap-4 sm:grid-cols-2">

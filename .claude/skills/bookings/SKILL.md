@@ -186,9 +186,20 @@ only if its time is still free.
 
 ## Next: Phase 5 (public booking on a profile)
 
-Not started. Scope from `parity.md` §8 and `routes.md`. Still open from Phase 4: the
-settings tab for custom fields (keys exist, no screen yet), select and checkbox field
-types (Later), notifications (Phase 6), mark paid (Phase 8).
+Not started. Scope from `parity.md` §8 and `routes.md`. From Phase 4, notifications
+(Phase 6, which must leave `sensitive` answers out of emails) and mark paid (Phase 8)
+remain.
+
+**Custom fields (built):** Settings, Questions tab (`/business/settings/questions`). Types
+text, textarea, select (choices one per line in `booking.custom_field_N_options`) and
+checkbox (stored as "Yes"). One partial renders them: `business/_question.php`.
+
+**Browser check (4 Nov 2026):** Playwright with Chromium is in node_modules; a headless
+run booked, opened details, saved notes and status, dragged to a new time, was refused an
+overlap, and walked day, month, list, Find, dark mode and 390px width with no console or
+CSP errors. Note `layouts/business.php` `main` needs `min-w-0`: the body is a flex
+container, so a wide week grid otherwise widens the page. Provider and category colours
+are palette names (`ocean`), turned into CSS by `CatalogueService::hex()`.
 
 ## Open housekeeping (as of 4 Nov 2026)
 

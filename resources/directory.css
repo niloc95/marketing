@@ -4307,5 +4307,7 @@
   .cal-dialog { @apply w-[min(40rem,calc(100vw-2rem))] max-h-[90vh] overflow-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100; }
   .cal-facts { @apply grid grid-cols-[1.25rem_1fr] items-start gap-x-2 gap-y-1.5 text-sm; }
   .cal-facts dt { @apply pt-0.5 text-slate-400; }
+  /* A class that sets display must never beat the hidden attribute. */
+  .cal [hidden] { display: none !important; }
   .cal-toast { @apply fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-white dark:text-slate-900; }
 }

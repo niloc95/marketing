@@ -107,7 +107,7 @@ $here = trim(uri_string(), '/');
         <?php endif ?>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main class="mx-auto w-full min-w-0 max-w-6xl px-4 py-6">
         <?php foreach (['success' => 'alert-success', 'info' => 'alert-info', 'error' => 'alert-error'] as $key => $cls): ?>
             <?php if ($msg = flash($key)): ?>
                 <div class="alert <?= $cls ?> mb-5" role="<?= $key === 'error' ? 'alert' : 'status' ?>"><?= esc((string) $msg) ?></div>

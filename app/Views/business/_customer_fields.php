@@ -40,15 +40,7 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
     <input id="c-address" type="text" name="address" maxlength="255" value="<?= esc($val('address'), 'attr') ?>">
 </div>
 <?php foreach ($customFields as $f): ?>
-    <div class="field">
-        <label for="c-<?= esc($f['key'], 'attr') ?>"><?= esc($f['title']) ?></label>
-        <?php if ($f['type'] === 'textarea'): ?>
-            <textarea id="c-<?= esc($f['key'], 'attr') ?>" name="<?= esc($f['key'], 'attr') ?>" rows="3" maxlength="2000"><?= esc($val($f['key'])) ?></textarea>
-        <?php else: ?>
-            <input id="c-<?= esc($f['key'], 'attr') ?>" type="text" name="<?= esc($f['key'], 'attr') ?>" maxlength="2000" value="<?= esc($val($f['key']), 'attr') ?>">
-        <?php endif ?>
-        <?= $err($f['key']) ?>
-    </div>
+    <?= view('business/_question', ['f' => $f, 'id' => 'c-' . esc($f['key'], 'attr'), 'value' => $val($f['key']), 'error' => $err($f['key']), 'strict' => false]) ?>
 <?php endforeach ?>
 <div class="field">
     <label for="c-notes">Notes <span class="font-normal text-slate-500">(only your team sees them)</span></label>

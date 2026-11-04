@@ -64,7 +64,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Statuses pending, confirmed, completed, cancelled, no show | `AppointmentStatus` | Port | 4 | `booked` and `rescheduled` aliases dropped (data is new) |
 | Details modal: status, notes, mark paid, resend | `appointment-details-modal.js` | Port | 4 | |
 | Filters by provider, service, location, status | `status-filters.js`, `advanced-filters.js` | Port | 4 | |
-| Custom fields 1 to 6 (text, textarea) | `booking.custom_field_*`, `xs_appointment_custom_fields` | Port | 4 | select and checkbox types: Later |
+| Custom fields 1 to 6 (text, textarea) | `booking.custom_field_*`, `xs_appointment_custom_fields` | Port | 4 | built with select (choices one per line) and checkbox types too; Settings, Questions tab |
 | Global search | `GlobalSearchService` | Port | 4 | scoped to the business |
 | Deep link `?open={hash}` | yes | Port | 4 | |
 

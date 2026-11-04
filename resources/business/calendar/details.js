@@ -12,7 +12,12 @@ import { MSG } from './messages.js';
 export function initDetails(root, scheduler) {
   const dialog = root.querySelector('[data-cal-details]');
   const q = (sel) => dialog.querySelector(sel);
-  const set = (name, value) => { q(`[data-d="${name}"]`).textContent = value || ''; };
+  const set = (name, value) => {
+    const node = q(`[data-d="${name}"]`);
+    node.textContent = value || '';
+    // An empty fact row (no phone, say) hides with its icon.
+    if (node.tagName === 'DD') { node.hidden = !value; node.previousElementSibling.hidden = !value; }
+  };
   const error = q('[data-d-error]');
   let current = null;
 

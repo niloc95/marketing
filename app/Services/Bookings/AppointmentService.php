@@ -158,12 +158,12 @@ class AppointmentService
             if ($customers->find($customerId) === null) {
                 $errors['customer_id'] = 'That customer was not found.';
             }
-            $errors += $customers->answerErrors($input);
         } else {
             // `notes` on this form are the appointment's, not the customer's.
             [, $customerErrors] = $customers->clean(['notes' => null] + $input);
             $errors += $customerErrors;
         }
+        $errors += $customers->answerErrors($input);
         if ($errors !== []) {
             return ['id' => null, 'hash' => null, 'reference' => null, 'errors' => $errors];
         }

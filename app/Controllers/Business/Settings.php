@@ -16,7 +16,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Settings extends BaseController
 {
-    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'localization' => 'Local time'];
+    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Questions', 'localization' => 'Local time'];
 
     public function index()
     {
@@ -91,6 +91,40 @@ class Settings extends BaseController
         }
 
         return redirect()->to(base_url('business/settings/booking'))->with('success', 'Saved.');
+    }
+
+    /**
+     * The business's own questions (custom fields 1 to 6): asked when
+     * someone books, kept on the appointment and the customer.
+     */
+    public function saveQuestions()
+    {
+        $context = service('businessContext');
+        $values  = [];
+        for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++) {
+            $p   = 'booking.custom_field_' . $n . '_';
+            $row = (array) ($this->request->getPost('q')[$n] ?? []);
+            $values[$p . 'title']     = trim(strip_tags((string) ($row['title'] ?? '')));
+            $values[$p . 'type']      = (string) ($row['type'] ?? 'text');
+            $values[$p . 'options']   = implode("\n", \App\Services\Bookings\CustomerService::options((string) ($row['options'] ?? '')));
+            $values[$p . 'enabled']   = ! empty($row['enabled']) && $values[$p . 'title'] !== '' ? '1' : '0';
+            $values[$p . 'required']  = ! empty($row['required']) ? '1' : '0';
+            $values[$p . 'sensitive'] = ! empty($row['sensitive']) ? '1' : '0';
+            if ($values[$p . 'enabled'] === '1' && $values[$p . 'type'] === 'select' && $values[$p . 'options'] === '') {
+                return redirect()->to(base_url('business/settings/questions'))->with('error', 'Question ' . $n . ' is a list: add its choices, one per line.');
+            }
+        }
+        $result = BookingSettings::for($context->listingId())->save($values, $context->accountId());
+        if ($result['errors'] !== []) {
+            return redirect()->to(base_url('business/settings/questions'))->with('error', implode(' ', array_unique($result['errors'])));
+        }
+        if ($result['changed'] !== []) {
+            (new BookingAudit())->record($context->listingId(), $context->accountId(), 'settings.saved', 'settings', null,
+                array_map(static fn (array $c): string => $c[0], $result['changed']),
+                array_map(static fn (array $c): string => $c[1], $result['changed']));
+        }
+
+        return redirect()->to(base_url('business/settings/questions'))->with('success', 'Saved.');
     }
 
     public function turnOff()

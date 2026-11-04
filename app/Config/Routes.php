@@ -277,6 +277,7 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
     $routes->get('settings', 'Business\Settings::index');
     $routes->post('settings/localization', 'Business\Settings::saveLocalization');
     $routes->post('settings/booking', 'Business\Settings::saveBooking');
+    $routes->post('settings/questions', 'Business\Settings::saveQuestions');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
 });
 $routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);

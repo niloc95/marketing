@@ -147,7 +147,7 @@ class DayView
         foreach ((new TeamService($this->listingId))->providers() as $p) {
             $id = (int) $p['id'];
             if (($this->scope === null || in_array($id, $this->scope, true)) && ($only === 0 || $only === $id)) {
-                $out[$id] = ['id' => $id, 'name' => (string) $p['name'], 'color' => (string) ($p['color'] ?: CalendarQuery::DEFAULT_COLOR)];
+                $out[$id] = ['id' => $id, 'name' => (string) $p['name'], 'color' => \App\Services\Bookings\CatalogueService::hex($p['color'] ?? null)];
             }
         }
         foreach ($events as $event) {

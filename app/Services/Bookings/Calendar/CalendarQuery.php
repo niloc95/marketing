@@ -3,6 +3,7 @@
 namespace App\Services\Bookings\Calendar;
 
 use App\Models\Bookings\BookingAppointmentModel;
+use App\Services\Bookings\CatalogueService;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -26,7 +27,8 @@ use DateTimeZone;
  */
 class CalendarQuery
 {
-    public const DEFAULT_COLOR = '#3B82F6';
+    /** The colour of a person with none (the palette's ocean). */
+    public const DEFAULT_COLOR = '#003049';
 
     private DateTimeZone $tz;
 
@@ -132,7 +134,7 @@ class CalendarQuery
             'phone'            => $row['customer_phone'] ?? null,
             'service_name'     => (string) $row['service_name'],
             'provider_name'    => (string) $row['provider_name'],
-            'provider_color'   => (string) ($row['provider_color'] ?? '') !== '' ? (string) $row['provider_color'] : self::DEFAULT_COLOR,
+            'provider_color'   => CatalogueService::hex($row['provider_color'] ?? null),
             'duration_min'     => (int) $row['service_duration_min'],
             'price_cents'      => $row['price_cents'] !== null ? (int) $row['price_cents'] : null,
             'currency'         => (string) $row['currency'],

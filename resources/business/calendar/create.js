@@ -37,7 +37,9 @@ export function initCreate(root, scheduler) {
       chosen.append(el('strong', '', customer.name), document.createTextNode(` ${[customer.email, customer.phone].filter(Boolean).join(', ')}`), change);
       Object.entries(customer.custom_fields || {}).forEach(([key, value]) => {
         const input = form.querySelector(`[name="${key}"]`);
-        if (input && !input.value) input.value = value;
+        if (!input) return;
+        if (input.type === 'checkbox') input.checked = input.checked || value === 'Yes';
+        else if (!input.value) input.value = value;
       });
     }
   }

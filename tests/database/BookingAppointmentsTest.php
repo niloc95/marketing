@@ -216,6 +216,43 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertSame('Keep it to 80 characters.', BookingSettings::for($this->listingId)->save(['booking.custom_field_3_title' => str_repeat('a', 81)], null)['errors']['booking.custom_field_3_title']);
     }
 
+    public function testListAndTickBoxQuestions(): void
+    {
+        BookingSettings::for($this->listingId)->save([
+            'booking.custom_field_1_enabled' => '1', 'booking.custom_field_1_title' => 'Hair length', 'booking.custom_field_1_type' => 'select',
+            'booking.custom_field_1_options' => "Short\nMedium\nLong", 'booking.custom_field_1_required' => '1',
+            'booking.custom_field_2_enabled' => '1', 'booking.custom_field_2_title' => 'I agree to the salon rules', 'booking.custom_field_2_type' => 'checkbox', 'booking.custom_field_2_required' => '1',
+            'booking.custom_field_3_enabled' => '1', 'booking.custom_field_3_title' => 'Empty list', 'booking.custom_field_3_type' => 'select',
+        ], null);
+        $customers = new CustomerService($this->listingId);
+
+        $this->assertSame(['field_1', 'field_2'], array_column($customers->customFields(), 'key'), 'A list with no choices is not asked');
+        $this->assertSame(['Short', 'Medium', 'Long'], $customers->customFields()[0]['options']);
+
+        $bad = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => 'Purple'], false);
+        $this->assertSame(['field_1' => 'Please choose one.', 'field_2' => 'Please tick this.'], $bad['errors']);
+
+        $ok = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => 'Long', 'field_2' => '1']);
+        $this->assertSame(['Long', 'Yes'], array_column($this->appointments()->detail($ok['id'])['fields'], 'value'));
+        $this->assertSame([], $customers->save(null, ['first_name' => 'Bob', 'email' => 'b@example.test'], null)['errors'], 'A customer record does not need the answers');
+    }
+
+    public function testQuestionsSettingsTab(): void
+    {
+        $this->signedIn()->get('business/settings/questions')->assertOK();
+        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'q' => [
+            1 => ['title' => 'Allergies', 'type' => 'text', 'enabled' => '1', 'required' => '1'],
+            2 => ['title' => 'Colour', 'type' => 'select', 'options' => "Red\n\nRed\nBlue", 'enabled' => '1'],
+        ]])->assertRedirectTo(base_url('business/settings/questions'));
+
+        $fields = (new CustomerService($this->listingId))->customFields();
+        $this->assertSame(['Allergies', 'Colour'], array_column($fields, 'title'));
+        $this->assertSame(['Red', 'Blue'], $fields[1]['options']);
+
+        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'q' => [1 => ['title' => 'Pick', 'type' => 'select', 'enabled' => '1']]]);
+        $this->assertSame('Colour', array_column((new CustomerService($this->listingId))->customFields(), 'title')[1] ?? null, 'A list without choices is refused and nothing is saved');
+    }
+
     // Reschedule and status
 
     public function testRescheduleExcludesItselfAndChecksEveryoneElse(): void

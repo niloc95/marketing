@@ -28,7 +28,7 @@ already holds is read from the profile, never copied, so the two can't drift.
 | `localization.first_day` | `monday` | 1 | |
 | `booking.default_appointment_status` | `pending` | 4 | `pending` or `confirmed` for public bookings |
 | `booking.{first_names,surname,email,phone,address,notes}_{display,required}` | name, email, phone shown and required; address and notes off | 5 | email or phone must stay required (we need a way to reach the customer) |
-| `booking.custom_field_{1..6}_{enabled,title,type,required,sensitive}` | off | 4 | |
+| `booking.custom_field_{1..6}_{enabled,title,type,required,sensitive,options}` | off | 4 | built; type text, textarea, select or checkbox; `options` one choice per line (up to 20); a list with no choices is not asked; required is checked when booking, not on the customer record; `sensitive` = never put in an email (Phase 6 honours it) |
 | `booking.slot_step` (was `booking.time_resolution`) | `0` = service length | 3 | built; 0 to 240 minutes |
 | `booking.lead_minutes` | `0` | 3 | built; minimum notice, customers only; entered in hours |
 | `business.buffer_time` | `0` | 3 | built; minutes after each appointment, added to the service's own gap |

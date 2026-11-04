@@ -29,6 +29,17 @@ class CatalogueService
 
     public const COLORS = ['slate', 'ocean', 'teal', 'violet', 'amber', 'rose', 'lime', 'sky'];
 
+    /** The colours as CSS values, for the calendar (brand ocean is the token's). */
+    public const COLOR_HEX = [
+        'slate' => '#64748B', 'ocean' => '#003049', 'teal' => '#0D9488', 'violet' => '#7C3AED',
+        'amber' => '#D97706', 'rose' => '#E11D48', 'lime' => '#65A30D', 'sky' => '#0284C7',
+    ];
+
+    public static function hex(?string $color): string
+    {
+        return self::COLOR_HEX[(string) $color] ?? self::COLOR_HEX['ocean'];
+    }
+
     public const MAX_SERVICES = 100;
 
     public const MAX_DURATION = 720;
