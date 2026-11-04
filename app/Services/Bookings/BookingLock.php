@@ -19,7 +19,13 @@ use DateTimeImmutable;
  * on each other.
  *
  * The appointment service (Phase 4) and the public flow (Phase 5) call
- * reserve(); nothing else inserts into xs_booking_appointments.
+ * reserve(); nothing else inserts into xs_booking_appointments. A new time
+ * or person for an existing appointment goes through move(), under the
+ * same lock, so a reschedule cannot race a booking either.
+ *
+ * The location is the one the person works at that weekday (their hours
+ * row), unless the caller names one, and its name and address are kept on
+ * the appointment.
  */
 class BookingLock
 {
@@ -65,7 +71,7 @@ class BookingLock
             [$before, $after] = $engine->holdMinutes($serviceId);
             $start = new DateTimeImmutable((string) $data['start_at'], new \DateTimeZone('UTC'));
 
-            $id = (int) BookingAppointmentModel::forBusiness($listingId)->insert($data + [
+            $id = (int) BookingAppointmentModel::forBusiness($listingId)->insert($data + self::location($listing, $providerId, $start, $engine, $data) + [
                 'hash'                 => bin2hex(random_bytes(16)),
                 'end_at'               => $start->modify('+' . (int) $service['duration_min'] . ' minutes')->format('Y-m-d H:i:s'),
                 'hold_before_min'      => $before,
@@ -89,5 +95,117 @@ class BookingLock
 
             throw $e;
         }
+    }
+
+    /**
+     * Give an appointment a new start (UTC) and optionally a new person,
+     * checked against everything else they have (the appointment itself
+     * excluded). Length and gaps stay as booked.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return array{problem:?string,changes:array<string,array{0:mixed,1:mixed}>}
+     */
+    public static function move(array $listing, int $appointmentId, string $startUtc, ?int $providerId, bool $public, ?DateTimeImmutable $now = null): array
+    {
+        $listingId = (int) $listing['id'];
+        $db        = db_connect();
+        $current   = BookingAppointmentModel::forBusiness($listingId)->find($appointmentId);
+        if (! is_array($current)) {
+            return ['problem' => 'not_found', 'changes' => []];
+        }
+        $providerId ??= (int) $current['provider_id'];
+
+        $db->resetTransStatus()->transBegin();
+
+        try {
+            // Lock the new person's row; a different old person's time only frees up.
+            $locked = $db->query(
+                'SELECT id FROM ' . $db->prefixTable('booking_providers') . ' WHERE id = ? AND listing_id = ? FOR UPDATE',
+                [$providerId, $listingId],
+            )->getRowArray();
+            if ($locked === null) {
+                $db->transRollback();
+
+                return ['problem' => AvailabilityService::NOT_OFFERED, 'changes' => []];
+            }
+
+            $engine  = new AvailabilityService($listing, $now);
+            $problem = $engine->problem($providerId, (int) $current['service_id'], $startUtc, $public, $appointmentId);
+            if ($problem !== null) {
+                $db->transRollback();
+
+                return ['problem' => $problem, 'changes' => []];
+            }
+
+            $start  = new DateTimeImmutable($startUtc, new \DateTimeZone('UTC'));
+            $update = [
+                'start_at'    => $start->format('Y-m-d H:i:s'),
+                'end_at'      => $start->modify('+' . (int) $current['service_duration_min'] . ' minutes')->format('Y-m-d H:i:s'),
+                'provider_id' => $providerId,
+            ];
+            if ($providerId !== (int) $current['provider_id']) {
+                $update['provider_name'] = (string) ((new TeamService($listingId))->provider($providerId)['name'] ?? $current['provider_name']);
+            }
+            $update += self::location($listing, $providerId, $start, $engine, []);
+
+            $changes = [];
+            foreach ($update as $k => $v) {
+                if ((string) $current[$k] !== (string) $v) {
+                    $changes[$k] = [$current[$k], $v];
+                }
+            }
+            if ($changes !== []) {
+                BookingAppointmentModel::forBusiness($listingId)->update($appointmentId, $update);
+            }
+            $db->transCommit();
+
+            return ['problem' => null, 'changes' => $changes];
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Where the appointment is: the caller's location_id if given, else the
+     * branch on the person's hours for that weekday, else the profile's own
+     * address (null). With its name and address as they are today.
+     *
+     * @param array<string,mixed> $listing
+     * @param array<string,mixed> $data
+     *
+     * @return array{location_id:?int,location_name:?string,location_address:?string}
+     */
+    private static function location(array $listing, int $providerId, DateTimeImmutable $startUtc, AvailabilityService $engine, array $data): array
+    {
+        helper('map');
+        $listingId = (int) $listing['id'];
+        if (array_key_exists('location_id', $data)) {
+            $locationId = $data['location_id'] !== null && (int) $data['location_id'] > 0 ? (int) $data['location_id'] : null;
+        } else {
+            $weekday    = (int) $startUtc->setTimezone($engine->timezone())->format('N');
+            $row        = \App\Models\Bookings\BookingProviderHoursModel::forBusiness($listingId)
+                ->where('provider_id', $providerId)->where('weekday', $weekday)->first();
+            $locationId = is_array($row) && $row['location_id'] !== null ? (int) $row['location_id'] : null;
+        }
+
+        if ($locationId !== null) {
+            $branch = (new \App\Models\DirectoryPracticeLocationModel())->where('listing_id', $listingId)->find($locationId);
+            if (is_array($branch)) {
+                return [
+                    'location_id'      => $locationId,
+                    'location_name'    => mb_substr(trim((string) ($branch['name'] ?? '')) ?: (string) ($listing['display_name'] ?? ''), 0, 160) ?: null,
+                    'location_address' => mb_substr(map_address_text($branch), 0, 255) ?: null,
+                ];
+            }
+        }
+
+        return [
+            'location_id'      => null,
+            'location_name'    => mb_substr(trim((string) ($listing['location_name'] ?? '')) ?: (string) ($listing['display_name'] ?? ''), 0, 160) ?: null,
+            'location_address' => mb_substr(map_address_text($listing), 0, 255) ?: null,
+        ];
     }
 }

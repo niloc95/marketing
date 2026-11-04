@@ -65,7 +65,22 @@ class Bookings extends BaseConfig
         'booking.lead_minutes'     => '0',   // minimum notice
         'business.buffer_time'     => '0',   // kept free after every appointment
         'business.future_limit'    => '60',  // days ahead customers may book online
+        // The business's own questions (Phase 4), see customFieldKeys().
+        'booking.custom_field_1_enabled' => '0', 'booking.custom_field_1_title' => '', 'booking.custom_field_1_type' => 'text', 'booking.custom_field_1_required' => '0', 'booking.custom_field_1_sensitive' => '0',
+        'booking.custom_field_2_enabled' => '0', 'booking.custom_field_2_title' => '', 'booking.custom_field_2_type' => 'text', 'booking.custom_field_2_required' => '0', 'booking.custom_field_2_sensitive' => '0',
+        'booking.custom_field_3_enabled' => '0', 'booking.custom_field_3_title' => '', 'booking.custom_field_3_type' => 'text', 'booking.custom_field_3_required' => '0', 'booking.custom_field_3_sensitive' => '0',
+        'booking.custom_field_4_enabled' => '0', 'booking.custom_field_4_title' => '', 'booking.custom_field_4_type' => 'text', 'booking.custom_field_4_required' => '0', 'booking.custom_field_4_sensitive' => '0',
+        'booking.custom_field_5_enabled' => '0', 'booking.custom_field_5_title' => '', 'booking.custom_field_5_type' => 'text', 'booking.custom_field_5_required' => '0', 'booking.custom_field_5_sensitive' => '0',
+        'booking.custom_field_6_enabled' => '0', 'booking.custom_field_6_title' => '', 'booking.custom_field_6_type' => 'text', 'booking.custom_field_6_required' => '0', 'booking.custom_field_6_sensitive' => '0',
     ];
+
+    /** How many of the business's own questions there can be (Bookings: 6). */
+    public const CUSTOM_FIELDS = 6;
+
+    /** Longest question title, and longest answer. */
+    public const CUSTOM_FIELD_TITLE_MAX = 80;
+
+    public const CUSTOM_FIELD_VALUE_MAX = 2000;
 
     /**
      * Whole number settings and their allowed range, inclusive.
@@ -84,6 +99,18 @@ class Bookings extends BaseConfig
         'localization.time_format' => ['24h', '12h'],
         'localization.first_day'   => ['monday', 'sunday'],
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+        // Questions: text or textarea for now (select and checkbox: Later, parity.md §4).
+        for ($n = 1; $n <= self::CUSTOM_FIELDS; $n++) {
+            foreach (['enabled', 'required', 'sensitive'] as $flag) {
+                $this->settingChoices['booking.custom_field_' . $n . '_' . $flag] = ['0', '1'];
+            }
+            $this->settingChoices['booking.custom_field_' . $n . '_type'] = ['text', 'textarea'];
+        }
+    }
 
     public function enabled(): bool
     {

@@ -89,6 +89,11 @@ class BookingSettings
                 }
                 $value = (string) $int;
             }
+            if ($choices === null && $range === null && mb_strlen($value) > Bookings::CUSTOM_FIELD_TITLE_MAX) {
+                $errors[$key] = 'Keep it to ' . Bookings::CUSTOM_FIELD_TITLE_MAX . ' characters.';
+
+                continue;
+            }
             $old = $this->get($key);
             if ($old !== $value) {
                 $changed[$key] = [$old, $value];
