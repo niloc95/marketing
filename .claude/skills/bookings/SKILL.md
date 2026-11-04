@@ -172,3 +172,17 @@ and §7 and `routes.md`:
   `resources/business/` (Vite), server mode only, drag to reschedule, details modal.
   Routes `/business/calendar`, `/business/api/calendar/{view}`, `/business/customers`.
 - Not yet: notifications (Phase 6, enqueue only later), payments (Phase 8).
+
+## Open housekeeping (as of 4 Nov 2026)
+
+- **The dev site serves the bookings branches.** The local `.env` has
+  `bookings.enabled = true` (appended at the end of the file). Before another session
+  works on `main`: switch to `main`, remove that line (or set it to `false`) and run
+  `npm run dev:restart`. Put it back when returning to a bookings branch.
+- **A test order leak already on `main`, not caused by bookings.** In random order,
+  `NewsletterTest::testAnAppSignupIsAnAppRowWithAppLinks` followed by
+  `SpatialSearchTest::testPositionsOutsideSouthAfricaAreIgnored` fails: the newsletter test
+  leaves the shared `site` service on .app. Reproduce with
+  `php vendor/bin/phpunit --filter 'testAnAppSignupIsAnAppRowWithAppLinks|testPositionsOutsideSouthAfricaAreIgnored'`.
+  Fix it on its own branch off `main` (reset the site service in NewsletterTest's
+  tearDown), not on a bookings branch.
