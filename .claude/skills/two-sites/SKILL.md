@@ -166,7 +166,7 @@ country on the .app signup form.
   hreflang only between the two home pages and matching static pages. Bing ownership tag
   on .app only.
 - **Analytics**: `sites.app.analyticsId` and `sites.app.clarityId` in `.env` (no .app
-  Clarity project yet). Mautic tags app signups `site-app`.
+  Clarity project yet).
 
 ## Local dev for both hosts
 

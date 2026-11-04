@@ -6,10 +6,8 @@ use App\Models\DirectoryListingModel;
 use App\Services\DirectoryAdminService;
 use App\Services\DirectoryListingMutationService;
 use App\Services\MarketingConsentService;
-use CodeIgniter\Config\Factories;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\FeatureTestTrait;
-use Config\Services;
 use Tests\Support\ValidListingInput;
 use Tests\Support\FreshDatabase;
 
@@ -24,10 +22,6 @@ use Tests\Support\FreshDatabase;
  * records no opt-in rather than inheriting the default, an admin still cannot
  * set it, a second signup on someone else's address still cannot flip it, and
  * every change still carries a server-stamped date and source.
- *
- * They also pin that nothing reaches Mautic while the reports do not exist
- * (Directory::analyticsEmailsLive), and that opt-outs are deliberately not held
- * back by that gate.
  *
  * And that the unsubscribe link works without a session (one-click) but never
  * on a bare GET, which link scanners would otherwise trigger.
@@ -55,16 +49,6 @@ final class MarketingConsentTest extends CIUnitTestCase
             'group_name' => 'Home',
             'is_active'  => 1,
         ], true);
-    }
-
-    protected function tearDown(): void
-    {
-        // CIUnitTestCase does not clear injected service mocks between tests.
-        Services::resetSingle('mautic');
-        // Nor a config mocked by reportsAreLive() — config('Directory') hands
-        // back a shared instance, so the flag would leak into the next test.
-        Factories::reset('config');
-        parent::tearDown();
     }
 
     // --------------------------------------------------------------- signup
@@ -340,168 +324,11 @@ final class MarketingConsentTest extends CIUnitTestCase
         $this->assertSame([$verified], $ids);
     }
 
-    // ------------------------------------------------------------ mautic sync
-
-    public function testOwnerOptInOnAVerifiedListingSyncsToTheSegment(): void
-    {
-        $this->reportsAreLive();
-        $fake = $this->fakeMautic();
-        $id   = $this->publishedListing(false);
-
-        (new MarketingConsentService())->setPreference($id, true, MarketingConsentService::SOURCE_MANAGE);
-
-        $this->assertSame(['upsert', 'add:77'], array_column($fake->calls, 0));
-        $this->assertSame(['listing-owner'], $fake->calls[0][1]['tags']);
-    }
-
-    public function testNobodyIsSyncedInWhileTheReportsAreOff(): void
-    {
-        // The gate: preferences are recorded, but nobody is put in a segment
-        // that would receive something the signup box did not describe. Not
-        // even a contact is created.
-        $fake = $this->fakeMautic();
-        $id   = $this->publishedListing(false);
-
-        (new MarketingConsentService())->setPreference($id, true, MarketingConsentService::SOURCE_MANAGE);
-
-        $this->assertSame([], $fake->calls);
-        $this->assertSame('1', (string) $this->listings->find($id)['marketing_opt_in'], 'the choice is still recorded');
-    }
-
-    public function testOptOutLeavesTheSegmentAndAddsDoNotContact(): void
-    {
-        // Deliberately does NOT set the flag: opt-outs are never held back by
-        // it. An unsent report harms nobody, a swallowed opt-out does.
-        $fake = $this->fakeMautic();
-        $id   = $this->publishedListing(true);
-
-        (new MarketingConsentService())->setPreference($id, false, MarketingConsentService::SOURCE_UNSUBSCRIBE);
-
-        $this->assertSame(['upsert', 'remove:77', 'dnc'], array_column($fake->calls, 0));
-    }
-
-    public function testAnUnverifiedOptInIsNotSynced(): void
-    {
-        $this->reportsAreLive();
-        $fake = $this->fakeMautic();
-        $id   = $this->publishedListing(false);
-        $this->listings->update($id, ['is_verified' => 0, 'status' => 'pending']);
-
-        (new MarketingConsentService())->setPreference($id, true, MarketingConsentService::SOURCE_MANAGE);
-
-        $this->assertSame([], $fake->calls);
-    }
-
-    public function testVerifyingAnOptedInSignupSyncsOnceReportsAreLive(): void
-    {
-        $this->reportsAreLive();
-        $svc    = new DirectoryListingMutationService();
-        $result = $svc->submitPublic($this->signup());
-        $token  = bin2hex(random_bytes(32));
-        $this->listings->update((int) $result['id'], [
-            'verify_token'   => hash('sha256', $token),
-            'verify_expires' => date('Y-m-d H:i:s', time() + 3600),
-        ]);
-        $fake = $this->fakeMautic();
-
-        $this->assertNotNull($svc->verify($token));
-        $this->assertSame(['upsert', 'add:77'], array_column($fake->calls, 0));
-    }
-
-    public function testVerifyingDoesNotSyncWhileReportsAreOff(): void
-    {
-        $svc    = new DirectoryListingMutationService();
-        $result = $svc->submitPublic($this->signup());
-        $token  = bin2hex(random_bytes(32));
-        $this->listings->update((int) $result['id'], [
-            'verify_token'   => hash('sha256', $token),
-            'verify_expires' => date('Y-m-d H:i:s', time() + 3600),
-        ]);
-        $fake = $this->fakeMautic();
-
-        $this->assertNotNull($svc->verify($token));
-
-        $this->assertSame([], $fake->calls);
-    }
-
-    public function testVerifyingWithoutTheBoxDoesNotSync(): void
-    {
-        $this->reportsAreLive();
-        $svc   = new DirectoryListingMutationService();
-        $input = $this->signup();
-        unset($input['marketing_opt_in']);
-        $result = $svc->submitPublic($input);
-        $token  = bin2hex(random_bytes(32));
-        $this->listings->update((int) $result['id'], [
-            'verify_token'   => hash('sha256', $token),
-            'verify_expires' => date('Y-m-d H:i:s', time() + 3600),
-        ]);
-        $fake = $this->fakeMautic();
-
-        $svc->verify($token);
-
-        $this->assertSame([], $fake->calls);
-    }
-
-    public function testAnUnconfiguredClientSkipsWithoutCallingOut(): void
-    {
-        $id = $this->publishedListing(true);
-
-        $this->assertFalse(service('mautic')->isConfigured(), 'the test env must not carry Mautic credentials');
-        $this->assertSame('skipped', (new MarketingConsentService())->syncToMautic($this->listings->find($id)));
-    }
-
-    // ----------------------------------------------------- newsletter footer
-
-    public function testSubscribedPendingShowsTheNotice(): void
-    {
-        $this->get('faq?subscribed=pending')->assertSee('Check your inbox and click the link to confirm your subscription');
-        $this->get('faq')->assertDontSee('Check your inbox and click the link to confirm your subscription');
-    }
-
-    public function testFooterPostsToTheLocalMauticFormAllowedByCsp(): void
-    {
-        $config = config('Directory');
-        $csp    = new \Config\ContentSecurityPolicy();
-        $origin = 'https://' . parse_url($config->newsletterFormUrl(), PHP_URL_HOST);
-
-        $this->assertContains($origin, $csp->formAction, 'form-action must allow the newsletter host, or Subscribe does nothing');
-
-        $body = (string) $this->get('faq')->response()->getBody();
-        $this->assertStringContainsString('name="mauticform[formName]" value="' . $config->newsletterFormName() . '"', $body);
-        $this->assertStringContainsString('action="' . esc($config->newsletterFormUrl()) . '"', $body);
-    }
-
     // -------------------------------------------------------------- helpers
 
-    private function fakeMautic(): FakeMauticClient
-    {
-        $fake = new FakeMauticClient();
-        Services::injectMock('mautic', $fake);
-
-        return $fake;
-    }
-
-    /**
-     * Session state as the controller's redirect-back leaves it: the rejected
-     * input under `old`, as flashdata rather than plain session data — which is
-     * the only form Listing::create() reads.
-     *
-     * @param array<string,mixed> $old
-     *
-     * @return array<string,mixed>
-     */
     private function flashedOld(array $old): array
     {
         return ['old' => $old, '__ci_vars' => ['old' => 'new']];
-    }
-
-    /** Pretend the monthly reports have shipped, so opt-ins reach Mautic. */
-    private function reportsAreLive(): void
-    {
-        $config                      = config('Directory');
-        $config->analyticsEmailsLive = true;
-        Factories::injectMock('config', 'Directory', $config);
     }
 
     private function publishedListing(bool $optedIn): int
@@ -576,52 +403,5 @@ final class MarketingConsentTest extends CIUnitTestCase
             'latitude'     => '-33.9249',
             'longitude'    => '18.4241',
         ], $overrides));
-    }
-}
-
-/**
- * Records calls instead of making them. Configured, segment 77, contact 5.
- */
-final class FakeMauticClient extends \App\Libraries\MauticClient
-{
-    /** @var list<array{0:string,1?:array<string,mixed>}> */
-    public array $calls = [];
-
-    public function isConfigured(): bool
-    {
-        return true;
-    }
-
-    public function ownerSegmentId(): int
-    {
-        return 77;
-    }
-
-    public function upsertContact(string $email, array $fields): ?int
-    {
-        $this->calls[] = ['upsert', $fields];
-
-        return 5;
-    }
-
-    public function addToSegment(int $contactId, int $segmentId, string $emailForLog = ''): bool
-    {
-        $this->calls[] = ['add:' . $segmentId];
-
-        return true;
-    }
-
-    public function removeFromSegment(int $contactId, int $segmentId, string $emailForLog = ''): bool
-    {
-        $this->calls[] = ['remove:' . $segmentId];
-
-        return true;
-    }
-
-    public function addDoNotContact(int $contactId, string $comment, string $emailForLog = ''): bool
-    {
-        $this->calls[] = ['dnc'];
-
-        return true;
     }
 }

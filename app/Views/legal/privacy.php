@@ -154,8 +154,8 @@ $contact   = config('Directory')->adminEmail();
             <p>We use this information to respond to your enquiry, provide assistance and address potential misuse of the service.</p>
 
             <h3>Newsletter</h3>
-            <p>The newsletter signup in the footer of every page is a separate, deliberate opt in. It sends your email address to our own mailing system at <code>updates.webscheduler.co.za</code>. We then email you a confirmation link, and you are added to the list only when you click it, so an address entered by somebody else never ends up subscribed. Adding a business profile does not subscribe you to this newsletter. The profile carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
-            <p>Once you are subscribed we keep your email address, the date you confirmed, and ordinary delivery records (whether a message reached you, and whether you opened it or clicked a link in it) so that the list works and unsubscribes are honoured. Every newsletter carries an unsubscribe link.</p>
+            <p>The newsletter signup in the footer of every page is a separate, deliberate opt in. The same list also takes signups from the footer of webscheduler.co.za. We store your email address as waiting for confirmation and email you a link. You are added to the list only when you open it and press Confirm, so an address entered by somebody else never ends up subscribed. If nobody confirms within 30 days, we delete the address. Adding a business profile does not subscribe you to this newsletter. The profile carries its own monthly analytics report instead, which is switched on by default and described under &ldquo;Email services&rdquo; below.</p>
+            <p>Once you are subscribed we keep your email address, where you signed up, and the date you confirmed. We do not track whether you open our emails or click their links. Every newsletter carries an unsubscribe link. When you unsubscribe we keep your address marked as unsubscribed, only so that we never email you again.</p>
 
             <h3>Recommending a business</h3>
             <p>If you use <a href="<?= base_url('recommend') ?>">Recommend a business</a>, we receive the business details you enter (its name, category, area, email address, phone number and, if you give one, its website) and your name, your email address, how you know the business and your reason for recommending it. We also keep a one way hash of your IP address to limit abuse. Nothing you enter is published.</p>
@@ -293,7 +293,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Email services</h3>
             <p>We use an email service provider to deliver verification, profile management and other necessary service communications.</p>
-            <p>The newsletter, and the monthly analytics report to profile owners who have it switched on, are sent through our own mailing system at <code>updates.webscheduler.co.za</code>. While the report is switched on we pass the owner's email address, contact name and business name to that system; when it is switched off, we mark them there as not to be contacted.</p>
+            <p>The newsletter, and the monthly analytics report to profile owners who have it switched on, are sent by the platform itself through the same email service provider. No separate mailing system receives your details.</p>
 
             <h3>Employers, requesters and businesses with a profile</h3>
             <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to businesses with a profile; the requester's contact details are not included.</p>

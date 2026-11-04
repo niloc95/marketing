@@ -112,6 +112,17 @@ $routes->get('cookie-policy', 'Legal::cookies');
 $routes->get('unsubscribe/(:segment)', 'Unsubscribe::confirm/$1');
 $routes->post('unsubscribe/(:segment)', 'Unsubscribe::apply/$1');
 
+// The newsletter (one list for both sites and the brand site's form). Confirm
+// and unsubscribe are GET asks, POST acts. See the Newsletter controller, and
+// Config\Filters for the CSRF exemptions on POST newsletter and unsubscribe.
+$routes->get('newsletter', 'Newsletter::index');
+$routes->post('newsletter', 'Newsletter::subscribe');
+$routes->get('newsletter/check-inbox', 'Newsletter::checkInbox');
+$routes->get('newsletter/confirm/(:segment)', 'Newsletter::confirmPage/$1');
+$routes->post('newsletter/confirm/(:segment)', 'Newsletter::confirm/$1');
+$routes->get('newsletter/unsubscribe/(:segment)', 'Newsletter::unsubscribePage/$1');
+$routes->post('newsletter/unsubscribe/(:segment)', 'Newsletter::unsubscribe/$1');
+
 // AJAX address autocomplete for the signup/owner/admin listing forms, plus the
 // lookup that centres the pin picker's map on whatever has been typed so far.
 $routes->get('address-suggest', 'AddressSuggest::index');

@@ -46,7 +46,7 @@ final class AdminAccessGateTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        // CIUnitTestCase does not clear mocks; see the Mautic note in the skill.
+        // CIUnitTestCase does not clear injected mocks between tests.
         Services::resetSingle('cloudflareAccess');
         cache()->delete('cf_access_certs');
         cache()->delete('admin_login_failures');

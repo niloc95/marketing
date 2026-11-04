@@ -55,6 +55,8 @@ class Forms extends BaseConfig
         'manage_media'     => ['label' => 'Remove photo or brand', 'posts' => ['manage/photo-delete/(:num)' => 'manage/edit', 'manage/brand-delete/(:num)' => 'manage/edit']],
         'verification'     => ['label' => 'Verified or Plus application', 'posts' => ['manage/verification' => 'manage/edit', 'manage/verification/cancel' => 'manage/edit', 'manage/verification/yearly' => 'manage/edit', 'manage/verification/pay' => 'manage/edit']],
         'preview'          => ['label' => 'Preview approval', 'posts' => ['preview/(:segment)/approve' => 'preview/$1', 'preview/(:segment)/changes' => 'preview/$1']],
+        'newsletter'       => ['label' => 'Newsletter signup', 'posts' => ['newsletter' => 'newsletter'], 'pages' => ['newsletter']],
+        'newsletter_confirm' => ['label' => 'Newsletter confirm', 'posts' => ['newsletter/confirm/(:segment)' => 'newsletter/confirm/$1']],
     ];
 
     /**
@@ -73,6 +75,7 @@ class Forms extends BaseConfig
         'jobs/screening/answer',
         'manage/preview',
         'unsubscribe/(:segment)',
+        'newsletter/unsubscribe/(:segment)',
         'csp-report',
         'payfast/notify',
         'payfast/setup-notify',

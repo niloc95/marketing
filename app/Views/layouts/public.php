@@ -309,12 +309,6 @@ foreach (config('Countries')->profiles as $code => $profile) {
         <?php endif; ?>
     <?php endforeach; ?>
 
-    <?php // Where Mautic's redirect lands after a footer newsletter signup. Without
-          // it a working signup looked like nothing happened. Compared, never echoed. ?>
-    <?php if (service('request')->getGet('subscribed') === 'pending'): ?>
-        <div class="container mt-5"><div class="alert alert-info">Almost there. Check your inbox and click the link to confirm your subscription.</div></div>
-    <?php endif; ?>
-
     <?php // Upload problems are a list, and they accompany rather than replace the
           // success message: a save can succeed while some photos are rejected. ?>
     <?php if ($uploadErrors = flash('upload_errors')): ?>
@@ -348,48 +342,27 @@ foreach (config('Countries')->profiles as $code => $profile) {
                 </a>
                 <p class="site-footer-tagline"><?= esc(site_copy('footer', 'Discover local. Be discovered. A discovery platform for South African businesses, services, locations, professionals and opportunities. Create your free business profile.')) ?></p>
                 <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
-                <?php // Newsletter -> Mautic (updates.webscheduler.co.za), the LOCAL
-                      // form. The marketing site posts to its own form (id 1); the
-                      // two brands used to share it, and its redirect setting sent
-                      // marketing-site signups here. Form id, alias and URL come from
-                      // Config\Directory, which the CSP form-action also reads.
-                      //
-                      // Plain cross-origin POST: no JS, no CORS. Mautic stores the
-                      // contact, sends the double opt-in confirmation, then redirects
-                      // back here with ?subscribed=pending (notice rendered above).
+                <?php // Newsletter: our own list (Newsletter controller), one for
+                      // both sites and the brand site. It lands on
+                      // newsletter/check-inbox; nobody joins until they press
+                      // Confirm on the page the emailed link opens. No CSRF token
+                      // (see Config\Filters); the honeypot filter adds its trap.
                       //
                       // The input uses this site's own .field component - the same
                       // wrapper the listing views use - so label and input inherit
                       // light AND dark styling with no utility classes and no local
                       // <style>. Do not reach for .header-search: that is the header
-                      // search bar, a different component that only looks similar.
-                      //
-                      // mauticform[...] names are Mautic's field mapping - do not rename. ?>
-                <?php $dir = config('Directory'); ?>
-                <form action="<?= esc($dir->newsletterFormUrl()) ?>" method="post" class="mt-4">
-                    <input type="hidden" name="mauticform[formId]" value="<?= (int) $dir->newsletterFormId() ?>">
-                    <input type="hidden" name="mauticform[formName]" value="<?= esc($dir->newsletterFormName(), 'attr') ?>">
-                    <input type="hidden" name="mauticform[return]" value="<?= base_url('/') ?>?subscribed=pending">
-
-                    <?php // Honeypot: display:none via .hidden. mauticform[honeypot]
-                          // is a real captcha-type field on the Mautic form and IS
-                          // validated server-side. ?>
-                    <div class="hidden" aria-hidden="true">
-                        <label>Leave this field empty
-                            <input type="text" name="mauticform[honeypot]" tabindex="-1" autocomplete="off">
-                        </label>
-                    </div>
-
+                      // search bar, a different component that only looks similar. ?>
+                <form action="<?= base_url('newsletter') ?>" method="post" class="mt-4">
                     <div class="field">
                         <label for="ws_email">Stay in the know</label>
-                        <input type="email" id="ws_email" name="mauticform[email]" required
-                               autocomplete="email" placeholder="you@business.co.za">
+                        <input type="email" id="ws_email" name="email" required
+                               autocomplete="email" placeholder="<?= site()->isApp() ? 'you@business.com' : 'you@business.co.za' ?>">
                     </div>
 
                     <?php // .btn-block, not style="width:100%": style-src-attr is
                           // 'self', so an inline style attribute is dropped by CSP. ?>
-                    <button type="submit" name="mauticform[submit]" value="1"
-                            class="btn btn-accent btn-block mt-2">
+                    <button type="submit" class="btn btn-accent btn-block mt-2">
                         Subscribe
                     </button>
 

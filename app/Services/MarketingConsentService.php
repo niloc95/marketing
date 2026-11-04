@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Controllers\Legal;
 use App\Models\DirectoryListingModel;
-use Config\Sites;
 
 /**
  * The listing owner's email record: terms acceptance, and whether they want the
@@ -76,99 +75,9 @@ class MarketingConsentService
 
         $now = date('Y-m-d H:i:s');
 
-        $saved = (bool) $this->listings->update($listingId, $optIn
+        return (bool) $this->listings->update($listingId, $optIn
             ? ['marketing_opt_in' => 1, 'marketing_consent_at' => $now, 'marketing_consent_source' => $source]
             : ['marketing_opt_in' => 0, 'marketing_withdrawn_at' => $now, 'marketing_consent_source' => $source]);
-
-        $fresh = $this->listings->find($listingId);
-        if ($saved && is_array($fresh)) {
-            $this->syncToMautic($fresh);
-        }
-
-        return $saved;
-    }
-
-    /**
-     * Mirror one listing's report preference into Mautic, where sends go out.
-     *
-     * - Opted in and email verified: create or update the contact and add it to
-     *   the owner segment. No Mautic double opt-in, because the signup
-     *   verification link already proved the address. Held entirely while
-     *   Directory::analyticsEmailsLive() is off — see below.
-     * - Withdrawn: take it out of the segment and mark it Do Not Contact.
-     * - Anything else (never opted in, or not yet verified): nothing.
-     *
-     * DNC is never lifted from here. Mautic sets it when someone unsubscribes
-     * inside Mautic, and that must stick even if this row still says opted in.
-     * That direction does not flow back into marketing_opt_in (no webhook yet),
-     * but DNC alone is enough to stop sends.
-     *
-     * Never throws and never blocks: see MauticClient. `spark mautic:sync`
-     * re-sends everything, which covers any call that failed here.
-     *
-     * @param array<string,mixed> $listing
-     * @return string what was done: synced | withdrawn | skipped | failed
-     */
-    public function syncToMautic(array $listing): string
-    {
-        $mautic = service('mautic');
-        $email  = (string) ($listing['email'] ?? '');
-        if (! $mautic->isConfigured() || $email === '') {
-            return 'skipped';
-        }
-
-        $optedIn   = ! empty($listing['marketing_opt_in']) && ! empty($listing['is_verified']);
-        $withdrawn = empty($listing['marketing_opt_in']) && ! empty($listing['marketing_withdrawn_at']);
-        if (! $optedIn && ! $withdrawn) {
-            return 'skipped';
-        }
-
-        // Opt-ins wait for the reports to exist; opt-outs never wait. An unsent
-        // report harms nobody, a swallowed opt-out does — and the DNC below is
-        // the same one-way safety rule as the note above about never lifting it.
-        // Held here rather than at the branch so an opted-in owner is not even
-        // created as a contact until there is something to send them.
-        if ($optedIn && ! config('Directory')->analyticsEmailsLive()) {
-            return 'skipped';
-        }
-
-        // A local.webscheduler.app owner is tagged as one, so the reports and
-        // anything else sent from Mautic can tell the two audiences apart.
-        $tags = ['listing-owner'];
-        if (service('site')->forRow($listing) === Sites::APP) {
-            $tags[] = 'site-app';
-        }
-
-        $contactId = $mautic->upsertContact($email, [
-            'firstname' => (string) ($listing['contact_person'] ?? ''),
-            'company'   => (string) ($listing['display_name'] ?? ''),
-            'tags'      => $tags,
-        ]);
-        if ($contactId === null) {
-            return 'failed';
-        }
-
-        if ($optedIn) {
-            return $mautic->addToSegment($contactId, $mautic->ownerSegmentId(), $email) ? 'synced' : 'failed';
-        }
-
-        $removed = $mautic->removeFromSegment($contactId, $mautic->ownerSegmentId(), $email);
-        $dnc     = $mautic->addDoNotContact($contactId, 'Opted out on WebScheduler Local (' . ($listing['marketing_consent_source'] ?? 'unknown') . ')', $email);
-
-        return $removed && $dnc ? 'withdrawn' : 'failed';
-    }
-
-    /**
-     * Every listing whose report preference Mautic should hold: opted in and
-     * verified, or withdrawn. What `spark mautic:sync` walks.
-     */
-    public function syncCandidates(): DirectoryListingModel
-    {
-        return $this->listings
-            ->groupStart()
-                ->groupStart()->where('marketing_opt_in', 1)->where('is_verified', 1)->groupEnd()
-                ->orGroupStart()->where('marketing_opt_in', 0)->where('marketing_withdrawn_at IS NOT NULL')->groupEnd()
-            ->groupEnd();
     }
 
     /**

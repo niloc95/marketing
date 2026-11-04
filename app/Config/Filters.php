@@ -163,7 +163,14 @@ class Filters extends BaseFilters
             // nothing (Stats::tap()). forms/event is the form health beacon:
             // one anonymous row for a known form, 30 a minute per IP, that
             // changes nothing anyone sees but /admin/forms (FormEvents::store()).
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event']],
+            //
+            // newsletter (the signup POST) is posted by the brand site from
+            // another origin and by the footer of every page. All it can do is
+            // store a pending row and send one confirmation email, throttled
+            // per IP and per address; nobody joins until they press Confirm on
+            // our own page, which keeps CSRF. newsletter/unsubscribe/* is the
+            // newsletter's RFC 8058 one click, as unsubscribe/* is the owners'.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

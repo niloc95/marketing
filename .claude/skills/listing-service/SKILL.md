@@ -1,6 +1,6 @@
 ---
 name: listing-service
-description: Work on WebScheduler Local, the CodeIgniter 4 app in app/ that serves local.webscheduler.co.za and local.webscheduler.app. Code map (controllers, services, libraries, helpers, filters, config, commands, cron), routes, data model, signup and verify, owner manage flow, admin, the paid Verified Business badge and its gates, Jobs board, careers and screening, reviews, referrals, partners, profile setup service, public holiday hours, profile page parts, geocoding, typeahead, consent and Mautic, CSP rules, local env, tests and verify steps. For anything that differs between co.za and .app (countries, Plus, per site copy, prices, links in emails) also load the two-sites skill.
+description: Work on WebScheduler Local, the CodeIgniter 4 app in app/ that serves local.webscheduler.co.za and local.webscheduler.app. Code map (controllers, services, libraries, helpers, filters, config, commands, cron), routes, data model, signup and verify, owner manage flow, admin, the paid Verified Business badge and its gates, Jobs board, careers and screening, reviews, referrals, partners, profile setup service, public holiday hours, profile page parts, geocoding, typeahead, consent and the newsletter, CSP rules, local env, tests and verify steps. For anything that differs between co.za and .app (countries, Plus, per site copy, prices, links in emails) also load the two-sites skill.
 ---
 
 # WebScheduler Local (`app/`)
@@ -46,8 +46,8 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 |---|---|
 | `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (owner magic link, dashboard, badge and Plus checkout), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
 | `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
-| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
-| `app/Libraries/` | `Mailer` (the only mail path), `MauticClient`, `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
+| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `NewsletterService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
+| `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
 | `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
 | `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
 | `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `AdminDocuments`, `Hostnames`, `ContentSecurityPolicy` |
@@ -437,25 +437,21 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   CSRF-exempt for RFC 8058 one-click.
 - `terms_version` records `Legal::LAST_UPDATED['terms']`. Bump that date whenever the
   terms change.
-- **Mautic sync:** `syncToMautic()` runs on `verify()` and on every preference change,
-  through `service('mautic')` (`App\Libraries\MauticClient`, which never throws). It adds
-  opted-in, verified owners to the `mauticOwnerSegmentId` segment, and on opt-out
-  removes them and sets DNC. It never lifts DNC. `php spark mautic:sync` re-sends
-  everything, so use it after a Mautic outage and once after the first deploy. Leaving
-  `directory.mautic*` unset turns the sync off, which is the local and test default.
-  Tests inject a fake with `Services::injectMock('mautic', …)` and must `resetSingle`
-  it in `tearDown`, because CIUnitTestCase doesn't clear mocks.
+## Newsletter (own list since 4 Nov 2026, Mautic retired)
 
-## Footer newsletter (Mautic)
-
-- It posts to the **Local** Mautic form (`newsletterFormUrl` / `newsletterFormId` /
-  `newsletterFormName` in `Config\Directory`, default id 2, alias `localnewsletter`). The
-  marketing site uses form 1. The two used to share form 1, and that form's redirect
-  sent marketing-site signups here.
-- `Config\ContentSecurityPolicy` derives the `form-action` host from `newsletterFormUrl`.
-  Without that host, Subscribe silently does nothing; this was the original bug.
-- Mautic redirects back with `?subscribed=pending`, and `layouts/public.php` shows the
-  "check your inbox" notice.
+- `NewsletterService` is the only writer of `xs_newsletter_subscribers`: one row per
+  address for all three forms, `source` = `za`, `app` or `brand` (the brand site
+  webscheduler.co.za posts `source=brand` to `POST /newsletter` on co.za).
+- **Real double opt in:** `POST /newsletter` stores `pending` and emails a link; the link
+  opens a page (GET) and only the Confirm POST subscribes and stamps `consent_at`.
+  A subscribed address signing up again gets the same answer and no email. Unconfirmed
+  rows are deleted after 30 days (on every signup).
+- `POST /newsletter` and `newsletter/unsubscribe/*` are CSRF exempt (brand site cross
+  origin; RFC 8058 one click). Confirm keeps CSRF. Throttles `newsletter-ip-` 5/h,
+  `newsletter-to-` 3/day. Unsubscribed rows are the do not contact list: never delete.
+- `php spark newsletter:import-mautic <csv> [--dry-run]` was the one off import of the
+  Mautic export (confirmed segments 10/11 and DNC only).
+- Tests: `tests/database/NewsletterTest.php`.
 
 ## Jobs board (`/jobs`)
 
@@ -1155,7 +1151,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `directory:countries:backfill` | fill `country_code` from `country` | once per release that needs it |
 | `directory:audit-text [--all]` | report names and descriptions that break the rules | |
 | `directory:venue-assign` | put shops into a venue | |
-| `mautic:sync` | resend every owner's marketing state to Mautic | |
+| `newsletter:import-mautic <csv>` | one off import of the Mautic newsletter export | |
 | `directory:adminhash` | hash for `directory.adminPasswordHash` | |
 
 The cron template is `deploy/cron/webscheduler`; the live copy is

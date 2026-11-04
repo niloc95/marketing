@@ -301,8 +301,7 @@ class Manage extends BaseController
      *
      * Nothing is written, and that is the whole design. updateOwn() is not run
      * and rolled back, because around its transaction it geocodes (billed),
-     * checks the video over the network, sends consent to Mautic and emails
-     * the admin. prepareOwnEdit() is its pure half, and the child rows the
+     * checks the video over the network and emails the admin. prepareOwnEdit() is its pure half, and the child rows the
      * page shows (services, features, facets, tags) are built from the form by
      * the same services that would save them. Uploads are ignored: photos,
      * logo, team and branches show as saved, and the bar says so.

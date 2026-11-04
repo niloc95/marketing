@@ -16,8 +16,7 @@ use Tests\Support\FreshDatabase;
  * Neither is published: _contact_panel.php renders neither, and
  * ListingQualityService scores neither, so nothing about this rule is visible
  * to a searcher. It exists because everything this directory sends about a
- * listing is addressed from them — MarketingConsentService pushes
- * contact_person as the Mautic firstname — and a listing nobody here can
+ * listing is addressed from them, and a listing nobody here can
  * address by name cannot be checked against anything but its own claims.
  *
  * Two asymmetries are the point, and both are the sort of thing a later

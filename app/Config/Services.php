@@ -9,7 +9,6 @@ use App\Libraries\Geocoding\NominatimGeocoder;
 use App\Libraries\CloudflareAccess;
 use App\Libraries\DomainChecker;
 use App\Libraries\GoogleApi;
-use App\Libraries\MauticClient;
 use App\Services\Description\DescriptionDraftService;
 use App\Services\Description\DescriptionWriter;
 use App\Services\DirectoryService;
@@ -135,19 +134,6 @@ class Services extends BaseService
         }
 
         return CloudflareAccess::fromConfig();
-    }
-
-    /**
-     * The Mautic API client for the listing-owner marketing sync. A service so
-     * tests can swap in a recording fake with Services::injectMock('mautic').
-     */
-    public static function mautic(bool $getShared = true): MauticClient
-    {
-        if ($getShared) {
-            return static::getSharedInstance('mautic');
-        }
-
-        return new MauticClient();
     }
 
     /**
