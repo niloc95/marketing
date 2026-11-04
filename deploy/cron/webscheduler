@@ -133,3 +133,11 @@ MAILTO=""
 # cron. That is precisely why it needs a reminder: nothing else will ever mention
 # it again, and Full (strict) breaks hard the day it lapses.
 0 9 1 * * deploy /usr/bin/openssl x509 -in /etc/ssl/cloudflare/webscheduler.co.za.pem -noout -checkend 7776000 || echo "Cloudflare origin cert for webscheduler.co.za expires within 90 days"
+
+# --- Session files ------------------------------------------------------------
+# CI4 keeps sessions as files in writable/session, and nothing else deletes
+# them: Ubuntu sets session.gc_probability = 0 and its own phpsessionclean
+# timer only clears /var/lib/php/sessions. 68,859 files (275 MB) had piled up
+# by 4 Nov 2026. Sessions expire after 2 hours (Config\Session::$expiration),
+# so a day old file is dead; current visitors are never touched.
+20 4 * * * deploy find /var/www/listing/directory-app/writable/session -maxdepth 1 -type f -name 'ci_session*' -mmin +1440 -delete
