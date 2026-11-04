@@ -22,7 +22,7 @@ class DirectoryListingModel extends Model
         'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
         'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'whatsapp', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
-        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code', 'country',
+        'location_name', 'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code', 'country',
         'latitude', 'longitude', 'geocode_precision', 'geocoded_at', 'geocoded_address', 'geocoding_status',
         'logo_path', 'slug', 'status', 'is_verified',
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
@@ -135,7 +135,7 @@ class DirectoryListingModel extends Model
         'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
         'credentials', 'description', 'phone', 'phone_alt', 'whatsapp', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
-        'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
+        'location_name', 'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',
         'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
         'customer_location', 'show_address', 'service_areas',
@@ -240,13 +240,16 @@ class DirectoryListingModel extends Model
         // so any update that resubmits an unchanged slug fails validation.
         'id'               => 'permit_empty|is_natural_no_zero',
         'display_name'     => 'required|min_length[2]|max_length[200]',
-        // A structural ceiling on stored markup, not the editorial one. The
-        // 5000-character limit owners actually feel is enforced against the
-        // plain text in DirectoryListingMutationService::validate(), so
-        // formatting does not eat into the allowance; this only stops something
-        // pathological reaching a TEXT column.
+        // Structural ceilings on stored text, not the editorial one. The limit
+        // owners actually feel (RichText::MAX_PLAIN_LENGTH) is enforced against
+        // the plain text in DirectoryListingMutationService::validate(), so
+        // formatting does not eat into the allowance; these only stop something
+        // pathological reaching a TEXT column. description_text sits above the
+        // cap on purpose: a profile saved under a larger, older cap must still
+        // save other edits (RichText::exceedsCap()), and a ceiling equal to the
+        // cap would refuse it here instead.
         'description'      => 'permit_empty|max_length[50000]',
-        'description_text' => 'permit_empty|max_length[5000]',
+        'description_text' => 'permit_empty|max_length[10000]',
         'type'             => 'permit_empty|in_list[person,practice,facility,ngo,community,foundation,project,place]',
         'email'            => 'permit_empty|valid_email|max_length[190]',
         'website'          => 'permit_empty|max_length[255]',

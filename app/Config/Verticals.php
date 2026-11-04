@@ -10,7 +10,7 @@ use CodeIgniter\Config\BaseConfig;
  * A general practitioner and a spice retailer used to render identical pages:
  * the same "Credentials" heading, the same "Trading hours", the same panel
  * order. This file is what gives each vertical its own voice — a practice has
- * "Qualifications & registrations" and "Consulting hours", a restaurant has a
+ * "Qualifications & registrations" and "Reception hours", a restaurant has a
  * "Menu", a guest house has "Rooms & rates".
  *
  * Deliberately wording and order ONLY. A group's colour and icon belong to
@@ -87,7 +87,7 @@ class Verticals extends BaseConfig
                 'credentials' => 'Qualifications & registrations',
                 'services'    => 'Treatments & fees',
                 'team'        => 'Practitioners',
-                'hours'       => 'Consulting hours',
+                'hours'       => 'Reception hours',
                 'tags'        => 'Special interests',
                 'locations'   => 'Other rooms & practices',
             ],
@@ -231,7 +231,7 @@ class Verticals extends BaseConfig
             'headings'   => [
                 'services'    => 'Services & fees',
                 'credentials' => 'Qualifications & registrations',
-                'hours'       => 'Consulting hours',
+                'hours'       => 'Reception hours',
                 'tags'        => 'Animals we see',
                 'locations'   => 'Other branches',
             ],
@@ -433,7 +433,7 @@ class Verticals extends BaseConfig
         ],
         // A hospital is not booked by the person reading the page, and it is
         // open when its departments are — neither "Book an appointment" nor
-        // "Consulting hours" is true of one.
+        // "Reception hours" is true of one.
         'hospital' => [
             'noun'       => 'hospital',
             'nounPlural' => 'hospitals',

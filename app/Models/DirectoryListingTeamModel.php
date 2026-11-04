@@ -24,6 +24,9 @@ class DirectoryListingTeamModel extends Model
     protected $allowedFields = [
         'listing_id', 'name', 'slug', 'role', 'credentials', 'specializations',
         'bio', 'photo_path', 'sort_order',
+        // Professional registration, per person since 4 Nov 2026. Written only
+        // by TeamMemberService::syncFromForm(); reg_checked_at by admin only.
+        'reg_number', 'orcid', 'researchgate_url', 'reg_checked_at',
     ];
 
     /**

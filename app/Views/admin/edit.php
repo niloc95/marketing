@@ -208,6 +208,8 @@ if (! is_array($old['hours'] ?? null)) {
                     'existingLogo' => (string) ($base['logo_path'] ?? ''),
                     'gallerySlots' => $slots,
                     'vTeam'        => is_array($old['team'] ?? null) ? $old['team'] : $team,
+                    // Each person's "checked against the register" tick.
+                    'adminEdit'    => true,
                     'vLocations'   => is_array($old['locations'] ?? null) ? $old['locations'] : $locations,
                     // Marker, not the array — see manage_edit.php.
                     'vServices'    => array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services,
@@ -255,16 +257,6 @@ if (! is_array($old['hours'] ?? null)) {
                           // either way; take one down at /admin/reviews. ?>
                     <?php if (! $isNew && ! \App\Services\ReviewService::acceptsReviews($listing)): ?>
                         <p class="hint">New reviews: off (switched off by the owner). Reviews already published stay on the profile.</p>
-                    <?php endif; ?>
-                    <?php // Admin only: lets the profile say "checked" instead of
-                          // "self declared". Only offered beside a stored number;
-                          // the owner changing the number clears it. ?>
-                    <?php if (! $isNew && ! empty($listing['reg_number'])): ?>
-                        <div class="field">
-                            <input type="hidden" name="reg_checked_present" value="1">
-                            <label class="font-medium"><input type="checkbox" name="reg_checked" value="1" <?= ! empty($listing['reg_checked_at']) ? 'checked' : '' ?>> Registration number <?= esc($listing['reg_number']) ?> checked against the register</label>
-                            <?php if (! empty($listing['reg_checked_at'])): ?><div class="hint">Checked <?= esc(date('j F Y', strtotime((string) $listing['reg_checked_at']))) ?>.</div><?php endif; ?>
-                        </div>
                     <?php endif; ?>
                     <?php // Admin-only, deliberately: a venue is a claim about a
                           // shared building, so it is not on the owner form and not

@@ -70,7 +70,7 @@ final class VerticalHeroTest extends CIUnitTestCase
         // trading_hours — _hours_panel returns early without them.
         $this->assertStringContainsString('vertical-scope cat-tint-red', $html);
         $this->assertStringContainsString('Qualifications &amp; registrations', $html);
-        $this->assertStringContainsString('Consulting hours', $html);
+        $this->assertStringContainsString('Reception hours', $html);
         $this->assertStringNotContainsString('<h3>Credentials</h3>', $html, 'the generic wording is gone');
     }
 

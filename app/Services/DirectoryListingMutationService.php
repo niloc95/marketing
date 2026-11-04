@@ -332,7 +332,7 @@ class DirectoryListingMutationService
             'title'          => $this->clean($input['title'] ?? ''),
             'position'       => $this->clean($input['position'] ?? '') ?: null,
             'email'          => trim((string) $input['email']),
-        ] + $this->draftColumns($input) + ServiceArea::columns($input) + ProfessionalRegistration::columns($input) + [
+        ] + $this->draftColumns($input) + ServiceArea::columns($input) + [
             'slug'           => ensure_unique_slug($this->listings, 'slug', $name, $existingId, listing_reserved_slugs()),
             'status'         => 'pending',
             'is_verified'    => 0,
@@ -372,6 +372,9 @@ class DirectoryListingMutationService
             'social_instagram' => (string) $this->normaliseSocial('social_instagram', $input['social_instagram'] ?? ''),
             'social_linkedin'  => (string) $this->normaliseSocial('social_linkedin', $input['social_linkedin'] ?? ''),
             'social_tiktok'    => (string) $this->normaliseSocial('social_tiktok', $input['social_tiktok'] ?? ''),
+            // The primary location's own name ("Sandton branch"), shown on its
+            // location card. Optional; without it the card uses the suburb.
+            'location_name'  => $this->clean($input['location_name'] ?? ''),
             'address_line'   => $this->clean($input['address_line'] ?? ''),
             'address_line_2' => $this->clean($input['address_line_2'] ?? ''),
             'suburb'         => normalise_place($this->clean($input['suburb'] ?? '')),
@@ -841,9 +844,6 @@ class DirectoryListingMutationService
         // Behind its own marker, so a POST without the section leaves a hidden
         // address hidden. The address columns themselves are untouched here.
         $data = ServiceArea::columns($input, $listing) + $data;
-        // Same marker convention; outside OWNER_EDITABLE because the number,
-        // ORCID and link each need their own normalising.
-        $data = ProfessionalRegistration::columns($input, $listing) + $data;
 
         // A booking link implies the flag — see buildListingData(). Read from
         // the merged row so a partial POST that leaves the link alone still
@@ -1013,6 +1013,7 @@ class DirectoryListingMutationService
         'social_instagram' => [255, 'Instagram link'],
         'social_linkedin'  => [255, 'LinkedIn link'],
         'social_tiktok'    => [255, 'TikTok link'],
+        'location_name'  => [200, 'branch or practice name'],
         'address_line'   => [255, 'street address'],
         'address_line_2' => [255, 'address line 2'],
         'suburb'         => [120, 'suburb'],
@@ -1158,8 +1159,8 @@ class DirectoryListingMutationService
         // list gets a smaller allowance than one that does not — for characters
         // the owner never typed and cannot see.
         //
-        // Only when the text changed. The cap came down from 5000 (now 3000), and
-        // a profile written under the old one must not block its owner from
+        // Only when the text changed. The cap has moved (5000, 1000, 3000, 5000), and
+        // a profile written under a larger one must not block its owner from
         // fixing a phone number — they are asked to shorten it the first time
         // they actually edit it. See RichText::exceedsCap().
         $description = RichText::toPlainText($this->ownerDescription($input['description'] ?? ''));
@@ -1370,12 +1371,8 @@ class DirectoryListingMutationService
 
         $errors += (new ServiceMenuService())->validate($input);
         $errors += (new ListingFacetService())->validate($input, $this->submittedCategoryId($input));
-        // The submitted category decides the regulator, for the reason
-        // submittedCategoryId() gives; the stored one covers a partial POST.
-        $errors += ProfessionalRegistration::problems(
-            $input,
-            ProfessionalRegistration::regulatorForCategoryId($this->submittedCategoryId($input) ?? (int) ($stored['category_id'] ?? 0))
-        );
+        // Professional registration is per person now (owner, 4 Nov 2026):
+        // TeamMemberService::syncFromForm() judges it, row by row.
 
         // The three "stand out" sections most owners skipped, now compulsory.
         // Signup always; an owner edit whenever it carries the section (the
@@ -1738,10 +1735,12 @@ class DirectoryListingMutationService
      *                                     not read a posted value
      * @param array<string,mixed> $input
      * @param array<string,mixed>|null $video ListingVideoService::prepare()'s result
+     * @param bool                     $admin admin intake: may set each person's
+     *                                        "checked against the register" mark
      *
      * @return array{errors:array<string,string>,orphans:array<int,string>}
      */
-    public function syncChildRows(int $id, array $listing, array $input, ?array $video = null): array
+    public function syncChildRows(int $id, array $listing, array $input, ?array $video = null, bool $admin = false): array
     {
         $team      = new TeamMemberService();
         $locations = new PracticeLocationService();
@@ -1750,7 +1749,11 @@ class DirectoryListingMutationService
         $orphans = [];
 
         if (array_key_exists('team', $input) && $team->canManage($listing)) {
-            $result  = $team->syncFromForm($id, $input['team']);
+            // The regulator of the category this save leaves the listing in.
+            $regulator = ProfessionalRegistration::regulatorForCategoryId(
+                $this->submittedCategoryId($input) ?? (int) ($listing['category_id'] ?? 0)
+            );
+            $result  = $team->syncFromForm($id, $input['team'], $regulator, $admin);
             $errors  = array_merge($errors, $result['errors']);
             $orphans = array_merge($orphans, $result['orphans']);
         }

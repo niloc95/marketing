@@ -24,6 +24,7 @@
  * @var array    $vTeam       team rows (old input wins), rendered by _team_fields.php
  * @var array    $vLocations  branch rows (old input wins), rendered by _location_fields.php
  * @var bool     $showExtras  render the team and location sections at all
+ * @var bool     $adminEdit   admin edit only: each person's "checked against the register" tick
  * @var bool     $extrasHidden admin form only: drawn but hidden until the Free/Verified
  *                            switch says Verified ([data-admin-plan-extras], directory.js)
  * @var array    $vServices   service rows (old input wins), rendered by _service_fields.php
@@ -224,7 +225,13 @@ helper('directory_hours');
       // thought rather than two. ?>
 <?php if ($showExtras): ?>
     <?= $extrasWrap ?>
-    <?= view('directory/_team_fields', ['rows' => $vTeam, 'err' => $err]) ?>
+    <?= view('directory/_team_fields', [
+        'rows'       => $vTeam,
+        'err'        => $err,
+        'v'          => $v,
+        'categories' => $categories,
+        'adminEdit'  => ! empty($adminEdit),
+    ], ['saveData' => false]) ?>
     </div>
 <?php endif; ?>
 </section>
@@ -367,7 +374,7 @@ helper('directory_hours');
         </div>
     </div>
     <div class="hint">
-        Keep it short, up to <?= number_format(\App\Libraries\RichText::MAX_PLAIN_LENGTH) ?> characters.
+        Up to <?= number_format(\App\Libraries\RichText::MAX_PLAIN_LENGTH) ?> characters.
         Cover <strong>what you do</strong>, <strong>who it&rsquo;s for</strong> and <strong>why choose you</strong>.
         List individual services and prices under <em>Services &amp; prices</em> below instead.
     </div>
@@ -378,9 +385,21 @@ helper('directory_hours');
 
 <?= $stepOpen(4) ?>
 <div class="form-section-head form-section-head-first">
-    <h3><?= $stepNum(4) ?>Where you are</h3>
-    <p class="hint">Your address puts you on the map and in local discovery. You choose below whether it shows on your profile.</p>
+    <h3><?= $stepNum(4) ?>Where you are and hours</h3>
+    <p class="hint">Your address puts you on the map and in local discovery, and your hours tell customers when to come. You choose below whether the address shows on your profile.</p>
 </div>
+<?php // The primary location's own name, the counterpart of a branch row's
+      // "Branch name". profile_location_label() shows it on the location card
+      // and in the profile head's list of locations; blank keeps the suburb. ?>
+<h4 class="form-subhead">Primary location</h4>
+<div class="field" id="field-location-name">
+    <label for="f-location-name">Branch or practice name <span class="text-slate-400">(optional)</span></label>
+    <input type="text" id="f-location-name" name="location_name" maxlength="200"
+           value="<?= esc($v('location_name'), 'attr') ?>" placeholder="e.g. City centre branch">
+    <div class="hint">Names this address on your profile. Leave it blank and we use your suburb.</div>
+    <?php if ($err('location_name')): ?><div class="err"><?= esc($err('location_name')) ?></div><?php endif; ?>
+</div>
+
 <?php // id: the profile-strength panel links here for the address, city and
       // province steps. The ids for those three inputs cannot live in
       // _address_inputs.php itself — branch rows render the same partial, so
@@ -540,6 +559,50 @@ $showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
     </div>
 </fieldset>
 
+<?php // Shared with every branch row — see _hours_inputs.php. The primary
+      // location's hours, so in section 4 with its address. Open once any day
+      // has something in it, whenever it is required (section 4 is outside
+      // data-standout, so nothing else would open it on signup), or when it
+      // carries an error. ?>
+<?php
+$vByAppointment = $v('by_appointment') === '1';
+$hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) !== [];
+?>
+<details class="disclosure" id="field-hours" <?= $hoursStarted || $err('hours') !== '' || $sectionsRequired ? 'open' : '' ?>>
+    <summary class="disclosure-summary">
+        <span>Opening hours<?php if ($sectionsRequired): ?> <span class="required-chip">Required</span><?php endif; ?></span>
+        <span class="hint"><?= $vByAppointment ? 'By appointment only' : 'So customers know when to call' ?></span>
+    </summary>
+    <div class="disclosure-body">
+    <?php if ($err('hours')): ?><div class="err"><?= esc($err('hours')) ?></div><?php endif; ?>
+    <?php // The honest answer for a mobile trade or a practice that only sees
+          // booked clients. It satisfies the compulsory-hours rule on its own;
+          // any times filled in as well are still shown. ?>
+    <div class="field">
+        <label><input type="checkbox" name="by_appointment" value="1" <?= $vByAppointment ? 'checked' : '' ?>> By appointment only: I don&rsquo;t keep regular opening hours</label>
+    </div>
+<?= view('directory/_hours_inputs', [
+    'n'     => static fn (string $f): string => $f,
+    'hours' => $vHours,
+    'copy'  => true,
+]) ?>
+    </div>
+</details>
+
+<?php // Other locations close section 4, after everything about the primary
+      // one (name, address, pin, how customers meet you, hours): asking for a second
+      // location before the first has been given reads backwards. Each branch
+      // repeats the same address and hours fields, so it follows them. ?>
+<?php if ($showExtras): ?>
+    <?= $extrasWrap ?>
+    <?= view('directory/_location_fields', [
+        'rows'      => $vLocations,
+        'provinces' => $provinces,
+        'err'       => $err,
+    ]) ?>
+    </div>
+<?php endif; ?>
+
 </section>
 
 <?php // data-standout: directory.js opens every section in here once the
@@ -550,7 +613,7 @@ $showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
 <div class="form-section-head form-section-head-first" id="standout-head">
     <h3><?= $stepNum(5) ?>Make your profile stand out</h3>
     <?php if ($sectionsRequired): ?>
-        <p class="hint"><strong>Opening hours, a logo or photo, and at least one service are required.</strong> The rest is optional and you can come back to it later. Each section you fill in adds a panel to your public profile.</p>
+        <p class="hint"><strong>A logo or photo and at least one service are required.</strong> The rest is optional and you can come back to it later. Each section you fill in adds a panel to your public profile.</p>
     <?php else: ?>
         <p class="hint">All optional, and you can come back to any of it later. Each section you fill in adds a panel to your public profile.</p>
     <?php endif; ?>
@@ -580,34 +643,6 @@ $showAddress = $v(\App\Libraries\ServiceArea::MARKER) !== ''
 ]) ?>
 </div>
 
-<?php // Shared with every branch row — see _hours_inputs.php. Open once any
-      // day has something in it, when it is required and still empty, or when
-      // it carries an error. ?>
-<?php
-$vByAppointment = $v('by_appointment') === '1';
-$hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool => is_array($d) && (! empty($d['open']) || ! empty($d['close']) || ! empty($d['closed']))) !== [];
-?>
-<details class="disclosure" id="field-hours" <?= $hoursStarted || $err('hours') !== '' || ($sectionsRequired && $lockEmail) ? 'open' : '' ?>>
-    <summary class="disclosure-summary">
-        <span>Opening hours<?php if ($sectionsRequired): ?> <span class="required-chip">Required</span><?php endif; ?></span>
-        <span class="hint"><?= $vByAppointment ? 'By appointment only' : 'So customers know when to call' ?></span>
-    </summary>
-    <div class="disclosure-body">
-    <?php if ($err('hours')): ?><div class="err"><?= esc($err('hours')) ?></div><?php endif; ?>
-    <?php // The honest answer for a mobile trade or a practice that only sees
-          // booked clients. It satisfies the compulsory-hours rule on its own;
-          // any times filled in as well are still shown. ?>
-    <div class="field">
-        <label><input type="checkbox" name="by_appointment" value="1" <?= $vByAppointment ? 'checked' : '' ?>> By appointment only: I don&rsquo;t keep regular opening hours</label>
-    </div>
-<?= view('directory/_hours_inputs', [
-    'n'     => static fn (string $f): string => $f,
-    'hours' => $vHours,
-    'copy'  => true,
-]) ?>
-    </div>
-</details>
-
 <?php
 $socialNetworks = listing_social_networks();
 $socialFilled   = count(array_filter(array_keys($socialNetworks), static fn (string $f): bool => $v($f) !== ''));
@@ -632,20 +667,6 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
         </div>
     </div>
 </details>
-
-<?php // Below every field belonging to the business's own address — its
-      // address, its pin and its hours — because a branch repeats all three.
-      // Asking for a second location before the first one has been given reads
-      // backwards, and it used to sit above the address block. ?>
-<?php if ($showExtras): ?>
-    <?= $extrasWrap ?>
-    <?= view('directory/_location_fields', [
-        'rows'      => $vLocations,
-        'provinces' => $provinces,
-        'err'       => $err,
-    ]) ?>
-    </div>
-<?php endif; ?>
 
 <?php // Open by default: photos do more for a profile than anything else on
       // this form, so this is the one optional section that is not folded away. ?>
@@ -759,7 +780,6 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
     </div>
 </details>
 
-<?= view('directory/_registration_fields', ['v' => $v, 'err' => $err, 'categories' => $categories], ['saveData' => false]) ?>
 </section>
 
 <?php if ($showConsent): ?>
