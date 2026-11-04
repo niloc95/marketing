@@ -58,6 +58,12 @@ $whatsappUrl = $showWeb ? whatsapp_chat_url($row['whatsapp'] ?? '', (string) ($r
 // written before either check existed must still never reach an href unvetted.
 $websiteUrl = $showWeb ? listing_website_url($row['website'] ?? '') : '';
 $bookingUrl = $showWeb ? safe_external_url($row['booking_url'] ?? '') : '';
+// Online bookings on the platform (Directory::show sets `_book_url` when the
+// profile takes them) win over an outside booking link.
+$ownBooking = $showWeb && ($row['_book_url'] ?? '') !== '';
+if ($ownBooking) {
+    $bookingUrl = (string) $row['_book_url'];
+}
 
 // "https://www.example.co.za/" reads as "example.co.za" — what a person would
 // say out loud, and what fits beside the icon on a phone.
@@ -88,7 +94,7 @@ if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones =
 
     <?php if ($bookingUrl !== ''): ?>
         <?php // id="book" keeps any old "#book" link landing on the right spot. ?>
-        <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl) ?>" data-stat="booking" target="_blank" rel="noopener nofollow"><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
+        <a id="book" class="btn btn-accent btn-block contact-book" href="<?= esc($bookingUrl) ?>" data-stat="booking"<?= $ownBooking ? '' : ' target="_blank" rel="noopener nofollow"' ?>><?= lucide('calendar-days', 'h-5 w-5 shrink-0') ?>Book online</a>
     <?php endif; ?>
 
     <?php if ($whatsappUrl !== ''): ?>

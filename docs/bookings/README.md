@@ -3,13 +3,13 @@
 Phase 0 specification for rebuilding WebScheduler Bookings inside Local, so any business
 profile can take bookings from one codebase, one database and one release.
 
-- **Status:** Phase 0 (specification) done; Phase 1 (foundation) built on
-  `bookings-p1-foundation` and Phase 2 (catalogue) on `bookings-p2-catalogue`, Phase 3
-  (scheduling engine) on `bookings-p3-scheduling`, 4 Nov 2026, none merged.
+- **Status:** Phases 0 to 4 merged to `main` on 4 Nov 2026 (`f3bb15b`), dark behind
+  `bookings.enabled`, not released. Phase 5 (public booking) built on
+  `bookings-p5-public` (off `main`), not merged.
 - **Reference app (frozen):** `/Volumes/Nilo_512GB/projects/xscheduler_ci4` (Bookings
   v2.7.0). Its installs keep running untouched. Nothing in this project changes it.
-- **Plan:** phases 0 to 10 below. Each phase gets its own branch off `bookings`, its own
-  tests and a dev check. It is merged and released only when the owner says so.
+- **Plan:** phases 0 to 10 below. Each phase gets its own branch (off `main` since the
+  merge), its own tests and a dev check. It is merged and released only when the owner says so.
 
 ## Documents
 

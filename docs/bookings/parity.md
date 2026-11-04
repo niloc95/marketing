@@ -114,15 +114,15 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Flow: service, provider or any, mode and location, date and slot, details, deposit, confirmation | `PublicBookingService`, `public-booking.js` | Port | 5 | on the profile at `/directory/{slug}/book`, no session until the details step |
-| Which customer fields show and are required | `booking.*_display/_required` | Port | 5 | |
-| Manage, reschedule, cancel by token, with policy windows | `PublicBookingPolicy` | Port | 5 | |
-| Look up bookings by email or phone | `/booking/search` | Rebuild | 5 | emails a link instead of listing bookings on screen (anyone can type an email) |
-| Short links `WS-YYYY-NNNN` | `BookingLinkService` | Rebuild | 5 | `WSB-BOOK-` reference from `PaymentReference` |
-| Legal page per business | `/booking/legal`, `legal.*` settings | Port | 5 | per business terms, cancellation and rescheduling text |
+| Flow: service, provider or any, mode and location, date and slot, details, deposit, confirmation | `PublicBookingService`, `public-booking.js` | Port | 5 | built: on the profile at `/directory/{slug}/book`, plain GET steps (no script needed, no session until the form is sent); deposit in Phase 8; the delivery mode choice comes with video in Phase 9 |
+| Which customer fields show and are required | `booking.*_display/_required` | Port | 5 | built; first name always; email or phone must stay required |
+| Manage, reschedule, cancel by token, with policy windows | `PublicBookingPolicy` | Port | 5 | built: the link alone is the key (hashed, rotated on every change, ends 30 days after); windows in hours per business, 0 = not online |
+| Look up bookings by email or phone | `/booking/search` | Rebuild | 5 | built: `/book/find` emails customer page links, same answer either way; phone only customers contact the business |
+| Short links `WS-YYYY-NNNN` | `BookingLinkService` | Rebuild | 5 | built: `/book/r/{reference}` opens the find form only (references are sequential) |
+| Legal page per business | `/booking/legal`, `legal.*` settings | Port | 5 | built: `/directory/{slug}/book/terms`; any terms make the form ask to accept them |
 | Provider and service SEO pages, discover by service and city, sitemap | `/booking/p`, `/booking/s`, `/booking/discover` | Skip | | Local's profiles, categories and discovery already do this; profile JSON-LD gets `ReserveAction` |
-| Honeypot, rate limits, CSRF | yes | Port | 5 | Local's `BotTrap`, honeypot, throttles and `Config\Forms` registry |
-| "Book online" in discovery results | none | New | 5 | never changes ranking |
+| Honeypot, rate limits, CSRF | yes | Port | 5 | built: `honeypot_field()`, throttles `book-ip-` 10/h, `book-to-` 5/day, `bookfind-*`, JSON 60/min |
+| "Book online" in discovery results | none | New | 5 | built: card badge `listing_books_online_badge()`, profile button and JSON-LD `ReserveAction`; never changes ranking |
 
 ## 9. Notifications
 

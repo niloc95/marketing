@@ -15,11 +15,17 @@ $roles = config('BookingPermissions')->roleLabels;
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">You are signed in as <?= esc($roles[$member['role']] ?? (string) $member['role']) ?>.</p>
 
 <?php $problems = App\Services\Bookings\SetupCheck::problems((int) $listing['id']); ?>
+<?php $bookUrl = App\Services\Bookings\PublicBookingService::bookUrl($listing); ?>
 <div class="mt-6 grid gap-4 sm:grid-cols-2">
     <div class="panel">
         <?php if ($problems === []): ?>
             <h2 class="font-bold">Ready for bookings</h2>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Your services, team and hours are set. The calendar and the Book online button on your profile come next. Nothing is shown to customers yet.</p>
+            <?php if ($bookUrl !== ''): ?>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Customers book on your profile's Book online button, or straight at your booking page:</p>
+                <p class="mt-2 break-all text-sm"><a class="underline" href="<?= esc($bookUrl, 'attr') ?>"><?= esc($bookUrl) ?></a></p>
+            <?php else: ?>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Your services, team and hours are set. Mark someone as bookable online on the Team page so customers can book.</p>
+            <?php endif ?>
         <?php else: ?>
             <h2 class="font-bold">To finish setting up</h2>
             <ul class="mt-2 space-y-1 text-sm">
@@ -27,7 +33,7 @@ $roles = config('BookingPermissions')->roleLabels;
                     <li><a class="underline" href="<?= base_url($p['link']) ?>"><?= esc($p['text']) ?></a></li>
                 <?php endforeach ?>
             </ul>
-            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Nothing is shown to customers yet.</p>
+            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400"><?= $bookUrl !== '' ? 'Customers can already book what is set up.' : 'Nothing is shown to customers yet.' ?></p>
         <?php endif ?>
     </div>
     <div class="panel">

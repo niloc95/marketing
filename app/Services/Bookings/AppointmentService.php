@@ -279,6 +279,84 @@ class AppointmentService
         return ['ok' => true, 'error' => null];
     }
 
+    // The customer's side (Phase 5, PublicBookingService calls these)
+
+    /** How long a customer's change or cancel link works after the appointment ends. */
+    public const TOKEN_DAYS_AFTER = 30;
+
+    /**
+     * A fresh change or cancel link for the customer. Only its hash is
+     * stored, so the raw token exists only in the link given out now; any
+     * earlier link stops working (Bookings rotated it the same way).
+     */
+    public function issuePublicToken(int $id): ?string
+    {
+        $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        if (! is_array($row)) {
+            return null;
+        }
+        $token = \App\Libraries\TokenHash::mint();
+        BookingAppointmentModel::forBusiness($this->listingId)->update($id, [
+            'public_token_hash'    => \App\Libraries\TokenHash::hash($token),
+            'public_token_expires' => (new DateTimeImmutable((string) $row['end_at'], new DateTimeZone('UTC')))
+                ->modify('+' . self::TOKEN_DAYS_AFTER . ' days')->format('Y-m-d H:i:s'),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * The customer moves their booking to another time offered online
+     * (`public = true`: the grid, notice and horizon apply), with the same
+     * person. Policy windows are PublicBookingService's to check first.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function moveForCustomer(int $id, string $startUtc): array
+    {
+        $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        if (! is_array($row) || ! $this->isUpcoming($row)) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_upcoming']];
+        }
+        $moved = BookingLock::move($this->listing, $id, $startUtc, null, true, $this->now);
+        if ($moved['problem'] !== null) {
+            return ['ok' => false, 'error' => self::CUSTOMER_PROBLEMS[$moved['problem']] ?? self::CUSTOMER_PROBLEMS[AvailabilityService::BUSY]];
+        }
+        $this->audit->record($this->listingId, null, 'appointment.rescheduled_by_customer', 'appointment', $id,
+            array_map(static fn (array $c) => $c[0], $moved['changes']),
+            array_map(static fn (array $c) => $c[1], $moved['changes']));
+
+        return ['ok' => true, 'error' => null];
+    }
+
+    /** The customer cancels. Policy windows are PublicBookingService's to check first. */
+    public function cancelForCustomer(int $id): bool
+    {
+        $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        if (! is_array($row) || ! in_array($row['status'], AppointmentStatus::UPCOMING, true)) {
+            return false;
+        }
+        BookingAppointmentModel::forBusiness($this->listingId)->update($id, [
+            'status'       => BookingAppointmentModel::STATUS_CANCELLED,
+            'cancelled_at' => gmdate('Y-m-d H:i:s', $this->now->getTimestamp()),
+        ]);
+        $this->audit->record($this->listingId, null, 'appointment.cancelled_by_customer', 'appointment', $id, $row['status'], BookingAppointmentModel::STATUS_CANCELLED);
+
+        return true;
+    }
+
+    /** What a reason code means, for the customer (copy.md). */
+    public const CUSTOMER_PROBLEMS = [
+        AvailabilityService::PAST            => 'That time has passed. Choose another.',
+        AvailabilityService::TOO_SOON        => 'That time is too soon to book online. Choose a later one.',
+        AvailabilityService::TOO_FAR         => 'That date is too far ahead to book online.',
+        AvailabilityService::CLOSED          => 'The business is closed that day.',
+        AvailabilityService::OUTSIDE_HOURS   => 'That time is no longer offered. Choose another.',
+        AvailabilityService::BUSY            => 'Someone has just booked that time. Choose another.',
+        AvailabilityService::NOT_OFFERED     => 'That service cannot be booked online right now.',
+        AvailabilityService::NOT_ON_THE_GRID => 'Choose one of the times offered.',
+    ];
+
     /**
      * Find appointments by reference, customer name, email or phone
      * ("Find", Bookings' GlobalSearchService), newest first, in scope.

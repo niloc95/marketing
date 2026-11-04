@@ -41,6 +41,12 @@ final class BookingAppointmentsTest extends CIUnitTestCase
 
     private const MONDAY = '2030-01-07';
 
+    /** The Booking form tab's customer field checkboxes, as the page posts them by default. */
+    private const FORM_FIELDS = [
+        'surname' => ['display' => '1', 'required' => '1'], 'email' => ['display' => '1', 'required' => '1'],
+        'phone' => ['display' => '1', 'required' => '1'],
+    ];
+
     private DirectoryListingModel $listings;
 
     private int $categoryId;
@@ -240,7 +246,7 @@ final class BookingAppointmentsTest extends CIUnitTestCase
     public function testQuestionsSettingsTab(): void
     {
         $this->signedIn()->get('business/settings/questions')->assertOK();
-        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'q' => [
+        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [
             1 => ['title' => 'Allergies', 'type' => 'text', 'enabled' => '1', 'required' => '1'],
             2 => ['title' => 'Colour', 'type' => 'select', 'options' => "Red\n\nRed\nBlue", 'enabled' => '1'],
         ]])->assertRedirectTo(base_url('business/settings/questions'));
@@ -249,7 +255,11 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertSame(['Allergies', 'Colour'], array_column($fields, 'title'));
         $this->assertSame(['Red', 'Blue'], $fields[1]['options']);
 
-        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'q' => [1 => ['title' => 'Pick', 'type' => 'select', 'enabled' => '1']]]);
+        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [1 => ['title' => 'Pick', 'type' => 'select', 'enabled' => '1']]]);
+
+        // Asking for neither email nor phone is refused (we must reach every customer).
+        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => ['surname' => ['display' => '1']], 'q' => []]);
+        $this->assertSame('1', BookingSettings::for($this->listingId)->get('booking.email_required'));
         $this->assertSame('Colour', array_column((new CustomerService($this->listingId))->customFields(), 'title')[1] ?? null, 'A list without choices is refused and nothing is saved');
     }
 

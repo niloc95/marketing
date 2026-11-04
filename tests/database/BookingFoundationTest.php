@@ -355,6 +355,7 @@ final class BookingFoundationTest extends CIUnitTestCase
     {
         $files = array_merge(
             glob(APPPATH . 'Views/business/*.php') ?: [],
+            glob(APPPATH . 'Views/book/*.php') ?: [],
             [APPPATH . 'Views/layouts/business.php', APPPATH . 'Views/directory/manage_bookings.php', APPPATH . 'Views/directory/_bookings_panel.php'],
             glob(APPPATH . 'Views/emails/booking-*.php') ?: [],
         );

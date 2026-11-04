@@ -16,7 +16,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Settings extends BaseController
 {
-    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Questions', 'localization' => 'Local time'];
+    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'localization' => 'Local time'];
 
     public function index()
     {
@@ -73,6 +73,9 @@ class Settings extends BaseController
             'booking.lead_minutes'  => (string) ((int) $this->request->getPost('lead_hours') * 60),
             'business.buffer_time'  => (string) $this->request->getPost('buffer_time'),
             'business.future_limit' => (string) $this->request->getPost('future_limit'),
+            'business.reschedule'   => (string) $this->request->getPost('reschedule_hours'),
+            'business.cancel'       => (string) $this->request->getPost('cancel_hours'),
+            'booking.default_appointment_status' => (string) $this->request->getPost('default_status'),
         ], $context->accountId());
 
         if ($result['errors'] !== []) {
@@ -101,6 +104,18 @@ class Settings extends BaseController
     {
         $context = service('businessContext');
         $values  = [];
+        // The customer fields (first name is always asked).
+        foreach (array_keys(\Config\Bookings::CUSTOMER_FIELDS) as $stem) {
+            if ($stem === 'first_names') {
+                continue;
+            }
+            $row = (array) ($this->request->getPost('field')[$stem] ?? []);
+            $values['booking.' . $stem . '_display']  = ! empty($row['display']) ? '1' : '0';
+            $values['booking.' . $stem . '_required'] = ! empty($row['display']) && ! empty($row['required']) ? '1' : '0';
+        }
+        foreach (['terms' => 'legal.terms', 'cancellation' => 'legal.cancellation_policy', 'rescheduling' => 'legal.rescheduling_policy', 'terms_url' => 'legal.terms_url', 'privacy_url' => 'legal.privacy_url'] as $field => $key) {
+            $values[$key] = trim(strip_tags((string) $this->request->getPost($field)));
+        }
         for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++) {
             $p   = 'booking.custom_field_' . $n . '_';
             $row = (array) ($this->request->getPost('q')[$n] ?? []);

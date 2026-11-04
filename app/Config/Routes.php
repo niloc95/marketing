@@ -535,6 +535,24 @@ $routes->get('directory/at/(:segment)', 'Directory::venue/$1');
 // read "menu" as a province and 404. No province is called "menu", so no
 // landing page is shadowed.
 $routes->get('directory/(:segment)/menu', 'Directory::menu/$1');
+// Booking online from a profile (Phase 5, docs/bookings/routes.md). Literal
+// segments, so Directory::place() never reads "book" as a province.
+$routes->get('directory/(:segment)/book', 'Book::page/$1');
+$routes->post('directory/(:segment)/book', 'Book::store/$1');
+$routes->get('directory/(:segment)/book/days', 'Book::days/$1');
+$routes->get('directory/(:segment)/book/slots', 'Book::slots/$1');
+$routes->get('directory/(:segment)/book/terms', 'Book::terms/$1');
+// The customer's side: literal segments before book/{token}.
+$routes->get('book/find', 'Book::find');
+$routes->post('book/find', 'Book::sendLinks');
+$routes->get('book/r/(:segment)', 'Book::reference/$1');
+$routes->get('book/customer/(:segment)', 'Book::customer/$1');
+$routes->get('book/customer/(:segment)/(:segment)', 'Book::manageFromCustomer/$1/$2');
+$routes->post('book/customer/(:segment)/(:segment)/reschedule', 'Book::rescheduleFromCustomer/$1/$2');
+$routes->post('book/customer/(:segment)/(:segment)/cancel', 'Book::cancelFromCustomer/$1/$2');
+$routes->get('book/(:segment)', 'Book::manage/$1');
+$routes->post('book/(:segment)/reschedule', 'Book::reschedule/$1');
+$routes->post('book/(:segment)/cancel', 'Book::cancel/$1');
 // "Show email" on a profile fetches the address from here, as JSON. Same
 // ordering rule as menu above; no province is called "email" either.
 $routes->get('directory/(:segment)/email', 'Directory::email/$1');

@@ -69,11 +69,46 @@ $labels = [
             <label for="biz-limit">Customers can book up to this many days ahead</label>
             <input id="biz-limit" type="number" name="future_limit" min="1" max="730" value="<?= (int) $settings['business.future_limit'] ?>">
         </div>
+        <div class="field">
+            <label for="biz-resched">Customers can change a booking online up to this many hours before</label>
+            <input id="biz-resched" type="number" name="reschedule_hours" min="0" max="336" value="<?= (int) $settings['business.reschedule'] ?>">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">0 means they cannot change it online and must contact you.</p>
+        </div>
+        <div class="field">
+            <label for="biz-cancel">Customers can cancel online up to this many hours before</label>
+            <input id="biz-cancel" type="number" name="cancel_hours" min="0" max="336" value="<?= (int) $settings['business.cancel'] ?>">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">0 means they cannot cancel online.</p>
+        </div>
+        <div class="field">
+            <label for="biz-status">A booking made online is</label>
+            <select id="biz-status" name="default_status">
+                <option value="pending"<?= $settings['booking.default_appointment_status'] === 'pending' ? ' selected' : '' ?>>Waiting for your confirmation</option>
+                <option value="confirmed"<?= $settings['booking.default_appointment_status'] === 'confirmed' ? ' selected' : '' ?>>Confirmed at once</option>
+            </select>
+        </div>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>
+        <h2 class="mb-2 font-bold">What customers fill in</h2>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">First name is always asked. Keep an email or a phone required, so you can reach everyone who books.</p>
+        <div class="table-scroll mb-6">
+            <table class="table">
+                <thead><tr><th>Field</th><th>Ask</th><th>Required</th></tr></thead>
+                <tbody>
+                    <?php foreach (['surname' => 'Surname', 'email' => 'Email', 'phone' => 'Phone', 'address' => 'Address', 'notes' => 'Anything we should know?'] as $stem => $label): ?>
+                        <tr>
+                            <td><?= $label ?></td>
+                            <td><input type="checkbox" name="field[<?= $stem ?>][display]" value="1" aria-label="Ask for <?= esc($label, 'attr') ?>"<?= $settings['booking.' . $stem . '_display'] === '1' ? ' checked' : '' ?>></td>
+                            <td><input type="checkbox" name="field[<?= $stem ?>][required]" value="1" aria-label="<?= esc($label, 'attr') ?> is required"<?= $settings['booking.' . $stem . '_required'] === '1' ? ' checked' : '' ?>></td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="mb-2 font-bold">Your questions</h2>
         <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">Up to six questions of your own, asked when you or a customer books. Answers stay with the appointment and with the customer for next time.</p>
         <?php for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++): ?>
             <?php $p = 'booking.custom_field_' . $n . '_'; ?>
@@ -104,6 +139,25 @@ $labels = [
                 </div>
             </fieldset>
         <?php endfor ?>
+
+        <h2 class="mb-2 mt-6 font-bold">Your booking terms</h2>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Shown on your booking terms page. When you add any, customers tick a box to accept them before booking.</p>
+        <?php foreach (['terms' => ['legal.terms', 'Terms'], 'cancellation' => ['legal.cancellation_policy', 'Cancelling'], 'rescheduling' => ['legal.rescheduling_policy', 'Changing a booking']] as $field => [$key, $label]): ?>
+            <div class="field">
+                <label for="legal-<?= $field ?>"><?= $label ?></label>
+                <textarea id="legal-<?= $field ?>" name="<?= $field ?>" rows="3" maxlength="<?= \Config\Bookings::LEGAL_TEXT_MAX ?>"><?= esc($settings[$key]) ?></textarea>
+            </div>
+        <?php endforeach ?>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="field">
+                <label for="legal-terms-url">Link to your full terms <span class="font-normal text-slate-500">(optional)</span></label>
+                <input id="legal-terms-url" type="url" name="terms_url" maxlength="500" value="<?= esc($settings['legal.terms_url'], 'attr') ?>" placeholder="https://">
+            </div>
+            <div class="field">
+                <label for="legal-privacy-url">Link to your privacy policy <span class="font-normal text-slate-500">(optional)</span></label>
+                <input id="legal-privacy-url" type="url" name="privacy_url" maxlength="500" value="<?= esc($settings['legal.privacy_url'], 'attr') ?>" placeholder="https://">
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
 <?php else: ?>

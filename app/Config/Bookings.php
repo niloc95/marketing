@@ -65,6 +65,23 @@ class Bookings extends BaseConfig
         'booking.lead_minutes'     => '0',   // minimum notice
         'business.buffer_time'     => '0',   // kept free after every appointment
         'business.future_limit'    => '60',  // days ahead customers may book online
+        // The public booking form (Phase 5): which customer fields show and
+        // which must be filled. Email or phone must stay required (we need a
+        // way to reach the customer); BookingSettings::save() refuses otherwise.
+        'booking.first_names_display' => '1', 'booking.first_names_required' => '1',
+        'booking.surname_display'     => '1', 'booking.surname_required'     => '1',
+        'booking.email_display'       => '1', 'booking.email_required'       => '1',
+        'booking.phone_display'       => '1', 'booking.phone_required'       => '1',
+        'booking.address_display'     => '0', 'booking.address_required'     => '0',
+        'booking.notes_display'       => '0', 'booking.notes_required'       => '0',
+        'booking.default_appointment_status' => 'pending', // what an online booking starts as
+        'business.reschedule'         => '24',  // hours before; 0 = not online
+        'business.cancel'             => '24',  // hours before; 0 = not online
+        'legal.terms'                 => '',
+        'legal.cancellation_policy'   => '',
+        'legal.rescheduling_policy'   => '',
+        'legal.terms_url'             => '',
+        'legal.privacy_url'           => '',
         // The business's own questions (Phase 4), see customFieldKeys().
         'booking.custom_field_1_enabled' => '0', 'booking.custom_field_1_title' => '', 'booking.custom_field_1_type' => 'text', 'booking.custom_field_1_required' => '0', 'booking.custom_field_1_sensitive' => '0', 'booking.custom_field_1_options' => '',
         'booking.custom_field_2_enabled' => '0', 'booking.custom_field_2_title' => '', 'booking.custom_field_2_type' => 'text', 'booking.custom_field_2_required' => '0', 'booking.custom_field_2_sensitive' => '0', 'booking.custom_field_2_options' => '',
@@ -105,17 +122,42 @@ class Bookings extends BaseConfig
         'booking.lead_minutes'  => [0, 20160],
         'business.buffer_time'  => [0, 240],
         'business.future_limit' => [1, 730],
+        'business.reschedule'   => [0, 336],
+        'business.cancel'       => [0, 336],
     ];
+
+    /**
+     * The fields of the public booking form, setting stem => form field. First
+     * name is always asked. `notes` are the appointment's ("Anything we should
+     * know"), not the customer record's.
+     */
+    public const CUSTOMER_FIELDS = [
+        'first_names' => 'first_name', 'surname' => 'last_name', 'email' => 'email',
+        'phone' => 'phone', 'address' => 'address', 'notes' => 'notes',
+    ];
+
+    /** Longest business terms or policy text. */
+    public const LEGAL_TEXT_MAX = 5000;
 
     /** @var array<string,list<string>> */
     public array $settingChoices = [
         'localization.time_format' => ['24h', '12h'],
         'localization.first_day'   => ['monday', 'sunday'],
+        'booking.default_appointment_status' => ['pending', 'confirmed'],
     ];
 
     public function __construct()
     {
         parent::__construct();
+        foreach (array_keys(self::CUSTOMER_FIELDS) as $stem) {
+            $this->settingChoices['booking.' . $stem . '_display']  = ['0', '1'];
+            $this->settingChoices['booking.' . $stem . '_required'] = ['0', '1'];
+        }
+        foreach (['legal.terms', 'legal.cancellation_policy', 'legal.rescheduling_policy'] as $key) {
+            $this->settingMaxLength[$key] = self::LEGAL_TEXT_MAX;
+        }
+        $this->settingMaxLength['legal.terms_url']   = 500;
+        $this->settingMaxLength['legal.privacy_url'] = 500;
         // Questions: a line, a paragraph, one of a list, or a tick box.
         for ($n = 1; $n <= self::CUSTOM_FIELDS; $n++) {
             foreach (['enabled', 'required', 'sensitive'] as $flag) {

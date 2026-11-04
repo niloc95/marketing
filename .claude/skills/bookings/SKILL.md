@@ -21,7 +21,8 @@ Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.
 | 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, not merged): services, categories, providers, hours, reception, time off, invitations, setup check |
 | 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, not merged): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
 | 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, not merged): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
-| 5 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, not merged): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
+| 6 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -187,11 +188,35 @@ only if its time is still free.
 `.cal-*` components at the end of `resources/directory.css`. Positions are set with
 `element.style` (CSSOM), which CSP allows; never write a style attribute.
 
-## Next: Phase 5 (public booking on a profile)
+## Phase 5 in the code
 
-Not started. Scope from `parity.md` §8 and `routes.md`. From Phase 4, notifications
-(Phase 6, which must leave `sensitive` answers out of emails) and mark paid (Phase 8)
-remain.
+| Piece | Where |
+|---|---|
+| Service | `PublicBookingService` (`takesBookings()`, `bookUrl()`, `services()`, `providersFor()`, `days()`, `times()`, `book()`, `byToken()`, `byCustomer()`, `customerAppointments()`, `refusal()`, `reschedule()`, `cancel()`, `emailLinks()`). Writes go through `AppointmentService::issuePublicToken()`, `moveForCustomer()`, `cancelForCustomer()` |
+| Controller | `App\Controllers\Book` (public, sessionless GET steps). Routes `directory/{slug}/book` (+ `/days`, `/slots` JSON, `/terms`), `book/find`, `book/r/{ref}`, `book/customer/{hash}[/{appointment hash}]`, `book/{token}` (+ `/reschedule`, `/cancel`) |
+| Views | `app/Views/book/*` (page, manage, customer, terms, find, expired, `_when`), email `emails/booking-links.php` |
+| Profile | `Directory::show` sets `_book_url`; `_contact_panel.php` Book online button (own page wins over `booking_url`); `schema_helper` ReserveAction; `_card.php` `listing_books_online_badge()` |
+| Settings | Booking rules tab: change and cancel hours, online status; Booking form tab (was Questions): customer fields, questions, the business's terms |
+| Tests | `tests/database/BookingPublicTest.php` |
+
+**Rules:** `takesBookings()` = flag, site allowed (co.za only, D2), the profile's own site,
+`bookings_enabled`, published, and a bookable person offering a service. The change or
+cancel link is a 64 hex token stored hashed, rotated on every change, ending 30 days after
+the appointment; the customer page key is the customer's 64 char hash. A reference never
+opens a booking. Pages with a key send `Referrer-Policy: no-referrer` and `no-store`.
+Customers keep their name: `findOrCreate()` fills only empty fields.
+
+**Testing gotcha:** the page tests run on the real clock; give the test business
+`booking.lead_minutes` 2880 so the first free time is outside the 24 hour windows.
+
+**Owner decision still open:** D3 (does the profile's own services list give way to the
+booking services?). Phase 5 adds the Book online button and leaves the list as it is.
+
+## Next: Phase 6 (notifications)
+
+Not started. Scope from `parity.md` §9. Must email the change link after booking (today it
+is only on the confirmation page), leave `sensitive` answers out of emails, and add the
+unsubscribe route.
 
 **Custom fields (built):** Settings, Questions tab (`/business/settings/questions`). Types
 text, textarea, select (choices one per line in `booking.custom_field_N_options`) and
