@@ -46,6 +46,9 @@ class Filters extends BaseFilters
         'cfaccess'      => \App\Filters\CloudflareAccessFilter::class,
         'scrapeguard'   => \App\Filters\ScrapeGuard::class,
         'formoutcome'   => \App\Filters\FormOutcome::class,
+        // Online bookings: /business sign in and membership, then permission.
+        'businessauth'  => \App\Filters\BusinessAuth::class,
+        'businesscan'   => \App\Filters\BusinessCan::class,
     ];
 
     /**

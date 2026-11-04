@@ -161,6 +161,10 @@ $routes->post('manage/jobs/(:num)/renew', 'Jobs::ownerRenew/$1');
 $routes->post('manage/reviews/switch', 'Reviews::ownerToggle');
 $routes->post('manage/reviews/(:num)/reply', 'Reviews::ownerReply/$1');
 $routes->post('manage/reviews/(:num)/report', 'Reviews::ownerReport/$1');
+// Online bookings: the owner turns them on from the manage session
+// (docs/bookings/). 404 while bookings.enabled is off.
+$routes->get('manage/bookings', 'ManageBookings::show');
+$routes->post('manage/bookings', 'ManageBookings::turnOn');
 // Verified Business: apply, pay, and where PayFast returns the browser to.
 // Like every literal above, these must stay ahead of the catch-all below —
 // 'manage/verification' would otherwise be read as a magic-link token.
@@ -243,6 +247,40 @@ $routes->get('admin/login', 'Admin::login');
 $routes->post('admin/login', 'Admin::attemptLogin');
 // POST, not GET: a GET sign-out can be fired by any page that embeds the URL.
 $routes->post('admin/logout', 'Admin::logout');
+// Online bookings, the business area (docs/bookings/routes.md). Every route
+// passes App\Filters\BusinessAuth, which 404s the lot while bookings are off
+// or not offered on this site. `guest`: sign in pages; `account`: signed in,
+// before a business is chosen; no argument: signed in to one business, checked
+// against the database on every request.
+$routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
+    $routes->get('sign-in', 'Business\Auth::signIn');
+    $routes->post('sign-in', 'Business\Auth::attempt');
+    $routes->post('sign-in/link', 'Business\Auth::requestLink');
+    $routes->get('sign-in/(:segment)', 'Business\Auth::linkPage/$1');
+    $routes->post('sign-in/(:segment)', 'Business\Auth::redeemLink/$1');
+    $routes->post('sign-out', 'Business\Auth::signOut');
+    $routes->get('password', 'Business\Auth::forgot');
+    $routes->post('password', 'Business\Auth::sendReset');
+    $routes->get('password/(:segment)', 'Business\Auth::resetPage/$1');
+    $routes->post('password/(:segment)', 'Business\Auth::reset/$1');
+});
+$routes->group('business', ['filter' => 'businessauth:account'], static function ($routes) {
+    $routes->get('ping', 'Business\Auth::ping');
+    $routes->get('choose', 'Business\Home::choose');
+    $routes->post('choose', 'Business\Home::switch');
+    $routes->get('account', 'Business\Account::show');
+    $routes->post('account/name', 'Business\Account::saveName');
+    $routes->post('account/password', 'Business\Account::savePassword');
+});
+$routes->get('business', 'Business\Home::index', ['filter' => 'businessauth']);
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.manage']], static function ($routes) {
+    $routes->get('settings', 'Business\Settings::index');
+    $routes->post('settings/localization', 'Business\Settings::saveLocalization');
+    $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
+});
+$routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
+$routes->get('business/audit', 'Business\Audit::index', ['filter' => ['businessauth', 'businesscan:audit.view']]);
+
 $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // The dashboard is the landing page; the profiles list moved to
     // /admin/profiles (AdminDashboard sends old ?status= links there).

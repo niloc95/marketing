@@ -57,6 +57,14 @@ class Forms extends BaseConfig
         'preview'          => ['label' => 'Preview approval', 'posts' => ['preview/(:segment)/approve' => 'preview/$1', 'preview/(:segment)/changes' => 'preview/$1']],
         'newsletter'       => ['label' => 'Newsletter signup', 'posts' => ['newsletter' => 'newsletter'], 'pages' => ['newsletter']],
         'newsletter_confirm' => ['label' => 'Newsletter confirm', 'posts' => ['newsletter/confirm/(:segment)' => 'newsletter/confirm/$1']],
+        // Online bookings (docs/bookings/).
+        'manage_bookings'   => ['label' => 'Turn on online bookings', 'posts' => ['manage/bookings' => 'manage/bookings']],
+        'business_sign_in'  => ['label' => 'Business sign in', 'posts' => ['business/sign-in' => 'business/sign-in', 'business/sign-in/link' => 'business/sign-in', 'business/sign-in/(:segment)' => 'business/sign-in/$1']],
+        'business_sign_out' => ['label' => 'Business sign out', 'posts' => ['business/sign-out' => 'business/sign-in']],
+        'business_password' => ['label' => 'Business password reset', 'posts' => ['business/password' => 'business/password', 'business/password/(:segment)' => 'business/password/$1']],
+        'business_account'  => ['label' => 'Business account', 'posts' => ['business/account/name' => 'business/account', 'business/account/password' => 'business/account#password']],
+        'business_choose'   => ['label' => 'Choose a business', 'posts' => ['business/choose' => 'business/choose']],
+        'business_settings' => ['label' => 'Business settings', 'posts' => ['business/settings/localization' => 'business/settings/localization', 'business/turn-off' => 'business/settings/general']],
     ];
 
     /**

@@ -203,4 +203,17 @@ class Services extends BaseService
             ? new ListingVideoService(static fn (string $url): ?array => null)
             : new ListingVideoService();
     }
+
+    /**
+     * Who is signed in to /business, and in which business, for this request
+     * (online bookings). Filled only by App\Filters\BusinessAuth.
+     */
+    public static function businessContext(bool $getShared = true): \App\Services\Bookings\BusinessContext
+    {
+        if ($getShared) {
+            return static::getSharedInstance('businessContext');
+        }
+
+        return new \App\Services\Bookings\BusinessContext();
+    }
 }

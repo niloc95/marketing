@@ -14,7 +14,7 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 | Phase | State |
 |---|---|
 | 0 Specification | done 4 Nov 2026, branch `bookings` (docs/bookings/) |
-| 1 Foundation | unblocked 4 Nov 2026 (dashboard /business, passwords, Vite agreed) |
+| 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (not merged): accounts, members, gate, settings, audit, /business shell, Vite |
 | 2 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
@@ -87,3 +87,23 @@ Bookings rules that still hold after the port:
   online", no rand on .app.
 - Check both sites. Bookings is co.za first (decision D2), and .app must show nothing of
   it until decided.
+
+## Phase 1 in the code
+
+| Piece | Where |
+|---|---|
+| Flag, sites, lockout, session length, setting defaults | `Config\Bookings` (`bookings.enabled`, off by default and pinned off in `tests/_support/bootstrap.php`) |
+| Permission matrix, role labels | `Config\BookingPermissions`, read only by `BookingAuthorization` |
+| Tables | migration `2026-11-12-100000_CreateBookingFoundation`: `xs_accounts`, `xs_business_members`, `xs_booking_settings`, `xs_booking_audit_logs`, listings `bookings_enabled(_at)` |
+| Scoping | `App\Models\Bookings\BookingScopedModel`: `Model::forBusiness($id)`; unscoped find, count, update, delete or insert throws |
+| Services | `App\Services\Bookings\`: `AccountService` (passwords, lockout per IP and per account, hashed one use links), `BusinessMemberService`, `BookingSetupService` (turn on and off, the only writer of `bookings_enabled`), `BookingSettings::for()`, `BookingAudit`, `BookingAuthorization`, `BusinessContext` (`service('businessContext')`), `BusinessSession` (session keys) |
+| Gate | `App\Filters\BusinessAuth` (`businessauth:guest` / `:account` / none: membership checked against the DB every request, `no-store`), `BusinessCan` (`businesscan:<permission>`, 403 page) |
+| Pages | `App\Controllers\Business\{Auth,Home,Account,Settings,Audit}`, `ManageBookings` (`/manage/bookings`), views `app/Views/business/`, `layouts/business.php`, owner panel `directory/_bookings_panel.php`, emails `emails/booking-*.php` |
+| Script | `resources/business/*.js` → Vite (`vite.business.config.mjs`) → `public/assets/business/business.js`; `npm run biz:build` (also inside `list:build`), `biz:dev` to watch. `list:hot` does not watch it. |
+| Tests | `tests/database/BookingFoundationTest.php` (two businesses, flag, scope, turn on, lockout, links, gate, roles, audit, copy) |
+
+**Local dev:** `.env` has `bookings.enabled = true` on this branch's machine. Dev account
+`dev-owner@example.test` / `dev password 123` is admin of profile 2 in the dev DB.
+Emailed links land in Mailpit. Switch the flag off (and `npm run dev:restart`) when back
+on `main`.
+

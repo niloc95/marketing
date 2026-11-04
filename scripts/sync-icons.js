@@ -79,6 +79,8 @@ const ICONS = [
   'images',
   // "Open on public holidays" on the results page (directory/_holiday_toggle.php).
   'calendar',
+  // Online bookings: the /business navigation (layouts/business.php).
+  'layout-dashboard', 'settings', 'history',
 ];
 
 /**
