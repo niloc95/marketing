@@ -57,7 +57,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Day, week, month, agenda, today views | `Services/Calendar/*` view models, `scheduler/*` JS (~9.3k) | Port | 4 | server mode only; drop the flat fallback mode |
+| Day, week, month, agenda, today views | `Services/Calendar/*` view models, `scheduler/*` JS (~9.3k) | Port | 4 | server mode only; drop the flat fallback mode. Built: day, week, month and a week list; the separate today view and the right panel are not carried |
 | Overlap layout, DST safe time grid | `EventLayoutService`, `TimeGridService` | Port | 4 | port their tests first |
 | Drag to reschedule | `scheduler-drag-drop.js` | Port | 4 | server checks conflicts again |
 | Create and edit form, inline customer create | `Appointment/*` services, `appointments-form.js` | Port | 4 | |
@@ -106,7 +106,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Customers CRUD, search, history, stats, autofill | `CustomerManagement`, `CustomerService` | Port | 4 | email unique **per business** |
 | Customer custom fields | `xs_customers.custom_fields` | Port | 4 | |
 | Customer page by hash (upcoming, history) | `/my-appointments/{hash}` | Port | 5 | |
-| Delete with impact preview | `CustomerDeletionService` | Port | 4 | |
+| Delete with impact preview | `CustomerDeletionService` | Port | 4 | built: refused while an upcoming appointment exists; past ones stay without the person (Bookings refused while any existed) |
 | Data export for a customer (POPIA access request) | not built | New | 10 | admin action, per business |
 | Retention and purge | none | New | 10 ⚠ | rule needed for POPIA |
 

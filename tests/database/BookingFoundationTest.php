@@ -365,6 +365,14 @@ final class BookingFoundationTest extends CIUnitTestCase
             $this->assertDoesNotMatchRegularExpression('/\b[A-Za-z]+-[A-Za-z]+\b/', $text, basename($file) . ' has a hyphenated word');
             $this->assertDoesNotMatchRegularExpression('/\b(log ?in|log out|directory|listing)\b/i', $text, basename($file));
         }
+
+        // The calendar script's sentences (resources/business/calendar/messages.js).
+        $messages = (string) file_get_contents(ROOTPATH . 'resources/business/calendar/messages.js');
+        preg_match_all("/'([^']*)'|`([^`]*)`/", substr($messages, (int) strpos($messages, 'export const MSG')), $m);
+        $text = implode(' ', array_filter(array_merge($m[1], $m[2])));
+        $this->assertStringNotContainsString('—', $text);
+        $this->assertDoesNotMatchRegularExpression('/\b[A-Za-z]+-[A-Za-z]+\b/', $text, 'messages.js has a hyphenated word');
+        $this->assertDoesNotMatchRegularExpression('/\b(search|provider|slot|log ?in)\b/i', $text, 'messages.js');
     }
 
     // Fixtures

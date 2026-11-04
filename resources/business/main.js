@@ -4,6 +4,8 @@
  */
 import { initTheme } from './theme.js';
 import { initInactivityMonitor } from './inactivity.js';
+import { initCalendar } from './calendar/scheduler.js';
 
 initTheme();
 initInactivityMonitor();
+initCalendar();

@@ -286,6 +286,28 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->get('availability', 'Business\Availability::index');
     $routes->get('api/availability/slots', 'Business\Availability::slots');
 });
+// Phase 4: the calendar, appointments and customers, for every member (scoped inside).
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
+    $routes->get('calendar', 'Business\Calendar::index');
+    $routes->get('api/calendar/(day|week|month|agenda)', 'Business\Calendar::model/$1');
+    $routes->get('appointments/new', 'Business\Appointments::new');
+    $routes->post('appointments/new', 'Business\Appointments::saveNew');
+    $routes->get('api/appointments/find', 'Business\Appointments::find');
+    $routes->get('api/appointments/(:num)', 'Business\Appointments::show/$1');
+    $routes->post('api/appointments', 'Business\Appointments::create');
+    $routes->post('api/appointments/(:num)/reschedule', 'Business\Appointments::reschedule/$1');
+    $routes->post('api/appointments/(:num)/status', 'Business\Appointments::status/$1');
+    $routes->post('api/appointments/(:num)/notes', 'Business\Appointments::notes/$1');
+});
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.manage']], static function ($routes) {
+    $routes->get('customers', 'Business\Customers::index');
+    $routes->get('customers/new', 'Business\Customers::new');
+    $routes->post('customers/new', 'Business\Customers::create');
+    $routes->get('api/customers', 'Business\Customers::lookup');
+    $routes->get('customers/(:segment)', 'Business\Customers::show/$1');
+    $routes->post('customers/(:segment)', 'Business\Customers::save/$1');
+});
+$routes->post('business/customers/(:segment)/delete', 'Business\Customers::delete/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
 // Phase 2: the catalogue, the team and time off.
 $routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
     $routes->get('invite/(:segment)', 'Business\Invite::show/$1');

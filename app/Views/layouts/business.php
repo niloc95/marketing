@@ -18,6 +18,12 @@ $asset    = static fn (string $path): string => base_url($path) . '?v=' . (@file
 $nav      = [];
 if ($listing !== null) {
     $nav[] = ['business', 'Dashboard', 'layout-dashboard'];
+    if ($context->can('appointments.manage')) {
+        $nav[] = ['business/calendar', 'Calendar', 'calendar'];
+    }
+    if ($context->can('customers.manage')) {
+        $nav[] = ['business/customers', 'Customers', 'contact'];
+    }
     if ($context->can('services.manage')) {
         $nav[] = ['business/services', 'Services', 'list'];
     }

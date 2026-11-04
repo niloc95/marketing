@@ -40,7 +40,7 @@ under `/business/api/` so session and CSRF rules stay simple.
 | Bookings | Local | Phase |
 |---|---|---|
 | `GET /api/calendar/day|week|month` | `GET /business/api/calendar/{view}` | 4 |
-| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | same shape under `/business/api/appointments` | 4, 6, 8 |
+| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); payment and notify in 6 and 8 | 4, 6, 8 |
 | `GET /api/availability/*` | `GET /business/api/availability/*` | 3 |
 | `GET /api/customers/*` | `/business/api/customers/*` | 4 |
 | `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `/business/api/dashboard/*` | 7 |

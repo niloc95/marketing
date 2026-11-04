@@ -17,7 +17,8 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 | 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (not merged): accounts, members, gate, settings, audit, /business shell, Vite |
 | 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, not merged): services, categories, providers, hours, reception, time off, invitations, setup check |
 | 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, not merged): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
-| 4 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, not merged): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
+| 5 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -154,24 +155,40 @@ before `hours_decode()` and the holiday helpers (Phase 2 shipped without it and 
 worked when another test had loaded it).
 
 
-## Next: Phase 4 (appointments and customers)
+## Phase 4 in the code
 
-Branch `bookings-p4-appointments` off `bookings-p3-scheduling`. Scope from `parity.md` §4
-and §7 and `routes.md`:
+| Piece | Where |
+|---|---|
+| Tables | migration `2026-11-15-100000_CreateBookingCustomers`: `xs_booking_customers` (unique listing + email, 64 char hash), `xs_booking_appointment_fields`, appointment `customer_id` FK (SET NULL) |
+| Calendar models | `App\Services\Bookings\Calendar\`: `CalendarRange`, `TimeGrid`, `CalendarHours` (replaces ProviderWorkingHoursTrait and the fixed work window), `EventLayout`, `CalendarQuery` (replaces AppointmentQuery and Formatter), `DayView`, `WeekView`, `MonthView` |
+| Appointments | `AppointmentService` (create via `BookingLock::reserve()`, reschedule via `BookingLock::move()`, status, notes, `findMatching()`), `AppointmentStatus` (`no_show`, labels from copy.md) |
+| Customers | `CustomerService` (save, `findOrCreate()` fills only empty fields, scoped `list()` and `history()`, `stats()`, `deletionImpact()` and `delete()`, custom fields 1 to 6) |
+| Pages | `Business\Calendar` (`/business/calendar`, JSON `/business/api/calendar/{day,week,month,agenda}`), `Business\Appointments` (JSON `/business/api/appointments/*`, plain form `/business/appointments/new`), `Business\Customers` (`/business/customers*`, JSON `/business/api/customers?q=`) |
+| Script | `resources/business/calendar/` (scheduler core, time grid, month, list, drag, details, Book dialog; all copy in `messages.js`, checked by the copy test) |
+| Tests | `tests/unit/BookingCalendarLayoutTest.php`, `tests/database/BookingCalendarTest.php`, `tests/database/BookingAppointmentsTest.php` |
 
-- `xs_booking_customers` (unique listing + email, 64 char hash) and the FK on
-  `xs_booking_appointments.customer_id`; `xs_booking_appointment_fields`.
-- `AppointmentService`: create (always through `BookingLock::reserve()`), edit, reschedule
-  (`problem()` with `$excludeAppointmentId`), status changes (pending, confirmed,
-  completed, cancelled, no show; port `AppointmentStatus`), notes. Scope every list by
-  `BusinessContext::providerScope()`.
-- `CustomerService`: create, edit, find, history, delete with impact preview, custom
-  fields 1 to 6 (`booking.custom_field_*` settings).
-- Calendar: port Bookings `app/Services/Calendar/*` (Day, Week, Month, TimeGrid,
-  EventLayout) with their tests first, then `resources/js/modules/scheduler/*` into
-  `resources/business/` (Vite), server mode only, drag to reschedule, details modal.
-  Routes `/business/calendar`, `/business/api/calendar/{view}`, `/business/customers`.
-- Not yet: notifications (Phase 6, enqueue only later), payments (Phase 8).
+**Deliberate differences from Bookings:** days are the business's local dates (Bookings
+grouped on the UTC date); a day shows a column for everyone in scope, not only people with
+appointments; the grid widens to the profile's hours, people's hours and any appointment
+outside them; cancelled appointments stay off the grid unless the status filter asks;
+a customer with an upcoming appointment cannot be deleted, otherwise past appointments
+stay without the person (Bookings refused delete whenever any appointment existed); the
+list view shows the week; JSON writes are POST, not PATCH; the service of a booked
+appointment does not change (cancel and book again); a cancelled appointment comes back
+only if its time is still free.
+
+**JSON and CSRF:** the token regenerates on every POST. Each JSON answer carries
+`csrf.hash`; `resources/business/calendar/api.js` sends it as `X-CSRF-TOKEN`.
+
+**Styles:** Tailwind now scans `resources/business/**/*.js` too; calendar classes are the
+`.cal-*` components at the end of `resources/directory.css`. Positions are set with
+`element.style` (CSSOM), which CSP allows; never write a style attribute.
+
+## Next: Phase 5 (public booking on a profile)
+
+Not started. Scope from `parity.md` §8 and `routes.md`. Still open from Phase 4: the
+settings tab for custom fields (keys exist, no screen yet), select and checkbox field
+types (Later), notifications (Phase 6), mark paid (Phase 8).
 
 ## Open housekeeping (as of 4 Nov 2026)
 

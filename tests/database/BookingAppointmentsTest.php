@@ -10,7 +10,9 @@ use App\Services\Bookings\BookingSetupService;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\CustomerService;
 use App\Services\Bookings\TeamService;
+use App\Services\Bookings\BusinessSession;
 use CodeIgniter\Test\CIUnitTestCase;
+use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\FreshDatabase;
 use Tests\Support\WithEnv;
@@ -33,6 +35,7 @@ use Tests\Support\WithEnv;
  */
 final class BookingAppointmentsTest extends CIUnitTestCase
 {
+    use FeatureTestTrait;
     use FreshDatabase;
     use WithEnv;
 
@@ -52,6 +55,8 @@ final class BookingAppointmentsTest extends CIUnitTestCase
 
     private int $serviceId;
 
+    private int $accountId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,7 +66,9 @@ final class BookingAppointmentsTest extends CIUnitTestCase
             'name' => 'Hair Salon', 'slug' => 'hair-salon', 'group_name' => 'Beauty & Wellness', 'is_active' => 1,
         ], true);
         $this->listingId      = $this->business('salon-lumi');
+        $this->accountId      = $this->lastAccountId;
         $this->otherListingId = $this->business('salon-noir');
+        $this->otherAccountId = (int) $this->lastAccountId;
 
         $team        = new TeamService($this->listingId);
         $this->sarah = (int) $team->providers()[0]['id'];
@@ -283,7 +290,63 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertArrayHasKey('customer_id', $result['errors'], 'Another business\'s customer id is not found');
     }
 
+    // Pages and JSON
+
+    public function testCalendarPagesAndModels(): void
+    {
+        $a = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
+        $me = $this->signedIn();
+
+        $r = $me->get('business/calendar');
+        $r->assertOK();
+        $this->assertStringContainsString('data-calendar', $r->getBody());
+        $week = json_decode($me->get('business/api/calendar/week?date=' . self::MONDAY)->getJSON(), true);
+        $this->assertSame([$a['id']], array_column($week['data']['appointments'], 'id'));
+        $month = json_decode($me->get('business/api/calendar/month?year=2030&month=1')->getJSON(), true);
+        $this->assertSame(1, $month['data']['totalAppointments']);
+        $this->signedIn()->get('business/api/calendar/day?date=nope')->assertStatus(422);
+        $detail = json_decode($this->signedIn()->get('business/api/appointments/' . $a['id'])->getJSON(), true);
+        $this->assertSame('alice@example.test', $detail['data']['email']);
+        $r = $this->signedIn()->get('business/customers');
+        $r->assertOK();
+        $r->assertSee('Alice');
+        $hash = (new CustomerService($this->listingId))->findByEmail('alice@example.test')['hash'];
+        $r = $this->signedIn()->get('business/customers/' . $hash);
+        $r->assertOK();
+        $r->assertSee('Delete this customer');
+        $r = $this->signedIn()->get('business/appointments/new');
+        $r->assertOK();
+        $r->assertSee('Book an appointment');
+        $found = json_decode($this->signedIn()->get('business/api/customers?q=ali')->getJSON(), true);
+        $this->assertSame(['Alice'], array_column($found['data'], 'name'));
+    }
+
+    public function testAnotherBusinessGetsNotFound(): void
+    {
+        $a     = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
+        $hash  = (new CustomerService($this->listingId))->findByEmail('alice@example.test')['hash'];
+        $other = $this->signedIn($this->otherAccountId, $this->otherListingId);
+
+        $other->get('business/api/appointments/' . $a['id'])->assertStatus(404);
+        $this->signedIn($this->otherAccountId, $this->otherListingId)->get('business/customers/' . $hash)->assertStatus(404);
+        $week = json_decode($this->signedIn($this->otherAccountId, $this->otherListingId)->get('business/api/calendar/week?date=' . self::MONDAY)->getJSON(), true);
+        $this->assertSame([], $week['data']['appointments']);
+    }
+
     // Helpers
+
+    private ?int $lastAccountId = null;
+
+    private int $otherAccountId = 0;
+
+    private function signedIn(?int $accountId = null, ?int $listingId = null): self
+    {
+        return $this->withSession([
+            BusinessSession::ACCOUNT => $accountId ?? $this->accountId,
+            BusinessSession::LISTING => $listingId ?? $this->listingId,
+            BusinessSession::SEEN    => time(),
+        ]);
+    }
 
     private function now(): DateTimeImmutable
     {
@@ -334,7 +397,7 @@ final class BookingAppointmentsTest extends CIUnitTestCase
             'description'      => '<p>A friendly hair salon in the heart of Rosebank, open six days a week.</p>',
             'description_text' => 'A friendly hair salon in the heart of Rosebank, open six days a week.',
         ], true);
-        (new BookingSetupService())->turnOn($this->listings->find($id));
+        $this->lastAccountId = (int) (new BookingSetupService())->turnOn($this->listings->find($id))['id'];
 
         return $id;
     }
