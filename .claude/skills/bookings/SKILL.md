@@ -11,6 +11,9 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 
 ## Status
 
+Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.enabled`
+(off). Not released to production. Later phases branch off `main`.
+
 | Phase | State |
 |---|---|
 | 0 Specification | done 4 Nov 2026, branch `bookings` (docs/bookings/) |
