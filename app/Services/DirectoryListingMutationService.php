@@ -601,11 +601,7 @@ class DirectoryListingMutationService
         $fresh = $this->listings->find((int) $listing['id']);
         $this->notifyAdmin(is_array($fresh) ? $fresh : $listing);
 
-        // The moment a signup opt-in becomes valid: the address is now proven.
-        // A no-op for anyone who did not tick the marketing box.
         if (is_array($fresh)) {
-            (new MarketingConsentService())->syncToMautic($fresh);
-
             // Close any "Recommend a business" referral this listing answers,
             // and tell the referrers who asked. Never throws.
             (new ReferralService())->markListed($fresh);
@@ -1101,9 +1097,7 @@ class DirectoryListingMutationService
         // The two fields in the private "Your details" fieldset. Neither is
         // rendered on the public profile — _contact_panel.php shows neither,
         // and ListingQualityService scores neither — but every mail this
-        // directory sends about the listing is addressed from them, and
-        // MarketingConsentService pushes contact_person as the Mautic
-        // firstname. A listing nobody at this end can address is one that
+        // directory sends about the listing is addressed from them. A listing nobody at this end can address is one that
         // cannot be verified by anything but its own claims.
         //
         // Held to on an owner edit as well as at signup, unlike

@@ -277,7 +277,7 @@ Production is Lightsail on `local.webscheduler.co.za`, released by hand: see the
 | `directory:geocode` | Backfilling map pins for listings without coordinates |
 | `directory:venue-assign` | Linking listings to the venue (mall, complex) they sit in |
 | `directory:audit-text [--all]` | Reporting stored names and descriptions that break the text rules |
-| `mautic:sync` | Recovering owner opt-ins and opt-outs that the live listing sync missed |
+| `newsletter:import-mautic <csv> [--dry-run]` | One off: bring the confirmed Mautic newsletter contacts and do not contact entries across |
 
 `DirectoryHeroImagesSeeder` seeds the starting hero rotation on a fresh install
 (`php spark db:seed DirectoryHeroImagesSeeder`); it is idempotent and never brings back a
