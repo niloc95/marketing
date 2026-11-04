@@ -2532,6 +2532,9 @@
   .field input[type="tel"],
   .field input[type="url"],
   .field input[type="date"],
+  /* time and datetime-local arrived with online bookings (/business). */
+  .field input[type="time"],
+  .field input[type="datetime-local"],
   .field select,
   .field textarea {
     @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm
@@ -2645,6 +2648,8 @@
   .dark .field input[type="tel"],
   .dark .field input[type="url"],
   .dark .field input[type="date"],
+  .dark .field input[type="time"],
+  .dark .field input[type="datetime-local"],
   .dark .field select,
   .dark .field textarea {
     @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-500
@@ -4236,3 +4241,73 @@
 .strength-w-90 { width: 90%; }
 .strength-w-95 { width: 95%; }
 .strength-w-100 { width: 100%; }
+
+/* Online bookings: the business calendar (business/calendar.php, drawn by
+   resources/business/calendar/). Positions and heights come from the
+   server's render model and are set through element.style (CSSOM), which
+   CSP allows; style attributes in markup it does not. */
+@layer components {
+  .cal-views { @apply inline-flex overflow-hidden rounded-control border border-slate-200 dark:border-slate-700; }
+  .cal-view-btn { @apply px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800; }
+  .cal-view-btn[aria-pressed="true"] { @apply bg-primary-500 text-white hover:bg-primary-600; }
+  .cal-filter { @apply flex flex-col gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300; }
+  .cal-filter select,
+  .cal-filter input { @apply h-9 rounded-control border-slate-200 bg-white py-0 pl-3 text-sm font-normal dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100; }
+  .cal-filter select { @apply pr-8; }
+  .cal-find-results { @apply mt-2 max-h-72 divide-y divide-slate-100 overflow-auto rounded-xl border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900; }
+  .cal-find-results button { @apply block w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800; }
+  .cal-body { @apply min-h-[20rem] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900; }
+  .cal-body[aria-busy="true"] { @apply opacity-60; }
+
+  /* Time grids (day and week) */
+  .cal-scroll { @apply max-h-[75vh] overflow-auto; }
+  .cal-grid { @apply flex min-w-full; }
+  .cal-times { @apply sticky left-0 z-10 w-14 shrink-0 border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900; }
+  .cal-time { @apply absolute right-1 -translate-y-1/2 text-[11px] text-slate-400; }
+  .cal-head { @apply sticky top-0 z-20 flex border-b border-slate-200 bg-white text-center text-xs font-semibold dark:border-slate-700 dark:bg-slate-900; }
+  .cal-head-cell { @apply min-w-[8rem] flex-1 truncate border-l border-slate-100 px-1 py-2 dark:border-slate-800; }
+  .cal-head-cell.is-today { @apply text-primary-600 dark:text-primary-300; }
+  .cal-col { @apply relative min-w-[8rem] flex-1 border-l border-slate-100 dark:border-slate-800; }
+  .cal-col.is-closed { @apply bg-slate-50 dark:bg-slate-950; }
+  .cal-line { @apply pointer-events-none absolute inset-x-0 border-t border-slate-100 dark:border-slate-800; }
+  .cal-line.is-hour { @apply border-slate-200 dark:border-slate-700; }
+  .cal-off { @apply pointer-events-none absolute inset-x-0 bg-slate-100/70 dark:bg-slate-800/60; }
+  .cal-drop { @apply absolute inset-x-0; }
+  .cal-drop.is-over { @apply bg-primary-50 ring-2 ring-inset ring-primary-400 dark:bg-primary-900/30; }
+  .cal-now { @apply pointer-events-none absolute inset-x-0 z-10 border-t-2 border-rose-500; }
+
+  .cal-event { @apply absolute z-[5] overflow-hidden rounded-md border-l-4 bg-white px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ring-1 ring-slate-200 hover:z-10 hover:shadow-md focus:z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-slate-800 dark:ring-slate-700; }
+  .cal-event[draggable="true"] { @apply cursor-grab; }
+  .cal-event.is-dragging { @apply opacity-50; }
+  .cal-event.is-pending { @apply border-dashed; }
+  .cal-event.is-cancelled { @apply line-through opacity-60; }
+  .cal-event-title { @apply block truncate font-semibold text-slate-900 dark:text-white; }
+  .cal-event-meta { @apply block truncate text-slate-500 dark:text-slate-400; }
+
+  /* Month */
+  .cal-month { @apply grid grid-cols-7; }
+  .cal-month-head { @apply border-b border-slate-200 py-2 text-center text-xs font-semibold text-slate-500 dark:border-slate-700; }
+  .cal-day { @apply min-h-[6.5rem] border-b border-l border-slate-100 p-1 text-xs dark:border-slate-800; }
+  .cal-day.is-other { @apply bg-slate-50 text-slate-400 dark:bg-slate-950; }
+  .cal-day.is-closed { @apply bg-slate-50 dark:bg-slate-950; }
+  .cal-day.is-over { @apply bg-primary-50 ring-2 ring-inset ring-primary-400 dark:bg-primary-900/30; }
+  .cal-day-num { @apply mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full font-semibold hover:bg-slate-100 dark:hover:bg-slate-800; }
+  .cal-day.is-today .cal-day-num { @apply bg-primary-500 text-white; }
+  .cal-chip { @apply mb-0.5 flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left hover:bg-slate-100 dark:hover:bg-slate-800; }
+  .cal-chip[draggable="true"] { @apply cursor-grab; }
+  .cal-more { @apply px-1 text-[11px] font-semibold text-primary-600 hover:underline dark:text-primary-300; }
+  .cal-swatch { @apply inline-block h-2.5 w-2.5 shrink-0 rounded-full; }
+
+  /* List (agenda) */
+  .cal-agenda { @apply divide-y divide-slate-100 dark:divide-slate-800; }
+  .cal-agenda-row { @apply flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800; }
+  .cal-empty { @apply p-8 text-center text-sm text-slate-500 dark:text-slate-400; }
+
+  /* Details and Book dialogs */
+  .cal-dialog { @apply w-[min(40rem,calc(100vw-2rem))] max-h-[90vh] overflow-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100; }
+  .cal-facts { @apply grid grid-cols-[1.25rem_1fr] items-start gap-x-2 gap-y-1.5 text-sm; }
+  .cal-facts dt { @apply pt-0.5 text-slate-400; }
+  /* A class that sets display must never beat the hidden attribute. */
+  .cal [hidden] { display: none !important; }
+  .cal-toast { @apply fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-white dark:text-slate-900; }
+}

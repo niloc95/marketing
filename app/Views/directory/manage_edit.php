@@ -237,6 +237,8 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                 'listing' => $listing,
                 'reviews' => $reviews ?? [],
             ], ['saveData' => false]) ?>
+
+            <?= view('directory/_bookings_panel', ['listing' => $listing], ['saveData' => false]) ?>
         </div>
     </div>
 </section>

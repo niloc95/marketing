@@ -1,0 +1,102 @@
+<?php
+/**
+ * The fields of a new appointment, shared by the calendar's "Book" dialog
+ * and the plain form (business/appointment_form.php).
+ *
+ * @var list<array<string,mixed>>                $providers
+ * @var list<array<string,mixed>>                $services
+ * @var list<array<string,mixed>>                $customFields
+ * @var list<array{value:string,label:string}>   $statuses
+ * @var array<string,mixed>                      $old
+ * @var array<string,string>                     $errors
+ * @var string                                   $prefix id prefix, unique per page
+ */
+$old    ??= [];
+$errors ??= [];
+$val    = static fn (string $k): string => (string) ($old[$k] ?? '');
+// Always printed, empty when fine, so the calendar script can fill it in place.
+$err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600' . (isset($errors[$k]) ? '' : ' hidden') . '" data-error-for="' . esc($k, 'attr') . '">' . esc($errors[$k] ?? '') . '</p>';
+?>
+<div class="grid gap-4 sm:grid-cols-2">
+    <div class="field">
+        <label for="<?= $prefix ?>-service">Service</label>
+        <select id="<?= $prefix ?>-service" name="service_id" required>
+            <?php foreach ($services as $s): ?>
+                <option value="<?= (int) $s['id'] ?>"<?= $val('service_id') === (string) $s['id'] ? ' selected' : '' ?>><?= esc((string) $s['name']) ?> (<?= (int) $s['duration_min'] ?> min)</option>
+            <?php endforeach ?>
+        </select>
+        <?= $err('service_id') ?>
+    </div>
+    <div class="field">
+        <label for="<?= $prefix ?>-provider">With</label>
+        <select id="<?= $prefix ?>-provider" name="provider_id" required>
+            <?php foreach ($providers as $p): ?>
+                <option value="<?= (int) $p['id'] ?>"<?= $val('provider_id') === (string) $p['id'] ? ' selected' : '' ?>><?= esc((string) $p['name']) ?></option>
+            <?php endforeach ?>
+        </select>
+        <?= $err('provider_id') ?>
+    </div>
+    <div class="field">
+        <label for="<?= $prefix ?>-date">Date</label>
+        <input id="<?= $prefix ?>-date" type="date" name="date" value="<?= esc($val('date'), 'attr') ?>" required>
+    </div>
+    <div class="field">
+        <label for="<?= $prefix ?>-time">Time</label>
+        <input id="<?= $prefix ?>-time" type="time" name="time" step="300" value="<?= esc($val('time'), 'attr') ?>" required>
+        <?= $err('time') ?>
+    </div>
+</div>
+
+<fieldset class="mt-2" data-customer-picker>
+    <legend class="text-sm font-semibold text-slate-900 dark:text-white">Customer</legend>
+    <input type="hidden" name="customer_id" value="<?= esc($val('customer_id'), 'attr') ?>" data-customer-id>
+    <div class="field mt-2" data-customer-find hidden>
+        <label for="<?= $prefix ?>-find">Find a customer</label>
+        <input id="<?= $prefix ?>-find" type="text" autocomplete="off" placeholder="Name, email or phone" data-customer-query>
+        <ul class="mt-1 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800" data-customer-results hidden></ul>
+        <p class="mt-1 hidden text-sm" data-customer-chosen></p>
+    </div>
+    <?= $err('customer_id') ?>
+    <div class="grid gap-4 sm:grid-cols-2" data-customer-new>
+        <div class="field">
+            <label for="<?= $prefix ?>-first">First name</label>
+            <input id="<?= $prefix ?>-first" type="text" name="first_name" maxlength="80" value="<?= esc($val('first_name'), 'attr') ?>" autocomplete="off">
+            <?= $err('first_name') ?>
+        </div>
+        <div class="field">
+            <label for="<?= $prefix ?>-last">Surname</label>
+            <input id="<?= $prefix ?>-last" type="text" name="last_name" maxlength="80" value="<?= esc($val('last_name'), 'attr') ?>" autocomplete="off">
+        </div>
+        <div class="field">
+            <label for="<?= $prefix ?>-email">Email</label>
+            <input id="<?= $prefix ?>-email" type="email" name="email" maxlength="190" value="<?= esc($val('email'), 'attr') ?>" autocomplete="off">
+            <?= $err('email') ?>
+        </div>
+        <div class="field">
+            <label for="<?= $prefix ?>-phone">Phone</label>
+            <input id="<?= $prefix ?>-phone" type="tel" name="phone" maxlength="32" value="<?= esc($val('phone'), 'attr') ?>" autocomplete="off">
+            <?= $err('phone') ?>
+        </div>
+    </div>
+</fieldset>
+
+<?php foreach ($customFields as $f): ?>
+    <?= view('business/_question', ['f' => $f, 'id' => $prefix . '-' . esc($f['key'], 'attr'), 'value' => $val($f['key']), 'error' => $err($f['key']), 'strict' => true]) ?>
+<?php endforeach ?>
+
+<div class="grid gap-4 sm:grid-cols-2">
+    <div class="field">
+        <label for="<?= $prefix ?>-status">Status</label>
+        <select id="<?= $prefix ?>-status" name="status">
+            <?php foreach ($statuses as $s): ?>
+                <?php if (in_array($s['value'], ['pending', 'confirmed'], true)): ?>
+                    <option value="<?= esc($s['value'], 'attr') ?>"<?= ($val('status') ?: 'confirmed') === $s['value'] ? ' selected' : '' ?>><?= esc($s['label']) ?></option>
+                <?php endif ?>
+            <?php endforeach ?>
+        </select>
+    </div>
+    <div class="field">
+        <label for="<?= $prefix ?>-notes">Notes <span class="font-normal text-slate-500">(only your team sees them)</span></label>
+        <textarea id="<?= $prefix ?>-notes" name="notes" rows="2" maxlength="5000"><?= esc($val('notes')) ?></textarea>
+    </div>
+</div>

@@ -57,6 +57,20 @@ class Forms extends BaseConfig
         'preview'          => ['label' => 'Preview approval', 'posts' => ['preview/(:segment)/approve' => 'preview/$1', 'preview/(:segment)/changes' => 'preview/$1']],
         'newsletter'       => ['label' => 'Newsletter signup', 'posts' => ['newsletter' => 'newsletter'], 'pages' => ['newsletter']],
         'newsletter_confirm' => ['label' => 'Newsletter confirm', 'posts' => ['newsletter/confirm/(:segment)' => 'newsletter/confirm/$1']],
+        // Online bookings (docs/bookings/).
+        'manage_bookings'   => ['label' => 'Turn on online bookings', 'posts' => ['manage/bookings' => 'manage/bookings']],
+        'business_sign_in'  => ['label' => 'Business sign in', 'posts' => ['business/sign-in' => 'business/sign-in', 'business/sign-in/link' => 'business/sign-in', 'business/sign-in/(:segment)' => 'business/sign-in/$1']],
+        'business_sign_out' => ['label' => 'Business sign out', 'posts' => ['business/sign-out' => 'business/sign-in']],
+        'business_password' => ['label' => 'Business password reset', 'posts' => ['business/password' => 'business/password', 'business/password/(:segment)' => 'business/password/$1']],
+        'business_account'  => ['label' => 'Business account', 'posts' => ['business/account/name' => 'business/account', 'business/account/password' => 'business/account#password']],
+        'business_choose'   => ['label' => 'Choose a business', 'posts' => ['business/choose' => 'business/choose']],
+        'business_settings' => ['label' => 'Business settings', 'posts' => ['business/settings/localization' => 'business/settings/localization', 'business/settings/booking' => 'business/settings/booking', 'business/settings/questions' => 'business/settings/questions', 'business/turn-off' => 'business/settings/general']],
+        'business_invite'   => ['label' => 'Accept a business invitation', 'posts' => ['business/invite/(:segment)' => 'business/invite/$1']],
+        'business_services' => ['label' => 'Business services', 'posts' => ['business/services/new' => 'business/services/new', 'business/services/(:num)' => 'business/services/$1', 'business/services/(:num)/archive' => 'business/services', 'business/services/categories' => 'business/services#categories', 'business/services/categories/(:num)' => 'business/services#categories', 'business/services/categories/(:num)/delete' => 'business/services#categories']],
+        'business_team'     => ['label' => 'Business team', 'posts' => ['business/team' => 'business/team', 'business/team/(:num)' => 'business/team/$1', 'business/team/(:num)/hours' => 'business/team/$1#hours', 'business/team/(:num)/archive' => 'business/team', 'business/team/invite' => 'business/team#access', 'business/team/members/(:num)/role' => 'business/team#access', 'business/team/members/(:num)/remove' => 'business/team#access']],
+        'business_time_off' => ['label' => 'Business time off', 'posts' => ['business/time-off' => 'business/time-off', 'business/time-off/(:num)/delete' => 'business/time-off']],
+        'business_appointment' => ['label' => 'Book an appointment (business)', 'posts' => ['business/appointments/new' => 'business/appointments/new'], 'old' => 'appointment_old'],
+        'business_customers'   => ['label' => 'Business customers', 'posts' => ['business/customers/new' => 'business/customers/new', 'business/customers/(:segment)' => 'business/customers/$1#edit', 'business/customers/(:segment)/delete' => 'business/customers/$1#delete'], 'old' => 'customer_old'],
     ];
 
     /**
@@ -66,6 +80,11 @@ class Forms extends BaseConfig
      * @var list<string>
      */
     public array $notForms = [
+        // The calendar's JSON writes (resources/business/calendar/): no page to send a failure back to.
+        'business/api/appointments',
+        'business/api/appointments/(:num)/reschedule',
+        'business/api/appointments/(:num)/status',
+        'business/api/appointments/(:num)/notes',
         // A 301 to add-profile, registered for every method.
         'list-your-practice',
         'add-profile/score',
