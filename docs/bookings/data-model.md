@@ -83,8 +83,8 @@ provider. Provider hours are clipped to the business window for the day.
 
 | Table | From | Notes |
 |---|---|---|
-| `xs_booking_payments` | `xs_payment_transactions` | gateway, reference (`WSB-BOOK-…-N`), amount_cents, currency, status, raw_payload, plus `listing_id` |
-| `xs_booking_integrations` | `xs_business_integrations` | encrypted config (CI4 Encrypter, refuses to save without `encryption.key`, as the Partner Program does) |
+| `xs_booking_payments` | `xs_payment_transactions` | Built 5 Nov 2026 (migration `2026-11-17-100000`): listing_id, appointment_id (SET NULL), hash (the return link), reference (`WSB-BOOK-000123-P1`, one per try, unique), gateway (payfast, paystack, manual), amount_cents, currency, status (started, paid, failed, refunded), test, gateway_id, detail, recorded_by_member_id, paid_at, refunded_at. No raw payload kept. Appointments got `payment_due_by`; `payment_status` is none, due, paid, refunded, expired or refund_due |
+| `xs_booking_integrations` | `xs_business_integrations` | encrypted config (CI4 Encrypter, refuses to save without `encryption.key`, as the Partner Program does). Channel `payment` (Phase 8) holds the business's PayFast or Paystack keys |
 | `xs_booking_api_keys` | `xs_api_keys` | bound to a member; scopes enforced |
 | `xs_booking_webhook_deliveries` | none (webhooks never fired) | event, endpoint, attempt, status, response code |
 

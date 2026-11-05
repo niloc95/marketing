@@ -143,6 +143,16 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
             </div>
         </div>
 
+        <?php // Deposit (Phase 8): shown when the appointment has one. ?>
+        <div class="mt-4 rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700" data-d-payment hidden>
+            <p class="font-semibold" data-d-payment-label></p>
+            <ul class="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300" data-d-payment-list></ul>
+            <div class="mt-2 flex flex-wrap gap-2">
+                <button type="button" class="btn btn-ghost btn-xs" data-d-mark-paid hidden>Mark deposit paid</button>
+                <button type="button" class="btn btn-ghost btn-xs" data-d-mark-refunded hidden>Mark refunded</button>
+            </div>
+        </div>
+
         <details class="mt-4" data-d-move>
             <summary class="cursor-pointer text-sm font-semibold text-brand-ocean dark:text-white">Move to another time</summary>
             <div class="mt-3 grid gap-3 sm:grid-cols-3">

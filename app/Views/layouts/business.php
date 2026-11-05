@@ -39,6 +39,11 @@ if ($listing !== null) {
     if ($context->can('analytics.view')) {
         $nav[] = ['business/analytics', 'Analytics', 'chart-column'];
     }
+    // Only once deposits are taken: the nav is full, and without an account
+    // the Payments settings tab says what to do.
+    if ($context->can('payments.manage') && App\Services\Bookings\Payments\DepositService::gatewayFor($context->listingId()) !== null) {
+        $nav[] = ['business/payments', 'Payments', 'wallet'];
+    }
     if ($context->can('settings.manage')) {
         $nav[] = ['business/settings', 'Settings', 'settings'];
     }

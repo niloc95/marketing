@@ -291,6 +291,9 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
     $routes->post('settings/notifications/template', 'Business\NotificationSettings::saveTemplate');
     $routes->post('settings/notifications/(sms|whatsapp)', 'Business\NotificationSettings::saveIntegration/$1');
     $routes->post('settings/notifications/(sms|whatsapp)/test', 'Business\NotificationSettings::test/$1');
+    // Phase 8: the business's own PayFast or Paystack account for deposits.
+    $routes->post('settings/payments', 'Business\PaymentSettings::save');
+    $routes->post('settings/payments/check', 'Business\PaymentSettings::check');
     $routes->get('notifications/sent', 'Business\Notifications::sent');
     $routes->get('notifications/sent.csv', 'Business\Notifications::export');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
@@ -315,6 +318,11 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->post('api/appointments/(:num)/status', 'Business\Appointments::status/$1');
     $routes->post('api/appointments/(:num)/notes', 'Business\Appointments::notes/$1');
     $routes->post('api/appointments/(:num)/notify', 'Business\Appointments::notify/$1');
+});
+// Phase 8: deposits. Mark one paid or refunded from the details panel, and the list.
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:payments.manage']], static function ($routes) {
+    $routes->post('api/appointments/(:num)/payment', 'Business\Appointments::payment/$1');
+    $routes->get('payments', 'Business\Payments::index');
 });
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.manage']], static function ($routes) {
     $routes->get('customers', 'Business\Customers::index');
@@ -571,9 +579,15 @@ $routes->get('book/customer/(:segment)', 'Book::customer/$1');
 $routes->get('book/customer/(:segment)/(:segment)', 'Book::manageFromCustomer/$1/$2');
 $routes->post('book/customer/(:segment)/(:segment)/reschedule', 'Book::rescheduleFromCustomer/$1/$2');
 $routes->post('book/customer/(:segment)/(:segment)/cancel', 'Book::cancelFromCustomer/$1/$2');
+$routes->post('book/customer/(:segment)/(:segment)/pay', 'Book::payFromCustomer/$1/$2');
+// Deposits (Phase 8): back from PayFast or Paystack, and PayFast's
+// notification (server to server, CSRF exempt, checked four ways).
+$routes->get('book/paid/(:segment)', 'Book::paid/$1');
+$routes->post('book/payfast/notify', 'Book::payfastNotify');
 $routes->get('book/(:segment)', 'Book::manage/$1');
 $routes->post('book/(:segment)/reschedule', 'Book::reschedule/$1');
 $routes->post('book/(:segment)/cancel', 'Book::cancel/$1');
+$routes->post('book/(:segment)/pay', 'Book::pay/$1');
 // "Show email" on a profile fetches the address from here, as JSON. Same
 // ordering rule as menu above; no province is called "email" either.
 $routes->get('directory/(:segment)/email', 'Directory::email/$1');

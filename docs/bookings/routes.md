@@ -40,7 +40,7 @@ under `/business/api/` so session and CSRF rules stay simple.
 | Bookings | Local | Phase |
 |---|---|---|
 | `GET /api/calendar/day|week|month` | `GET /business/api/calendar/{view}` | 4 |
-| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); payment and notify in 6 and 8 | 4, 6, 8 |
+| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); `POST /{id}/notify` (6); `POST /{id}/payment` {action: paid or refunded} (8, `payments.manage`); `/business/payments` and `/business/settings/payments` (+ `/check`) (8) | 4, 6, 8 |
 | `GET /api/availability/*` | `GET /business/api/availability/*` | 3 |
 | `GET /api/customers/*` | `/business/api/customers/*` | 4 |
 | `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /business/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
@@ -59,14 +59,14 @@ under `/business/api/` so session and CSRF rules stay simple.
 | `GET /booking/search?email|phone` | `POST /book/find` (emails the customer their link; same answer whether found or not) | 5 |
 | `/booking/legal` | `GET /directory/{slug}/book/terms` | 5 |
 | `/booking/p/*`, `/booking/s/*`, `/booking/discover`, booking sitemap | none (profile, category and discovery pages already cover it) | skip |
-| `/booking/payment/return|cancel` | `GET /book/{token}/paid`, `/book/{token}/unpaid` | 8 |
+| `/booking/payment/return|cancel` | `POST /book/{token}/pay` and `/book/customer/{hash}/{appointment}/pay` (Paystack checkout, or the PayFast form page, honeypot exempt), `GET /book/paid/{payment hash}` (return and cancel both land here, then on to the customer page); built 5 Nov 2026 | 8 |
 | none | `GET/POST /book/unsubscribe/{token}` (CSRF exempt POST, RFC 8058) | 6 |
 
 ## Webhooks in (CSRF, honeypot and BotTrap exempt, like `payfast/notify`)
 
 | Bookings | Local | Phase |
 |---|---|---|
-| `POST /public/payments/payfast/notify` | depends on D6 (gateway); Paystack: the existing `POST paystack/webhook` routed by reference prefix `WSB-BOOK` | 8 |
+| `POST /public/payments/payfast/notify` | `POST /book/payfast/notify` (one address for every business; the reference finds the business, its passphrase checks the notice). Paystack has no webhook here: verified on return and by `bookings:payments`; built 5 Nov 2026 | 8 |
 | `POST /public/payments/stripe/webhook` | `POST /book/stripe/webhook` if D6 says Stripe | later |
 | `/oauth/google/authorize|callback` | `/business/integrations/google`, `/business/integrations/google/callback` | 9 |
 
@@ -83,6 +83,6 @@ lists origins.
 |---|---|---|
 | `* * * * * notifications:dispatch-queue` | `* * * * * bookings:dispatch` (all businesses, lock file, time box) | 6 |
 | `notifications:purge-delivery-logs`, `audit:purge-logs` | `bookings:prune` daily, joins Local's 03:xx block | 6 |
-| none | `bookings:sweep` (expire unpaid holds, retention) | 8, 10 |
+| none | `*/5 bookings:payments`: ask Paystack about open payments, free unpaid holds (built 5 Nov 2026); retention sweep in 10 | 8, 10 |
 
 Each new command goes into `deploy/cron/webscheduler` and the live `/etc/cron.d/webscheduler`.

@@ -20,7 +20,9 @@ $tiles = [
     ['Customers', $cards['customers'], 'all time'],
 ];
 if ($canValue) {
-    $tiles[] = ['Booked this month', CatalogueService::priceText((int) $cards['month_value_cents'], (string) $cards['currency']), 'from your prices, not money received'];
+    $tiles[] = ['Booked this month', CatalogueService::priceText((int) $cards['month_value_cents'], (string) $cards['currency']), (int) $cards['deposits_cents'] > 0
+        ? 'from your prices; ' . CatalogueService::priceText((int) $cards['deposits_cents']) . ' paid in deposits'
+        : 'from your prices, not money received'];
 }
 ?>
 <?php // Literal classes, so Tailwind sees them: four or five tiles a row on a wide screen. ?>

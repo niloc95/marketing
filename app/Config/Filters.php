@@ -117,7 +117,7 @@ class Filters extends BaseFilters
             // failure mode if one were ever chosen that PayFast also sends is
             // subscriptions silently going unpaid while PayFast retries into a
             // 403 forever. Cheap to rule out.
-            'bottrap' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook']],
+            'bottrap' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'book/payfast/notify']],
             // csp-report is exempt because a browser posting a violation report
             // has no CSRF token to send. Nothing is trusted from that endpoint —
             // it only writes a throttled, truncated log line (see Csp::report).
@@ -174,10 +174,15 @@ class Filters extends BaseFilters
             // our own page, which keeps CSRF. newsletter/unsubscribe/* is the
             // newsletter's RFC 8058 one click, as unsubscribe/* is the owners'.
             //
+            // book/payfast/notify is PayFast's notification for a booking
+            // deposit, paid into the business's own PayFast account. The same
+            // four checks as payfast/notify stand in, under that business's
+            // passphrase (DepositService::payfastNotified()).
+            //
             // book/unsubscribe/* is the same for one business's booking
             // emails: the customer's 64 hex link is the authority, and all a
             // forged POST can do is stop that business's emails to them.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*']],
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*', 'book/payfast/notify']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',
@@ -205,7 +210,10 @@ class Filters extends BaseFilters
             // payfast/setup-notify is the
             // profile setup ITN, with ProfileSetupService's four checks in
             // place of CSRF (see the csrf list above).
-            'honeypot' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'manage/verification/checkout', 'manage/verification/yearly']],
+            // book/*/pay and book/customer/*/*/pay render the step before
+            // PayFast for a booking deposit (book/pay.php): the same signed
+            // form, so exempt for the same reason (Book::payDeposit()).
+            'honeypot' => ['except' => ['payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'manage/verification/checkout', 'manage/verification/yearly', 'book/payfast/notify', 'book/*/pay', 'book/customer/*/*/pay']],
             // Sets the Partner Program cookie for a ?ref= arrival. See the class.
             'partnerref',
             'secureheaders',

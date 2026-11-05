@@ -216,4 +216,25 @@ class Services extends BaseService
 
         return new \App\Services\Bookings\BusinessContext();
     }
+
+    /**
+     * A business's own PayFast or Paystack (online bookings, Phase 8): the
+     * Local client classes on that business's keys (GatewayConfig). Never
+     * shared, since every business has its own keys. A test swaps one in
+     * with Services::injectMock('bookingPayFast' or 'bookingPaystack', fn)
+     * where fn receives the config and returns the fake.
+     */
+    public static function bookingPayFast(\App\Services\Bookings\Payments\GatewayConfig $config): \App\Libraries\PayFast
+    {
+        $mock = static::$mocks['bookingpayfast'] ?? null;
+
+        return $mock instanceof \Closure ? $mock($config) : new \App\Libraries\PayFast($config);
+    }
+
+    public static function bookingPaystack(\App\Services\Bookings\Payments\GatewayConfig $config): \App\Libraries\Paystack
+    {
+        $mock = static::$mocks['bookingpaystack'] ?? null;
+
+        return $mock instanceof \Closure ? $mock($config) : new \App\Libraries\Paystack($config);
+    }
 }

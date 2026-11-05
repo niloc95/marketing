@@ -19,7 +19,7 @@ final class BookingMetricsCache
      * Bump when a cached array changes shape (a key added or renamed), so a
      * release never reads the old shape from the last five minutes.
      */
-    private const SHAPE = 1;
+    private const SHAPE = 2;
 
     /**
      * @template T

@@ -24,7 +24,8 @@ Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.
 | 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, not merged): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
 | 6 Notifications | built 5 Nov 2026 on `bookings-p6-notifications` (off p5, not merged): queue, dispatcher, rules, reminders, templates, email, SMS and WhatsApp on the business's own account, delivery logs, opt out, notices |
 | 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, not merged): figures, today by person with refresh, waiting list, free times with quick book, alerts, /business/analytics with four tabs |
-| 8 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, not merged): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /business/payments, Payments settings tab |
+| 9 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -256,10 +257,35 @@ carries: Bookings' utilisation, monthly retention and forecast were invented and
 ported. A holiday alert only fires inside the booking horizon (30 days at most) and not on
 a weekday the profile is closed anyway.
 
-## Next: Phase 8
+## Phase 8 in the code
 
-Payments (deposits through Paystack subaccounts, D6). Read `parity.md` and `README.md`
-for its scope, and settle D6 and D9 with the owner before starting.
+| Piece | Where |
+|---|---|
+| Tables | migration `2026-11-17-100000_CreateBookingPayments`: `xs_booking_payments` (`BookingPaymentModel`), appointments `payment_due_by`; payment statuses on `BookingAppointmentModel::PAYMENT_*` |
+| The account | `BookingIntegrations` channel `payment` (payfast: merchant id, key, passphrase, mode; paystack: secret key), encrypted, write only. `GatewayConfig` hands the keys to Local's own `PayFast` and `Paystack` clients; `Services::bookingPayFast()` / `bookingPaystack()` build them (tests inject a closure) |
+| Service | `Payments\DepositService`: `amountFor()`, `depositFor()`, `ask()`, `start()`, `returned()`, `payfastNotified()`, `checkPaystack()`, `paid()` (idempotent), `markPaid()`, `markRefunded()`, `summary()`, `forCustomer()`, `payments()`, `toRefund()`, `receivedThisMonth()`, `sweep()`. The only writer of payments and of an appointment's payment columns |
+| Booking | `PublicBookingService::book()`: with a deposit the booking is pending with `payment_status` due and no messages; email is always asked (`customerFields(true)`) |
+| Customer pages | `book/manage.php` Deposit panel, `POST book/{token}/pay` and `book/customer/{c}/{a}/pay` (`Book::payDeposit()`), `book/pay.php` (PayFast form, honeypot exempt), `GET book/paid/{hash}`, `POST book/payfast/notify` (CSRF, BotTrap, honeypot exempt; in `Config\Forms::$notForms`) |
+| Business | Settings tab Payments (`Business\PaymentSettings`, `_settings_payments.php`, check button, email to every admin on a change), `/business/payments` (`Business\Payments`), `POST business/api/appointments/{id}/payment` (details panel buttons), nav item only once an account is on, dashboard refund alert and deposits in the value tile, SetupCheck `deposit_no_account` |
+| Cron | `*/5 bookings:payments` (`BookingsPayments`, MySQL lock) in `deploy/cron/webscheduler` |
+| Tests | `tests/database/BookingPaymentsTest.php` (FakePaystack, a PayFast subclass whose IP and POST-back checks say yes) |
+
+**Rules:** money goes to the business, never us (T15); no fee; refunds in the business's
+gateway (T16). A deposit is the service's percentage of a rand price, at least R5, asked
+only when an account is on. The hold is `payments.hold_minutes` (30). PayFast needs a
+passphrase here (PayFast lets it be empty). Paystack has no webhook: verify on return and
+in the sweep. A late payment restores the booking if the time is free, else "Deposit to
+refund". Test mode (PayFast sandbox, `sk_test_`) shows on the customer page and marks rows
+`test`; test payments are left out of "received this month".
+
+**Dev:** dev has no `encryption.key`, so the Payments tab shows "not available" and no
+deposit is asked there; the whole flow is covered by the tests. Production needs the key
+before release (D14, owner OK at that step), plus the new cron line.
+
+## Next: Phase 9
+
+Integrations and API (README.md, parity.md §11). Read both and check decisions.md before
+starting.
 
 **Custom fields (built):** Settings, Questions tab (`/business/settings/questions`). Types
 text, textarea, select (choices one per line in `booking.custom_field_N_options`) and

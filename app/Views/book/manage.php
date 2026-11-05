@@ -18,6 +18,7 @@
  * @var string|null               $date
  * @var list<array<string,mixed>> $times
  * @var bool                      $twelveHour
+ * @var array<string,mixed>|null  $deposit     what the customer sees about the deposit, or null
  */
 use App\Services\Bookings\AppointmentStatus;
 
@@ -40,7 +41,7 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
     <div class="container">
         <?php if ($new): ?>
             <div class="alert alert-success mb-5" role="status">
-                <p class="font-semibold">Booked. Your reference is <?= esc((string) $a['reference']) ?>.</p>
+                <p class="font-semibold"><?= $deposit !== null && $deposit['waiting'] ? 'Nearly done: pay the deposit below to keep this time.' : 'Booked.' ?> Your reference is <?= esc((string) $a['reference']) ?>.</p>
                 <p class="mt-1 text-sm">Keep this page's address: it is how you change or cancel your booking. Anyone with the link can, so keep it to yourself.</p>
             </div>
         <?php endif ?>
@@ -48,8 +49,32 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc((string) $a['service_name']) ?></h1>
         <p class="text-slate-700 dark:text-slate-200"><?= view('book/_when', ['a' => $a, 'timezone' => $timezone, 'twelveHour' => $twelveHour]) ?></p>
         <p class="text-sm text-slate-500 dark:text-slate-400">with <?= esc((string) $a['provider_name']) ?><?= $a['location_name'] ? ', ' . esc((string) $a['location_name']) : '' ?><?= $a['location_address'] ? ', ' . esc((string) $a['location_address']) : '' ?></p>
-        <p class="mt-3 text-sm font-semibold"><?= esc($status[$a['status']] ?? AppointmentStatus::label((string) $a['status'])) ?></p>
+        <p class="mt-3 text-sm font-semibold"><?= esc($deposit !== null && $deposit['waiting'] ? 'Not booked yet: the time is held for you until the deposit is paid.' : ($status[$a['status']] ?? AppointmentStatus::label((string) $a['status']))) ?></p>
         <p class="mt-1 text-xs text-slate-500">Reference <?= esc((string) $a['reference']) ?> · Times in <?= esc($timezone->getName()) ?></p>
+
+        <?php if ($deposit !== null): ?>
+            <div class="panel mt-6" id="deposit">
+                <h2 class="mb-2 font-bold">Deposit</h2>
+                <?php if ($deposit['waiting']): ?>
+                    <p class="text-sm">Pay the deposit of <strong><?= esc($deposit['amount']) ?></strong> to keep this time. We hold it for you until <?= esc($deposit['due_by']) ?>. The deposit goes to <?= esc($listing['display_name']) ?>, through <?= esc($deposit['gateway']) ?>.</p>
+                    <?php if ($deposit['checking']): ?>
+                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">If you have just paid, it can take a minute to show here. Refresh this page in a moment.</p>
+                    <?php endif ?>
+                    <?php if ($deposit['test']): ?>
+                        <p class="mt-2 text-sm text-amber-700 dark:text-amber-300">This business is testing its payments: no real money is taken.</p>
+                    <?php endif ?>
+                    <form method="post" action="<?= base_url($path . '/pay') ?>" class="mt-3">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-accent">Pay <?= esc($deposit['amount']) ?></button>
+                    </form>
+                <?php else: ?>
+                    <p class="text-sm"><?= esc($deposit['text']) ?></p>
+                    <?php if ($deposit['status'] === 'expired'): ?>
+                        <p class="mt-2 text-sm"><a class="underline" href="<?= base_url('directory/' . $listing['slug'] . '/book') ?>">Book again</a></p>
+                    <?php endif ?>
+                <?php endif ?>
+            </div>
+        <?php endif ?>
 
         <?php if (in_array($a['status'], AppointmentStatus::UPCOMING, true)): ?>
             <div class="panel mt-6" id="change">

@@ -31,6 +31,11 @@ class SetupCheck
                 $out[] = ['code' => 'service_unoffered', 'text' => $s['name'] . ' has nobody who offers it.', 'link' => 'business/services/' . $s['id']];
             }
         }
+        // Deposits asked for with nowhere to pay them: bookings go through without one (Phase 8).
+        if (array_filter($services, static fn (array $s): bool => Payments\DepositService::amountFor($s) !== null) !== []
+            && Payments\DepositService::gatewayFor($listingId) === null) {
+            $out[] = ['code' => 'deposit_no_account', 'text' => 'Some services ask for a deposit, but no payment account is on, so customers book them without one.', 'link' => 'business/settings/payments'];
+        }
         foreach ($providers as $p) {
             $week = $team->hours((int) $p['id']);
             if (array_filter($week, static fn (array $d): bool => $d['active']) === []) {

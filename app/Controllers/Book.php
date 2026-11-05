@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\Concerns\RedirectsToOwningSite;
 use App\Models\DirectoryListingModel;
+use App\Services\Bookings\Payments\DepositService;
 use App\Services\Bookings\PublicBookingService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use DateTimeImmutable;
@@ -71,8 +72,19 @@ class Book extends BaseController
             }
         }
 
+        // The deposit each service asks for now, by service id (none without a payment account).
+        $depositSvc = new DepositService($listing);
+        $deposits   = [];
+        foreach ($services as $s) {
+            $deposits[(int) $s['id']] = $depositSvc->depositFor($s);
+        }
+        $deposit = $service !== null ? ($deposits[(int) $service['id']] ?? null) : null;
+
         return $this->respondPrivate(view('book/page', [
             'listing'   => $listing,
+            'deposits'  => $deposits,
+            'deposit'   => $deposit,
+            'holdMinutes' => $depositSvc->holdMinutes(),
             'services'  => $services,
             'service'   => $service,
             'providers' => $providers,
@@ -85,7 +97,7 @@ class Book extends BaseController
             'times'     => $times,
             'slot'      => $slot,
             'next'      => $service !== null && $whoChosen && $days === [] ? $svc->nextAvailable((int) $service['id'], $providerId) : null,
-            'fields'    => $svc->customerFields(),
+            'fields'    => $svc->customerFields($deposit !== null),
             'questions' => (new \App\Services\Bookings\CustomerService((int) $listing['id']))->customFields(),
             'hasTerms'  => $svc->hasTerms(),
             'policies'  => $svc->policies(),
@@ -208,6 +220,47 @@ class Book extends BaseController
     public function cancelFromCustomer(string $customerHash, string $appointmentHash)
     {
         return $this->changeBooking(PublicBookingService::byCustomer($customerHash, $appointmentHash), 'book/customer/' . $customerHash . '/' . $appointmentHash, 'cancel', false);
+    }
+
+    public function pay(string $token)
+    {
+        return $this->payDeposit(PublicBookingService::byToken($token), 'book/' . $token);
+    }
+
+    public function payFromCustomer(string $customerHash, string $appointmentHash)
+    {
+        return $this->payDeposit(PublicBookingService::byCustomer($customerHash, $appointmentHash), 'book/customer/' . $customerHash . '/' . $appointmentHash);
+    }
+
+    /**
+     * Back from PayFast or Paystack (`book/paid/{payment hash}`): on to the
+     * customer's page for the booking, which says whether the deposit is in.
+     */
+    public function paid(string $hash)
+    {
+        $found = DepositService::returned($hash);
+        if ($found === null) {
+            return $this->respondPrivate(view('book/expired'))->setStatusCode(404);
+        }
+        $customer = db_connect()->table('xs_booking_customers')->select('hash')->where('id', (int) $found['appointment']['customer_id'])->get()->getRowArray();
+        if ($customer === null) {
+            return $this->respondPrivate(view('book/expired'))->setStatusCode(404);
+        }
+        $to = listing_site_url($found['listing'], 'book/customer/' . $customer['hash'] . '/' . $found['appointment']['hash'] . '#deposit');
+
+        return $found['payment']['status'] === \App\Models\Bookings\BookingPaymentModel::PAID
+            ? redirect()->to($to)->with('success', 'Thank you. Your deposit is paid and your booking is made.')
+            : redirect()->to($to);
+    }
+
+    /** PayFast's notification for a deposit, server to server: always 200, the outcome goes to the log. */
+    public function payfastNotify()
+    {
+        [$raw] = \App\Libraries\PayFast::readNotificationBody($this->request);
+        $outcome = DepositService::payfastNotified($raw, (string) $this->request->getIPAddress());
+        log_message($outcome === 'paid' ? 'info' : 'warning', 'Booking deposit notification: ' . $outcome);
+
+        return $this->response->setStatusCode(200)->setBody('');
     }
 
     public function customer(string $hash)
@@ -354,7 +407,34 @@ class Book extends BaseController
             'date'         => $date,
             'times'        => $date !== null && $svc->refusal($a, 'reschedule') === null ? $svc->rescheduleTimes($a, $date) : [],
             'twelveHour'   => \App\Services\Bookings\BookingSettings::for((int) $found['listing']['id'])->get('localization.time_format') === '12h',
+            'deposit'      => (new DepositService($found['listing']))->forCustomer($a),
         ]));
+    }
+
+    /**
+     * Pay the deposit: off to Paystack's checkout, or a page whose button
+     * posts the signed form to PayFast. That page renders on this POST, so
+     * the honeypot filter is off for it (Config\Filters): a field PayFast's
+     * signature does not cover would get the payment refused.
+     *
+     * @param array{listing:array<string,mixed>,appointment:array<string,mixed>}|null $found
+     */
+    private function payDeposit(?array $found, string $path)
+    {
+        if ($found === null) {
+            form_outcome('expired');
+
+            return $this->respondPrivate(view('book/expired'))->setStatusCode(404);
+        }
+        $start = (new DepositService($found['listing']))->start($found['appointment']);
+        if ($start['error'] !== null) {
+            return redirect()->to(base_url($path . '#deposit'))->with('error', $start['error']);
+        }
+        if ($start['redirect'] !== null) {
+            return redirect()->to($start['redirect']);
+        }
+
+        return $this->respondPrivate(view('book/pay', ['listing' => $found['listing'], 'a' => $found['appointment'], 'form' => $start['form'], 'back' => $path]));
     }
 
     /** @param array{listing:array<string,mixed>,appointment:array<string,mixed>}|null $found */

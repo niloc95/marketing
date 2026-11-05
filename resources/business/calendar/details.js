@@ -2,8 +2,8 @@
  * The appointment details panel (Bookings' appointment-details-modal):
  * who, when, where, answers, status, notes, and a move form for anyone
  * without a mouse to drag with, the messages sent about it and "Send
- * again" (queued, sent within the minute). Mark paid arrives with payments
- * (Phase 8).
+ * again" (queued, sent within the minute), and the deposit with Mark paid
+ * and Mark refunded (Phase 8, for members with payments.manage).
  */
 import { getJson, postJson } from './api.js';
 import { el } from './chip.js';
@@ -74,6 +74,14 @@ export function initDetails(root, scheduler) {
     const chat = q('[data-d-whatsapp]');
     chat.hidden = !a.whatsapp_url;
     chat.href = a.whatsapp_url || '#';
+    const pay = a.payment;
+    q('[data-d-payment]').hidden = !pay;
+    if (pay) {
+      q('[data-d-payment-label]').textContent = MSG.paymentLabel(pay.label, pay.amount, pay.status === 'due' ? pay.due_by : null);
+      q('[data-d-payment-list]').replaceChildren(...pay.payments.map((p) => el('li', '', MSG.paymentRow(p))));
+      q('[data-d-mark-paid]').hidden = !(a.can_payments && pay.can_mark_paid);
+      q('[data-d-mark-refunded]').hidden = !(a.can_payments && pay.can_refund);
+    }
     q('[data-d-event]').value = { pending: 'pending', confirmed: 'confirmed', cancelled: 'cancelled', no_show: 'no_show' }[a.status] || 'confirmed';
     scheduler.busy(true);
     if (!dialog.open) dialog.showModal();
@@ -100,6 +108,17 @@ export function initDetails(root, scheduler) {
     const ok = await scheduler.reschedule(current.id, q('[data-d-date]').value, q('[data-d-time]').value, Number(q('[data-d-provider]').value), fail);
     if (ok) dialog.close();
   });
+
+  async function markPayment(action, question) {
+    if (!current || !window.confirm(question)) return;
+    const res = await postJson(`${root.dataset.appointmentUrl}/${current.id}/payment`, { action });
+    if (!res.ok) { fail(res.error); return; }
+    scheduler.toast(MSG.saved);
+    await scheduler.reload();
+    await open(current.id);
+  }
+  q('[data-d-mark-paid]').addEventListener('click', () => markPayment('paid', MSG.markPaidAsk));
+  q('[data-d-mark-refunded]').addEventListener('click', () => markPayment('refunded', MSG.markRefundedAsk));
 
   q('[data-d-send]').addEventListener('click', async () => {
     if (!current) return;

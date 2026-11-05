@@ -7,7 +7,9 @@ profile can take bookings from one codebase, one database and one release.
   `bookings.enabled`, not released. Phase 5 (public booking) built on
   `bookings-p5-public` (off `main`), not merged. Phase 6 (notifications) built on
   `bookings-p6-notifications` (off p5), not merged. Phase 7 (dashboard and analytics)
-  built on `bookings-p7-dashboard` (off p6), not merged.
+  built on `bookings-p7-dashboard` (off p6), not merged. Phase 8 (deposits into the
+  business's own PayFast or Paystack account) built on `bookings-p8-payments` (off p7),
+  not merged.
 - **Reference app (frozen):** `/Volumes/Nilo_512GB/projects/xscheduler_ci4` (Bookings
   v2.7.0). Its installs keep running untouched. Nothing in this project changes it.
 - **Plan:** phases 0 to 10 below. Each phase gets its own branch (off `main` since the

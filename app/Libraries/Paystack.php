@@ -245,6 +245,15 @@ class Paystack
         return str_starts_with($link, 'https://') ? $link : null;
     }
 
+    /**
+     * Whether Paystack accepts the secret key: one page of the transaction
+     * list. For a business connecting its own account (online bookings).
+     */
+    public function keyWorks(): bool
+    {
+        return $this->request('GET', '/transaction?perPage=1') !== null;
+    }
+
     /** HMAC SHA512 of the raw body under the secret key, as Paystack signs it. */
     public function validWebhookSignature(string $raw, string $signature): bool
     {

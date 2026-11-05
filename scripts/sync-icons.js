@@ -82,7 +82,7 @@ const ICONS = [
   // Online bookings: the /business navigation (layouts/business.php).
   'layout-dashboard', 'settings', 'history', 'list', 'users', 'calendar-off', 'plus',
   // The dashboard and analytics (business/home.php, layouts/business.php).
-  'chart-column', 'circle-alert', 'info',
+  'chart-column', 'wallet', 'circle-alert', 'info',
   // The calendar and customers (business/calendar.php, business/customer*.php).
   'contact', 'user',
 ];

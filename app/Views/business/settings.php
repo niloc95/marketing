@@ -6,6 +6,7 @@
  * @var array<string,string>      $settings
  * @var array<string,list<string>> $choices
  * @var array<string,mixed>|null   $messages the Messages tab (NotificationSettings::viewData())
+ * @var array<string,mixed>|null   $payments the Payments tab (PaymentSettings::viewData())
  */
 $labels = [
     '24h' => '24 hour clock (14:30)', '12h' => '12 hour clock (2:30 pm)',
@@ -91,6 +92,8 @@ $labels = [
     </form>
 <?php elseif ($tab === 'notifications'): ?>
     <?= $this->include('business/_settings_notifications') ?>
+<?php elseif ($tab === 'payments'): ?>
+    <?= $this->include('business/_settings_payments') ?>
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>

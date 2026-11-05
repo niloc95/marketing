@@ -45,7 +45,7 @@ already holds is read from the profile, never copied, so the two can't drift.
 | `notifications.reminder_primary`, `reminder_secondary` | `1440`, `0` (off) | 6 | minutes before, 0 to 20160; one setting for every channel (Bookings kept offsets per channel on the rules); built 5 Nov 2026 |
 | `notifications.from_name` | business name | 6 | sender name only, shown as "Name via WebScheduler Local"; the address is always ours; built 5 Nov 2026 |
 | `notifications.reply_to` | the profile's email | 6 | Reply-To on customer emails; built 5 Nov 2026 |
-| `payments.deposit_gateway` | none | 8 | per decision D6 |
+| `payments.hold_minutes` | `30` | 8 | how long an unpaid deposit holds the time, 15 to 120; built 5 Nov 2026. The gateway is the business's account in `xs_booking_integrations` (channel `payment`), not a setting |
 
 ## Not carried
 

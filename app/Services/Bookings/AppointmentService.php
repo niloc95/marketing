@@ -122,6 +122,7 @@ class AppointmentService
         $out['created_at']   = $row['created_at'];
         $out['messages']     = $this->messages($id);
         $out['whatsapp_url'] = $this->whatsappUrl($row);
+        $out['payment']      = (new Payments\DepositService($this->listing, $this->now))->summary($row);
 
         return $out;
     }

@@ -19,6 +19,9 @@
  * @var array<string,mixed>|null       $next
  * @var list<array<string,mixed>>      $fields
  * @var list<array<string,mixed>>      $questions
+ * @var array<int,int|null>            $deposits  deposit in cents by service id
+ * @var int|null                       $deposit   the chosen service's
+ * @var int                            $holdMinutes
  * @var bool                           $hasTerms
  * @var array<string,mixed>            $policies
  * @var array<string,mixed>            $old
@@ -45,6 +48,8 @@ $clock   = static function (string $hhmm) use ($twelveHour): string {
     return ($h % 12 ?: 12) . ($m ? ':' . sprintf('%02d', $m) : '') . ($h < 12 ? 'am' : 'pm');
 };
 $price = static fn (array $s): string => $s['price_cents'] !== null ? money($s['price_cents'] / 100, (string) $s['currency']) : '';
+// "R85 deposit online" next to a price, when the service asks for one (DepositService::depositFor()).
+$depositText = static fn (array $s): string => ($deposits[(int) $s['id']] ?? null) !== null ? money($deposits[(int) $s['id']] / 100, 'ZAR') . ' deposit online' : '';
 $labels = [
     'first_name' => 'First name', 'last_name' => 'Surname', 'email' => 'Email', 'phone' => 'Phone',
     'address' => 'Address', 'notes' => 'Anything we should know?',
@@ -77,10 +82,10 @@ $whoParam = $who === '' ? null : $who;
             <h2 class="mb-3 font-bold">1. Service</h2>
             <?php if ($service !== null && count($services) > 1): ?>
                 <p class="flex flex-wrap items-center gap-3"><strong><?= esc((string) $service['name']) ?></strong>
-                    <span class="text-sm text-slate-500"><?= (int) $service['duration_min'] ?> min<?= $price($service) !== '' ? ', ' . esc($price($service)) : '' ?></span>
+                    <span class="text-sm text-slate-500"><?= (int) $service['duration_min'] ?> min<?= $price($service) !== '' ? ', ' . esc($price($service)) : '' ?><?= $depositText($service) !== '' ? ', ' . esc($depositText($service)) : '' ?></span>
                     <a class="text-sm underline" href="<?= $link([]) ?>">Change</a></p>
             <?php elseif ($service !== null): ?>
-                <p><strong><?= esc((string) $service['name']) ?></strong> <span class="text-sm text-slate-500"><?= (int) $service['duration_min'] ?> min<?= $price($service) !== '' ? ', ' . esc($price($service)) : '' ?></span></p>
+                <p><strong><?= esc((string) $service['name']) ?></strong> <span class="text-sm text-slate-500"><?= (int) $service['duration_min'] ?> min<?= $price($service) !== '' ? ', ' . esc($price($service)) : '' ?><?= $depositText($service) !== '' ? ', ' . esc($depositText($service)) : '' ?></span></p>
             <?php else: ?>
                 <ul class="divide-y divide-slate-100 dark:divide-slate-800">
                     <?php foreach ($services as $s): ?>
@@ -90,7 +95,7 @@ $whoParam = $who === '' ? null : $who;
                                     <span class="block font-semibold"><?= esc((string) $s['name']) ?></span>
                                     <?php if (trim((string) ($s['description'] ?? '')) !== ''): ?><span class="block text-sm text-slate-500"><?= esc((string) $s['description']) ?></span><?php endif ?>
                                 </span>
-                                <span class="text-right text-sm text-slate-500"><?= (int) $s['duration_min'] ?> min<?= $price($s) !== '' ? '<br>' . esc($price($s)) : '' ?></span>
+                                <span class="text-right text-sm text-slate-500"><?= (int) $s['duration_min'] ?> min<?= $price($s) !== '' ? '<br>' . esc($price($s)) : '' ?><?= $depositText($s) !== '' ? '<br>' . esc($depositText($s)) : '' ?></span>
                             </a>
                         </li>
                     <?php endforeach ?>
@@ -209,7 +214,10 @@ $whoParam = $who === '' ? null : $who;
                     <?= esc($listing['display_name']) ?> receives your details to look after your booking. WebScheduler Local keeps them for the business, as our <a class="underline" href="<?= base_url('privacy') ?>">privacy policy</a> explains.
                     <?php if ((int) $policies['cancel_hours'] > 0): ?>You can cancel online up to <?= (int) $policies['cancel_hours'] ?> <?= (int) $policies['cancel_hours'] === 1 ? 'hour' : 'hours' ?> before.<?php endif ?>
                 </p>
-                <button type="submit" class="btn btn-accent btn-block">Book <?= esc((string) $service['name']) ?>, <?= esc($dayName((string) $date)) ?> at <?= esc($clock($slot['time'])) ?></button>
+                <?php if ($deposit !== null): ?>
+                    <p class="alert alert-info mb-4 text-sm">To keep this time, pay a deposit of <?= esc(money($deposit / 100, 'ZAR')) ?> online straight after booking. It goes to <?= esc($listing['display_name']) ?>. We hold the time for <?= (int) $holdMinutes ?> minutes; if the deposit is not paid by then, the time is freed for others.</p>
+                <?php endif ?>
+                <button type="submit" class="btn btn-accent btn-block"><?= $deposit !== null ? 'Book and pay the deposit' : 'Book ' . esc((string) $service['name']) . ', ' . esc($dayName((string) $date)) . ' at ' . esc($clock($slot['time'])) ?></button>
             </form>
         <?php endif ?>
 

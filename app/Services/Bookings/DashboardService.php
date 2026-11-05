@@ -6,6 +6,7 @@ use App\Models\Bookings\BookingAppointmentModel as A;
 use App\Models\Bookings\BookingCustomerModel;
 use App\Models\Bookings\BookingDeliveryLogModel;
 use App\Services\Bookings\Calendar\CalendarQuery;
+use App\Services\Bookings\Payments\DepositService;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -61,7 +62,7 @@ class DashboardService
     /**
      * The figures across the top, cached five minutes per business and scope.
      *
-     * @return array{today:int,next_hours:int,pending:int,week:int,customers:int,month_value_cents:int,currency:string}
+     * @return array{today:int,next_hours:int,pending:int,week:int,customers:int,month_value_cents:int,deposits_cents:int,currency:string}
      */
     public function cards(): array
     {
@@ -69,7 +70,7 @@ class DashboardService
 
         return BookingMetricsCache::remember($this->listingId, $key, function (): array {
             if ($this->scope === []) {
-                return ['today' => 0, 'next_hours' => 0, 'pending' => 0, 'week' => 0, 'customers' => 0, 'month_value_cents' => 0, 'currency' => 'ZAR'];
+                return ['today' => 0, 'next_hours' => 0, 'pending' => 0, 'week' => 0, 'customers' => 0, 'month_value_cents' => 0, 'deposits_cents' => 0, 'currency' => 'ZAR'];
             }
             [$dayStart, $dayEnd] = $this->dayUtc($this->today());
             $nowUtc   = $this->utc($this->now);
@@ -91,6 +92,7 @@ class DashboardService
                 'week'              => $this->appointments()->where('start_at >=', $dayStart)->where('start_at <', $weekEnd)->whereIn('status', self::TODAY)->countAllResults(),
                 'customers'         => $this->customerCount(),
                 'month_value_cents' => (int) ($value['cents'] ?? 0),
+                'deposits_cents'    => (new DepositService($this->listing, $this->now))->receivedThisMonth($this->scope),
                 'currency'          => (string) ($value['currency'] ?? '') ?: 'ZAR',
             ];
         });
@@ -145,7 +147,8 @@ class DashboardService
         $events = (new CalendarQuery($this->listingId, $this->tz))->forRange($this->today(), $to, ['status' => [A::STATUS_PENDING]], $this->scope);
         $from   = $this->now->format('Y-m-d') . 'T00:00';
 
-        return array_slice(array_values(array_filter($events, static fn (array $e): bool => $e['start'] >= $from)), 0, $limit);
+        // A booking still waiting for its deposit is the customer's to finish, not the business's to confirm.
+        return array_slice(array_values(array_filter($events, static fn (array $e): bool => $e['start'] >= $from && $e['payment_status'] !== A::PAYMENT_DUE)), 0, $limit);
     }
 
     /**
@@ -256,6 +259,17 @@ class DashboardService
             ];
         }
 
+        if ($auth->can($member, 'payments.manage')) {
+            $refunds = count((new DepositService($this->listing, $this->now))->toRefund($this->scope));
+            if ($refunds > 0) {
+                $out[] = [
+                    'code' => 'refund', 'level' => 'warn',
+                    'text' => ($refunds === 1 ? 'One deposit was' : $refunds . ' deposits were') . ' paid on a booking that is cancelled or was freed. Refund in your PayFast or Paystack account if your terms say so, then mark it refunded.',
+                    'link' => 'business/payments', 'action' => 'See payments',
+                ];
+            }
+        }
+
         if ($auth->can($member, 'settings.manage')) {
             $failed = $this->failedMessages();
             if ($failed > 0) {
@@ -289,7 +303,8 @@ class DashboardService
             return 0;
         }
 
-        return $this->appointments()->where('status', A::STATUS_PENDING)->where('start_at >=', $this->dayUtc($this->today())[0])->countAllResults();
+        return $this->appointments()->where('status', A::STATUS_PENDING)->where('payment_status !=', A::PAYMENT_DUE)
+            ->where('start_at >=', $this->dayUtc($this->today())[0])->countAllResults();
     }
 
     /** All customers for the whole business; a member's own otherwise (permissions.md). */

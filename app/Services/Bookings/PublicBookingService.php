@@ -8,6 +8,7 @@ use App\Models\Bookings\BookingAppointmentModel;
 use App\Models\Bookings\BookingProviderModel;
 use App\Models\Bookings\BookingProviderServiceModel;
 use App\Models\DirectoryListingModel;
+use App\Services\Bookings\Payments\DepositService;
 use Config\Bookings;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -184,15 +185,17 @@ class PublicBookingService
     }
 
     /**
-     * The customer fields of the booking form, in order.
+     * The customer fields of the booking form, in order. With a deposit to
+     * pay the email is always asked for: the receipt goes there, and
+     * Paystack will not take a payment without one.
      *
      * @return list<array{stem:string,name:string,required:bool}>
      */
-    public function customerFields(): array
+    public function customerFields(bool $deposit = false): array
     {
         $out = [];
         foreach (Bookings::CUSTOMER_FIELDS as $stem => $name) {
-            if ($stem === 'first_names') {
+            if ($stem === 'first_names' || ($deposit && $stem === 'email')) {
                 $out[] = ['stem' => $stem, 'name' => $name, 'required' => true];
             } elseif ($this->settings->get('booking.' . $stem . '_display') === '1') {
                 $out[] = ['stem' => $stem, 'name' => $name, 'required' => $this->settings->get('booking.' . $stem . '_required') === '1'];
@@ -244,9 +247,12 @@ class PublicBookingService
         $start      = (string) ($input['start'] ?? '');
         $errors     = [];
 
-        if ($this->service($serviceId) === null) {
+        $service = $this->service($serviceId);
+        if ($service === null) {
             return ['token' => null, 'reference' => null, 'errors' => ['service_id' => AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::NOT_OFFERED]]];
         }
+        $deposits = new DepositService($this->listing, $this->now);
+        $deposit  = $deposits->depositFor($service);
         if (! preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:00$/', $start)) {
             return ['token' => null, 'reference' => null, 'errors' => ['start' => AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::NOT_ON_THE_GRID]]];
         }
@@ -269,7 +275,7 @@ class PublicBookingService
         // The customer as the business's form asks for them.
         $customers = new CustomerService($this->listingId);
         $person    = [];
-        foreach ($this->customerFields() as $f) {
+        foreach ($this->customerFields($deposit !== null) as $f) {
             $value = trim((string) ($input[$f['name']] ?? ''));
             if ($f['required'] && $value === '') {
                 $errors[$f['name']] = 'Please fill this in.';
@@ -300,7 +306,9 @@ class PublicBookingService
             return ['token' => null, 'reference' => null, 'errors' => $customer['errors']];
         }
 
-        $status = $this->settings->get('booking.default_appointment_status');
+        // A deposit to pay holds the time as a request; paying it moves the
+        // booking to the usual status (DepositService::paid()).
+        $status = $deposit !== null ? BookingAppointmentModel::STATUS_PENDING : $this->settings->get('booking.default_appointment_status');
         $result = BookingLock::reserve($this->listing, [
             'provider_id' => $providerId,
             'service_id'  => $serviceId,
@@ -323,8 +331,14 @@ class PublicBookingService
             (new \App\Models\Bookings\BookingAppointmentFieldModel())->insertBatch($rows);
             $customers->rememberAnswers($customer['id'], $answers);
         }
-        (new BookingAudit())->record($this->listingId, null, 'appointment.booked_online', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId]);
-        $this->appointments()->notify($id, \App\Services\Bookings\Notifications\NotificationQueue::statusEvent($status), true);
+        (new BookingAudit())->record($this->listingId, null, 'appointment.booked_online', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId, 'deposit_cents' => $deposit]);
+        if ($deposit !== null) {
+            // No messages yet: they go out once the deposit is paid.
+            $deposits->ask($id, $deposit);
+            $this->appointments()->notify($id, null);
+        } else {
+            $this->appointments()->notify($id, \App\Services\Bookings\Notifications\NotificationQueue::statusEvent($status), true);
+        }
 
         return ['token' => $this->appointments()->issuePublicToken($id), 'reference' => $result['reference'], 'errors' => []];
     }

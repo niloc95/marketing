@@ -30,8 +30,17 @@ final class PaymentReference
     public const PLUS_MONTHLY = 'WSL-PLUS-M';
     public const PLUS_YEARLY  = 'WSL-PLUS-Y';
 
-    /** Reserved for Bookings once it takes payments inside Local; nothing produces it yet. */
+    /**
+     * Online bookings: an appointment is WSB-BOOK-000123 (BookingLock), and
+     * each try at paying its deposit WSB-BOOK-000123-P1, P2 ... (a gateway
+     * refuses a reference it has seen, so a second try needs its own).
+     */
     public const BOOKING = 'WSB-BOOK';
+
+    public static function forDeposit(int $appointmentId, int $attempt): string
+    {
+        return self::make(self::BOOKING, $appointmentId) . '-P' . max(1, $attempt);
+    }
 
     public static function make(string $prefix, int $id, int $attempt = 1): string
     {

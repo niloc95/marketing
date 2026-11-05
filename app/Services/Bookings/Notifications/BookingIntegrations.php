@@ -7,7 +7,9 @@ use App\Services\Bookings\BookingAudit;
 
 /**
  * The SMS and WhatsApp accounts a business brings (decision D8: the business
- * pays its own provider; we do not resell). Ported from Bookings'
+ * pays its own provider; we do not resell), and since Phase 8 the PayFast or
+ * Paystack account its deposits go into (channel 'payment', decision D6: the
+ * money goes to the business, never through us). Ported from Bookings'
  * NotificationSmsService / NotificationWhatsAppService integration settings
  * and HandlesNotificationIntegrations. The only writer of
  * xs_booking_integrations.
@@ -49,9 +51,17 @@ class BookingIntegrations
                 'template_no_show' => ['Template name: no show', false],
             ],
         ],
+        // The business's own merchant account. 'mode' is live or test (PayFast's sandbox);
+        // a Paystack key says its own mode (sk_test_).
+        'payment' => [
+            'payfast'  => ['merchant_id' => ['Merchant ID', false], 'merchant_key' => ['Merchant key', false], 'passphrase' => ['Passphrase', true], 'mode' => ['Mode', false]],
+            'paystack' => ['secret_key' => ['Secret key', true]],
+        ],
     ];
 
     public const PROVIDER_LABELS = [
+        'payfast'    => 'PayFast',
+        'paystack'   => 'Paystack',
         'clickatell' => 'Clickatell',
         'twilio'     => 'Twilio',
         'link'       => 'Open a chat from the appointment (no account needed)',
@@ -222,6 +232,25 @@ class BookingIntegrations
     private function check(string $channel, string $provider, array $c): array
     {
         $errors = [];
+        if ($provider === 'payfast') {
+            if (! preg_match('/^\d{5,12}$/', $c['merchant_id'])) {
+                $errors['merchant_id'] = 'The merchant ID is the number on your PayFast dashboard.';
+            }
+            if (! preg_match('/^[A-Za-z0-9]{8,32}$/', $c['merchant_key'])) {
+                $errors['merchant_key'] = 'The merchant key is the letters and digits on your PayFast dashboard.';
+            }
+            // PayFast lets an account go without one; we do not, since it is what
+            // stops anyone else signing a payment notification for this account.
+            if (mb_strlen($c['passphrase']) < 8) {
+                $errors['passphrase'] = 'Set a passphrase of at least 8 characters under Settings, Developer settings in PayFast, and paste it here.';
+            }
+            if (! in_array($c['mode'], ['live', 'test'], true)) {
+                $errors['mode'] = 'Choose live or test.';
+            }
+        }
+        if ($provider === 'paystack' && ! preg_match('/^sk_(live|test)_[A-Za-z0-9]{20,}$/', $c['secret_key'])) {
+            $errors['secret_key'] = 'Paste the secret key from Settings, API keys in Paystack. It starts with sk_live_ or sk_test_.';
+        }
         $phone  = static fn (string $v): bool => (bool) preg_match('/^\+\d{7,15}$/', $v);
         if ($provider === 'clickatell' && $c['api_key'] === '') {
             $errors['api_key'] = 'Paste the API key from Clickatell.';

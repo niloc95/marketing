@@ -46,7 +46,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | Built 5 Nov 2026: today, next 4 hours, next 7 days, waiting for confirmation, customers (own for a team member), booked value this month (from appointment prices, not money received). Pending payments wait for Phase 8. Cached 5 min per business and scope, emptied on every appointment change (`BookingMetricsCache`) |
+| Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | Built 5 Nov 2026: today, next 4 hours, next 7 days, waiting for confirmation, customers (own for a team member), booked value this month (from appointment prices, not money received). Deposits received this month show in the value tile's note since Phase 8. Cached 5 min per business and scope, emptied on every appointment change (`BookingMetricsCache`) |
 | Provider cards with free slots, quick book | `/api/dashboard/provider-slots` | Port | 7 | Built: state now in the business's time zone (working, on a break, off, time off; Bookings used the server clock), today's next free times as links to the prefilled form, next free time when today is full. Server rendered, no JSON endpoint |
 | Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | Built: by person, in team order; `GET /business/api/dashboard/today` returns the partial every 2 min while the tab is visible |
 | Role alerts (pending confirmations, missing hours, booking off, closures, overbooking) | `AuthorizationService` | Port | 7 | Bookings only built pending confirmations. Built: pending, setup problems (`SetupCheck`), public holidays with no answer, whole business closures in 14 days, messages not sent in 7 days (admin). Overbooking skipped: `BookingLock` refuses it |
@@ -146,11 +146,13 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Deposit percentage per service | `deposit_percentage`, `calculate_deposit_amount()` | Port | 8 | |
-| PayFast deposits | `PayFastPaymentService` | Rebuild ⚠ | 8 | gateway choice open: Paystack subaccounts favoured |
+| Deposit percentage per service | `deposit_percentage`, `calculate_deposit_amount()` | Port | 8 | Built 5 Nov 2026 (`DepositService::amountFor()`): percentage of the price, rand only, at least R5 (PayFast's smallest payment). No account on: the booking goes through without a deposit and SetupCheck says so |
+| PayFast deposits | `PayFastPaymentService` | Rebuild ⚠ | 8 | Built 5 Nov 2026 on the business's **own** PayFast account (T15): Local's `PayFast` client on the business's keys (`GatewayConfig`), signed form, notification at `book/payfast/notify` checked four ways under the business's passphrase (required here, optional in PayFast) and its merchant id |
+| Paystack deposits | none | New | 8 | Built 5 Nov 2026 on the business's own secret key: hosted checkout, verified with Paystack when the customer comes back and by `bookings:payments` every 5 minutes. No webhook: a Paystack account has one webhook address, which the business may use for its own shop |
+| Hold while paying | none (Bookings booked first, then asked for payment) | New | 8 | The booking waits as pending with `payment_due_by` (`payments.hold_minutes`, 30); no messages until paid; paid moves it to the usual status and queues the messages; unpaid by then, `bookings:payments` cancels it quietly. A payment after that brings it back if the time is still free, otherwise "deposit to refund" |
 | Stripe deposits | `StripePaymentService` | Later ⚠ | | .app only, if .app gets bookings |
-| Transactions, mark paid | `xs_payment_transactions`, `adminMarkPaid` | Port | 8 | |
-| Refunds | status exists, no flow | Later ⚠ | | |
+| Transactions, mark paid | `xs_payment_transactions`, `adminMarkPaid` | Port | 8 | Built 5 Nov 2026: `/business/payments` (every try, To refund list, received this month, scoped), Mark deposit paid and Mark refunded in the appointment details (`payments.manage`, own people for a team member) |
+| Refunds | status exists, no flow | Later ⚠ | | T16: done in the business's own gateway, then marked refunded. A dashboard alert lists deposits paid on a cancelled or freed booking |
 
 ## 11. Integrations and API
 
