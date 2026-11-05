@@ -1253,6 +1253,8 @@ class Admin extends BaseController
             'plusUsdYearly'       => $settings->plusYearlyPriceUsd(),
             'plusRandYearly'      => $settings->plusYearlyRandAmount(),
             'lastPlusPriceYearly' => $settings->lastChange(DirectorySettingModel::PLUS_PRICE_USD_YEARLY),
+            'setupRand'         => $settings->profileSetupRand(),
+            'lastSetupRand'     => $settings->lastChange(DirectorySettingModel::PROFILE_SETUP_ZAR),
             'setupUsd'          => $settings->profileSetupUsd(),
             'setupRandApp'      => $settings->profileSetupRandOnApp(),
             'extraHolidays' => $settings->extraHolidaysText(),

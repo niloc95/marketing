@@ -173,6 +173,16 @@ class DirectorySettings
         return number_format(round((float) $usd * (float) $rate, 2), 2, '.', '');
     }
 
+    /** The setup service's rand price on co.za: the saved one, else .env, else the default. */
+    public function profileSetupRand(): string
+    {
+        $stored = $this->stored(DirectorySettingModel::PROFILE_SETUP_ZAR);
+
+        return $stored === null
+            ? $this->config->profileSetupAmount()
+            : $this->config->normaliseAmount($stored);
+    }
+
     /** The setup service's dollar price on .app: the saved one, else the default. */
     public function profileSetupUsd(): string
     {
@@ -337,6 +347,11 @@ class DirectorySettings
             $usdYearly = $this->validatePrice($input, 'plus_price_usd_yearly', $errors, 'Enter a yearly price.');
 
             $writes[DirectorySettingModel::PLUS_PRICE_USD_YEARLY] = static fn (): string => (string) $usdYearly;
+        }
+        if (trim((string) ($input['profile_setup_price'] ?? '')) !== '') {
+            $setupRand = $this->validatePrice($input, 'profile_setup_price', $errors);
+
+            $writes[DirectorySettingModel::PROFILE_SETUP_ZAR] = static fn (): string => (string) $setupRand;
         }
         if (trim((string) ($input['profile_setup_usd'] ?? '')) !== '') {
             $setupUsd = $this->validatePrice($input, 'profile_setup_usd', $errors);

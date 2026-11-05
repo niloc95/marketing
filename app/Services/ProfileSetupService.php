@@ -50,11 +50,12 @@ class ProfileSetupService
      */
     public function amount(): string
     {
-        if ($this->onApp() && ($rand = (new DirectorySettings())->profileSetupRandOnApp()) !== null) {
+        $settings = new DirectorySettings($this->site);
+        if ($this->onApp() && ($rand = $settings->profileSetupRandOnApp()) !== null) {
             return $rand;
         }
 
-        return $this->site->profileSetupAmount();
+        return $settings->profileSetupRand();
     }
 
     /**

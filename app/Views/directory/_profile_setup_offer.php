@@ -3,13 +3,14 @@
  * The profile setup service, offered in one bold line where an owner fills
  * in their profile: the signup form (form.php) and the owner's edit page
  * (manage_edit.php). One copy so the price and wording cannot drift; the
- * price comes from the same config the /profile-setup page reads.
+ * price comes from the same service the /profile-setup page reads.
  */
 // The dollar price on local.webscheduler.app (ProfileSetupService::usdAmount()).
-$setupUsd   = (new \App\Services\ProfileSetupService())->usdAmount();
-$setupPrice = $setupUsd !== null
+$setupService = new \App\Services\ProfileSetupService();
+$setupUsd     = $setupService->usdAmount();
+$setupPrice   = $setupUsd !== null
     ? money($setupUsd, 'USD')
-    : money(rtrim(rtrim(config('Directory')->profileSetupAmount(), '0'), '.'));
+    : money(rtrim(rtrim($setupService->amount(), '0'), '.'));
 ?>
 <p class="mb-6 rounded-surface bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
     <strong>Short on time? For a single payment of <?= esc($setupPrice) ?>, we complete your profile for you.</strong>

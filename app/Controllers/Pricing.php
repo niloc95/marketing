@@ -49,7 +49,7 @@ class Pricing extends BaseController
                     $verification->amountFor(DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::CYCLE_YEARLY),
                     'ZAR'
                 ) : null,
-                'profileSetup' => $this->once($config->profileSetupAmount(), 'ZAR'),
+                'profileSetup' => $this->once($settings->profileSetupRand(), 'ZAR'),
                 // What a partner earns per referred Verified business on the
                 // monthly price, as /partners works it out (partners.php).
                 'partner' => $badgeOn && $partners->enabled ? $this->partner((float) $settings->badgePrice(), $partners) : null,

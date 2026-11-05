@@ -99,6 +99,17 @@ $changeNote = static function (?array $change): string {
                     </div>
                 </div>
 
+                <div class="field">
+                    <label for="setup-rand">Profile setup service price on co.za (rand, once off)</label>
+                    <input type="text" id="setup-rand" name="profile_setup_price" inputmode="decimal"
+                           value="<?= esc($v('profile_setup_price', $setupRand), 'attr') ?>" placeholder="250.00">
+                    <?php if ($err('profile_setup_price')): ?><div class="err"><?= esc($err('profile_setup_price')) ?></div><?php endif; ?>
+                    <div class="hint">
+                        What /profile-setup charges on local.webscheduler.co.za. Each order keeps the price it was paid at.
+                        <?php if ($n = $changeNote($lastSetupRand)): ?><br><?= esc($n) ?><?php endif; ?>
+                    </div>
+                </div>
+
                 <?php // The one thing this page must be honest about. We cannot re-price a
                       // live PayFast mandate from here, and implying otherwise would turn
                       // a price rise into a pile of "why am I still paying the old amount?"
