@@ -14,7 +14,7 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`); phases 5 to 10 and .app
 (T24) on 5 Nov 2026. All behind `bookings.enabled` (off), not released to production.
 No decisions open (D10, D11, D13 became T25 to T27: English only, the feature is called
-"Bookings", import from frozen installs later with each customer's OK).
+"Bookings" but copy keeps "online bookings", import from frozen installs later with each customer's OK).
 
 | Phase | State |
 |---|---|

@@ -29,7 +29,7 @@
 | T23 | Bookings plan prices (was D16): by bookable people, Solo (1) R160, Team (up to 5) R420, Business (6 or more) R890 a month; `Config\Bookings::$planTiers`, prices overridable with `bookings.planPrices`. Growing or shrinking past a tier offers a move, which charges the new price, adds a month and stops the old subscription | owner, 5 Nov 2026 |
 | T24 | Sites (was D2): online bookings on both sites. A business uses its own site's host for the booking page, `/business` and the API (the wrong host redirects, or 404s for a form or an API call); prices in its country's currency (`BusinessLocale`), its own clock; no deposits abroad (rand only, the business's own PayFast or Paystack in South Africa; Stripe later); the plan abroad shows US dollars (US$8.99 / US$23.99 / US$49.99, `planTiers` `usd`) and is charged in rand at the Plus rate (`usd_zar_rate@app`), with no rand figure on .app | owner, 5 Nov 2026 |
 | T25 | Languages (was D10): English only | owner, 5 Nov 2026 |
-| T26 | Name in copy (was D11): the feature is called **Bookings**; WebScheduler Local stays the platform name | owner, 5 Nov 2026 |
+| T26 | Name in copy (was D11): the feature is called **Bookings**; screens and emails keep "online bookings" as they say now (owner, 5 Nov: no rename); WebScheduler Local stays the platform name | owner, 5 Nov 2026 |
 | T27 | Import from frozen Bookings installs (was D13): yes, per customer and with their OK, after launch | owner, 5 Nov 2026 |
 | T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as WhatsApp and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
 
