@@ -531,6 +531,9 @@ if (! function_exists('category_photo')) {
             // Supplied by the owner on 21 Oct 2026, replacing the Beauty &
             // Wellness group photo the category used to fall back to.
             'tattoo-piercing'    => ['Supplied by the owner', 0],
+            // Supplied by the owner on 5 Nov 2026, replacing the Health &
+            // Medical group photo the category used to fall back to.
+            'general-practitioner' => ['Supplied by the owner', 0],
         ];
 
         // group => list of [file name, photographer, Pexels id], in order of
