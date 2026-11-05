@@ -16,7 +16,18 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Settings extends BaseController
 {
-    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'notifications' => 'Messages', 'payments' => 'Payments', 'connections' => 'Connections', 'api' => 'API keys', 'localization' => 'Local time'];
+    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'notifications' => 'Messages', 'payments' => 'Payments', 'connections' => 'Connections', 'api' => 'API keys', 'plan' => 'Plan', 'localization' => 'Local time'];
+
+    /** The tabs; Plan only while the Bookings plan is required (Phase 10). */
+    public static function tabs(): array
+    {
+        $tabs = self::TABS;
+        if (! \App\Services\Bookings\Plans\BookingPlanService::required()) {
+            unset($tabs['plan']);
+        }
+
+        return $tabs;
+    }
 
     public function index()
     {
@@ -25,14 +36,14 @@ class Settings extends BaseController
 
     public function tab(string $tab)
     {
-        if (! array_key_exists($tab, self::TABS)) {
+        if (! array_key_exists($tab, self::tabs())) {
             throw PageNotFoundException::forPageNotFound();
         }
         $context = service('businessContext');
 
         return view('business/settings', [
             'tab'      => $tab,
-            'tabs'     => self::TABS,
+            'tabs'     => self::tabs(),
             'listing'  => $context->listing(),
             'settings' => BookingSettings::for($context->listingId())->all(),
             'choices'  => config('Bookings')->settingChoices,
@@ -40,6 +51,7 @@ class Settings extends BaseController
             'payments' => $tab === 'payments' ? PaymentSettings::viewData($context->listingId()) : null,
             'connections' => $tab === 'connections' ? ConnectionSettings::viewData($context->listing()) : null,
             'api'      => $tab === 'api' ? ApiKeys::viewData($context->listingId()) : null,
+            'plan'     => $tab === 'plan' ? PlanSettings::viewData($context->listingId()) : null,
         ]);
     }
 

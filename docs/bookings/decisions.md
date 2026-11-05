@@ -21,6 +21,8 @@
 | T15 | Deposits (was D6): each business connects its **own** PayFast or Paystack account and the money goes straight to it. We are not part of a business's billing to its customers: no subaccounts, no fee, never the merchant of record. Separate from the business's own subscription to us | owner, 5 Nov 2026 |
 | T16 | Refunds and 2FA (was D9): later. Refunds are done in the business's own gateway and marked refunded in /business | owner, 5 Nov 2026 |
 
+| T18 | Bookings plan (was D1): a paid monthly plan with a 30 day free trial, through Paystack, behind `bookings.planRequired`; price set by the owner (`bookings.planMonthly`) | owner, 5 Nov 2026 |
+| T19 | Retention and admin access (was D12): customers' personal details removed 24 months after their last appointment; platform admin sees counts and setup, plus a support view that needs a reason and is logged in the business's audit log | owner, 5 Nov 2026 |
 | T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as SMS and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
 
 ## Open: owner to answer before Phase 1
@@ -30,12 +32,11 @@ Each has a recommendation and is needed by the phase shown. D4, D5 and D7 were s
 
 | # | Question | Recommendation | Needed by |
 |---|---|---|---|
-| D1 | **Who can turn bookings on?** (a) every free profile, (b) Verified / Plus only, (c) a new paid Bookings plan (like R160 / R420 / R890 a month) | (c) a paid plan with a free trial: booking costs us SMS, WhatsApp and mail, and support. Free profiles see the offer. Ranking never changes. | Phase 10 (built with a switch, so the code does not wait) |
 | D2 | **Sites:** co.za only first, or .app too? | co.za first. .app later with Stripe or Paystack USD deposits and no rand figures. | Phase 5 |
 | D8 | **SMS and WhatsApp cost:** the business brings its own Twilio / Clickatell / Meta account (as in Bookings), or we resell? | Business brings its own at launch; resold credits later. Phase 6 was built this way (5 Nov 2026); owner to confirm. Owner wants SMS dropped completely (5 Nov 2026, to revisit with D14). | Phase 6 |
 | D10 | **Languages:** English only? | English only. | Phase 1 |
 | D11 | **Name in copy:** what owners and customers see. "Bookings", "WebScheduler Bookings", or "Online bookings on WebScheduler Local"? | "Online bookings" as the feature, "WebScheduler Local" as the platform. | Phase 1 |
-| D12 | **Customer data retention and platform admin access** (POPIA): how long to keep customers and appointments after the last booking, whether platform admin may open appointment contents | Keep 24 months after the last appointment, then delete the personal fields. Platform admin sees counts and setup only, plus a logged "open for support" action. | Phase 10 (privacy policy update before launch) |
 | D13 | **Import from frozen Bookings installs:** offer it later? | Yes, per customer and with their OK, after launch. | after Phase 10 |
 | D14 | **`encryption.key` on production** (still missing, noted in the Partner Program): required for integration credentials | Generate and set it before Phase 6 is released (owner OK, production change). **Revisit (owner, 5 Nov 2026):** the owner wants to drop SMS completely. If SMS goes and WhatsApp stays link only (wa.me, no stored account), nothing needs encrypting and D14 may fall away; decide together with D8. **Settled for Phase 8 (owner, 5 Nov 2026):** the business's PayFast and Paystack keys need it, so the key is set on production at the Phase 8 release, with the owner's OK at that step. | Phase 8 release |
 | D15 | **Google Calendar OAuth client** (Phase 9). Bookings had each business paste its own Google client id and secret. Built instead with one platform client (`bookings.googleClientId` and `bookings.googleClientSecret` in `.env`); the button stays hidden until they are set. The owner creates it in Google Cloud (redirect `https://local.webscheduler.co.za/business/connections/google/callback`, scope `calendar.events`), and Google's verification of a sensitive scope is needed before businesses outside the test users can connect | Owner: create the client and start Google's verification, or keep Google Calendar off at launch | Phase 9 release |
+| D16 | **Bookings plan price** (T18): one monthly price for now (`bookings.planMonthly`); D1 suggested tiers by size (R160 / R420 / R890) | Owner: set the price, and say whether tiers are wanted | before `planRequired = true` |

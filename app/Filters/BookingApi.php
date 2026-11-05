@@ -6,6 +6,7 @@ use App\Models\Bookings\AccountModel;
 use App\Models\DirectoryListingModel;
 use App\Services\Bookings\Api\ApiKeys;
 use App\Services\Bookings\BookingSetupService;
+use App\Services\Bookings\Plans\BookingPlanService;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -18,7 +19,8 @@ use CodeIgniter\HTTP\ResponseInterface;
  *    cookie, and a `listing_id` in the request can never point the key at
  *    another business (permissions.md). Unknown, revoked or expired keys,
  *    and keys whose member left the business: 401.
- * 3. The business must still take bookings: 403.
+ * 3. The business must still take bookings, under a plan that has not
+ *    ended (Phase 10): 403.
  * 4. 120 requests per key per minute (Config\Bookings::$apiPerMinute): 429
  *    with Retry-After.
  * 5. The scope must be on the key and the member's role must allow it
@@ -51,6 +53,9 @@ class BookingApi implements FilterInterface
         $setup   = new BookingSetupService();
         if (! is_array($listing) || ! $setup->isOn($listing) || $setup->whyNot($listing) !== null) {
             return self::error(403, 'bookings_off', 'This business does not take online bookings at the moment.');
+        }
+        if (! (new BookingPlanService())->allows($listing)) {
+            return self::error(403, 'plan_required', 'The online bookings plan of this business has ended. An admin can renew it in Settings, Plan.');
         }
         $account = (new AccountModel())->find((int) $member['account_id']);
         if (! is_array($account) || $account['status'] !== AccountModel::STATUS_ACTIVE) {

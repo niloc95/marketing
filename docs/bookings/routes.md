@@ -84,6 +84,13 @@ the Bearer header across sites, which is why `api/v1/*` is CSRF exempt). Referen
 `GET /developers/bookings` and `GET /developers/bookings/openapi.json`, 404 where bookings
 are off.
 
+## Phase 10
+
+`POST /business/settings/plan/subscribe`, `/cancel`, `GET /business/plan/paystack` (return
+from Paystack), tab `/business/settings/plan` (only while the plan is required);
+`GET /business/customers/{hash}/export` (admins); `GET /admin/bookings`,
+`POST /admin/bookings/{id}/extend`, `POST /admin/bookings/{id}/support`.
+
 ## Cron
 
 | Bookings | Local | Phase |
@@ -91,6 +98,7 @@ are off.
 | `* * * * * notifications:dispatch-queue` | `* * * * * bookings:dispatch` (all businesses, lock file, time box) | 6 |
 | `notifications:purge-delivery-logs`, `audit:purge-logs` | `bookings:prune` daily, joins Local's 03:xx block | 6 |
 | none | `bookings:dispatch` runs the outbox (webhooks, Google, Zoom) before the messages each minute; no new cron line (Phase 9) | 9 |
+| none | `40 4 bookings:plans` (trial reminders, missed renewals) and `45 4 bookings:retention` (POPIA) | 10 |
 | none | `*/5 bookings:payments`: ask Paystack about open payments, free unpaid holds (built 5 Nov 2026); retention sweep in 10 | 8, 10 |
 
 Each new command goes into `deploy/cron/webscheduler` and the live `/etc/cron.d/webscheduler`.

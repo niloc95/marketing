@@ -91,6 +91,16 @@ provider. Provider hours are clipped to the business window for the day.
 Appointments got `video_meeting_id` (Zoom) and `google_event_id` in Phase 9; with `video_link`
 they are written only by `Integrations\IntegrationSync`, without touching `updated_at`.
 
+## The Bookings plan (Phase 10)
+
+| Table | Notes |
+|---|---|
+| `xs_booking_plans` | Built 5 Nov 2026 (migration `2026-11-19-100000`): one row per business (unique listing_id), state (trial, active, cancelled), trial_ends_at, paid_until (UTC), amount_cents, payment_reference (`WSL-BKG-M-000123`), payment_attempts, the Paystack mandate (customer, plan, subscription code, email token), reminded_at, cancelled_at, note. Not scoped (the webhook reads across businesses); written only by `Plans\BookingPlanService` |
+| `xs_booking_plan_payments` | one row per charge, unique gateway_id (`paystack:<id>`), so the return and the webhook count once |
+
+Customers past the keeping period keep their row (counts) with `purged_at` set and the
+personal fields cleared (`Privacy\Retention`); `CustomerService::list()` leaves them out.
+
 ## Settings (Phase 1)
 
 | Table | Columns | Notes |

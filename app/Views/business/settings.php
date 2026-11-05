@@ -100,6 +100,8 @@ $labels = [
     <?= $this->include('business/_settings_connections') ?>
 <?php elseif ($tab === 'api'): ?>
     <?= $this->include('business/_settings_api') ?>
+<?php elseif ($tab === 'plan'): ?>
+    <?= $this->include('business/_settings_plan') ?>
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>

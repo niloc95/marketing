@@ -153,3 +153,11 @@ MAILTO=""
 
 # Booking delivery logs, finished queue rows and read notices older than 90 days.
 35 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:prune --quiet
+
+# The Bookings plan (Phase 10): trial reminders and missed Paystack renewals.
+# Nothing while bookings.planRequired is off.
+40 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:plans --quiet
+
+# POPIA retention for booking customers (Phase 10, D12): personal details go
+# 24 months after the last appointment. Nothing while bookings are off.
+45 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:retention --quiet

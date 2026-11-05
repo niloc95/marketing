@@ -107,8 +107,8 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Customer custom fields | `xs_customers.custom_fields` | Port | 4 | |
 | Customer page by hash (upcoming, history) | `/my-appointments/{hash}` | Port | 5 | |
 | Delete with impact preview | `CustomerDeletionService` | Port | 4 | built: refused while an upcoming appointment exists; past ones stay without the person (Bookings refused while any existed) |
-| Data export for a customer (POPIA access request) | not built | New | 10 | admin action, per business |
-| Retention and purge | none | New | 10 ⚠ | rule needed for POPIA |
+| Data export for a customer (POPIA access request) | not built | New | 10 | built 5 Nov 2026: "Download their data" on the customer page (admins), JSON, audited |
+| Retention and purge | none | New | 10 | built 5 Nov 2026 (T19): `bookings:retention` nightly, personal fields cleared 24 months after the last appointment, older audit lines deleted |
 
 ## 8. Public booking
 

@@ -76,6 +76,11 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 </form>
 
 <?php if ($impact !== null): ?>
+    <section class="form-card form-card-narrow mt-8" id="their-data">
+        <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Their data</h2>
+        <p class="text-sm">If they ask what you hold about them, download it all in one file: their details, answers, appointments, deposits and the messages sent to them. We keep customers for <?= (int) config('Bookings')->retentionMonths ?> months after their last appointment, then remove their personal details.</p>
+        <a class="btn btn-ghost mt-4" href="<?= base_url('business/customers/' . $customer['hash'] . '/export') ?>">Download their data</a>
+    </section>
     <section class="form-card form-card-narrow mt-8" id="delete">
         <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Delete this customer</h2>
         <?php if (! $impact['can_delete']): ?>

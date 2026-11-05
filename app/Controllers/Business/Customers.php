@@ -113,6 +113,23 @@ class Customers extends BaseController
         return redirect()->to(base_url('business/customers'))->with('success', 'Customer deleted.');
     }
 
+    /**
+     * Everything held about the customer as one JSON file, for a POPIA
+     * access request (admins; Phase 10). In the audit log.
+     */
+    public function export(string $hash)
+    {
+        $customer = $this->visible($hash);
+        $context  = service('businessContext');
+        $data     = (new \App\Services\Bookings\Privacy\CustomerExport($context->listingId()))->build((int) $customer['id']);
+        (new \App\Services\Bookings\BookingAudit())->record($context->listingId(), $context->accountId(), 'customer.exported', 'customer', (int) $customer['id']);
+
+        return $this->response
+            ->setHeader('Cache-Control', 'no-store, private')
+            ->setHeader('Content-Disposition', 'attachment; filename="customer-' . (int) $customer['id'] . '.json"')
+            ->setJSON($data);
+    }
+
     /** JSON for the appointment form's customer picker: ?q= (at most 10). */
     public function lookup()
     {

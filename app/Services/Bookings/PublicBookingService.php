@@ -68,7 +68,8 @@ class PublicBookingService
         if (! config('Bookings')->siteAllowed(site()->key())
             || site()->forRow($listing) !== site()->key()
             || ! (int) ($listing['bookings_enabled'] ?? 0)
-            || ($listing['status'] ?? '') !== 'published') {
+            || ($listing['status'] ?? '') !== 'published'
+            || ! (new Plans\BookingPlanService())->allows($listing)) {
             return false;
         }
 

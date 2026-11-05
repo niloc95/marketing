@@ -123,6 +123,25 @@ $here = trim(uri_string(), '/');
                 <div class="alert <?= $cls ?> mb-5" role="<?= $key === 'error' ? 'alert' : 'status' ?>"><?= esc((string) $msg) ?></div>
             <?php endif ?>
         <?php endforeach ?>
+        <?php
+        // The Bookings plan (Phase 10): a line on every page near the end of the trial, or once it has ended.
+        $bizContext = service('businessContext');
+        $planLine   = null;
+        if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::required()) {
+            $planNow  = (new \App\Services\Bookings\Plans\BookingPlanService())->status($bizContext->listingId());
+            $planLine = match (true) {
+                $planNow['state'] === 'trial' && $planNow['days_left'] !== null && $planNow['days_left'] <= 7 => 'Your free trial ends in ' . $planNow['days_left'] . ($planNow['days_left'] === 1 ? ' day.' : ' days.'),
+                $planNow['state'] === 'past_due' => 'Your last plan payment did not go through.',
+                ! $planNow['allows']             => 'Your plan has ended, so customers cannot book online.',
+                default                          => null,
+            };
+        }
+        ?>
+        <?php if ($planLine !== null): ?>
+            <div class="alert alert-info mb-5" role="status"><?= esc($planLine) ?>
+                <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('business/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
+            </div>
+        <?php endif ?>
         <?= $this->renderSection('content') ?>
     </main>
 

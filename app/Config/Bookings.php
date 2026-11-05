@@ -70,6 +70,43 @@ class Bookings extends BaseConfig
     /** Days finished outbox rows (the delivery log) are kept. */
     public int $outboxKeepDays = 30;
 
+    /**
+     * The Bookings plan (Phase 10, decision D1): a monthly subscription with
+     * a free trial. Off (`bookings.planRequired = false`) every business with
+     * bookings on may use them, as before. The price is the owner's to set
+     * (`bookings.planMonthly`, rand, like 160.00); without one the plan
+     * cannot be bought, only the trial runs.
+     */
+    public bool $planRequired = false;
+
+    public string $planMonthly = '';
+
+    public int $trialDays = 30;
+
+    /** Days a lapsed renewal keeps working while Paystack tries the card again. */
+    public int $planGraceDays = 3;
+
+    /** Days before the trial ends that the admins are reminded. */
+    public int $trialReminderDays = 3;
+
+    /** Months a customer is kept after their last appointment (POPIA, decision D12). */
+    public int $retentionMonths = 24;
+
+    public function planRequired(): bool
+    {
+        $env = env('bookings.planRequired');
+
+        return $env === null || $env === '' ? $this->planRequired : filter_var($env, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /** The monthly price in rand as text (160.00), or '' when none is set. */
+    public function planPrice(): string
+    {
+        $price = trim((string) (env('bookings.planMonthly') ?? $this->planMonthly));
+
+        return preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 5 ? number_format((float) $price, 2, '.', '') : '';
+    }
+
     public function googleCalendarOffered(): bool
     {
         return $this->googleClientId !== '' && $this->googleClientSecret !== '';
