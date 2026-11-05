@@ -28,15 +28,11 @@
 | T22 | Google Calendar (was D15): one platform OAuth client; the owner creates it in Google Cloud (redirect `https://local.webscheduler.co.za/business/connections/google/callback`, scope `calendar.events`) and applies for Google's verification; the button shows once `bookings.googleClientId` and `bookings.googleClientSecret` are set | owner, 5 Nov 2026 |
 | T23 | Bookings plan prices (was D16): by bookable people, Solo (1) R160, Team (up to 5) R420, Business (6 or more) R890 a month; `Config\Bookings::$planTiers`, prices overridable with `bookings.planPrices`. Growing or shrinking past a tier offers a move, which charges the new price, adds a month and stops the old subscription | owner, 5 Nov 2026 |
 | T24 | Sites (was D2): online bookings on both sites. A business uses its own site's host for the booking page, `/business` and the API (the wrong host redirects, or 404s for a form or an API call); prices in its country's currency (`BusinessLocale`), its own clock; no deposits abroad (rand only, the business's own PayFast or Paystack in South Africa; Stripe later); the plan abroad shows US dollars (US$8.99 / US$23.99 / US$49.99, `planTiers` `usd`) and is charged in rand at the Plus rate (`usd_zar_rate@app`), with no rand figure on .app | owner, 5 Nov 2026 |
+| T25 | Languages (was D10): English only | owner, 5 Nov 2026 |
+| T26 | Name in copy (was D11): the feature is called **Bookings**; WebScheduler Local stays the platform name | owner, 5 Nov 2026 |
+| T27 | Import from frozen Bookings installs (was D13): yes, per customer and with their OK, after launch | owner, 5 Nov 2026 |
 | T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as WhatsApp and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
 
-## Open: owner to answer before Phase 1
+## Open
 
-Each has a recommendation and is needed by the phase shown. D4, D5 and D7 were settled on
-4 Nov 2026 (T11 to T13), which unblocks Phase 1.
-
-| # | Question | Recommendation | Needed by |
-|---|---|---|---|
-| D10 | **Languages:** English only? | English only. | Phase 1 |
-| D11 | **Name in copy:** what owners and customers see. "Bookings", "WebScheduler Bookings", or "Online bookings on WebScheduler Local"? | "Online bookings" as the feature, "WebScheduler Local" as the platform. | Phase 1 |
-| D13 | **Import from frozen Bookings installs:** offer it later? | Yes, per customer and with their OK, after launch. | after Phase 10 |
+None. D10, D11 and D13 were settled on 5 Nov 2026 (T25 to T27).

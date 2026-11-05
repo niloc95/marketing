@@ -11,23 +11,25 @@ on the profile for customers, reminders, deposits. It is a port of WebScheduler 
 
 ## Status
 
-Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.enabled`
-(off). Not released to production. Later phases branch off `main`.
+Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`); phases 5 to 10 and .app
+(T24) on 5 Nov 2026. All behind `bookings.enabled` (off), not released to production.
+No decisions open (D10, D11, D13 became T25 to T27: English only, the feature is called
+"Bookings", import from frozen installs later with each customer's OK).
 
 | Phase | State |
 |---|---|
 | 0 Specification | done 4 Nov 2026, branch `bookings` (docs/bookings/) |
-| 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (not merged): accounts, members, gate, settings, audit, /business shell, Vite |
-| 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, not merged): services, categories, providers, hours, reception, time off, invitations, setup check |
-| 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, not merged): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
-| 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, not merged): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
-| 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, not merged): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
-| 6 Notifications | built 5 Nov 2026 on `bookings-p6-notifications` (off p5, not merged): queue, dispatcher, rules, reminders, templates, email, SMS and WhatsApp on the business's own account, delivery logs, opt out, notices |
-| 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, not merged): figures, today by person with refresh, waiting list, free times with quick book, alerts, /business/analytics with four tabs |
-| 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, not merged): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /business/payments, Payments settings tab |
-| 9 Integrations and API | built 5 Nov 2026 on `bookings-p9-integrations` (off p8, not merged): outbox run by `bookings:dispatch`, signed webhooks, Zoom and Jitsi meetings, Google Calendar push, API keys, `/api/v1`, OpenAPI file, `/developers/bookings` |
-| .app (T24) | built 5 Nov 2026 on `bookings-app` (off p10, not merged): bookings on local.webscheduler.app, `BusinessLocale`, per host gates, plan in US dollars, migration `2026-11-21-100000_AddBookingPlanTier` (`tier`, `checkout_tier`) |
-| 10 Hardening and launch | built 5 Nov 2026 on `bookings-p10-launch` (off p9, not merged): Bookings plan with trial, POPIA retention and export, `/admin/bookings`, route guard test, security review, restore drill and load test scripts, launch checklist. Production steps wait for the owner (docs/bookings/launch.md) |
+| 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (merged 4 Nov): accounts, members, gate, settings, audit, /business shell, Vite |
+| 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, merged 4 Nov): services, categories, providers, hours, reception, time off, invitations, setup check |
+| 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, merged 4 Nov): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
+| 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, merged 4 Nov): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
+| 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, merged 5 Nov): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
+| 6 Notifications | built 5 Nov 2026 on `bookings-p6-notifications` (off p5, merged 5 Nov): queue, dispatcher, rules, reminders, templates, email, SMS and WhatsApp on the business's own account, delivery logs, opt out, notices |
+| 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, merged 5 Nov): figures, today by person with refresh, waiting list, free times with quick book, alerts, /business/analytics with four tabs |
+| 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, merged 5 Nov): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /business/payments, Payments settings tab |
+| 9 Integrations and API | built 5 Nov 2026 on `bookings-p9-integrations` (off p8, merged 5 Nov): outbox run by `bookings:dispatch`, signed webhooks, Zoom and Jitsi meetings, Google Calendar push, API keys, `/api/v1`, OpenAPI file, `/developers/bookings` |
+| .app (T24) | built 5 Nov 2026 on `bookings-app` (off p10, merged 5 Nov): bookings on local.webscheduler.app, `BusinessLocale`, per host gates, plan in US dollars, migration `2026-11-21-100000_AddBookingPlanTier` (`tier`, `checkout_tier`) |
+| 10 Hardening and launch | built 5 Nov 2026 on `bookings-p10-launch` (off p9, merged 5 Nov): Bookings plan with trial, POPIA retention and export, `/admin/bookings`, route guard test, security review, restore drill and load test scripts, launch checklist. Production steps wait for the owner (docs/bookings/launch.md) |
 
 Update this table and the decisions file as phases land.
 

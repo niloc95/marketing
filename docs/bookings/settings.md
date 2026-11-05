@@ -52,7 +52,7 @@ already holds is read from the profile, never copied, so the two can't drift.
 | Bookings key | Why |
 |---|---|
 | `booking.indexable` | profiles are already indexed by Local's quality rules |
-| `localization.language` | English only for now (decision D10) |
+| `localization.language` | English only (decision T25) |
 | `integrations.analytics*` | no per business analytics tags |
 | `database.allow_backup`, `system.installed_version` | one hosted install |
 | `legal.privacy`, `legal.cookie_notice` | Local's privacy and cookie policy cover the platform; a business can link its own |
