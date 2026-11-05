@@ -55,7 +55,8 @@ foreach ($spec['paths'] as $path => $methods) {
         $byTag[$o['tags'][0] ?? 'Other'][] = [$method, $path, $o];
     }
 }
-$server = $spec['servers'][0]['url'];
+// The API is on the host of the business's own site: this page shows this site's.
+$server = $spec['servers'][site()->isApp() ? 1 : 0]['url'];
 ?>
 <?= $this->extend('layouts/public') ?>
 

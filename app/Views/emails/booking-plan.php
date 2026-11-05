@@ -7,11 +7,10 @@
  * @var string              $kind  trial | failed
  * @var string|null         $ends  trial end, UTC (trial)
  * @var string|null         $link  Paystack's page for a new card (failed)
- * @var string              $price monthly price in rand, '' when not set
+ * @var string              $price the monthly price as the business reads it (US dollars abroad)
  * @var string              $url   the Plan tab
  */
-helper('money');
-$ends = isset($ends) ? (new DateTimeImmutable($ends, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Africa/Johannesburg'))->format('j F Y') : '';
+$ends = isset($ends) ? (new DateTimeImmutable($ends, new DateTimeZone('UTC')))->setTimezone(\App\Services\Bookings\BusinessLocale::zone($listing))->format('j F Y') : '';
 ?>
 <?= $this->extend('emails/_layout') ?>
 <?= $this->section('content') ?>
@@ -19,7 +18,7 @@ $ends = isset($ends) ? (new DateTimeImmutable($ends, new DateTimeZone('UTC')))->
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px">Your free trial ends on <?= esc($ends) ?></h1>
         <p style="font-size:15px;line-height:1.6">
             Online bookings for <?= esc($listing['display_name']) ?> are free until <?= esc($ends) ?>.
-            To keep taking bookings after that, choose the plan<?= $price !== '' ? ' for ' . esc(money((float) $price, 'ZAR')) . ' a month' : '' ?>.
+            To keep taking bookings after that, choose the plan for <?= esc($price) ?> a month.
             If you do not, your calendar and customers stay in your business area, and customers can no longer book online until you do.
         </p>
         <p style="margin:18px 0"><a href="<?= esc($url) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Choose the plan</a></p>

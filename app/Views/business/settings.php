@@ -32,7 +32,7 @@ $labels = [
                 <dt class="text-slate-500 dark:text-slate-400">Name</dt><dd class="col-span-2"><?= esc((string) $listing['display_name']) ?></dd>
                 <dt class="text-slate-500 dark:text-slate-400">Email</dt><dd class="col-span-2"><?= esc((string) $listing['email']) ?></dd>
                 <dt class="text-slate-500 dark:text-slate-400">Phone</dt><dd class="col-span-2"><?= esc((string) ($listing['phone'] ?? '')) ?></dd>
-                <dt class="text-slate-500 dark:text-slate-400">Time zone</dt><dd class="col-span-2"><?= esc((string) ($listing['timezone'] ?: 'Africa/Johannesburg')) ?></dd>
+                <dt class="text-slate-500 dark:text-slate-400">Time zone</dt><dd class="col-span-2"><?= esc(\App\Services\Bookings\BusinessLocale::timezoneName($listing)) ?></dd>
             </dl>
             <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">To change these, or your opening hours, <a class="underline" href="<?= base_url('manage') ?>">edit your business profile</a>.</p>
         </div>
@@ -193,7 +193,7 @@ $labels = [
                 <?php endforeach ?>
             </select>
         </div>
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Your time zone comes from your business profile: <?= esc((string) ($listing['timezone'] ?: 'Africa/Johannesburg')) ?>.</p>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Your time zone comes from your business profile: <?= esc(\App\Services\Bookings\BusinessLocale::timezoneName($listing)) ?>.</p>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
 <?php endif ?>

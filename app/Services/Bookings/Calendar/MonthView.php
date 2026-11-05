@@ -41,8 +41,7 @@ class MonthView
     public function __construct(array $listing, private ?array $scope, ?DateTimeImmutable $now = null)
     {
         $listingId     = (int) $listing['id'];
-        $tz            = (string) ($listing['timezone'] ?? '');
-        $this->tz      = new DateTimeZone(in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg');
+        $this->tz      = \App\Services\Bookings\BusinessLocale::zone($listing);
         $this->range   = DayView::rangeFor($listingId, $this->tz, $now);
         $this->hours   = new CalendarHours($listing, $this->range);
         $this->query   = new CalendarQuery($listingId, $this->tz);

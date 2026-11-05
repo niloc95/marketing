@@ -30,7 +30,7 @@ class PlanSettings extends BaseController
         if (! $status['can_subscribe'] && ! $status['can_move']) {
             return redirect()->to(base_url(self::BACK))->with('error', 'Your plan is already paid up.');
         }
-        $checkout = (new BookingPlanService())->checkout($context->listing(), (string) $context->account()['email'], base_url('business/plan/paystack'));
+        $checkout = (new BookingPlanService())->checkout($context->listing(), (string) $context->account()['email'], listing_site_url($context->listing(), 'business/plan/paystack'));
         if ($checkout === null) {
             return redirect()->to(base_url(self::BACK))->with('error', 'We could not open the payment page. Please try again in a few minutes.');
         }

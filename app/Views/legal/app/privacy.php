@@ -100,6 +100,20 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
             <p>If you order our <a href="<?= base_url('profile-setup') ?>">profile setup service</a>, we receive your name, business name, email address and phone number, and optionally a link to your existing profile and a note. We use them to take your payment through Paystack, to ask you for the details, logo and photos we need, and to complete your profile. We keep the order record, including when you accepted the terms of the service, as proof of the purchase.</p>
             <h3 id="reviews">Customer reviews</h3>
             <p>If you review a business we receive your rating, review, name and email address. The rating and review are <strong>published</strong> under your first name and surname initial once we have checked them. Your full name and email address are <strong>never published</strong> and are not given to the business. We keep one way hashes of your email address and IP address to allow one review per person and to spot fake reviews.</p>
+            <?php if (config('Bookings')->siteAllowed(\Config\Sites::APP)): ?>
+            <?php // Online bookings on this site (decision D2). Draft for the owner (and the lawyer) to read before release; shown only while bookings are on. ?>
+            <h3 id="online-bookings">Online bookings</h3>
+            <p>A business on <?= esc($siteName) ?> can take bookings online. When you book with a business, the business decides what it asks you and what it does with your booking: it is the controller of your information, and we process it on its behalf to run its bookings.</p>
+            <ul>
+                <li><strong>What we hold for the business:</strong> your name, email address and phone number, the address and notes you give, your answers to the business's questions, and your bookings with it. One business never sees another's.</li>
+                <li><strong>Messages:</strong> we send your booking emails for the business. If the business connects its own WhatsApp account, those messages go through that account. You can stop a business's booking emails from the link in any of them.</li>
+                <li><strong>Online meetings and calendars:</strong> if the business uses Zoom or Google Calendar, the time, the service and your name go to the business's own Zoom account or Google calendar. A Jitsi meeting link holds no personal information.</li>
+                <li><strong>How long:</strong> your details are kept for 24 months after your last appointment with a business, then removed. The business can remove them sooner.</li>
+                <li><strong>Your rights:</strong> ask the business for a copy of what it holds about you, to correct it or to delete it; it can download your whole record and answer you. You may also <a href="<?= base_url('contact') ?>">contact us</a>, and we will pass your request to the business.</li>
+                <li><strong>Our staff:</strong> we do not look at a business's bookings. If a business needs our help, our support team may open them for that reason only, and the business sees that in its activity log.</li>
+            </ul>
+            <p>The people who work for a business sign in with their email address and a password. We keep their name and email, and a record of what they change, for the business's own activity log. A business that pays for online bookings is billed in South African rand through Paystack, as described for Plus.</p>
+            <?php endif ?>
 
             <h2>7. Information collected automatically</h2>
             <ul>

@@ -69,8 +69,7 @@ class AvailabilityService
     {
         helper('directory_hours'); // hours_decode(), holidays: not autoloaded
         $this->listingId = (int) $listing['id'];
-        $tz              = (string) ($listing['timezone'] ?? '');
-        $this->tz        = new DateTimeZone(in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg');
+        $this->tz        = \App\Services\Bookings\BusinessLocale::zone($listing);
         $this->now       = ($now ?? new DateTimeImmutable('now'))->setTimezone($this->tz);
         $this->settings  = BookingSettings::for($this->listingId);
         $this->catalog   = new CatalogueService($this->listingId);

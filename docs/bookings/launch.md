@@ -75,6 +75,19 @@ Section 12a "Online bookings" in `app/Views/legal/privacy.php` shows only while 
 on. The owner reads it before the switch. The Terms may need a matching line for businesses
 (the plan, deposits going to their own account, we are not a party to their bookings).
 
+## 8a. local.webscheduler.app (T24)
+
+- Nothing extra to switch: `bookings.enabled` covers both sites (`Config\Bookings::$sites`).
+- The plan abroad needs the Plus rate: `usd_zar_rate@app` in `/admin/settings` (already set for
+  Plus). Without it the trial runs and the plan shows as not on sale.
+- Google Calendar: add the second redirect URI
+  `https://local.webscheduler.app/business/connections/google/callback` to the OAuth client.
+- Check both hosts after the switch: a London test profile books on .app in pounds, no deposit
+  field, no rand anywhere; its `/business` and `/api/v1` only on .app; co.za pages unchanged
+  (diff a co.za booking page against `main`).
+- The .app privacy policy has an "Online bookings" part (shown only while bookings are on); the
+  lawyer who reviewed the .app legal pages should read it, then bump `Legal::APP_LAST_UPDATED`.
+
 ## 9. First businesses
 
 - Pick three to five co.za profiles that already use a paper diary or WhatsApp.

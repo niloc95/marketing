@@ -67,7 +67,9 @@ class BookingPlanService
     /**
      * Where the business stands, for the Plan tab, the banner and the admin.
      *
-     * @return array{required:bool,state:string,allows:bool,trial_ends:?string,paid_until:?string,days_left:?int,people:int,tier:string,price:string,paid_price:?string,can_subscribe:bool,can_move:bool,renews:bool}
+     * @return array{required:bool,state:string,allows:bool,trial_ends:?string,paid_until:?string,days_left:?int,people:int,tier:string,price:?string,display:string,abroad:bool,paid_tier:?string,can_subscribe:bool,can_move:bool,renews:bool}
+     *   price: what Paystack is asked for, in rand (null abroad without a rate); display: the price as the
+     *   business reads it (US dollars abroad: no rand figures on .app)
      *   state: none, trial, trial_ended, active, past_due, cancelled (paid up, not renewing), ended
      */
     public function status(int $listingId): array
@@ -97,7 +99,9 @@ class BookingPlanService
         $people = self::people($listingId);
         $tier   = $config->planTierFor($people);
         $renews = $row !== null && $row['state'] === Plan::ACTIVE && $row['cancelled_at'] === null;
-        $paid   = $renews && $row['amount_cents'] !== null ? number_format((int) $row['amount_cents'] / 100, 2, '.', '') : null;
+        $paid   = $renews ? ($row['tier'] ?? null) : null;
+        $abroad = self::abroad($listingId);
+        $price  = $this->priceFor($listingId);
 
         return [
             'required'      => self::required(),
@@ -108,10 +112,12 @@ class BookingPlanService
             'days_left'     => $days,
             'people'        => $people,
             'tier'          => $tier['name'],
-            'price'         => $tier['price'],
-            'paid_price'    => $paid,
-            'can_subscribe' => in_array($state, ['none', 'trial', 'trial_ended', 'cancelled', 'ended'], true),
-            'can_move'      => $renews && $paid !== null && $paid !== $tier['price'],
+            'price'         => $price,
+            'display'       => self::display($tier, $abroad),
+            'abroad'        => $abroad,
+            'paid_tier'     => $paid,
+            'can_subscribe' => $price !== null && in_array($state, ['none', 'trial', 'trial_ended', 'cancelled', 'ended'], true),
+            'can_move'      => $price !== null && $renews && $paid !== null && $paid !== $tier['name'],
             'renews'        => $renews,
         ];
     }
@@ -122,10 +128,40 @@ class BookingPlanService
         return \App\Models\Bookings\BookingProviderModel::forBusiness($listingId)->where('archived_at', null)->where('bookable', 1)->countAllResults();
     }
 
-    /** The monthly price for a business now, in rand (160.00). */
-    public function priceFor(int $listingId): string
+    /**
+     * What Paystack charges a business a month now, in rand (160.00): the
+     * tier's rand price at home; abroad its dollar price at the Plus rate,
+     * or null while no rate is set.
+     */
+    public function priceFor(int $listingId): ?string
     {
-        return config('Bookings')->planTierFor(self::people($listingId))['price'];
+        $tier = config('Bookings')->planTierFor(self::people($listingId));
+        if (! self::abroad($listingId)) {
+            return $tier['price'];
+        }
+        $rate = (new \App\Services\DirectorySettings())->usdZarRate(Sites::APP);
+
+        return $rate === null ? null : number_format(round((float) $tier['usd'] * (float) $rate, 2), 2, '.', '');
+    }
+
+    /** A business on local.webscheduler.app (decision D2). */
+    public static function abroad(int $listingId): bool
+    {
+        $listing = (new DirectoryListingModel())->find($listingId);
+
+        return is_array($listing) && site()->forRow($listing) === Sites::APP;
+    }
+
+    /**
+     * A tier's price as the business reads it: rand at home, US dollars abroad.
+     *
+     * @param array{price:string,usd:string} $tier
+     */
+    public static function display(array $tier, bool $abroad): string
+    {
+        helper('money');
+
+        return $abroad ? money((float) $tier['usd'], 'USD') : money((float) $tier['price'], 'ZAR');
     }
 
     /** Start the free trial, once per business. Returns the row. */
@@ -156,7 +192,7 @@ class BookingPlanService
     {
         $price    = $this->priceFor((int) $listing['id']);
         $paystack = $this->paystack();
-        if (! $paystack->isConfigured() || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($price === null || ! $paystack->isConfigured() || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return null;
         }
         $row      = $this->startTrial((int) $listing['id'], null);
@@ -168,7 +204,11 @@ class BookingPlanService
         $this->plans->builder()->set('payment_attempts', 'payment_attempts + 1', false)->where('id', (int) $row['id'])->update();
         $attempts  = (int) ($this->plans->find((int) $row['id'])['payment_attempts'] ?? 1);
         $reference = PaymentReference::make(PaymentReference::BOOKINGS_PLAN, (int) $row['id'], max(1, $attempts));
-        $this->plans->update((int) $row['id'], ['payment_reference' => $reference, 'amount_cents' => Paystack::cents($price)]);
+        $this->plans->update((int) $row['id'], [
+            'payment_reference' => $reference,
+            'amount_cents'      => Paystack::cents($price),
+            'checkout_tier'     => config('Bookings')->planTierFor(self::people((int) $listing['id']))['name'],
+        ]);
 
         return $paystack->initialize($email, Paystack::cents($price), $reference, $returnUrl, $planCode, [
             'booking_plan_id' => (int) $row['id'],
@@ -246,6 +286,7 @@ class BookingPlanService
                 'created_at' => $this->nowUtc(), 'updated_at' => $this->nowUtc(),
             ]);
             $this->plans->update((int) $row['id'], ['state' => Plan::ACTIVE, 'paid_until' => $until, 'cancelled_at' => null, 'amount_cents' => $cents] + ($mandate !== [] ? [
+                'tier' => $fresh['checkout_tier'] ?? $fresh['tier'],
                 'paystack_customer_code' => $mandate['customer'], 'paystack_plan_code' => $mandate['plan'],
                 'paystack_subscription_code' => null, 'paystack_email_token' => null,
             ] : []));
@@ -395,7 +436,8 @@ class BookingPlanService
             ->join('xs_accounts a', 'a.id = m.account_id')
             ->where('m.listing_id', $listingId)->where('m.role', 'admin')->where('m.status', 'active')->where('a.status', 'active')
             ->get()->getResultArray(), 'email');
-        $body = view($view, $data + ['listing' => $listing, 'url' => listing_site_url($listing, 'business/settings/plan'), 'price' => $this->priceFor($listingId)], ['saveData' => false]);
+        $tier = config('Bookings')->planTierFor(self::people($listingId));
+        $body = view($view, $data + ['listing' => $listing, 'url' => listing_site_url($listing, 'business/settings/plan'), 'price' => self::display($tier, self::abroad($listingId))], ['saveData' => false]);
         foreach (array_unique($emails) as $email) {
             (new Mailer())->send((string) $email, $subject, $body);
         }

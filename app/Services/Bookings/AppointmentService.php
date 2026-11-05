@@ -70,8 +70,7 @@ class AppointmentService
         ?BookingAudit $audit = null,
     ) {
         $this->listingId = (int) $listing['id'];
-        $tz              = (string) ($listing['timezone'] ?? '');
-        $this->tz        = new DateTimeZone(in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg');
+        $this->tz        = \App\Services\Bookings\BusinessLocale::zone($listing);
         $this->now       = $now ?? new DateTimeImmutable('now');
         $this->audit     = $audit ?? new BookingAudit();
     }

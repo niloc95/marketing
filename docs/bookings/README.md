@@ -13,7 +13,8 @@ profile can take bookings from one codebase, one database and one release.
   webhooks, API keys, `/api/v1`, developer page) built on `bookings-p9-integrations`
   (off p8), not merged. Phase 10 (Bookings plan with a trial, POPIA retention and export,
   `/admin/bookings`, security review, drills, launch checklist) built on
-  `bookings-p10-launch` (off p9), not merged. Release steps: [launch.md](launch.md).
+  `bookings-p10-launch` (off p9), not merged. Release steps: [launch.md](launch.md). Bookings on `local.webscheduler.app` (T24) built on
+  `bookings-app` (off p10), not merged.
 - **Reference app (frozen):** `/Volumes/Nilo_512GB/projects/xscheduler_ci4` (Bookings
   v2.7.0). Its installs keep running untouched. Nothing in this project changes it.
 - **Plan:** phases 0 to 10 below. Each phase gets its own branch (off `main` since the

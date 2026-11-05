@@ -20,7 +20,7 @@ class BookingPlanModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'listing_id', 'state', 'trial_ends_at', 'paid_until', 'amount_cents', 'payment_reference', 'payment_attempts',
+        'listing_id', 'state', 'trial_ends_at', 'paid_until', 'amount_cents', 'tier', 'checkout_tier', 'payment_reference', 'payment_attempts',
         'paystack_customer_code', 'paystack_plan_code', 'paystack_subscription_code', 'paystack_email_token',
         'reminded_at', 'cancelled_at', 'note',
     ];

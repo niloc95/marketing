@@ -1,7 +1,7 @@
 # Route map
 
 Bookings route → Local route. All Local routes are on both hosts unless a decision limits
-them (D2: co.za first). Literal segments are declared before Local's catch alls
+them (T24: both sites, each business on its own site's host). Literal segments are declared before Local's catch alls
 (`directory/(:segment)/menu` is the model). `/directory/{a}/{b}` (`Directory::place`)
 would otherwise swallow `/directory/{slug}/book`.
 

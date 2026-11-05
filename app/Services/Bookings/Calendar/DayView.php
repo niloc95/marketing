@@ -53,8 +53,7 @@ class DayView
         ?EventLayout $layout = null,
     ) {
         $this->listingId = (int) $listing['id'];
-        $tz              = (string) ($listing['timezone'] ?? '');
-        $this->tz        = new DateTimeZone(in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg');
+        $this->tz        = \App\Services\Bookings\BusinessLocale::zone($listing);
         $this->range     = $range ?? self::rangeFor($this->listingId, $this->tz, $now);
         $this->hours     = $hours ?? new CalendarHours($listing, $this->range);
         $this->query     = $query ?? new CalendarQuery($this->listingId, $this->tz);

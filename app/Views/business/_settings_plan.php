@@ -7,7 +7,7 @@
 helper('money');
 $tz   = new DateTimeZone(service('businessContext')->timezone());
 $date = static fn (?string $utc): string => $utc ? (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($tz)->format('j F Y') : '';
-$price = money((float) $plan['price'], 'ZAR');
+$price = $plan['display'];
 ?>
 <div class="max-w-2xl space-y-6">
     <section class="form-card">
@@ -31,23 +31,25 @@ $price = money((float) $plan['price'], 'ZAR');
             <form method="post" action="<?= base_url('business/settings/plan/subscribe') ?>" class="mt-4">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-primary">Pay <?= esc($price) ?> a month</button>
-                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Paid by card through Paystack, renewing monthly until you stop it. <?= $plan['state'] === 'trial' ? 'Paying now adds the month after your trial, so you lose no free days.' : '' ?></p>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Paid by card through Paystack, renewing monthly until you stop it.<?= $plan['abroad'] ? ' Billed in South African rand by WebScheduler, a South African company, so your bank converts the amount and it may vary a little from month to month.' : '' ?> <?= $plan['state'] === 'trial' ? 'Paying now adds the month after your trial, so you lose no free days.' : '' ?></p>
             </form>
         <?php elseif ($plan['can_move']): ?>
             <div class="alert alert-info mt-4 text-sm">
-                You pay <?= esc(money((float) $plan['paid_price'], 'ZAR')) ?> a month, but with <?= (int) $plan['people'] ?> bookable <?= (int) $plan['people'] === 1 ? 'person' : 'people' ?> your plan is now <?= esc($plan['tier']) ?> at <?= esc($price) ?>.
+                You are on <?= esc((string) $plan['paid_tier']) ?>, but with <?= (int) $plan['people'] ?> bookable <?= (int) $plan['people'] === 1 ? 'person' : 'people' ?> your plan is now <?= esc($plan['tier']) ?> at <?= esc($price) ?> a month.
                 Moving charges <?= esc($price) ?> now, adds a month to your paid time, and stops the old payments.
             </div>
             <form method="post" action="<?= base_url('business/settings/plan/subscribe') ?>" class="mt-3">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-primary">Move to <?= esc($plan['tier']) ?></button>
             </form>
+        <?php elseif ($plan['price'] === null): ?>
+            <p class="mt-4 text-sm">The paid plan is not on sale here yet. Your calendar keeps working.</p>
         <?php endif ?>
         <details class="mt-4 text-sm">
             <summary class="cursor-pointer">The plans</summary>
             <ul class="mt-2 space-y-1">
                 <?php foreach (config('Bookings')->planTiers() as $tier): ?>
-                    <li><?= esc($tier['name']) ?>: <?= $tier['people'] === 1 ? 'one person' : ($tier['people'] === 0 ? 'any number of people' : 'up to ' . $tier['people'] . ' people') ?>, <?= esc(money((float) $tier['price'], 'ZAR')) ?> a month</li>
+                    <li><?= esc($tier['name']) ?>: <?= $tier['people'] === 1 ? 'one person' : ($tier['people'] === 0 ? 'any number of people' : 'up to ' . $tier['people'] . ' people') ?>, <?= esc(\App\Services\Bookings\Plans\BookingPlanService::display($tier, $plan['abroad'])) ?> a month</li>
                 <?php endforeach ?>
             </ul>
             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">People are the team members customers can book.</p>
@@ -65,7 +67,7 @@ $price = money((float) $plan['price'], 'ZAR');
             <h2 class="mb-2 font-bold">Payments</h2>
             <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
                 <?php foreach ($plan['payments'] as $p): ?>
-                    <li class="flex justify-between py-1"><span><?= esc($date((string) $p['paid_at'])) ?> <code class="text-xs text-slate-500"><?= esc((string) $p['reference']) ?></code></span><span><?= esc(money((int) $p['amount_cents'] / 100, 'ZAR')) ?></span></li>
+                    <li class="flex justify-between py-1"><span><?= esc($date((string) $p['paid_at'])) ?> <code class="text-xs text-slate-500"><?= esc((string) $p['reference']) ?></code></span><span><?= $plan['abroad'] ? 'Paid' : esc(money((int) $p['amount_cents'] / 100, 'ZAR')) ?></span></li>
                 <?php endforeach ?>
             </ul>
         </section>

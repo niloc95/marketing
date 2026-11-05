@@ -7,7 +7,12 @@
   },
   "servers": [
     {
-      "url": "https://local.webscheduler.co.za/api/v1"
+      "url": "https://local.webscheduler.co.za/api/v1",
+      "description": "Businesses in South Africa"
+    },
+    {
+      "url": "https://local.webscheduler.app/api/v1",
+      "description": "Businesses in every other country"
     }
   ],
   "security": [

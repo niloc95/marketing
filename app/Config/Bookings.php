@@ -19,12 +19,14 @@ class Bookings extends BaseConfig
     public bool $enabled = false;
 
     /**
-     * Sites that may use bookings (Config\Sites keys). co.za first, decision
-     * D2 in docs/bookings/decisions.md; .app shows nothing until it is added.
+     * Sites that may use bookings (Config\Sites keys): both, since decision
+     * D2 (owner, 5 Nov 2026). A business uses the site its country belongs to;
+     * abroad it prices in its own currency, takes no deposits, and its plan is
+     * in US dollars charged in rand (BusinessLocale, BookingPlanService).
      *
      * @var list<string>
      */
-    public array $sites = ['za'];
+    public array $sites = ['za', 'app'];
 
     /** A signed in session ends after this long without a request (Bookings: 2 hours). */
     public int $idleSeconds = 7200;
@@ -79,15 +81,18 @@ class Bookings extends BaseConfig
      * owner 5 Nov 2026), in rand a month. `people` is the most the tier
      * covers, 0 for no limit. The prices can be changed in .env with
      * `bookings.planPrices = 160,420,890` (one per tier, in this order).
+     * Abroad (local.webscheduler.app, D2) the price is `usd`, shown in US
+     * dollars and charged in rand at the Plus rate (`usd_zar_rate@app` in
+     * /admin/settings), as Plus is; `bookings.planPricesUsd` overrides it.
      *
-     * @var list<array{name:string,people:int,price:string}>
+     * @var list<array{name:string,people:int,price:string,usd:string}>
      */
     public bool $planRequired = false;
 
     public array $planTiers = [
-        ['name' => 'Solo', 'people' => 1, 'price' => '160.00'],
-        ['name' => 'Team', 'people' => 5, 'price' => '420.00'],
-        ['name' => 'Business', 'people' => 0, 'price' => '890.00'],
+        ['name' => 'Solo', 'people' => 1, 'price' => '160.00', 'usd' => '8.99'],
+        ['name' => 'Team', 'people' => 5, 'price' => '420.00', 'usd' => '23.99'],
+        ['name' => 'Business', 'people' => 0, 'price' => '890.00', 'usd' => '49.99'],
     ];
 
     public int $trialDays = 30;
@@ -111,16 +116,18 @@ class Bookings extends BaseConfig
     /**
      * The tiers with .env's prices applied.
      *
-     * @return list<array{name:string,people:int,price:string}>
+     * @return list<array{name:string,people:int,price:string,usd:string}>
      */
     public function planTiers(): array
     {
-        $tiers  = $this->planTiers;
-        $prices = array_map('trim', explode(',', (string) (env('bookings.planPrices') ?? '')));
-        foreach ($tiers as $i => $tier) {
-            $price = $prices[$i] ?? '';
-            if (preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 5) {
-                $tiers[$i]['price'] = number_format((float) $price, 2, '.', '');
+        $tiers = $this->planTiers;
+        foreach (['price' => 'bookings.planPrices', 'usd' => 'bookings.planPricesUsd'] as $field => $key) {
+            $prices = array_map('trim', explode(',', (string) (env($key) ?? '')));
+            foreach ($tiers as $i => $tier) {
+                $price = $prices[$i] ?? '';
+                if (preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 1) {
+                    $tiers[$i][$field] = number_format((float) $price, 2, '.', '');
+                }
             }
         }
 
@@ -130,7 +137,7 @@ class Bookings extends BaseConfig
     /**
      * The tier for a business with this many bookable people.
      *
-     * @return array{name:string,people:int,price:string}
+     * @return array{name:string,people:int,price:string,usd:string}
      */
     public function planTierFor(int $people): array
     {

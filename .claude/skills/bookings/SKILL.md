@@ -26,6 +26,7 @@ Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.
 | 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, not merged): figures, today by person with refresh, waiting list, free times with quick book, alerts, /business/analytics with four tabs |
 | 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, not merged): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /business/payments, Payments settings tab |
 | 9 Integrations and API | built 5 Nov 2026 on `bookings-p9-integrations` (off p8, not merged): outbox run by `bookings:dispatch`, signed webhooks, Zoom and Jitsi meetings, Google Calendar push, API keys, `/api/v1`, OpenAPI file, `/developers/bookings` |
+| .app (T24) | built 5 Nov 2026 on `bookings-app` (off p10, not merged): bookings on local.webscheduler.app, `BusinessLocale`, per host gates, plan in US dollars, migration `2026-11-21-100000_AddBookingPlanTier` (`tier`, `checkout_tier`) |
 | 10 Hardening and launch | built 5 Nov 2026 on `bookings-p10-launch` (off p9, not merged): Bookings plan with trial, POPIA retention and export, `/admin/bookings`, route guard test, security review, restore drill and load test scripts, launch checklist. Production steps wait for the owner (docs/bookings/launch.md) |
 
 Update this table and the decisions file as phases land.
@@ -96,8 +97,12 @@ Bookings rules that still hold after the port:
   for this).
 - Customer copy follows `docs/bookings/copy.md`. No dashes, no hyphenated words, "Book
   online", no rand on .app.
-- Check both sites. Bookings is co.za first (decision D2), and .app must show nothing of
-  it until decided.
+- Check both sites. Bookings runs on both since T24 (owner, 5 Nov 2026): each business on its own
+  site's host (`BusinessAuth` redirects GETs and refuses POSTs on the wrong host, `BookingApi`
+  answers 404 `wrong_site`); clock and currency from `BusinessLocale` (never `Africa/Johannesburg`
+  or `ZAR` by hand); no deposits abroad (Payments tab and deposit field hidden, `amountFor()` is
+  rand only); the plan abroad shows US dollars and charges rand at `usd_zar_rate@app`; no rand
+  figure on any .app page. Tests: `tests/database/BookingAppSiteTest.php`.
 
 ## Phase 1 in the code
 
@@ -203,7 +208,7 @@ only if its time is still free.
 | Settings | Booking rules tab: change and cancel hours, online status; Booking form tab (was Questions): customer fields, questions, the business's terms |
 | Tests | `tests/database/BookingPublicTest.php` |
 
-**Rules:** `takesBookings()` = flag, site allowed (co.za only, D2), the profile's own site,
+**Rules:** `takesBookings()` = flag, site allowed (both sites, T24), the profile's own site,
 `bookings_enabled`, published, and a bookable person offering a service. The change or
 cancel link is a 64 hex token stored hashed, rotated on every change, ending 30 days after
 the appointment; the customer page key is the customer's 64 char hash. A reference never

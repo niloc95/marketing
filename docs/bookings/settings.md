@@ -16,7 +16,7 @@ already holds is read from the profile, never copied, so the two can't drift.
 | `general.company_logo`, `company_icon` | listing `logo_path` |
 | `general.company_link` | the profile URL (`listing_url()`) |
 | `localization.timezone` | listing `timezone` (`hours_context()`) |
-| `localization.currency` | the site (`ZAR` on co.za; .app per decision D2) |
+| `localization.currency` | the business's country (`BusinessLocale::currency()`: `ZAR` on co.za, the country's currency abroad, T24) |
 | `business.work_start`, `work_end`, `break_start`, `break_end` | listing `trading_hours` per weekday (breaks are per provider) |
 | `business.blocked_periods` | holiday hours plus `xs_booking_blocked_times` with no provider |
 

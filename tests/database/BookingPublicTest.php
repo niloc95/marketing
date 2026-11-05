@@ -195,18 +195,7 @@ final class BookingPublicTest extends CIUnitTestCase
         db_connect()->table('xs_directory_listings')->where('id', $this->listingId)->update(['bookings_enabled' => 0]);
         $this->get('directory/salon-lumi/book')->assertStatus(404);
         db_connect()->table('xs_directory_listings')->where('id', $this->listingId)->update(['bookings_enabled' => 1]);
-
-        // .app takes no bookings yet (decision D2), even for a business abroad.
-        $this->setEnv('sites.app.enabled', 'true');
-        Services::resetSingle('site');
-        // BookingSetupService refuses to turn bookings on abroad; force the flag
-        // on to prove the public side refuses it as well.
-        $abroad = $this->business('london-salon', ['country' => 'United Kingdom'], false);
-        db_connect()->table('xs_directory_listings')->where('id', $abroad)->update(['bookings_enabled' => 1]);
-        $this->withHeaders(['Host' => 'local.webscheduler.app'])->get('directory/london-salon/book')->assertStatus(404);
-        $this->withHeaders(['Host' => 'local.webscheduler.app'])->get('book/find')->assertStatus(404);
-        $this->assertStringNotContainsString('london-salon/book', $this->withHeaders(['Host' => 'local.webscheduler.app'])->get('directory/london-salon')->getBody());
-        $this->assertSame('', listing_books_online_badge($this->listings->find($abroad)));
+        // .app (decision D2): tests/database/BookingAppSiteTest.php.
     }
 
     public function testAProfileWithNothingToBookShowsNoButton(): void

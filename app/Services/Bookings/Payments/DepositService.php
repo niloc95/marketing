@@ -688,8 +688,6 @@ class DepositService
 
     private function timezone(): DateTimeZone
     {
-        $tz = (string) ($this->listing['timezone'] ?? '');
-
-        return new DateTimeZone(in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg');
+        return \App\Services\Bookings\BusinessLocale::zone($this->listing);
     }
 }

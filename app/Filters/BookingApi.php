@@ -57,6 +57,10 @@ class BookingApi implements FilterInterface
         if (! (new BookingPlanService())->allows($listing)) {
             return self::error(403, 'plan_required', 'The online bookings plan of this business has ended. An admin can renew it in Settings, Plan.');
         }
+        // A business's API is on its own site's host (D2): co.za for South Africa, .app abroad.
+        if (site()->forRow($listing) !== site()->key()) {
+            return self::error(404, 'wrong_site', 'Use ' . rtrim(listing_site_url($listing, 'api/v1'), '/') . ' for this business.');
+        }
         $account = (new AccountModel())->find((int) $member['account_id']);
         if (! is_array($account) || $account['status'] !== AccountModel::STATUS_ACTIVE) {
             return self::error(401, 'invalid_key', 'That API key is not valid.');

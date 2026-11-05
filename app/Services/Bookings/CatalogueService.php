@@ -253,6 +253,14 @@ class CatalogueService
         return is_array($modes) ? array_values(array_intersect(array_keys(self::DELIVERY_MODES), $modes)) : ['onsite'];
     }
 
+    /** The business's currency (BusinessLocale): rand on co.za, the country's abroad. */
+    private function currency(): string
+    {
+        $listing = (new \App\Models\DirectoryListingModel())->find($this->listingId);
+
+        return is_array($listing) ? BusinessLocale::currency($listing) : 'ZAR';
+    }
+
     /** "R350.00" style text for a price in cents, or '' when there is none. */
     public static function priceText(?int $cents, string $currency = 'ZAR'): string
     {
@@ -328,7 +336,7 @@ class CatalogueService
             'description'   => $description === '' ? null : $description,
             'duration_min'  => (int) $duration,
             'price_cents'   => $priceCents,
-            'currency'      => 'ZAR',
+            'currency'      => $this->currency(),
             'deposit_pct'   => (int) $deposit,
             'buffer_before' => $buffers['buffer_before'],
             'buffer_after'  => $buffers['buffer_after'],

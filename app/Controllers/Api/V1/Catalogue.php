@@ -26,7 +26,7 @@ class Catalogue extends ApiController
             'profile_url'  => listing_site_url($listing, 'directory/' . $listing['slug']),
             'booking_url'  => listing_site_url($listing, 'directory/' . $listing['slug'] . '/book'),
             'timezone'     => (string) $this->timezone()->getName(),
-            'currency'     => 'ZAR',
+            'currency'     => \App\Services\Bookings\BusinessLocale::currency($listing),
             'booking_rules' => [
                 'slot_step_min'        => $settings->int('booking.slot_step'),
                 'minimum_notice_min'   => $settings->int('booking.lead_minutes'),

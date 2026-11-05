@@ -100,9 +100,7 @@ class BusinessContext
     /** The business's own time zone (the profile's), never the server's. */
     public function timezone(): string
     {
-        $tz = (string) ($this->listing()['timezone'] ?? '');
-
-        return in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg';
+        return BusinessLocale::timezoneName($this->listing());
     }
 
     /**

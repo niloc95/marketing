@@ -25,6 +25,11 @@ class Settings extends BaseController
         if (! \App\Services\Bookings\Plans\BookingPlanService::required()) {
             unset($tabs['plan']);
         }
+        // Deposits take rand only (the business's own PayFast or Paystack in South Africa):
+        // no Payments tab on local.webscheduler.app (decision D2).
+        if (site()->isApp()) {
+            unset($tabs['payments']);
+        }
 
         return $tabs;
     }
