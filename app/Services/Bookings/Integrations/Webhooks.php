@@ -18,7 +18,7 @@ use App\Services\Bookings\Notifications\BookingIntegrations;
  * five minutes.
  *
  * Sending is the worker's (IntegrationWorker), except the "Send a test"
- * button, which the admin presses and waits for, as with the SMS test.
+ * button, which the admin presses and waits for, as with the WhatsApp test.
  */
 class Webhooks
 {

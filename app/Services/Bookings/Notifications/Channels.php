@@ -7,15 +7,12 @@ use Config\BookingNotifications as Catalog;
 
 /**
  * Sending one message on one channel. Ported from Bookings'
- * NotificationEmailService, NotificationSmsService and
- * NotificationWhatsAppService, keeping their provider calls:
+ * NotificationEmailService and NotificationWhatsAppService, keeping their provider calls:
  *
  * - Email always through Local's Mailer (SES, decision T8): From is ours with
  *   the business's name, Reply-To is the business, and customer emails carry
  *   List-Unsubscribe with RFC 8058 one click (Book::unsubscribe).
- * - SMS: Clickatell (platform.clickatell.com/v1/message) or Twilio
- *   (Messages.json), with the business's own account.
- * - WhatsApp: Twilio (whatsapp: numbers) or Meta Cloud API, which only sends
+ * - WhatsApp: Twilio (Messages.json, whatsapp: numbers) or Meta Cloud API, which only sends
  *   the business's approved templates, so its parameters are fixed:
  *   1 first name, 2 business, 3 service, 4 when, 5 link.
  *
@@ -80,26 +77,6 @@ class Channels
         $ok = (new Mailer())->send($to, $filled['subject'], $body, $replyTo, ['fromName' => $context['from_name'], 'headers' => $headers]);
 
         return $ok ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => 'The mail server did not accept the email.'];
-    }
-
-    /** @param array{provider:string,config:array<string,string>} $account */
-    public static function sms(array $account, string $to, string $text): array
-    {
-        $text = mb_substr($text, 0, Catalog::SMS_MAX);
-        $c    = $account['config'];
-
-        return match ($account['provider']) {
-            'clickatell' => self::post(
-                'https://platform.clickatell.com/v1/message',
-                ['Authorization' => (string) ($c['api_key'] ?? ''), 'Content-Type' => 'application/json', 'Accept' => 'application/json'],
-                ['body' => json_encode(['messages' => [array_filter([
-                    'channel' => 'sms', 'to' => ltrim($to, '+'), 'content' => $text, 'from' => (string) ($c['from'] ?? ''),
-                ], static fn ($v) => $v !== '')]])],
-                'Clickatell',
-            ),
-            'twilio' => self::twilio($c, $to, (string) ($c['from_number'] ?? ''), $text),
-            default  => ['ok' => false, 'error' => 'No SMS provider set.'],
-        };
     }
 
     /**

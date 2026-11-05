@@ -13,7 +13,7 @@ use App\Services\Bookings\Notifications\BookingIntegrations;
  * (parity.md §11); this is new.
  *
  * - One OAuth client for the platform (Config\Bookings::$googleClientId,
- *   decision D15), not one per business as in Bookings: a business presses
+ *   decision T22), not one per business as in Bookings: a business presses
  *   Connect and says yes at Google, nothing to paste.
  * - Scope `calendar.events` only (plus the email address, to show which
  *   account is connected). Tokens are encrypted in xs_booking_integrations

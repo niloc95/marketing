@@ -230,13 +230,14 @@ the Book online button and the booking page.
 | Tests | `tests/database/BookingNotificationsTest.php` (fixed clock 7 Jan 2030; `MockEmail` archive for headers, `returnValue = false` for failures; fake `curlrequest` for providers) |
 
 **Rules worth knowing:**
-- Nothing is sent in a request except the admin's own SMS or WhatsApp test.
+- Nothing is sent in a request except the admin's own WhatsApp test.
 - Team messages and Notices only for what the customer did online.
 - A queued message is checked again at send time: bookings on, rule on, account on, not opted out, and still true (status, fingerprint). Otherwise it is cancelled, never sent.
 - Customer emails link to `book/customer/{customer}/{appointment}`. That link is stable, unlike the rotated change token, which a queued message could not carry.
 - Sensitive answers never reach a message, and the delivery logs keep masked recipients only.
 - The unsubscribe POST can only stop emails. Only the business can switch them back on.
-- SMS and WhatsApp accounts need `encryption.key`. Without it the tab says they are not available, and nothing is saved in plain text. Dev has no key, so dev shows that state. Decision D14: set the key on production before release.
+- **SMS was removed (owner, 5 Nov 2026, T20):** channels are email and WhatsApp only; never add SMS back without the owner.
+- WhatsApp accounts need `encryption.key`. Without it the tab says they are not available, and nothing is saved in plain text. Dev has no key, so dev shows that state. Decision T21: set the key on production before release.
 - WhatsApp has three modes: "link" (a wa.me button in the details, never queued), Twilio (body text), and Meta, which sends only approved templates with five fixed values: first name, business, service, when, link.
 
 ## Phase 7 in the code
@@ -280,10 +281,10 @@ refund". Test mode (PayFast sandbox, `sk_test_`) shows on the customer page and 
 `test`; test payments are left out of "received this month".
 
 **Dev:** since 5 Nov 2026 the local `.env` has its own dev only `encryption.key`, so the
-Payments, SMS and WhatsApp forms work on dev (before that they showed "not available").
+Payments and WhatsApp forms work on dev (before that they showed "not available").
 PayFast's notice cannot reach localhost, so a sandbox payment there stays due unless
 marked paid; Paystack test keys are verified on return. Production needs the key
-before release (D14, owner OK at that step), plus the new cron line.
+before release (T21, owner OK at that step), plus the new cron line.
 
 ## Phase 9 in the code
 
@@ -294,7 +295,7 @@ before release (D14, owner OK at that step), plus the new cron line.
 | Outbox | `Integrations\Outbox` (only writer of the outbox): `appointmentChanged($id, created|rescheduled|status)` from `AppointmentService::notify()` (new 4th argument `$change`), `depositPaid()` from `DepositService::paid()`, release of an unpaid hold, `backfillGoogle()`, `dropQueued()`, `retry()` |
 | Worker | `Integrations\IntegrationWorker::run()` inside `bookings:dispatch`, before the messages; retries `Config\Bookings::$outboxRetryMinutes`, then failed; `bookings:prune` deletes finished rows after `$outboxKeepDays` |
 | Sync | `Integrations\IntegrationSync` (only writer of `video_link`, `video_meeting_id`, `google_event_id`, raw update so `updated_at` stays): `jitsi()` at once, `zoom()`, `google()`, `event()` |
-| Clients | `Integrations\Http` (never throws, no redirects, `request()` on the shared `curlrequest`), `Zoom`, `GoogleCalendar` (platform OAuth client `bookings.googleClientId/Secret`, D15), `Webhooks` (events, signing, test, deliveries), `SafeUrl` (https, port 443, public addresses only; tests set `SafeUrl::$resolver`) |
+| Clients | `Integrations\Http` (never throws, no redirects, `request()` on the shared `curlrequest`), `Zoom`, `GoogleCalendar` (platform OAuth client `bookings.googleClientId/Secret`, T22), `Webhooks` (events, signing, test, deliveries), `SafeUrl` (https, port 443, public addresses only; tests set `SafeUrl::$resolver`) |
 | Delivery mode | `Integrations\DeliveryModes::offered()/pick()/label()`; `AppointmentService::create($input, $source)` and `PublicBookingService::book()` take `delivery_mode`; the booking page asks "How would you like it?" when a service has more than one way; `_appointment_fields.php` has a How select; SetupCheck `zoom_no_account` |
 | Messages | `{video_link}` placeholder, "Join online" in the email details, "Where: Online"; `NotificationDispatcher` holds a customer message up to 10 minutes while a Zoom link is coming |
 | API | `App\Filters\BookingApi` (`bookingapi:<scope>`: key, business on, 120 a minute, scope and role) fills `businessContext` (`setApiKey()`); `Api\ApiKeys` (only writer of keys, `wsk_<prefix>_<secret>`, SHA-256, `SCOPES` scope => [label, permission]); `Api\Resources` (shapes shared with webhooks); controllers `App\Controllers\Api\V1\{ApiController,Catalogue,Availability,Appointments,Customers}` |
@@ -307,13 +308,13 @@ buttons (and the Google OAuth exchange). A webhook body is frozen when the event
 Google and Zoom read the appointment when the job runs. A key acts as its member: scopes
 narrow it, the role still applies, and a removed member's keys stop at once. `api/v1/*` is
 exempt from CSRF, BotTrap and honeypot, sessionless, and has no CORS. On release:
-`encryption.key` (D14) and, for Google, the OAuth client and its verification (D15).
+`encryption.key` (T21) and, for Google, the OAuth client and its verification (T22, the owner's step).
 
 ## Phase 10 in the code
 
 | Piece | Where |
 |---|---|
-| Plan | migration `2026-11-19-100000_CreateBookingPlans`, `BookingPlanModel` (not scoped), `Plans\BookingPlanService` (`required()`, `allows()`, `status()`, `startTrial()` from `BookingSetupService::turnOn()`, `checkout()`, `rowForCharge()`, `recordPayment()` once per Paystack id, `cancel()`, `extendTrial()`, `sweep()`). Config `planRequired`, `planMonthly`, `trialDays` 30, `planGraceDays` 3 (`bookings.*` in .env). Reference `WSL-BKG-M-000123` |
+| Plan | migration `2026-11-19-100000_CreateBookingPlans`, `BookingPlanModel` (not scoped), `Plans\BookingPlanService` (`required()`, `allows()`, `status()`, `startTrial()` from `BookingSetupService::turnOn()`, `people()`, `priceFor()`, `checkout()` (also a move to the right tier; the old subscription is disabled once the new one is paid), `rowForCharge()`, `recordPayment()` once per Paystack id, `cancel()`, `extendTrial()`, `sweep()`). Config `planRequired`, `planTiers` (T23: Solo 1 person R160, Team up to 5 R420, Business R890; `bookings.planPrices` overrides; `planTierFor()`), `trialDays` 30, `planGraceDays` 3 (`bookings.*` in .env). Reference `WSL-BKG-M-000123` |
 | Paystack | `PaystackPayments` routes our plan's charges (reference, `booking_plan_id` metadata, or the mandate) and its subscription events to the plan service; Paystack plan name "WebScheduler Local online bookings, monthly" |
 | Enforced | `PublicBookingService::takesBookings()`, `BookingApi` (403 `plan_required`), SetupCheck `plan_ended`, banner in `layouts/business.php`. `/business` itself always works |
 | Pages | Settings tab Plan (`Business\PlanSettings`, `_settings_plan.php`, hidden while not required), email `emails/booking-plan.php`, offer lines on `/manage/bookings` and the owner panel |

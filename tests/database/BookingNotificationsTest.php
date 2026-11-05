@@ -40,7 +40,7 @@ use Tests\Support\WithEnv;
  * per offset with the booking window guard, stale reminders after a move,
  * opt out, retries with backoff, templates and placeholders, team messages.
  * Then Local's: the change link and unsubscribe in every customer email,
- * sensitive answers left out, SMS through the business's own encrypted
+ * sensitive answers left out, WhatsApp through the business's own encrypted
  * account, one business never touching another's queue, and the pages.
  *
  * Services run on a fixed clock: Monday 7 January 2030, 08:00 Johannesburg.
@@ -327,7 +327,7 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $t = new NotificationTemplates($this->listingId);
         $this->assertFalse($t->get('confirmed', 'email')['custom']);
         $this->assertSame(['body' => '{price} is not one of the placeholders listed.'], $t->save('confirmed', 'email', 'Hi', 'It costs {price}', null));
-        $this->assertSame(['body' => '{answers} can only go in an email.'], $t->save('confirmed', 'sms', '', 'See {answers}', null));
+        $this->assertSame(['body' => '{answers} can only go in an email.'], $t->save('confirmed', 'whatsapp', '', 'See {answers}', null));
         $this->assertSame([], $t->save('confirmed', 'email', 'See you {when}, {customer_first_name}', "Hello {customer_first_name}.\n\nBring a towel.", null));
         $this->assertTrue($t->get('confirmed', 'email')['custom']);
         $this->assertFalse((new NotificationTemplates($this->otherId))->get('confirmed', 'email')['custom'], 'Per business');
@@ -352,39 +352,39 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertStringNotContainsString('<b>Al</b>', $body);
     }
 
-    // SMS and WhatsApp (decision D8: the business's own account)
+    // WhatsApp (decision D8: the business's own account; SMS removed, T20)
 
-    public function testSmsGoesThroughTheBusinessTwilioAccount(): void
+    public function testWhatsAppGoesThroughTheBusinessTwilioAccount(): void
     {
         $this->withEncryptionKey();
         $integrations = new BookingIntegrations($this->listingId);
-        $this->assertSame(['from_number' => 'Use the full number with the country code, like +27871234567.'], $integrations->save('sms', 'twilio', [
+        $this->assertSame(['from_number' => 'Use the full number with the country code, like +27871234567.'], $integrations->save('whatsapp', 'twilio', [
             'account_sid' => 'AC' . str_repeat('a', 32), 'auth_token' => 'secret-token', 'from_number' => '0871234567',
         ], true, null));
-        $this->assertSame([], $integrations->save('sms', 'twilio', [
+        $this->assertSame([], $integrations->save('whatsapp', 'twilio', [
             'account_sid' => 'AC' . str_repeat('a', 32), 'auth_token' => 'secret-token', 'from_number' => '+27871234567',
         ], true, null));
         $stored = db_connect()->table('xs_booking_integrations')->where('listing_id', $this->listingId)->get()->getRowArray();
         $this->assertStringNotContainsString('secret-token', (string) $stored['config'], 'Encrypted at rest');
-        $this->assertSame('', (new BookingIntegrations($this->listingId))->view('sms')['values']['twilio.auth_token'], 'Never shown again');
+        $this->assertSame('', (new BookingIntegrations($this->listingId))->view('whatsapp')['values']['twilio.auth_token'], 'Never shown again');
         // Saving again with the secret left empty keeps it.
-        $this->assertSame([], (new BookingIntegrations($this->listingId))->save('sms', 'twilio', ['account_sid' => 'AC' . str_repeat('a', 32), 'auth_token' => '', 'from_number' => '+27871234567'], true, null));
-        $this->assertSame('secret-token', (new BookingIntegrations($this->listingId))->account('sms')['config']['auth_token']);
+        $this->assertSame([], (new BookingIntegrations($this->listingId))->save('whatsapp', 'twilio', ['account_sid' => 'AC' . str_repeat('a', 32), 'auth_token' => '', 'from_number' => '+27871234567'], true, null));
+        $this->assertSame('secret-token', (new BookingIntegrations($this->listingId))->account('whatsapp')['config']['auth_token']);
 
-        (new NotificationRules($this->listingId))->save(['confirmed' => ['email' => '1', 'sms' => '1']], [], null);
+        (new NotificationRules($this->listingId))->save(['confirmed' => ['email' => '1', 'whatsapp' => '1']], [], null);
         $curl = $this->fakeHttp(201, '{"sid":"SM1"}');
         $this->book('2030-01-09', '10:00', 'confirmed');
         $stats = $this->dispatch();
 
-        $this->assertSame(2, $stats['sent'], 'Email and SMS');
+        $this->assertSame(2, $stats['sent'], 'Email and WhatsApp');
         $this->assertCount(1, $curl->posts);
         [$url, $options] = $curl->posts[0];
         $this->assertSame('https://api.twilio.com/2010-04-01/Accounts/AC' . str_repeat('a', 32) . '/Messages.json', $url);
-        $this->assertSame('+27825551234', $options['form_params']['To'], 'The customer\'s 082 number in international form');
-        $this->assertSame('+27871234567', $options['form_params']['From']);
-        $this->assertStringContainsString('Salon Lumi: your booking for Cut', $options['form_params']['Body']);
-        $this->assertSame('ok', (new BookingIntegrations($this->listingId))->view('sms')['health']);
-        $this->assertSame('*** *** 234', BookingDeliveryLogModel::forBusiness($this->listingId)->where('channel', 'sms')->first()['recipient']);
+        $this->assertSame('whatsapp:+27825551234', $options['form_params']['To'], 'The customer\'s 082 number in international form');
+        $this->assertSame('whatsapp:+27871234567', $options['form_params']['From']);
+        $this->assertStringContainsString('your booking with Salon Lumi for Cut', $options['form_params']['Body']);
+        $this->assertSame('ok', (new BookingIntegrations($this->listingId))->view('whatsapp')['health']);
+        $this->assertSame('*** *** 234', BookingDeliveryLogModel::forBusiness($this->listingId)->where('channel', 'whatsapp')->first()['recipient']);
     }
 
     public function testMetaWhatsAppSendsTheApprovedTemplate(): void
@@ -412,7 +412,7 @@ final class BookingNotificationsTest extends CIUnitTestCase
     {
         config('Encryption')->key = '';
         Services::resetSingle('encrypter');
-        $errors = (new BookingIntegrations($this->listingId))->save('sms', 'clickatell', ['api_key' => 'k'], true, null);
+        $errors = (new BookingIntegrations($this->listingId))->save('whatsapp', 'meta', ['phone_number_id' => '1234567890', 'access_token' => 'k'], true, null);
         $this->assertArrayHasKey('provider', $errors);
         $this->assertSame(0, db_connect()->table('xs_booking_integrations')->countAllResults());
     }
@@ -447,7 +447,7 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $id = $this->book('2030-01-09', '10:00', 'confirmed');
         $this->dispatch();
         $this->assertSame(['ok' => true, 'error' => null], $this->appointments()->resend($id, 'confirmed', 'email'));
-        $this->assertFalse($this->appointments()->resend($id, 'confirmed', 'sms')['ok'], 'No SMS account');
+        $this->assertFalse($this->appointments()->resend($id, 'confirmed', 'whatsapp')['ok'], 'No WhatsApp account');
         $this->dispatch();
         $this->assertCount(2, $this->sent);
         $this->assertCount(2, $this->appointments()->detail($id)['messages']);
@@ -485,8 +485,8 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $tab->assertSee('What customers get');
         $tab->assertSee('Wording');
 
-        $edit = $this->get('business/settings/notifications?edit=confirmed.sms');
-        $edit->assertSee('Booking confirmed, SMS');
+        $edit = $this->get('business/settings/notifications?edit=confirmed.whatsapp');
+        $edit->assertSee('Booking confirmed, WhatsApp');
 
         $this->post('business/settings/notifications', [
             csrf_token() => csrf_hash(), 'customer' => ['confirmed' => ['email' => '1']], 'team' => [],

@@ -3,7 +3,7 @@
 namespace App\Models\Bookings;
 
 /**
- * SMS and WhatsApp accounts a business brings (xs_booking_integrations), the
+ * The accounts a business brings (WhatsApp, deposits, Zoom, Google, webhook) (xs_booking_integrations), the
  * credentials encrypted in `config`. Written only by BookingIntegrations.
  */
 class BookingIntegrationModel extends BookingScopedModel

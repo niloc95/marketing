@@ -27,8 +27,8 @@ class PlanSettings extends BaseController
     {
         $context = service('businessContext');
         $status  = (new BookingPlanService())->status($context->listingId());
-        if (! $status['can_subscribe']) {
-            return redirect()->to(base_url(self::BACK))->with('error', $status['price'] === '' ? 'The plan is not on sale yet. Your trial carries on.' : 'Your plan is already paid up.');
+        if (! $status['can_subscribe'] && ! $status['can_move']) {
+            return redirect()->to(base_url(self::BACK))->with('error', 'Your plan is already paid up.');
         }
         $checkout = (new BookingPlanService())->checkout($context->listing(), (string) $context->account()['email'], base_url('business/plan/paystack'));
         if ($checkout === null) {

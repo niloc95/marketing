@@ -23,7 +23,11 @@
 
 | T18 | Bookings plan (was D1): a paid monthly plan with a 30 day free trial, through Paystack, behind `bookings.planRequired`; price set by the owner (`bookings.planMonthly`) | owner, 5 Nov 2026 |
 | T19 | Retention and admin access (was D12): customers' personal details removed 24 months after their last appointment; platform admin sees counts and setup, plus a support view that needs a reason and is logged in the business's audit log | owner, 5 Nov 2026 |
-| T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as SMS and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
+| T20 | SMS removed completely (was D8): no SMS channel, no Clickatell; messages are email, and WhatsApp on the business's own account (link, Twilio or Meta), which it pays itself. Migration `2026-11-20-100000_RemoveBookingSms` clears SMS rows | owner, 5 Nov 2026 |
+| T21 | `encryption.key` on production (was D14): still needed after T20, for the business's WhatsApp, PayFast/Paystack, Zoom, Google and webhook accounts. Set at the release, with the owner's OK at that step; never rotated after | owner, 5 Nov 2026 |
+| T22 | Google Calendar (was D15): one platform OAuth client; the owner creates it in Google Cloud (redirect `https://local.webscheduler.co.za/business/connections/google/callback`, scope `calendar.events`) and applies for Google's verification; the button shows once `bookings.googleClientId` and `bookings.googleClientSecret` are set | owner, 5 Nov 2026 |
+| T23 | Bookings plan prices (was D16): by bookable people, Solo (1) R160, Team (up to 5) R420, Business (6 or more) R890 a month; `Config\Bookings::$planTiers`, prices overridable with `bookings.planPrices`. Growing or shrinking past a tier offers a move, which charges the new price, adds a month and stops the old subscription | owner, 5 Nov 2026 |
+| T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as WhatsApp and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
 
 ## Open: owner to answer before Phase 1
 
@@ -33,10 +37,6 @@ Each has a recommendation and is needed by the phase shown. D4, D5 and D7 were s
 | # | Question | Recommendation | Needed by |
 |---|---|---|---|
 | D2 | **Sites:** co.za only first, or .app too? | co.za first. .app later with Stripe or Paystack USD deposits and no rand figures. | Phase 5 |
-| D8 | **SMS and WhatsApp cost:** the business brings its own Twilio / Clickatell / Meta account (as in Bookings), or we resell? | Business brings its own at launch; resold credits later. Phase 6 was built this way (5 Nov 2026); owner to confirm. Owner wants SMS dropped completely (5 Nov 2026, to revisit with D14). | Phase 6 |
 | D10 | **Languages:** English only? | English only. | Phase 1 |
 | D11 | **Name in copy:** what owners and customers see. "Bookings", "WebScheduler Bookings", or "Online bookings on WebScheduler Local"? | "Online bookings" as the feature, "WebScheduler Local" as the platform. | Phase 1 |
 | D13 | **Import from frozen Bookings installs:** offer it later? | Yes, per customer and with their OK, after launch. | after Phase 10 |
-| D14 | **`encryption.key` on production** (still missing, noted in the Partner Program): required for integration credentials | Generate and set it before Phase 6 is released (owner OK, production change). **Revisit (owner, 5 Nov 2026):** the owner wants to drop SMS completely. If SMS goes and WhatsApp stays link only (wa.me, no stored account), nothing needs encrypting and D14 may fall away; decide together with D8. **Settled for Phase 8 (owner, 5 Nov 2026):** the business's PayFast and Paystack keys need it, so the key is set on production at the Phase 8 release, with the owner's OK at that step. | Phase 8 release |
-| D15 | **Google Calendar OAuth client** (Phase 9). Bookings had each business paste its own Google client id and secret. Built instead with one platform client (`bookings.googleClientId` and `bookings.googleClientSecret` in `.env`); the button stays hidden until they are set. The owner creates it in Google Cloud (redirect `https://local.webscheduler.co.za/business/connections/google/callback`, scope `calendar.events`), and Google's verification of a sensitive scope is needed before businesses outside the test users can connect | Owner: create the client and start Google's verification, or keep Google Calendar off at launch | Phase 9 release |
-| D16 | **Bookings plan price** (T18): one monthly price for now (`bookings.planMonthly`); D1 suggested tiers by size (R160 / R420 / R890) | Owner: set the price, and say whether tiers are wanted | before `planRequired = true` |

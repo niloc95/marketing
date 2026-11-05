@@ -58,6 +58,6 @@ already holds is read from the profile, never copied, so the two can't drift.
 | `legal.privacy`, `legal.cookie_notice` | Local's privacy and cookie policy cover the platform; a business can link its own |
 | `security.*`, `branding.*` | unused in Bookings code |
 
-Integration credentials (SMTP, SMS, WhatsApp, Zoom, Google, payment) are not settings.
+Integration credentials (SMTP, WhatsApp, Zoom, Google, payment, webhook) are not settings.
 They live encrypted in `xs_booking_integrations`. SMTP is not offered, because mail goes
 through `Mailer`.

@@ -65,7 +65,7 @@ The working rules for code live in the project skill `.claude/skills/bookings/SK
 | 3 | Scheduling engine | availability, conflicts, timezones, buffers, lead time, horizon, golden tests |
 | 4 | Appointments and customers | calendar day/week/month/agenda, drag to reschedule, form, statuses, custom fields, customers |
 | 5 | Public booking | flow on the profile, manage, reschedule and cancel by link, customer page, short links |
-| 6 | Notifications | queue, dispatcher, rules, reminders, templates, email, then SMS and WhatsApp, delivery logs, opt out |
+| 6 | Notifications | queue, dispatcher, rules, reminders, templates, email, then WhatsApp (SMS removed, T20), delivery logs, opt out |
 | 7 | Dashboard and analytics | landing dashboard, analytics tabs, cached metrics |
 | 8 | Payments | deposits, transactions, mark paid, refunds if decided |
 | 9 | Integrations and API | integration store, Zoom and Jitsi, Google Calendar, webhooks, API keys, REST API, developer page |

@@ -56,7 +56,7 @@ class OptOuts
         if ($normal === null || $normal === '') {
             return null;
         }
-        // SMS and WhatsApp share a number: stopping one is its own choice, so the channel is in the hash.
+        // The channel is in the hash: stopping emails never stops WhatsApp, and the other way round.
         return hash('sha256', 'booking-optout|' . $listingId . '|' . $channel . '|' . $normal . '|' . config('Encryption')->key);
     }
 

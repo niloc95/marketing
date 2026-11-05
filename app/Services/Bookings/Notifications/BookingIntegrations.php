@@ -6,17 +6,17 @@ use App\Models\Bookings\BookingIntegrationModel;
 use App\Services\Bookings\BookingAudit;
 
 /**
- * The SMS and WhatsApp accounts a business brings (decision D8: the business
- * pays its own provider; we do not resell), and since Phase 8 the PayFast or
+ * The WhatsApp account a business brings (decision D8: the business pays its
+ * own provider; we do not resell; SMS was removed by the owner, T20), and since Phase 8 the PayFast or
  * Paystack account its deposits go into (channel 'payment', decision D6: the
  * money goes to the business, never through us). Ported from Bookings'
- * NotificationSmsService / NotificationWhatsAppService integration settings
+ * NotificationWhatsAppService integration settings
  * and HandlesNotificationIntegrations. The only writer of
  * xs_booking_integrations.
  *
  * - Credentials are encrypted with the CI4 Encrypter. Without encryption.key
  *   nothing is saved (as the Partner Program does for bank details), so a
- *   missing key can never leave tokens in plain text. Decision D14: set the
+ *   missing key can never leave tokens in plain text. Decision T21: set the
  *   key on production before this is released.
  * - Secrets are write only: the settings screen shows that one is saved,
  *   never the value, and leaving the field empty keeps it.
@@ -37,10 +37,6 @@ class BookingIntegrations
      * @var array<string,array<string,array<string,array{0:string,1:bool}>>>
      */
     public const PROVIDERS = [
-        'sms' => [
-            'clickatell' => ['api_key' => ['API key', true], 'from' => ['Sender number or name (optional)', false]],
-            'twilio'     => ['account_sid' => ['Account SID', false], 'auth_token' => ['Auth token', true], 'from_number' => ['Twilio number, like +27871234567', false]],
-        ],
         'whatsapp' => [
             'link'   => [],
             'twilio' => ['account_sid' => ['Account SID', false], 'auth_token' => ['Auth token', true], 'from_number' => ['WhatsApp number on Twilio, like +27871234567', false]],
@@ -78,7 +74,6 @@ class BookingIntegrations
     public const PROVIDER_LABELS = [
         'payfast'    => 'PayFast',
         'paystack'   => 'Paystack',
-        'clickatell' => 'Clickatell',
         'twilio'     => 'Twilio',
         'link'       => 'Open a chat from the appointment (no account needed)',
         'meta'       => 'WhatsApp Business (Meta Cloud API)',
@@ -334,12 +329,6 @@ class BookingIntegrations
             $errors['server_url'] = $problem;
         }
         $phone  = static fn (string $v): bool => (bool) preg_match('/^\+\d{7,15}$/', $v);
-        if ($provider === 'clickatell' && $c['api_key'] === '') {
-            $errors['api_key'] = 'Paste the API key from Clickatell.';
-        }
-        if ($provider === 'clickatell' && $c['from'] !== '' && ! preg_match('/^(\+?\d{3,15}|[A-Za-z0-9 ]{1,11})$/', $c['from'])) {
-            $errors['from'] = 'A sender is a number, or up to 11 letters and digits.';
-        }
         if ($provider === 'twilio') {
             if (! preg_match('/^AC[0-9a-fA-F]{32}$/', $c['account_sid'])) {
                 $errors['account_sid'] = 'A Twilio Account SID starts with AC and has 34 characters.';

@@ -12,8 +12,8 @@ use Config\BookingNotifications as Catalog;
  * xs_business_notification_rules. The only writer of
  * xs_booking_notification_rules.
  *
- * A rule with no row takes the default in Config\BookingNotifications. SMS
- * and WhatsApp also need the business's own account to be on
+ * A rule with no row takes the default in Config\BookingNotifications.
+ * WhatsApp also needs the business's own account to be on
  * (BookingIntegrations::active()); the rule alone sends nothing there.
  * Team messages are email only (and the notification centre, always).
  */

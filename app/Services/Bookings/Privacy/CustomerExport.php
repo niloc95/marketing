@@ -61,7 +61,7 @@ class CustomerExport
             'customer'     => Resources::customer($c) + ['answers' => $custom],
             'stopped'      => [
                 'email' => ! empty($c['email']) && $optOuts->isOptedOut('email', (string) $c['email']),
-                'sms'   => ! empty($c['phone']) && $optOuts->isOptedOut('sms', (string) $c['phone']),
+                'whatsapp' => ! empty($c['phone']) && $optOuts->isOptedOut('whatsapp', (string) $c['phone']),
             ],
             'appointments' => $appointments,
         ];

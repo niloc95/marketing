@@ -73,13 +73,22 @@ class Bookings extends BaseConfig
     /**
      * The Bookings plan (Phase 10, decision D1): a monthly subscription with
      * a free trial. Off (`bookings.planRequired = false`) every business with
-     * bookings on may use them, as before. The price is the owner's to set
-     * (`bookings.planMonthly`, rand, like 160.00); without one the plan
-     * cannot be bought, only the trial runs.
+     * bookings on may use them, as before.
+     *
+     * Priced by how many bookable people the business has (decision T23,
+     * owner 5 Nov 2026), in rand a month. `people` is the most the tier
+     * covers, 0 for no limit. The prices can be changed in .env with
+     * `bookings.planPrices = 160,420,890` (one per tier, in this order).
+     *
+     * @var list<array{name:string,people:int,price:string}>
      */
     public bool $planRequired = false;
 
-    public string $planMonthly = '';
+    public array $planTiers = [
+        ['name' => 'Solo', 'people' => 1, 'price' => '160.00'],
+        ['name' => 'Team', 'people' => 5, 'price' => '420.00'],
+        ['name' => 'Business', 'people' => 0, 'price' => '890.00'],
+    ];
 
     public int $trialDays = 30;
 
@@ -99,12 +108,39 @@ class Bookings extends BaseConfig
         return $env === null || $env === '' ? $this->planRequired : filter_var($env, FILTER_VALIDATE_BOOLEAN);
     }
 
-    /** The monthly price in rand as text (160.00), or '' when none is set. */
-    public function planPrice(): string
+    /**
+     * The tiers with .env's prices applied.
+     *
+     * @return list<array{name:string,people:int,price:string}>
+     */
+    public function planTiers(): array
     {
-        $price = trim((string) (env('bookings.planMonthly') ?? $this->planMonthly));
+        $tiers  = $this->planTiers;
+        $prices = array_map('trim', explode(',', (string) (env('bookings.planPrices') ?? '')));
+        foreach ($tiers as $i => $tier) {
+            $price = $prices[$i] ?? '';
+            if (preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 5) {
+                $tiers[$i]['price'] = number_format((float) $price, 2, '.', '');
+            }
+        }
 
-        return preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 5 ? number_format((float) $price, 2, '.', '') : '';
+        return $tiers;
+    }
+
+    /**
+     * The tier for a business with this many bookable people.
+     *
+     * @return array{name:string,people:int,price:string}
+     */
+    public function planTierFor(int $people): array
+    {
+        foreach ($this->planTiers() as $tier) {
+            if ($tier['people'] === 0 || max(1, $people) <= $tier['people']) {
+                return $tier;
+            }
+        }
+
+        return $this->planTiers()[array_key_last($this->planTiers)];
     }
 
     public function googleCalendarOffered(): bool

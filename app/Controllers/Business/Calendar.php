@@ -49,7 +49,7 @@ class Calendar extends BaseController
         ]);
     }
 
-    /** Channels "Send again" offers: email, and SMS or WhatsApp when the business's account sends. @return array<string,string> */
+    /** Channels "Send again" offers: email, and WhatsApp when the business's account sends. @return array<string,string> */
     private static function sendChannels(int $listingId): array
     {
         $integrations = new \App\Services\Bookings\Notifications\BookingIntegrations($listingId);

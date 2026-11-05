@@ -169,7 +169,6 @@ class NotificationDispatcher
         }
         $result = match ($channel) {
             'email'    => Channels::email($listing, $context, $event, $recipient, $template, $team),
-            'sms'      => Channels::sms($integrations->account('sms'), $recipient, NotificationTemplates::fill($template, $context['values'])['body']),
             'whatsapp' => Channels::whatsapp($integrations->account('whatsapp'), $event, $recipient, NotificationTemplates::fill($template, $context['values'])['body'], $context['values']),
         };
         if ($channel !== 'email') {

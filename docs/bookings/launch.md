@@ -14,13 +14,13 @@ Full suite green before the merge (`php vendor/bin/phpunit`).
 
 | Step | Why | Notes |
 |---|---|---|
-| `encryption.key` in the production `.env` (D14) | SMS, WhatsApp, payment, Zoom, Google and webhook accounts are stored encrypted; without it they cannot be saved | `php spark key:generate --show`, paste by hand; back up `.env` first. Never rotate it afterwards: saved accounts would no longer decrypt |
+| `encryption.key` in the production `.env` (T21) | WhatsApp, payment, Zoom, Google and webhook accounts are stored encrypted; without it they cannot be saved | `php spark key:generate --show`, paste by hand; back up `.env` first. Never rotate it afterwards: saved accounts would no longer decrypt |
 | Database dump | the migrations below add 18 tables | the nightly `/home/deploy/backups/db-*.sql.gz` from the same day, or a fresh one |
 
 ## 3. Release
 
-1. Migrations (all additive, new tables and nullable columns): `2026-11-12` to `2026-11-19`
-   (`CreateBookingFoundation` … `CreateBookingPlans`). Additive, so they may run before the
+1. Migrations (all additive, new tables and nullable columns): `2026-11-12` to `2026-11-20`
+   (`CreateBookingFoundation` … `CreateBookingPlans`), then `2026-11-20` (`RemoveBookingSms`). Additive, so they may run before the
    code copy (memory: additive migration first).
 2. Code, `npm run list:build` on the server (the business bundle and the stylesheet).
 3. Cron: reinstall `/etc/cron.d/webscheduler` from `deploy/cron/webscheduler`. New lines:
@@ -51,7 +51,7 @@ Full suite green before the merge (`php vendor/bin/phpunit`).
 
 | Setting | Value |
 |---|---|
-| `bookings.planMonthly` | the owner's price in rand, like `160` (D1 suggested R160 / R420 / R890 by size; the code takes one price for now) |
+| Prices (T23) | Solo R160, Team R420, Business R890 a month by bookable people, already in `Config\Bookings::$planTiers`; `bookings.planPrices = 160,420,890` in `.env` only to change them |
 | `bookings.planRequired` | `true` when the plan goes on sale; every business then needs a trial or a paid plan for its booking page and API |
 | Trial | 30 days (`Config\Bookings::$trialDays`), once per business, started when bookings are turned on |
 
@@ -61,7 +61,7 @@ trial from `/admin/bookings` (Add free days), which starts it.
 
 The brand site's pricing (`/pricing.json`) does not list the Bookings plan yet.
 
-## 7. Google Calendar (D15)
+## 7. Google Calendar (T22, owner's step)
 
 Create the OAuth client in Google Cloud (Web application, redirect
 `https://local.webscheduler.co.za/business/connections/google/callback`, scope

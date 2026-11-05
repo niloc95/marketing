@@ -1,7 +1,7 @@
 # Copy
 
 Local's copy rules (CLAUDE.md, listing-service skill) apply to every string a customer or
-business owner reads: pages, emails, SMS, WhatsApp templates, JS messages, error text,
+business owner reads: pages, emails, WhatsApp templates, JS messages, error text,
 the dashboard. Bookings' own wording is **rewritten, not carried over**. Code identifiers
 (routes, classes, keys such as `no_show`) stay as they are.
 

@@ -64,7 +64,7 @@ class NotificationTemplates
         }
 
         $errors = [];
-        $max    = $channel === 'email' ? Catalog::BODY_MAX : Catalog::SMS_MAX;
+        $max    = $channel === 'email' ? Catalog::BODY_MAX : Catalog::TEXT_MAX;
         if (mb_strlen($body) > $max) {
             $errors['body'] = 'Keep it to ' . $max . ' characters.';
         }

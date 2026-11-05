@@ -1,5 +1,5 @@
 /**
- * Settings, Messages: show the fields of the SMS or WhatsApp provider
+ * Settings, Messages: show the fields of the WhatsApp provider
  * chosen (business/_settings_notifications.php). Without the script every
  * provider's fields stay as the server rendered them, which still saves.
  */

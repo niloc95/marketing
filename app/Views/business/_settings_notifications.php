@@ -1,8 +1,8 @@
 <?php
 /**
  * Settings, Messages tab (Business\NotificationSettings). Which messages go
- * out, reminders, the sender, the wording, and the business's own SMS and
- * WhatsApp accounts. Secrets are never printed: a saved one shows as saved.
+ * out, reminders, the sender, the wording, and the business's own
+ * WhatsApp account. Secrets are never printed: a saved one shows as saved.
  *
  * @var array<string,string> $settings
  * @var array<string,mixed>  $messages NotificationSettings::viewData()
@@ -21,7 +21,7 @@ $current   = static function (string $value) use ($reminders): array {
 <form method="post" action="<?= base_url('business/settings/notifications') ?>" class="form-card">
     <?= csrf_field() ?>
     <h2 class="mb-2 font-bold">What customers get</h2>
-    <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Emails are sent by WebScheduler Local in your name, and replies reach you. SMS and WhatsApp need your own account (below) and are charged by that provider.</p>
+    <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Emails are sent by WebScheduler Local in your name, and replies reach you. WhatsApp needs your own account (below) and is charged by that provider.</p>
     <div class="table-scroll mb-6">
         <table class="table">
             <thead><tr><th>Message</th><?php foreach (Catalog::CHANNELS as $ch): ?><th><?= Catalog::CHANNEL_LABELS[$ch] ?></th><?php endforeach ?></tr></thead>
@@ -109,9 +109,9 @@ $current   = static function (string $value) use ($reminders): array {
             <?php endif ?>
             <div class="field">
                 <label for="t-body">Message</label>
-                <textarea id="t-body" name="body" rows="<?= $ch === 'email' ? 8 : 4 ?>" maxlength="<?= $ch === 'email' ? Catalog::BODY_MAX : Catalog::SMS_MAX ?>"><?= esc((string) old('body', $t['body'])) ?></textarea>
+                <textarea id="t-body" name="body" rows="<?= $ch === 'email' ? 8 : 4 ?>" maxlength="<?= $ch === 'email' ? Catalog::BODY_MAX : Catalog::TEXT_MAX ?>"><?= esc((string) old('body', $t['body'])) ?></textarea>
                 <?php if ($ch !== 'email'): ?>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Up to <?= Catalog::SMS_MAX ?> characters. An SMS of more than 160 characters is charged as two or more.</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Up to <?= Catalog::TEXT_MAX ?> characters.</p>
                 <?php endif ?>
                 <?php if ($ch === 'whatsapp' && $messages['whatsapp']['provider'] === 'meta'): ?>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">With WhatsApp Business, Meta sends your approved template, not this text. Its five values are: first name, business, service, when, and the change or cancel link.</p>
@@ -138,7 +138,7 @@ $current   = static function (string $value) use ($reminders): array {
     <?php endif ?>
 </section>
 
-<?php foreach (['sms' => 'SMS', 'whatsapp' => 'WhatsApp'] as $channel => $title): ?>
+<?php foreach (['whatsapp' => 'WhatsApp'] as $channel => $title): ?>
     <?php $acc = $messages[$channel]; ?>
     <section class="form-card mt-6" id="<?= $channel ?>">
         <h2 class="mb-2 font-bold"><?= $title ?> account</h2>

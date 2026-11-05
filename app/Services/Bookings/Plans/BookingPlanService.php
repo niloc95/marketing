@@ -24,6 +24,10 @@ use DateTimeImmutable;
  *   up (plus a few days' grace while Paystack retries a card), customers can
  *   book and the API answers. After that the business keeps its calendar and
  *   data in /business, and the booking page and API stop until it pays.
+ * - The price follows the number of bookable people (T23: Solo, Team,
+ *   Business; Config\Bookings::$planTiers), worked out at checkout and kept
+ *   on the row. A business that grows or shrinks past its tier is offered the
+ *   right one; paying for it adds a month and stops the old subscription.
  * - The plan never changes discovery ranking or the quality score.
  * - Paystack's charges come in through PaystackPayments (webhook and the
  *   browser's return), which hands a charge of ours to recordPayment();
@@ -63,7 +67,7 @@ class BookingPlanService
     /**
      * Where the business stands, for the Plan tab, the banner and the admin.
      *
-     * @return array{required:bool,state:string,allows:bool,trial_ends:?string,paid_until:?string,days_left:?int,price:string,can_subscribe:bool,renews:bool}
+     * @return array{required:bool,state:string,allows:bool,trial_ends:?string,paid_until:?string,days_left:?int,people:int,tier:string,price:string,paid_price:?string,can_subscribe:bool,can_move:bool,renews:bool}
      *   state: none, trial, trial_ended, active, past_due, cancelled (paid up, not renewing), ended
      */
     public function status(int $listingId): array
@@ -90,6 +94,11 @@ class BookingPlanService
             }
         }
 
+        $people = self::people($listingId);
+        $tier   = $config->planTierFor($people);
+        $renews = $row !== null && $row['state'] === Plan::ACTIVE && $row['cancelled_at'] === null;
+        $paid   = $renews && $row['amount_cents'] !== null ? number_format((int) $row['amount_cents'] / 100, 2, '.', '') : null;
+
         return [
             'required'      => self::required(),
             'state'         => $state,
@@ -97,10 +106,26 @@ class BookingPlanService
             'trial_ends'    => $row['trial_ends_at'] ?? null,
             'paid_until'    => $row['paid_until'] ?? null,
             'days_left'     => $days,
-            'price'         => $config->planPrice(),
-            'can_subscribe' => $config->planPrice() !== '' && in_array($state, ['none', 'trial', 'trial_ended', 'cancelled', 'ended'], true),
-            'renews'        => $row !== null && $row['state'] === Plan::ACTIVE && $row['cancelled_at'] === null,
+            'people'        => $people,
+            'tier'          => $tier['name'],
+            'price'         => $tier['price'],
+            'paid_price'    => $paid,
+            'can_subscribe' => in_array($state, ['none', 'trial', 'trial_ended', 'cancelled', 'ended'], true),
+            'can_move'      => $renews && $paid !== null && $paid !== $tier['price'],
+            'renews'        => $renews,
         ];
+    }
+
+    /** Bookable people (not archived): what the price follows. */
+    public static function people(int $listingId): int
+    {
+        return \App\Models\Bookings\BookingProviderModel::forBusiness($listingId)->where('archived_at', null)->where('bookable', 1)->countAllResults();
+    }
+
+    /** The monthly price for a business now, in rand (160.00). */
+    public function priceFor(int $listingId): string
+    {
+        return config('Bookings')->planTierFor(self::people($listingId))['price'];
     }
 
     /** Start the free trial, once per business. Returns the row. */
@@ -121,16 +146,17 @@ class BookingPlanService
     }
 
     /**
-     * Open a Paystack checkout for the plan. Null when it cannot be opened
-     * (no price set, Paystack not configured or not answering).
+     * Open a Paystack checkout for the plan at the business's tier: a first
+     * subscription, or a move to another tier. Null when it cannot be opened
+     * (Paystack not configured or not answering).
      *
      * @return array{url:string,access_code:string}|null
      */
     public function checkout(array $listing, string $email, string $returnUrl): ?array
     {
-        $price    = config('Bookings')->planPrice();
+        $price    = $this->priceFor((int) $listing['id']);
         $paystack = $this->paystack();
-        if ($price === '' || ! $paystack->isConfigured() || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! $paystack->isConfigured() || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return null;
         }
         $row      = $this->startTrial((int) $listing['id'], null);
@@ -209,6 +235,9 @@ class BookingPlanService
                 return 'duplicate';
             }
             $fresh = $this->plans->find((int) $row['id']);
+            // A move to another tier: the old subscription stops once the new one is paid.
+            $old   = $mandate !== [] && $fresh['paystack_subscription_code'] !== null && $fresh['paystack_plan_code'] !== $mandate['plan']
+                ? [(string) $fresh['paystack_subscription_code'], (string) $fresh['paystack_email_token']] : null;
             $base  = max($this->now->getTimestamp(), strtotime((string) ($fresh['paid_until'] ?? '') . ' UTC') ?: 0, $fresh['state'] === Plan::TRIAL ? (strtotime((string) $fresh['trial_ends_at'] . ' UTC') ?: 0) : 0);
             $until = (new DateTimeImmutable('@' . $base))->modify('+1 month')->format('Y-m-d H:i:s');
             $db->table('xs_booking_plan_payments')->insert([
@@ -216,7 +245,7 @@ class BookingPlanService
                 'reference' => $reference, 'amount_cents' => $cents, 'paid_at' => gmdate('Y-m-d H:i:s', $paidAt),
                 'created_at' => $this->nowUtc(), 'updated_at' => $this->nowUtc(),
             ]);
-            $this->plans->update((int) $row['id'], ['state' => Plan::ACTIVE, 'paid_until' => $until, 'cancelled_at' => null] + ($mandate !== [] ? [
+            $this->plans->update((int) $row['id'], ['state' => Plan::ACTIVE, 'paid_until' => $until, 'cancelled_at' => null, 'amount_cents' => $cents] + ($mandate !== [] ? [
                 'paystack_customer_code' => $mandate['customer'], 'paystack_plan_code' => $mandate['plan'],
                 'paystack_subscription_code' => null, 'paystack_email_token' => null,
             ] : []));
@@ -229,7 +258,11 @@ class BookingPlanService
 
         (new BookingAudit())->record((int) $row['listing_id'], null, 'plan.paid', 'plan', (int) $row['id'], null, ['reference' => $reference, 'until' => $until]);
         if ($mandate !== []) {
-            $this->tellUs((int) $row['listing_id'], 'subscribed to the Bookings plan');
+            if ($old !== null && ! $this->paystack()->disableSubscription($old[0], $old[1])) {
+                log_message('error', 'Bookings plan ' . (int) $row['id'] . ': the old Paystack subscription ' . $old[0] . ' was not stopped after a move; stop it by hand.');
+                $this->tellUs((int) $row['listing_id'], 'moved plan, but the old Paystack subscription ' . $old[0] . ' did not stop: stop it in Paystack');
+            }
+            $this->tellUs((int) $row['listing_id'], 'subscribed to the Bookings plan at R' . number_format($cents / 100, 2, '.', '') . ' a month');
             $this->storeSubscription((int) $row['id']);
         }
 
@@ -362,7 +395,7 @@ class BookingPlanService
             ->join('xs_accounts a', 'a.id = m.account_id')
             ->where('m.listing_id', $listingId)->where('m.role', 'admin')->where('m.status', 'active')->where('a.status', 'active')
             ->get()->getResultArray(), 'email');
-        $body = view($view, $data + ['listing' => $listing, 'url' => listing_site_url($listing, 'business/settings/plan'), 'price' => config('Bookings')->planPrice()], ['saveData' => false]);
+        $body = view($view, $data + ['listing' => $listing, 'url' => listing_site_url($listing, 'business/settings/plan'), 'price' => $this->priceFor($listingId)], ['saveData' => false]);
         foreach (array_unique($emails) as $email) {
             (new Mailer())->send((string) $email, $subject, $body);
         }

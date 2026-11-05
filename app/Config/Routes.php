@@ -289,8 +289,8 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
     $routes->post('settings/questions', 'Business\Settings::saveQuestions');
     $routes->post('settings/notifications', 'Business\NotificationSettings::save');
     $routes->post('settings/notifications/template', 'Business\NotificationSettings::saveTemplate');
-    $routes->post('settings/notifications/(sms|whatsapp)', 'Business\NotificationSettings::saveIntegration/$1');
-    $routes->post('settings/notifications/(sms|whatsapp)/test', 'Business\NotificationSettings::test/$1');
+    $routes->post('settings/notifications/(whatsapp)', 'Business\NotificationSettings::saveIntegration/$1');
+    $routes->post('settings/notifications/(whatsapp)/test', 'Business\NotificationSettings::test/$1');
     // Phase 8: the business's own PayFast or Paystack account for deposits.
     $routes->post('settings/payments', 'Business\PaymentSettings::save');
     $routes->post('settings/payments/check', 'Business\PaymentSettings::check');

@@ -135,12 +135,12 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Stale reminder cancellation after reschedule | `schedule_fingerprint` | Port | 6 | |
 | Customer and internal templates, 37 placeholders | `NotificationTemplateService` | Port | 6 | copy rewritten to Local rules; emails in Local's `emails/_layout.php` style |
 | Email | `MailerService` (SMTP per business) | Rebuild | 6 | Local `Mailer` (SES) only, From: the platform, Reply-To: the business |
-| SMS (Clickatell, Twilio) | yes | Port | 6 | credentials per business, encrypted |
+| SMS (Clickatell, Twilio) | yes | Skip | | built in Phase 6, removed 5 Nov 2026 (owner, T20) |
 | WhatsApp (link, Twilio, Meta Cloud) | yes | Port | 6 | |
 | Delivery logs, export, purge | yes | Port | 6 | |
 | In app notification centre | `/notifications` | Port | 6 | |
 | Opt out | table exists, **no route** | New | 6 | unsubscribe link and page, RFC 8058 for email; built 5 Nov 2026 (`book/unsubscribe/{customer hash}`; only the business can switch emails back on) |
-| Manual resend | `POST appointments/{id}/notify` | Port | 6 | queued, not sent in the request (Bookings sent email and SMS at once) |
+| Manual resend | `POST appointments/{id}/notify` | Port | 6 | queued, not sent in the request (Bookings sent email and SMS at once; SMS since removed, T20) |
 
 ## 10. Payments
 
@@ -160,7 +160,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 |---|---|---|---|---|
 | Encrypted integration store with health and test | `xs_business_integrations` | Port | 6, 9 | needs `encryption.key` on production (still missing); built (Check buttons for Zoom and Google, Send a test for the webhook) |
 | Zoom meeting on booking, Jitsi link | `VideoSessionService` | Port | 9 | built 5 Nov 2026: the business's own Zoom app; unlike Bookings a new time moves the meeting and a cancellation deletes it; Jitsi link hashed from the appointment hash; customers choose how when a service offers more than one way; confirmations wait up to 10 minutes for a Zoom link |
-| Google Calendar | OAuth works, **push never called** | New | 9 | built 5 Nov 2026: one platform OAuth client (D15), push on create, update and cancel through the outbox, one way only. Reading busy times from Google: Later. Per person calendars: Later |
+| Google Calendar | OAuth works, **push never called** | New | 9 | built 5 Nov 2026: one platform OAuth client (T22), push on create, update and cancel through the outbox, one way only. Reading busy times from Google: Later. Per person calendars: Later |
 | Outgoing webhooks, signed | defined, **never dispatched** | New | 9 | built 5 Nov 2026: `WebScheduler-Signature: t=..,v1=HMAC(t.body)`, retries 1, 5, 30, 120, 360 min, delivery log with Send again, SSRF guard (`SafeUrl`) |
 | API keys | CLI only, scopes not enforced | New | 9 | built 5 Nov 2026: Settings, API keys; six scopes, each also needs the member's role |
 | REST API `/api/v1` with `{data, meta}` | yes | Port | 9 | built 5 Nov 2026, per business; `docs/bookings/openapi.json` checked against the routes by a test |

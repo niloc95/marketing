@@ -17,7 +17,8 @@ use CodeIgniter\Config\BaseConfig;
  */
 class BookingNotifications extends BaseConfig
 {
-    public const CHANNELS = ['email', 'sms', 'whatsapp'];
+    /** SMS was removed on 5 Nov 2026 (owner, decision T20): email, and WhatsApp on the business's own account. */
+    public const CHANNELS = ['email', 'whatsapp'];
 
     public const CUSTOMER = 'customer';
     public const TEAM     = 'team';
@@ -35,11 +36,11 @@ class BookingNotifications extends BaseConfig
     /** Events the team hears about, when the customer did it (booked, moved, cancelled online). */
     public const TEAM_EVENTS = ['pending', 'confirmed', 'rescheduled', 'cancelled'];
 
-    public const CHANNEL_LABELS = ['email' => 'Email', 'sms' => 'SMS', 'whatsapp' => 'WhatsApp'];
+    public const CHANNEL_LABELS = ['email' => 'Email', 'whatsapp' => 'WhatsApp'];
 
     /**
-     * Rules with no row: customer email on for everything but no show, SMS and
-     * WhatsApp off (they need the business's own account, decision D8), team
+     * Rules with no row: customer email on for everything but no show,
+     * WhatsApp off (it needs the business's own account, decision D8), team
      * email on.
      *
      * @var array<string,array<string,bool>> recipient => "event.channel" => on
@@ -63,7 +64,7 @@ class BookingNotifications extends BaseConfig
     public int $staleLockMinutes = 15;
 
     /** Most messages one run sends per channel; the rest wait for the next minute. */
-    public array $perRunLimit = ['email' => 200, 'sms' => 60, 'whatsapp' => 60];
+    public array $perRunLimit = ['email' => 200, 'whatsapp' => 60];
 
     /** How long delivery logs and finished queue rows are kept (bookings:prune). */
     public int $logDays = 90;
@@ -72,7 +73,8 @@ class BookingNotifications extends BaseConfig
 
     public const BODY_MAX = 4000;
 
-    public const SMS_MAX = 480;
+    /** A WhatsApp message body. */
+    public const TEXT_MAX = 480;
 
     /**
      * What a template may use. Values are escaped where they are rendered;
@@ -106,7 +108,7 @@ class BookingNotifications extends BaseConfig
      * Customer messages. Email bodies are plain text paragraphs separated by
      * a blank line; the email itself adds the appointment details, the change
      * or cancel button and the unsubscribe link, so a business cannot edit
-     * them away. SMS and WhatsApp carry {manage_link} themselves.
+     * them away. WhatsApp carries {manage_link} itself.
      *
      * @var array<string,array<string,array{subject?:string,body:string}>>
      */
@@ -116,7 +118,6 @@ class BookingNotifications extends BaseConfig
                 'subject' => 'Your booking request with {business}',
                 'body'    => "Hi {customer_first_name},\n\nWe have your request for {service} {when}. {business} will confirm it, and we will email you when they do.\n\n{answers}",
             ],
-            'sms'      => ['body' => '{business}: we have your request for {service} {when}. We will let you know when it is confirmed. {manage_link}'],
             'whatsapp' => ['body' => 'Hi {customer_first_name}, {business} has your request for {service} {when}. We will let you know when it is confirmed. Change or cancel: {manage_link}'],
         ],
         'confirmed' => [
@@ -124,7 +125,6 @@ class BookingNotifications extends BaseConfig
                 'subject' => 'Confirmed: {service} with {business} on {date} at {time}',
                 'body'    => "Hi {customer_first_name},\n\nYour booking is confirmed: {service} with {team_member} {when}.\n\n{answers}",
             ],
-            'sms'      => ['body' => '{business}: your booking for {service} {when} is confirmed. Change or cancel: {manage_link}'],
             'whatsapp' => ['body' => 'Hi {customer_first_name}, your booking with {business} for {service} {when} is confirmed. Change or cancel: {manage_link}'],
         ],
         'rescheduled' => [
@@ -132,7 +132,6 @@ class BookingNotifications extends BaseConfig
                 'subject' => 'New time: {service} with {business} on {date} at {time}',
                 'body'    => "Hi {customer_first_name},\n\nYour booking has a new time: {service} with {team_member} {when}.",
             ],
-            'sms'      => ['body' => '{business}: your booking for {service} is now {when}. {manage_link}'],
             'whatsapp' => ['body' => 'Hi {customer_first_name}, your booking with {business} for {service} is now {when}. Change or cancel: {manage_link}'],
         ],
         'cancelled' => [
@@ -140,7 +139,6 @@ class BookingNotifications extends BaseConfig
                 'subject' => 'Cancelled: {service} with {business} on {date}',
                 'body'    => "Hi {customer_first_name},\n\nYour booking for {service} {when} is cancelled.\n\nYou are welcome to book again: {booking_link}",
             ],
-            'sms'      => ['body' => '{business}: your booking for {service} {when} is cancelled. Book again: {booking_link}'],
             'whatsapp' => ['body' => 'Hi {customer_first_name}, your booking with {business} for {service} {when} is cancelled. Book again: {booking_link}'],
         ],
         'reminder' => [
@@ -148,7 +146,6 @@ class BookingNotifications extends BaseConfig
                 'subject' => 'Reminder: {service} with {business} {when}',
                 'body'    => "Hi {customer_first_name},\n\nThis is a reminder of your booking: {service} with {team_member} {when}.\n\nIf you cannot make it, please change or cancel your booking so someone else can have the time.",
             ],
-            'sms'      => ['body' => 'Reminder from {business}: {service} {when}. Change or cancel: {manage_link}'],
             'whatsapp' => ['body' => 'Hi {customer_first_name}, a reminder of your booking with {business}: {service} {when}. Change or cancel: {manage_link}'],
         ],
         'no_show' => [
@@ -156,7 +153,6 @@ class BookingNotifications extends BaseConfig
                 'subject' => 'We missed you at {business}',
                 'body'    => "Hi {customer_first_name},\n\nWe missed you for {service} {when}. You are welcome to book a new time: {booking_link}",
             ],
-            'sms'      => ['body' => '{business}: we missed you for {service} {when}. Book a new time: {booking_link}'],
             'whatsapp' => ['body' => 'Hi {customer_first_name}, {business} missed you for {service} {when}. Book a new time: {booking_link}'],
         ],
     ];

@@ -13,7 +13,7 @@ use Config\BookingNotifications as Catalog;
 
 /**
  * Settings, Messages tab (/business/settings/notifications): which messages
- * go out, reminders, the sender, the wording, and the SMS and WhatsApp
+ * go out, reminders, the sender, the wording, and the WhatsApp
  * accounts. Admins only (settings.manage). Ported from Bookings' Settings
  * notifications tab (NotificationSettingsService).
  */
@@ -38,7 +38,6 @@ class NotificationSettings extends BaseController
             'rules'        => (new NotificationRules($listingId))->matrix(),
             'templates'    => $all,
             'edit'         => isset($all[$editEvent][$editChannel]) ? [$editEvent, $editChannel] : null,
-            'sms'          => $integrations->view('sms'),
             'whatsapp'     => $integrations->view('whatsapp'),
             'canEncrypt'   => self::canEncrypt(),
         ];
@@ -130,7 +129,7 @@ class NotificationSettings extends BaseController
         }
         $text   = 'Test from ' . $listing['display_name'] . ' on WebScheduler Local: your ' . Catalog::CHANNEL_LABELS[$channel] . ' messages work.';
         $values = ['{customer_first_name}' => 'Test', '{business}' => (string) $listing['display_name'], '{service}' => 'Test', '{when}' => 'now', '{manage_link}' => '', '{booking_link}' => listing_site_url($listing, 'directory/' . $listing['slug'] . '/book')];
-        $result = $channel === 'sms' ? Channels::sms($account, $to, $text) : Channels::whatsapp($account, 'confirmed', $to, $text, $values);
+        $result = Channels::whatsapp($account, 'confirmed', $to, $text, $values);
         $integrations->recordHealth($channel, $result['ok'], $result['error'], true);
 
         return redirect()->to($back)->with($result['ok'] ? 'success' : 'error', $result['ok'] ? 'Test sent. Check the phone.' : 'Not sent: ' . $result['error']);

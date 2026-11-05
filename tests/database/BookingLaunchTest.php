@@ -71,7 +71,6 @@ final class BookingLaunchTest extends CIUnitTestCase
         parent::setUp();
         $this->setEnv('bookings.enabled', 'true');
         $this->setEnv('bookings.planRequired', 'true');
-        $this->setEnv('bookings.planMonthly', '160');
         $this->paystack = new FakePaystack();
         Services::injectMock('paystack', $this->paystack);
 
@@ -224,12 +223,45 @@ final class BookingLaunchTest extends CIUnitTestCase
         $this->assertStringContainsString('trial ends soon', (string) $this->sent[array_key_last($this->sent)]['subject']);
     }
 
-    public function testNoPriceMeansTheTrialOnly(): void
+    public function testThePriceFollowsTheTeamSize(): void
     {
-        $this->setEnv('bookings.planMonthly', '');
-        $this->signedIn()->get('business/settings/plan')->assertSee('The paid plan is not on sale yet.');
-        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirectTo(base_url('business/settings/plan'));
-        $this->assertSame([], $this->paystack->callsOf('initialize'));
+        $team = new TeamService($this->listingId);
+        $this->assertSame(['Solo', '160.00'], array_values(array_intersect_key((new BookingPlanService())->status($this->listingId), ['tier' => 0, 'price' => 0])));
+        $team->saveProvider(null, ['name' => 'James', 'bookable' => 1], null);
+        $team->saveProvider(null, ['name' => 'Desk', 'bookable' => 0], null);
+        $status = (new BookingPlanService())->status($this->listingId);
+        $this->assertSame([2, 'Team', '420.00'], [$status['people'], $status['tier'], $status['price']], 'people who cannot be booked are not counted');
+
+        $this->setEnv('bookings.planPrices', '150,400,850');
+        $this->assertSame('400.00', (new BookingPlanService())->status($this->listingId)['price']);
+        for ($i = 0; $i < 4; $i++) {
+            $team->saveProvider(null, ['name' => 'Person ' . $i, 'bookable' => 1], null);
+        }
+        $this->assertSame(['Business', '850.00'], [(new BookingPlanService())->status($this->listingId)['tier'], (new BookingPlanService())->status($this->listingId)['price']]);
+    }
+
+    public function testGrowingPastTheTierMovesThePlanAndStopsTheOldPayments(): void
+    {
+        $this->paid();
+        $this->assertFalse((new BookingPlanService())->status($this->listingId)['can_move']);
+        (new TeamService($this->listingId))->saveProvider(null, ['name' => 'James', 'bookable' => 1], null);
+        $status = (new BookingPlanService())->status($this->listingId);
+        $this->assertSame([true, 'Team'], [$status['can_move'], $status['tier']]);
+        $this->signedIn()->get('business/settings/plan')->assertSee('Move to Team');
+        $until = (new BookingPlanService())->forListing($this->listingId)['paid_until'];
+
+        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirect();
+        $init = $this->paystack->callsOf('initialize')[1][1];
+        $this->assertSame([42000, 'PLN_monthly_42000'], [$init['amountCents'], $init['planCode']]);
+        $this->paystack->subscription = ['code' => 'SUB_team', 'email_token' => 'etok_team'];
+        $this->paystack->transactions[$init['reference']] = ['plan' => 'PLN_monthly_42000'] + $this->charge(1003, $init['reference'], 42000);
+
+        $this->assertStringStartsWith('applied', (new PaystackPayments($this->paystack))->confirmReference($init['reference']));
+        $plan = (new BookingPlanService())->forListing($this->listingId);
+        $this->assertSame([42000, 'PLN_monthly_42000', 'SUB_team'], [(int) $plan['amount_cents'], $plan['paystack_plan_code'], $plan['paystack_subscription_code']]);
+        $this->assertSame([['disable', 'SUB_fake', 'etok_fake']], $this->paystack->callsOf('disable'), 'the old payments stop');
+        $this->assertSame(gmdate('Y-m-d H:i:s', strtotime('+1 month', strtotime($until . ' UTC'))), $plan['paid_until'], 'a month added, nothing lost');
+        $this->assertFalse((new BookingPlanService())->status($this->listingId)['can_move']);
     }
 
     // POPIA
