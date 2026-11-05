@@ -278,8 +278,10 @@ in the sweep. A late payment restores the booking if the time is free, else "Dep
 refund". Test mode (PayFast sandbox, `sk_test_`) shows on the customer page and marks rows
 `test`; test payments are left out of "received this month".
 
-**Dev:** dev has no `encryption.key`, so the Payments tab shows "not available" and no
-deposit is asked there; the whole flow is covered by the tests. Production needs the key
+**Dev:** since 5 Nov 2026 the local `.env` has its own dev only `encryption.key`, so the
+Payments, SMS and WhatsApp forms work on dev (before that they showed "not available").
+PayFast's notice cannot reach localhost, so a sandbox payment there stays due unless
+marked paid; Paystack test keys are verified on return. Production needs the key
 before release (D14, owner OK at that step), plus the new cron line.
 
 ## Next: Phase 9
