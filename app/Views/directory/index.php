@@ -99,7 +99,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
     <?php if ($verticalPhoto !== null): ?>
         <?php // Decorative, and eager — see landing.php, which draws the same
               // photograph for the same category. ?>
-        <img class="hero-vertical-img"
+        <img class="hero-vertical-img <?= esc($verticalPhoto['focus'], 'attr') ?>"
              src="<?= esc(base_url($verticalPhoto['src'])) ?>"
              srcset="<?= esc(base_url($verticalPhoto['src_sm'])) ?> 400w, <?= esc(base_url($verticalPhoto['src']), 'attr') ?> 800w, <?= esc(base_url($verticalPhoto['src_lg']), 'attr') ?> 1600w"
              sizes="100vw" alt="" decoding="async" fetchpriority="high">

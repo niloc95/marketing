@@ -59,7 +59,8 @@ final class VerticalHeroTest extends CIUnitTestCase
         $this->assertStringContainsString('cat-tint-red', $html, 'Health & Medical is red');
         // The group's photograph, behind the band.
         $this->assertStringContainsString('hero-vertical-img', $html);
-        $this->assertStringContainsString('group-health-medical', $html);
+        $this->assertStringContainsString('general-practitioner-800.webp', $html);
+        $this->assertStringContainsString('photo-focus-high', $html);
     }
 
     public function testAProfilePageIsScopedAndNamedByItsVertical(): void

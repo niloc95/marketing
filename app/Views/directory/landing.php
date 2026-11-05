@@ -87,7 +87,7 @@ $schema = schema_page(
               // a generic clinic tells a screen reader nothing it needs. Eager, no
               // lazy attribute — it is the only image above the fold, and lazy on
               // an in-viewport hero image costs a round trip for nothing. ?>
-        <img class="hero-vertical-img"
+        <img class="hero-vertical-img <?= esc($photo['focus'], 'attr') ?>"
              src="<?= esc(base_url($photo['src'])) ?>"
              srcset="<?= esc(base_url($photo['src_sm'])) ?> 400w, <?= esc(base_url($photo['src']), 'attr') ?> 800w, <?= esc(base_url($photo['src_lg']), 'attr') ?> 1600w"
              sizes="100vw" alt="" decoding="async" fetchpriority="high">
