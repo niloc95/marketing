@@ -8,6 +8,7 @@ use App\Models\Bookings\BookingAppointmentModel;
 use App\Models\Bookings\BookingProviderModel;
 use App\Models\Bookings\BookingProviderServiceModel;
 use App\Models\DirectoryListingModel;
+use App\Services\Bookings\Integrations\DeliveryModes;
 use App\Services\Bookings\Payments\DepositService;
 use Config\Bookings;
 use DateTimeImmutable;
@@ -294,6 +295,10 @@ class PublicBookingService
             $errors[$key] ??= $message;
         }
         $errors += $customers->answerErrors($input);
+        $mode = DeliveryModes::pick($this->listingId, $service, isset($input['delivery_mode']) ? (string) $input['delivery_mode'] : null);
+        if ($mode === null) {
+            $errors['delivery_mode'] = 'Please choose how you would like it.';
+        }
         if ($this->hasTerms() && empty($input['accept'])) {
             $errors['accept'] = 'Please accept the booking terms.';
         }
@@ -316,6 +321,7 @@ class PublicBookingService
             'start_at'    => $start,
             'status'      => $status,
             'notes'       => $this->text($input['notes'] ?? null, 1000),
+            'delivery_mode' => $mode,
         ], true, $this->now);
         if ($result['problem'] !== null) {
             return ['token' => null, 'reference' => null, 'errors' => ['start' => AppointmentService::CUSTOMER_PROBLEMS[$result['problem']] ?? AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::BUSY]]];
@@ -335,9 +341,9 @@ class PublicBookingService
         if ($deposit !== null) {
             // No messages yet: they go out once the deposit is paid.
             $deposits->ask($id, $deposit);
-            $this->appointments()->notify($id, null);
+            $this->appointments()->notify($id, null, true, 'created');
         } else {
-            $this->appointments()->notify($id, \App\Services\Bookings\Notifications\NotificationQueue::statusEvent($status), true);
+            $this->appointments()->notify($id, \App\Services\Bookings\Notifications\NotificationQueue::statusEvent($status), true, 'created');
         }
 
         return ['token' => $this->appointments()->issuePublicToken($id), 'reference' => $result['reference'], 'errors' => []];

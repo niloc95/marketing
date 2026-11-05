@@ -51,6 +51,31 @@ class Bookings extends BaseConfig
     public int $signInLinkSeconds = 900;
 
     /**
+     * Google Calendar (Phase 9): our one OAuth client, from .env
+     * (`bookings.googleClientId`, `bookings.googleClientSecret`). Each business
+     * connects its own calendar through it. Empty: Google Calendar is not
+     * offered. Its redirect address is /business/connections/google/callback
+     * on local.webscheduler.co.za.
+     */
+    public string $googleClientId = '';
+
+    public string $googleClientSecret = '';
+
+    /** Requests per API key per minute (/api/v1). */
+    public int $apiPerMinute = 120;
+
+    /** Minutes to wait before each new try of a webhook, Google or Zoom job; after the last, it has failed. */
+    public array $outboxRetryMinutes = [1, 5, 30, 120, 360];
+
+    /** Days finished outbox rows (the delivery log) are kept. */
+    public int $outboxKeepDays = 30;
+
+    public function googleCalendarOffered(): bool
+    {
+        return $this->googleClientId !== '' && $this->googleClientSecret !== '';
+    }
+
+    /**
      * Per business settings and their defaults (docs/bookings/settings.md).
      * A key not listed here cannot be stored. Each value is the default, and
      * `$settingChoices` limits what may replace it.

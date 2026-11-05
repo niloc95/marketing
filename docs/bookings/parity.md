@@ -158,13 +158,13 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Encrypted integration store with health and test | `xs_business_integrations` | Port | 6, 9 | needs `encryption.key` on production (still missing) |
-| Zoom meeting on booking, Jitsi link | `VideoSessionService` | Port | 9 | |
-| Google Calendar | OAuth works, **push never called** | New | 9 | push on create, update and cancel |
-| Outgoing webhooks, signed | defined, **never dispatched** | New | 9 | |
-| API keys | CLI only, scopes not enforced | New | 9 | UI, enforced scopes |
-| REST API `/api/v1` with `{data, meta}` | yes | Port | 9 | per business; OpenAPI file ported and checked in CI |
-| Developer page (Redoc) | `/developers` | Port | 9 | Redoc from a pinned CDN version, CSP permitting |
+| Encrypted integration store with health and test | `xs_business_integrations` | Port | 6, 9 | needs `encryption.key` on production (still missing); built (Check buttons for Zoom and Google, Send a test for the webhook) |
+| Zoom meeting on booking, Jitsi link | `VideoSessionService` | Port | 9 | built 5 Nov 2026: the business's own Zoom app; unlike Bookings a new time moves the meeting and a cancellation deletes it; Jitsi link hashed from the appointment hash; customers choose how when a service offers more than one way; confirmations wait up to 10 minutes for a Zoom link |
+| Google Calendar | OAuth works, **push never called** | New | 9 | built 5 Nov 2026: one platform OAuth client (D15), push on create, update and cancel through the outbox, one way only. Reading busy times from Google: Later. Per person calendars: Later |
+| Outgoing webhooks, signed | defined, **never dispatched** | New | 9 | built 5 Nov 2026: `WebScheduler-Signature: t=..,v1=HMAC(t.body)`, retries 1, 5, 30, 120, 360 min, delivery log with Send again, SSRF guard (`SafeUrl`) |
+| API keys | CLI only, scopes not enforced | New | 9 | built 5 Nov 2026: Settings, API keys; six scopes, each also needs the member's role |
+| REST API `/api/v1` with `{data, meta}` | yes | Port | 9 | built 5 Nov 2026, per business; `docs/bookings/openapi.json` checked against the routes by a test |
+| Developer page (Redoc) | `/developers` | Rebuild | 9 | Redoc needs inline styles (CSP), so `/developers/bookings` is rendered by us from the same OpenAPI file |
 | GA4 or Matomo per business | `analytics_head_html()` | Skip | | the profile stats cover it |
 | "List on our directory" handoff | `DirectoryHandoffService` | Skip | | bookings now live on the profile |
 

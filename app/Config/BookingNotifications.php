@@ -99,6 +99,7 @@ class BookingNotifications extends BaseConfig
         '{cancellation_policy}' => 'Your cancellation policy',
         '{rescheduling_policy}' => 'Your rescheduling policy',
         '{answers}'             => 'Answers to your questions (email only, never sensitive ones)',
+        '{video_link}'          => 'The link to join an online appointment (Zoom or Jitsi)',
     ];
 
     /**

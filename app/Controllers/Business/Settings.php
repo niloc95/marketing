@@ -16,7 +16,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Settings extends BaseController
 {
-    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'notifications' => 'Messages', 'payments' => 'Payments', 'localization' => 'Local time'];
+    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'notifications' => 'Messages', 'payments' => 'Payments', 'connections' => 'Connections', 'api' => 'API keys', 'localization' => 'Local time'];
 
     public function index()
     {
@@ -38,6 +38,8 @@ class Settings extends BaseController
             'choices'  => config('Bookings')->settingChoices,
             'messages' => $tab === 'notifications' ? NotificationSettings::viewData($context->listingId(), (string) $this->request->getGet('edit')) : null,
             'payments' => $tab === 'payments' ? PaymentSettings::viewData($context->listingId()) : null,
+            'connections' => $tab === 'connections' ? ConnectionSettings::viewData($context->listing()) : null,
+            'api'      => $tab === 'api' ? ApiKeys::viewData($context->listingId()) : null,
         ]);
     }
 

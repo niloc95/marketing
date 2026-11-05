@@ -44,7 +44,7 @@ under `/business/api/` so session and CSRF rules stay simple.
 | `GET /api/availability/*` | `GET /business/api/availability/*` | 3 |
 | `GET /api/customers/*` | `/business/api/customers/*` | 4 |
 | `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /business/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
-| `GET/POST integrations/*` | `/business/api/integrations/*` | 9 |
+| `GET/POST integrations/*` | plain forms under `/business/settings/connections/*` (zoom, jitsi, zoom/check, google, google/check, google/disconnect, webhook, webhook/test, webhook/secret, webhook/remove, webhook/{id}/retry) and `/business/settings/api/keys` (+ `/{id}/revoke`); built 5 Nov 2026 | 9 |
 
 ## Public booking (no account; session starts only at the details step)
 
@@ -68,14 +68,21 @@ under `/business/api/` so session and CSRF rules stay simple.
 |---|---|---|
 | `POST /public/payments/payfast/notify` | `POST /book/payfast/notify` (one address for every business; the reference finds the business, its passphrase checks the notice). Paystack has no webhook here: verified on return and by `bookings:payments`; built 5 Nov 2026 | 8 |
 | `POST /public/payments/stripe/webhook` | `POST /book/stripe/webhook` if D6 says Stripe | later |
-| `/oauth/google/authorize|callback` | `/business/integrations/google`, `/business/integrations/google/callback` | 9 |
+| `/oauth/google/authorize|callback` | `POST /business/settings/connections/google` (state in the session), `GET /business/connections/google/callback`; built 5 Nov 2026 | 9 |
 
 ## Public API (Phase 9, Bearer key, JSON, `{data, meta}` / `{error}`)
 
 `/api/v1/*` with Bookings' resource groups (appointments, availability, customers,
 services, categories, providers, locations, settings reads), scoped to the key's business.
-The unversioned `/api` alias is not carried. CORS stays same origin unless the business
-lists origins.
+The unversioned `/api` alias is not carried. Built 5 Nov 2026: `GET business`, `services`
+(+ `/{id}`), `categories`, `providers` (+ `/{id}`), `locations`, `availability`,
+`appointments` (+ `/{id}`), `customers` (+ `/{id}`); `POST appointments`,
+`appointments/{id}/reschedule|status|notes`, `customers`, `customers/{id}`. Each route names
+its scope (`bookingapi:<scope>`); `docs/bookings/openapi.json` describes exactly these
+(BookingIntegrationsTest checks). No CORS at all (server to server; a browser cannot send
+the Bearer header across sites, which is why `api/v1/*` is CSRF exempt). Reference page
+`GET /developers/bookings` and `GET /developers/bookings/openapi.json`, 404 where bookings
+are off.
 
 ## Cron
 
@@ -83,6 +90,7 @@ lists origins.
 |---|---|---|
 | `* * * * * notifications:dispatch-queue` | `* * * * * bookings:dispatch` (all businesses, lock file, time box) | 6 |
 | `notifications:purge-delivery-logs`, `audit:purge-logs` | `bookings:prune` daily, joins Local's 03:xx block | 6 |
+| none | `bookings:dispatch` runs the outbox (webhooks, Google, Zoom) before the messages each minute; no new cron line (Phase 9) | 9 |
 | none | `*/5 bookings:payments`: ask Paystack about open payments, free unpaid holds (built 5 Nov 2026); retention sweep in 10 | 8, 10 |
 
 Each new command goes into `deploy/cron/webscheduler` and the live `/etc/cron.d/webscheduler`.

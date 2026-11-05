@@ -84,9 +84,12 @@ provider. Provider hours are clipped to the business window for the day.
 | Table | From | Notes |
 |---|---|---|
 | `xs_booking_payments` | `xs_payment_transactions` | Built 5 Nov 2026 (migration `2026-11-17-100000`): listing_id, appointment_id (SET NULL), hash (the return link), reference (`WSB-BOOK-000123-P1`, one per try, unique), gateway (payfast, paystack, manual), amount_cents, currency, status (started, paid, failed, refunded), test, gateway_id, detail, recorded_by_member_id, paid_at, refunded_at. No raw payload kept. Appointments got `payment_due_by`; `payment_status` is none, due, paid, refunded, expired or refund_due |
-| `xs_booking_integrations` | `xs_business_integrations` | encrypted config (CI4 Encrypter, refuses to save without `encryption.key`, as the Partner Program does). Channel `payment` (Phase 8) holds the business's PayFast or Paystack keys |
-| `xs_booking_api_keys` | `xs_api_keys` | bound to a member; scopes enforced |
-| `xs_booking_webhook_deliveries` | none (webhooks never fired) | event, endpoint, attempt, status, response code |
+| `xs_booking_integrations` | `xs_business_integrations` | encrypted config (CI4 Encrypter, refuses to save without `encryption.key`, as the Partner Program does). Channel `payment` (Phase 8) holds the business's PayFast or Paystack keys; Phase 9 adds `zoom` (the business's Server to Server app), `jitsi` (an optional own server), `google` (OAuth tokens, written only by `GoogleCalendar` through `store()`) and `webhook` (address, our signing secret, events) |
+| `xs_booking_api_keys` | `xs_api_keys` | Built 5 Nov 2026 (migration `2026-11-18-100000`): listing_id, member_id (CASCADE), name, prefix (12 hex, unique, the lookup), secret_hash (SHA-256 of the 40 hex secret), scopes (JSON), last_used_at, expires_at, revoked_at, created_by. Scopes enforced together with the member's role |
+| `xs_booking_outbox` | none (webhooks never fired, Google never pushed) | Built 5 Nov 2026, replaces the planned `xs_booking_webhook_deliveries`: target (webhook, google, zoom), appointment_id (SET NULL), event, payload (webhook body frozen when it happened), status (queued, done, failed, cancelled), attempts, next_attempt_at, response_code, last_error, done_at. One queued Google or Zoom row per appointment; one webhook row per event. It is the delivery log too; `bookings:prune` deletes finished rows after 30 days |
+
+Appointments got `video_meeting_id` (Zoom) and `google_event_id` in Phase 9; with `video_link`
+they are written only by `Integrations\IntegrationSync`, without touching `updated_at`.
 
 ## Settings (Phase 1)
 

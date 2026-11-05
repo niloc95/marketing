@@ -5,6 +5,8 @@ namespace App\Services\Bookings;
 use App\Models\Bookings\BookingAppointmentFieldModel;
 use App\Models\Bookings\BookingAppointmentModel;
 use App\Services\Bookings\Calendar\CalendarQuery;
+use App\Services\Bookings\Integrations\DeliveryModes;
+use App\Services\Bookings\Integrations\Outbox;
 use App\Services\Bookings\Notifications\NotificationQueue;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -28,7 +30,8 @@ use DateTimeZone;
  * - The service of an existing appointment does not change: cancel and book
  *   again (its snapshots, price and gaps belong to the service booked).
  * - Every change queues its messages (Notifications\NotificationQueue, Phase
- *   6) after it is written; nothing is sent inside the request.
+ *   6) and its webhooks, calendar and meeting updates (Integrations\Outbox,
+ *   Phase 9) after it is written; nothing is sent inside the request.
  */
 class AppointmentService
 {
@@ -132,11 +135,12 @@ class AppointmentService
      *
      * @param array<string,mixed> $input provider_id, service_id, date (Y-m-d), time (H:i),
      *                                   customer_id or first_name, last_name, email, phone,
-     *                                   notes, status (pending|confirmed), field_1 ... field_6
+     *                                   notes, status (pending|confirmed), delivery_mode, field_1 ... field_6
+     * @param string              $source business, or api for /api/v1
      *
      * @return array{id:?int,hash:?string,reference:?string,errors:array<string,string>}
      */
-    public function create(array $input): array
+    public function create(array $input, string $source = 'business'): array
     {
         $errors     = [];
         $providerId = (int) ($input['provider_id'] ?? 0);
@@ -169,6 +173,13 @@ class AppointmentService
             $errors += $customerErrors;
         }
         $errors += $customers->answerErrors($input);
+        $mode    = null;
+        if ($serviceId > 0 && ($service = (new CatalogueService($this->listingId))->service($serviceId)) !== null) {
+            $mode = DeliveryModes::pick($this->listingId, $service, isset($input['delivery_mode']) ? (string) $input['delivery_mode'] : null);
+            if ($mode === null) {
+                $errors['delivery_mode'] = 'Choose how this service is given.';
+            }
+        }
         if ($errors !== []) {
             return ['id' => null, 'hash' => null, 'reference' => null, 'errors' => $errors];
         }
@@ -185,8 +196,9 @@ class AppointmentService
             'start_at'             => $start,
             'status'               => $status,
             'notes'                => $this->notes($input['notes'] ?? null),
+            'delivery_mode'        => $mode ?? 'onsite',
             'created_by_member_id' => $this->memberId,
-        ], false, $this->now);
+        ] + ($source !== 'business' ? ['source' => $source] : []), false, $this->now);
         if ($result['problem'] !== null) {
             return ['id' => null, 'hash' => null, 'reference' => null, 'errors' => ['time' => self::PROBLEMS[$result['problem']] ?? 'That time cannot be booked.']];
         }
@@ -194,7 +206,7 @@ class AppointmentService
         $id = (int) $result['id'];
         $this->saveAnswers($id, $customerId, (new CustomerService($this->listingId))->answers($input));
         $this->audit->record($this->listingId, $this->accountId, 'appointment.created', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId]);
-        $this->notify($id, NotificationQueue::statusEvent($status));
+        $this->notify($id, NotificationQueue::statusEvent($status), false, 'created');
         $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
 
         return ['id' => $id, 'hash' => (string) $row['hash'], 'reference' => $result['reference'], 'errors' => []];
@@ -467,12 +479,19 @@ class AppointmentService
      * After every appointment change: the dashboard figures start again
      * (BookingMetricsCache), and the messages are queued (the queue never throws).
      */
-    public function notify(int $id, ?string $event, bool $byCustomer = false): void
+    /**
+     * After every change: the figures, the messages, and the outside world
+     * (webhooks, Google Calendar, Zoom, Phase 9).
+     *
+     * @param string|null $change created, rescheduled or status; null works it out from the event
+     */
+    public function notify(int $id, ?string $event, bool $byCustomer = false, ?string $change = null): void
     {
         BookingMetricsCache::forget($this->listingId);
         if ($event !== null) {
             (new NotificationQueue($this->listingId, $this->now))->appointmentEvent($id, $event, $byCustomer);
         }
+        (new Outbox($this->listing, $this->now))->appointmentChanged($id, $change ?? ($event === 'rescheduled' ? 'rescheduled' : 'status'));
     }
 
     private function inScope(int $providerId): bool

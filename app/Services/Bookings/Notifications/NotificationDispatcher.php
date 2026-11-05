@@ -135,6 +135,13 @@ class NotificationDispatcher
         if (($stale = $this->stale($row, $context['appointment'])) !== null) {
             return $this->cancel($row, $stale);
         }
+        // A Zoom link is on its way (the outbox runs first each minute): wait
+        // for it, but never longer than ten minutes after the change.
+        if (! $team && $this->zoomLinkComing($context['appointment'], $integrations)) {
+            $this->release($row);
+
+            return 'retrying';
+        }
 
         // Who it goes to, as they are now.
         if ($team) {
@@ -270,6 +277,16 @@ class NotificationDispatcher
         DeliveryLog::record($row, $final ? DeliveryLog::FAILED : DeliveryLog::RETRYING, $recipient, $error);
 
         return $final ? 'failed' : 'retrying';
+    }
+
+    /** @param array<string,mixed> $a */
+    private function zoomLinkComing(array $a, BookingIntegrations $integrations): bool
+    {
+        return $a['delivery_mode'] === 'online_zoom'
+            && (string) ($a['video_link'] ?? '') === ''
+            && in_array($a['status'], ['pending', 'confirmed'], true)
+            && $integrations->active('zoom')
+            && strtotime((string) $a['updated_at'] . ' UTC') > $this->nowTs() - 600;
     }
 
     private function release(array $row): void

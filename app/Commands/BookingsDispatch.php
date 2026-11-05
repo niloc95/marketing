@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Services\Bookings\Integrations\IntegrationWorker;
 use App\Services\Bookings\Notifications\NotificationDispatcher;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
@@ -9,6 +10,8 @@ use CodeIgniter\CLI\CLI;
 /**
  * Queue due reminders and send online booking messages, for every business
  * (Bookings' notifications:dispatch-queue, which ran once per install).
+ * First it runs the outbox (Phase 9: webhooks, Google Calendar, Zoom), so a
+ * new Zoom link is on the appointment before its confirmation is sent.
  * Cron runs it each minute:
  *
  *   * * * * * php spark bookings:dispatch --quiet
@@ -21,7 +24,7 @@ class BookingsDispatch extends BaseCommand
 {
     protected $group       = 'Bookings';
     protected $name        = 'bookings:dispatch';
-    protected $description = 'Queue due booking reminders and send booking messages.';
+    protected $description = 'Run booking webhooks and calendar syncs, queue due reminders and send booking messages.';
     protected $usage       = 'bookings:dispatch [--quiet]';
     protected $options     = ['--quiet' => 'Print nothing unless something was sent or failed.'];
 
@@ -37,12 +40,19 @@ class BookingsDispatch extends BaseCommand
             return;
         }
         try {
+            $jobs  = (new IntegrationWorker())->run(200, microtime(true) + 20);
             $stats = (new NotificationDispatcher())->run(500, microtime(true) + 50);
         } finally {
             $db->query('SELECT RELEASE_LOCK(?)', ['webscheduler_bookings_dispatch']);
         }
 
         $quiet = CLI::getOption('quiet') !== null;
+        if (! $quiet || $jobs['done'] + $jobs['failed'] > 0) {
+            CLI::write(sprintf(
+                'Connections: done %d, failed %d, trying again %d, not needed %d.',
+                $jobs['done'], $jobs['failed'], $jobs['retrying'], $jobs['cancelled'],
+            ));
+        }
         if (! $quiet || $stats['sent'] + $stats['failed'] > 0) {
             CLI::write(sprintf(
                 'Reminders queued %d, sent %d, failed %d, trying again %d, not needed %d.',

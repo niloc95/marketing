@@ -20,6 +20,7 @@
  * @var list<array<string,mixed>>      $fields
  * @var list<array<string,mixed>>      $questions
  * @var array<int,int|null>            $deposits  deposit in cents by service id
+ * @var list<string>                   $modes     how the chosen service can be given (DeliveryModes::offered())
  * @var int|null                       $deposit   the chosen service's
  * @var int                            $holdMinutes
  * @var bool                           $hasTerms
@@ -171,6 +172,17 @@ $whoParam = $who === '' ? null : $who;
                 <input type="hidden" name="provider_id" value="<?= $provider !== null ? (int) $provider['id'] : 0 ?>">
                 <input type="hidden" name="start" value="<?= esc($slot['start'], 'attr') ?>">
                 <h2 class="mb-4 font-bold"><?= count($providers) > 1 ? '4' : '3' ?>. Your details</h2>
+                <?php if (count($modes) > 1): ?>
+                    <fieldset class="field">
+                        <legend class="mb-1 text-sm font-semibold">How would you like it?</legend>
+                        <?php foreach ($modes as $i => $m): ?>
+                            <label class="flex items-center gap-2 text-sm"><input type="radio" name="delivery_mode" value="<?= esc($m, 'attr') ?>" required<?= $val('delivery_mode') === $m || ($val('delivery_mode') === '' && $i === 0) ? ' checked' : '' ?>> <?= esc(\App\Services\Bookings\Integrations\DeliveryModes::label($m)) ?></label>
+                        <?php endforeach ?>
+                        <?= $err('delivery_mode') ?>
+                    </fieldset>
+                <?php elseif ($modes !== [] && $modes[0] !== 'onsite'): ?>
+                    <p class="mb-4 text-sm"><?= esc(\App\Services\Bookings\Integrations\DeliveryModes::label($modes[0])) ?>. We send you the link to join.</p>
+                <?php endif ?>
                 <div class="grid gap-x-4 sm:grid-cols-2">
                     <?php foreach ($fields as $f): ?>
                         <?php if ($f['name'] === 'notes' || $f['name'] === 'address') { continue; } ?>

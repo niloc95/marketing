@@ -7,6 +7,8 @@
  * @var array<string,list<string>> $choices
  * @var array<string,mixed>|null   $messages the Messages tab (NotificationSettings::viewData())
  * @var array<string,mixed>|null   $payments the Payments tab (PaymentSettings::viewData())
+ * @var array<string,mixed>|null   $connections the Connections tab (ConnectionSettings::viewData())
+ * @var array<string,mixed>|null   $api the API keys tab (ApiKeys::viewData())
  */
 $labels = [
     '24h' => '24 hour clock (14:30)', '12h' => '12 hour clock (2:30 pm)',
@@ -94,6 +96,10 @@ $labels = [
     <?= $this->include('business/_settings_notifications') ?>
 <?php elseif ($tab === 'payments'): ?>
     <?= $this->include('business/_settings_payments') ?>
+<?php elseif ($tab === 'connections'): ?>
+    <?= $this->include('business/_settings_connections') ?>
+<?php elseif ($tab === 'api'): ?>
+    <?= $this->include('business/_settings_api') ?>
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>

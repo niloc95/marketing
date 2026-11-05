@@ -97,6 +97,7 @@ class Book extends BaseController
             'times'     => $times,
             'slot'      => $slot,
             'next'      => $service !== null && $whoChosen && $days === [] ? $svc->nextAvailable((int) $service['id'], $providerId) : null,
+            'modes'     => $service !== null ? \App\Services\Bookings\Integrations\DeliveryModes::offered((int) $listing['id'], $service) : [],
             'fields'    => $svc->customerFields($deposit !== null),
             'questions' => (new \App\Services\Bookings\CustomerService((int) $listing['id']))->customFields(),
             'hasTerms'  => $svc->hasTerms(),

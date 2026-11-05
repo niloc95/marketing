@@ -36,6 +36,11 @@ class SetupCheck
             && Payments\DepositService::gatewayFor($listingId) === null) {
             $out[] = ['code' => 'deposit_no_account', 'text' => 'Some services ask for a deposit, but no payment account is on, so customers book them without one.', 'link' => 'business/settings/payments'];
         }
+        // Online by Zoom with no Zoom on: no meeting is made (Phase 9).
+        if (array_filter($services, static fn (array $s): bool => in_array('online_zoom', (array) $s['delivery_modes'], true)) !== []
+            && ! (new Notifications\BookingIntegrations($listingId))->active('zoom')) {
+            $out[] = ['code' => 'zoom_no_account', 'text' => 'Some services are given online by Zoom, but Zoom is not connected, so no meeting link is made.', 'link' => 'business/settings/connections'];
+        }
         foreach ($providers as $p) {
             $week = $team->hours((int) $p['id']);
             if (array_filter($week, static fn (array $d): bool => $d['active']) === []) {

@@ -59,7 +59,10 @@ class MessageContext
         };
 
         $location = '';
-        if (trim((string) ($appointment['location_address'] ?? '')) !== '') {
+        $video    = (string) ($appointment['video_link'] ?? '');
+        if ($appointment['delivery_mode'] !== 'onsite') {
+            $location = 'Online';
+        } elseif (trim((string) ($appointment['location_address'] ?? '')) !== '') {
             $location = trim((string) ($appointment['location_name'] ?? '') . ', ' . $appointment['location_address'], ', ');
         } elseif (listing_address_public($listing)) {
             $location = implode(', ', array_filter(array_map('trim', [
@@ -105,11 +108,15 @@ class MessageContext
             '{cancellation_policy}' => $settings->get('legal.cancellation_policy'),
             '{rescheduling_policy}' => $settings->get('legal.rescheduling_policy'),
             '{answers}'             => implode("\n", array_map(static fn (array $a): string => $a[0] . ': ' . $a[1], $answers)),
+            '{video_link}'          => $video,
         ];
 
         $details = [['When', $date . ' at ' . $time], ['Service', $values['{service}'] . ' (' . $duration . ')'], ['With', $values['{team_member}']]];
         if ($location !== '') {
             $details[] = ['Where', $location];
+        }
+        if ($video !== '') {
+            $details[] = ['Join online', $video];
         }
         $details[] = ['Reference', $values['{reference}']];
 

@@ -21,6 +21,8 @@
 | T15 | Deposits (was D6): each business connects its **own** PayFast or Paystack account and the money goes straight to it. We are not part of a business's billing to its customers: no subaccounts, no fee, never the merchant of record. Separate from the business's own subscription to us | owner, 5 Nov 2026 |
 | T16 | Refunds and 2FA (was D9): later. Refunds are done in the business's own gateway and marked refunded in /business | owner, 5 Nov 2026 |
 
+| T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as SMS and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
+
 ## Open: owner to answer before Phase 1
 
 Each has a recommendation and is needed by the phase shown. D4, D5 and D7 were settled on
@@ -36,3 +38,4 @@ Each has a recommendation and is needed by the phase shown. D4, D5 and D7 were s
 | D12 | **Customer data retention and platform admin access** (POPIA): how long to keep customers and appointments after the last booking, whether platform admin may open appointment contents | Keep 24 months after the last appointment, then delete the personal fields. Platform admin sees counts and setup only, plus a logged "open for support" action. | Phase 10 (privacy policy update before launch) |
 | D13 | **Import from frozen Bookings installs:** offer it later? | Yes, per customer and with their OK, after launch. | after Phase 10 |
 | D14 | **`encryption.key` on production** (still missing, noted in the Partner Program): required for integration credentials | Generate and set it before Phase 6 is released (owner OK, production change). **Revisit (owner, 5 Nov 2026):** the owner wants to drop SMS completely. If SMS goes and WhatsApp stays link only (wa.me, no stored account), nothing needs encrypting and D14 may fall away; decide together with D8. **Settled for Phase 8 (owner, 5 Nov 2026):** the business's PayFast and Paystack keys need it, so the key is set on production at the Phase 8 release, with the owner's OK at that step. | Phase 8 release |
+| D15 | **Google Calendar OAuth client** (Phase 9). Bookings had each business paste its own Google client id and secret. Built instead with one platform client (`bookings.googleClientId` and `bookings.googleClientSecret` in `.env`); the button stays hidden until they are set. The owner creates it in Google Cloud (redirect `https://local.webscheduler.co.za/business/connections/google/callback`, scope `calendar.events`), and Google's verification of a sensitive scope is needed before businesses outside the test users can connect | Owner: create the client and start Google's verification, or keep Google Calendar off at launch | Phase 9 release |

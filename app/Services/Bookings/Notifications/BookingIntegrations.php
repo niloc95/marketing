@@ -23,6 +23,11 @@ use App\Services\Bookings\BookingAudit;
  * - WhatsApp "link" sends nothing by itself: the team opens a prefilled chat
  *   from the appointment (wa.me). So `active()` is false for it, and
  *   `linkMode()` says when the button shows.
+ * - Phase 9 adds the business's Zoom app and Jitsi server (typed in, so in
+ *   PROVIDERS), and its Google Calendar tokens and webhook endpoint, which
+ *   we make or receive rather than the business typing them: those are
+ *   written with store() by Integrations\GoogleCalendar and
+ *   Integrations\Webhooks.
  */
 class BookingIntegrations
 {
@@ -57,7 +62,18 @@ class BookingIntegrations
             'payfast'  => ['merchant_id' => ['Merchant ID', false], 'merchant_key' => ['Merchant key', false], 'passphrase' => ['Passphrase', true], 'mode' => ['Mode', false]],
             'paystack' => ['secret_key' => ['Secret key', true]],
         ],
+        // The business's own Zoom app (Server to Server OAuth), as in Bookings.
+        'zoom' => [
+            'zoom' => ['account_id' => ['Account ID', false], 'client_id' => ['Client ID', false], 'client_secret' => ['Client secret', true]],
+        ],
+        // Empty server: meet.jit.si.
+        'jitsi' => [
+            'jitsi' => ['server_url' => ['Jitsi server address (leave empty for meet.jit.si)', false]],
+        ],
     ];
+
+    /** Channels written only by store(): what we make or receive, never typed in. */
+    public const STORED = ['google', 'webhook'];
 
     public const PROVIDER_LABELS = [
         'payfast'    => 'PayFast',
@@ -66,6 +82,10 @@ class BookingIntegrations
         'twilio'     => 'Twilio',
         'link'       => 'Open a chat from the appointment (no account needed)',
         'meta'       => 'WhatsApp Business (Meta Cloud API)',
+        'zoom'       => 'Zoom',
+        'jitsi'      => 'Jitsi Meet',
+        'google'     => 'Google Calendar',
+        'custom'     => 'Your address',
     ];
 
     /** @var array<string,array<string,mixed>|null> */
@@ -162,30 +182,78 @@ class BookingIntegrations
             return $errors;
         }
 
+        if (! $this->write($channel, $provider, $fields !== [] ? $config : null, $active, $row === null || $row['provider'] !== $provider || $old != $config)) {
+            return ['provider' => 'We cannot save account details right now. Please try again later.'];
+        }
+        (new BookingAudit())->record($this->listingId, $accountId, 'notifications.integration', 'settings', null, null, ['channel' => $channel, 'provider' => $provider, 'active' => $active]);
+
+        return [];
+    }
+
+    /**
+     * Save what we made or received for a channel in STORED (Google tokens,
+     * a webhook endpoint and its secret). False when it cannot be encrypted.
+     *
+     * @param array<string,mixed> $config
+     */
+    public function store(string $channel, string $provider, array $config, bool $active, bool $resetHealth = true): bool
+    {
+        if (! in_array($channel, self::STORED, true)) {
+            throw new \InvalidArgumentException('Use save() for ' . $channel);
+        }
+
+        return $this->write($channel, $provider, $config, $active, $resetHealth);
+    }
+
+    /** Switch a channel on or off without touching its account. */
+    public function setActive(string $channel, bool $active): void
+    {
+        $row = $this->row($channel);
+        if ($row !== null && (int) $row['is_active'] !== ($active ? 1 : 0)) {
+            BookingIntegrationModel::forBusiness($this->listingId)->update((int) $row['id'], ['is_active' => $active ? 1 : 0]);
+            unset($this->rows[$channel]);
+        }
+    }
+
+    /** @param array<string,mixed>|null $config */
+    private function write(string $channel, string $provider, ?array $config, bool $active, bool $resetHealth): bool
+    {
         $sealed = null;
-        if ($fields !== []) {
+        if ($config !== null) {
             try {
                 $sealed = base64_encode(service('encrypter')->encrypt(json_encode($config)));
             } catch (\Throwable $e) {
                 log_message('error', 'Booking integration not saved, encryption unavailable: ' . $e->getMessage());
 
-                return ['provider' => 'We cannot save account details right now. Please try again later.'];
+                return false;
             }
         }
 
+        $row  = $this->row($channel);
         $data = ['provider' => $provider, 'config' => $sealed, 'is_active' => $active ? 1 : 0];
         if ($row === null) {
             BookingIntegrationModel::forBusiness($this->listingId)->insert($data + ['channel' => $channel, 'health' => 'unknown']);
         } else {
-            if ($row['provider'] !== $provider || $old != $config) {
+            if ($resetHealth) {
                 $data += ['health' => 'unknown', 'last_error' => null, 'last_tested_at' => null];
             }
             BookingIntegrationModel::forBusiness($this->listingId)->update((int) $row['id'], $data);
         }
         unset($this->rows[$channel]);
-        (new BookingAudit())->record($this->listingId, $accountId, 'notifications.integration', 'settings', null, null, ['channel' => $channel, 'provider' => $provider, 'active' => $active]);
 
-        return [];
+        return true;
+    }
+
+    /** Whether account details can be saved at all (encryption.key is set). */
+    public static function canEncrypt(): bool
+    {
+        try {
+            service('encrypter')->encrypt('check');
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     public function remove(string $channel, ?int $accountId): void
@@ -250,6 +318,20 @@ class BookingIntegrations
         }
         if ($provider === 'paystack' && ! preg_match('/^sk_(live|test)_[A-Za-z0-9]{20,}$/', $c['secret_key'])) {
             $errors['secret_key'] = 'Paste the secret key from Settings, API keys in Paystack. It starts with sk_live_ or sk_test_.';
+        }
+        if ($provider === 'zoom') {
+            if (! preg_match('/^[A-Za-z0-9_-]{6,64}$/', $c['account_id'])) {
+                $errors['account_id'] = 'Paste the Account ID from your Zoom app, under App credentials.';
+            }
+            if (! preg_match('/^[A-Za-z0-9_-]{6,64}$/', $c['client_id'])) {
+                $errors['client_id'] = 'Paste the Client ID from your Zoom app, under App credentials.';
+            }
+            if ($c['client_secret'] === '') {
+                $errors['client_secret'] = 'Paste the Client secret from your Zoom app.';
+            }
+        }
+        if ($provider === 'jitsi' && $c['server_url'] !== '' && ($problem = \App\Services\Bookings\Integrations\SafeUrl::problem($c['server_url'])) !== null) {
+            $errors['server_url'] = $problem;
         }
         $phone  = static fn (string $v): bool => (bool) preg_match('/^\+\d{7,15}$/', $v);
         if ($provider === 'clickatell' && $c['api_key'] === '') {

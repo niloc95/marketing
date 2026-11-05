@@ -14,6 +14,7 @@ use App\Services\Bookings\BookingAudit;
 use App\Services\Bookings\BookingMetricsCache;
 use App\Services\Bookings\BookingSettings;
 use App\Services\Bookings\CatalogueService;
+use App\Services\Bookings\Integrations\Outbox;
 use App\Services\Bookings\Notifications\BookingIntegrations;
 use App\Services\Bookings\Notifications\NotificationQueue;
 use Config\Services;
@@ -359,6 +360,8 @@ class DepositService
             return;
         }
         $id      = (int) $a['id'];
+        $outbox  = new Outbox($this->listing, $this->now);
+        $payment = ['status' => P::PAID] + $payment;
         $usual   = BookingSettings::for($this->listingId)->get('booking.default_appointment_status');
         $service = new AppointmentService($this->listing, null, null, $accountId, $this->now);
 
@@ -366,6 +369,7 @@ class DepositService
             $status = $a['status'] === A::STATUS_PENDING ? $usual : $a['status'];
             A::forBusiness($this->listingId)->update($id, ['payment_status' => A::PAYMENT_PAID, 'payment_due_by' => null, 'status' => $status]);
             $this->audit->record($this->listingId, $accountId, 'appointment.deposit_paid', 'appointment', $id, null, ['reference' => $payment['reference'], 'via' => $via]);
+            $outbox->depositPaid($id, $payment);
             $service->notify($id, NotificationQueue::statusEvent($status), $accountId === null);
 
             return;
@@ -376,6 +380,7 @@ class DepositService
             if (! $busy && (string) $a['start_at'] > $nowUtc) {
                 A::forBusiness($this->listingId)->update($id, ['payment_status' => A::PAYMENT_PAID, 'status' => $usual, 'cancelled_at' => null]);
                 $this->audit->record($this->listingId, $accountId, 'appointment.deposit_paid_late', 'appointment', $id, null, ['reference' => $payment['reference'], 'via' => $via, 'kept' => true]);
+                $outbox->depositPaid($id, $payment);
                 $service->notify($id, NotificationQueue::statusEvent($usual), true);
 
                 return;
@@ -387,6 +392,7 @@ class DepositService
         }
         // Paid for a booking that is gone, or paid twice: the business refunds it.
         $this->audit->record($this->listingId, $accountId, 'appointment.deposit_to_refund', 'appointment', $id, null, ['reference' => $payment['reference'], 'via' => $via]);
+        $outbox->depositPaid($id, $payment);
         BookingMetricsCache::forget($this->listingId);
     }
 
@@ -648,6 +654,9 @@ class DepositService
         A::forBusiness($this->listingId)->update($id, $data);
         $this->audit->record($this->listingId, null, 'appointment.deposit_expired', 'appointment', $id, $a['status'], $data['status'] ?? $a['status']);
         BookingMetricsCache::forget($this->listingId);
+        if (isset($data['status'])) {
+            (new Outbox($this->listing, $this->now))->appointmentChanged($id, 'status');
+        }
 
         return true;
     }

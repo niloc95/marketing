@@ -143,7 +143,7 @@ class Appointments extends BaseController
         $body = str_contains((string) $this->request->getHeaderLine('Content-Type'), 'application/json')
             ? (array) ($this->request->getJSON(true) ?? [])
             : (array) $this->request->getPost();
-        $keys = ['provider_id', 'service_id', 'date', 'time', 'status', 'notes', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'address', 'event', 'channel', 'action'];
+        $keys = ['provider_id', 'service_id', 'date', 'time', 'status', 'notes', 'delivery_mode', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'address', 'event', 'channel', 'action'];
         for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++) {
             $keys[] = 'field_' . $n;
         }

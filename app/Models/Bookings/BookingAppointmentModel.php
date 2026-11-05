@@ -5,7 +5,9 @@ namespace App\Models\Bookings;
 /**
  * Appointments (xs_booking_appointments). Times UTC; see the migration for
  * the snapshot columns. Written only by the appointment service (Phase 4) and
- * BookingLock::reserve() (Phase 3).
+ * BookingLock::reserve() (Phase 3); the payment columns by DepositService
+ * (Phase 8) and video_link, video_meeting_id and google_event_id by
+ * Integrations\IntegrationSync (Phase 9).
  */
 class BookingAppointmentModel extends BookingScopedModel
 {
@@ -36,7 +38,7 @@ class BookingAppointmentModel extends BookingScopedModel
     protected $allowedFields = [
         'listing_id', 'reference', 'hash', 'provider_id', 'service_id', 'customer_id', 'location_id',
         'start_at', 'end_at', 'hold_before_min', 'hold_after_min', 'stored_timezone', 'status', 'source',
-        'notes', 'delivery_mode', 'video_link', 'service_name', 'service_duration_min', 'price_cents',
+        'notes', 'delivery_mode', 'video_link', 'video_meeting_id', 'google_event_id', 'service_name', 'service_duration_min', 'price_cents',
         'currency', 'provider_name', 'location_name', 'location_address', 'payment_status',
         'payment_amount_cents', 'payment_due_by', 'public_token_hash', 'public_token_expires', 'reminder_sent',
         'created_by_member_id', 'cancelled_at',
