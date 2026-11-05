@@ -111,6 +111,10 @@ class BookingSettings
                 $errors[$key] = 'Use a full link that starts with https://';
             }
         }
+        if (array_key_exists('notifications.reply_to', $values) && $after('notifications.reply_to') !== ''
+            && filter_var($after('notifications.reply_to'), FILTER_VALIDATE_EMAIL) === false) {
+            $errors['notifications.reply_to'] = 'Use an email address, like bookings@yourbusiness.co.za.';
+        }
         if ($errors !== []) {
             return ['errors' => $errors, 'changed' => []];
         }

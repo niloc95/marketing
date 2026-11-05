@@ -273,11 +273,23 @@ $routes->group('business', ['filter' => 'businessauth:account'], static function
     $routes->post('account/password', 'Business\Account::savePassword');
 });
 $routes->get('business', 'Business\Home::index', ['filter' => 'businessauth']);
+// Phase 6: every member's own notices.
+$routes->group('business', ['filter' => 'businessauth'], static function ($routes) {
+    $routes->get('notifications', 'Business\Notifications::index');
+    $routes->post('notifications/read', 'Business\Notifications::read');
+    $routes->post('notifications/preferences', 'Business\Notifications::preferences');
+});
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.manage']], static function ($routes) {
     $routes->get('settings', 'Business\Settings::index');
     $routes->post('settings/localization', 'Business\Settings::saveLocalization');
     $routes->post('settings/booking', 'Business\Settings::saveBooking');
     $routes->post('settings/questions', 'Business\Settings::saveQuestions');
+    $routes->post('settings/notifications', 'Business\NotificationSettings::save');
+    $routes->post('settings/notifications/template', 'Business\NotificationSettings::saveTemplate');
+    $routes->post('settings/notifications/(sms|whatsapp)', 'Business\NotificationSettings::saveIntegration/$1');
+    $routes->post('settings/notifications/(sms|whatsapp)/test', 'Business\NotificationSettings::test/$1');
+    $routes->get('notifications/sent', 'Business\Notifications::sent');
+    $routes->get('notifications/sent.csv', 'Business\Notifications::export');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
 });
 $routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
@@ -299,6 +311,7 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->post('api/appointments/(:num)/reschedule', 'Business\Appointments::reschedule/$1');
     $routes->post('api/appointments/(:num)/status', 'Business\Appointments::status/$1');
     $routes->post('api/appointments/(:num)/notes', 'Business\Appointments::notes/$1');
+    $routes->post('api/appointments/(:num)/notify', 'Business\Appointments::notify/$1');
 });
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.manage']], static function ($routes) {
     $routes->get('customers', 'Business\Customers::index');
@@ -306,6 +319,7 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.
     $routes->post('customers/new', 'Business\Customers::create');
     $routes->get('api/customers', 'Business\Customers::lookup');
     $routes->get('customers/(:segment)', 'Business\Customers::show/$1');
+    $routes->post('customers/(:segment)/emails', 'Business\Customers::emailsAgain/$1');
     $routes->post('customers/(:segment)', 'Business\Customers::save/$1');
 });
 $routes->post('business/customers/(:segment)/delete', 'Business\Customers::delete/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
@@ -543,6 +557,10 @@ $routes->get('directory/(:segment)/book/days', 'Book::days/$1');
 $routes->get('directory/(:segment)/book/slots', 'Book::slots/$1');
 $routes->get('directory/(:segment)/book/terms', 'Book::terms/$1');
 // The customer's side: literal segments before book/{token}.
+// Stop a business's booking emails: GET asks, POST acts (RFC 8058 one
+// click posts here with no session; CSRF exempt like unsubscribe/*).
+$routes->get('book/unsubscribe/(:segment)', 'Book::unsubscribePage/$1');
+$routes->post('book/unsubscribe/(:segment)', 'Book::unsubscribe/$1');
 $routes->get('book/find', 'Book::find');
 $routes->post('book/find', 'Book::sendLinks');
 $routes->get('book/r/(:segment)', 'Book::reference/$1');

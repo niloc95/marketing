@@ -3,6 +3,7 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\Notifications\OptOuts;
 use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\CustomerService;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -71,7 +72,21 @@ class Customers extends BaseController
             'stats'        => $this->service()->stats($customer['id']),
             'impact'       => $context->can('customers.delete') ? $this->service()->deletionImpact($customer['id']) : null,
             'timezone'     => $context->timezone(),
+            'optedOut'     => ! empty($customer['email']) && (new OptOuts($context->listingId()))->isOptedOut('email', (string) $customer['email']),
         ]);
+    }
+
+    /** The customer asked to get booking emails again (they stopped them from a link). */
+    public function emailsAgain(string $hash)
+    {
+        $context  = service('businessContext');
+        $customer = $this->visible($hash);
+        if ($this->request->getPost('confirm') === 'yes' && ! empty($customer['email'])) {
+            (new OptOuts($context->listingId()))->optIn('email', (string) $customer['email']);
+            (new \App\Services\Bookings\BookingAudit())->record($context->listingId(), $context->accountId(), 'customer.emails_again', 'customer', $customer['id']);
+        }
+
+        return redirect()->to(base_url('business/customers/' . $hash))->with('success', 'Booking emails will reach them again.');
     }
 
     public function save(string $hash)

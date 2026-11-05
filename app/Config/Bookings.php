@@ -82,6 +82,11 @@ class Bookings extends BaseConfig
         'legal.rescheduling_policy'   => '',
         'legal.terms_url'             => '',
         'legal.privacy_url'           => '',
+        // Phase 6: reminders (minutes before; 0 = off) and how messages are signed.
+        'notifications.reminder_primary'   => '1440',
+        'notifications.reminder_secondary' => '0',
+        'notifications.from_name'          => '',  // empty = the business name
+        'notifications.reply_to'           => '',  // empty = the profile's email
         // The business's own questions (Phase 4), see customFieldKeys().
         'booking.custom_field_1_enabled' => '0', 'booking.custom_field_1_title' => '', 'booking.custom_field_1_type' => 'text', 'booking.custom_field_1_required' => '0', 'booking.custom_field_1_sensitive' => '0', 'booking.custom_field_1_options' => '',
         'booking.custom_field_2_enabled' => '0', 'booking.custom_field_2_title' => '', 'booking.custom_field_2_type' => 'text', 'booking.custom_field_2_required' => '0', 'booking.custom_field_2_sensitive' => '0', 'booking.custom_field_2_options' => '',
@@ -124,6 +129,8 @@ class Bookings extends BaseConfig
         'business.future_limit' => [1, 730],
         'business.reschedule'   => [0, 336],
         'business.cancel'       => [0, 336],
+        'notifications.reminder_primary'   => [0, 20160],
+        'notifications.reminder_secondary' => [0, 20160],
     ];
 
     /**
@@ -158,6 +165,8 @@ class Bookings extends BaseConfig
         }
         $this->settingMaxLength['legal.terms_url']   = 500;
         $this->settingMaxLength['legal.privacy_url'] = 500;
+        $this->settingMaxLength['notifications.from_name'] = 80;
+        $this->settingMaxLength['notifications.reply_to']  = 190;
         // Questions: a line, a paragraph, one of a list, or a tick box.
         for ($n = 1; $n <= self::CUSTOM_FIELDS; $n++) {
             foreach (['enabled', 'required', 'sensitive'] as $flag) {

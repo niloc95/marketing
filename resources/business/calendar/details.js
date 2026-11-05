@@ -1,8 +1,9 @@
 /**
  * The appointment details panel (Bookings' appointment-details-modal):
  * who, when, where, answers, status, notes, and a move form for anyone
- * without a mouse to drag with. Mark paid and resend arrive with payments
- * (Phase 8) and notifications (Phase 6).
+ * without a mouse to drag with, the messages sent about it and "Send
+ * again" (queued, sent within the minute). Mark paid arrives with payments
+ * (Phase 8).
  */
 import { getJson, postJson } from './api.js';
 import { el } from './chip.js';
@@ -67,6 +68,13 @@ export function initDetails(root, scheduler) {
     q('[data-d-date]').value = dateOf(a.start);
     q('[data-d-time]').value = hhmm(a.start);
     q('[data-d-provider]').value = String(a.provider_id);
+    const list = q('[data-d-message-list]');
+    list.replaceChildren(...(a.messages || []).map((m) => el('li', '', `${m.at}: ${m.event}, ${m.channel}${m.recipient_type === 'team' ? MSG.toTeam : ''}. ${m.outcome}.`)));
+    if (!list.children.length) list.append(el('li', '', MSG.noMessages));
+    const chat = q('[data-d-whatsapp]');
+    chat.hidden = !a.whatsapp_url;
+    chat.href = a.whatsapp_url || '#';
+    q('[data-d-event]').value = { pending: 'pending', confirmed: 'confirmed', cancelled: 'cancelled', no_show: 'no_show' }[a.status] || 'confirmed';
     scheduler.busy(true);
     if (!dialog.open) dialog.showModal();
   }
@@ -91,6 +99,13 @@ export function initDetails(root, scheduler) {
     if (!current) return;
     const ok = await scheduler.reschedule(current.id, q('[data-d-date]').value, q('[data-d-time]').value, Number(q('[data-d-provider]').value), fail);
     if (ok) dialog.close();
+  });
+
+  q('[data-d-send]').addEventListener('click', async () => {
+    if (!current) return;
+    const res = await postJson(`${root.dataset.appointmentUrl}/${current.id}/notify`, { event: q('[data-d-event]').value, channel: q('[data-d-channel]').value });
+    if (!res.ok) { fail(res.error); return; }
+    scheduler.toast(MSG.queued);
   });
 
   return { open };

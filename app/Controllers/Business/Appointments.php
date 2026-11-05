@@ -61,6 +61,14 @@ class Appointments extends BaseController
         return $this->answer($this->service()->setNotes($id, (string) $this->input()['notes']));
     }
 
+    /** "Send again": {event, channel} */
+    public function notify(int $id)
+    {
+        $in = $this->input();
+
+        return $this->answer($this->service()->resend($id, (string) ($in['event'] ?? ''), (string) ($in['channel'] ?? 'email')));
+    }
+
     /** "Find" across appointments: ?q= */
     public function find()
     {
@@ -115,7 +123,7 @@ class Appointments extends BaseController
         $body = str_contains((string) $this->request->getHeaderLine('Content-Type'), 'application/json')
             ? (array) ($this->request->getJSON(true) ?? [])
             : (array) $this->request->getPost();
-        $keys = ['provider_id', 'service_id', 'date', 'time', 'status', 'notes', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'address'];
+        $keys = ['provider_id', 'service_id', 'date', 'time', 'status', 'notes', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'address', 'event', 'channel'];
         for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++) {
             $keys[] = 'field_' . $n;
         }

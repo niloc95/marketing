@@ -42,8 +42,9 @@ already holds is read from the profile, never copied, so the two can't drift.
 | `calendar.slot_duration` | `30` | 4 | grid lines |
 | `legal.terms`, `legal.cancellation_policy`, `legal.rescheduling_policy` | empty | 5 | plain text, shown on the booking terms page; built 4 Nov 2026 |
 | `legal.terms_url`, `legal.privacy_url` | empty | 5 | checked with `safe_external_url()`; built 4 Nov 2026 |
-| `notifications.reminder_primary`, `reminder_secondary` | `1440`, off | 6 | minutes before |
-| `notifications.from_name` | business name | 6 | sender name only; the address is always ours |
+| `notifications.reminder_primary`, `reminder_secondary` | `1440`, `0` (off) | 6 | minutes before, 0 to 20160; one setting for every channel (Bookings kept offsets per channel on the rules); built 5 Nov 2026 |
+| `notifications.from_name` | business name | 6 | sender name only, shown as "Name via WebScheduler Local"; the address is always ours; built 5 Nov 2026 |
+| `notifications.reply_to` | the profile's email | 6 | Reply-To on customer emails; built 5 Nov 2026 |
 | `payments.deposit_gateway` | none | 8 | per decision D6 |
 
 ## Not carried

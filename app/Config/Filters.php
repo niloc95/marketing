@@ -173,7 +173,11 @@ class Filters extends BaseFilters
             // per IP and per address; nobody joins until they press Confirm on
             // our own page, which keeps CSRF. newsletter/unsubscribe/* is the
             // newsletter's RFC 8058 one click, as unsubscribe/* is the owners'.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*']],
+            //
+            // book/unsubscribe/* is the same for one business's booking
+            // emails: the customer's 64 hex link is the authority, and all a
+            // forged POST can do is stop that business's emails to them.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

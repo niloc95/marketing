@@ -5,6 +5,7 @@ namespace App\Services\Bookings;
 use App\Models\Bookings\BookingAppointmentFieldModel;
 use App\Models\Bookings\BookingAppointmentModel;
 use App\Services\Bookings\Calendar\CalendarQuery;
+use App\Services\Bookings\Notifications\NotificationQueue;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -26,7 +27,8 @@ use DateTimeZone;
  *   one checks its time again.
  * - The service of an existing appointment does not change: cancel and book
  *   again (its snapshots, price and gaps belong to the service booked).
- * - Notifications are Phase 6; nothing is sent here.
+ * - Every change queues its messages (Notifications\NotificationQueue, Phase
+ *   6) after it is written; nothing is sent inside the request.
  */
 class AppointmentService
 {
@@ -118,6 +120,8 @@ class AppointmentService
         $out['status_label'] = AppointmentStatus::label($out['status']);
         $out['upcoming']     = $this->isUpcoming($row);
         $out['created_at']   = $row['created_at'];
+        $out['messages']     = $this->messages($id);
+        $out['whatsapp_url'] = $this->whatsappUrl($row);
 
         return $out;
     }
@@ -189,6 +193,7 @@ class AppointmentService
         $id = (int) $result['id'];
         $this->saveAnswers($id, $customerId, (new CustomerService($this->listingId))->answers($input));
         $this->audit->record($this->listingId, $this->accountId, 'appointment.created', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId]);
+        $this->notify($id, NotificationQueue::statusEvent($status));
         $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
 
         return ['id' => $id, 'hash' => (string) $row['hash'], 'reference' => $result['reference'], 'errors' => []];
@@ -224,6 +229,7 @@ class AppointmentService
             $this->audit->record($this->listingId, $this->accountId, 'appointment.rescheduled', 'appointment', $id,
                 array_map(static fn (array $c) => $c[0], $moved['changes']),
                 array_map(static fn (array $c) => $c[1], $moved['changes']));
+            $this->notify($id, 'rescheduled');
         }
 
         return ['ok' => true, 'error' => null];
@@ -263,6 +269,7 @@ class AppointmentService
             'cancelled_at' => $status === BookingAppointmentModel::STATUS_CANCELLED ? gmdate('Y-m-d H:i:s', $this->now->getTimestamp()) : null,
         ]);
         $this->audit->record($this->listingId, $this->accountId, 'appointment.status', 'appointment', $id, $row['status'], $status);
+        $this->notify($id, NotificationQueue::statusEvent($status));
 
         return ['ok' => true, 'error' => null];
     }
@@ -325,6 +332,9 @@ class AppointmentService
         $this->audit->record($this->listingId, null, 'appointment.rescheduled_by_customer', 'appointment', $id,
             array_map(static fn (array $c) => $c[0], $moved['changes']),
             array_map(static fn (array $c) => $c[1], $moved['changes']));
+        if ($moved['changes'] !== []) {
+            $this->notify($id, 'rescheduled', true);
+        }
 
         return ['ok' => true, 'error' => null];
     }
@@ -341,6 +351,7 @@ class AppointmentService
             'cancelled_at' => gmdate('Y-m-d H:i:s', $this->now->getTimestamp()),
         ]);
         $this->audit->record($this->listingId, null, 'appointment.cancelled_by_customer', 'appointment', $id, $row['status'], BookingAppointmentModel::STATUS_CANCELLED);
+        $this->notify($id, 'cancelled', true);
 
         return true;
     }
@@ -392,6 +403,72 @@ class AppointmentService
     }
 
     // Internals
+
+    /**
+     * "Send again": queue one message about this appointment now, on a
+     * channel the business has on. Sent within the minute by bookings:dispatch.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function resend(int $id, string $event, string $channel): array
+    {
+        if ($this->find($id) === null) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_found']];
+        }
+        if (! (new NotificationQueue($this->listingId, $this->now))->resend($id, $event, $channel)) {
+            return ['ok' => false, 'error' => 'That message cannot be sent. Check that the channel is set up in Settings, Messages.'];
+        }
+        $this->audit->record($this->listingId, $this->accountId, 'appointment.resend', 'appointment', $id, null, $event . '.' . $channel);
+
+        return ['ok' => true, 'error' => null];
+    }
+
+    /**
+     * The last messages about this appointment, for the details panel.
+     *
+     * @return list<array{event:string,channel:string,outcome:string,recipient_type:string,at:string}>
+     */
+    private function messages(int $id): array
+    {
+        $rows = \App\Models\Bookings\BookingDeliveryLogModel::forBusiness($this->listingId)
+            ->where('appointment_id', $id)->whereIn('outcome', ['sent', 'failed'])->orderBy('id', 'DESC')->findAll(10);
+
+        return array_map(fn (array $r): array => [
+            'event'          => \Config\BookingNotifications::EVENTS[$r['event']] ?? $r['event'],
+            'channel'        => \Config\BookingNotifications::CHANNEL_LABELS[$r['channel']] ?? $r['channel'],
+            'outcome'        => \App\Services\Bookings\Notifications\DeliveryLog::LABELS[$r['outcome']] ?? $r['outcome'],
+            'recipient_type' => (string) $r['recipient_type'],
+            'at'             => (new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC')))->setTimezone($this->tz)->format('j M H:i'),
+        ], $rows);
+    }
+
+    /** "Open a WhatsApp chat" (WhatsApp set to link mode), or ''. @param array<string,mixed> $row with customer_phone */
+    private function whatsappUrl(array $row): string
+    {
+        if (! (new \App\Services\Bookings\Notifications\BookingIntegrations($this->listingId))->linkMode()) {
+            return '';
+        }
+        $to = \App\Services\Bookings\Notifications\Channels::e164((string) ($row['customer_phone'] ?? ''), (string) ($this->listing['country_code'] ?? 'ZA'));
+        if ($to === null) {
+            return '';
+        }
+        $event    = NotificationQueue::statusEvent((string) $row['status']) ?? 'confirmed';
+        $context  = \App\Services\Bookings\Notifications\MessageContext::build($this->listing, (int) $row['id'], $this->now);
+        $template = (new \App\Services\Bookings\Notifications\NotificationTemplates($this->listingId))->get($event, 'whatsapp');
+        if ($context === null || $template === null) {
+            return '';
+        }
+
+        return \App\Services\Bookings\Notifications\Channels::whatsappLink($to, \App\Services\Bookings\Notifications\NotificationTemplates::fill($template, $context['values'])['body']);
+    }
+
+    /** Queue the messages for a change just written (the queue never throws). */
+    public function notify(int $id, ?string $event, bool $byCustomer = false): void
+    {
+        if ($event !== null) {
+            (new NotificationQueue($this->listingId, $this->now))->appointmentEvent($id, $event, $byCustomer);
+        }
+    }
 
     private function inScope(int $providerId): bool
     {

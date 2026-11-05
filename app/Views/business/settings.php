@@ -5,6 +5,7 @@
  * @var array<string,mixed>       $listing
  * @var array<string,string>      $settings
  * @var array<string,list<string>> $choices
+ * @var array<string,mixed>|null   $messages the Messages tab (NotificationSettings::viewData())
  */
 $labels = [
     '24h' => '24 hour clock (14:30)', '12h' => '12 hour clock (2:30 pm)',
@@ -14,9 +15,9 @@ $labels = [
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
-<nav class="mb-5 flex gap-1 border-b border-slate-200 dark:border-slate-800" aria-label="Settings">
+<nav class="mb-5 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800" aria-label="Settings">
     <?php foreach ($tabs as $key => $label): ?>
-        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-brand-ocean text-brand-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
+        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-brand-ocean text-brand-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
     <?php endforeach ?>
 </nav>
 
@@ -88,6 +89,8 @@ $labels = [
         </div>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
+<?php elseif ($tab === 'notifications'): ?>
+    <?= $this->include('business/_settings_notifications') ?>
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>

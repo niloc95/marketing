@@ -141,3 +141,11 @@ MAILTO=""
 # by 4 Nov 2026. Sessions expire after 2 hours (Config\Session::$expiration),
 # so a day old file is dead; current visitors are never touched.
 20 4 * * * deploy find /var/www/listing/directory-app/writable/session -maxdepth 1 -type f -name 'ci_session*' -mmin +1440 -delete
+
+# Online bookings (docs/bookings/, Phase 6): queue due reminders and send
+# booking emails, SMS and WhatsApp, every minute for every business. Does
+# nothing while bookings.enabled is off. A MySQL lock stops overlapping runs.
+* * * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:dispatch --quiet
+
+# Booking delivery logs, finished queue rows and read notices older than 90 days.
+35 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:prune --quiet

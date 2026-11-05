@@ -139,8 +139,8 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | WhatsApp (link, Twilio, Meta Cloud) | yes | Port | 6 | |
 | Delivery logs, export, purge | yes | Port | 6 | |
 | In app notification centre | `/notifications` | Port | 6 | |
-| Opt out | table exists, **no route** | New | 6 | unsubscribe link and page, RFC 8058 for email |
-| Manual resend | `POST appointments/{id}/notify` | Port | 6 | |
+| Opt out | table exists, **no route** | New | 6 | unsubscribe link and page, RFC 8058 for email; built 5 Nov 2026 (`book/unsubscribe/{customer hash}`; only the business can switch emails back on) |
+| Manual resend | `POST appointments/{id}/notify` | Port | 6 | queued, not sent in the request (Bookings sent email and SMS at once) |
 
 ## 10. Payments
 

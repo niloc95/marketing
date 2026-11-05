@@ -5,7 +5,9 @@
 import { initTheme } from './theme.js';
 import { initInactivityMonitor } from './inactivity.js';
 import { initCalendar } from './calendar/scheduler.js';
+import { initProviderForms } from './providers.js';
 
 initTheme();
 initInactivityMonitor();
 initCalendar();
+initProviderForms();

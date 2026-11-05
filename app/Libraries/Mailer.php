@@ -38,15 +38,30 @@ class Mailer
      *                        address in From fails SPF/DMARC at the recipient.
      *                        Empty falls back to Config\Email::$replyTo.
      *
+     * @param array{fromName?:string,headers?:array<string,string>} $options
+     *                        `fromName` changes the sender's name only (online
+     *                        bookings sign as the business; the address stays
+     *                        ours for SPF and DMARC). `headers` adds headers such
+     *                        as List-Unsubscribe. Both last for this one email:
+     *                        CI4's clear() after each send drops them, and the
+     *                        next send takes the From from Config\Email again.
+     *
      * @return bool Whether it went out. Callers that must not block on mail
      *              (signup, owner edit) can ignore it; the contact form uses it
      *              to tell the visitor the truth.
      */
-    public function send(string $to, string $subject, string $body, string $replyTo = ''): bool
+    public function send(string $to, string $subject, string $body, string $replyTo = '', array $options = []): bool
     {
         try {
             $email = service('email');
             $email->setTo($to);
+            $fromName = self::oneLine((string) ($options['fromName'] ?? ''));
+            if ($fromName !== '') {
+                $email->setFrom(config('Email')->fromEmail, $fromName);
+            }
+            foreach ($options['headers'] ?? [] as $name => $value) {
+                $email->setHeader($name, self::oneLine($value));
+            }
             $replyTo = $replyTo !== '' ? $replyTo : config('Email')->replyTo;
             if ($replyTo !== '') {
                 $email->setReplyTo($replyTo);

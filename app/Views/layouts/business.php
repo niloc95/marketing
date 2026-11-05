@@ -18,6 +18,8 @@ $asset    = static fn (string $path): string => base_url($path) . '?v=' . (@file
 $nav      = [];
 if ($listing !== null) {
     $nav[] = ['business', 'Dashboard', 'layout-dashboard'];
+    $unread = (new \App\Services\Bookings\Notifications\NotificationCentre($context->listingId(), (int) $context->member()['id']))->unread();
+    $nav[]  = ['business/notifications', $unread > 0 ? 'Notices (' . $unread . ')' : 'Notices', 'bell'];
     if ($context->can('appointments.manage')) {
         $nav[] = ['business/calendar', 'Calendar', 'calendar'];
     }

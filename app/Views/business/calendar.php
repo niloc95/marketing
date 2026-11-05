@@ -159,6 +159,30 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
             </div>
             <button type="button" class="btn btn-primary btn-xs mt-3" data-d-save-move>Move</button>
         </details>
+        <details class="mt-4" data-d-messages>
+            <summary class="cursor-pointer text-sm font-semibold text-brand-ocean dark:text-white">Messages</summary>
+            <ul class="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300" data-d-message-list></ul>
+            <p class="mt-2"><a class="btn btn-ghost btn-xs" href="#" target="_blank" rel="noopener" data-d-whatsapp hidden><?= lucide('message-circle', 'h-4 w-4') ?> Open a WhatsApp chat</a></p>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <div class="field mb-0">
+                    <label for="cal-d-event">Send again</label>
+                    <select id="cal-d-event" data-d-event>
+                        <?php foreach (\Config\BookingNotifications::EVENTS as $k => $label): ?>
+                            <option value="<?= $k ?>"><?= esc($label) ?></option>
+                        <?php endforeach ?>
+                    </select>
+                </div>
+                <div class="field mb-0">
+                    <label for="cal-d-channel">By</label>
+                    <select id="cal-d-channel" data-d-channel>
+                        <?php foreach ($sendChannels as $k => $label): ?>
+                            <option value="<?= $k ?>"><?= esc($label) ?></option>
+                        <?php endforeach ?>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-xs mt-3" data-d-send>Send</button>
+        </details>
         <p class="mt-3 hidden text-sm text-rose-600" data-d-error role="alert"></p>
     </dialog>
 

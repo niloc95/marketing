@@ -10,6 +10,7 @@
  * @var array{total:int,upcoming:int,completed:int,cancelled:int,no_show:int} $stats
  * @var array{upcoming:int,past:int,can_delete:bool}|null         $impact null when the member may not delete
  * @var string                                                    $timezone
+ * @var bool                                                      $optedOut  stopped this business's booking emails
  */
 use App\Services\Bookings\AppointmentStatus;
 
@@ -26,6 +27,16 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
     <?= esc(implode(' · ', array_filter([(string) ($customer['email'] ?? ''), (string) ($customer['phone'] ?? '')]))) ?>
 </p>
+<?php if (! empty($optedOut)): ?>
+    <div class="alert alert-info mt-3">
+        <p>This customer asked us to stop your booking emails to them.</p>
+        <form method="post" action="<?= base_url('business/customers/' . $customer['hash'] . '/emails') ?>" class="mt-2">
+            <?= csrf_field() ?>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" required> They asked me to send them again</label>
+            <button type="submit" class="btn btn-ghost btn-xs mt-2">Send booking emails again</button>
+        </form>
+    </div>
+<?php endif ?>
 
 <dl class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
     <?php foreach (['total' => 'Appointments', 'upcoming' => 'Upcoming', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'no_show' => 'No show'] as $k => $label): ?>

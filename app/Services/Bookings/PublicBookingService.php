@@ -324,6 +324,7 @@ class PublicBookingService
             $customers->rememberAnswers($customer['id'], $answers);
         }
         (new BookingAudit())->record($this->listingId, null, 'appointment.booked_online', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId]);
+        $this->appointments()->notify($id, \App\Services\Bookings\Notifications\NotificationQueue::statusEvent($status), true);
 
         return ['token' => $this->appointments()->issuePublicToken($id), 'reference' => $result['reference'], 'errors' => []];
     }

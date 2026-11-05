@@ -64,7 +64,8 @@ class Forms extends BaseConfig
         'business_password' => ['label' => 'Business password reset', 'posts' => ['business/password' => 'business/password', 'business/password/(:segment)' => 'business/password/$1']],
         'business_account'  => ['label' => 'Business account', 'posts' => ['business/account/name' => 'business/account', 'business/account/password' => 'business/account#password']],
         'business_choose'   => ['label' => 'Choose a business', 'posts' => ['business/choose' => 'business/choose']],
-        'business_settings' => ['label' => 'Business settings', 'posts' => ['business/settings/localization' => 'business/settings/localization', 'business/settings/booking' => 'business/settings/booking', 'business/settings/questions' => 'business/settings/questions', 'business/turn-off' => 'business/settings/general']],
+        'business_settings' => ['label' => 'Business settings', 'posts' => ['business/settings/localization' => 'business/settings/localization', 'business/settings/booking' => 'business/settings/booking', 'business/settings/questions' => 'business/settings/questions', 'business/settings/notifications' => 'business/settings/notifications', 'business/settings/notifications/template' => 'business/settings/notifications#wording', 'business/settings/notifications/(sms|whatsapp)' => 'business/settings/notifications', 'business/settings/notifications/(sms|whatsapp)/test' => 'business/settings/notifications', 'business/turn-off' => 'business/settings/general']],
+        'business_notices'  => ['label' => 'Business notices', 'posts' => ['business/notifications/read' => 'business/notifications', 'business/notifications/preferences' => 'business/notifications']],
         'business_invite'   => ['label' => 'Accept a business invitation', 'posts' => ['business/invite/(:segment)' => 'business/invite/$1']],
         'business_services' => ['label' => 'Business services', 'posts' => ['business/services/new' => 'business/services/new', 'business/services/(:num)' => 'business/services/$1', 'business/services/(:num)/archive' => 'business/services', 'business/services/categories' => 'business/services#categories', 'business/services/categories/(:num)' => 'business/services#categories', 'business/services/categories/(:num)/delete' => 'business/services#categories']],
         'business_team'     => ['label' => 'Business team', 'posts' => ['business/team' => 'business/team', 'business/team/(:num)' => 'business/team/$1', 'business/team/(:num)/hours' => 'business/team/$1#hours', 'business/team/(:num)/archive' => 'business/team', 'business/team/invite' => 'business/team#access', 'business/team/members/(:num)/role' => 'business/team#access', 'business/team/members/(:num)/remove' => 'business/team#access']],
@@ -73,7 +74,7 @@ class Forms extends BaseConfig
         'book_change'       => ['label' => 'Change or cancel a booking', 'posts' => ['book/(:segment)/reschedule' => 'book/$1', 'book/(:segment)/cancel' => 'book/$1', 'book/customer/(:segment)/(:segment)/reschedule' => 'book/find', 'book/customer/(:segment)/(:segment)/cancel' => 'book/find'], 'pages' => []],
         'book_find'         => ['label' => 'Find my booking', 'posts' => ['book/find' => 'book/find']],
         'business_appointment' => ['label' => 'Book an appointment (business)', 'posts' => ['business/appointments/new' => 'business/appointments/new'], 'old' => 'appointment_old'],
-        'business_customers'   => ['label' => 'Business customers', 'posts' => ['business/customers/new' => 'business/customers/new', 'business/customers/(:segment)' => 'business/customers/$1#edit', 'business/customers/(:segment)/delete' => 'business/customers/$1#delete'], 'old' => 'customer_old'],
+        'business_customers'   => ['label' => 'Business customers', 'posts' => ['business/customers/new' => 'business/customers/new', 'business/customers/(:segment)' => 'business/customers/$1#edit', 'business/customers/(:segment)/delete' => 'business/customers/$1#delete', 'business/customers/(:segment)/emails' => 'business/customers/$1'], 'old' => 'customer_old'],
     ];
 
     /**
@@ -88,6 +89,7 @@ class Forms extends BaseConfig
         'business/api/appointments/(:num)/reschedule',
         'business/api/appointments/(:num)/status',
         'business/api/appointments/(:num)/notes',
+        'business/api/appointments/(:num)/notify',
         // A 301 to add-profile, registered for every method.
         'list-your-practice',
         'add-profile/score',
@@ -98,6 +100,7 @@ class Forms extends BaseConfig
         'manage/preview',
         'unsubscribe/(:segment)',
         'newsletter/unsubscribe/(:segment)',
+        'book/unsubscribe/(:segment)',
         'csp-report',
         'payfast/notify',
         'payfast/setup-notify',

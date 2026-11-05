@@ -22,7 +22,8 @@ Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.
 | 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, not merged): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
 | 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, not merged): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
 | 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, not merged): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
-| 6 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 6 Notifications | built 5 Nov 2026 on `bookings-p6-notifications` (off p5, not merged): queue, dispatcher, rules, reminders, templates, email, SMS and WhatsApp on the business's own account, delivery logs, opt out, notices |
+| 7 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -209,14 +210,35 @@ Customers keep their name: `findOrCreate()` fills only empty fields.
 **Testing gotcha:** the page tests run on the real clock; give the test business
 `booking.lead_minutes` 2880 so the first free time is outside the 24 hour windows.
 
-**Owner decision still open:** D3 (does the profile's own services list give way to the
-booking services?). Phase 5 adds the Book online button and leaves the list as it is.
+**D3 settled (T14, 5 Nov 2026):** the profile keeps its own services list; bookings only add
+the Book online button and the booking page.
 
-## Next: Phase 6 (notifications)
+## Phase 6 in the code
 
-Not started. Scope from `parity.md` §9. Must email the change link after booking (today it
-is only on the confirmation page), leave `sensitive` answers out of emails, and add the
-unsubscribe route.
+| Piece | Where |
+|---|---|
+| Tables | migration `2026-11-16-100000_CreateBookingNotifications`: rules, templates, queue, delivery logs, opt outs, inbox, integrations (all `xs_booking_*`, scoped models) |
+| Catalogue | `Config\BookingNotifications`: events (pending, confirmed, rescheduled, cancelled, reminder, no show), default rules, default customer templates, fixed team templates, placeholders, retry limits |
+| Services | `App\Services\Bookings\Notifications\`: `NotificationRules`, `NotificationTemplates`, `MessageContext` (values read at send time), `NotificationQueue` (enqueue, reminders, team recipients), `NotificationDispatcher`, `Channels` (Mailer, Clickatell, Twilio, Meta), `BookingIntegrations` (encrypted accounts), `OptOuts`, `DeliveryLog`, `NotificationCentre` |
+| Hooks | `AppointmentService::notify()` after create, reschedule, status, customer move and cancel; `PublicBookingService::book()` |
+| Cron | `bookings:dispatch` each minute (MySQL `GET_LOCK`, 50 s time box), `bookings:prune` nightly; both in `deploy/cron/webscheduler` |
+| Pages | Settings tab Messages (`Business\NotificationSettings`), `/business/notifications` (Notices, every member, own email switch), `/business/notifications/sent` (+ `.csv`), "Messages" and "Send again" in the appointment details (`POST /business/api/appointments/{id}/notify`), customer page "Send booking emails again", public `book/unsubscribe/{customer hash}` (GET asks, POST acts, CSRF exempt for RFC 8058) |
+| Mail | `Mailer::send()` takes `fromName` and `headers`; From stays ours ("Business via WebScheduler Local"), Reply-To the business |
+| Tests | `tests/database/BookingNotificationsTest.php` (fixed clock 7 Jan 2030; `MockEmail` archive for headers, `returnValue = false` for failures; fake `curlrequest` for providers) |
+
+**Rules worth knowing:**
+- Nothing is sent in a request except the admin's own SMS or WhatsApp test.
+- Team messages and Notices only for what the customer did online.
+- A queued message is checked again at send time: bookings on, rule on, account on, not opted out, and still true (status, fingerprint). Otherwise it is cancelled, never sent.
+- Customer emails link to `book/customer/{customer}/{appointment}`. That link is stable, unlike the rotated change token, which a queued message could not carry.
+- Sensitive answers never reach a message, and the delivery logs keep masked recipients only.
+- The unsubscribe POST can only stop emails. Only the business can switch them back on.
+- SMS and WhatsApp accounts need `encryption.key`. Without it the tab says they are not available, and nothing is saved in plain text. Dev has no key, so dev shows that state. Decision D14: set the key on production before release.
+- WhatsApp has three modes: "link" (a wa.me button in the details, never queued), Twilio (body text), and Meta, which sends only approved templates with five fixed values: first name, business, service, when, link.
+
+## Next: Phase 7
+
+Not started. Read `parity.md` and `README.md` for its scope before starting.
 
 **Custom fields (built):** Settings, Questions tab (`/business/settings/questions`). Types
 text, textarea, select (choices one per line in `booking.custom_field_N_options`) and

@@ -230,6 +230,42 @@ class Book extends BaseController
         ]));
     }
 
+    /**
+     * "Stop emails from {business}": GET asks, POST acts (mail scanners open
+     * every link). The POST is also RFC 8058 one click, posted by the mail
+     * provider with no session, so it is CSRF exempt and never redirected.
+     * Works while the business has bookings off too: stopping is always allowed.
+     */
+    public function unsubscribePage(string $hash)
+    {
+        [, $listing] = $this->unsubscribeTarget($hash);
+
+        return $this->respondPrivate(view('book/unsubscribe', ['listing' => $listing, 'hash' => $hash, 'done' => false]));
+    }
+
+    public function unsubscribe(string $hash)
+    {
+        [$customer, $listing] = $this->unsubscribeTarget($hash);
+        if (! empty($customer['email'])) {
+            (new \App\Services\Bookings\Notifications\OptOuts((int) $listing['id']))
+                ->optOut('email', (string) $customer['email'], $this->request->getPost('List-Unsubscribe') !== null ? 'one_click' : 'link');
+        }
+
+        return $this->respondPrivate(view('book/unsubscribe', ['listing' => $listing, 'hash' => $hash, 'done' => true]));
+    }
+
+    /** @return array{0:array<string,mixed>,1:array<string,mixed>} */
+    private function unsubscribeTarget(string $hash): array
+    {
+        $customer = PublicBookingService::customerByHash($hash);
+        $listing  = $customer !== null ? (new DirectoryListingModel())->find((int) $customer['listing_id']) : null;
+        if ($listing === null || ! config('Bookings')->enabled()) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        return [$customer, $listing];
+    }
+
     public function find()
     {
         $this->siteOrNotFound();

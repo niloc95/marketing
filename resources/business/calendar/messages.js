@@ -24,4 +24,7 @@ export const MSG = {
   everyone: 'Everyone',
   online: 'Online',
   noAddress: 'Address not given',
+  noMessages: 'Nothing sent yet.',
+  toTeam: ' to the team',
+  queued: 'It will go out within a minute.',
 };
