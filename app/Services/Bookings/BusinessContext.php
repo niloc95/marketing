@@ -5,8 +5,10 @@ namespace App\Services\Bookings;
 /**
  * Who is signed in to /business and which business they are working in, for
  * the current request. Filled by App\Filters\BusinessAuth after it has checked
- * the session against the database; read by controllers through
- * service('businessContext'). Never filled from request input.
+ * the session against the database, or for /api/v1 by App\Filters\BookingApi
+ * from the API key (which then acts as the member it belongs to); read by
+ * controllers through service('businessContext'). Never filled from request
+ * input.
  */
 class BusinessContext
 {
@@ -40,6 +42,21 @@ class BusinessContext
     public function setAccount(array $account): void
     {
         $this->account = $account;
+    }
+
+    /** @var array<string,mixed>|null the API key of this request (/api/v1) */
+    private ?array $apiKey = null;
+
+    /** @param array<string,mixed> $key */
+    public function setApiKey(array $key): void
+    {
+        $this->apiKey = $key;
+    }
+
+    /** @return array<string,mixed>|null */
+    public function apiKey(): ?array
+    {
+        return $this->apiKey;
     }
 
     public function hasAccount(): bool
@@ -83,9 +100,7 @@ class BusinessContext
     /** The business's own time zone (the profile's), never the server's. */
     public function timezone(): string
     {
-        $tz = (string) ($this->listing()['timezone'] ?? '');
-
-        return in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg';
+        return BusinessLocale::timezoneName($this->listing());
     }
 
     /**

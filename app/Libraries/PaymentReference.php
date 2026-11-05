@@ -10,7 +10,8 @@ use App\Models\DirectoryVerificationModel;
  *   Profile setup       WSL-SETUP-000123
  *   Verified monthly    WSL-VER-M-000123     yearly WSL-VER-Y-000123
  *   Plus monthly        WSL-PLUS-M-000123    yearly WSL-PLUS-Y-000123
- *   Booking             WSB-BOOK-000123      reserved for the Bookings rebuild
+ *   Booking             WSB-BOOK-000123      an appointment (online bookings)
+ *   Bookings plan       WSL-BKG-M-000123     the business's own Bookings subscription
  *
  * The number is the order's or subscription row's own id, zero padded to six
  * digits (a larger id prints wider), so it matches the admin screens. Paystack
@@ -30,8 +31,25 @@ final class PaymentReference
     public const PLUS_MONTHLY = 'WSL-PLUS-M';
     public const PLUS_YEARLY  = 'WSL-PLUS-Y';
 
-    /** Reserved for Bookings once it takes payments inside Local; nothing produces it yet. */
+    /**
+     * Online bookings: an appointment is WSB-BOOK-000123 (BookingLock), and
+     * each try at paying its deposit WSB-BOOK-000123-P1, P2 ... (a gateway
+     * refuses a reference it has seen, so a second try needs its own).
+     */
     public const BOOKING = 'WSB-BOOK';
+
+    /** The Bookings plan (Phase 10): our subscription, so WSL like the badge. */
+    public const BOOKINGS_PLAN = 'WSL-BKG-M';
+
+    public static function isBookingsPlan(string $reference): bool
+    {
+        return str_starts_with($reference, self::BOOKINGS_PLAN . '-');
+    }
+
+    public static function forDeposit(int $appointmentId, int $attempt): string
+    {
+        return self::make(self::BOOKING, $appointmentId) . '-P' . max(1, $attempt);
+    }
 
     public static function make(string $prefix, int $id, int $attempt = 1): string
     {

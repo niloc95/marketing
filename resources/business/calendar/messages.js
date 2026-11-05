@@ -24,4 +24,11 @@ export const MSG = {
   everyone: 'Everyone',
   online: 'Online',
   noAddress: 'Address not given',
+  noMessages: 'Nothing sent yet.',
+  toTeam: ' to the team',
+  queued: 'It will go out within a minute.',
+  paymentLabel: (label, amount, dueBy) => `${label}: ${amount}${dueBy ? `, held until ${dueBy}` : ''}`,
+  paymentRow: (p) => `${p.at}: ${p.gateway} ${p.reference}, ${p.amount}, ${p.status}${p.test ? ', test' : ''}`,
+  markPaidAsk: 'Mark the deposit as paid? Do this when the customer paid you another way.',
+  markRefundedAsk: 'Mark the deposit as refunded? Refund it in your PayFast or Paystack account first.',
 };

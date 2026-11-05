@@ -273,14 +273,78 @@ $routes->group('business', ['filter' => 'businessauth:account'], static function
     $routes->post('account/password', 'Business\Account::savePassword');
 });
 $routes->get('business', 'Business\Home::index', ['filter' => 'businessauth']);
+// Phase 7: the dashboard's refresh (today's list and figures, as HTML) and analytics.
+$routes->get('business/api/dashboard/today', 'Business\Home::today', ['filter' => 'businessauth']);
+$routes->get('business/analytics', 'Business\Analytics::index', ['filter' => ['businessauth', 'businesscan:analytics.view']]);
+// Phase 6: every member's own notices.
+$routes->group('business', ['filter' => 'businessauth'], static function ($routes) {
+    $routes->get('notifications', 'Business\Notifications::index');
+    $routes->post('notifications/read', 'Business\Notifications::read');
+    $routes->post('notifications/preferences', 'Business\Notifications::preferences');
+});
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.manage']], static function ($routes) {
     $routes->get('settings', 'Business\Settings::index');
     $routes->post('settings/localization', 'Business\Settings::saveLocalization');
     $routes->post('settings/booking', 'Business\Settings::saveBooking');
     $routes->post('settings/questions', 'Business\Settings::saveQuestions');
+    $routes->post('settings/notifications', 'Business\NotificationSettings::save');
+    $routes->post('settings/notifications/template', 'Business\NotificationSettings::saveTemplate');
+    $routes->post('settings/notifications/(whatsapp)', 'Business\NotificationSettings::saveIntegration/$1');
+    $routes->post('settings/notifications/(whatsapp)/test', 'Business\NotificationSettings::test/$1');
+    // Phase 8: the business's own PayFast or Paystack account for deposits.
+    $routes->post('settings/payments', 'Business\PaymentSettings::save');
+    $routes->post('settings/payments/check', 'Business\PaymentSettings::check');
+    // Phase 10: the Bookings plan.
+    $routes->post('settings/plan/subscribe', 'Business\PlanSettings::subscribe');
+    $routes->post('settings/plan/cancel', 'Business\PlanSettings::cancel');
+    $routes->get('plan/paystack', 'Business\PlanSettings::returned');
+    // Phase 9: video meetings, Google Calendar and the webhook.
+    $routes->post('settings/connections/(zoom|jitsi)', 'Business\ConnectionSettings::saveVideo/$1');
+    $routes->post('settings/connections/zoom/check', 'Business\ConnectionSettings::checkZoom');
+    $routes->post('settings/connections/google', 'Business\ConnectionSettings::connectGoogle');
+    $routes->post('settings/connections/google/check', 'Business\ConnectionSettings::checkGoogle');
+    $routes->post('settings/connections/google/disconnect', 'Business\ConnectionSettings::disconnectGoogle');
+    $routes->get('connections/google/callback', 'Business\ConnectionSettings::googleCallback');
+    $routes->post('settings/connections/webhook', 'Business\ConnectionSettings::saveWebhook');
+    $routes->post('settings/connections/webhook/test', 'Business\ConnectionSettings::testWebhook');
+    $routes->post('settings/connections/webhook/secret', 'Business\ConnectionSettings::newSecret');
+    $routes->post('settings/connections/webhook/remove', 'Business\ConnectionSettings::removeWebhook');
+    $routes->post('settings/connections/webhook/(:num)/retry', 'Business\ConnectionSettings::retry/$1');
+    $routes->get('notifications/sent', 'Business\Notifications::sent');
+    $routes->get('notifications/sent.csv', 'Business\Notifications::export');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
 });
 $routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
+// Phase 9: API keys (admins).
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:api_keys.manage']], static function ($routes) {
+    $routes->post('settings/api/keys', 'Business\ApiKeys::create');
+    $routes->post('settings/api/keys/(:num)/revoke', 'Business\ApiKeys::revoke/$1');
+});
+// Phase 9: the API (docs/bookings/routes.md). The key decides the business;
+// `bookingapi:<scope>` checks it, its scope and its member's role.
+$routes->group('api/v1', static function ($routes) {
+    $routes->get('business', 'Api\V1\Catalogue::business', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('services', 'Api\V1\Catalogue::services', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('services/(:num)', 'Api\V1\Catalogue::service/$1', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('categories', 'Api\V1\Catalogue::categories', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('providers', 'Api\V1\Catalogue::providers', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('providers/(:num)', 'Api\V1\Catalogue::provider/$1', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('locations', 'Api\V1\Catalogue::locations', ['filter' => 'bookingapi:catalogue.read']);
+    $routes->get('availability', 'Api\V1\Availability::slots', ['filter' => 'bookingapi:availability.read']);
+    $routes->get('appointments', 'Api\V1\Appointments::index', ['filter' => 'bookingapi:appointments.read']);
+    $routes->get('appointments/(:num)', 'Api\V1\Appointments::show/$1', ['filter' => 'bookingapi:appointments.read']);
+    $routes->post('appointments', 'Api\V1\Appointments::create', ['filter' => 'bookingapi:appointments.write']);
+    $routes->post('appointments/(:num)/reschedule', 'Api\V1\Appointments::reschedule/$1', ['filter' => 'bookingapi:appointments.write']);
+    $routes->post('appointments/(:num)/status', 'Api\V1\Appointments::status/$1', ['filter' => 'bookingapi:appointments.write']);
+    $routes->post('appointments/(:num)/notes', 'Api\V1\Appointments::notes/$1', ['filter' => 'bookingapi:appointments.write']);
+    $routes->get('customers', 'Api\V1\Customers::index', ['filter' => 'bookingapi:customers.read']);
+    $routes->get('customers/(:num)', 'Api\V1\Customers::show/$1', ['filter' => 'bookingapi:customers.read']);
+    $routes->post('customers', 'Api\V1\Customers::create', ['filter' => 'bookingapi:customers.write']);
+    $routes->post('customers/(:num)', 'Api\V1\Customers::update/$1', ['filter' => 'bookingapi:customers.write']);
+});
+// The API's reference, public but only where bookings are on.
+$routes->get('developers/bookings', 'Developers::bookings');
+$routes->get('developers/bookings/openapi.json', 'Developers::openapi');
 $routes->get('business/audit', 'Business\Audit::index', ['filter' => ['businessauth', 'businesscan:audit.view']]);
 // Phase 3: the scheduling engine, for every member (scoped inside).
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
@@ -299,6 +363,12 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->post('api/appointments/(:num)/reschedule', 'Business\Appointments::reschedule/$1');
     $routes->post('api/appointments/(:num)/status', 'Business\Appointments::status/$1');
     $routes->post('api/appointments/(:num)/notes', 'Business\Appointments::notes/$1');
+    $routes->post('api/appointments/(:num)/notify', 'Business\Appointments::notify/$1');
+});
+// Phase 8: deposits. Mark one paid or refunded from the details panel, and the list.
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:payments.manage']], static function ($routes) {
+    $routes->post('api/appointments/(:num)/payment', 'Business\Appointments::payment/$1');
+    $routes->get('payments', 'Business\Payments::index');
 });
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.manage']], static function ($routes) {
     $routes->get('customers', 'Business\Customers::index');
@@ -306,9 +376,12 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.
     $routes->post('customers/new', 'Business\Customers::create');
     $routes->get('api/customers', 'Business\Customers::lookup');
     $routes->get('customers/(:segment)', 'Business\Customers::show/$1');
+    $routes->post('customers/(:segment)/emails', 'Business\Customers::emailsAgain/$1');
     $routes->post('customers/(:segment)', 'Business\Customers::save/$1');
 });
 $routes->post('business/customers/(:segment)/delete', 'Business\Customers::delete/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
+// Phase 10: a customer's whole record, for a POPIA access request (admins).
+$routes->get('business/customers/(:segment)/export', 'Business\Customers::export/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
 // Phase 2: the catalogue, the team and time off.
 $routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
     $routes->get('invite/(:segment)', 'Business\Invite::show/$1');
@@ -491,6 +564,11 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
 
     // Form health: what every form submission did (FormHealthService). Read-only.
     $routes->get('forms', 'AdminForms::index');
+    // Online bookings across the platform (Phase 10, D12): counts and setup;
+    // a business's contents only through the logged support view.
+    $routes->get('bookings', 'AdminBookings::index');
+    $routes->post('bookings/(:num)/extend', 'AdminBookings::extend/$1');
+    $routes->post('bookings/(:num)/support', 'AdminBookings::support/$1');
     $routes->post('status/clear-mail', 'Admin::clearMailStatus');
 });
 
@@ -535,6 +613,34 @@ $routes->get('directory/at/(:segment)', 'Directory::venue/$1');
 // read "menu" as a province and 404. No province is called "menu", so no
 // landing page is shadowed.
 $routes->get('directory/(:segment)/menu', 'Directory::menu/$1');
+// Booking online from a profile (Phase 5, docs/bookings/routes.md). Literal
+// segments, so Directory::place() never reads "book" as a province.
+$routes->get('directory/(:segment)/book', 'Book::page/$1');
+$routes->post('directory/(:segment)/book', 'Book::store/$1');
+$routes->get('directory/(:segment)/book/days', 'Book::days/$1');
+$routes->get('directory/(:segment)/book/slots', 'Book::slots/$1');
+$routes->get('directory/(:segment)/book/terms', 'Book::terms/$1');
+// The customer's side: literal segments before book/{token}.
+// Stop a business's booking emails: GET asks, POST acts (RFC 8058 one
+// click posts here with no session; CSRF exempt like unsubscribe/*).
+$routes->get('book/unsubscribe/(:segment)', 'Book::unsubscribePage/$1');
+$routes->post('book/unsubscribe/(:segment)', 'Book::unsubscribe/$1');
+$routes->get('book/find', 'Book::find');
+$routes->post('book/find', 'Book::sendLinks');
+$routes->get('book/r/(:segment)', 'Book::reference/$1');
+$routes->get('book/customer/(:segment)', 'Book::customer/$1');
+$routes->get('book/customer/(:segment)/(:segment)', 'Book::manageFromCustomer/$1/$2');
+$routes->post('book/customer/(:segment)/(:segment)/reschedule', 'Book::rescheduleFromCustomer/$1/$2');
+$routes->post('book/customer/(:segment)/(:segment)/cancel', 'Book::cancelFromCustomer/$1/$2');
+$routes->post('book/customer/(:segment)/(:segment)/pay', 'Book::payFromCustomer/$1/$2');
+// Deposits (Phase 8): back from PayFast or Paystack, and PayFast's
+// notification (server to server, CSRF exempt, checked four ways).
+$routes->get('book/paid/(:segment)', 'Book::paid/$1');
+$routes->post('book/payfast/notify', 'Book::payfastNotify');
+$routes->get('book/(:segment)', 'Book::manage/$1');
+$routes->post('book/(:segment)/reschedule', 'Book::reschedule/$1');
+$routes->post('book/(:segment)/cancel', 'Book::cancel/$1');
+$routes->post('book/(:segment)/pay', 'Book::pay/$1');
 // "Show email" on a profile fetches the address from here, as JSON. Same
 // ordering rule as menu above; no province is called "email" either.
 $routes->get('directory/(:segment)/email', 'Directory::email/$1');

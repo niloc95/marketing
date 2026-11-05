@@ -5,6 +5,9 @@ namespace App\Services\Bookings;
 use App\Models\Bookings\BookingAppointmentFieldModel;
 use App\Models\Bookings\BookingAppointmentModel;
 use App\Services\Bookings\Calendar\CalendarQuery;
+use App\Services\Bookings\Integrations\DeliveryModes;
+use App\Services\Bookings\Integrations\Outbox;
+use App\Services\Bookings\Notifications\NotificationQueue;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -26,7 +29,9 @@ use DateTimeZone;
  *   one checks its time again.
  * - The service of an existing appointment does not change: cancel and book
  *   again (its snapshots, price and gaps belong to the service booked).
- * - Notifications are Phase 6; nothing is sent here.
+ * - Every change queues its messages (Notifications\NotificationQueue, Phase
+ *   6) and its webhooks, calendar and meeting updates (Integrations\Outbox,
+ *   Phase 9) after it is written; nothing is sent inside the request.
  */
 class AppointmentService
 {
@@ -65,8 +70,7 @@ class AppointmentService
         ?BookingAudit $audit = null,
     ) {
         $this->listingId = (int) $listing['id'];
-        $tz              = (string) ($listing['timezone'] ?? '');
-        $this->tz        = new DateTimeZone(in_array($tz, timezone_identifiers_list(), true) ? $tz : 'Africa/Johannesburg');
+        $this->tz        = \App\Services\Bookings\BusinessLocale::zone($listing);
         $this->now       = $now ?? new DateTimeImmutable('now');
         $this->audit     = $audit ?? new BookingAudit();
     }
@@ -118,6 +122,9 @@ class AppointmentService
         $out['status_label'] = AppointmentStatus::label($out['status']);
         $out['upcoming']     = $this->isUpcoming($row);
         $out['created_at']   = $row['created_at'];
+        $out['messages']     = $this->messages($id);
+        $out['whatsapp_url'] = $this->whatsappUrl($row);
+        $out['payment']      = (new Payments\DepositService($this->listing, $this->now))->summary($row);
 
         return $out;
     }
@@ -127,11 +134,12 @@ class AppointmentService
      *
      * @param array<string,mixed> $input provider_id, service_id, date (Y-m-d), time (H:i),
      *                                   customer_id or first_name, last_name, email, phone,
-     *                                   notes, status (pending|confirmed), field_1 ... field_6
+     *                                   notes, status (pending|confirmed), delivery_mode, field_1 ... field_6
+     * @param string              $source business, or api for /api/v1
      *
      * @return array{id:?int,hash:?string,reference:?string,errors:array<string,string>}
      */
-    public function create(array $input): array
+    public function create(array $input, string $source = 'business'): array
     {
         $errors     = [];
         $providerId = (int) ($input['provider_id'] ?? 0);
@@ -164,6 +172,13 @@ class AppointmentService
             $errors += $customerErrors;
         }
         $errors += $customers->answerErrors($input);
+        $mode    = null;
+        if ($serviceId > 0 && ($service = (new CatalogueService($this->listingId))->service($serviceId)) !== null) {
+            $mode = DeliveryModes::pick($this->listingId, $service, isset($input['delivery_mode']) ? (string) $input['delivery_mode'] : null);
+            if ($mode === null) {
+                $errors['delivery_mode'] = 'Choose how this service is given.';
+            }
+        }
         if ($errors !== []) {
             return ['id' => null, 'hash' => null, 'reference' => null, 'errors' => $errors];
         }
@@ -180,8 +195,9 @@ class AppointmentService
             'start_at'             => $start,
             'status'               => $status,
             'notes'                => $this->notes($input['notes'] ?? null),
+            'delivery_mode'        => $mode ?? 'onsite',
             'created_by_member_id' => $this->memberId,
-        ], false, $this->now);
+        ] + ($source !== 'business' ? ['source' => $source] : []), false, $this->now);
         if ($result['problem'] !== null) {
             return ['id' => null, 'hash' => null, 'reference' => null, 'errors' => ['time' => self::PROBLEMS[$result['problem']] ?? 'That time cannot be booked.']];
         }
@@ -189,6 +205,7 @@ class AppointmentService
         $id = (int) $result['id'];
         $this->saveAnswers($id, $customerId, (new CustomerService($this->listingId))->answers($input));
         $this->audit->record($this->listingId, $this->accountId, 'appointment.created', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId]);
+        $this->notify($id, NotificationQueue::statusEvent($status), false, 'created');
         $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
 
         return ['id' => $id, 'hash' => (string) $row['hash'], 'reference' => $result['reference'], 'errors' => []];
@@ -224,6 +241,7 @@ class AppointmentService
             $this->audit->record($this->listingId, $this->accountId, 'appointment.rescheduled', 'appointment', $id,
                 array_map(static fn (array $c) => $c[0], $moved['changes']),
                 array_map(static fn (array $c) => $c[1], $moved['changes']));
+            $this->notify($id, 'rescheduled');
         }
 
         return ['ok' => true, 'error' => null];
@@ -263,6 +281,7 @@ class AppointmentService
             'cancelled_at' => $status === BookingAppointmentModel::STATUS_CANCELLED ? gmdate('Y-m-d H:i:s', $this->now->getTimestamp()) : null,
         ]);
         $this->audit->record($this->listingId, $this->accountId, 'appointment.status', 'appointment', $id, $row['status'], $status);
+        $this->notify($id, NotificationQueue::statusEvent($status));
 
         return ['ok' => true, 'error' => null];
     }
@@ -278,6 +297,88 @@ class AppointmentService
 
         return ['ok' => true, 'error' => null];
     }
+
+    // The customer's side (Phase 5, PublicBookingService calls these)
+
+    /** How long a customer's change or cancel link works after the appointment ends. */
+    public const TOKEN_DAYS_AFTER = 30;
+
+    /**
+     * A fresh change or cancel link for the customer. Only its hash is
+     * stored, so the raw token exists only in the link given out now; any
+     * earlier link stops working (Bookings rotated it the same way).
+     */
+    public function issuePublicToken(int $id): ?string
+    {
+        $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        if (! is_array($row)) {
+            return null;
+        }
+        $token = \App\Libraries\TokenHash::mint();
+        BookingAppointmentModel::forBusiness($this->listingId)->update($id, [
+            'public_token_hash'    => \App\Libraries\TokenHash::hash($token),
+            'public_token_expires' => (new DateTimeImmutable((string) $row['end_at'], new DateTimeZone('UTC')))
+                ->modify('+' . self::TOKEN_DAYS_AFTER . ' days')->format('Y-m-d H:i:s'),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * The customer moves their booking to another time offered online
+     * (`public = true`: the grid, notice and horizon apply), with the same
+     * person. Policy windows are PublicBookingService's to check first.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function moveForCustomer(int $id, string $startUtc): array
+    {
+        $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        if (! is_array($row) || ! $this->isUpcoming($row)) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_upcoming']];
+        }
+        $moved = BookingLock::move($this->listing, $id, $startUtc, null, true, $this->now);
+        if ($moved['problem'] !== null) {
+            return ['ok' => false, 'error' => self::CUSTOMER_PROBLEMS[$moved['problem']] ?? self::CUSTOMER_PROBLEMS[AvailabilityService::BUSY]];
+        }
+        $this->audit->record($this->listingId, null, 'appointment.rescheduled_by_customer', 'appointment', $id,
+            array_map(static fn (array $c) => $c[0], $moved['changes']),
+            array_map(static fn (array $c) => $c[1], $moved['changes']));
+        if ($moved['changes'] !== []) {
+            $this->notify($id, 'rescheduled', true);
+        }
+
+        return ['ok' => true, 'error' => null];
+    }
+
+    /** The customer cancels. Policy windows are PublicBookingService's to check first. */
+    public function cancelForCustomer(int $id): bool
+    {
+        $row = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        if (! is_array($row) || ! in_array($row['status'], AppointmentStatus::UPCOMING, true)) {
+            return false;
+        }
+        BookingAppointmentModel::forBusiness($this->listingId)->update($id, [
+            'status'       => BookingAppointmentModel::STATUS_CANCELLED,
+            'cancelled_at' => gmdate('Y-m-d H:i:s', $this->now->getTimestamp()),
+        ]);
+        $this->audit->record($this->listingId, null, 'appointment.cancelled_by_customer', 'appointment', $id, $row['status'], BookingAppointmentModel::STATUS_CANCELLED);
+        $this->notify($id, 'cancelled', true);
+
+        return true;
+    }
+
+    /** What a reason code means, for the customer (copy.md). */
+    public const CUSTOMER_PROBLEMS = [
+        AvailabilityService::PAST            => 'That time has passed. Choose another.',
+        AvailabilityService::TOO_SOON        => 'That time is too soon to book online. Choose a later one.',
+        AvailabilityService::TOO_FAR         => 'That date is too far ahead to book online.',
+        AvailabilityService::CLOSED          => 'The business is closed that day.',
+        AvailabilityService::OUTSIDE_HOURS   => 'That time is no longer offered. Choose another.',
+        AvailabilityService::BUSY            => 'Someone has just booked that time. Choose another.',
+        AvailabilityService::NOT_OFFERED     => 'That service cannot be booked online right now.',
+        AvailabilityService::NOT_ON_THE_GRID => 'Choose one of the times offered.',
+    ];
 
     /**
      * Find appointments by reference, customer name, email or phone
@@ -314,6 +415,83 @@ class AppointmentService
     }
 
     // Internals
+
+    /**
+     * "Send again": queue one message about this appointment now, on a
+     * channel the business has on. Sent within the minute by bookings:dispatch.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function resend(int $id, string $event, string $channel): array
+    {
+        if ($this->find($id) === null) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_found']];
+        }
+        if (! (new NotificationQueue($this->listingId, $this->now))->resend($id, $event, $channel)) {
+            return ['ok' => false, 'error' => 'That message cannot be sent. Check that the channel is set up in Settings, Messages.'];
+        }
+        $this->audit->record($this->listingId, $this->accountId, 'appointment.resend', 'appointment', $id, null, $event . '.' . $channel);
+
+        return ['ok' => true, 'error' => null];
+    }
+
+    /**
+     * The last messages about this appointment, for the details panel.
+     *
+     * @return list<array{event:string,channel:string,outcome:string,recipient_type:string,at:string}>
+     */
+    private function messages(int $id): array
+    {
+        $rows = \App\Models\Bookings\BookingDeliveryLogModel::forBusiness($this->listingId)
+            ->where('appointment_id', $id)->whereIn('outcome', ['sent', 'failed'])->orderBy('id', 'DESC')->findAll(10);
+
+        return array_map(fn (array $r): array => [
+            'event'          => \Config\BookingNotifications::EVENTS[$r['event']] ?? $r['event'],
+            'channel'        => \Config\BookingNotifications::CHANNEL_LABELS[$r['channel']] ?? $r['channel'],
+            'outcome'        => \App\Services\Bookings\Notifications\DeliveryLog::LABELS[$r['outcome']] ?? $r['outcome'],
+            'recipient_type' => (string) $r['recipient_type'],
+            'at'             => (new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC')))->setTimezone($this->tz)->format('j M H:i'),
+        ], $rows);
+    }
+
+    /** "Open a WhatsApp chat" (WhatsApp set to link mode), or ''. @param array<string,mixed> $row with customer_phone */
+    private function whatsappUrl(array $row): string
+    {
+        if (! (new \App\Services\Bookings\Notifications\BookingIntegrations($this->listingId))->linkMode()) {
+            return '';
+        }
+        $to = \App\Services\Bookings\Notifications\Channels::e164((string) ($row['customer_phone'] ?? ''), (string) ($this->listing['country_code'] ?? 'ZA'));
+        if ($to === null) {
+            return '';
+        }
+        $event    = NotificationQueue::statusEvent((string) $row['status']) ?? 'confirmed';
+        $context  = \App\Services\Bookings\Notifications\MessageContext::build($this->listing, (int) $row['id'], $this->now);
+        $template = (new \App\Services\Bookings\Notifications\NotificationTemplates($this->listingId))->get($event, 'whatsapp');
+        if ($context === null || $template === null) {
+            return '';
+        }
+
+        return \App\Services\Bookings\Notifications\Channels::whatsappLink($to, \App\Services\Bookings\Notifications\NotificationTemplates::fill($template, $context['values'])['body']);
+    }
+
+    /**
+     * After every appointment change: the dashboard figures start again
+     * (BookingMetricsCache), and the messages are queued (the queue never throws).
+     */
+    /**
+     * After every change: the figures, the messages, and the outside world
+     * (webhooks, Google Calendar, Zoom, Phase 9).
+     *
+     * @param string|null $change created, rescheduled or status; null works it out from the event
+     */
+    public function notify(int $id, ?string $event, bool $byCustomer = false, ?string $change = null): void
+    {
+        BookingMetricsCache::forget($this->listingId);
+        if ($event !== null) {
+            (new NotificationQueue($this->listingId, $this->now))->appointmentEvent($id, $event, $byCustomer);
+        }
+        (new Outbox($this->listing, $this->now))->appointmentChanged($id, $change ?? ($event === 'rescheduled' ? 'rescheduled' : 'status'));
+    }
 
     private function inScope(int $providerId): bool
     {

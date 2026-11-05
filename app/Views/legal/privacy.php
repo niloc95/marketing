@@ -220,6 +220,22 @@ $contact   = config('Directory')->adminEmail();
                 <li>We keep the order record, including when you accepted the terms of the service, as proof of the purchase.</li>
             </ul>
 
+            <?php if (config('Bookings')->enabled()): ?>
+            <?php // Online bookings (Phase 10, decision D12). Draft for the owner to read before release; shown only while bookings are on. ?>
+            <h2 id="online-bookings">12a. Online bookings</h2>
+            <p>A business on <?= esc($siteName) ?> can take bookings online. When you book with a business, the business decides what it asks you and what it does with your booking: it is the responsible party for your information, and we process it on its behalf to run its bookings.</p>
+            <ul>
+                <li><strong>What we hold for the business:</strong> your name, email address and phone number, the address and notes you give, your answers to the business's questions, and your bookings with it. The same person booking with two businesses is two separate records; one business never sees another's.</li>
+                <li><strong>Messages:</strong> we send your booking emails for the business. If the business connects its own WhatsApp account, those messages go through that account. You can stop a business's booking emails from the link in any of them.</li>
+                <li><strong>Deposits:</strong> a deposit is paid into the business's own PayFast or Paystack account. We do not see or store your card details, and we never hold the money.</li>
+                <li><strong>Online meetings and calendars:</strong> if the business uses Zoom or Google Calendar, the time, the service and your name go to the business's own Zoom account or Google calendar. A Jitsi meeting link holds no personal information.</li>
+                <li><strong>How long:</strong> your details are kept for 24 months after your last appointment with a business, then removed. The business can remove them sooner.</li>
+                <li><strong>Your rights:</strong> ask the business what it holds about you, to correct it or to delete it; it can download your whole record and answer you. You may also <a href="<?= base_url('contact') ?>">contact us</a>, and we will pass your request to the business.</li>
+                <li><strong>Our staff:</strong> we do not look at a business's bookings. If a business needs our help, our support team may open them for that reason only, and the business sees that in its activity log.</li>
+            </ul>
+            <p>The people who work for a business on <?= esc($siteName) ?> sign in with their email address and a password. We keep their name and email, and a record of what they change, for the business's own activity log.</p>
+            <?php endif ?>
+
             <h2>13. Information collected automatically</h2>
             <p>When you use <?= esc($siteName) ?>, certain information may be processed automatically.</p>
 

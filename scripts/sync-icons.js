@@ -59,7 +59,7 @@ const ICONS = [
   // Map controls.
   'maximize',
   // Marketing site feature and contact rows.
-  'calendar-days', 'users', 'circle-user', 'mail', 'phone',
+  'calendar-days', 'users', 'circle-user', 'mail', 'phone', 'bell', 'message-circle',
   // Category groups — see category_group_icon() in directory_ui_helper.php.
   // This list must stay in step with that map, including its 'folder' fallback.
   'stethoscope', 'sparkles', 'car', 'scale', 'wrench', 'briefcase',
@@ -81,6 +81,8 @@ const ICONS = [
   'calendar',
   // Online bookings: the /business navigation (layouts/business.php).
   'layout-dashboard', 'settings', 'history', 'list', 'users', 'calendar-off', 'plus',
+  // The dashboard and analytics (business/home.php, layouts/business.php).
+  'chart-column', 'wallet', 'circle-alert', 'info',
   // The calendar and customers (business/calendar.php, business/customer*.php).
   'contact', 'user',
 ];

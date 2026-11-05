@@ -91,6 +91,18 @@ class BusinessAuth implements FilterInterface
             return redirect()->to(base_url('business/choose'));
         }
 
+        // The business area is on the business's own site's host (D2). Pages
+        // follow it there (the visitor signs in on that host); a form posted
+        // to the wrong host is refused.
+        if (site()->forRow($listing) !== site()->key()) {
+            session()->remove(BusinessSession::LISTING);
+            if ($request->getMethod() !== 'GET') {
+                throw PageNotFoundException::forPageNotFound();
+            }
+
+            return redirect()->to(listing_site_url($listing, 'business'));
+        }
+
         $context->set($account, $member, $listing);
 
         return null;

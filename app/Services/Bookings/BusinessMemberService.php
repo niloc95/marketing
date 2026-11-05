@@ -78,4 +78,11 @@ class BusinessMemberService
             'status'     => BusinessMemberModel::STATUS_ACTIVE,
         ]);
     }
+
+    /** A member's own choice to get booking notices by email (Phase 6). */
+    public function setNotify(int $listingId, int $memberId, bool $on, ?int $accountId): void
+    {
+        BusinessMemberModel::forBusiness($listingId)->update($memberId, ['notify_on_appointments' => $on ? 1 : 0]);
+        (new BookingAudit())->record($listingId, $accountId, 'member.notify', 'member', $memberId, null, $on);
+    }
 }

@@ -412,6 +412,27 @@ if (! function_exists('listing_type_badge')) {
     }
 }
 
+if (! function_exists('listing_books_online_badge')) {
+    /**
+     * "Book online" on a discovery card, for a profile that takes bookings on
+     * this site (docs/bookings/, Phase 5). A cheap check on the row only: the
+     * booking page itself confirms there is something to book. Never part of
+     * the ordering or the quality score.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_books_online_badge(array $listing): string
+    {
+        if (! (int) ($listing['bookings_enabled'] ?? 0)
+            || ! config('Bookings')->siteAllowed(site()->key())
+            || site()->forRow($listing) !== site()->key()) {
+            return '';
+        }
+
+        return '<span class="badge badge-type gap-1">' . lucide('calendar-days', 'h-3.5 w-3.5 shrink-0') . 'Book online</span>';
+    }
+}
+
 if (! function_exists('category_group_style')) {
     /**
      * How a category group is drawn: its icon and its colour.

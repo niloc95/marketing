@@ -102,6 +102,8 @@ class CustomerService
         }
         $c     = 'xs_booking_customers';
         $model = BookingCustomerModel::forBusiness($this->listingId)->select($c . '.*');
+        // Customers past the keeping period (Privacy\Retention) are kept only as counts.
+        $model->where($c . '.purged_at', null);
         $query = trim($query);
         if ($query !== '') {
             $model->groupStart()

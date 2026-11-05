@@ -45,6 +45,18 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <input id="<?= $prefix ?>-time" type="time" name="time" step="300" value="<?= esc($val('time'), 'attr') ?>" required>
         <?= $err('time') ?>
     </div>
+    <?php if (array_filter($services, static fn (array $s): bool => count((array) $s['delivery_modes']) > 1 || (array) $s['delivery_modes'] !== ['onsite'])): ?>
+        <div class="field sm:col-span-2">
+            <label for="<?= $prefix ?>-mode">How</label>
+            <select id="<?= $prefix ?>-mode" name="delivery_mode">
+                <option value="">As the service is usually given</option>
+                <?php foreach (\App\Services\Bookings\CatalogueService::DELIVERY_MODES as $mode => $label): ?>
+                    <option value="<?= $mode ?>"<?= $val('delivery_mode') === $mode ? ' selected' : '' ?>><?= esc($label) ?></option>
+                <?php endforeach ?>
+            </select>
+            <?= $err('delivery_mode') ?>
+        </div>
+    <?php endif ?>
 </div>
 
 <fieldset class="mt-2" data-customer-picker>

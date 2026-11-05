@@ -668,7 +668,8 @@ if (! function_exists('schema_local_business')) {
         );
 
         // The owner's own booking page, as the action a search result can offer.
-        $bookingUrl = safe_external_url($l['booking_url'] ?? '');
+        // Booking on the platform (Directory::show's `_book_url`) wins over an outside link.
+        $bookingUrl = ($l['_book_url'] ?? '') !== '' ? (string) $l['_book_url'] : safe_external_url($l['booking_url'] ?? '');
         $reserve    = $bookingUrl !== '' ? ['@type' => 'ReserveAction', 'target' => $bookingUrl] : null;
 
         // The named people inside the business. Present only for a listing with

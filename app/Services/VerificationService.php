@@ -422,7 +422,7 @@ class VerificationService
             return $cached;
         }
 
-        $name = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile'][$product] ?? 'Verified Business badge';
+        $name = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile', 'bookings' => 'WebScheduler Local online bookings'][$product] ?? 'Verified Business badge';
         $code = $this->paystack->createPlan(
             $name . ($cycle === DirectoryVerificationModel::CYCLE_YEARLY ? ', yearly' : ', monthly'),
             $cycle === DirectoryVerificationModel::CYCLE_YEARLY ? Paystack::INTERVAL_ANNUALLY : Paystack::INTERVAL_MONTHLY,

@@ -1,7 +1,7 @@
 # Route map
 
 Bookings route → Local route. All Local routes are on both hosts unless a decision limits
-them (D2: co.za first). Literal segments are declared before Local's catch alls
+them (T24: both sites, each business on its own site's host). Literal segments are declared before Local's catch alls
 (`directory/(:segment)/menu` is the model). `/directory/{a}/{b}` (`Directory::place`)
 would otherwise swallow `/directory/{slug}/book`.
 
@@ -18,7 +18,7 @@ New top level segments: `business`, `book`, `api`. Check `listing_reserved_slugs
 | none | `GET /manage/bookings` (turn on, from the owner magic link session) | 1 |
 | none | `GET /business/invite/{token}` (accept an invitation, set a password) | 2 |
 | `/profile/*` | `/business/account` | 1 |
-| `/dashboard` | `GET /business` | 7 (shell in 1) |
+| `/dashboard` | `GET /business` | 7 (shell in 1; built 5 Nov 2026) |
 | `/appointments` (+ `?open={hash}`) | `/business/calendar` (+ `?open={hash}`) | 4 |
 | `/appointments/create`, `edit/{hash}` | modal inside the calendar, plus `/business/appointments/new` without JS | 4 |
 | `/customer-management/*` | `/business/customers`, `/business/customers/{hash}` | 4 |
@@ -26,7 +26,7 @@ New top level segments: `business`, `book`, `api`. Check `listing_reserved_slugs
 | `/user-management/*`, `/providers/{id}/schedule`, `/provider-staff/*`, `/staff-providers/*` | `/business/team`, `/business/team/{id}`, `/business/team/{id}/hours` | 2 |
 | none (blocked times had no UI) | `/business/time-off` | 2 |
 | `/notifications` | `/business/notifications` | 6 |
-| `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/business/analytics` (tabs by `?tab=`) | 7 |
+| `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/business/analytics` (`?tab=overview|services|team|customers`, `?period=7d|30d|90d|12m`, `?provider=`; built) | 7 |
 | `/settings` (tabs) | `/business/settings/{tab}` | 1 to 9 |
 | none | `/business/audit` | 1 |
 | `/search`, `/dashboard/search` | `/business/search` | 4 |
@@ -40,11 +40,11 @@ under `/business/api/` so session and CSRF rules stay simple.
 | Bookings | Local | Phase |
 |---|---|---|
 | `GET /api/calendar/day|week|month` | `GET /business/api/calendar/{view}` | 4 |
-| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); payment and notify in 6 and 8 | 4, 6, 8 |
+| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); `POST /{id}/notify` (6); `POST /{id}/payment` {action: paid or refunded} (8, `payments.manage`); `/business/payments` and `/business/settings/payments` (+ `/check`) (8) | 4, 6, 8 |
 | `GET /api/availability/*` | `GET /business/api/availability/*` | 3 |
 | `GET /api/customers/*` | `/business/api/customers/*` | 4 |
-| `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `/business/api/dashboard/*` | 7 |
-| `GET/POST integrations/*` | `/business/api/integrations/*` | 9 |
+| `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /business/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
+| `GET/POST integrations/*` | plain forms under `/business/settings/connections/*` (zoom, jitsi, zoom/check, google, google/check, google/disconnect, webhook, webhook/test, webhook/secret, webhook/remove, webhook/{id}/retry) and `/business/settings/api/keys` (+ `/{id}/revoke`); built 5 Nov 2026 | 9 |
 
 ## Public booking (no account; session starts only at the details step)
 
@@ -59,23 +59,37 @@ under `/business/api/` so session and CSRF rules stay simple.
 | `GET /booking/search?email|phone` | `POST /book/find` (emails the customer their link; same answer whether found or not) | 5 |
 | `/booking/legal` | `GET /directory/{slug}/book/terms` | 5 |
 | `/booking/p/*`, `/booking/s/*`, `/booking/discover`, booking sitemap | none (profile, category and discovery pages already cover it) | skip |
-| `/booking/payment/return|cancel` | `GET /book/{token}/paid`, `/book/{token}/unpaid` | 8 |
+| `/booking/payment/return|cancel` | `POST /book/{token}/pay` and `/book/customer/{hash}/{appointment}/pay` (Paystack checkout, or the PayFast form page, honeypot exempt), `GET /book/paid/{payment hash}` (return and cancel both land here, then on to the customer page); built 5 Nov 2026 | 8 |
 | none | `GET/POST /book/unsubscribe/{token}` (CSRF exempt POST, RFC 8058) | 6 |
 
 ## Webhooks in (CSRF, honeypot and BotTrap exempt, like `payfast/notify`)
 
 | Bookings | Local | Phase |
 |---|---|---|
-| `POST /public/payments/payfast/notify` | depends on D6 (gateway); Paystack: the existing `POST paystack/webhook` routed by reference prefix `WSB-BOOK` | 8 |
+| `POST /public/payments/payfast/notify` | `POST /book/payfast/notify` (one address for every business; the reference finds the business, its passphrase checks the notice). Paystack has no webhook here: verified on return and by `bookings:payments`; built 5 Nov 2026 | 8 |
 | `POST /public/payments/stripe/webhook` | `POST /book/stripe/webhook` if D6 says Stripe | later |
-| `/oauth/google/authorize|callback` | `/business/integrations/google`, `/business/integrations/google/callback` | 9 |
+| `/oauth/google/authorize|callback` | `POST /business/settings/connections/google` (state in the session), `GET /business/connections/google/callback`; built 5 Nov 2026 | 9 |
 
 ## Public API (Phase 9, Bearer key, JSON, `{data, meta}` / `{error}`)
 
 `/api/v1/*` with Bookings' resource groups (appointments, availability, customers,
 services, categories, providers, locations, settings reads), scoped to the key's business.
-The unversioned `/api` alias is not carried. CORS stays same origin unless the business
-lists origins.
+The unversioned `/api` alias is not carried. Built 5 Nov 2026: `GET business`, `services`
+(+ `/{id}`), `categories`, `providers` (+ `/{id}`), `locations`, `availability`,
+`appointments` (+ `/{id}`), `customers` (+ `/{id}`); `POST appointments`,
+`appointments/{id}/reschedule|status|notes`, `customers`, `customers/{id}`. Each route names
+its scope (`bookingapi:<scope>`); `docs/bookings/openapi.json` describes exactly these
+(BookingIntegrationsTest checks). No CORS at all (server to server; a browser cannot send
+the Bearer header across sites, which is why `api/v1/*` is CSRF exempt). Reference page
+`GET /developers/bookings` and `GET /developers/bookings/openapi.json`, 404 where bookings
+are off.
+
+## Phase 10
+
+`POST /business/settings/plan/subscribe`, `/cancel`, `GET /business/plan/paystack` (return
+from Paystack), tab `/business/settings/plan` (only while the plan is required);
+`GET /business/customers/{hash}/export` (admins); `GET /admin/bookings`,
+`POST /admin/bookings/{id}/extend`, `POST /admin/bookings/{id}/support`.
 
 ## Cron
 
@@ -83,6 +97,8 @@ lists origins.
 |---|---|---|
 | `* * * * * notifications:dispatch-queue` | `* * * * * bookings:dispatch` (all businesses, lock file, time box) | 6 |
 | `notifications:purge-delivery-logs`, `audit:purge-logs` | `bookings:prune` daily, joins Local's 03:xx block | 6 |
-| none | `bookings:sweep` (expire unpaid holds, retention) | 8, 10 |
+| none | `bookings:dispatch` runs the outbox (webhooks, Google, Zoom) before the messages each minute; no new cron line (Phase 9) | 9 |
+| none | `40 4 bookings:plans` (trial reminders, missed renewals) and `45 4 bookings:retention` (POPIA) | 10 |
+| none | `*/5 bookings:payments`: ask Paystack about open payments, free unpaid holds (built 5 Nov 2026); retention sweep in 10 | 8, 10 |
 
 Each new command goes into `deploy/cron/webscheduler` and the live `/etc/cron.d/webscheduler`.

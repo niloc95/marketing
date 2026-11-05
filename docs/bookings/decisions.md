@@ -17,22 +17,22 @@
 | T11 | Dashboard at `/business` on the same host (was D4) | owner, 4 Nov 2026 |
 | T12 | Email + password accounts with lockout for business people; magic link sign in also offered; owners keep the magic link for `/manage` (was D5) | owner, 4 Nov 2026 |
 | T13 | Vite in Local for the dashboard bundle only; public pages keep Tailwind CLI and `directory.js` (was D7) | owner, 4 Nov 2026 |
+| T14 | One services list (was D3): the profile keeps its own "Services and prices"; bookings add the Book online button and the booking page, nothing is hidden | owner, 5 Nov 2026 |
+| T15 | Deposits (was D6): each business connects its **own** PayFast or Paystack account and the money goes straight to it. We are not part of a business's billing to its customers: no subaccounts, no fee, never the merchant of record. Separate from the business's own subscription to us | owner, 5 Nov 2026 |
+| T16 | Refunds and 2FA (was D9): later. Refunds are done in the business's own gateway and marked refunded in /business | owner, 5 Nov 2026 |
 
-## Open: owner to answer before Phase 1
+| T18 | Bookings plan (was D1): a paid monthly plan with a 30 day free trial, through Paystack, behind `bookings.planRequired`; price set by the owner (`bookings.planMonthly`) | owner, 5 Nov 2026 |
+| T19 | Retention and admin access (was D12): customers' personal details removed 24 months after their last appointment; platform admin sees counts and setup, plus a support view that needs a reason and is logged in the business's audit log | owner, 5 Nov 2026 |
+| T20 | SMS removed completely (was D8): no SMS channel, no Clickatell; messages are email, and WhatsApp on the business's own account (link, Twilio or Meta), which it pays itself. Migration `2026-11-20-100000_RemoveBookingSms` clears SMS rows | owner, 5 Nov 2026 |
+| T21 | `encryption.key` on production (was D14): still needed after T20, for the business's WhatsApp, PayFast/Paystack, Zoom, Google and webhook accounts. Set at the release, with the owner's OK at that step; never rotated after | owner, 5 Nov 2026 |
+| T22 | Google Calendar (was D15): one platform OAuth client; the owner creates it in Google Cloud (redirect `https://local.webscheduler.co.za/business/connections/google/callback`, scope `calendar.events`) and applies for Google's verification; the button shows once `bookings.googleClientId` and `bookings.googleClientSecret` are set | owner, 5 Nov 2026 |
+| T23 | Bookings plan prices (was D16): by bookable people, Solo (1) R160, Team (up to 5) R420, Business (6 or more) R890 a month; `Config\Bookings::$planTiers`, prices overridable with `bookings.planPrices`. Growing or shrinking past a tier offers a move, which charges the new price, adds a month and stops the old subscription | owner, 5 Nov 2026 |
+| T24 | Sites (was D2): online bookings on both sites. A business uses its own site's host for the booking page, `/business` and the API (the wrong host redirects, or 404s for a form or an API call); prices in its country's currency (`BusinessLocale`), its own clock; no deposits abroad (rand only, the business's own PayFast or Paystack in South Africa; Stripe later); the plan abroad shows US dollars (US$8.99 / US$23.99 / US$49.99, `planTiers` `usd`) and is charged in rand at the Plus rate (`usd_zar_rate@app`), with no rand figure on .app | owner, 5 Nov 2026 |
+| T25 | Languages (was D10): English only | owner, 5 Nov 2026 |
+| T26 | Name in copy (was D11): the feature is called **Bookings**; WebScheduler Local stays the platform name | owner, 5 Nov 2026 |
+| T27 | Import from frozen Bookings installs (was D13): yes, per customer and with their OK, after launch | owner, 5 Nov 2026 |
+| T17 | Zoom: each business brings its own Zoom app (Server to Server OAuth), as WhatsApp and payments (D8, T15). Jitsi (meet.jit.si) needs no account | Phase 9 build, 5 Nov 2026 |
 
-Each has a recommendation and is needed by the phase shown. D4, D5 and D7 were settled on
-4 Nov 2026 (T11 to T13), which unblocks Phase 1.
+## Open
 
-| # | Question | Recommendation | Needed by |
-|---|---|---|---|
-| D1 | **Who can turn bookings on?** (a) every free profile, (b) Verified / Plus only, (c) a new paid Bookings plan (like R160 / R420 / R890 a month) | (c) a paid plan with a free trial: booking costs us SMS, WhatsApp and mail, and support. Free profiles see the offer. Ranking never changes. | Phase 10 (built with a switch, so the code does not wait) |
-| D2 | **Sites:** co.za only first, or .app too? | co.za first. .app later with Stripe or Paystack USD deposits and no rand figures. | Phase 5 |
-| D3 | **One services list or two?** Should the profile's public "Services and prices" come from the booking services when bookings are on? | Yes: when bookings are on, the public list is the booking services (name, price, duration, Book button), and the old list is hidden, not deleted. | Phase 2 |
-| D6 | **Deposit gateway:** money must reach the business, not us. Paystack subaccounts (split payments to the business's bank account, our fee optional), or each business's own PayFast merchant details as in Bookings? | Paystack subaccounts: Local already runs Paystack, a business only gives bank details, and one webhook serves everyone. PayFast per business stays possible later. | Phase 8 |
-| D8 | **SMS and WhatsApp cost:** the business brings its own Twilio / Clickatell / Meta account (as in Bookings), or we resell? | Business brings its own at launch; resold credits later. | Phase 6 |
-| D9 | **Refunds and 2FA:** build now or later? | Later, both. Refunds are done in the gateway dashboard at first. | Phase 8 |
-| D10 | **Languages:** English only? | English only. | Phase 1 |
-| D11 | **Name in copy:** what owners and customers see. "Bookings", "WebScheduler Bookings", or "Online bookings on WebScheduler Local"? | "Online bookings" as the feature, "WebScheduler Local" as the platform. | Phase 1 |
-| D12 | **Customer data retention and platform admin access** (POPIA): how long to keep customers and appointments after the last booking, whether platform admin may open appointment contents | Keep 24 months after the last appointment, then delete the personal fields. Platform admin sees counts and setup only, plus a logged "open for support" action. | Phase 10 (privacy policy update before launch) |
-| D13 | **Import from frozen Bookings installs:** offer it later? | Yes, per customer and with their OK, after launch. | after Phase 10 |
-| D14 | **`encryption.key` on production** (still missing, noted in the Partner Program): required for integration credentials | Generate and set it before Phase 6 is released (owner OK, production change). | Phase 6 release |
+None. D10, D11 and D13 were settled on 5 Nov 2026 (T25 to T27).

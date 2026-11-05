@@ -1,0 +1,2106 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "WebScheduler Local online bookings API",
+    "version": "1.0.0",
+    "description": "Read and book a business's appointments from your own programs. Each key belongs to one business and acts as the person who made it."
+  },
+  "servers": [
+    {
+      "url": "https://local.webscheduler.co.za/api/v1",
+      "description": "Businesses in South Africa"
+    },
+    {
+      "url": "https://local.webscheduler.app/api/v1",
+      "description": "Businesses in every other country"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Business"
+    },
+    {
+      "name": "Availability"
+    },
+    {
+      "name": "Appointments"
+    },
+    {
+      "name": "Customers"
+    }
+  ],
+  "paths": {
+    "/business": {
+      "get": {
+        "operationId": "getBusiness",
+        "summary": "The business",
+        "description": "The business the key belongs to, its time zone and booking rules.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "The business",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Business"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/services": {
+      "get": {
+        "operationId": "listServices",
+        "summary": "Services",
+        "description": "Services that can be booked, archived ones left out.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "Services",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Service"
+                      }
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "operationId": "getService",
+        "summary": "One service",
+        "description": "One service.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "The service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Service"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/categories": {
+      "get": {
+        "operationId": "listCategories",
+        "summary": "Service categories",
+        "description": "Categories of services.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "Categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Category"
+                      }
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "operationId": "listProviders",
+        "summary": "Team members",
+        "description": "People who can be booked. A key of a team member or reception sees only the people they work with.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "Team members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Provider"
+                      }
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/providers/{id}": {
+      "get": {
+        "operationId": "getProvider",
+        "summary": "One team member",
+        "description": "One team member, with the services they offer.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "The team member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Provider"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/locations": {
+      "get": {
+        "operationId": "listLocations",
+        "summary": "Locations",
+        "description": "The profile's main address and its branches.\n\nScope: `catalogue.read`.",
+        "tags": [
+          "Business"
+        ],
+        "x-scope": "catalogue.read",
+        "responses": {
+          "200": {
+            "description": "Locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/availability": {
+      "get": {
+        "operationId": "getAvailability",
+        "summary": "Free times",
+        "description": "Free start times for a service on one day. Leave provider_id out for anyone (admin keys only).\n\nScope: `availability.read`.",
+        "tags": [
+          "Availability"
+        ],
+        "x-scope": "availability.read",
+        "responses": {
+          "200": {
+            "description": "Free times",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Slot"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        },
+                        "as": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "service_id",
+            "in": "query",
+            "required": true,
+            "description": "The service.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "description": "YYYY-MM-DD in the business's time zone.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "description": "One team member.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "as",
+            "in": "query",
+            "required": false,
+            "description": "customer (default): the rules customers book under. business: every free minute in working time.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "customer",
+                "business"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/appointments": {
+      "get": {
+        "operationId": "listAppointments",
+        "summary": "Appointments",
+        "description": "Appointments, earliest first. A key of a team member or reception sees only the people they work with.\n\nScope: `appointments.read`.",
+        "tags": [
+          "Appointments"
+        ],
+        "x-scope": "appointments.read",
+        "responses": {
+          "200": {
+            "description": "Appointments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Appointment"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "per_page": {
+                          "type": "integer"
+                        },
+                        "pages": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "YYYY-MM-DD (business time) or ISO 8601: appointments ending after it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "YYYY-MM-DD (to the end of that day) or ISO 8601: appointments starting before it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "description": "ISO 8601: only appointments changed since then. Handy to keep a copy up to date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "One or more, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Up to 100, 25 when left out.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createAppointment",
+        "summary": "Book an appointment",
+        "description": "Book as the business does from its calendar: any free time in working hours. The same checks, messages and webhooks as a booking made in the calendar; source is api.\n\nScope: `appointments.write`.",
+        "tags": [
+          "Appointments"
+        ],
+        "x-scope": "appointments.write",
+        "responses": {
+          "201": {
+            "description": "Booked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Appointment"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentInput"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AppointmentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appointments/{id}": {
+      "get": {
+        "operationId": "getAppointment",
+        "summary": "One appointment",
+        "description": "One appointment.\n\nScope: `appointments.read`.",
+        "tags": [
+          "Appointments"
+        ],
+        "x-scope": "appointments.read",
+        "responses": {
+          "200": {
+            "description": "The appointment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Appointment"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/appointments/{id}/reschedule": {
+      "post": {
+        "operationId": "rescheduleAppointment",
+        "summary": "Move an appointment",
+        "description": "A new time, and optionally a new team member. Upcoming appointments only.\n\nScope: `appointments.write`.",
+        "tags": [
+          "Appointments"
+        ],
+        "x-scope": "appointments.write",
+        "responses": {
+          "200": {
+            "description": "Moved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Appointment"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "description": "Send `start`, or `date` and `time`.",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2030-01-07T10:00:00+02:00",
+                        "description": "ISO 8601 with an offset."
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "In the business's time zone."
+                      },
+                      "time": {
+                        "type": "string",
+                        "example": "10:00",
+                        "description": "In the business's time zone."
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "provider_id": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "description": "Send `start`, or `date` and `time`.",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2030-01-07T10:00:00+02:00",
+                        "description": "ISO 8601 with an offset."
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "In the business's time zone."
+                      },
+                      "time": {
+                        "type": "string",
+                        "example": "10:00",
+                        "description": "In the business's time zone."
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "provider_id": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appointments/{id}/status": {
+      "post": {
+        "operationId": "setAppointmentStatus",
+        "summary": "Change the status",
+        "description": "Confirm, cancel, mark completed or no show.\n\nScope: `appointments.write`.",
+        "tags": [
+          "Appointments"
+        ],
+        "x-scope": "appointments.write",
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Appointment"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "confirmed",
+                      "completed",
+                      "cancelled",
+                      "no_show"
+                    ]
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "confirmed",
+                      "completed",
+                      "cancelled",
+                      "no_show"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appointments/{id}/notes": {
+      "post": {
+        "operationId": "setAppointmentNotes",
+        "summary": "Change the notes",
+        "description": "The business's notes on the appointment.\n\nScope: `appointments.write`.",
+        "tags": [
+          "Appointments"
+        ],
+        "x-scope": "appointments.write",
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Appointment"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "Customers",
+        "description": "Customers, newest first.\n\nScope: `customers.read`.",
+        "tags": [
+          "Customers"
+        ],
+        "x-scope": "customers.read",
+        "responses": {
+          "200": {
+            "description": "Customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Customer"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "per_page": {
+                          "type": "integer"
+                        },
+                        "pages": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Name, email or phone.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Up to 100.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createCustomer",
+        "summary": "Add a customer",
+        "description": "first_name is required. An email may belong to one customer only.\n\nScope: `customers.write`.",
+        "tags": [
+          "Customers"
+        ],
+        "x-scope": "customers.write",
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Customer"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerInput"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "operationId": "getCustomer",
+        "summary": "One customer",
+        "description": "One customer.\n\nScope: `customers.read`.",
+        "tags": [
+          "Customers"
+        ],
+        "x-scope": "customers.read",
+        "responses": {
+          "200": {
+            "description": "The customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Customer"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "updateCustomer",
+        "summary": "Change a customer",
+        "description": "Only the fields sent change.\n\nScope: `customers.write`.",
+        "tags": [
+          "Customers"
+        ],
+        "x-scope": "customers.write",
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Customer"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Invalid"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerInput"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerInput"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "bookingEvent": {
+      "post": {
+        "summary": "Something happened to a booking",
+        "description": "Sent to the business's webhook address. Check the WebScheduler-Signature header before trusting it.",
+        "parameters": [
+          {
+            "name": "WebScheduler-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "t=1893484800,v1=5d41402abc4b2a76b9719d911017c592"
+            }
+          },
+          {
+            "name": "WebScheduler-Event",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "WebScheduler-Delivery",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Any 2xx answer means received. Anything else, or no answer in 10 seconds, is tried again after 1, 5, 30, 120 and 360 minutes."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Authorization: Bearer wsk_..."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "message",
+              "code"
+            ],
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "enum": [
+                  "unauthenticated",
+                  "invalid_key",
+                  "bookings_off",
+                  "plan_required",
+                  "rate_limited",
+                  "insufficient_scope",
+                  "not_found",
+                  "invalid",
+                  "refused"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Money": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "amount_cents": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string",
+            "example": "ZAR"
+          }
+        }
+      },
+      "Business": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "profile_url": {
+            "type": "string"
+          },
+          "booking_url": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Johannesburg"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "booking_rules": {
+            "type": "object",
+            "properties": {
+              "slot_step_min": {
+                "type": "integer"
+              },
+              "minimum_notice_min": {
+                "type": "integer"
+              },
+              "buffer_min": {
+                "type": "integer"
+              },
+              "future_limit_days": {
+                "type": "integer"
+              },
+              "default_status": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Service": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_min": {
+            "type": "integer"
+          },
+          "price": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "amount_cents": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string",
+                "example": "ZAR"
+              }
+            }
+          },
+          "deposit_pct": {
+            "type": "integer"
+          },
+          "category_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "delivery_modes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "onsite",
+                "online_zoom",
+                "online_jitsi"
+              ]
+            }
+          },
+          "provider_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "description": "A team member who can be booked.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bookable": {
+            "type": "boolean"
+          },
+          "service_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Only on GET /providers/{id}."
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "null is the profile's main address."
+          },
+          "name": {
+            "type": "string"
+          },
+          "main": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Slot": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "local_time": {
+            "type": "string",
+            "example": "10:00"
+          },
+          "provider_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "CustomerSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Customer": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CustomerSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ]
+      },
+      "CustomerInput": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "Appointment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "reference": {
+            "type": "string",
+            "example": "WSB-BOOK-000123"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "confirmed",
+              "completed",
+              "cancelled",
+              "no_show"
+            ]
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC."
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC."
+          },
+          "local_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "local_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "service": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "duration_min": {
+                "type": "integer"
+              }
+            }
+          },
+          "provider": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "customer": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CustomerSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              }
+            }
+          },
+          "delivery_mode": {
+            "type": "string",
+            "enum": [
+              "onsite",
+              "online_zoom",
+              "online_jitsi"
+            ]
+          },
+          "video_link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "price": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "amount_cents": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string",
+                "example": "ZAR"
+              }
+            }
+          },
+          "deposit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "due",
+                  "paid",
+                  "refunded",
+                  "expired",
+                  "refund_due"
+                ]
+              },
+              "amount_cents": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "business",
+              "public",
+              "api"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AppointmentInput": {
+        "allOf": [
+          {
+            "type": "object",
+            "description": "Send `start`, or `date` and `time`.",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2030-01-07T10:00:00+02:00",
+                "description": "ISO 8601 with an offset."
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "description": "In the business's time zone."
+              },
+              "time": {
+                "type": "string",
+                "example": "10:00",
+                "description": "In the business's time zone."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "service_id",
+              "provider_id"
+            ],
+            "properties": {
+              "service_id": {
+                "type": "integer"
+              },
+              "provider_id": {
+                "type": "integer"
+              },
+              "customer_id": {
+                "type": "integer",
+                "description": "An existing customer. Or send customer."
+              },
+              "customer": {
+                "$ref": "#/components/schemas/CustomerInput"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "confirmed"
+                ],
+                "description": "Confirmed when left out."
+              },
+              "delivery_mode": {
+                "type": "string",
+                "enum": [
+                  "onsite",
+                  "online_zoom",
+                  "online_jitsi"
+                ],
+                "description": "One the service offers. The service's first when left out."
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "evt_5f2b9c0e7d1a4b3c8e6f0a12"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "appointment.created",
+              "appointment.rescheduled",
+              "appointment.confirmed",
+              "appointment.pending",
+              "appointment.completed",
+              "appointment.no_show",
+              "appointment.cancelled",
+              "deposit.paid",
+              "ping"
+            ]
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "business": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "appointment": {
+                "$ref": "#/components/schemas/Appointment"
+              },
+              "payment": {
+                "type": "object",
+                "description": "Only on deposit.paid.",
+                "properties": {
+                  "reference": {
+                    "type": "string"
+                  },
+                  "gateway": {
+                    "type": "string"
+                  },
+                  "amount_cents": {
+                    "type": "integer"
+                  },
+                  "currency": {
+                    "type": "string"
+                  },
+                  "test": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthenticated": {
+        "description": "No key, or a key that is unknown, revoked or expired.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The key lacks the scope, its person's role does not allow it, or the business no longer takes bookings (bookings_off) or its plan has ended (plan_required).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "More than 120 requests a minute. Wait for Retry-After seconds.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found, or not in this key's reach.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Invalid": {
+        "description": "Something sent is missing or wrong; details.fields says what.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

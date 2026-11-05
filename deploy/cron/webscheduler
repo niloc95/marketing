@@ -141,3 +141,23 @@ MAILTO=""
 # by 4 Nov 2026. Sessions expire after 2 hours (Config\Session::$expiration),
 # so a day old file is dead; current visitors are never touched.
 20 4 * * * deploy find /var/www/listing/directory-app/writable/session -maxdepth 1 -type f -name 'ci_session*' -mmin +1440 -delete
+
+# Online bookings (docs/bookings/, Phase 6): queue due reminders and send
+# booking emails, SMS and WhatsApp, every minute for every business. Does
+# nothing while bookings.enabled is off. A MySQL lock stops overlapping runs.
+* * * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:dispatch --quiet
+
+# Booking deposits (Phase 8): ask Paystack about payments left open and free
+# times whose deposit was not paid in time. Nothing while bookings are off.
+*/5 * * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:payments --quiet
+
+# Booking delivery logs, finished queue rows and read notices older than 90 days.
+35 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:prune --quiet
+
+# The Bookings plan (Phase 10): trial reminders and missed Paystack renewals.
+# Nothing while bookings.planRequired is off.
+40 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:plans --quiet
+
+# POPIA retention for booking customers (Phase 10, D12): personal details go
+# 24 months after the last appointment. Nothing while bookings are off.
+45 4 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark bookings:retention --quiet

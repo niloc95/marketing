@@ -19,12 +19,14 @@ class Bookings extends BaseConfig
     public bool $enabled = false;
 
     /**
-     * Sites that may use bookings (Config\Sites keys). co.za first, decision
-     * D2 in docs/bookings/decisions.md; .app shows nothing until it is added.
+     * Sites that may use bookings (Config\Sites keys): both, since decision
+     * D2 (owner, 5 Nov 2026). A business uses the site its country belongs to;
+     * abroad it prices in its own currency, takes no deposits, and its plan is
+     * in US dollars charged in rand (BusinessLocale, BookingPlanService).
      *
      * @var list<string>
      */
-    public array $sites = ['za'];
+    public array $sites = ['za', 'app'];
 
     /** A signed in session ends after this long without a request (Bookings: 2 hours). */
     public int $idleSeconds = 7200;
@@ -51,6 +53,109 @@ class Bookings extends BaseConfig
     public int $signInLinkSeconds = 900;
 
     /**
+     * Google Calendar (Phase 9): our one OAuth client, from .env
+     * (`bookings.googleClientId`, `bookings.googleClientSecret`). Each business
+     * connects its own calendar through it. Empty: Google Calendar is not
+     * offered. Its redirect address is /business/connections/google/callback
+     * on local.webscheduler.co.za.
+     */
+    public string $googleClientId = '';
+
+    public string $googleClientSecret = '';
+
+    /** Requests per API key per minute (/api/v1). */
+    public int $apiPerMinute = 120;
+
+    /** Minutes to wait before each new try of a webhook, Google or Zoom job; after the last, it has failed. */
+    public array $outboxRetryMinutes = [1, 5, 30, 120, 360];
+
+    /** Days finished outbox rows (the delivery log) are kept. */
+    public int $outboxKeepDays = 30;
+
+    /**
+     * The Bookings plan (Phase 10, decision D1): a monthly subscription with
+     * a free trial. Off (`bookings.planRequired = false`) every business with
+     * bookings on may use them, as before.
+     *
+     * Priced by how many bookable people the business has (decision T23,
+     * owner 5 Nov 2026), in rand a month. `people` is the most the tier
+     * covers, 0 for no limit. The prices can be changed in .env with
+     * `bookings.planPrices = 160,420,890` (one per tier, in this order).
+     * Abroad (local.webscheduler.app, D2) the price is `usd`, shown in US
+     * dollars and charged in rand at the Plus rate (`usd_zar_rate@app` in
+     * /admin/settings), as Plus is; `bookings.planPricesUsd` overrides it.
+     *
+     * @var list<array{name:string,people:int,price:string,usd:string}>
+     */
+    public bool $planRequired = false;
+
+    public array $planTiers = [
+        ['name' => 'Solo', 'people' => 1, 'price' => '160.00', 'usd' => '8.99'],
+        ['name' => 'Team', 'people' => 5, 'price' => '420.00', 'usd' => '23.99'],
+        ['name' => 'Business', 'people' => 0, 'price' => '890.00', 'usd' => '49.99'],
+    ];
+
+    public int $trialDays = 30;
+
+    /** Days a lapsed renewal keeps working while Paystack tries the card again. */
+    public int $planGraceDays = 3;
+
+    /** Days before the trial ends that the admins are reminded. */
+    public int $trialReminderDays = 3;
+
+    /** Months a customer is kept after their last appointment (POPIA, decision D12). */
+    public int $retentionMonths = 24;
+
+    public function planRequired(): bool
+    {
+        $env = env('bookings.planRequired');
+
+        return $env === null || $env === '' ? $this->planRequired : filter_var($env, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * The tiers with .env's prices applied.
+     *
+     * @return list<array{name:string,people:int,price:string,usd:string}>
+     */
+    public function planTiers(): array
+    {
+        $tiers = $this->planTiers;
+        foreach (['price' => 'bookings.planPrices', 'usd' => 'bookings.planPricesUsd'] as $field => $key) {
+            $prices = array_map('trim', explode(',', (string) (env($key) ?? '')));
+            foreach ($tiers as $i => $tier) {
+                $price = $prices[$i] ?? '';
+                if (preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 1) {
+                    $tiers[$i][$field] = number_format((float) $price, 2, '.', '');
+                }
+            }
+        }
+
+        return $tiers;
+    }
+
+    /**
+     * The tier for a business with this many bookable people.
+     *
+     * @return array{name:string,people:int,price:string,usd:string}
+     */
+    public function planTierFor(int $people): array
+    {
+        foreach ($this->planTiers() as $tier) {
+            if ($tier['people'] === 0 || max(1, $people) <= $tier['people']) {
+                return $tier;
+            }
+        }
+
+        return $this->planTiers()[array_key_last($this->planTiers)];
+    }
+
+    public function googleCalendarOffered(): bool
+    {
+        return $this->googleClientId !== '' && $this->googleClientSecret !== '';
+    }
+
+    /**
      * Per business settings and their defaults (docs/bookings/settings.md).
      * A key not listed here cannot be stored. Each value is the default, and
      * `$settingChoices` limits what may replace it.
@@ -65,6 +170,30 @@ class Bookings extends BaseConfig
         'booking.lead_minutes'     => '0',   // minimum notice
         'business.buffer_time'     => '0',   // kept free after every appointment
         'business.future_limit'    => '60',  // days ahead customers may book online
+        // The public booking form (Phase 5): which customer fields show and
+        // which must be filled. Email or phone must stay required (we need a
+        // way to reach the customer); BookingSettings::save() refuses otherwise.
+        'booking.first_names_display' => '1', 'booking.first_names_required' => '1',
+        'booking.surname_display'     => '1', 'booking.surname_required'     => '1',
+        'booking.email_display'       => '1', 'booking.email_required'       => '1',
+        'booking.phone_display'       => '1', 'booking.phone_required'       => '1',
+        'booking.address_display'     => '0', 'booking.address_required'     => '0',
+        'booking.notes_display'       => '0', 'booking.notes_required'       => '0',
+        'booking.default_appointment_status' => 'pending', // what an online booking starts as
+        'business.reschedule'         => '24',  // hours before; 0 = not online
+        'business.cancel'             => '24',  // hours before; 0 = not online
+        'legal.terms'                 => '',
+        'legal.cancellation_policy'   => '',
+        'legal.rescheduling_policy'   => '',
+        'legal.terms_url'             => '',
+        'legal.privacy_url'           => '',
+        // Phase 6: reminders (minutes before; 0 = off) and how messages are signed.
+        'notifications.reminder_primary'   => '1440',
+        'notifications.reminder_secondary' => '0',
+        'notifications.from_name'          => '',  // empty = the business name
+        'notifications.reply_to'           => '',  // empty = the profile's email
+        // Phase 8: minutes an unpaid deposit holds the time before it goes back.
+        'payments.hold_minutes'            => '30',
         // The business's own questions (Phase 4), see customFieldKeys().
         'booking.custom_field_1_enabled' => '0', 'booking.custom_field_1_title' => '', 'booking.custom_field_1_type' => 'text', 'booking.custom_field_1_required' => '0', 'booking.custom_field_1_sensitive' => '0', 'booking.custom_field_1_options' => '',
         'booking.custom_field_2_enabled' => '0', 'booking.custom_field_2_title' => '', 'booking.custom_field_2_type' => 'text', 'booking.custom_field_2_required' => '0', 'booking.custom_field_2_sensitive' => '0', 'booking.custom_field_2_options' => '',
@@ -105,17 +234,47 @@ class Bookings extends BaseConfig
         'booking.lead_minutes'  => [0, 20160],
         'business.buffer_time'  => [0, 240],
         'business.future_limit' => [1, 730],
+        'business.reschedule'   => [0, 336],
+        'business.cancel'       => [0, 336],
+        'notifications.reminder_primary'   => [0, 20160],
+        'notifications.reminder_secondary' => [0, 20160],
+        'payments.hold_minutes'            => [15, 120],
     ];
+
+    /**
+     * The fields of the public booking form, setting stem => form field. First
+     * name is always asked. `notes` are the appointment's ("Anything we should
+     * know"), not the customer record's.
+     */
+    public const CUSTOMER_FIELDS = [
+        'first_names' => 'first_name', 'surname' => 'last_name', 'email' => 'email',
+        'phone' => 'phone', 'address' => 'address', 'notes' => 'notes',
+    ];
+
+    /** Longest business terms or policy text. */
+    public const LEGAL_TEXT_MAX = 5000;
 
     /** @var array<string,list<string>> */
     public array $settingChoices = [
         'localization.time_format' => ['24h', '12h'],
         'localization.first_day'   => ['monday', 'sunday'],
+        'booking.default_appointment_status' => ['pending', 'confirmed'],
     ];
 
     public function __construct()
     {
         parent::__construct();
+        foreach (array_keys(self::CUSTOMER_FIELDS) as $stem) {
+            $this->settingChoices['booking.' . $stem . '_display']  = ['0', '1'];
+            $this->settingChoices['booking.' . $stem . '_required'] = ['0', '1'];
+        }
+        foreach (['legal.terms', 'legal.cancellation_policy', 'legal.rescheduling_policy'] as $key) {
+            $this->settingMaxLength[$key] = self::LEGAL_TEXT_MAX;
+        }
+        $this->settingMaxLength['legal.terms_url']   = 500;
+        $this->settingMaxLength['legal.privacy_url'] = 500;
+        $this->settingMaxLength['notifications.from_name'] = 80;
+        $this->settingMaxLength['notifications.reply_to']  = 190;
         // Questions: a line, a paragraph, one of a list, or a tick box.
         for ($n = 1; $n <= self::CUSTOM_FIELDS; $n++) {
             foreach (['enabled', 'required', 'sensitive'] as $flag) {

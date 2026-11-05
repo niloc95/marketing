@@ -100,6 +100,21 @@ class BookingSettings
                 $changed[$key] = [$old, $value];
             }
         }
+        // We need a way to reach every customer who books online.
+        $after = fn (string $k): string => array_key_exists($k, $values) ? trim((string) $values[$k]) : $this->get($k);
+        $asked = static fn (string $stem): bool => $after('booking.' . $stem . '_display') === '1' && $after('booking.' . $stem . '_required') === '1';
+        if (! $asked('email') && ! $asked('phone')) {
+            $errors['booking.email_required'] = 'Ask for an email or a phone number, and make it required, so you can reach every customer.';
+        }
+        foreach (['legal.terms_url', 'legal.privacy_url'] as $key) {
+            if (array_key_exists($key, $values) && $after($key) !== '' && safe_external_url($after($key)) === '') {
+                $errors[$key] = 'Use a full link that starts with https://';
+            }
+        }
+        if (array_key_exists('notifications.reply_to', $values) && $after('notifications.reply_to') !== ''
+            && filter_var($after('notifications.reply_to'), FILTER_VALIDATE_EMAIL) === false) {
+            $errors['notifications.reply_to'] = 'Use an email address, like bookings@yourbusiness.co.za.';
+        }
         if ($errors !== []) {
             return ['errors' => $errors, 'changed' => []];
         }

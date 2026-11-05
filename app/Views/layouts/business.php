@@ -18,6 +18,8 @@ $asset    = static fn (string $path): string => base_url($path) . '?v=' . (@file
 $nav      = [];
 if ($listing !== null) {
     $nav[] = ['business', 'Dashboard', 'layout-dashboard'];
+    $unread = (new \App\Services\Bookings\Notifications\NotificationCentre($context->listingId(), (int) $context->member()['id']))->unread();
+    $nav[]  = ['business/notifications', $unread > 0 ? 'Notices (' . $unread . ')' : 'Notices', 'bell'];
     if ($context->can('appointments.manage')) {
         $nav[] = ['business/calendar', 'Calendar', 'calendar'];
     }
@@ -33,6 +35,14 @@ if ($listing !== null) {
     }
     if ($context->can('appointments.manage')) {
         $nav[] = ['business/availability', 'Availability', 'calendar-days'];
+    }
+    if ($context->can('analytics.view')) {
+        $nav[] = ['business/analytics', 'Analytics', 'chart-column'];
+    }
+    // Only once deposits are taken: the nav is full, and without an account
+    // the Payments settings tab says what to do.
+    if ($context->can('payments.manage') && App\Services\Bookings\Payments\DepositService::gatewayFor($context->listingId()) !== null) {
+        $nav[] = ['business/payments', 'Payments', 'wallet'];
     }
     if ($context->can('settings.manage')) {
         $nav[] = ['business/settings', 'Settings', 'settings'];
@@ -113,6 +123,25 @@ $here = trim(uri_string(), '/');
                 <div class="alert <?= $cls ?> mb-5" role="<?= $key === 'error' ? 'alert' : 'status' ?>"><?= esc((string) $msg) ?></div>
             <?php endif ?>
         <?php endforeach ?>
+        <?php
+        // The Bookings plan (Phase 10): a line on every page near the end of the trial, or once it has ended.
+        $bizContext = service('businessContext');
+        $planLine   = null;
+        if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::required()) {
+            $planNow  = (new \App\Services\Bookings\Plans\BookingPlanService())->status($bizContext->listingId());
+            $planLine = match (true) {
+                $planNow['state'] === 'trial' && $planNow['days_left'] !== null && $planNow['days_left'] <= 7 => 'Your free trial ends in ' . $planNow['days_left'] . ($planNow['days_left'] === 1 ? ' day.' : ' days.'),
+                $planNow['state'] === 'past_due' => 'Your last plan payment did not go through.',
+                ! $planNow['allows']             => 'Your plan has ended, so customers cannot book online.',
+                default                          => null,
+            };
+        }
+        ?>
+        <?php if ($planLine !== null): ?>
+            <div class="alert alert-info mb-5" role="status"><?= esc($planLine) ?>
+                <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('business/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
+            </div>
+        <?php endif ?>
         <?= $this->renderSection('content') ?>
     </main>
 

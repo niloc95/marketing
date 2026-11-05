@@ -7,6 +7,7 @@ use App\Services\Bookings\AppointmentService;
 use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\CustomerService;
+use App\Services\Bookings\Payments\DepositService;
 use App\Services\Bookings\TeamService;
 
 /**
@@ -26,7 +27,26 @@ class Appointments extends BaseController
             return $this->json(['ok' => false, 'error' => AppointmentService::PROBLEMS['not_found']], 404);
         }
 
+        $detail['can_payments'] = service('businessContext')->can('payments.manage');
+
         return $this->json(['ok' => true, 'data' => $detail]);
+    }
+
+    /** Deposit: {action: paid|refunded}. Only for an appointment in the member's scope. */
+    public function payment(int $id)
+    {
+        if ($this->service()->find($id) === null) {
+            return $this->json(['ok' => false, 'error' => AppointmentService::PROBLEMS['not_found']], 404);
+        }
+        $context  = service('businessContext');
+        $deposits = new DepositService($context->listing());
+        $result   = match ($this->input()['action']) {
+            'paid'     => $deposits->markPaid($id, $context->accountId(), (int) $context->member()['id']),
+            'refunded' => $deposits->markRefunded($id, $context->accountId()),
+            default    => ['ok' => false, 'error' => 'Choose what to mark.'],
+        };
+
+        return $this->answer($result);
     }
 
     public function create()
@@ -61,6 +81,14 @@ class Appointments extends BaseController
         return $this->answer($this->service()->setNotes($id, (string) $this->input()['notes']));
     }
 
+    /** "Send again": {event, channel} */
+    public function notify(int $id)
+    {
+        $in = $this->input();
+
+        return $this->answer($this->service()->resend($id, (string) ($in['event'] ?? ''), (string) ($in['channel'] ?? 'email')));
+    }
+
     /** "Find" across appointments: ?q= */
     public function find()
     {
@@ -79,7 +107,7 @@ class Appointments extends BaseController
             'services'     => (new CatalogueService($context->listingId()))->services(),
             'customFields' => (new CustomerService($context->listingId()))->customFields(),
             'statuses'     => array_values(array_filter(AppointmentStatus::options(), static fn (array $s): bool => in_array($s['value'], AppointmentStatus::UPCOMING, true))),
-            'old'          => flash('appointment_old') ?: ['date' => $this->request->getGet('date'), 'time' => $this->request->getGet('time'), 'provider_id' => $this->request->getGet('provider_id')],
+            'old'          => flash('appointment_old') ?: ['date' => $this->request->getGet('date'), 'time' => $this->request->getGet('time'), 'provider_id' => $this->request->getGet('provider_id'), 'service_id' => $this->request->getGet('service_id')],
             'errors'       => flash('errors') ?: [],
             'timezone'     => $context->timezone(),
         ]);
@@ -115,7 +143,7 @@ class Appointments extends BaseController
         $body = str_contains((string) $this->request->getHeaderLine('Content-Type'), 'application/json')
             ? (array) ($this->request->getJSON(true) ?? [])
             : (array) $this->request->getPost();
-        $keys = ['provider_id', 'service_id', 'date', 'time', 'status', 'notes', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'address'];
+        $keys = ['provider_id', 'service_id', 'date', 'time', 'status', 'notes', 'delivery_mode', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'address', 'event', 'channel', 'action'];
         for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++) {
             $keys[] = 'field_' . $n;
         }

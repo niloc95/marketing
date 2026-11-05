@@ -46,11 +46,11 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | cached per business, 5 min |
-| Provider cards with free slots, quick book | `/api/dashboard/provider-slots` | Port | 7 | |
-| Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | |
-| Role alerts (pending confirmations, missing hours, booking off, closures, overbooking) | `AuthorizationService` | Port | 7 | |
-| Analytics: overview, revenue, customers, providers | `AnalyticsService`, `BookingMetricsService`, Chart.js | Port | 7 | Chart.js in the dashboard bundle only; public pages keep inline SVG charts |
+| Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | Built 5 Nov 2026: today, next 4 hours, next 7 days, waiting for confirmation, customers (own for a team member), booked value this month (from appointment prices, not money received). Deposits received this month show in the value tile's note since Phase 8. Cached 5 min per business and scope, emptied on every appointment change (`BookingMetricsCache`) |
+| Provider cards with free slots, quick book | `/api/dashboard/provider-slots` | Port | 7 | Built: state now in the business's time zone (working, on a break, off, time off; Bookings used the server clock), today's next free times as links to the prefilled form, next free time when today is full. Server rendered, no JSON endpoint |
+| Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | Built: by person, in team order; `GET /business/api/dashboard/today` returns the partial every 2 min while the tab is visible |
+| Role alerts (pending confirmations, missing hours, booking off, closures, overbooking) | `AuthorizationService` | Port | 7 | Bookings only built pending confirmations. Built: pending, setup problems (`SetupCheck`), public holidays with no answer, whole business closures in 14 days, messages not sent in 7 days (admin). Overbooking skipped: `BookingLock` refuses it |
+| Analytics: overview, revenue, customers, providers | `AnalyticsService`, `BookingMetricsService`, Chart.js | Port | 7 | Built: tabs Overview, Services, Team, Customers; 7, 30, 90 days and 12 months against the period before. **Inline SVG, not Chart.js** (the admin dashboard's partials: no new script, a table under each chart). Left out as made up in Bookings: staff utilisation (fixed 160 a month), retention by month (rate × 0.9…), revenue forecast |
 | Business stats on the public profile | Local `ListingStatsService` | keep | | separate from booking analytics; `taps_booking` stays |
 
 ## 4. Calendar and appointments
@@ -107,22 +107,22 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Customer custom fields | `xs_customers.custom_fields` | Port | 4 | |
 | Customer page by hash (upcoming, history) | `/my-appointments/{hash}` | Port | 5 | |
 | Delete with impact preview | `CustomerDeletionService` | Port | 4 | built: refused while an upcoming appointment exists; past ones stay without the person (Bookings refused while any existed) |
-| Data export for a customer (POPIA access request) | not built | New | 10 | admin action, per business |
-| Retention and purge | none | New | 10 ⚠ | rule needed for POPIA |
+| Data export for a customer (POPIA access request) | not built | New | 10 | built 5 Nov 2026: "Download their data" on the customer page (admins), JSON, audited |
+| Retention and purge | none | New | 10 | built 5 Nov 2026 (T19): `bookings:retention` nightly, personal fields cleared 24 months after the last appointment, older audit lines deleted |
 
 ## 8. Public booking
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Flow: service, provider or any, mode and location, date and slot, details, deposit, confirmation | `PublicBookingService`, `public-booking.js` | Port | 5 | on the profile at `/directory/{slug}/book`, no session until the details step |
-| Which customer fields show and are required | `booking.*_display/_required` | Port | 5 | |
-| Manage, reschedule, cancel by token, with policy windows | `PublicBookingPolicy` | Port | 5 | |
-| Look up bookings by email or phone | `/booking/search` | Rebuild | 5 | emails a link instead of listing bookings on screen (anyone can type an email) |
-| Short links `WS-YYYY-NNNN` | `BookingLinkService` | Rebuild | 5 | `WSB-BOOK-` reference from `PaymentReference` |
-| Legal page per business | `/booking/legal`, `legal.*` settings | Port | 5 | per business terms, cancellation and rescheduling text |
+| Flow: service, provider or any, mode and location, date and slot, details, deposit, confirmation | `PublicBookingService`, `public-booking.js` | Port | 5 | built: on the profile at `/directory/{slug}/book`, plain GET steps (no script needed, no session until the form is sent); deposit in Phase 8; the delivery mode choice comes with video in Phase 9 |
+| Which customer fields show and are required | `booking.*_display/_required` | Port | 5 | built; first name always; email or phone must stay required |
+| Manage, reschedule, cancel by token, with policy windows | `PublicBookingPolicy` | Port | 5 | built: the link alone is the key (hashed, rotated on every change, ends 30 days after); windows in hours per business, 0 = not online |
+| Look up bookings by email or phone | `/booking/search` | Rebuild | 5 | built: `/book/find` emails customer page links, same answer either way; phone only customers contact the business |
+| Short links `WS-YYYY-NNNN` | `BookingLinkService` | Rebuild | 5 | built: `/book/r/{reference}` opens the find form only (references are sequential) |
+| Legal page per business | `/booking/legal`, `legal.*` settings | Port | 5 | built: `/directory/{slug}/book/terms`; any terms make the form ask to accept them |
 | Provider and service SEO pages, discover by service and city, sitemap | `/booking/p`, `/booking/s`, `/booking/discover` | Skip | | Local's profiles, categories and discovery already do this; profile JSON-LD gets `ReserveAction` |
-| Honeypot, rate limits, CSRF | yes | Port | 5 | Local's `BotTrap`, honeypot, throttles and `Config\Forms` registry |
-| "Book online" in discovery results | none | New | 5 | never changes ranking |
+| Honeypot, rate limits, CSRF | yes | Port | 5 | built: `honeypot_field()`, throttles `book-ip-` 10/h, `book-to-` 5/day, `bookfind-*`, JSON 60/min |
+| "Book online" in discovery results | none | New | 5 | built: card badge `listing_books_online_badge()`, profile button and JSON-LD `ReserveAction`; never changes ranking |
 
 ## 9. Notifications
 
@@ -135,34 +135,36 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Stale reminder cancellation after reschedule | `schedule_fingerprint` | Port | 6 | |
 | Customer and internal templates, 37 placeholders | `NotificationTemplateService` | Port | 6 | copy rewritten to Local rules; emails in Local's `emails/_layout.php` style |
 | Email | `MailerService` (SMTP per business) | Rebuild | 6 | Local `Mailer` (SES) only, From: the platform, Reply-To: the business |
-| SMS (Clickatell, Twilio) | yes | Port | 6 | credentials per business, encrypted |
+| SMS (Clickatell, Twilio) | yes | Skip | | built in Phase 6, removed 5 Nov 2026 (owner, T20) |
 | WhatsApp (link, Twilio, Meta Cloud) | yes | Port | 6 | |
 | Delivery logs, export, purge | yes | Port | 6 | |
 | In app notification centre | `/notifications` | Port | 6 | |
-| Opt out | table exists, **no route** | New | 6 | unsubscribe link and page, RFC 8058 for email |
-| Manual resend | `POST appointments/{id}/notify` | Port | 6 | |
+| Opt out | table exists, **no route** | New | 6 | unsubscribe link and page, RFC 8058 for email; built 5 Nov 2026 (`book/unsubscribe/{customer hash}`; only the business can switch emails back on) |
+| Manual resend | `POST appointments/{id}/notify` | Port | 6 | queued, not sent in the request (Bookings sent email and SMS at once; SMS since removed, T20) |
 
 ## 10. Payments
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Deposit percentage per service | `deposit_percentage`, `calculate_deposit_amount()` | Port | 8 | |
-| PayFast deposits | `PayFastPaymentService` | Rebuild ⚠ | 8 | gateway choice open: Paystack subaccounts favoured |
-| Stripe deposits | `StripePaymentService` | Later ⚠ | | .app only, if .app gets bookings |
-| Transactions, mark paid | `xs_payment_transactions`, `adminMarkPaid` | Port | 8 | |
-| Refunds | status exists, no flow | Later ⚠ | | |
+| Deposit percentage per service | `deposit_percentage`, `calculate_deposit_amount()` | Port | 8 | Built 5 Nov 2026 (`DepositService::amountFor()`): percentage of the price, rand only, at least R5 (PayFast's smallest payment). No account on: the booking goes through without a deposit and SetupCheck says so |
+| PayFast deposits | `PayFastPaymentService` | Rebuild ⚠ | 8 | Built 5 Nov 2026 on the business's **own** PayFast account (T15): Local's `PayFast` client on the business's keys (`GatewayConfig`), signed form, notification at `book/payfast/notify` checked four ways under the business's passphrase (required here, optional in PayFast) and its merchant id |
+| Paystack deposits | none | New | 8 | Built 5 Nov 2026 on the business's own secret key: hosted checkout, verified with Paystack when the customer comes back and by `bookings:payments` every 5 minutes. No webhook: a Paystack account has one webhook address, which the business may use for its own shop |
+| Hold while paying | none (Bookings booked first, then asked for payment) | New | 8 | The booking waits as pending with `payment_due_by` (`payments.hold_minutes`, 30); no messages until paid; paid moves it to the usual status and queues the messages; unpaid by then, `bookings:payments` cancels it quietly. A payment after that brings it back if the time is still free, otherwise "deposit to refund" |
+| Stripe deposits | `StripePaymentService` | Later | | .app has bookings since T24 but no deposits; Stripe (or Paystack in the business's currency) would add them |
+| Transactions, mark paid | `xs_payment_transactions`, `adminMarkPaid` | Port | 8 | Built 5 Nov 2026: `/business/payments` (every try, To refund list, received this month, scoped), Mark deposit paid and Mark refunded in the appointment details (`payments.manage`, own people for a team member) |
+| Refunds | status exists, no flow | Later ⚠ | | T16: done in the business's own gateway, then marked refunded. A dashboard alert lists deposits paid on a cancelled or freed booking |
 
 ## 11. Integrations and API
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Encrypted integration store with health and test | `xs_business_integrations` | Port | 6, 9 | needs `encryption.key` on production (still missing) |
-| Zoom meeting on booking, Jitsi link | `VideoSessionService` | Port | 9 | |
-| Google Calendar | OAuth works, **push never called** | New | 9 | push on create, update and cancel |
-| Outgoing webhooks, signed | defined, **never dispatched** | New | 9 | |
-| API keys | CLI only, scopes not enforced | New | 9 | UI, enforced scopes |
-| REST API `/api/v1` with `{data, meta}` | yes | Port | 9 | per business; OpenAPI file ported and checked in CI |
-| Developer page (Redoc) | `/developers` | Port | 9 | Redoc from a pinned CDN version, CSP permitting |
+| Encrypted integration store with health and test | `xs_business_integrations` | Port | 6, 9 | needs `encryption.key` on production (still missing); built (Check buttons for Zoom and Google, Send a test for the webhook) |
+| Zoom meeting on booking, Jitsi link | `VideoSessionService` | Port | 9 | built 5 Nov 2026: the business's own Zoom app; unlike Bookings a new time moves the meeting and a cancellation deletes it; Jitsi link hashed from the appointment hash; customers choose how when a service offers more than one way; confirmations wait up to 10 minutes for a Zoom link |
+| Google Calendar | OAuth works, **push never called** | New | 9 | built 5 Nov 2026: one platform OAuth client (T22), push on create, update and cancel through the outbox, one way only. Reading busy times from Google: Later. Per person calendars: Later |
+| Outgoing webhooks, signed | defined, **never dispatched** | New | 9 | built 5 Nov 2026: `WebScheduler-Signature: t=..,v1=HMAC(t.body)`, retries 1, 5, 30, 120, 360 min, delivery log with Send again, SSRF guard (`SafeUrl`) |
+| API keys | CLI only, scopes not enforced | New | 9 | built 5 Nov 2026: Settings, API keys; six scopes, each also needs the member's role |
+| REST API `/api/v1` with `{data, meta}` | yes | Port | 9 | built 5 Nov 2026, per business; `docs/bookings/openapi.json` checked against the routes by a test |
+| Developer page (Redoc) | `/developers` | Rebuild | 9 | Redoc needs inline styles (CSP), so `/developers/bookings` is rendered by us from the same OpenAPI file |
 | GA4 or Matomo per business | `analytics_head_html()` | Skip | | the profile stats cover it |
 | "List on our directory" handoff | `DirectoryHandoffService` | Skip | | bookings now live on the profile |
 

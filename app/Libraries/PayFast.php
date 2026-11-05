@@ -462,6 +462,42 @@ class PayFast
     }
 
     /**
+     * Whether PayFast accepts this merchant ID and passphrase: its API's
+     * /ping, signed like cancelSubscription(). For a business connecting its
+     * own account to take deposits (online bookings); false on any failure.
+     */
+    public function ping(): bool
+    {
+        if (! $this->isConfigured()) {
+            return false;
+        }
+        $headers = [
+            'merchant-id' => $this->config->payfastMerchantId(),
+            'version'     => 'v1',
+            'timestamp'   => date('Y-m-d\TH:i:sP'),
+        ];
+        $headers['signature'] = $this->apiSignature($headers);
+
+        $ch = curl_init('https://api.payfast.co.za/ping' . ($this->isSandbox() ? '?testing=true' : ''));
+        if ($ch === false) {
+            return false;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_HTTPHEADER     => array_map(static fn ($k, $v) => $k . ': ' . $v, array_keys($headers), $headers),
+        ]);
+        $body   = curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $body !== false && $status >= 200 && $status < 300;
+    }
+
+    /**
      * Signature for the Subscriptions API.
      *
      * Separate from signature() above and it must stay separate, because the

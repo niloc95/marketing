@@ -8,6 +8,7 @@ use App\Libraries\Paystack;
 use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\DirectoryVerificationModel;
 use App\Models\ProfileSetupOrderModel;
+use App\Services\Bookings\Plans\BookingPlanService;
 
 /**
  * What Paystack tells us, turned into payments: the webhook and the browser's
@@ -23,8 +24,9 @@ use App\Models\ProfileSetupOrderModel;
  * The browser's return trip carries only a reference, so it can at most make
  * us ask Paystack sooner than the webhook would.
  *
- * Both paths end in VerificationService::recordPayment() or
- * ProfileSetupService::recordPayment(), which are idempotent: whichever
+ * Both paths end in VerificationService::recordPayment(),
+ * ProfileSetupService::recordPayment() or, for the online bookings plan,
+ * BookingPlanService::recordPayment(), which are idempotent: whichever
  * arrives second changes nothing.
  *
  * Outcomes are short strings for the log. One starting 'retry' asks the
@@ -108,6 +110,14 @@ class PaystackPayments
         $metadata = $this->metadataOf($tx);
         if (PaymentReference::isSetup((string) ($tx['reference'] ?? '')) || isset($metadata['order_id'])) {
             return $this->profileSetupCharge($tx, $metadata, $fields, $ip);
+        }
+        // Online bookings' own plan (Phase 10): our reference, its id in the
+        // metadata, or a renewal on a booking plan's mandate.
+        $customer = (string) ($tx['customer']['customer_code'] ?? '');
+        $planCode = Paystack::planCodeOf($tx['plan'] ?? null) ?: Paystack::planCodeOf($tx['plan_object'] ?? null);
+        if (PaymentReference::isBookingsPlan((string) ($tx['reference'] ?? '')) || isset($metadata['booking_plan_id'])
+            || $this->bookingPlans()->rowForCharge('', [], $customer, $planCode) !== null) {
+            return $this->bookingPlanCharge($tx, $metadata, $fields, $ip);
         }
 
         return $this->subscriptionCharge($tx, $metadata, $fields, $ip);
@@ -282,6 +292,37 @@ class PaystackPayments
         return (new ProfileSetupService())->recordPayment($order, 'paystack:' . (string) ($tx['id'] ?? ''));
     }
 
+    /**
+     * @param array<string,mixed>  $tx
+     * @param array<string,mixed>  $metadata
+     * @param array<string,string> $fields
+     */
+    private function bookingPlanCharge(array $tx, array $metadata, array $fields, string $ip): string
+    {
+        $reference = (string) ($tx['reference'] ?? '');
+        $customer  = (string) ($tx['customer']['customer_code'] ?? '');
+        $planCode  = Paystack::planCodeOf($tx['plan'] ?? null) ?: Paystack::planCodeOf($tx['plan_object'] ?? null);
+        $row       = $this->bookingPlans()->rowForCharge($reference, $metadata, $customer, $planCode);
+        if ($row === null) {
+            return $this->reject('Bookings plan: no matching plan', $fields, $ip);
+        }
+        $cents = (int) ($tx['amount'] ?? -1);
+        if ($row['amount_cents'] === null || $cents !== (int) $row['amount_cents']) {
+            return $this->reject(sprintf('Bookings plan: amount %s does not match the expected %s', number_format($cents / 100, 2, '.', ''), number_format((int) $row['amount_cents'] / 100, 2, '.', '')), $fields, $ip);
+        }
+        $renewal = $row['paystack_customer_code'] === $customer && $row['paystack_plan_code'] === $planCode && $reference !== (string) $row['payment_reference'];
+        $mandate = ! $renewal && $customer !== '' && $planCode !== '' ? ['customer' => $customer, 'plan' => $planCode] : [];
+        $paidAt  = strtotime((string) ($tx['paid_at'] ?? $tx['paidAt'] ?? '')) ?: time();
+
+        return $this->bookingPlans()->recordPayment($row, 'paystack:' . (string) ($tx['id'] ?? $reference), $cents, $reference, $mandate, $paidAt)
+            . ': booking plan ' . (int) $row['id'];
+    }
+
+    private function bookingPlans(): BookingPlanService
+    {
+        return new BookingPlanService($this->paystack);
+    }
+
     // ------------------------------------------------------- subscription news
 
     /** @param array<string,mixed> $data */
@@ -293,6 +334,14 @@ class PaystackPayments
         );
         $code  = (string) ($data['subscription_code'] ?? '');
         $token = (string) ($data['email_token'] ?? '');
+        if ($row === null && $code !== '' && $token !== '') {
+            $plan = $this->bookingPlans()->rowForCharge('', [], (string) ($data['customer']['customer_code'] ?? ''), Paystack::planCodeOf($data['plan'] ?? null));
+            if ($plan !== null) {
+                $this->bookingPlans()->subscriptionCreated($plan, $code, $token);
+
+                return 'stored: subscription for booking plan ' . (int) $plan['id'];
+            }
+        }
         if ($row === null || $code === '' || $token === '') {
             return 'ignored: subscription.create for no known mandate';
         }
@@ -317,6 +366,9 @@ class PaystackPayments
     private function subscriptionStopped(array $data, string $event): string
     {
         $row = $this->verifications->findByPaystackSubscription((string) ($data['subscription_code'] ?? ''));
+        if ($row === null && ($plan = $this->bookingPlans()->rowForSubscription((string) ($data['subscription_code'] ?? ''))) !== null) {
+            return $this->bookingPlans()->subscriptionStopped($plan);
+        }
         if ($row === null || $row['state'] !== DirectoryVerificationModel::STATE_ACTIVE) {
             return 'ignored: ' . $event . ' for no active row';
         }
@@ -347,6 +399,12 @@ class PaystackPayments
                 Paystack::planCodeOf($sub['plan'] ?? ($data['plan'] ?? null))
             );
         if ($row === null) {
+            $plan = $this->bookingPlans()->rowForSubscription($code)
+                ?? $this->bookingPlans()->rowForCharge('', [], (string) ($data['customer']['customer_code'] ?? ''), Paystack::planCodeOf($sub['plan'] ?? ($data['plan'] ?? null)));
+            if ($plan !== null) {
+                return $this->bookingPlans()->paymentFailed($plan, $this->paystack->manageLink($code ?: (string) ($plan['paystack_subscription_code'] ?? '')));
+            }
+
             return 'ignored: invoice.payment_failed for no known mandate';
         }
 

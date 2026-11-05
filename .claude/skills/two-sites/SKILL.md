@@ -148,6 +148,15 @@ country on the .app signup form.
 - Profile setup service: `ProfileSetupService::amount()` / `usdAmount()`: R250 on co.za,
   `profile_setup_usd` (US$29.99) on .app, charged in rand.
 
+## Online bookings on both sites
+
+Since decision T24 (5 Nov 2026, `docs/bookings/decisions.md`; skill `bookings`): a business
+takes bookings on its own site's host only (booking page, `/business`, `/api/v1`). Clock and
+currency come from `App\Services\Bookings\BusinessLocale` (profile timezone, else the country's;
+the country's currency). Deposits are rand only, so co.za only. The Bookings plan abroad is shown
+in US dollars (`Config\Bookings::$planTiers` `usd`) and charged in rand at `usd_zar_rate@app`,
+like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
+
 ## Settings, copy, legal, SEO per site
 
 - **`DirectorySettings`**: on .app a row named `{name}@app` wins over `{name}`

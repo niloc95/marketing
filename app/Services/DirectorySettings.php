@@ -144,9 +144,9 @@ class DirectorySettings
     }
 
     /** How many rand one US dollar is at, as set on the settings page, or null. */
-    public function usdZarRate(): ?string
+    public function usdZarRate(?string $siteKey = null): ?string
     {
-        $stored = $this->stored(DirectorySettingModel::USD_ZAR_RATE);
+        $stored = $this->stored(DirectorySettingModel::USD_ZAR_RATE, $siteKey);
 
         return $stored === null ? null : number_format((float) $stored, 4, '.', '');
     }
@@ -549,13 +549,15 @@ class DirectorySettings
      * one, so .app can carry its own price without touching co.za's. co.za
      * reads only the plain name, exactly as before.
      */
-    private function stored(string $name): ?string
+    /** @param string|null $siteKey the site whose row wins; null: this request's site */
+    private function stored(string $name, ?string $siteKey = null): ?string
     {
-        $map   = $this->map();
-        $value = null;
+        $map     = $this->map();
+        $value   = null;
+        $siteKey ??= service('site')->isApp() ? service('site')->key() : null;
 
-        if (service('site')->isApp()) {
-            $value = $map[$name . '@' . service('site')->key()]['value'] ?? null;
+        if ($siteKey !== null && $siteKey !== \Config\Sites::ZA) {
+            $value = $map[$name . '@' . $siteKey]['value'] ?? null;
         }
 
         $value ??= $map[$name]['value'] ?? null;

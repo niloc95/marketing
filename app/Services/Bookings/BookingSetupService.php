@@ -89,6 +89,10 @@ class BookingSetupService
             ]);
             $this->audit->record($listingId, (int) $account['id'], 'bookings.turned_on');
         }
+        // The free trial of the Bookings plan starts once, at the first turn on (D1).
+        if (Plans\BookingPlanService::required()) {
+            (new Plans\BookingPlanService())->startTrial($listingId, (int) $account['id']);
+        }
 
         return $account;
     }

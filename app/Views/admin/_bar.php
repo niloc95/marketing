@@ -53,6 +53,7 @@ $more = [
         ['Badge funnel', 'admin/funnel'],
         ['Discovery', 'admin/discovery'],
         ['Stats', 'admin/stats'],
+        ...(config('Bookings')->enabled() ? [['Online bookings', 'admin/bookings']] : []),
     ],
     'System' => [
         ['Settings', 'admin/settings'],

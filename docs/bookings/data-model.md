@@ -38,7 +38,7 @@ Migration `2026-11-13-100000_CreateBookingCatalogue`.
 | Table | Columns | Mirrors in Bookings | Notes |
 |---|---|---|---|
 | `xs_booking_categories` | id, listing_id, name, color, sort_order | `xs_categories` | deleting one leaves its services without a category (FK SET NULL) |
-| `xs_booking_services` | id, listing_id, slug, name, description, duration_min, price_cents, currency, deposit_pct, buffer_before, buffer_after, category_id, delivery_modes (JSON), profile_service_name, sort_order, archived_at | `xs_services` + payment columns | Unique (listing_id, slug). Archived, never deleted. `profile_service_name` is reserved for D3. |
+| `xs_booking_services` | id, listing_id, slug, name, description, duration_min, price_cents, currency, deposit_pct, buffer_before, buffer_after, category_id, delivery_modes (JSON), profile_service_name, sort_order, archived_at | `xs_services` + payment columns | Unique (listing_id, slug). Archived, never deleted. `profile_service_name` is unused: D3 was settled as one list each (T14). |
 | `xs_booking_providers` | id, listing_id, team_member_id (nullable, SET NULL), member_id (nullable, SET NULL), slug, name, title, bio, color, bookable, sort_order, archived_at | `xs_users` with the provider role | A new business gets one provider named after itself, on the profile's opening hours, linked to the owner. A provider made from a profile team card **copies** its name, title and bio once (changed from "reads while linked": simpler, and the card can be a lapsed paid feature). |
 | `xs_booking_provider_services` | listing_id, provider_id, service_id, created_at | `xs_providers_services` | PK (provider_id, service_id). Carries `listing_id` so it goes through BookingScopedModel like every other table. |
 | `xs_booking_provider_hours` | id, listing_id, provider_id, weekday (1 to 7), start_time, end_time, breaks (JSON), location_id (nullable, SET NULL) | `xs_business_hours` | Unique (provider_id, weekday). Local time. One break per day in the form; the JSON allows more later. |
@@ -83,10 +83,23 @@ provider. Provider hours are clipped to the business window for the day.
 
 | Table | From | Notes |
 |---|---|---|
-| `xs_booking_payments` | `xs_payment_transactions` | gateway, reference (`WSB-BOOK-…-N`), amount_cents, currency, status, raw_payload, plus `listing_id` |
-| `xs_booking_integrations` | `xs_business_integrations` | encrypted config (CI4 Encrypter, refuses to save without `encryption.key`, as the Partner Program does) |
-| `xs_booking_api_keys` | `xs_api_keys` | bound to a member; scopes enforced |
-| `xs_booking_webhook_deliveries` | none (webhooks never fired) | event, endpoint, attempt, status, response code |
+| `xs_booking_payments` | `xs_payment_transactions` | Built 5 Nov 2026 (migration `2026-11-17-100000`): listing_id, appointment_id (SET NULL), hash (the return link), reference (`WSB-BOOK-000123-P1`, one per try, unique), gateway (payfast, paystack, manual), amount_cents, currency, status (started, paid, failed, refunded), test, gateway_id, detail, recorded_by_member_id, paid_at, refunded_at. No raw payload kept. Appointments got `payment_due_by`; `payment_status` is none, due, paid, refunded, expired or refund_due |
+| `xs_booking_integrations` | `xs_business_integrations` | encrypted config (CI4 Encrypter, refuses to save without `encryption.key`, as the Partner Program does). Channel `payment` (Phase 8) holds the business's PayFast or Paystack keys; Phase 9 adds `zoom` (the business's Server to Server app), `jitsi` (an optional own server), `google` (OAuth tokens, written only by `GoogleCalendar` through `store()`) and `webhook` (address, our signing secret, events) |
+| `xs_booking_api_keys` | `xs_api_keys` | Built 5 Nov 2026 (migration `2026-11-18-100000`): listing_id, member_id (CASCADE), name, prefix (12 hex, unique, the lookup), secret_hash (SHA-256 of the 40 hex secret), scopes (JSON), last_used_at, expires_at, revoked_at, created_by. Scopes enforced together with the member's role |
+| `xs_booking_outbox` | none (webhooks never fired, Google never pushed) | Built 5 Nov 2026, replaces the planned `xs_booking_webhook_deliveries`: target (webhook, google, zoom), appointment_id (SET NULL), event, payload (webhook body frozen when it happened), status (queued, done, failed, cancelled), attempts, next_attempt_at, response_code, last_error, done_at. One queued Google or Zoom row per appointment; one webhook row per event. It is the delivery log too; `bookings:prune` deletes finished rows after 30 days |
+
+Appointments got `video_meeting_id` (Zoom) and `google_event_id` in Phase 9; with `video_link`
+they are written only by `Integrations\IntegrationSync`, without touching `updated_at`.
+
+## The Bookings plan (Phase 10)
+
+| Table | Notes |
+|---|---|
+| `xs_booking_plans` | Built 5 Nov 2026 (migration `2026-11-19-100000`): one row per business (unique listing_id), state (trial, active, cancelled), trial_ends_at, paid_until (UTC), amount_cents, payment_reference (`WSL-BKG-M-000123`), payment_attempts, the Paystack mandate (customer, plan, subscription code, email token), reminded_at, cancelled_at, note. Not scoped (the webhook reads across businesses); written only by `Plans\BookingPlanService` |
+| `xs_booking_plan_payments` | one row per charge, unique gateway_id (`paystack:<id>`), so the return and the webhook count once |
+
+Customers past the keeping period keep their row (counts) with `purged_at` set and the
+personal fields cleared (`Privacy\Retention`); `CustomerService::list()` leaves them out.
 
 ## Settings (Phase 1)
 

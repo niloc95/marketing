@@ -924,6 +924,10 @@ class Directory extends BaseController
 
         (new ListingStatsService())->countView($this->request, (int) $listing['id']);
 
+        // Online bookings on the platform: the contact panel's Book online
+        // button and the JSON-LD ReserveAction. '' while bookings are off.
+        $listing['_book_url'] = \App\Services\Bookings\PublicBookingService::bookUrl($listing);
+
         return view('directory/show', [
             'l'       => $listing,
             // Explicit, not omitted: the renderer keeps data between renders,

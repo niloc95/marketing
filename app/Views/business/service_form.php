@@ -46,7 +46,8 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
             <?= $err('duration_min') ?>
         </div>
         <div class="field">
-            <label for="svc-price">Price in rand <span class="font-normal text-slate-500">(optional)</span></label>
+            <?php $currency = \App\Services\Bookings\BusinessLocale::currency(service('businessContext')->listing()); ?>
+            <label for="svc-price">Price <?= $currency === 'ZAR' ? 'in rand' : 'in ' . esc($currency) ?> <span class="font-normal text-slate-500">(optional)</span></label>
             <input id="svc-price" type="text" name="price" value="<?= esc((string) $v['price']) ?>" inputmode="decimal" placeholder="350">
             <?= $err('price') ?>
         </div>
@@ -62,11 +63,13 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
             <input id="svc-after" type="number" name="buffer_after" value="<?= (int) $v['buffer_after'] ?>" min="0" max="240" step="5">
             <?= $err('buffer_after') ?>
         </div>
+        <?php if ($currency === 'ZAR'): // Deposits take rand only (PayFast, Paystack ZA): co.za businesses. ?>
         <div class="field">
             <label for="svc-deposit">Deposit (%)</label>
             <input id="svc-deposit" type="number" name="deposit_pct" value="<?= (int) $v['deposit_pct'] ?>" min="0" max="100">
             <?= $err('deposit_pct') ?>
         </div>
+        <?php endif ?>
     </div>
     <p class="-mt-2 mb-4 text-xs text-slate-500 dark:text-slate-400">Gaps keep time free around the booking, for setting up or cleaning. Deposits are collected once online payments arrive.</p>
 

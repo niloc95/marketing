@@ -5,6 +5,10 @@
  * @var array<string,mixed>       $listing
  * @var array<string,string>      $settings
  * @var array<string,list<string>> $choices
+ * @var array<string,mixed>|null   $messages the Messages tab (NotificationSettings::viewData())
+ * @var array<string,mixed>|null   $payments the Payments tab (PaymentSettings::viewData())
+ * @var array<string,mixed>|null   $connections the Connections tab (ConnectionSettings::viewData())
+ * @var array<string,mixed>|null   $api the API keys tab (ApiKeys::viewData())
  */
 $labels = [
     '24h' => '24 hour clock (14:30)', '12h' => '12 hour clock (2:30 pm)',
@@ -14,9 +18,9 @@ $labels = [
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
-<nav class="mb-5 flex gap-1 border-b border-slate-200 dark:border-slate-800" aria-label="Settings">
+<nav class="mb-5 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800" aria-label="Settings">
     <?php foreach ($tabs as $key => $label): ?>
-        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-brand-ocean text-brand-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
+        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-brand-ocean text-brand-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
     <?php endforeach ?>
 </nav>
 
@@ -28,7 +32,7 @@ $labels = [
                 <dt class="text-slate-500 dark:text-slate-400">Name</dt><dd class="col-span-2"><?= esc((string) $listing['display_name']) ?></dd>
                 <dt class="text-slate-500 dark:text-slate-400">Email</dt><dd class="col-span-2"><?= esc((string) $listing['email']) ?></dd>
                 <dt class="text-slate-500 dark:text-slate-400">Phone</dt><dd class="col-span-2"><?= esc((string) ($listing['phone'] ?? '')) ?></dd>
-                <dt class="text-slate-500 dark:text-slate-400">Time zone</dt><dd class="col-span-2"><?= esc((string) ($listing['timezone'] ?: 'Africa/Johannesburg')) ?></dd>
+                <dt class="text-slate-500 dark:text-slate-400">Time zone</dt><dd class="col-span-2"><?= esc(\App\Services\Bookings\BusinessLocale::timezoneName($listing)) ?></dd>
             </dl>
             <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">To change these, or your opening hours, <a class="underline" href="<?= base_url('manage') ?>">edit your business profile</a>.</p>
         </div>
@@ -69,11 +73,56 @@ $labels = [
             <label for="biz-limit">Customers can book up to this many days ahead</label>
             <input id="biz-limit" type="number" name="future_limit" min="1" max="730" value="<?= (int) $settings['business.future_limit'] ?>">
         </div>
+        <div class="field">
+            <label for="biz-resched">Customers can change a booking online up to this many hours before</label>
+            <input id="biz-resched" type="number" name="reschedule_hours" min="0" max="336" value="<?= (int) $settings['business.reschedule'] ?>">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">0 means they cannot change it online and must contact you.</p>
+        </div>
+        <div class="field">
+            <label for="biz-cancel">Customers can cancel online up to this many hours before</label>
+            <input id="biz-cancel" type="number" name="cancel_hours" min="0" max="336" value="<?= (int) $settings['business.cancel'] ?>">
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">0 means they cannot cancel online.</p>
+        </div>
+        <div class="field">
+            <label for="biz-status">A booking made online is</label>
+            <select id="biz-status" name="default_status">
+                <option value="pending"<?= $settings['booking.default_appointment_status'] === 'pending' ? ' selected' : '' ?>>Waiting for your confirmation</option>
+                <option value="confirmed"<?= $settings['booking.default_appointment_status'] === 'confirmed' ? ' selected' : '' ?>>Confirmed at once</option>
+            </select>
+        </div>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
+<?php elseif ($tab === 'notifications'): ?>
+    <?= $this->include('business/_settings_notifications') ?>
+<?php elseif ($tab === 'payments'): ?>
+    <?= $this->include('business/_settings_payments') ?>
+<?php elseif ($tab === 'connections'): ?>
+    <?= $this->include('business/_settings_connections') ?>
+<?php elseif ($tab === 'api'): ?>
+    <?= $this->include('business/_settings_api') ?>
+<?php elseif ($tab === 'plan'): ?>
+    <?= $this->include('business/_settings_plan') ?>
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>
+        <h2 class="mb-2 font-bold">What customers fill in</h2>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">First name is always asked. Keep an email or a phone required, so you can reach everyone who books.</p>
+        <div class="table-scroll mb-6">
+            <table class="table">
+                <thead><tr><th>Field</th><th>Ask</th><th>Required</th></tr></thead>
+                <tbody>
+                    <?php foreach (['surname' => 'Surname', 'email' => 'Email', 'phone' => 'Phone', 'address' => 'Address', 'notes' => 'Anything we should know?'] as $stem => $label): ?>
+                        <tr>
+                            <td><?= $label ?></td>
+                            <td><input type="checkbox" name="field[<?= $stem ?>][display]" value="1" aria-label="Ask for <?= esc($label, 'attr') ?>"<?= $settings['booking.' . $stem . '_display'] === '1' ? ' checked' : '' ?>></td>
+                            <td><input type="checkbox" name="field[<?= $stem ?>][required]" value="1" aria-label="<?= esc($label, 'attr') ?> is required"<?= $settings['booking.' . $stem . '_required'] === '1' ? ' checked' : '' ?>></td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="mb-2 font-bold">Your questions</h2>
         <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">Up to six questions of your own, asked when you or a customer books. Answers stay with the appointment and with the customer for next time.</p>
         <?php for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++): ?>
             <?php $p = 'booking.custom_field_' . $n . '_'; ?>
@@ -104,6 +153,25 @@ $labels = [
                 </div>
             </fieldset>
         <?php endfor ?>
+
+        <h2 class="mb-2 mt-6 font-bold">Your booking terms</h2>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Shown on your booking terms page. When you add any, customers tick a box to accept them before booking.</p>
+        <?php foreach (['terms' => ['legal.terms', 'Terms'], 'cancellation' => ['legal.cancellation_policy', 'Cancelling'], 'rescheduling' => ['legal.rescheduling_policy', 'Changing a booking']] as $field => [$key, $label]): ?>
+            <div class="field">
+                <label for="legal-<?= $field ?>"><?= $label ?></label>
+                <textarea id="legal-<?= $field ?>" name="<?= $field ?>" rows="3" maxlength="<?= \Config\Bookings::LEGAL_TEXT_MAX ?>"><?= esc($settings[$key]) ?></textarea>
+            </div>
+        <?php endforeach ?>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="field">
+                <label for="legal-terms-url">Link to your full terms <span class="font-normal text-slate-500">(optional)</span></label>
+                <input id="legal-terms-url" type="url" name="terms_url" maxlength="500" value="<?= esc($settings['legal.terms_url'], 'attr') ?>" placeholder="https://">
+            </div>
+            <div class="field">
+                <label for="legal-privacy-url">Link to your privacy policy <span class="font-normal text-slate-500">(optional)</span></label>
+                <input id="legal-privacy-url" type="url" name="privacy_url" maxlength="500" value="<?= esc($settings['legal.privacy_url'], 'attr') ?>" placeholder="https://">
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
 <?php else: ?>
@@ -125,7 +193,7 @@ $labels = [
                 <?php endforeach ?>
             </select>
         </div>
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Your time zone comes from your business profile: <?= esc((string) ($listing['timezone'] ?: 'Africa/Johannesburg')) ?>.</p>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Your time zone comes from your business profile: <?= esc(\App\Services\Bookings\BusinessLocale::timezoneName($listing)) ?>.</p>
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
 <?php endif ?>

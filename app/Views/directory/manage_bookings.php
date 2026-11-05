@@ -26,6 +26,9 @@
                 <div class="alert alert-info"><?= esc($whyNot) ?></div>
             <?php else: ?>
                 <p class="mb-3 text-sm">Let customers book a time with you, keep a calendar for your team and send reminders. You set it up first; customers see nothing until you are ready.</p>
+<?php if (App\Services\Bookings\Plans\BookingPlanService::required()): helper('money'); $tiers = config('Bookings')->planTiers(); ?>
+                    <p class="mb-3 text-sm font-semibold">Free for <?= (int) config('Bookings')->trialDays ?> days, then from <?= esc(App\Services\Bookings\Plans\BookingPlanService::display($tiers[0], site()->forRow($listing) === Config\Sites::APP)) ?> a month, by the size of your team. No card needed to start.</p>
+                <?php endif ?>
                 <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">You become the admin of the business, signed in with <?= esc((string) $listing['email']) ?>. You choose a password on the next page.</p>
                 <form method="post" action="<?= base_url('manage/bookings') ?>">
                     <?= csrf_field() ?>

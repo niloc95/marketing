@@ -3,6 +3,7 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\Notifications\OptOuts;
 use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\CustomerService;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -71,7 +72,21 @@ class Customers extends BaseController
             'stats'        => $this->service()->stats($customer['id']),
             'impact'       => $context->can('customers.delete') ? $this->service()->deletionImpact($customer['id']) : null,
             'timezone'     => $context->timezone(),
+            'optedOut'     => ! empty($customer['email']) && (new OptOuts($context->listingId()))->isOptedOut('email', (string) $customer['email']),
         ]);
+    }
+
+    /** The customer asked to get booking emails again (they stopped them from a link). */
+    public function emailsAgain(string $hash)
+    {
+        $context  = service('businessContext');
+        $customer = $this->visible($hash);
+        if ($this->request->getPost('confirm') === 'yes' && ! empty($customer['email'])) {
+            (new OptOuts($context->listingId()))->optIn('email', (string) $customer['email']);
+            (new \App\Services\Bookings\BookingAudit())->record($context->listingId(), $context->accountId(), 'customer.emails_again', 'customer', $customer['id']);
+        }
+
+        return redirect()->to(base_url('business/customers/' . $hash))->with('success', 'Booking emails will reach them again.');
     }
 
     public function save(string $hash)
@@ -96,6 +111,23 @@ class Customers extends BaseController
         }
 
         return redirect()->to(base_url('business/customers'))->with('success', 'Customer deleted.');
+    }
+
+    /**
+     * Everything held about the customer as one JSON file, for a POPIA
+     * access request (admins; Phase 10). In the audit log.
+     */
+    public function export(string $hash)
+    {
+        $customer = $this->visible($hash);
+        $context  = service('businessContext');
+        $data     = (new \App\Services\Bookings\Privacy\CustomerExport($context->listingId()))->build((int) $customer['id']);
+        (new \App\Services\Bookings\BookingAudit())->record($context->listingId(), $context->accountId(), 'customer.exported', 'customer', (int) $customer['id']);
+
+        return $this->response
+            ->setHeader('Cache-Control', 'no-store, private')
+            ->setHeader('Content-Disposition', 'attachment; filename="customer-' . (int) $customer['id'] . '.json"')
+            ->setJSON($data);
     }
 
     /** JSON for the appointment form's customer picker: ?q= (at most 10). */

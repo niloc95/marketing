@@ -45,7 +45,16 @@ class Calendar extends BaseController
             'statuses'      => AppointmentStatus::options(),
             'customFields'  => (new CustomerService($context->listingId()))->customFields(),
             'anyone'        => $scope === null,
+            'sendChannels'  => self::sendChannels($context->listingId()),
         ]);
+    }
+
+    /** Channels "Send again" offers: email, and WhatsApp when the business's account sends. @return array<string,string> */
+    private static function sendChannels(int $listingId): array
+    {
+        $integrations = new \App\Services\Bookings\Notifications\BookingIntegrations($listingId);
+
+        return array_filter(\Config\BookingNotifications::CHANNEL_LABELS, static fn (string $label, string $ch): bool => $ch === 'email' || $integrations->active($ch), ARRAY_FILTER_USE_BOTH);
     }
 
     /** JSON: {data: render model, meta: {view, timezone}} */

@@ -10,6 +10,7 @@
  * @var array{total:int,upcoming:int,completed:int,cancelled:int,no_show:int} $stats
  * @var array{upcoming:int,past:int,can_delete:bool}|null         $impact null when the member may not delete
  * @var string                                                    $timezone
+ * @var bool                                                      $optedOut  stopped this business's booking emails
  */
 use App\Services\Bookings\AppointmentStatus;
 
@@ -26,6 +27,16 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
     <?= esc(implode(' · ', array_filter([(string) ($customer['email'] ?? ''), (string) ($customer['phone'] ?? '')]))) ?>
 </p>
+<?php if (! empty($optedOut)): ?>
+    <div class="alert alert-info mt-3">
+        <p>This customer asked us to stop your booking emails to them.</p>
+        <form method="post" action="<?= base_url('business/customers/' . $customer['hash'] . '/emails') ?>" class="mt-2">
+            <?= csrf_field() ?>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" required> They asked me to send them again</label>
+            <button type="submit" class="btn btn-ghost btn-xs mt-2">Send booking emails again</button>
+        </form>
+    </div>
+<?php endif ?>
 
 <dl class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
     <?php foreach (['total' => 'Appointments', 'upcoming' => 'Upcoming', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'no_show' => 'No show'] as $k => $label): ?>
@@ -65,6 +76,11 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 </form>
 
 <?php if ($impact !== null): ?>
+    <section class="form-card form-card-narrow mt-8" id="their-data">
+        <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Their data</h2>
+        <p class="text-sm">If they ask what you hold about them, download it all in one file: their details, answers, appointments, deposits and the messages sent to them. We keep customers for <?= (int) config('Bookings')->retentionMonths ?> months after their last appointment, then remove their personal details.</p>
+        <a class="btn btn-ghost mt-4" href="<?= base_url('business/customers/' . $customer['hash'] . '/export') ?>">Download their data</a>
+    </section>
     <section class="form-card form-card-narrow mt-8" id="delete">
         <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Delete this customer</h2>
         <?php if (! $impact['can_delete']): ?>
