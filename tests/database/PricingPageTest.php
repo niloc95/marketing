@@ -51,6 +51,18 @@ final class PricingPageTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Plus', $html);
     }
 
+    public function testTheAdminSetsTheCoZaSetupPrice(): void
+    {
+        $this->setEnv('directory.profileSetupAmount', '250.00');
+        $saved = (new DirectorySettings())->save(['profile_setup_price' => 'R2 500,00'], 'test');
+        $this->assertTrue($saved['ok'], $saved['message']);
+
+        $this->assertStringContainsString('R2500.00 once off', $this->text($this->page('pricing')));
+        $this->assertStringContainsString('For a single payment of R2500,', $this->text($this->page('profile-setup')));
+        $this->assertSame('2500.00', json_decode($this->get('pricing.json')->getJSON(), true)['za']['profileSetup']['amount']);
+        $this->assertSame('2500.00', (new \App\Services\ProfileSetupService())->amount());
+    }
+
     public function testAppQuotesPlusInDollarsAndNeverRand(): void
     {
         $this->goLiveWithPlus();

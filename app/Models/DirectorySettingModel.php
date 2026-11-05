@@ -49,9 +49,15 @@ class DirectorySettingModel extends Model
     /**
      * The profile setup service's price on local.webscheduler.app, in US
      * dollars, charged in rand at USD_ZAR_RATE. co.za keeps its rand price
-     * (Config\Directory::profileSetupAmount()).
+     * (PROFILE_SETUP_ZAR).
      */
     public const PROFILE_SETUP_USD = 'profile_setup_usd';
+
+    /**
+     * The profile setup service's price on co.za, in rand. Unset, it is
+     * Config\Directory::profileSetupAmount() (.env, then the default).
+     */
+    public const PROFILE_SETUP_ZAR = 'profile_setup_price';
 
     /** Home hero background: 'photos' (the rotation), 'video' or 'youtube'. */
     public const HERO_MEDIA      = 'hero_media';
@@ -85,6 +91,7 @@ class DirectorySettingModel extends Model
         self::BADGE_PRICE_YEARLY,
         self::PLUS_PRICE_USD_YEARLY,
         self::PROFILE_SETUP_USD,
+        self::PROFILE_SETUP_ZAR,
         self::HERO_MEDIA,
         self::HERO_VIDEO_PATH,
         self::HERO_YOUTUBE_ID,
