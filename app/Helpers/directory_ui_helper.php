@@ -503,7 +503,10 @@ if (! function_exists('category_photo')) {
      * file renders a broken image over the tile — CategoryPhotoTest checks every
      * entry against the disk, and that every seeded group has one.
      *
-     * @return array{src: string, src_sm: string, src_lg: string, credit: string, credit_url: string}|null
+     * A photo whose subject sits high in the frame is listed in $focus: the wide
+     * hero band crops a 3:2 photo to its middle, which cuts off a head near the top.
+     *
+     * @return array{src: string, src_sm: string, src_lg: string, credit: string, credit_url: string, focus: string}|null
      */
     function category_photo(array $category, array $taken = []): ?array
     {
@@ -541,8 +544,12 @@ if (! function_exists('category_photo')) {
         // reason: it must cover every group the seeder creates.
         static $byGroup = [
             'Health & Medical' => [
-                ['group-health-medical', 'Tessy Agbonome', 18828741],
+                // The owner's Doctors photo since 5 Nov 2026, the General
+                // Practitioner file reused so the two never repeat on one page.
+                ['general-practitioner', 'Supplied by the owner', 0],
                 ['group-health-medical-2', 'Laura James', 6097750],
+                // The group's first photo until 5 Nov 2026; /company still uses it.
+                ['group-health-medical', 'Tessy Agbonome', 18828741],
             ],
             'Beauty & Wellness' => [
                 ['group-beauty-wellness', 'Jonathan Borba', 19641835],
@@ -576,6 +583,11 @@ if (! function_exists('category_photo')) {
             'Faith & Worship'          => [['group-faith-worship', 'Bingqian Li', 30036851]],
         ];
 
+        // file name => class for the hero band's crop (directory.css).
+        static $focus = [
+            'general-practitioner' => 'photo-focus-high',
+        ];
+
         $photo = static fn (string $name, string $credit, int $id): array => [
             'src'        => 'assets/categories/' . $name . '-800.webp',
             'src_sm'     => 'assets/categories/' . $name . '-400.webp',
@@ -584,6 +596,7 @@ if (! function_exists('category_photo')) {
             'src_lg'     => 'assets/categories/' . $name . '-1600.webp',
             'credit'     => $credit,
             'credit_url' => $id > 0 ? 'https://www.pexels.com/photo/' . $id . '/' : '',
+            'focus'      => $focus[$name] ?? '',
         ];
 
         $slug  = (string) ($category['slug'] ?? '');

@@ -46,10 +46,21 @@ final class CategoryPhotoTest extends CIUnitTestCase
     public function testACategoryOfItsOwnWinsOverItsGroup(): void
     {
         $dentist = category_photo(['slug' => 'dentist', 'group_name' => 'Health & Medical']);
-        $gp      = category_photo(['slug' => 'general-practitioner', 'group_name' => 'Health & Medical']);
+        $optician = category_photo(['slug' => 'optometrist', 'group_name' => 'Health & Medical']);
 
         $this->assertSame('assets/categories/dentist-800.webp', $dentist['src']);
-        $this->assertSame('assets/categories/group-health-medical-800.webp', $gp['src']);
+        $this->assertSame('assets/categories/general-practitioner-800.webp', $optician['src']);
+    }
+
+    public function testTheDoctorsPhotoKeepsItsHeadInTheBand(): void
+    {
+        $gp    = category_photo(['slug' => 'general-practitioner', 'group_name' => 'Health & Medical']);
+        $group = category_photo(['group_name' => 'Health & Medical']);
+        $other = category_photo(['slug' => 'dentist', 'group_name' => 'Health & Medical']);
+
+        $this->assertSame('photo-focus-high', $gp['focus']);
+        $this->assertSame($gp['src'], $group['src']);
+        $this->assertSame('', $other['focus']);
     }
 
     public function testTattooAndPiercingHasItsOwnPhoto(): void

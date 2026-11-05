@@ -1632,6 +1632,8 @@
      eyebrow over the heading (.hero-group) rather than a gradient behind
      everything. */
   .hero-vertical-img { @apply object-cover; }
+  /* category_photo()'s $focus: a subject high in the frame stays in the band. */
+  .hero-vertical-img.photo-focus-high { object-position: 50% 15%; }
   .hero .hero-group { color: var(--tint-fg, theme(colors.brand.orange)); }
   .dark .hero .hero-group { color: var(--tint-fg-dark, theme(colors.brand.orange)); }
 
