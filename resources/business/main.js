@@ -6,8 +6,10 @@ import { initTheme } from './theme.js';
 import { initInactivityMonitor } from './inactivity.js';
 import { initCalendar } from './calendar/scheduler.js';
 import { initProviderForms } from './providers.js';
+import { initDashboard } from './dashboard.js';
 
 initTheme();
 initInactivityMonitor();
 initCalendar();
 initProviderForms();
+initDashboard();

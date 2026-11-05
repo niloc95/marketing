@@ -273,6 +273,9 @@ $routes->group('business', ['filter' => 'businessauth:account'], static function
     $routes->post('account/password', 'Business\Account::savePassword');
 });
 $routes->get('business', 'Business\Home::index', ['filter' => 'businessauth']);
+// Phase 7: the dashboard's refresh (today's list and figures, as HTML) and analytics.
+$routes->get('business/api/dashboard/today', 'Business\Home::today', ['filter' => 'businessauth']);
+$routes->get('business/analytics', 'Business\Analytics::index', ['filter' => ['businessauth', 'businesscan:analytics.view']]);
 // Phase 6: every member's own notices.
 $routes->group('business', ['filter' => 'businessauth'], static function ($routes) {
     $routes->get('notifications', 'Business\Notifications::index');

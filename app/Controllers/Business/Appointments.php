@@ -87,7 +87,7 @@ class Appointments extends BaseController
             'services'     => (new CatalogueService($context->listingId()))->services(),
             'customFields' => (new CustomerService($context->listingId()))->customFields(),
             'statuses'     => array_values(array_filter(AppointmentStatus::options(), static fn (array $s): bool => in_array($s['value'], AppointmentStatus::UPCOMING, true))),
-            'old'          => flash('appointment_old') ?: ['date' => $this->request->getGet('date'), 'time' => $this->request->getGet('time'), 'provider_id' => $this->request->getGet('provider_id')],
+            'old'          => flash('appointment_old') ?: ['date' => $this->request->getGet('date'), 'time' => $this->request->getGet('time'), 'provider_id' => $this->request->getGet('provider_id'), 'service_id' => $this->request->getGet('service_id')],
             'errors'       => flash('errors') ?: [],
             'timezone'     => $context->timezone(),
         ]);

@@ -4310,4 +4310,28 @@
   /* A class that sets display must never beat the hidden attribute. */
   .cal [hidden] { display: none !important; }
   .cal-toast { @apply fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-white dark:text-slate-900; }
+
+  /* The /business dashboard and analytics (business/home.php, _dash_today.php,
+     analytics.php). Tiles, lists and charts are the admin dashboard's
+     (.stats-*, .dash-*); these are the pieces it does not have. */
+  .biz-tiles  { @apply mb-6 mt-0 grid-cols-2; }
+  .biz-alerts { @apply grid gap-2; }
+  .biz-alert  { @apply flex flex-wrap items-center gap-2 rounded-xl border px-4 py-2.5 text-sm; }
+  .biz-alert.is-warn { @apply border-amber-200 bg-amber-50 text-amber-900; }
+  .biz-alert.is-info { @apply border-slate-200 bg-white text-slate-700; }
+  .dark .biz-alert.is-warn { @apply border-amber-500/30 bg-amber-500/10 text-amber-100; }
+  .dark .biz-alert.is-info { @apply border-slate-800 bg-surface-tone text-slate-200; }
+  .biz-today  { @apply mt-3 grid gap-5 md:grid-cols-2; }
+  .biz-today-name { @apply mb-1 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white; }
+  /* The person's colour arrives by CSSOM (dashboard.js); ocean until then. */
+  .biz-dot    { @apply inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-brand-ocean; }
+  .biz-when-past { @apply opacity-60; }
+  .biz-when-now  { @apply rounded-lg bg-primary-50 px-2 dark:bg-white/5; }
+  .biz-team   { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  .biz-team > .panel { @apply min-w-0 p-5; }
+  .biz-state  { @apply shrink-0 rounded-full px-2 py-0.5 text-xs font-medium; }
+  .biz-state.is-working  { @apply bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200; }
+  .biz-state.is-break    { @apply bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200; }
+  .biz-state.is-off,
+  .biz-state.is-time_off { @apply bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300; }
 }

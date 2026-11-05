@@ -46,11 +46,11 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | cached per business, 5 min |
-| Provider cards with free slots, quick book | `/api/dashboard/provider-slots` | Port | 7 | |
-| Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | |
-| Role alerts (pending confirmations, missing hours, booking off, closures, overbooking) | `AuthorizationService` | Port | 7 | |
-| Analytics: overview, revenue, customers, providers | `AnalyticsService`, `BookingMetricsService`, Chart.js | Port | 7 | Chart.js in the dashboard bundle only; public pages keep inline SVG charts |
+| Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | Built 5 Nov 2026: today, next 4 hours, next 7 days, waiting for confirmation, customers (own for a team member), booked value this month (from appointment prices, not money received). Pending payments wait for Phase 8. Cached 5 min per business and scope, emptied on every appointment change (`BookingMetricsCache`) |
+| Provider cards with free slots, quick book | `/api/dashboard/provider-slots` | Port | 7 | Built: state now in the business's time zone (working, on a break, off, time off; Bookings used the server clock), today's next free times as links to the prefilled form, next free time when today is full. Server rendered, no JSON endpoint |
+| Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | Built: by person, in team order; `GET /business/api/dashboard/today` returns the partial every 2 min while the tab is visible |
+| Role alerts (pending confirmations, missing hours, booking off, closures, overbooking) | `AuthorizationService` | Port | 7 | Bookings only built pending confirmations. Built: pending, setup problems (`SetupCheck`), public holidays with no answer, whole business closures in 14 days, messages not sent in 7 days (admin). Overbooking skipped: `BookingLock` refuses it |
+| Analytics: overview, revenue, customers, providers | `AnalyticsService`, `BookingMetricsService`, Chart.js | Port | 7 | Built: tabs Overview, Services, Team, Customers; 7, 30, 90 days and 12 months against the period before. **Inline SVG, not Chart.js** (the admin dashboard's partials: no new script, a table under each chart). Left out as made up in Bookings: staff utilisation (fixed 160 a month), retention by month (rate × 0.9…), revenue forecast |
 | Business stats on the public profile | Local `ListingStatsService` | keep | | separate from booking analytics; `taps_booking` stays |
 
 ## 4. Calendar and appointments

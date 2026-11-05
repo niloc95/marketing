@@ -18,7 +18,7 @@ New top level segments: `business`, `book`, `api`. Check `listing_reserved_slugs
 | none | `GET /manage/bookings` (turn on, from the owner magic link session) | 1 |
 | none | `GET /business/invite/{token}` (accept an invitation, set a password) | 2 |
 | `/profile/*` | `/business/account` | 1 |
-| `/dashboard` | `GET /business` | 7 (shell in 1) |
+| `/dashboard` | `GET /business` | 7 (shell in 1; built 5 Nov 2026) |
 | `/appointments` (+ `?open={hash}`) | `/business/calendar` (+ `?open={hash}`) | 4 |
 | `/appointments/create`, `edit/{hash}` | modal inside the calendar, plus `/business/appointments/new` without JS | 4 |
 | `/customer-management/*` | `/business/customers`, `/business/customers/{hash}` | 4 |
@@ -26,7 +26,7 @@ New top level segments: `business`, `book`, `api`. Check `listing_reserved_slugs
 | `/user-management/*`, `/providers/{id}/schedule`, `/provider-staff/*`, `/staff-providers/*` | `/business/team`, `/business/team/{id}`, `/business/team/{id}/hours` | 2 |
 | none (blocked times had no UI) | `/business/time-off` | 2 |
 | `/notifications` | `/business/notifications` | 6 |
-| `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/business/analytics` (tabs by `?tab=`) | 7 |
+| `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/business/analytics` (`?tab=overview|services|team|customers`, `?period=7d|30d|90d|12m`, `?provider=`; built) | 7 |
 | `/settings` (tabs) | `/business/settings/{tab}` | 1 to 9 |
 | none | `/business/audit` | 1 |
 | `/search`, `/dashboard/search` | `/business/search` | 4 |
@@ -43,7 +43,7 @@ under `/business/api/` so session and CSRF rules stay simple.
 | `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); payment and notify in 6 and 8 | 4, 6, 8 |
 | `GET /api/availability/*` | `GET /business/api/availability/*` | 3 |
 | `GET /api/customers/*` | `/business/api/customers/*` | 4 |
-| `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `/business/api/dashboard/*` | 7 |
+| `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /business/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
 | `GET/POST integrations/*` | `/business/api/integrations/*` | 9 |
 
 ## Public booking (no account; session starts only at the details step)

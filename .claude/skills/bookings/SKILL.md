@@ -23,7 +23,8 @@ Phases 0 to 4 were merged to `main` on 4 Nov 2026 (`f3bb15b`), behind `bookings.
 | 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, not merged): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
 | 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, not merged): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
 | 6 Notifications | built 5 Nov 2026 on `bookings-p6-notifications` (off p5, not merged): queue, dispatcher, rules, reminders, templates, email, SMS and WhatsApp on the business's own account, delivery logs, opt out, notices |
-| 7 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
+| 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, not merged): figures, today by person with refresh, waiting list, free times with quick book, alerts, /business/analytics with four tabs |
+| 8 to 10 | not started; open owner decisions in docs/bookings/decisions.md |
 
 Update this table and the decisions file as phases land.
 
@@ -236,9 +237,29 @@ the Book online button and the booking page.
 - SMS and WhatsApp accounts need `encryption.key`. Without it the tab says they are not available, and nothing is saved in plain text. Dev has no key, so dev shows that state. Decision D14: set the key on production before release.
 - WhatsApp has three modes: "link" (a wa.me button in the details, never queued), Twilio (body text), and Meta, which sends only approved templates with five fixed values: first name, business, service, when, link.
 
-## Next: Phase 7
+## Phase 7 in the code
 
-Not started. Read `parity.md` and `README.md` for its scope before starting.
+| Piece | Where |
+|---|---|
+| Dashboard | `DashboardService($listing, $scope, ?$now)`: `cards()` (cached), `schedule()`, `waiting()`, `comingUp()`, `team()` (state now, free times, next free), `alerts($member)` |
+| Analytics | `AnalyticsService($listing, $scope, ?$now)`: `report($period, ?$providerId)`, periods `7d`, `30d`, `90d`, `12m` (by month); one query per period, summed in PHP, cached |
+| Cache | `BookingMetricsCache::remember()` (5 min, key carries a per business generation); `AppointmentService::notify()` calls `forget()` after every change. Bump `SHAPE` when a cached array changes shape |
+| Pages | `Business\Home` (`/business`, `GET /business/api/dashboard/today` = `_dash_today.php` partial), `Business\Analytics` (`/business/analytics`, `businesscan:analytics.view`: admin and team member, not reception); quick book links prefill `/business/appointments/new?provider_id&service_id&date&time` |
+| Views | `business/home.php`, `_dash_today.php`, `analytics.php`; charts are `directory/_stacked_bar_chart.php` and `_meter_rows.php` (inline SVG, as the admin dashboard; no Chart.js) |
+| Script | `resources/business/dashboard.js` (refresh every 2 min while visible, person colour dots via CSSOM, `data-autosubmit` selects) |
+| Tests | `tests/database/BookingDashboardTest.php` (bookings on a clock of 1 Dec 2029, dashboard read Monday 7 Jan 2030 10:30) |
+
+**Rules:** "Value" is the price on appointments that are pending, confirmed or completed;
+it is never called revenue or money received (that is Phase 8). A no show is booked (it
+took the time) but has no value. Customers are counted in scope. Only figures the data
+carries: Bookings' utilisation, monthly retention and forecast were invented and are not
+ported. A holiday alert only fires inside the booking horizon (30 days at most) and not on
+a weekday the profile is closed anyway.
+
+## Next: Phase 8
+
+Payments (deposits through Paystack subaccounts, D6). Read `parity.md` and `README.md`
+for its scope, and settle D6 and D9 with the owner before starting.
 
 **Custom fields (built):** Settings, Questions tab (`/business/settings/questions`). Types
 text, textarea, select (choices one per line in `booking.custom_field_N_options`) and

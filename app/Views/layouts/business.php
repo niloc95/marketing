@@ -36,6 +36,9 @@ if ($listing !== null) {
     if ($context->can('appointments.manage')) {
         $nav[] = ['business/availability', 'Availability', 'calendar-days'];
     }
+    if ($context->can('analytics.view')) {
+        $nav[] = ['business/analytics', 'Analytics', 'chart-column'];
+    }
     if ($context->can('settings.manage')) {
         $nav[] = ['business/settings', 'Settings', 'settings'];
     }

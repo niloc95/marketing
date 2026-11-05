@@ -5,18 +5,51 @@ namespace App\Controllers\Business;
 use App\Controllers\BaseController;
 use App\Services\Bookings\BusinessMemberService;
 use App\Services\Bookings\BusinessSession;
+use App\Services\Bookings\DashboardService;
 
-/** The /business landing page and the business picker. */
+/** The /business dashboard and the business picker. */
 class Home extends BaseController
 {
     public function index()
     {
-        $context = service('businessContext');
+        $context   = service('businessContext');
+        $dashboard = $this->dashboard();
 
         return view('business/home', [
             'listing' => $context->listing(),
             'member'  => $context->member(),
-        ]);
+            'alerts'  => $dashboard->alerts($context->member()),
+            'waiting' => $dashboard->waiting(),
+            'team'    => $dashboard->team(),
+            'coming'  => $dashboard->comingUp(),
+        ] + $this->todayData($dashboard));
+    }
+
+    /** The figures and today's list again, for the page's refresh (dashboard.js). */
+    public function today()
+    {
+        return view('business/_dash_today', $this->todayData($this->dashboard()));
+    }
+
+    private function dashboard(): DashboardService
+    {
+        $context = service('businessContext');
+
+        return new DashboardService($context->listing(), $context->providerScope());
+    }
+
+    /** @return array<string,mixed> */
+    private function todayData(DashboardService $dashboard): array
+    {
+        $context = service('businessContext');
+
+        return [
+            'cards'     => $dashboard->cards(),
+            'schedule'  => $dashboard->schedule(),
+            'today'     => $dashboard->today(),
+            'canValue'  => $context->can('analytics.view'),
+            'canBook'   => $context->can('appointments.manage'),
+        ];
     }
 
     public function choose()

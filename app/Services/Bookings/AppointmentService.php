@@ -462,9 +462,13 @@ class AppointmentService
         return \App\Services\Bookings\Notifications\Channels::whatsappLink($to, \App\Services\Bookings\Notifications\NotificationTemplates::fill($template, $context['values'])['body']);
     }
 
-    /** Queue the messages for a change just written (the queue never throws). */
+    /**
+     * After every appointment change: the dashboard figures start again
+     * (BookingMetricsCache), and the messages are queued (the queue never throws).
+     */
     public function notify(int $id, ?string $event, bool $byCustomer = false): void
     {
+        BookingMetricsCache::forget($this->listingId);
         if ($event !== null) {
             (new NotificationQueue($this->listingId, $this->now))->appointmentEvent($id, $event, $byCustomer);
         }
