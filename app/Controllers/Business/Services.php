@@ -39,11 +39,11 @@ class Services extends BaseController
         $result  = (new CatalogueService($context->listingId()))->saveService($id, $input, $context->accountId());
 
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url($id === null ? 'business/services/new' : 'business/services/' . $id))
+            return redirect()->to(base_url($id === null ? 'bookings/services/new' : 'bookings/services/' . $id))
                 ->with('errors', $result['errors'])->with('old', $input);
         }
 
-        return redirect()->to(base_url('business/services'))->with('success', 'Service saved.');
+        return redirect()->to(base_url('bookings/services'))->with('success', 'Service saved.');
     }
 
     public function archive(int $id)
@@ -54,7 +54,7 @@ class Services extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
-        return redirect()->to(base_url('business/services'))->with('success', $restore ? 'Service is back on offer.' : 'Service archived. Customers can no longer choose it.');
+        return redirect()->to(base_url('bookings/services'))->with('success', $restore ? 'Service is back on offer.' : 'Service archived. Customers can no longer choose it.');
     }
 
     public function saveCategory(?int $id = null)
@@ -67,7 +67,7 @@ class Services extends BaseController
             $context->accountId(),
         );
 
-        return redirect()->to(base_url('business/services#categories'))
+        return redirect()->to(base_url('bookings/services#categories'))
             ->with($result['errors'] === [] ? 'success' : 'error', $result['errors'] === [] ? 'Category saved.' : implode(' ', $result['errors']));
     }
 
@@ -76,7 +76,7 @@ class Services extends BaseController
         $context = service('businessContext');
         (new CatalogueService($context->listingId()))->deleteCategory($id, $context->accountId());
 
-        return redirect()->to(base_url('business/services#categories'))->with('success', 'Category deleted. Its services stay.');
+        return redirect()->to(base_url('bookings/services#categories'))->with('success', 'Category deleted. Its services stay.');
     }
 
     private function form(?int $id)

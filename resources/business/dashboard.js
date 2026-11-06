@@ -1,5 +1,5 @@
 /**
- * The /business dashboard and analytics (business/home.php, analytics.php).
+ * The /bookings dashboard and analytics (business/home.php, analytics.php).
  *
  * - Today's figures and list refresh every two minutes while the tab is in
  *   view, and at once when it comes back (Bookings' dashboard-refresh.js).

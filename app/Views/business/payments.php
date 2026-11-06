@@ -20,14 +20,14 @@ $more  = count($rows) > 50;
 $rows  = array_slice($rows, 0, 50);
 $query = static fn (array $extra): string => http_build_query(array_filter($extra + ['status' => $status]));
 $local = static fn (?string $utc, string $format): string => $utc ? (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($zone)->format($format) : '';
-$open  = static fn (string $startUtc, string $hash): string => base_url('business/calendar?view=day&date=' . (new DateTimeImmutable($startUtc, new DateTimeZone('UTC')))->setTimezone($zone)->format('Y-m-d') . '&open=' . $hash);
+$open  = static fn (string $startUtc, string $hash): string => base_url('bookings/calendar?view=day&date=' . (new DateTimeImmutable($startUtc, new DateTimeZone('UTC')))->setTimezone($zone)->format('Y-m-d') . '&open=' . $hash);
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Payments</h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Deposits customers paid into your own PayFast or Paystack account when they booked. <?= esc(CatalogueService::priceText($received)) ?> received this month.</p>
 <?php if (! $ready): ?>
-    <p class="alert alert-info mt-4">No payment account is on, so customers book without a deposit.<?php if ($canSetUp): ?> <a class="underline" href="<?= base_url('business/settings/payments') ?>">Connect PayFast or Paystack</a>.<?php endif ?></p>
+    <p class="alert alert-info mt-4">No payment account is on, so customers book without a deposit.<?php if ($canSetUp): ?> <a class="underline" href="<?= base_url('bookings/settings/payments') ?>">Connect PayFast or Paystack</a>.<?php endif ?></p>
 <?php endif ?>
 
 <?php if ($refund !== []): ?>
@@ -45,7 +45,7 @@ $open  = static fn (string $startUtc, string $hash): string => base_url('busines
     </section>
 <?php endif ?>
 
-<form method="get" action="<?= base_url('business/payments') ?>" class="mt-6 mb-4 flex flex-wrap items-end gap-3">
+<form method="get" action="<?= base_url('bookings/payments') ?>" class="mt-6 mb-4 flex flex-wrap items-end gap-3">
     <div class="field mb-0">
         <label for="f-status">Result</label>
         <select id="f-status" name="status" data-autosubmit>

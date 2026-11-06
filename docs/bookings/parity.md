@@ -20,7 +20,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Email + password sign in, sign out | `Auth.php`, session `user{role, roles[], active_role}` | Rebuild | 1 | `xs_accounts`; session only under `/business` |
+| Email + password sign in, sign out | `Auth.php`, session `user{role, roles[], active_role}` | Rebuild | 1 | `xs_accounts`; session only under `/bookings` |
 | Owner claims an account | none | New | 1 | from the `/manage` magic link: redeem, then set a password |
 | Lockout 5 attempts per 15 min per IP | CI4 Throttler | Port | 1 | plus a per account key so one IP cannot try many accounts slowly |
 | Password reset (1 h token) | `reset_token`, `reset_expires` | Rebuild | 1 | hashed token (`TokenHash`), sent through `Mailer` |
@@ -48,7 +48,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 |---|---|---|---|---|
 | Stat cards (today, customers, pending payments, revenue this month) | `DashboardService` | Port | 7 | Built 5 Nov 2026: today, next 4 hours, next 7 days, waiting for confirmation, customers (own for a team member), booked value this month (from appointment prices, not money received). Deposits received this month show in the value tile's note since Phase 8. Cached 5 min per business and scope, emptied on every appointment change (`BookingMetricsCache`) |
 | Provider cards with free slots, quick book | `/api/dashboard/provider-slots` | Port | 7 | Built: state now in the business's time zone (working, on a break, off, time off; Bookings used the server clock), today's next free times as links to the prefilled form, next free time when today is full. Server rendered, no JSON endpoint |
-| Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | Built: by person, in team order; `GET /business/api/dashboard/today` returns the partial every 2 min while the tab is visible |
+| Today's schedule with refresh | `dashboard-refresh.js` | Port | 7 | Built: by person, in team order; `GET /bookings/api/dashboard/today` returns the partial every 2 min while the tab is visible |
 | Role alerts (pending confirmations, missing hours, booking off, closures, overbooking) | `AuthorizationService` | Port | 7 | Bookings only built pending confirmations. Built: pending, setup problems (`SetupCheck`), public holidays with no answer, whole business closures in 14 days, messages not sent in 7 days (admin). Overbooking skipped: `BookingLock` refuses it |
 | Analytics: overview, revenue, customers, providers | `AnalyticsService`, `BookingMetricsService`, Chart.js | Port | 7 | Built: tabs Overview, Services, Team, Customers; 7, 30, 90 days and 12 months against the period before. **Inline SVG, not Chart.js** (the admin dashboard's partials: no new script, a table under each chart). Left out as made up in Bookings: staff utilisation (fixed 160 a month), retention by month (rate × 0.9…), revenue forecast |
 | Business stats on the public profile | Local `ListingStatsService` | keep | | separate from booking analytics; `taps_booking` stays |
@@ -89,10 +89,10 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 
 | Feature | Bookings today | Decision | Phase | Notes |
 |---|---|---|---|---|
-| Services: duration, price, category, active, slug, description | `xs_services` | Rebuild | 2 | `xs_booking_services`, linked to the profile's services list, see [data-model.md](data-model.md) |
+| Services: duration, price, category, active, slug, description | `xs_services` | Rebuild | 2 | `xs_booking_services`; while bookings are on they are the profile's services list (T28, mirrored), see [data-model.md](data-model.md) |
 | Service categories with colour | `xs_categories` | Port | 2 | per business |
 | Delivery modes per service (on site, Zoom, Jitsi) | `delivery_modes[]` | Port | 2 | video links work in Phase 9 |
-| Providers with slug, bio, colour, photo | `xs_users` with provider role | Rebuild | 2 | `xs_booking_providers`, optionally tied to a team member and an account |
+| Providers with slug, bio, colour, photo | `xs_users` with provider role | Rebuild | 2 | `xs_booking_providers`, optionally tied to a team member and an account. No photo column: the profile and the booking page use the linked team card's photo (Verified or Plus) |
 | Provider weekly hours and breaks | `xs_business_hours` | Port | 2 | |
 | Staff to provider assignments | `xs_provider_staff_assignments` | Port | 2 | |
 | Locations per provider, primary, active | `xs_locations` | Rebuild | 2 | use the profile's own address and branches (`xs_directory_practice_locations`) |
@@ -151,7 +151,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Paystack deposits | none | New | 8 | Built 5 Nov 2026 on the business's own secret key: hosted checkout, verified with Paystack when the customer comes back and by `bookings:payments` every 5 minutes. No webhook: a Paystack account has one webhook address, which the business may use for its own shop |
 | Hold while paying | none (Bookings booked first, then asked for payment) | New | 8 | The booking waits as pending with `payment_due_by` (`payments.hold_minutes`, 30); no messages until paid; paid moves it to the usual status and queues the messages; unpaid by then, `bookings:payments` cancels it quietly. A payment after that brings it back if the time is still free, otherwise "deposit to refund" |
 | Stripe deposits | `StripePaymentService` | Later | | .app has bookings since T24 but no deposits; Stripe (or Paystack in the business's currency) would add them |
-| Transactions, mark paid | `xs_payment_transactions`, `adminMarkPaid` | Port | 8 | Built 5 Nov 2026: `/business/payments` (every try, To refund list, received this month, scoped), Mark deposit paid and Mark refunded in the appointment details (`payments.manage`, own people for a team member) |
+| Transactions, mark paid | `xs_payment_transactions`, `adminMarkPaid` | Port | 8 | Built 5 Nov 2026: `/bookings/payments` (every try, To refund list, received this month, scoped), Mark deposit paid and Mark refunded in the appointment details (`payments.manage`, own people for a team member) |
 | Refunds | status exists, no flow | Later ⚠ | | T16: done in the business's own gateway, then marked refunded. A dashboard alert lists deposits paid on a cancelled or freed booking |
 
 ## 11. Integrations and API

@@ -151,7 +151,7 @@ country on the .app signup form.
 ## Online bookings on both sites
 
 Since decision T24 (5 Nov 2026, `docs/bookings/decisions.md`; skill `bookings`): a business
-takes bookings on its own site's host only (booking page, `/business`, `/api/v1`). Clock and
+takes bookings on its own site's host only (booking page, `/bookings`, `/api/v1`). Clock and
 currency come from `App\Services\Bookings\BusinessLocale` (profile timezone, else the country's;
 the country's currency). Deposits are rand only, so co.za only. The Bookings plan abroad is shown
 in US dollars (`Config\Bookings::$planTiers` `usd`) and charged in rand at `usd_zar_rate@app`,

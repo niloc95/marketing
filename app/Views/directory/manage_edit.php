@@ -180,6 +180,7 @@ $vMarketing  = array_key_exists('marketing_present', $old) ? ! empty($old['marke
                     'vTeam'        => $vTeam,
                     'vLocations'   => $vLocations,
                     'vServices'    => $vServices,
+                    'servicesFromBookings' => $servicesFromBookings ?? false,
                     'vAttributes'  => $vAttributes,
                     'vFacets'      => $vFacets,
                     'photos'       => $photos,

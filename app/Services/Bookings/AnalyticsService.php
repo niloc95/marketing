@@ -7,7 +7,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * /business/analytics: how bookings went over a period, compared with the
+ * /bookings/analytics: how bookings went over a period, compared with the
  * period before. Ported from Bookings' AnalyticsService and
  * BookingMetricsService (parity.md §3), with these changes:
  *

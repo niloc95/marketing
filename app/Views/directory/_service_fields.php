@@ -17,8 +17,34 @@ use App\Services\ServiceMenuService;
  * @var array    $rows stored service rows, or flashed input after a failed save
  * @var callable $err  fn(string $field): string — keys are 'services.0.name' etc
  * @var bool     $required  show the "Required" chip (signup and owner edit, not admin)
+ * @var bool     $fromBookings the booking catalogue writes this list (decision T28):
+ *                         shown read only, with no marker, so a save leaves it alone
  */
 $max = ServiceMenuService::MAX_SERVICES;
+
+if (! empty($fromBookings)) {
+    $named = array_values(array_filter(is_array($rows) ? $rows : [], static fn ($r): bool => is_array($r) && trim((string) ($r['name'] ?? '')) !== ''));
+    ?>
+    <details class="disclosure" open>
+        <summary class="disclosure-summary">
+            <span>Services &amp; prices</span>
+            <span class="hint"><?= count($named) ?> listed, from online bookings</span>
+        </summary>
+        <div class="disclosure-body">
+            <p class="hint">
+                You take online bookings, so your profile lists the services people can book.
+                Change them in <a class="underline" href="<?= esc(base_url('bookings/services'), 'attr') ?>">your bookings</a>; this list follows.
+            </p>
+            <ul class="service-list">
+                <?php foreach ($named as $r): ?>
+                    <li><span class="service-name"><?= esc((string) $r['name']) ?></span><?php if (! empty($r['price_label'])): ?><span class="service-price"><?= esc((string) $r['price_label']) ?></span><?php endif; ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </details>
+    <?php
+    return;
+}
 
 // Not filtered or re-keyed. Flashed input arrives with the indexes the errors
 // are keyed on (0..n-1, since the add button indexes off the row count), and

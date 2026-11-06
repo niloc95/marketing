@@ -103,6 +103,61 @@ export function initDetails(root, scheduler) {
     scheduler.toast(MSG.saved);
   });
 
+  // Free times to move to: the next few, and the chosen date's, each with
+  // its place. A click fills the date and time below; Move still saves.
+  const nextBox = q('[data-d-next]');
+  const dayBox = q('[data-d-day]');
+  const dayHeading = q('[data-d-day-heading]');
+  const chosen = q('[data-d-chosen]');
+  let freeAsk = 0;
+
+  function timeButtons(box, times, empty) {
+    box.replaceChildren(...times.map((t) => {
+      const b = el('button', 'free-time', '');
+      b.type = 'button';
+      b.append(el('span', 'free-time-when', t.label));
+      if (t.place) b.append(el('span', 'free-time-place', t.place));
+      b.addEventListener('click', () => {
+        q('[data-d-date]').value = t.date;
+        q('[data-d-time]').value = t.time;
+        dialog.querySelectorAll('.free-time[aria-pressed]').forEach((x) => x.removeAttribute('aria-pressed'));
+        b.setAttribute('aria-pressed', 'true');
+        chosen.textContent = MSG.chosenTime(t.label, t.place);
+        chosen.hidden = false;
+      });
+      return b;
+    }));
+    if (!times.length) box.append(el('p', 'free-times-empty', empty));
+  }
+
+  async function loadFree(withDate) {
+    if (!current) return;
+    const ask = ++freeAsk;
+    const params = new URLSearchParams({ provider: q('[data-d-provider]').value });
+    if (withDate && q('[data-d-date]').value) params.set('date', q('[data-d-date]').value);
+    nextBox.replaceChildren(el('p', 'free-times-empty', MSG.finding));
+    let body;
+    try {
+      body = await getJson(`${root.dataset.appointmentUrl}/${current.id}/free?${params}`);
+    } catch {
+      nextBox.replaceChildren(el('p', 'free-times-empty', MSG.failed));
+      return;
+    }
+    if (ask !== freeAsk) return; // A newer question was asked meanwhile.
+    timeButtons(nextBox, body.data.next, MSG.noFree);
+    const showDay = params.has('date');
+    dayHeading.hidden = !showDay;
+    dayBox.hidden = !showDay;
+    if (showDay) {
+      dayHeading.textContent = MSG.freeOn(longDay(params.get('date')));
+      timeButtons(dayBox, body.data.day, MSG.noFreeDay);
+    }
+  }
+
+  q('[data-d-move]').addEventListener('toggle', (e) => { if (e.target.open) { chosen.hidden = true; loadFree(false); } });
+  q('[data-d-date]').addEventListener('change', () => { chosen.hidden = true; loadFree(true); });
+  q('[data-d-provider]').addEventListener('change', () => { chosen.hidden = true; loadFree(q('[data-d-date]').value !== dateOf(current.start)); });
+
   q('[data-d-save-move]').addEventListener('click', async () => {
     if (!current) return;
     const ok = await scheduler.reschedule(current.id, q('[data-d-date]').value, q('[data-d-time]').value, Number(q('[data-d-provider]').value), fail);

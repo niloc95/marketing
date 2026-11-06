@@ -11,7 +11,7 @@
 <h1 class="text-xl font-bold text-slate-900 dark:text-white">Time off</h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Nobody can book these times. Public holidays follow your business profile's holiday hours. Times are in <?= esc($timezone) ?>.</p>
 
-<form method="post" action="<?= base_url('business/time-off') ?>" class="form-card mt-5">
+<form method="post" action="<?= base_url('bookings/time-off') ?>" class="form-card mt-5">
     <?= csrf_field() ?>
     <div class="grid gap-4 sm:grid-cols-2">
         <div class="field">
@@ -55,7 +55,7 @@
                         <td><?= esc((string) ($r['reason'] ?? '')) ?></td>
                         <td>
                             <?php if ($wholeBusiness || $r['provider_id'] !== null): ?>
-                                <form method="post" action="<?= base_url('business/time-off/' . $r['id'] . '/delete') ?>">
+                                <form method="post" action="<?= base_url('bookings/time-off/' . $r['id'] . '/delete') ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-xs">Remove</button>
                                 </form>

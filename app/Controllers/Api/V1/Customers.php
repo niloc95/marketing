@@ -7,9 +7,9 @@ use App\Services\Bookings\CustomerService;
 
 /**
  * The business's customers (scopes customers.read and customers.write),
- * limited, like /business/customers, to the customers of the member's own
+ * limited, like /bookings/customers, to the customers of the member's own
  * people when the key's member is not an admin. Deleting stays in
- * /business (admins only, with its warnings).
+ * /bookings (admins only, with its warnings).
  */
 class Customers extends ApiController
 {

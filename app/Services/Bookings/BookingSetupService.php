@@ -80,7 +80,8 @@ class BookingSetupService
         $memberId  = $this->members->ensureAdmin($listingId, (int) $account['id']);
         // Most small businesses are one person: they get a bookable provider
         // named after the business, on the profile's opening hours, at once.
-        (new TeamService($listingId, $this->audit))->ensureDefaultProvider($listing, $memberId);
+        $team = new TeamService($listingId, $this->audit);
+        $team->ensureDefaultProvider($listing, $memberId);
 
         if ((int) ($listing['bookings_enabled'] ?? 0) !== 1) {
             db_connect()->table('xs_directory_listings')->where('id', $listingId)->update([
@@ -89,6 +90,12 @@ class BookingSetupService
             ]);
             $this->audit->record($listingId, (int) $account['id'], 'bookings.turned_on');
         }
+        // Their profile's services become the catalogue to start from, and
+        // from now on the catalogue writes the profile's list (T28).
+        $default  = $team->providers()[0]['id'] ?? null;
+        $catalog  = new CatalogueService($listingId, $this->audit);
+        $catalog->seedFromProfile($default !== null ? (int) $default : null, (int) $account['id']);
+        $catalog->mirrorToProfile();
         // The free trial of the Bookings plan starts once, at the first turn on (D1).
         if (Plans\BookingPlanService::required()) {
             (new Plans\BookingPlanService())->startTrial($listingId, (int) $account['id']);

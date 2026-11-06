@@ -7,7 +7,7 @@ use App\Services\Bookings\AccountService;
 use App\Services\Bookings\BusinessSession;
 
 /**
- * Sign in, sign out, emailed sign in links and password reset for /business
+ * Sign in, sign out, emailed sign in links and password reset for /bookings
  * (online bookings). Rules live in AccountService; this only moves requests.
  *
  * Every form answers the same whether or not the email has an account.
@@ -19,7 +19,7 @@ class Auth extends BaseController
     public function signIn()
     {
         if (BusinessSession::accountId() > 0) {
-            return redirect()->to(base_url('business'));
+            return redirect()->to(base_url('bookings'));
         }
 
         // On the query string: the session they would be flashed into was just destroyed.
@@ -41,7 +41,7 @@ class Auth extends BaseController
         if ($outcome['result'] === AccountService::SIGNED_IN) {
             BusinessSession::signIn((int) $outcome['account']['id']);
 
-            return redirect()->to(base_url('business'));
+            return redirect()->to(base_url('bookings'));
         }
 
         $message = match ($outcome['result']) {
@@ -53,7 +53,7 @@ class Auth extends BaseController
             form_outcome('throttled');
         }
 
-        return redirect()->to(base_url('business/sign-in'))
+        return redirect()->to(base_url('bookings/sign-in'))
             ->with('error', $message)
             ->with('old', ['email' => $email]);
     }
@@ -65,7 +65,7 @@ class Auth extends BaseController
             (new AccountService())->sendSignInLink($email);
         }
 
-        return redirect()->to(base_url('business/sign-in'))->with('info', self::LINK_SENT);
+        return redirect()->to(base_url('bookings/sign-in'))->with('info', self::LINK_SENT);
     }
 
     /**
@@ -84,19 +84,19 @@ class Auth extends BaseController
     {
         $account = (new AccountService())->redeemSignInLink($token);
         if ($account === null) {
-            return redirect()->to(base_url('business/sign-in'))
+            return redirect()->to(base_url('bookings/sign-in'))
                 ->with('error', 'That sign in link has expired or was already used. Ask for a new one.');
         }
         BusinessSession::signIn((int) $account['id']);
 
-        return redirect()->to(base_url('business'));
+        return redirect()->to(base_url('bookings'));
     }
 
     public function signOut()
     {
         BusinessSession::signOut();
 
-        return redirect()->to(base_url('business/sign-in?signed_out=1'));
+        return redirect()->to(base_url('bookings/sign-in?signed_out=1'));
     }
 
     public function forgot()
@@ -111,7 +111,7 @@ class Auth extends BaseController
             (new AccountService())->sendPasswordReset($email);
         }
 
-        return redirect()->to(base_url('business/sign-in'))->with('info', self::LINK_SENT);
+        return redirect()->to(base_url('bookings/sign-in'))->with('info', self::LINK_SENT);
     }
 
     public function resetPage(string $token)
@@ -126,23 +126,23 @@ class Auth extends BaseController
         $service = new AccountService();
         $account = $service->accountForResetToken($token);
         if ($account === null) {
-            return redirect()->to(base_url('business/password'))
+            return redirect()->to(base_url('bookings/password'))
                 ->with('error', 'That reset link has expired or was already used. Ask for a new one.');
         }
 
         $password = (string) $this->request->getPost('password');
         if ($password !== (string) $this->request->getPost('password_confirm')) {
-            return redirect()->to(base_url('business/password/' . $token))->with('error', 'The two passwords are not the same.');
+            return redirect()->to(base_url('bookings/password/' . $token))->with('error', 'The two passwords are not the same.');
         }
         $problem = $service->setPassword((int) $account['id'], $password);
         if ($problem !== null) {
-            return redirect()->to(base_url('business/password/' . $token))->with('error', $problem);
+            return redirect()->to(base_url('bookings/password/' . $token))->with('error', $problem);
         }
 
         $service->markSignedIn((int) $account['id']);
         BusinessSession::signIn((int) $account['id']);
 
-        return redirect()->to(base_url('business'))->with('success', 'Your new password is saved.');
+        return redirect()->to(base_url('bookings'))->with('success', 'Your new password is saved.');
     }
 
     /**

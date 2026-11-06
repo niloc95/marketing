@@ -11,7 +11,7 @@ $old = flash('old') ?: [];
         <?php if (! empty($notice)): ?>
             <div class="alert alert-info mb-5" role="status"><?= esc($notice) ?></div>
         <?php endif ?>
-        <form method="post" action="<?= base_url('business/sign-in') ?>">
+        <form method="post" action="<?= base_url('bookings/sign-in') ?>">
             <?= csrf_field() ?>
             <div class="field">
                 <label for="biz-email">Email</label>
@@ -23,13 +23,13 @@ $old = flash('old') ?: [];
             </div>
             <button type="submit" class="btn btn-primary btn-block">Sign in</button>
         </form>
-        <p class="mt-4 text-sm"><a class="underline" href="<?= base_url('business/password') ?>">Forgot your password?</a></p>
+        <p class="mt-4 text-sm"><a class="underline" href="<?= base_url('bookings/password') ?>">Forgot your password?</a></p>
     </div>
 
     <div class="form-card mt-5">
         <h2 class="mb-1.5 font-bold text-slate-900 dark:text-white">Or get a sign in link</h2>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">We email you a link that signs you in once. No password needed.</p>
-        <form method="post" action="<?= base_url('business/sign-in/link') ?>">
+        <form method="post" action="<?= base_url('bookings/sign-in/link') ?>">
             <?= csrf_field() ?>
             <div class="field">
                 <label for="biz-link-email">Email</label>

@@ -1,6 +1,6 @@
 <?php
 /**
- * The /business dashboard (Phase 7): what needs attention, today's figures
+ * The /bookings dashboard (Phase 7): what needs attention, today's figures
  * and list (business/_dash_today.php, refreshed by dashboard.js), bookings
  * waiting for confirmation, the team's free times with quick book links, and
  * the next week. Everything is the member's own scope (DashboardService).
@@ -30,7 +30,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
     </div>
     <p class="flex flex-wrap gap-2">
         <?php if ($canBook): ?>
-            <a class="btn btn-primary btn-sm" href="<?= base_url('business/appointments/new') ?>"><?= lucide('plus', 'h-4 w-4') ?>Book an appointment</a>
+            <a class="btn btn-primary btn-sm" href="<?= base_url('bookings/appointments/new') ?>"><?= lucide('plus', 'h-4 w-4') ?>Book an appointment</a>
         <?php endif ?>
         <?php if ($bookUrl !== ''): ?>
             <a class="btn btn-ghost btn-sm" href="<?= esc($bookUrl, 'attr') ?>">Your booking page</a>
@@ -51,7 +51,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
     </ul>
 <?php endif ?>
 
-<div data-dash-today data-refresh-url="<?= esc(base_url('business/api/dashboard/today'), 'attr') ?>" aria-live="polite">
+<div data-dash-today data-refresh-url="<?= esc(base_url('bookings/api/dashboard/today'), 'attr') ?>" aria-live="polite">
     <?= view('business/_dash_today', ['cards' => $cards, 'schedule' => $schedule, 'today' => $today, 'canValue' => $canValue, 'canBook' => $canBook]) ?>
 </div>
 
@@ -64,7 +64,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
             <ul class="stats-list dash-list mt-3">
                 <?php foreach ($waiting as $a): ?>
                     <li>
-                        <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('business/calendar?view=day&date=' . substr((string) $a['start'], 0, 10) . '&open=' . $a['hash']) ?>">
+                        <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('bookings/calendar?view=day&date=' . substr((string) $a['start'], 0, 10) . '&open=' . $a['hash']) ?>">
                             <?= esc($day((string) $a['start'])) ?>, <?= esc((string) ($a['customer_name'] ?? 'No customer')) ?>
                         </a>
                         <span class="stats-list-n"><?= esc((string) $a['service_name']) ?> with <?= esc((string) $a['provider_name']) ?></span>
@@ -82,7 +82,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
             <ul class="stats-list dash-list mt-3">
                 <?php foreach ($coming as $a): ?>
                     <li>
-                        <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('business/calendar?view=day&date=' . substr((string) $a['start'], 0, 10) . '&open=' . $a['hash']) ?>">
+                        <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('bookings/calendar?view=day&date=' . substr((string) $a['start'], 0, 10) . '&open=' . $a['hash']) ?>">
                             <?= esc($day((string) $a['start'])) ?>, <?= esc((string) ($a['customer_name'] ?? 'No customer')) ?>
                         </a>
                         <span class="stats-list-n"><?= esc((string) $a['service_name']) ?> with <?= esc((string) $a['provider_name']) ?></span>
@@ -108,14 +108,14 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
                     <p class="mt-3 flex flex-wrap gap-1.5">
                         <?php foreach ($p['free'] as $time): ?>
                             <?php if ($canBook): ?>
-                                <a class="chip" href="<?= base_url('business/appointments/new?' . http_build_query(['provider_id' => $p['id'], 'service_id' => $p['service']['id'], 'date' => $today, 'time' => $time])) ?>" title="Book <?= esc($time, 'attr') ?>"><?= esc($time) ?></a>
+                                <a class="chip" href="<?= base_url('bookings/appointments/new?' . http_build_query(['provider_id' => $p['id'], 'service_id' => $p['service']['id'], 'date' => $today, 'time' => $time])) ?>" title="Book <?= esc($time, 'attr') ?>"><?= esc($time) ?></a>
                             <?php else: ?>
                                 <span class="chip"><?= esc($time) ?></span>
                             <?php endif ?>
                         <?php endforeach ?>
                     </p>
                     <?php if ($p['free_count'] > count($p['free'])): ?>
-                        <p class="mt-2 text-xs"><a class="underline" href="<?= base_url('business/availability?' . http_build_query(['provider_id' => $p['id'], 'service_id' => $p['service']['id'], 'as' => 'business'])) ?>"><?= (int) $p['free_count'] - count($p['free']) ?> more today</a></p>
+                        <p class="mt-2 text-xs"><a class="underline" href="<?= base_url('bookings/availability?' . http_build_query(['provider_id' => $p['id'], 'service_id' => $p['service']['id'], 'as' => 'business'])) ?>"><?= (int) $p['free_count'] - count($p['free']) ?> more today</a></p>
                     <?php endif ?>
                 <?php elseif ($p['next'] !== null): ?>
                     <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">No free time left today. Next free time online: <?= esc(date('D j M', (int) strtotime($p['next']['date']))) ?> at <?= esc((string) $p['next']['time']) ?>.</p>

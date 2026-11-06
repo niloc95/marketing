@@ -1,6 +1,6 @@
 <?php
 /**
- * Layout for /business, the online bookings area (docs/bookings/). Separate
+ * Layout for /bookings, the online bookings area (docs/bookings/). Separate
  * from layouts/public.php on purpose: no analytics, no Clarity, no consent
  * banner, no discovery header, and every page private (noindex, no-store).
  *
@@ -17,38 +17,38 @@ $bizJs    = 'assets/business/business.js';
 $asset    = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0);
 $nav      = [];
 if ($listing !== null) {
-    $nav[] = ['business', 'Dashboard', 'layout-dashboard'];
+    $nav[] = ['bookings', 'Dashboard', 'layout-dashboard'];
     $unread = (new \App\Services\Bookings\Notifications\NotificationCentre($context->listingId(), (int) $context->member()['id']))->unread();
-    $nav[]  = ['business/notifications', $unread > 0 ? 'Notices (' . $unread . ')' : 'Notices', 'bell'];
+    $nav[]  = ['bookings/notifications', $unread > 0 ? 'Notices (' . $unread . ')' : 'Notices', 'bell'];
     if ($context->can('appointments.manage')) {
-        $nav[] = ['business/calendar', 'Calendar', 'calendar'];
+        $nav[] = ['bookings/calendar', 'Calendar', 'calendar'];
     }
     if ($context->can('customers.manage')) {
-        $nav[] = ['business/customers', 'Customers', 'contact'];
+        $nav[] = ['bookings/customers', 'Customers', 'contact'];
     }
     if ($context->can('services.manage')) {
-        $nav[] = ['business/services', 'Services', 'list'];
+        $nav[] = ['bookings/services', 'Services', 'list'];
     }
     if ($context->can('providers.manage')) {
-        $nav[] = ['business/team', 'Team', 'users'];
-        $nav[] = ['business/time-off', 'Time off', 'calendar-off'];
+        $nav[] = ['bookings/team', 'Team', 'users'];
+        $nav[] = ['bookings/time-off', 'Time off', 'calendar-off'];
     }
     if ($context->can('appointments.manage')) {
-        $nav[] = ['business/availability', 'Availability', 'calendar-days'];
+        $nav[] = ['bookings/availability', 'Availability', 'calendar-days'];
     }
     if ($context->can('analytics.view')) {
-        $nav[] = ['business/analytics', 'Analytics', 'chart-column'];
+        $nav[] = ['bookings/analytics', 'Analytics', 'chart-column'];
     }
     // Only once deposits are taken: the nav is full, and without an account
     // the Payments settings tab says what to do.
     if ($context->can('payments.manage') && App\Services\Bookings\Payments\DepositService::gatewayFor($context->listingId()) !== null) {
-        $nav[] = ['business/payments', 'Payments', 'wallet'];
+        $nav[] = ['bookings/payments', 'Payments', 'wallet'];
     }
     if ($context->can('settings.manage')) {
-        $nav[] = ['business/settings', 'Settings', 'settings'];
+        $nav[] = ['bookings/settings', 'Settings', 'settings'];
     }
     if ($context->can('audit.view')) {
-        $nav[] = ['business/audit', 'Activity', 'history'];
+        $nav[] = ['bookings/audit', 'Activity', 'history'];
     }
 }
 $here = trim(uri_string(), '/');
@@ -58,7 +58,8 @@ $here = trim(uri_string(), '/');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= esc(($title ?? 'Business') . ' | WebScheduler Local') ?></title>
+    <?php // "Appointments | Dr Bertus Mensveld | WebScheduler Local" (owner, 6 Nov 2026); no name before a business is chosen. ?>
+    <title><?= esc(implode(' | ', array_filter([$title ?? 'Appointments', $listing !== null ? (string) $listing['display_name'] : '', 'WebScheduler Local']))) ?></title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" href="<?= $asset('favicon.ico') ?>" sizes="any">
     <link rel="stylesheet" href="<?= $asset('assets/directory.css') ?>">
@@ -80,15 +81,15 @@ $here = trim(uri_string(), '/');
     <?php endif ?>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100"
-      <?php if ($signedIn): ?>data-biz-session data-ping-url="<?= esc(base_url('business/ping'), 'attr') ?>" data-sign-in-url="<?= esc(base_url('business/sign-in?expired=1'), 'attr') ?>" data-idle-seconds="<?= (int) config('Bookings')->idleSeconds ?>"<?php endif ?>>
+      <?php if ($signedIn): ?>data-biz-session data-ping-url="<?= esc(base_url('bookings/ping'), 'attr') ?>" data-sign-in-url="<?= esc(base_url('bookings/sign-in?expired=1'), 'attr') ?>" data-idle-seconds="<?= (int) config('Bookings')->idleSeconds ?>"<?php endif ?>>
     <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
-            <a href="<?= base_url($signedIn ? 'business' : 'business/sign-in') ?>" class="flex items-center gap-2 font-bold text-brand-ocean dark:text-white">
+            <a href="<?= base_url($signedIn ? 'bookings' : 'bookings/sign-in') ?>" class="flex items-center gap-2 font-bold text-brand-ocean dark:text-white">
                 <img class="brand-mark" src="<?= $asset('assets/brand/logo-64.png') ?>" alt="" width="28" height="28">
                 <span>WebScheduler Local</span>
             </a>
             <?php if ($listing !== null): ?>
-                <a href="<?= base_url('business/choose') ?>" class="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" title="Switch business">
+                <a href="<?= base_url('bookings/choose') ?>" class="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" title="Switch business">
                     <?= esc((string) $listing['display_name']) ?>
                 </a>
             <?php endif ?>
@@ -97,8 +98,8 @@ $here = trim(uri_string(), '/');
                     <?= lucide('moon', 'h-5 w-5') ?>
                 </button>
                 <?php if ($signedIn): ?>
-                    <a href="<?= base_url('business/account') ?>" class="rounded-lg px-2 py-1 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"><?= esc((string) ($context->account()['name'] ?: 'Your account')) ?></a>
-                    <form method="post" action="<?= base_url('business/sign-out') ?>" data-biz-sign-out>
+                    <a href="<?= base_url('bookings/account') ?>" class="rounded-lg px-2 py-1 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"><?= esc((string) ($context->account()['name'] ?: 'Your account')) ?></a>
+                    <form method="post" action="<?= base_url('bookings/sign-out') ?>" data-biz-sign-out>
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost btn-xs">Sign out</button>
                     </form>
@@ -108,7 +109,7 @@ $here = trim(uri_string(), '/');
         <?php if ($nav !== []): ?>
             <nav class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Business">
                 <?php foreach ($nav as [$path, $label, $icon]): ?>
-                    <?php $active = $here === $path || ($path !== 'business' && str_starts_with($here, $path . '/')); ?>
+                    <?php $active = $here === $path || ($path !== 'bookings' && str_starts_with($here, $path . '/')); ?>
                     <a href="<?= base_url($path) ?>" class="<?= $active ? 'bg-primary-50 text-brand-ocean dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' ?> flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium"<?= $active ? ' aria-current="page"' : '' ?>>
                         <?= lucide($icon, 'h-4 w-4') ?><?= esc($label) ?>
                     </a>
@@ -139,7 +140,7 @@ $here = trim(uri_string(), '/');
         ?>
         <?php if ($planLine !== null): ?>
             <div class="alert alert-info mb-5" role="status"><?= esc($planLine) ?>
-                <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('business/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
+                <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('bookings/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
             </div>
         <?php endif ?>
         <?= $this->renderSection('content') ?>

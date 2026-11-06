@@ -927,6 +927,11 @@ class Directory extends BaseController
         // Online bookings on the platform: the contact panel's Book online
         // button and the JSON-LD ReserveAction. '' while bookings are off.
         $listing['_book_url'] = \App\Services\Bookings\PublicBookingService::bookUrl($listing);
+        // While it does, its booking services stand in for its own services
+        // list, and its bookable people join the team panel (T28).
+        $booking                      = \App\Services\Bookings\PublicBookingService::profileView($listing);
+        $listing['_booking_services'] = $booking['services'];
+        $listing['_practitioners']    = $booking['practitioners'];
 
         return view('directory/show', [
             'l'       => $listing,

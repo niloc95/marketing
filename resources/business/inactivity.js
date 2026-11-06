@@ -1,5 +1,5 @@
 /**
- * Inactivity warning and keepalive for /business, ported from Bookings'
+ * Inactivity warning and keepalive for /bookings, ported from Bookings'
  * resources/js/modules/auth/inactivity-monitor.js. What it keeps:
  *
  * - Wall clock, not timer ticks. Browsers throttle timers in background tabs
