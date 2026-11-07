@@ -128,6 +128,26 @@ MAILTO=""
 # instance back.
 30 2 * * * deploy find /home/deploy/backups -name 'db-*.sql.gz' -mtime +14 -delete
 
+# --- Offsite copy --------------------------------------------------------------
+# Last night's dump plus the uploaded files go to S3 in af-south-1, so a backup
+# survives losing this box (the dumps above and the Lightsail snapshots do not
+# leave AWS's Mumbai region). Keys for an upload only IAM user live in
+# /home/deploy/.aws (700). The bucket expires objects after 30 days. Runs from
+# the release clone; one OK or FAIL line per night in /home/deploy/backups/offsite.log.
+40 2 * * * deploy BUCKET=webscheduler-local-backups-896680103616-af-south-1-an /home/deploy/src/scripts/backup-offsite.sh
+
+# The script cannot report a night it never ran, and MAILTO is empty, so this
+# reads its log half an hour later and emails the admin unless the last line
+# is a recent OK (Libraries\OffsiteBackupCheck).
+10 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark backups:check --quiet
+
+# Monthly restore drill: the newest dump into webscheduler_restore_drill_tests
+# (dropped afterwards; the webscheduler user needs ALL on that one name), every
+# table compared with the live one, files-latest.tar.gz listed. The daily check
+# mails the admin if no drill has passed in 32 days.
+30 4 1 * * deploy /home/deploy/src/scripts/restore-drill.sh > /dev/null
+12 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark backups:check --log /home/deploy/backups/restore-drill.log --max-age 768 --name "Restore drill" --quiet
+
 # --- Certificate expiry warning ----------------------------------------------
 # The Cloudflare origin certificate is valid for 15 years, so there is no renewal
 # cron. That is precisely why it needs a reminder: nothing else will ever mention

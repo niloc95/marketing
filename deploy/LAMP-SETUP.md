@@ -176,6 +176,18 @@ sudo a2dissite 000-default
 install `libapache2-mod-php` — two PHP SAPIs fighting over the same requests is
 a confusing way to spend an afternoon.
 
+Online bookings get their own FPM pool (`deploy/php/pool-bookings.conf`, socket
+`php8.3-fpm-bookings.sock`, at most 3 workers, none while idle). Both Local vhosts
+send the booking paths to it from an `<If>` on `THE_REQUEST`, so a burst of booking
+traffic cannot take the five `www` workers that serve profiles:
+
+```bash
+sudo cp deploy/php/pool-bookings.conf /etc/php/8.3/fpm/pool.d/bookings.conf
+sudo php-fpm8.3 -t && sudo systemctl reload php8.3-fpm
+sudo apachectl configtest && sudo systemctl reload apache2
+ps -o args= -C php-fpm8.3 | sort | uniq -c   # "pool bookings" appears on the first booking request
+```
+
 ---
 
 ## Part 3 — The `deploy` user and the directory tree
@@ -333,6 +345,24 @@ list where any user on the box could read it with `ps`:
 sudo -u deploy bash -c "umask 077; printf '[client]\nuser=webscheduler\npassword=%s\n' '$DBPW' > /home/deploy/.my.cnf"
 sudo chmod 600 /home/deploy/.my.cnf
 sudo -u deploy mysql --defaults-file=/home/deploy/.my.cnf -e 'SELECT VERSION();'
+```
+
+Offsite copy of the dump and the uploads (`scripts/backup-offsite.sh`, cron 02:40): install
+the AWS CLI v2 (`curl -fsSL -o awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip`,
+`unzip`, `sudo ./aws/install`), then give `deploy` the upload only key, region `af-south-1`:
+
+```bash
+sudo -u deploy -H bash -c "umask 077; mkdir -p ~/.aws; printf '[default]\nregion = af-south-1\n' > ~/.aws/config"
+sudo -u deploy -H nano /home/deploy/.aws/credentials   # aws_access_key_id / aws_secret_access_key
+sudo -u deploy -H env DRYRUN=1 BUCKET=<bucket> /home/deploy/src/scripts/backup-offsite.sh
+```
+
+The monthly restore drill (`scripts/restore-drill.sh`) restores into a scratch database that
+the app's user may create and drop, and nothing else:
+
+```bash
+sudo mysql -e "GRANT ALL PRIVILEGES ON \`webscheduler_restore_drill_tests\`.* TO 'webscheduler'@'localhost';"
+sudo -u deploy -H /home/deploy/src/scripts/restore-drill.sh
 ```
 
 ---
@@ -773,6 +803,7 @@ in Part 9:
 
 ```bash
 ls -lh /home/deploy/backups/          # a db-YYYY-MM-DD.sql.gz appears after 02:15
+tail -1 /home/deploy/backups/offsite.log   # an OK line after 02:40
 grep CRON /var/log/syslog | tail
 ```
 
