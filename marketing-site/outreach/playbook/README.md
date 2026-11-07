@@ -33,10 +33,11 @@ Add `--vertical all` for the full set of trade editions (see below).
 python3 build_playbook.py --only pdf --profile web --publish
 ```
 
-Copies the **web** build to `public/assets/playbook/`, which the listing app
-serves at `/assets/playbook/webscheduler-local-visibility-playbook.pdf` and
-lists on the `/resources` page (`Contact::resources()`), which the footer's
-Company column links as "Guides and reports".
+Copies the **web** build into the document library, `public/assets/documents/`,
+which the listing app serves at `/assets/documents/webscheduler-local-visibility-playbook.pdf`
+and lists on the `/resources` page (entry `visibility-playbook` in
+`app/Config/Documents.php`), which the footer's Company column links as
+"Guides and reports". The old `/assets/playbook/…` URL 301s there.
 `scripts/build-listing-app.js` copies `public/` wholesale into the deploy
 bundle, so the file ships with the next release — no separate upload.
 
@@ -44,7 +45,8 @@ bundle, so the file ships with the next release — no separate upload.
 crop marks and a 3mm bleed is wrong for anyone clicking a link. With
 `--vertical all` it publishes every edition as
 `webscheduler-local-visibility-playbook-<trade>.pdf`, but only the general one
-is linked from the footer today.
+is in the library today; a trade edition you keep needs its own entry in
+`Config\Documents` (or delete the file).
 
 **Re-run it after any copy change**, or the site keeps serving the old PDF —
 the published copy is a snapshot, not a symlink.

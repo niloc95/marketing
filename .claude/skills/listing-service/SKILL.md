@@ -50,7 +50,7 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 | `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
 | `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
 | `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
-| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `AdminDocuments`, `Hostnames`, `ContentSecurityPolicy` |
+| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Hostnames`, `ContentSecurityPolicy` |
 | `app/Models/` | One per table, `xs_` prefix. `DirectoryListingModel` is the hub; `Concerns/DerivesCountryCode` |
 | `app/Views/` | `layouts/public.php` (one layout for every page, header, footer, analytics), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
 | `app/Commands/` | spark commands, see Commands below |
@@ -632,14 +632,42 @@ referred businesses pay. Rules are in `PartnerService`, the only writer of the
 - Terms §19, privacy §10, and the cookie policy describe all of this.
 - Tests: `tests/database/PartnerProgramTest.php`.
 
-## Internal documents (`/admin/documents`)
+## Document library (every PDF we publish, since 7 Nov 2026)
 
-PDFs for staff only (the Partner Program guide, the founder's proposal). Files
-in `resources/documents/`, registered in `Config\AdminDocuments`; the build
-copies them into `directory-app/` outside the web root and fails on a missing
-one. `Admin::document($key)` streams by registry key, never by path, with the
-same nosniff/no-store/locked CSP as verification documents. Tests:
-`tests/database/AdminDocumentsTest.php`.
+One registry, `app/Config/Documents.php`, and two folders. Never put a document anywhere
+else, and never link one that is not in the registry.
+
+| | Folder | Registry | Reached at |
+|---|---|---|---|
+| Public (guides, brochure, outlook, playbook, proposal) | `public/assets/documents/` | `$published` | `/assets/documents/<file>.pdf` |
+| Staff only (Partner Program guide, founder's proposal) | `resources/documents/` | `$internal` | `/admin/documents/<key>` only |
+
+- **`$published`** entries carry `title, summary, file, pages, tag, inside, listed,
+  builder`. `/resources` (`Contact::resources()`) lists those with `listed` true, in
+  registry order, with `?v=<filemtime>` (a replaced file needs no Cloudflare purge).
+  `listed => false` (the proposal) is public but only linked where we send it.
+  `builder` is the rebuild command, `null` for the two built outside the repo
+  (Verified brochure, 2027 outlook): replace those files by hand.
+- **`$internal`**: the build copies `resources/documents/` into `directory-app/` outside
+  the web root. `Admin::document($key)` streams by registry key, never by path, with the
+  same nosniff/no-store/locked CSP as verification documents. Never put these in public/.
+- **Old URLs** `/assets/playbook/…` and `/assets/proposal/…` 301 to the library through
+  `Contact::legacyDocument()`, only for a file `$published` names (else 404). Sent
+  emails, signatures and printed proposals still carry them: keep the routes.
+- **Builders** in `marketing-site/outreach/*` publish into the library (`--publish` →
+  public, `--admin` → `resources/documents/`).
+- **Guards:** `scripts/build-listing-app.js` fails when an entry's file is missing from
+  its folder; `DocumentLibraryTest` fails on a missing file, a public PDF anywhere under
+  `public/assets/` outside the library or not registered, a broken legacy redirect, or
+  an unlisted document showing on `/resources`. `AdminDocumentsTest` pins the staff side,
+  `ResourcesPageTest` the page.
+
+**To add or replace a document:** build it (or take the supplied PDF, after checking the
+copy rules: no dashes, discover wording, nothing South African for .app readers) → put
+it in the right folder under its published name (`webscheduler-local-<topic>.pdf`) → add
+or update the entry (an `inside` list from its headings, the real page count) → run the
+tests → check `/resources` and the file URL. A file renamed later needs its old name
+kept working, as the legacy routes do.
 
 ## The profile page (`directory/show.php`)
 
@@ -806,9 +834,8 @@ look at the rejection table and `Paystack:` / `Paystack return:` log lines first
 
 ## Content pages and analytics
 
-- `/resources`: the list is hardcoded in `Contact::resources()`; PDFs in
-  `public/assets/documents/` and `public/assets/playbook/`, linked with `?v=<filemtime>`.
-  Two PDFs have no builder in the repo: replace the file by hand.
+- `/resources`: the listed entries of the document library (`Config\Documents`, see
+  Document library above).
 - `/media`: logo downloads (`public/assets/brand/`), embed snippet, usage rules. The
   Verified badge is shown but never offered as a file; Terms §20 covers misuse.
 - `/compare`, `/faq`, `/company`, `/verified`, `/plus`: see their sections.

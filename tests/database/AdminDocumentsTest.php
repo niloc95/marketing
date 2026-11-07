@@ -26,10 +26,10 @@ final class AdminDocumentsTest extends CIUnitTestCase
 
     public function testEveryRegisteredDocumentExistsAndIsAPdfOutsidePublic(): void
     {
-        $config = config('AdminDocuments');
-        $this->assertNotEmpty($config->documents);
+        $config = config('Documents');
+        $this->assertNotEmpty($config->internal);
 
-        foreach (array_keys($config->documents) as $key) {
+        foreach (array_keys($config->internal) as $key) {
             $path = $config->path($key);
             $this->assertNotNull($path, $key . ' has a file');
             $this->assertSame('%PDF', substr((string) file_get_contents($path, false, null, 0, 4), 0, 4), $key . ' is a PDF');
@@ -70,6 +70,6 @@ final class AdminDocumentsTest extends CIUnitTestCase
     {
         $this->asAdmin()->get('admin/documents/nope')->assertStatus(404);
         $this->asAdmin()->get('admin/documents/..%2F..%2F.env')->assertStatus(404);
-        $this->assertNull(config('AdminDocuments')->path('../../.env'));
+        $this->assertNull(config('Documents')->path('../../.env'));
     }
 }

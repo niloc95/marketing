@@ -32,7 +32,7 @@ RUNNING_FOOTER = "WEBSCHEDULER LOCAL · BUSINESS PROPOSAL"
 CTA_BARE = "local.webscheduler.co.za/add-profile"
 CTA_URL = "https://local.webscheduler.co.za/add-profile"
 JOBS_URL = "https://local.webscheduler.co.za/jobs"
-PLAYBOOK_URL = "https://local.webscheduler.co.za/assets/playbook/webscheduler-local-visibility-playbook.pdf"
+PLAYBOOK_URL = "https://local.webscheduler.co.za/assets/documents/webscheduler-local-visibility-playbook.pdf"
 
 # The renderer has one edition; the playbook's per-trade editions do not apply.
 VERTICALS = {"general": {"audience": None}}

@@ -113,15 +113,26 @@ if (!fs.existsSync(iconsFrom)) {
 copyDir(iconsFrom, path.join(appOut, 'resources', 'icons'));
 console.log('  • resources/icons/ (' + fs.readdirSync(iconsFrom).length + ' icons)');
 
-// 2a') Internal documents for /admin/documents (Config\AdminDocuments). Beside
-//      the code in directory-app/, never under public/: they must have no URL
-//      of their own. Every file the registry names must be here, or the admin
+// 2a') The document library (Config\Documents). Internal documents for
+//      /admin/documents go beside the code in directory-app/, never under
+//      public/: they must have no URL of their own. Published ones ride along
+//      with public/. Every file the registry names must be in its folder, or a
 //      page would offer a document the server cannot open.
 const docsFrom = path.join(projectRoot, 'resources', 'documents');
-const docsRegistry = fs.readFileSync(path.join(projectRoot, 'app', 'Config', 'AdminDocuments.php'), 'utf8');
-for (const m of docsRegistry.matchAll(/'file'\s*=>\s*'([^']+)'/g)) {
-  if (!fs.existsSync(path.join(docsFrom, m[1]))) {
-    fail('Config\\AdminDocuments names resources/documents/' + m[1] + ', which does not exist.');
+const libraryFrom = path.join(projectRoot, 'public', 'assets', 'documents');
+const docsRegistry = fs.readFileSync(path.join(projectRoot, 'app', 'Config', 'Documents.php'), 'utf8');
+const internalAt = docsRegistry.indexOf('public array $internal');
+if (internalAt < 0) {
+  fail('Config\\Documents has no $internal list.');
+}
+for (const [part, dir, label] of [
+  [docsRegistry.slice(0, internalAt), libraryFrom, 'public/assets/documents/'],
+  [docsRegistry.slice(internalAt), docsFrom, 'resources/documents/'],
+]) {
+  for (const m of part.matchAll(/'file'\s*=>\s*'([^']+)'/g)) {
+    if (!fs.existsSync(path.join(dir, m[1]))) {
+      fail('Config\\Documents names ' + label + m[1] + ', which does not exist.');
+    }
   }
 }
 if (fs.existsSync(docsFrom)) {

@@ -148,118 +148,26 @@ class Contact extends BaseController
 
     /**
      * Guides and reports: the PDFs we publish for business owners, in one
-     * place instead of one footer link each. The files sit in public/, so they
-     * ship with the deploy bundle like any other asset; each entry's size is
-     * read from disk so the page can't advertise a stale one. A file that is
-     * missing is left off rather than linked to a 404.
-     *
-     * 'inside' is what the document covers, from its own page headings, shown
-     * when a row rolls down. Change it when the PDF changes.
+     * place instead of one footer link each. The list is the document library
+     * (Config\Documents, entries with 'listed'); the files sit in
+     * public/assets/documents/, so they ship with the deploy bundle like any
+     * other asset. Each entry's size is read from disk so the page can't
+     * advertise a stale one. A file that is missing is left off rather than
+     * linked to a 404.
      */
     public function resources()
     {
+        $library   = config('Documents');
         $documents = [];
-        foreach ([
-            [
-                'title'       => 'Profile guide',
-                'summary'     => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then locations, team members, jobs and reviews with Verified Business.',
-                'file'        => 'assets/documents/webscheduler-local-profile-guide.pdf',
-                'pages'       => 19,
-                'tag'         => 'Guide',
-                'inside'      => [
-                    'before you start',
-                    'profile strength',
-                    'photos that work',
-                    'your description with ChatGPT',
-                    'services',
-                    'hours and map',
-                    'brands we carry',
-                    'Verified Business',
-                    'locations',
-                    'team members',
-                    'jobs',
-                    'reviews',
-                    'a launch checklist',
-                ],
-            ],
-            [
-                'title'       => 'Local visibility playbook',
-                'summary'     => 'How customers find local businesses today, and the practical steps that make a business easier to find, on search, on maps and in AI assistants.',
-                'file'        => 'assets/playbook/webscheduler-local-visibility-playbook.pdf',
-                'pages'       => 12,
-                'tag'         => 'Guide',
-                'inside'      => [
-                    'why this matters now',
-                    'how local search works',
-                    'what you own and what you rent',
-                    'the local visibility loop',
-                    'a complete profile',
-                    'local SEO',
-                    'service and location visibility',
-                    'the customer journey',
-                    'a worked example',
-                    'a 30 day plan',
-                ],
-            ],
-            [
-                'title'       => 'Verified Business brochure',
-                'summary'     => 'Paying for visibility, or building a presence people can find? What a Verified profile adds, what we check, and every source behind the numbers.',
-                'file'        => 'assets/documents/webscheduler-local-verified-business.pdf',
-                'pages'       => 9,
-                'tag'         => 'Brochure',
-                'inside'      => [
-                    'when the advert budget runs out',
-                    'impressions are not sales',
-                    'start free, get verified',
-                    'everything Verified adds',
-                    'built for search, maps and AI',
-                    'fast, by Google\'s own measure',
-                    'every source behind the numbers',
-                ],
-            ],
-            [
-                'title'       => '2027 local visibility outlook',
-                'summary'     => 'Projected benchmarks for beauty and wellness, home services, health and professional practices, and fitness, and what a complete profile is likely to be worth. A forecast, labelled as one.',
-                'file'        => 'assets/documents/webscheduler-local-2027-outlook.pdf',
-                'pages'       => 13,
-                'tag'         => 'Forecast',
-                'inside'      => [
-                    'five things to know',
-                    'the growth picture',
-                    'the research behind it',
-                    'four segments',
-                    'the completeness advantage',
-                    'what customers look for',
-                    'projected benchmarks',
-                    'where to focus first',
-                    'methodology and sources',
-                ],
-            ],
-            [
-                'title'       => 'Hiring guide',
-                'summary'     => 'Hire well, hire safely: how to write a job post people answer, choose fairly between applicants, check who they are with consent, and make an offer that keeps you on the right side of the law.',
-                'file'        => 'assets/documents/webscheduler-local-hiring-guide.pdf',
-                'pages'       => 15,
-                'tag'         => 'Guide',
-                'inside'      => [
-                    'define the role',
-                    'write a post people answer',
-                    'fair wording',
-                    'post it',
-                    'shortlist',
-                    'interview',
-                    'check before you commit',
-                    'treat CVs like customer records',
-                    'job scams',
-                    'offer and onboarding',
-                    'a one page checklist',
-                ],
-            ],
-        ] as $doc) {
-            $path = FCPATH . $doc['file'];
-            if (! is_file($path)) {
+        foreach ($library->published as $key => $doc) {
+            if (! $doc['listed']) {
                 continue;
             }
+            $path = $library->publishedPath($key);
+            if ($path === null) {
+                continue;
+            }
+            $doc['file'] = $library::PUBLIC_DIR . $doc['file'];
             $doc['size'] = number_format(filesize($path) / 1048576, 1) . ' MB';
             // Same ?v=<filemtime> buster as the layout's CSS: a PDF replaced at
             // the same path gets a new URL, so Cloudflare needs no purge.
@@ -271,6 +179,23 @@ class Contact extends BaseController
         }
 
         return view('directory/resources', ['documents' => $documents]);
+    }
+
+    /**
+     * A document's URL from before the library (/assets/playbook/…,
+     * /assets/proposal/…), still in sent emails, signatures and printed
+     * proposals. Only a file the library publishes is redirected; anything
+     * else is a 404, so the route cannot be used to bounce visitors elsewhere.
+     */
+    public function legacyDocument(string $file)
+    {
+        $library = config('Documents');
+        $key     = $library->publishedByFile($file);
+        if ($key === null || $library->publishedPath($key) === null) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        return redirect()->to(base_url($library::PUBLIC_DIR . $file), 301);
     }
 
     /**

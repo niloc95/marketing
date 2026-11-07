@@ -29,6 +29,8 @@ they hold the rules that are not obvious from the code.
   (documents checked, rand), **Plus** on .app (no checks, priced in US dollars, charged in
   rand), the profile setup service, all through PayFast. Payment never changes the order
   of discovery results.
+- **Documents.** Every PDF we publish lives in `public/assets/documents/` (staff only:
+  `resources/documents/`) and is listed in `Config\Documents`; nowhere else.
 - **Security boundaries to respect:** `DirectoryListingModel::OWNER_EDITABLE`, the CSRF and
   honeypot exemptions in `Config\Filters`, enforcing CSP (no inline styles, scripts or
   handlers), Cloudflare Access plus a JWT check in front of `/admin*`, `Mailer` as the only

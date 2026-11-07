@@ -22,6 +22,15 @@ counter-intuitive at deploy time and belong there, not here: `contact.php` needs
 config file placed by hand on the server, and Cloudflare will keep serving the previous
 build unless the cache is purged.
 
+## Outreach documents (`marketing-site/outreach/`) still live here
+
+The superseded note above covers the site pages, not the PDF builders. The playbook,
+proposal, profile guide and partner guide are still built from `marketing-site/outreach/*`
+and publish into WebScheduler Local's **document library**: `--publish` copies the web
+PDF to `public/assets/documents/`, `--admin` copies a staff version to
+`resources/documents/`, and each file needs an entry in `app/Config/Documents.php`.
+Read the "Document library" section of the `listing-service` skill before adding one.
+
 ## Layout
 
 ```

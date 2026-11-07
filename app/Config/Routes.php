@@ -59,6 +59,11 @@ $routes->get('resources', 'Contact::resources');
 // Media resources: our logo to download, how to use it, and why the Verified
 // Business badge is deliberately not among the downloads.
 $routes->get('media', 'Contact::media');
+// Document URLs from before the library (Config\Documents): sent emails,
+// signatures and printed proposals still carry them. Apache only reaches the
+// app because the files are gone from these folders.
+$routes->get('assets/playbook/(:segment)', 'Contact::legacyDocument/$1');
+$routes->get('assets/proposal/(:segment)', 'Contact::legacyDocument/$1');
 // Profile setup service: we complete a profile for a once-off Paystack fee.
 // pay opens Paystack's checkout, paystack is where it sends the buyer back.
 // payfast/setup-notify stays for a PayFast checkout opened before the switch.
@@ -494,7 +499,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('referrals/(:num)/invite', 'Admin::inviteReferral/$1');
     $routes->post('referrals/(:num)/dismiss', 'Admin::dismissReferral/$1');
 
-    // Internal documents (Config\AdminDocuments). Served from outside the web
+    // Internal documents (Config\Documents::$internal). Served from outside the web
     // root and only here; the segment is a registry key, never a path.
     $routes->get('documents', 'Admin::documents');
     $routes->get('documents/(:segment)', 'Admin::document/$1');
