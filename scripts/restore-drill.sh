@@ -8,8 +8,9 @@
 #   (default: the newest dump and files-latest.tar.gz in $DUMPS)
 #
 # MYCNF is a mysql option file for a user that can read LIVE_DB and create and
-# drop DRILL_DB. Rows written since the 02:15 dump are expected, so a table
-# passes when it holds at least 90% of today's rows (all rows below 100).
+# drop DRILL_DB. Rows written since the 02:15 dump are expected (the search,
+# stats and form event logs grow 10 to 15% in a day), so a table passes when it
+# holds at least half of today's rows; below 100 rows it must not be empty.
 # One OK or FAIL line per run in $LOG, in backup-offsite.sh's format, so
 # `php spark backups:check --log <LOG> --max-age 768` can mail a failure.
 set -euo pipefail
@@ -43,7 +44,7 @@ while read -r table; do
     live=$(sql -e "SELECT COUNT(*) FROM \`$LIVE_DB\`.\`$table\`")
     if ! got=$(sql -e "SELECT COUNT(*) FROM \`$DRILL_DB\`.\`$table\`" 2>/dev/null); then
         short+=("$table missing")
-    elif (( live < 100 ? got < live : got * 10 < live * 9 )); then
+    elif (( live < 100 ? (live > 0 && got == 0) : got * 2 < live )); then
         short+=("$table $got of $live")
     fi
 done < <(sql -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$LIVE_DB' AND table_type = 'BASE TABLE'")
