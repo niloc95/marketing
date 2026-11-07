@@ -16,6 +16,8 @@ Full suite green before the merge (`php vendor/bin/phpunit`).
 |---|---|---|
 | `encryption.key` in the production `.env` (T21) | WhatsApp, payment, Zoom, Google and webhook accounts are stored encrypted; without it they cannot be saved | `php spark key:generate --show`, paste by hand; back up `.env` first. Never rotate it afterwards: saved accounts would no longer decrypt |
 | Database dump | the migrations below add 18 tables | the nightly `/home/deploy/backups/db-*.sql.gz` from the same day, or a fresh one |
+| Bookings FPM pool | booking load must not take the workers that serve profiles | live since 7 Nov 2026 (`deploy/php/pool-bookings.conf`, both vhosts); a `/bookings` request shows `pool bookings` in `ps`. The vhost rule matches `/business`, `/bookings`, `/book`, `/api/v1` and `/directory/<slug>/book` |
+| Offsite backup running | appointments cannot be imported again | live since 7 Nov 2026: `/home/deploy/backups/offsite.log` shows an OK line from last night (`scripts/backup-offsite.sh`, cron 02:40; `backups:check` at 03:10 emails the admin otherwise) |
 
 ## 3. Release
 
