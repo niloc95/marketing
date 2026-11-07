@@ -136,6 +136,11 @@ MAILTO=""
 # the release clone; one OK or FAIL line per night in /home/deploy/backups/offsite.log.
 40 2 * * * deploy BUCKET=webscheduler-local-backups-896680103616-af-south-1-an /home/deploy/src/scripts/backup-offsite.sh
 
+# The script cannot report a night it never ran, and MAILTO is empty, so this
+# reads its log half an hour later and emails the admin unless the last line
+# is a recent OK (Libraries\OffsiteBackupCheck).
+10 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark backups:check --quiet
+
 # --- Certificate expiry warning ----------------------------------------------
 # The Cloudflare origin certificate is valid for 15 years, so there is no renewal
 # cron. That is precisely why it needs a reminder: nothing else will ever mention
