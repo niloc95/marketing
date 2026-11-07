@@ -176,6 +176,18 @@ sudo a2dissite 000-default
 install `libapache2-mod-php` — two PHP SAPIs fighting over the same requests is
 a confusing way to spend an afternoon.
 
+Online bookings get their own FPM pool (`deploy/php/pool-bookings.conf`, socket
+`php8.3-fpm-bookings.sock`, at most 3 workers, none while idle). Both Local vhosts
+send the booking paths to it from an `<If>` on `THE_REQUEST`, so a burst of booking
+traffic cannot take the five `www` workers that serve profiles:
+
+```bash
+sudo cp deploy/php/pool-bookings.conf /etc/php/8.3/fpm/pool.d/bookings.conf
+sudo php-fpm8.3 -t && sudo systemctl reload php8.3-fpm
+sudo apachectl configtest && sudo systemctl reload apache2
+ps -o args= -C php-fpm8.3 | sort | uniq -c   # "pool bookings" appears on the first booking request
+```
+
 ---
 
 ## Part 3 — The `deploy` user and the directory tree
