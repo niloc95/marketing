@@ -264,7 +264,7 @@ final class BookingFoundationTest extends CIUnitTestCase
         $this->post('bookings/sign-in/link', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test']);
         $token = $this->tokenFrom($this->sent[0], 'bookings/sign-in/');
 
-        $this->get('bookings/sign-in/' . $token)->assertSee('Sign in to your business');
+        $this->get('bookings/sign-in/' . $token)->assertSee('Sign in to your Dashboard');
         $first = $this->post('bookings/sign-in/' . $token, [csrf_token() => csrf_hash()]);
         $first->assertRedirectTo(base_url('bookings'));
         $first->assertSessionHas(BusinessSession::ACCOUNT, $accountId);
