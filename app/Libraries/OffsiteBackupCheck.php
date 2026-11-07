@@ -3,7 +3,7 @@
 namespace App\Libraries;
 
 /**
- * Did last night's offsite backup reach S3?
+ * Did last night's offsite backup reach S3 (or this month's restore drill pass)?
  *
  * scripts/backup-offsite.sh writes one line per run to its log, "<ISO time> OK
  * db <bytes> files <bytes>" or "<ISO time> FAIL <reason>". The script itself
@@ -20,7 +20,7 @@ class OffsiteBackupCheck
     public const MIN_DB_BYTES = 100_000;
 
     /** Null when the last run is a recent OK, else the reason, for the email. */
-    public function problem(string $logPath, ?int $now = null): ?string
+    public function problem(string $logPath, ?int $now = null, int $maxAgeHours = self::MAX_AGE_HOURS): ?string
     {
         $now ??= time();
         if (! is_file($logPath) || ! is_readable($logPath)) {
@@ -41,8 +41,8 @@ class OffsiteBackupCheck
         if (($parts[1] ?? '') !== 'OK') {
             return 'last run failed on ' . gmdate('j M H:i', $at) . ' UTC: ' . Mailer::oneLine($parts[2] ?? '');
         }
-        if ($now - $at > self::MAX_AGE_HOURS * 3600) {
-            return 'no backup since ' . gmdate('j M H:i', $at) . ' UTC';
+        if ($now - $at > $maxAgeHours * 3600) {
+            return 'no successful run since ' . gmdate('j M H:i', $at) . ' UTC';
         }
         if (preg_match('/\bdb (\d+)\b/', $parts[2] ?? '', $m) !== 1 || (int) $m[1] < self::MIN_DB_BYTES) {
             return 'last dump was only ' . ($m[1] ?? '?') . ' bytes';

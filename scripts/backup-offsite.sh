@@ -17,23 +17,26 @@ DUMPS="${DUMPS:-/home/deploy/backups}"
 LOG="${LOG:-$DUMPS/offsite.log}"
 DAY="$(date +%F)"
 DUMP="$DUMPS/db-$DAY.sql.gz"
-FILES="$(mktemp --suffix=.tar.gz)"
-trap 'rm -f "$FILES"' EXIT
+# The newest archive stays here (replaced each night) for scripts/restore-drill.sh.
+FILES="$DUMPS/files-latest.tar.gz"
+PART="$FILES.part"
+trap 'rm -f "$PART"' EXIT
 
-fail() { echo "$(date -Is) FAIL $*" >> "$LOG"; echo "offsite backup failed: $*" >&2; exit 1; }
+fail() { echo "$(date -u +%Y-%m-%dT%H:%M:%S+00:00) FAIL $*" >> "$LOG"; echo "offsite backup failed: $*" >&2; exit 1; }
 
 # A dump that stopped half way still gzips cleanly; mysqldump's last line proves it finished.
 [[ -s "$DUMP" ]] || fail "no dump at $DUMP"
 zcat "$DUMP" | tail -n 1 | grep -q '^-- Dump completed' || fail "dump $DUMP is incomplete"
 
 # Uploads: public images and the private documents (verification, careers CVs, menus).
-tar -czf "$FILES" -C / \
+tar -czf "$PART" -C / \
     "${WEB#/}/assets/listings" \
     "${WEB#/}/assets/hero/uploads" \
     "${APP#/}/writable/verification" \
     "${APP#/}/writable/careers" \
     "${APP#/}/writable/menus" \
     "${APP#/}/writable/uploads" || fail "tar of uploads"
+mv -f "$PART" "$FILES"
 
 if [[ -n "${DRYRUN:-}" ]]; then
     echo "dry run: would upload $DUMP ($(stat -c %s "$DUMP") bytes) and files ($(stat -c %s "$FILES") bytes) to s3://$BUCKET"
@@ -43,4 +46,4 @@ fi
 aws s3 cp --only-show-errors "$DUMP" "s3://$BUCKET/db/db-$DAY.sql.gz" || fail "upload of $DUMP"
 aws s3 cp --only-show-errors "$FILES" "s3://$BUCKET/files/files-$DAY.tar.gz" || fail "upload of files"
 
-echo "$(date -Is) OK db $(stat -c %s "$DUMP") files $(stat -c %s "$FILES")" >> "$LOG"
+echo "$(date -u +%Y-%m-%dT%H:%M:%S+00:00) OK db $(stat -c %s "$DUMP") files $(stat -c %s "$FILES")" >> "$LOG"

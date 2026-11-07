@@ -141,6 +141,13 @@ MAILTO=""
 # is a recent OK (Libraries\OffsiteBackupCheck).
 10 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark backups:check --quiet
 
+# Monthly restore drill: the newest dump into webscheduler_restore_drill_tests
+# (dropped afterwards; the webscheduler user needs ALL on that one name), every
+# table compared with the live one, files-latest.tar.gz listed. The daily check
+# mails the admin if no drill has passed in 32 days.
+30 4 1 * * deploy /home/deploy/src/scripts/restore-drill.sh > /dev/null
+12 3 * * * deploy cd /var/www/listing/directory-app && /usr/bin/php spark backups:check --log /home/deploy/backups/restore-drill.log --max-age 768 --name "Restore drill" --quiet
+
 # --- Certificate expiry warning ----------------------------------------------
 # The Cloudflare origin certificate is valid for 15 years, so there is no renewal
 # cron. That is precisely why it needs a reminder: nothing else will ever mention

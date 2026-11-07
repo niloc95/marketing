@@ -345,6 +345,14 @@ sudo -u deploy -H nano /home/deploy/.aws/credentials   # aws_access_key_id / aws
 sudo -u deploy -H env DRYRUN=1 BUCKET=<bucket> /home/deploy/src/scripts/backup-offsite.sh
 ```
 
+The monthly restore drill (`scripts/restore-drill.sh`) restores into a scratch database that
+the app's user may create and drop, and nothing else:
+
+```bash
+sudo mysql -e "GRANT ALL PRIVILEGES ON \`webscheduler_restore_drill_tests\`.* TO 'webscheduler'@'localhost';"
+sudo -u deploy -H /home/deploy/src/scripts/restore-drill.sh
+```
+
 ---
 
 ## Part 7 — TLS, then enable the vhosts

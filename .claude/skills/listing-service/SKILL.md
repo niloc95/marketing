@@ -1136,7 +1136,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | Command | Does | Cron (UTC) |
 |---|---|---|
 | `directory:verifications:sweep` | lapse expired badge and Plus subscriptions, renewal reminders | 03:00 |
-| `backups:check [--log path]` | email the admin unless `scripts/backup-offsite.sh` (02:40) logged a recent OK | 03:10 |
+| `backups:check [--log path] [--max-age h] [--name label]` | email the admin unless `scripts/backup-offsite.sh` (02:40) logged a recent OK; again at 03:12 for `scripts/restore-drill.sh` (monthly, 32 day limit) | 03:10, 03:12 |
 | `directory:quality:recalculate [--stale]` | rescore profiles | 03:15 |
 | `directory:insights:build` | rebuild the description hints | 03:20 |
 | `discovery:learn [--show <word>]` | rebuild the discovery model (categories, related words, vocabulary, clicks; per site) and purge old searches | 03:25 |

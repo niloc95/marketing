@@ -56,9 +56,17 @@ final class OffsiteBackupCheckTest extends CIUnitTestCase
 
     public function testANightWithNoRunIsReported(): void
     {
-        $this->assertStringContainsString('no backup since 6 Nov', (string) $this->problem(
+        $this->assertStringContainsString('no successful run since 6 Nov', (string) $this->problem(
             '2026-11-06T02:40:12+00:00 OK db 794580 files 47219454',
         ));
+    }
+
+    public function testTheMonthlyDrillGetsALongerLimit(): void
+    {
+        file_put_contents($this->log, "2026-10-12T04:30:00+00:00 OK db 794580 files 2210 tables 96 seconds 41\n");
+
+        $this->assertNull((new OffsiteBackupCheck())->problem($this->log, $this->now, 768));
+        $this->assertNotNull((new OffsiteBackupCheck())->problem($this->log, $this->now));
     }
 
     public function testATinyDumpIsReported(): void
