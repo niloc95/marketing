@@ -13,7 +13,7 @@
 <form method="get" action="<?= base_url('bookings/customers') ?>" class="mt-4 flex items-start gap-2" role="search">
     <div class="field mb-0 flex-1">
         <label class="sr-only" for="cust-q">Find a customer</label>
-        <input id="cust-q" type="text" name="q" value="<?= esc($q, 'attr') ?>" placeholder="Find a customer by name, email or phone">
+        <input id="cust-q" type="text" name="q" value="<?= esc($q, 'attr') ?>" placeholder="Find by name, email, phone or reference">
     </div>
     <button type="submit" class="btn btn-ghost">Find</button>
 </form>

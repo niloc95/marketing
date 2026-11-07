@@ -1,8 +1,8 @@
 /**
  * "Find a customer" on any booking form: the calendar's Book dialog and the
  * page /bookings/appointments/new (the dashboard's Book button, a customer's
- * page, quick book links). Type two letters of a name, an email or a phone
- * number and pick: the customer is linked by id and the new customer fields
+ * page, quick book links). Type two letters of a name, an email, a phone
+ * number or a reference (BookingSearch) and pick: the customer is linked by id and the new customer fields
  * hide, so nobody retypes or asks again. Nothing found: fill in a new one.
  *
  * The picker is a [data-customer-picker] fieldset (business/_appointment_fields.php);

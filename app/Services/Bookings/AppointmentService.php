@@ -443,37 +443,33 @@ class AppointmentService
     ];
 
     /**
-     * Find appointments by reference, customer name, email or phone
-     * ("Find", Bookings' GlobalSearchService), newest first, in scope.
+     * Find appointments by reference, customer name, email or phone, or
+     * service ("Find", BookingSearch), best first, newest first within a
+     * rank, in scope.
      *
      * @return list<array<string,mixed>> calendar shaped
      */
     public function findMatching(string $query, int $limit = 20): array
     {
-        $query = trim($query);
-        if ($query === '' || $this->scope === []) {
+        if (trim($query) === '' || $this->scope === []) {
             return [];
         }
-        $a     = 'xs_booking_appointments';
-        $model = BookingAppointmentModel::forBusiness($this->listingId)
+        $ids = array_column((new BookingSearch($this->listingId, (string) ($this->listing['country_code'] ?? 'ZA')))->appointments($query, $this->scope, $limit), 'id');
+        if ($ids === []) {
+            return [];
+        }
+        $a    = 'xs_booking_appointments';
+        $rows = BookingAppointmentModel::forBusiness($this->listingId)
             ->select($a . '.*, c.first_name AS customer_first_name, c.last_name AS customer_last_name,'
                 . ' c.email AS customer_email, c.phone AS customer_phone, c.hash AS customer_hash, p.color AS provider_color')
             ->join('xs_booking_customers c', 'c.id = ' . $a . '.customer_id AND c.listing_id = ' . $a . '.listing_id', 'left')
             ->join('xs_booking_providers p', 'p.id = ' . $a . '.provider_id AND p.listing_id = ' . $a . '.listing_id', 'left')
-            ->groupStart()
-            ->like($a . '.reference', $query)
-            ->orLike('c.first_name', $query)
-            ->orLike('c.last_name', $query)
-            ->orLike('c.email', $query)
-            ->orLike('c.phone', preg_replace('/\s+/', '', $query))
-            ->orLike($a . '.service_name', $query)
-            ->groupEnd();
-        if ($this->scope !== null) {
-            $model->whereIn($a . '.provider_id', $this->scope);
-        }
+            ->whereIn($a . '.id', $ids)
+            ->findAll();
+        $rows  = array_column($rows, null, 'id');
         $query = new CalendarQuery($this->listingId, $this->tz);
 
-        return array_map(static fn (array $r): array => $query->format($r), $model->orderBy($a . '.start_at', 'DESC')->findAll($limit));
+        return array_values(array_map(static fn (int $id): array => $query->format($rows[$id]), array_filter($ids, static fn (int $id): bool => isset($rows[$id]))));
     }
 
     // Internals

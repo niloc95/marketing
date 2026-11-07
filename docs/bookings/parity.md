@@ -65,7 +65,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Details modal: status, notes, mark paid, resend | `appointment-details-modal.js` | Port | 4 | |
 | Filters by provider, service, location, status | `status-filters.js`, `advanced-filters.js` | Port | 4 | |
 | Custom fields 1 to 6 (text, textarea) | `booking.custom_field_*`, `xs_appointment_custom_fields` | Port | 4 | built with select (choices one per line) and checkbox types too; Settings, Questions tab |
-| Global search | `GlobalSearchService` | Port | 4 | scoped to the business |
+| Global search | `GlobalSearchService` | Rebuild | 4 | scoped to the business and the member's people. Rebuilt 6 Nov 2026 as `BookingSearch` (branch `booking/customer-lookup`): one search for the customer picker, the calendar's Find box and the Customers list; names either way round and by prefix, accents and capitals ignored, a phone number in any form (the business's own country code for the leading 0), references (`WSB-BOOK-000123`, `#123`, `123`), typos against the business's own names (Levenshtein, metaphone); ranked exact, prefix, fuzzy, most recent first. Not Discover: no learned tables, customer data never feeds the public model (POPIA). If big practices need it later, generated `phone_digits` and `name_folded` columns with indexes |
 | Deep link `?open={hash}` | yes | Port | 4 | |
 
 ## 5. Scheduling engine
