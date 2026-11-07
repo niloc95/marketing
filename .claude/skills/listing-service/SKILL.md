@@ -50,7 +50,7 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 | `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
 | `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
 | `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
-| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Hostnames`, `ContentSecurityPolicy` |
+| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Handbook` (the system handbook), `Hostnames`, `ContentSecurityPolicy` |
 | `app/Models/` | One per table, `xs_` prefix. `DirectoryListingModel` is the hub; `Concerns/DerivesCountryCode` |
 | `app/Views/` | `layouts/public.php` (one layout for every page, header, footer, analytics), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
 | `app/Commands/` | spark commands, see Commands below |
@@ -631,6 +631,47 @@ referred businesses pay. Rules are in `PartnerService`, the only writer of the
   (1h), session key `partner_id`, like `/manage`.
 - Terms §19, privacy §10, and the cookie policy describe all of this.
 - Tests: `tests/database/PartnerProgramTest.php`.
+
+## System handbook (`/admin/documents/system`, since 7 Nov 2026)
+
+One internal page that describes everything: Local on both sites, Bookings, the brand site,
+architecture, design, tech stack, every table, ids and formats, operations. First row on
+`/admin/documents`. Owner rule (7 Nov 2026): **every change keeps it true.**
+
+- **Live half** (`App\Services\SystemHandbookService`, read on every open, nothing to
+  edit): tables from `information_schema` with exact `COUNT(*)`, highest id and next
+  AUTO_INCREMENT (it sets `information_schema_stats_expiry = 0`), columns, indexes, foreign
+  keys, scope from the columns (`country_code` = site, `listing_id` = profile or business),
+  rows per site, breakdowns (status, signup source, plans, newsletter source, bookings),
+  migrations, routes, PHP/CI/MySQL versions, `composer.lock` and `package.json` packages,
+  `deploy/cron/webscheduler`, `tailwind.tokens.cjs` colours, `PaymentReference` prefixes,
+  GA4 / Clarity / Search Console ids per site, the `.app` and Bookings switches.
+  `scripts/build-listing-app.js` ships `package.json`, `tailwind.tokens.cjs` and the cron
+  template in the bundle so production reads the same files. Each section is read on its
+  own (`AdminHandbook`), so one failure shows "Not available right now" and logs.
+- **Written half:** `app/Config/Handbook.php` (`$chapters`, and `$tables`: purpose,
+  writer, product, personal data and retention for **every** table) and the chapter views
+  in `app/Views/admin/handbook/` (overview, architecture, two-sites, bookings, brand-site,
+  stack, design, database, ids, operations, changelog).
+- **What to update, in the same commit as the change:**
+  | Change | Update |
+  |---|---|
+  | New or dropped table (any migration) | `Config\Handbook::$tables` entry (the test fails otherwise) |
+  | New service, filter, layer rule, security boundary | `architecture.php` |
+  | Anything that differs per site, new country support | `two-sites.php` |
+  | Bookings feature or rule | `bookings.php` |
+  | Brand site change (in its repo) | `brand-site.php` here |
+  | New external service, server change, dependency with a role | `stack.php` |
+  | CSS component, layout, token, icon or chart rule | `design.php` (tokens themselves are live) |
+  | New payment reference prefix, token, slug or id format, analytics property | `ids.php` (the test fails for an unexplained prefix) |
+  | Cron job, switch, rollback, release step | `operations.php` |
+  | Any of the above | one dated line at the top of `changelog.php` |
+- **Never print a secret.** Only ids that are public anyway (GA4, Clarity, Search Console
+  property names). `SystemHandbookTest` checks the page for the database password,
+  `encryption.key`, Paystack, Mapbox and admin values, and for `style="` (CSP).
+- Prints to PDF from the browser: `@media print` drops the site chrome, and
+  `directory.js` opens every table's `<details>` on `beforeprint`.
+- Tests: `tests/database/SystemHandbookTest.php`.
 
 ## Document library (every PDF we publish, since 7 Nov 2026)
 

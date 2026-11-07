@@ -3970,6 +3970,28 @@
   .table td  { @apply border-t border-slate-100 px-4 py-3 align-top; }
   .actions   { @apply flex flex-wrap items-center gap-1.5; }
 
+  /* The system handbook (admin/handbook.php). Chapters reuse .prose-legal,
+     but the page itself is full width so the table list fits. */
+  .handbook-head      { @apply mb-6; }
+  .handbook-toc       { @apply mb-10 rounded-surface border border-slate-200 bg-white p-6; }
+  .handbook-toc ol    { @apply grid list-decimal gap-x-8 gap-y-1 pl-5 text-sm sm:grid-cols-2 lg:grid-cols-3; }
+  .handbook-toc a     { @apply font-medium text-primary-600 hover:underline; }
+  .handbook-chapter   { @apply mb-14 scroll-mt-24; }
+  .handbook-chapter > h2 { @apply mb-4 border-b border-slate-200 pb-2 text-2xl font-bold tracking-tight text-primary-500; }
+  .handbook .prose-legal { @apply mx-0 max-w-4xl; }
+  .handbook-columns   { @apply grid gap-6 lg:grid-cols-2; }
+  .handbook-columns .tablewrap { @apply self-start; }
+  /* Table names and class paths are one long word: let them wrap on a phone. */
+  .handbook code      { overflow-wrap: anywhere; }
+  .handbook .faq-item summary > span { @apply block; }
+  .handbook-swatches  { @apply mb-2 grid grid-cols-2 gap-3 text-xs text-slate-600 sm:grid-cols-4 lg:grid-cols-6; }
+  .handbook-swatches li { @apply flex items-center gap-2; }
+  .handbook-swatches svg { @apply shrink-0 text-slate-900; }
+  .dark .handbook-toc { @apply border-slate-800 bg-surface-card; }
+  .dark .handbook-chapter > h2 { @apply border-slate-800 text-white; }
+  .dark .handbook-swatches { @apply text-slate-400; }
+  .dark .handbook-swatches svg { @apply text-white; }
+
   /* The admin profile list (admin/index.php). Six columns and icon actions so
      it fits a laptop screen without the sideways scroll the eleven column
      version needed. .tablewrap still scrolls on a phone. */
@@ -4336,4 +4358,17 @@
   .biz-state.is-break    { @apply bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200; }
   .biz-state.is-off,
   .biz-state.is-time_off { @apply bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300; }
+}
+
+/* The system handbook prints as a document: no site chrome, no contents box,
+   every chapter on paper. directory.js opens each table's <details> before
+   printing, since a closed one prints its summary only. */
+@media print {
+  .handbook-print .site-header,
+  .handbook-print .site-footer,
+  .handbook-print .admin-bar,
+  .handbook-print .handbook-toc { display: none !important; }
+  .handbook-print .tablewrap { overflow: visible; box-shadow: none; }
+  .handbook-chapter { break-inside: auto; }
+  .handbook-chapter > h2 { break-after: avoid; }
 }

@@ -61,6 +61,10 @@ recurring release procedure.
    run again on the server, but finding a guard failure there means a half-finished
    release on a live box.
 3. If the change touches `app/Database/Migrations/`, read "Migrations" below.
+3a. The system handbook (`/admin/documents/system`) is current: a `changelog.php` line
+   for what ships, `Config\Handbook::$tables` for any new table (the suite enforces it).
+   After the release, open the page on production: no "Not available right now", and
+   pending migrations none.
 4. If the change touches the contact form or the privacy policy, they must ship
    together. See "The contact/privacy coupling".
 

@@ -43,7 +43,10 @@ const appOut = path.join(outDir, 'directory-app');
 const webOut = path.join(outDir, 'docroot');
 
 /** Files copied verbatim into the app root. */
-const APP_FILES = ['composer.json', 'composer.lock', 'spark'];
+// package.json, tailwind.tokens.cjs and the cron template ride along for the
+// system handbook (/admin/documents/system, SystemHandbookService), which
+// reads them from ROOTPATH. None is under public/, so none has a URL.
+const APP_FILES = ['composer.json', 'composer.lock', 'spark', 'package.json', 'tailwind.tokens.cjs'];
 
 /** writable/ subdirectories the framework requires at runtime.
  *
@@ -155,6 +158,9 @@ for (const line of log.split('\n')) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(line)) commitDate = line;
   else if (line && commitDate && !(line in lastmod)) lastmod[line] = commitDate;
 }
+// The cron template, for the handbook's schedule (see APP_FILES).
+fs.mkdirSync(path.join(appOut, 'deploy', 'cron'), { recursive: true });
+fs.copyFileSync(path.join(projectRoot, 'deploy', 'cron', 'webscheduler'), path.join(appOut, 'deploy', 'cron', 'webscheduler'));
 fs.writeFileSync(path.join(appOut, 'view-lastmod.json'), JSON.stringify(lastmod, null, 1) + '\n');
 console.log('  • view-lastmod.json (' + Object.keys(lastmod).length + ' files)');
 

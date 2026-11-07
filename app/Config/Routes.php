@@ -502,6 +502,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Internal documents (Config\Documents::$internal). Served from outside the web
     // root and only here; the segment is a registry key, never a path.
     $routes->get('documents', 'Admin::documents');
+    // The system handbook (AdminHandbook, Config\Handbook). A literal, so it
+    // MUST precede documents/{key}.
+    $routes->get('documents/system', 'AdminHandbook::index');
     $routes->get('documents/(:segment)', 'Admin::document/$1');
 
     // Partner Program: applications, partners, and the monthly payout list.

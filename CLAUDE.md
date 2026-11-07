@@ -67,6 +67,11 @@ they hold the rules that are not obvious from the code.
     once; `dev:status`, `dev:restart` after a composer or `.env` change). It serves whatever
     branch is checked out. Never start another server.
   - Dev DB `webscheduler_directory`, test DB `webscheduler_directory_tests`.
+- **System handbook** (`/admin/documents/system`): every change that adds or alters a
+  table, route group, service, dependency, design token, cron job, external service, id
+  format, a per site difference, Bookings or the brand site updates `Config\Handbook`
+  and/or `app/Views/admin/handbook/` in the same commit, with a dated changelog line.
+  Live figures need nothing. Rules in the `listing-service` skill, "System handbook".
 - Tests: `php vendor/bin/phpunit`, about 30 seconds for the full suite. The schema is
   built once per run and every DB test class uses `Tests\Support\FreshDatabase`, which
   empties the tables before each test (never `DatabaseTestTrait` directly). Use the id

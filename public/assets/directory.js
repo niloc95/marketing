@@ -5518,4 +5518,24 @@
       send(form.action, 'js_error', String(reason).slice(0, 150));
     });
   })();
+
+  // System handbook (admin/handbook.php): print every chapter in full. A
+  // closed <details> prints its summary only, so open them all first and put
+  // them back after.
+  (function () {
+    var book = document.querySelector('.handbook');
+    if (!book) return;
+    document.documentElement.classList.add('handbook-print');
+    var opened = [];
+    window.addEventListener('beforeprint', function () {
+      opened = Array.prototype.filter.call(book.querySelectorAll('details:not([open])'), function (d) {
+        d.open = true;
+        return true;
+      });
+    });
+    window.addEventListener('afterprint', function () {
+      opened.forEach(function (d) { d.open = false; });
+      opened = [];
+    });
+  })();
 })();

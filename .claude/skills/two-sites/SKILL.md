@@ -189,6 +189,13 @@ like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
   `international-app` worktree, its port 8098 and its `_intl` databases were removed on
   29 Oct 2026.
 
+## System handbook
+
+A change to anything in this skill (a per site difference, a country, a setting, copy,
+legal, SEO, analytics ids) updates `app/Views/admin/handbook/two-sites.php` (and `ids.php`
+for analytics or search ids) plus a dated `changelog.php` line in the same commit; see
+the `listing-service` skill, "System handbook". Rows per site there are live.
+
 ## Tests
 
 - `tests/_support/bootstrap.php` re-pins `sites.app.enabled = false` and

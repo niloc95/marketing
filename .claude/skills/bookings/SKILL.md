@@ -90,6 +90,13 @@ Bookings rules that still hold after the port:
 
 ## Hard rules
 
+- Every Bookings change also updates the system handbook (`/admin/documents/system`) in
+  the same commit: a new `xs_booking_*` table needs its `Config\Handbook::$tables` entry
+  (product `bookings`; `SystemHandbookTest` fails without it), a feature or rule goes in
+  `app/Views/admin/handbook/bookings.php`, a reference format in `ids.php`, a cron job
+  in the cron template (read live), plus a dated `changelog.php` line. See the
+  `listing-service` skill, "System handbook".
+
 - Nothing booking related may change discovery ranking or the quality score.
 - Public profile pages stay sessionless. The booking flow starts a session only at the
   details step, and `/business` is the only place with a signed in session.
