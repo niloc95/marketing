@@ -335,6 +335,16 @@ sudo chmod 600 /home/deploy/.my.cnf
 sudo -u deploy mysql --defaults-file=/home/deploy/.my.cnf -e 'SELECT VERSION();'
 ```
 
+Offsite copy of the dump and the uploads (`scripts/backup-offsite.sh`, cron 02:40): install
+the AWS CLI v2 (`curl -fsSL -o awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip`,
+`unzip`, `sudo ./aws/install`), then give `deploy` the upload only key, region `af-south-1`:
+
+```bash
+sudo -u deploy -H bash -c "umask 077; mkdir -p ~/.aws; printf '[default]\nregion = af-south-1\n' > ~/.aws/config"
+sudo -u deploy -H nano /home/deploy/.aws/credentials   # aws_access_key_id / aws_secret_access_key
+sudo -u deploy -H env DRYRUN=1 BUCKET=<bucket> /home/deploy/src/scripts/backup-offsite.sh
+```
+
 ---
 
 ## Part 7 — TLS, then enable the vhosts
@@ -773,6 +783,7 @@ in Part 9:
 
 ```bash
 ls -lh /home/deploy/backups/          # a db-YYYY-MM-DD.sql.gz appears after 02:15
+tail -1 /home/deploy/backups/offsite.log   # an OK line after 02:40
 grep CRON /var/log/syslog | tail
 ```
 
