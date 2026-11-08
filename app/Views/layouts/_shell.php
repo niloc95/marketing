@@ -1,7 +1,7 @@
 <?php
 /**
  * The signed in app shell: a sidebar, a slim top bar and one content region,
- * shared by /admin (layouts/admin.php) and /business (layouts/business.php).
+ * shared by /admin (layouts/admin.php) and /bookings (layouts/business.php).
  * Public pages never use it: they keep layouts/public.php.
  *
  * Ported from WebScheduler Bookings' layouts/app.php and spa.js: page changes

@@ -40,10 +40,29 @@ class Book extends BaseController
         }
 
         $services  = $svc->services();
+        $who       = (string) ($this->request->getGet('provider') ?? '');
+        // "Book with" on the profile (T28) names a person before a service:
+        // list only what they offer, and keep them chosen. Anyone else's id
+        // (or another business's) is ignored.
+        $withId = ctype_digit($who) ? (int) $who : 0;
+        $theirs = $withId > 0 ? array_values(array_filter($services, static fn (array $s): bool => in_array($withId, $s['provider_ids'], true))) : [];
+        if ($theirs === []) {
+            $withId = 0;
+        } else {
+            $services = $theirs;
+        }
         $serviceId = (int) $this->request->getGet('service');
         $service   = $svc->service($serviceId) ?? (count($services) === 1 ? $services[0] : null);
         $providers = $service !== null ? $svc->providersFor((int) $service['id']) : [];
-        $who       = (string) ($this->request->getGet('provider') ?? '');
+        // A person's headshot from their team card, which only a Verified or
+        // Plus profile shows publicly.
+        if ($providers !== [] && listing_has_premium($listing)) {
+            $photos = array_column((new \App\Models\DirectoryListingTeamModel())->forListing((int) $listing['id']), 'photo_path', 'id');
+            foreach ($providers as &$p) {
+                $p['photo_path'] = $photos[(int) ($p['team_member_id'] ?? 0)] ?? null;
+            }
+            unset($p);
+        }
         $provider  = null;
         if (count($providers) === 1) {
             $provider = $providers[0];
@@ -87,6 +106,8 @@ class Book extends BaseController
             'holdMinutes' => $depositSvc->holdMinutes(),
             'services'  => $services,
             'service'   => $service,
+            'withId'    => $withId,
+            'places'    => (new \App\Services\Bookings\TeamService((int) $listing['id']))->locationChoices($listing),
             'providers' => $providers,
             'provider'  => $provider,
             'who'       => $whoChosen ? ($provider !== null ? (string) $provider['id'] : 'any') : '',
@@ -403,8 +424,11 @@ class Book extends BaseController
             'cancelRefusal' => $svc->refusal($a, 'cancel'),
             'policies'     => $svc->policies(),
             'today'        => $svc->today(),
-            'from'         => max($this->date($this->request->getGet('from')) ?? $svc->today(), $svc->today()),
-            'days'         => $svc->refusal($a, 'reschedule') === null ? $svc->days((int) $a['service_id'], (int) $a['provider_id'], max($this->date($this->request->getGet('from')) ?? $svc->today(), $svc->today()), 14) : [],
+            // The month calendar of free days, up to the future booking limit.
+            'calendar'     => $svc->refusal($a, 'reschedule') === null
+                ? $svc->rescheduleMonth($a, (string) ($this->request->getGet('month') ?? ($date !== null ? substr($date, 0, 7) : '')))
+                : null,
+            'nextFree'     => $svc->refusal($a, 'reschedule') === null ? $svc->rescheduleNext($a) : null,
             'date'         => $date,
             'times'        => $date !== null && $svc->refusal($a, 'reschedule') === null ? $svc->rescheduleTimes($a, $date) : [],
             'twelveHour'   => \App\Services\Bookings\BookingSettings::for((int) $found['listing']['id'])->get('localization.time_format') === '12h',

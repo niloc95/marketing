@@ -209,30 +209,30 @@ final class BookingCatalogueTest extends CIUnitTestCase
         [$id, $ownerId] = $this->business();
         $providerId = (int) (new TeamService($id))->saveProvider(null, ['name' => 'Lerato'], null)['id'];
 
-        $this->signedIn($ownerId, $id)->post('business/team/invite', [
+        $this->signedIn($ownerId, $id)->post('bookings/team/invite', [
             csrf_token() => csrf_hash(), 'name' => 'Lerato', 'email' => 'lerato@example.test', 'role' => 'provider', 'provider_id' => $providerId,
-        ])->assertRedirectTo(base_url('business/team#access'));
+        ])->assertRedirectTo(base_url('bookings/team#access'));
 
         $this->assertCount(1, $this->sent);
-        preg_match('#business/invite/([a-f0-9]{64})#', html_entity_decode((string) $this->sent[0]['body']), $m);
+        preg_match('#bookings/invite/([a-f0-9]{64})#', html_entity_decode((string) $this->sent[0]['body']), $m);
         $token = $m[1];
 
         $member = BusinessMemberModel::forBusiness($id)->where('status', 'invited')->first();
         $this->assertSame(hash('sha256', $token), $member['invite_token_hash']);
         $this->assertSame((int) $member['id'], (int) BookingProviderModel::forBusiness($id)->find($providerId)['member_id']);
 
-        $this->get('business/invite/' . $token)->assertSee('Join Salon Lumi');
+        $this->get('bookings/invite/' . $token)->assertSee('Join Salon Lumi');
         $this->assertSame('invited', BusinessMemberModel::forBusiness($id)->find($member['id'])['status']);
 
-        $this->post('business/invite/' . $token, [csrf_token() => csrf_hash(), 'password' => 'short'])
-            ->assertRedirectTo(base_url('business/invite/' . $token));
+        $this->post('bookings/invite/' . $token, [csrf_token() => csrf_hash(), 'password' => 'short'])
+            ->assertRedirectTo(base_url('bookings/invite/' . $token));
 
-        $joined = $this->post('business/invite/' . $token, [csrf_token() => csrf_hash(), 'password' => 'a good long password']);
-        $joined->assertRedirectTo(base_url('business'));
+        $joined = $this->post('bookings/invite/' . $token, [csrf_token() => csrf_hash(), 'password' => 'a good long password']);
+        $joined->assertRedirectTo(base_url('bookings'));
         $joined->assertSessionHas(BusinessSession::LISTING, $id);
         $this->assertSame('active', BusinessMemberModel::forBusiness($id)->find($member['id'])['status']);
 
-        $this->get('business/invite/' . $token)->assertSee('This invitation has expired');
+        $this->get('bookings/invite/' . $token)->assertSee('This invitation has expired');
     }
 
     public function testTheLastAdminStays(): void
@@ -257,13 +257,13 @@ final class BookingCatalogueTest extends CIUnitTestCase
         $mine    = (int) $team->saveProvider(null, ['name' => 'Lerato', 'member_id' => $member], null)['id'];
 
         $as = $this->signedIn((int) $account['id'], $id);
-        $as->get('business/team/' . $mine)->assertOK();
-        $as->get('business/team/' . $owners)->assertStatus(404);
-        $this->signedIn((int) $account['id'], $id)->post('business/team/invite', [csrf_token() => csrf_hash(), 'name' => 'X', 'email' => 'x@example.test', 'role' => 'admin'])->assertStatus(403);
+        $as->get('bookings/team/' . $mine)->assertOK();
+        $as->get('bookings/team/' . $owners)->assertStatus(404);
+        $this->signedIn((int) $account['id'], $id)->post('bookings/team/invite', [csrf_token() => csrf_hash(), 'name' => 'X', 'email' => 'x@example.test', 'role' => 'admin'])->assertStatus(403);
 
-        $this->signedIn((int) $account['id'], $id)->post('business/time-off', [
+        $this->signedIn((int) $account['id'], $id)->post('bookings/time-off', [
             csrf_token() => csrf_hash(), 'provider_id' => $owners, 'start' => '2030-01-01T09:00', 'end' => '2030-01-01T10:00',
-        ])->assertRedirectTo(base_url('business/time-off'));
+        ])->assertRedirectTo(base_url('bookings/time-off'));
         $this->assertSame(0, BookingBlockedTimeModel::forBusiness($id)->countAllResults());
     }
 
@@ -273,8 +273,8 @@ final class BookingCatalogueTest extends CIUnitTestCase
         $account = (new AccountService())->findOrCreate('desk@example.test', 'Desk');
         BusinessMemberModel::forBusiness($id)->insert(['account_id' => $account['id'], 'role' => 'staff', 'status' => 'active']);
 
-        $this->signedIn((int) $account['id'], $id)->get('business/team')->assertStatus(403);
-        $this->signedIn((int) $account['id'], $id)->get('business/services')->assertStatus(403);
+        $this->signedIn((int) $account['id'], $id)->get('bookings/team')->assertStatus(403);
+        $this->signedIn((int) $account['id'], $id)->get('bookings/services')->assertStatus(403);
     }
 
     public function testTheSetupCheckSaysWhatIsMissing(): void
@@ -287,7 +287,7 @@ final class BookingCatalogueTest extends CIUnitTestCase
         $catalog->saveService(null, ['name' => 'Cut', 'duration_min' => 30, 'delivery_modes' => ['onsite'], 'provider_ids' => []], null);
         $this->assertContains('service_unoffered', array_column(SetupCheck::problems($id), 'code'));
 
-        $this->signedIn($ownerId, $id)->get('business')->assertSee('has nobody who offers it');
+        $this->signedIn($ownerId, $id)->get('bookings')->assertSee('has nobody who offers it');
     }
 
     public function testTheBusinessPagesRender(): void
@@ -296,7 +296,7 @@ final class BookingCatalogueTest extends CIUnitTestCase
         $providerId = (int) (new TeamService($id))->providers()[0]['id'];
         $serviceId  = (int) (new CatalogueService($id))->saveService(null, ['name' => 'Cut', 'duration_min' => 30, 'delivery_modes' => ['onsite'], 'provider_ids' => [$providerId]], null)['id'];
 
-        foreach (['business/services', 'business/services/new', 'business/services/' . $serviceId, 'business/team', 'business/team/' . $providerId, 'business/time-off'] as $path) {
+        foreach (['bookings/services', 'bookings/services/new', 'bookings/services/' . $serviceId, 'bookings/team', 'bookings/team/' . $providerId, 'bookings/time-off'] as $path) {
             $this->signedIn($ownerId, $id)->get($path)->assertOK();
         }
     }

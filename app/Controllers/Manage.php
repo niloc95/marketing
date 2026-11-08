@@ -188,6 +188,8 @@ class Manage extends BaseController
             'countries'  => config('Countries')->grouped(),
             'tags'       => $tags,
             'services'   => $services,
+            // Read only while the booking catalogue writes the list (T28).
+            'servicesFromBookings' => \App\Services\Bookings\CatalogueService::ownsProfileServices($listing),
             'attributes' => $attributes,
             'facets'     => $facets,
             'photos'     => $photos,

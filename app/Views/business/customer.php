@@ -19,10 +19,10 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/customers') ?>">Customers</a></p>
+<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('bookings/customers') ?>">Customers</a></p>
 <div class="flex flex-wrap items-center gap-3">
     <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= esc($customer['name']) ?></h1>
-    <a href="<?= base_url('business/appointments/new') ?>" class="btn btn-primary btn-xs ml-auto"><?= lucide('plus', 'h-4 w-4') ?> Book</a>
+    <a href="<?= base_url('bookings/appointments/new?customer=' . $customer['hash']) ?>" class="btn btn-primary btn-xs ml-auto"><?= lucide('plus', 'h-4 w-4') ?> Book</a>
 </div>
 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
     <?= esc(implode(' · ', array_filter([(string) ($customer['email'] ?? ''), (string) ($customer['phone'] ?? '')]))) ?>
@@ -30,7 +30,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 <?php if (! empty($optedOut)): ?>
     <div class="alert alert-info mt-3">
         <p>This customer asked us to stop your booking emails to them.</p>
-        <form method="post" action="<?= base_url('business/customers/' . $customer['hash'] . '/emails') ?>" class="mt-2">
+        <form method="post" action="<?= base_url('bookings/customers/' . $customer['hash'] . '/emails') ?>" class="mt-2">
             <?= csrf_field() ?>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" required> They asked me to send them again</label>
             <button type="submit" class="btn btn-ghost btn-xs mt-2">Send booking emails again</button>
@@ -57,7 +57,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
             <tbody>
                 <?php foreach ($history as $a): ?>
                     <tr>
-                        <td class="whitespace-nowrap"><a class="underline" href="<?= base_url('business/calendar?view=day&date=' . substr((new DateTimeImmutable((string) $a['start_at'], new DateTimeZone('UTC')))->setTimezone($tz)->format('Y-m-d'), 0, 10) . '&open=' . $a['hash']) ?>"><?= esc($local((string) $a['start_at'])) ?></a></td>
+                        <td class="whitespace-nowrap"><a class="underline" href="<?= base_url('bookings/calendar?view=day&date=' . substr((new DateTimeImmutable((string) $a['start_at'], new DateTimeZone('UTC')))->setTimezone($tz)->format('Y-m-d'), 0, 10) . '&open=' . $a['hash']) ?>"><?= esc($local((string) $a['start_at'])) ?></a></td>
                         <td><?= esc((string) $a['service_name']) ?></td>
                         <td><?= esc((string) $a['provider_name']) ?></td>
                         <td><?= esc(AppointmentStatus::short((string) $a['status'])) ?></td>
@@ -68,7 +68,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
     </div>
 <?php endif ?>
 
-<form method="post" action="<?= base_url('business/customers/' . $customer['hash']) ?>" class="form-card form-card-narrow mt-8" id="edit">
+<form method="post" action="<?= base_url('bookings/customers/' . $customer['hash']) ?>" class="form-card form-card-narrow mt-8" id="edit">
     <?= csrf_field() ?>
     <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Details</h2>
     <?= view('business/_customer_fields', ['old' => $old, 'errors' => $errors, 'customFields' => $customFields]) ?>
@@ -79,7 +79,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
     <section class="form-card form-card-narrow mt-8" id="their-data">
         <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Their data</h2>
         <p class="text-sm">If they ask what you hold about them, download it all in one file: their details, answers, appointments, deposits and the messages sent to them. We keep customers for <?= (int) config('Bookings')->retentionMonths ?> months after their last appointment, then remove their personal details.</p>
-        <a class="btn btn-ghost mt-4" href="<?= base_url('business/customers/' . $customer['hash'] . '/export') ?>">Download their data</a>
+        <a class="btn btn-ghost mt-4" href="<?= base_url('bookings/customers/' . $customer['hash'] . '/export') ?>">Download their data</a>
     </section>
     <section class="form-card form-card-narrow mt-8" id="delete">
         <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Delete this customer</h2>
@@ -87,7 +87,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
             <p class="text-sm">They have <?= $impact['upcoming'] ?> upcoming <?= $impact['upcoming'] === 1 ? 'appointment' : 'appointments' ?>. Cancel or move <?= $impact['upcoming'] === 1 ? 'it' : 'them' ?> first.</p>
         <?php else: ?>
             <p class="text-sm">This removes their name, contact details, notes and answers.<?php if ($impact['past'] > 0): ?> Their <?= $impact['past'] ?> past <?= $impact['past'] === 1 ? 'appointment stays' : 'appointments stay' ?> in your calendar without their name.<?php endif ?> You cannot undo this.</p>
-            <form method="post" action="<?= base_url('business/customers/' . $customer['hash'] . '/delete') ?>" class="mt-4">
+            <form method="post" action="<?= base_url('bookings/customers/' . $customer['hash'] . '/delete') ?>" class="mt-4">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-ghost text-rose-700">Delete customer</button>
             </form>

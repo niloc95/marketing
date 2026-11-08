@@ -8,7 +8,7 @@ use CodeIgniter\Config\BaseConfig;
  * Online bookings, the rebuild of WebScheduler Bookings inside Local
  * (docs/bookings/, skill `bookings`).
  *
- * Everything is dark until `bookings.enabled = true` in .env: every /business
+ * Everything is dark until `bookings.enabled = true` in .env: every /bookings
  * route answers 404 and /manage shows no offer. A profile then still needs its
  * own switch (xs_directory_listings.bookings_enabled), which only
  * BookingSetupService writes.
@@ -56,7 +56,7 @@ class Bookings extends BaseConfig
      * Google Calendar (Phase 9): our one OAuth client, from .env
      * (`bookings.googleClientId`, `bookings.googleClientSecret`). Each business
      * connects its own calendar through it. Empty: Google Calendar is not
-     * offered. Its redirect address is /business/connections/google/callback
+     * offered. Its redirect address is /bookings/connections/google/callback
      * on local.webscheduler.co.za.
      */
     public string $googleClientId = '';

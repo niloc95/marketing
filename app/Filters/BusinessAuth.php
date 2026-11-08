@@ -13,7 +13,7 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
 /**
- * Gate for every /business route (online bookings, docs/bookings/).
+ * Gate for every /bookings route (online bookings, docs/bookings/).
  *
  * 1. Bookings switched off, or not offered on this site: 404, as if the area
  *    did not exist. That is the whole effect of `businessauth:guest` (sign in
@@ -45,21 +45,21 @@ class BusinessAuth implements FilterInterface
 
         $accountId = BusinessSession::accountId();
         if ($accountId <= 0) {
-            return redirect()->to(base_url('business/sign-in'));
+            return redirect()->to(base_url('bookings/sign-in'));
         }
 
         $seen = (int) (session()->get(BusinessSession::SEEN) ?? 0);
         if (time() - $seen > $config->idleSeconds) {
             BusinessSession::signOut();
 
-            return redirect()->to(base_url('business/sign-in?expired=1'));
+            return redirect()->to(base_url('bookings/sign-in?expired=1'));
         }
 
         $account = (new AccountModel())->find($accountId);
         if (! is_array($account) || $account['status'] !== AccountModel::STATUS_ACTIVE) {
             BusinessSession::signOut();
 
-            return redirect()->to(base_url('business/sign-in'));
+            return redirect()->to(base_url('bookings/sign-in'));
         }
 
         session()->set(BusinessSession::SEEN, time());
@@ -75,7 +75,7 @@ class BusinessAuth implements FilterInterface
         if ($listingId <= 0) {
             $businesses = $members->businessesFor($accountId);
             if (count($businesses) !== 1) {
-                return redirect()->to(base_url('business/choose'));
+                return redirect()->to(base_url('bookings/choose'));
             }
             $listingId = $businesses[0]['listing_id'];
             BusinessSession::chooseBusiness($listingId);
@@ -88,7 +88,7 @@ class BusinessAuth implements FilterInterface
             || (new BookingSetupService())->whyNot($listing) !== null) {
             session()->remove(BusinessSession::LISTING);
 
-            return redirect()->to(base_url('business/choose'));
+            return redirect()->to(base_url('bookings/choose'));
         }
 
         // The business area is on the business's own site's host (D2). Pages
@@ -100,7 +100,7 @@ class BusinessAuth implements FilterInterface
                 throw PageNotFoundException::forPageNotFound();
             }
 
-            return redirect()->to(listing_site_url($listing, 'business'));
+            return redirect()->to(listing_site_url($listing, 'bookings'));
         }
 
         $context->set($account, $member, $listing);

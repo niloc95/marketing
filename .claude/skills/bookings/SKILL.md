@@ -1,6 +1,6 @@
 ---
 name: bookings
-description: The Bookings rebuild inside WebScheduler Local (branch `bookings`, started Nov 2026) — any business profile can take online bookings. Where the spec lives (docs/bookings/), the frozen reference app (xscheduler_ci4) and how to port from it, the data model (listing_id on every booking table, own services and providers tables, snapshots), accounts and per business roles, scoping, settings, copy, phases and their status. Use for any work on accounts, /business, the calendar, availability, appointments, public booking on a profile, booking notifications, deposits, or the booking API. Also load listing-service, and two-sites for anything a page shows.
+description: The Bookings rebuild inside WebScheduler Local (branch `bookings`, started Nov 2026) — any business profile can take online bookings. Where the spec lives (docs/bookings/), the frozen reference app (xscheduler_ci4) and how to port from it, the data model (listing_id on every booking table, own services and providers tables, snapshots), accounts and per business roles, scoping, settings, copy, phases and their status. Use for any work on accounts, /bookings, the calendar, availability, appointments, public booking on a profile, booking notifications, deposits, or the booking API. Also load listing-service, and two-sites for anything a page shows.
 ---
 
 # Bookings inside Local
@@ -18,15 +18,16 @@ No decisions open (D10, D11, D13 became T25 to T27: English only, the feature is
 
 | Phase | State |
 |---|---|
+| Profile view (T28) + schedule periods (T29) | built 5 Nov 2026 on `booking/profiles-frontend` (off `main`): booking services replace the profile list, seed and mirror, practitioners with their own hours on Verified/Plus; periods per day at places and for some services; copied services wait for their length. Not merged |
 | 0 Specification | done 4 Nov 2026, branch `bookings` (docs/bookings/) |
-| 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (merged 4 Nov): accounts, members, gate, settings, audit, /business shell, Vite |
+| 1 Foundation | built 4 Nov 2026 on `bookings-p1-foundation` (merged 4 Nov): accounts, members, gate, settings, audit, /bookings shell, Vite |
 | 2 Catalogue | built 4 Nov 2026 on `bookings-p2-catalogue` (off p1, merged 4 Nov): services, categories, providers, hours, reception, time off, invitations, setup check |
-| 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, merged 4 Nov): AvailabilityService, BookingLock, appointments table, booking rule settings, /business/availability |
+| 3 Scheduling engine | built 4 Nov 2026 on `bookings-p3-scheduling` (off p2, merged 4 Nov): AvailabilityService, BookingLock, appointments table, booking rule settings, /bookings/availability |
 | 4 Appointments, customers, calendar | built 4 Nov 2026 on `bookings-p4-appointments` (off p3, merged 4 Nov): calendar view models, scheduler JS, AppointmentService, CustomerService, customers table |
 | 5 Public booking | built 4 Nov 2026 on `bookings-p5-public` (off `main`, merged 5 Nov): booking page on the profile, change and cancel links, customer page, find by email, terms page, Book online button and badge |
 | 6 Notifications | built 5 Nov 2026 on `bookings-p6-notifications` (off p5, merged 5 Nov): queue, dispatcher, rules, reminders, templates, email, SMS and WhatsApp on the business's own account, delivery logs, opt out, notices |
-| 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, merged 5 Nov): figures, today by person with refresh, waiting list, free times with quick book, alerts, /business/analytics with four tabs |
-| 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, merged 5 Nov): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /business/payments, Payments settings tab |
+| 7 Dashboard and analytics | built 5 Nov 2026 on `bookings-p7-dashboard` (off p6, merged 5 Nov): figures, today by person with refresh, waiting list, free times with quick book, alerts, /bookings/analytics with four tabs |
+| 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, merged 5 Nov): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /bookings/payments, Payments settings tab |
 | 9 Integrations and API | built 5 Nov 2026 on `bookings-p9-integrations` (off p8, merged 5 Nov): outbox run by `bookings:dispatch`, signed webhooks, Zoom and Jitsi meetings, Google Calendar push, API keys, `/api/v1`, OpenAPI file, `/developers/bookings` |
 | .app (T24) | built 5 Nov 2026 on `bookings-app` (off p10, merged 5 Nov): bookings on local.webscheduler.app, `BusinessLocale`, per host gates, plan in US dollars, migration `2026-11-21-100000_AddBookingPlanTier` (`tier`, `checkout_tier`) |
 | 10 Hardening and launch | built 5 Nov 2026 on `bookings-p10-launch` (off p9, merged 5 Nov): Bookings plan with trial, POPIA retention and export, `/admin/bookings`, route guard test, security review, restore drill and load test scripts, launch checklist. Production steps wait for the owner (docs/bookings/launch.md) |
@@ -80,7 +81,9 @@ Bookings rules that still hold after the port:
 - **Own tables for services and providers** (`xs_booking_services`, `xs_booking_providers`).
   Local's `ServiceMenuService` deletes and reinserts the profile's services on every save,
   so those ids are unstable. Team members and extra branches are Verified or Plus features.
-  A provider may link to a team member, and a service to a profile service by name.
+  A provider may link to a team card (`team_member_id`); a service records the profile row it
+  was copied from (`profile_service_name`). While bookings are on, the catalogue writes the
+  profile's services list (T28, see "Profile view" below).
 - Locations are the profile's address (`location_id` null) or a branch id.
 - Appointments snapshot service name, duration, price, provider and location.
 - People: `xs_accounts` (sign in) plus `xs_business_members` (account × listing × role
@@ -99,7 +102,7 @@ Bookings rules that still hold after the port:
 
 - Nothing booking related may change discovery ranking or the quality score.
 - Public profile pages stay sessionless. The booking flow starts a session only at the
-  details step, and `/business` is the only place with a signed in session.
+  details step, and `/bookings` is the only place with a signed in session.
 - Every new POST route goes into `Config\Forms` (`FormHealthServiceTest` enforces it), and
   every webhook gets the `payfast/notify` exemption pattern plus signature checks.
 - Payment references come from `App\Libraries\PaymentReference` (`WSB-BOOK-`, reserved
@@ -127,6 +130,11 @@ Bookings rules that still hold after the port:
 | Script | `resources/business/*.js` → Vite (`vite.business.config.mjs`) → `public/assets/business/business.js`; `npm run biz:build` (also inside `list:build`), `biz:dev` to watch. `list:hot` does not watch it. Pages are swapped without reloads (`resources/shell/`): a page script registers with `registerPage(selector, init)` in `main.js` and returns a cleanup for its timers |
 | Tests | `tests/database/BookingFoundationTest.php` (two businesses, flag, scope, turn on, lockout, links, gate, roles, audit, copy) |
 
+**Messages on dev (owner OK, 6 Nov 2026):** booking messages are only queued in a request;
+`npm run dev:install` installs `deploy/dev/co.za.webscheduler.local-dev-jobs.plist`, which runs
+`bookings:dispatch` every minute (and `bookings:payments` every five) into Mailpit. Without it
+nothing is ever sent on dev. `npm run dev:status` shows both agents.
+
 **Local dev:** `.env` has `bookings.enabled = true` on this branch's machine. Dev account
 `dev-owner@example.test` / `dev password 123` is admin of profile 2 in the dev DB.
 Emailed links land in Mailpit. Switch the flag off (and `npm run dev:restart`) when back
@@ -141,7 +149,7 @@ on `main`.
 | People, hours, reception, invitations, roles | `TeamService` (only writer of providers, provider hours, staff assignments, invitations and roles; hours rules from Bookings' ScheduleValidationService; last admin stays; `ensureDefaultProvider()` on turn on) |
 | Time off | `TimeOffService` (local input, UTC storage, whole business or one provider) |
 | Scope | `BookingAuthorization::providerScope()` / `canManageProvider()`, `BusinessContext::providerScope()` and `timezone()` |
-| What is missing | `SetupCheck::problems()`, shown on /business and by `php spark bookings:check [--business id]` |
+| What is missing | `SetupCheck::problems()`, shown on /bookings and by `php spark bookings:check [--business id]` |
 | Pages | `Business\{Services,Team,TimeOff,Invite}`, views `business/{services,service_form,team,provider,time_off,invite}.php`, email `emails/booking-invite.php` |
 | Tests | `tests/database/BookingCatalogueTest.php` |
 
@@ -160,7 +168,7 @@ silently after any earlier failure on the connection (it broke the random order 
 | Engine | `AvailabilityService($listing, ?$now)`: `slots()`, `slotsForAnyone()`, `problem()` (reason codes), `nextAvailable()`, `availableDates()`, `businessWindow()`, `holdMinutes()` |
 | Creating an appointment | `BookingLock::reserve($listing, $data, $public, ?$now)` only: transaction, `SELECT ... FOR UPDATE` on the provider row, `problem()` again, insert with snapshots, reference `WSB-BOOK-000123` |
 | Rules | `booking.slot_step` (0 = service length), `booking.lead_minutes`, `business.buffer_time`, `business.future_limit` (`Config\Bookings::$settingRanges`), tab "Booking rules" |
-| Pages | `Business\Availability` (`/business/availability`, JSON `/business/api/availability/slots`, scoped to the member's providers) |
+| Pages | `Business\Availability` (`/bookings/availability`, JSON `/bookings/api/availability/slots`, scoped to the member's providers) |
 | Tests | `tests/database/BookingAvailabilityTest.php` (fixed clock 1 Jan 2030 Johannesburg) |
 
 **Engine rules (deliberate differences from Bookings):** half open intervals, so back to
@@ -185,7 +193,8 @@ worked when another test had loaded it).
 | Calendar models | `App\Services\Bookings\Calendar\`: `CalendarRange`, `TimeGrid`, `CalendarHours` (replaces ProviderWorkingHoursTrait and the fixed work window), `EventLayout`, `CalendarQuery` (replaces AppointmentQuery and Formatter), `DayView`, `WeekView`, `MonthView` |
 | Appointments | `AppointmentService` (create via `BookingLock::reserve()`, reschedule via `BookingLock::move()`, status, notes, `findMatching()`), `AppointmentStatus` (`no_show`, labels from copy.md) |
 | Customers | `CustomerService` (save, `findOrCreate()` fills only empty fields, scoped `list()` and `history()`, `stats()`, `deletionImpact()` and `delete()`, custom fields 1 to 6) |
-| Pages | `Business\Calendar` (`/business/calendar`, JSON `/business/api/calendar/{day,week,month,agenda}`), `Business\Appointments` (JSON `/business/api/appointments/*`, plain form `/business/appointments/new`), `Business\Customers` (`/business/customers*`, JSON `/business/api/customers?q=`) |
+| Find | `BookingSearch` (6 Nov 2026, branch `booking/customer-lookup`): `customers()` and `appointments()` ranked exact, prefix, fuzzy; used by `CustomerService::list()` (picker JSON `/bookings/api/customers`, Customers list) and `AppointmentService::findMatching()` (calendar Find). Names either way round, accents folded, phones by national digits (`nationalDigits()`, business's own dial code), references, typos (Levenshtein 1, 2 from 8 letters, same first letter; metaphone). Discover's `fold()`/`words()` are deliberately not used (they fold plurals and drop short words and place names). Tests `tests/database/BookingSearchTest.php` |
+| Pages | `Business\Calendar` (`/bookings/calendar`, JSON `/bookings/api/calendar/{day,week,month,agenda}`), `Business\Appointments` (JSON `/bookings/api/appointments/*`, plain form `/bookings/appointments/new`), `Business\Customers` (`/bookings/customers*`, JSON `/bookings/api/customers?q=`) |
 | Script | `resources/business/calendar/` (scheduler core, time grid, month, list, drag, details, Book dialog; all copy in `messages.js`, checked by the copy test) |
 | Tests | `tests/unit/BookingCalendarLayoutTest.php`, `tests/database/BookingCalendarTest.php`, `tests/database/BookingAppointmentsTest.php` |
 
@@ -227,8 +236,41 @@ Customers keep their name: `findOrCreate()` fills only empty fields.
 **Testing gotcha:** the page tests run on the real clock; give the test business
 `booking.lead_minutes` 2880 so the first free time is outside the 24 hour windows.
 
-**D3 settled (T14, 5 Nov 2026):** the profile keeps its own services list; bookings only add
-the Book online button and the booking page.
+**T14 replaced by T28 (5 Nov 2026):** see "Profile view" below.
+
+## Profile view (T28, branch `booking/profiles-frontend`)
+
+| Piece | Where |
+|---|---|
+| Read | `PublicBookingService::profileView()` (empty unless `takesBookings()`), `profileServices()`, `practitioners()` (premium only), `weekLines()`; `Directory::show()` sets `_booking_services`, `_practitioners` |
+| Hours | `AvailabilityService::periods()` (shared by `windows()`) and `weekPeriods()`: the usual week clamped to the profile's hours, minus breaks, so the profile never shows a time the engine would not book |
+| Views | `_panel_services.php` (booking rows instead of the profile list), `_team_panel.php` + `_team_booking.php` (card joined by `team_member_id`, cardless people appended), `book/page.php` (`?provider=` alone lists only their services; photo and title on "With") |
+| Write | `CatalogueService::bookable()`, `ownsProfileServices()`, `seedFromProfile()` (from `BookingSetupService::turnOn()`), `mirrorToProfile()` after service, archive, provider service, provider save and archive changes; `ServiceMenuService::mirror()` (ServiceMenuService stays the only writer); `sync()` ignores the services marker while the catalogue owns the list |
+| Form | `_service_fields.php` `fromBookings`: read only, no marker (so no "list a service" error); passed by `Manage::edit()` and the admin edit as `servicesFromBookings` |
+| Schema | Offers get `price` + `priceCurrency` + the Book link; cardless practitioners are `employee` Persons |
+| Tests | `tests/database/BookingProfileTest.php` |
+
+**Dev test case (owner, 5 Nov 2026): Dr Bertus Mensveld, profile 308** (`/directory/dr-bertus-mensveld`):
+Verified, endocrinologist, 8 services priced "Medical Aid Rates", a receptionist team card
+(Bernice Green, never bookable). The owner's T29 case: Birnam Park Practice (main) and Netcare
+Sunninghill Hospital (branch 2) both open Mon to Fri 08:00 to 16:30; provider 6 (team card 7)
+works Mon and Tue at Birnam Park 09:00 to 13:00 and Sunninghill 14:30 to 16:00 (Diabetes
+Management only there). Two service lengths confirmed, six waiting. Backups of the earlier
+hours: scratchpad `bertus-*-before.*` of 5 Nov.
+`dev-owner@example.test` is admin of 308 as well as profile 2. Check profile changes on it.
+
+**T29, the person's schedule drives booking:** `xs_booking_provider_hours` holds several
+periods per weekday, each with `location_id` and `service_ids` (null = all). `TeamService::hours()`
+returns `periods` per day (top level = first period), `hoursForForm()` splits old breaks,
+`hoursWarnings()` flags periods outside their place's hours; `saveHours()` takes `periods` or the
+old one period shape. `AvailabilityService::windows($p, $date, $serviceId)` filters by service and
+clamps each period to `businessWindow($date, $locationId)` (the branch's own hours and holidays);
+`locationAt()` gives an appointment its place (`BookingLock`). `CatalogueService::listed()` vs
+`bookable()` (= listed + `length_checked`); mirror and profile use listed, booking uses bookable.
+SetupCheck `length_unchecked`. Tests: `tests/database/BookingSchedulePeriodsTest.php`.
+
+**Quality score:** the mirror writes `xs_directory_listing_services`, which the score counts.
+Accepted by the owner in T28 as the one exception (the same as typing the services in).
 
 ## Phase 6 in the code
 
@@ -239,7 +281,7 @@ the Book online button and the booking page.
 | Services | `App\Services\Bookings\Notifications\`: `NotificationRules`, `NotificationTemplates`, `MessageContext` (values read at send time), `NotificationQueue` (enqueue, reminders, team recipients), `NotificationDispatcher`, `Channels` (Mailer, Clickatell, Twilio, Meta), `BookingIntegrations` (encrypted accounts), `OptOuts`, `DeliveryLog`, `NotificationCentre` |
 | Hooks | `AppointmentService::notify()` after create, reschedule, status, customer move and cancel; `PublicBookingService::book()` |
 | Cron | `bookings:dispatch` each minute (MySQL `GET_LOCK`, 50 s time box), `bookings:prune` nightly; both in `deploy/cron/webscheduler` |
-| Pages | Settings tab Messages (`Business\NotificationSettings`), `/business/notifications` (Notices, every member, own email switch), `/business/notifications/sent` (+ `.csv`), "Messages" and "Send again" in the appointment details (`POST /business/api/appointments/{id}/notify`), customer page "Send booking emails again", public `book/unsubscribe/{customer hash}` (GET asks, POST acts, CSRF exempt for RFC 8058) |
+| Pages | Settings tab Messages (`Business\NotificationSettings`), `/bookings/notifications` (Notices, every member, own email switch), `/bookings/notifications/sent` (+ `.csv`), "Messages" and "Send again" in the appointment details (`POST /bookings/api/appointments/{id}/notify`), customer page "Send booking emails again", public `book/unsubscribe/{customer hash}` (GET asks, POST acts, CSRF exempt for RFC 8058) |
 | Mail | `Mailer::send()` takes `fromName` and `headers`; From stays ours ("Business via WebScheduler Local"), Reply-To the business |
 | Tests | `tests/database/BookingNotificationsTest.php` (fixed clock 7 Jan 2030; `MockEmail` archive for headers, `returnValue = false` for failures; fake `curlrequest` for providers) |
 
@@ -261,7 +303,7 @@ the Book online button and the booking page.
 | Dashboard | `DashboardService($listing, $scope, ?$now)`: `cards()` (cached), `schedule()`, `waiting()`, `comingUp()`, `team()` (state now, free times, next free), `alerts($member)` |
 | Analytics | `AnalyticsService($listing, $scope, ?$now)`: `report($period, ?$providerId)`, periods `7d`, `30d`, `90d`, `12m` (by month); one query per period, summed in PHP, cached |
 | Cache | `BookingMetricsCache::remember()` (5 min, key carries a per business generation); `AppointmentService::notify()` calls `forget()` after every change. Bump `SHAPE` when a cached array changes shape |
-| Pages | `Business\Home` (`/business`, `GET /business/api/dashboard/today` = `_dash_today.php` partial), `Business\Analytics` (`/business/analytics`, `businesscan:analytics.view`: admin and team member, not reception); quick book links prefill `/business/appointments/new?provider_id&service_id&date&time` |
+| Pages | `Business\Home` (`/bookings`, `GET /bookings/api/dashboard/today` = `_dash_today.php` partial), `Business\Analytics` (`/bookings/analytics`, `businesscan:analytics.view`: admin and team member, not reception); quick book links prefill `/bookings/appointments/new?provider_id&service_id&date&time` |
 | Views | `business/home.php`, `_dash_today.php`, `analytics.php`; charts are `directory/_stacked_bar_chart.php` and `_meter_rows.php` (inline SVG, as the admin dashboard; no Chart.js) |
 | Script | `resources/business/dashboard.js` (refresh every 2 min while visible, person colour dots via CSSOM, `data-autosubmit` selects) |
 | Tests | `tests/database/BookingDashboardTest.php` (bookings on a clock of 1 Dec 2029, dashboard read Monday 7 Jan 2030 10:30) |
@@ -282,7 +324,7 @@ a weekday the profile is closed anyway.
 | Service | `Payments\DepositService`: `amountFor()`, `depositFor()`, `ask()`, `start()`, `returned()`, `payfastNotified()`, `checkPaystack()`, `paid()` (idempotent), `markPaid()`, `markRefunded()`, `summary()`, `forCustomer()`, `payments()`, `toRefund()`, `receivedThisMonth()`, `sweep()`. The only writer of payments and of an appointment's payment columns |
 | Booking | `PublicBookingService::book()`: with a deposit the booking is pending with `payment_status` due and no messages; email is always asked (`customerFields(true)`) |
 | Customer pages | `book/manage.php` Deposit panel, `POST book/{token}/pay` and `book/customer/{c}/{a}/pay` (`Book::payDeposit()`), `book/pay.php` (PayFast form, honeypot exempt), `GET book/paid/{hash}`, `POST book/payfast/notify` (CSRF, BotTrap, honeypot exempt; in `Config\Forms::$notForms`) |
-| Business | Settings tab Payments (`Business\PaymentSettings`, `_settings_payments.php`, check button, email to every admin on a change), `/business/payments` (`Business\Payments`), `POST business/api/appointments/{id}/payment` (details panel buttons), nav item only once an account is on, dashboard refund alert and deposits in the value tile, SetupCheck `deposit_no_account` |
+| Business | Settings tab Payments (`Business\PaymentSettings`, `_settings_payments.php`, check button, email to every admin on a change), `/bookings/payments` (`Business\Payments`), `POST business/api/appointments/{id}/payment` (details panel buttons), nav item only once an account is on, dashboard refund alert and deposits in the value tile, SetupCheck `deposit_no_account` |
 | Cron | `*/5 bookings:payments` (`BookingsPayments`, MySQL lock) in `deploy/cron/webscheduler` |
 | Tests | `tests/database/BookingPaymentsTest.php` (FakePaystack, a PayFast subclass whose IP and POST-back checks say yes) |
 
@@ -330,9 +372,9 @@ exempt from CSRF, BotTrap and honeypot, sessionless, and has no CORS. On release
 |---|---|
 | Plan | migration `2026-11-19-100000_CreateBookingPlans`, `BookingPlanModel` (not scoped), `Plans\BookingPlanService` (`required()`, `allows()`, `status()`, `startTrial()` from `BookingSetupService::turnOn()`, `people()`, `priceFor()`, `checkout()` (also a move to the right tier; the old subscription is disabled once the new one is paid), `rowForCharge()`, `recordPayment()` once per Paystack id, `cancel()`, `extendTrial()`, `sweep()`). Config `planRequired`, `planTiers` (T23: Solo 1 person R160, Team up to 5 R420, Business R890; `bookings.planPrices` overrides; `planTierFor()`), `trialDays` 30, `planGraceDays` 3 (`bookings.*` in .env). Reference `WSL-BKG-M-000123` |
 | Paystack | `PaystackPayments` routes our plan's charges (reference, `booking_plan_id` metadata, or the mandate) and its subscription events to the plan service; Paystack plan name "WebScheduler Local online bookings, monthly" |
-| Enforced | `PublicBookingService::takesBookings()`, `BookingApi` (403 `plan_required`), SetupCheck `plan_ended`, banner in `layouts/business.php`. `/business` itself always works |
+| Enforced | `PublicBookingService::takesBookings()`, `BookingApi` (403 `plan_required`), SetupCheck `plan_ended`, banner in `layouts/business.php`. `/bookings` itself always works |
 | Pages | Settings tab Plan (`Business\PlanSettings`, `_settings_plan.php`, hidden while not required), email `emails/booking-plan.php`, offer lines on `/manage/bookings` and the owner panel |
-| POPIA | `Privacy\Retention` (`bookings:retention`), `Privacy\CustomerExport` (`/business/customers/{hash}/export`, admins), privacy policy section 12a (shown only while bookings are on; owner to read) |
+| POPIA | `Privacy\Retention` (`bookings:retention`), `Privacy\CustomerExport` (`/bookings/customers/{hash}/export`, admins), privacy policy section 12a (shown only while bookings are on; owner to read) |
 | Admin | `AdminBookings` (`/admin/bookings`: counts, plan, setup, connections; Add free days; support view with a reason, audited as `support.opened`) |
 | Scripts | `scripts/bookings-restore-drill.php` (restore a dump into the test DB, compare every booking table, reset), `scripts/bookings-load-test.sh` (ab; needs `BOT_TOKEN` past ScrapeGuard) |
 | Tests | `tests/database/BookingLaunchTest.php` (FakePaystack; includes the route guard test) |
@@ -341,7 +383,7 @@ exempt from CSRF, BotTrap and honeypot, sessionless, and has no CORS. On release
 
 Release, step by step with the owner: docs/bookings/launch.md.
 
-**Custom fields (built):** Settings, Questions tab (`/business/settings/questions`). Types
+**Custom fields (built):** Settings, Questions tab (`/bookings/settings/questions`). Types
 text, textarea, select (choices one per line in `booking.custom_field_N_options`) and
 checkbox (stored as "Yes"). One partial renders them: `business/_question.php`.
 

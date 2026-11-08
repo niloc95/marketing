@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The dev copy of production's minute cron for online bookings
+  (deploy/cron/webscheduler): every minute `bookings:dispatch` sends queued
+  booking messages (to Mailpit on dev) and runs the integrations outbox, and
+  every fifth minute `bookings:payments` checks open deposits. A job, not a
+  server: it runs, finishes, and launchd starts it again a minute later.
+  Owner OK 6 Nov 2026. A template: scripts/dev-service.js fills in __REPO__
+  and __HOME__ and installs it with `npm run dev:install`, never by hand.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>co.za.webscheduler.local-dev-jobs</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>php spark bookings:dispatch --quiet; [ $(( $(date +%M) % 5 )) -eq 0 ] &amp;&amp; php spark bookings:payments --quiet; exit 0</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO__</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StartInterval</key>
+    <integer>60</integer>
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/webscheduler-dev-jobs.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/webscheduler-dev-jobs.log</string>
+</dict>
+</plist>

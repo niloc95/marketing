@@ -19,11 +19,11 @@ $input  = static fn (string $provider, string $field, string $label, bool $secre
         <h2 class="mb-2 font-bold">Deposits</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">Customers who book online pay the deposit into your own PayFast or Paystack account. The money goes straight to you: WebScheduler Local takes no part of it and never holds it. Refunds are done in your PayFast or Paystack account.</p>
         <?php if ($payments['services'] === []): ?>
-            <p class="mt-3 text-sm">None of your services asks for a deposit yet. Set a deposit percentage on a <a class="underline" href="<?= base_url('business/services') ?>">service</a>.</p>
+            <p class="mt-3 text-sm">None of your services asks for a deposit yet. Set a deposit percentage on a <a class="underline" href="<?= base_url('bookings/services') ?>">service</a>.</p>
         <?php else: ?>
             <ul class="mt-3 space-y-1 text-sm">
                 <?php foreach ($payments['services'] as $s): ?>
-                    <li><a class="underline" href="<?= base_url('business/services/' . $s['id']) ?>"><?= esc($s['name']) ?></a>: <?= (int) $s['pct'] ?>%<?= $s['deposit'] !== null ? ', ' . esc(money($s['deposit'] / 100, 'ZAR')) : ', below the R5 smallest payment, so no deposit is asked' ?></li>
+                    <li><a class="underline" href="<?= base_url('bookings/services/' . $s['id']) ?>"><?= esc($s['name']) ?></a>: <?= (int) $s['pct'] ?>%<?= $s['deposit'] !== null ? ', ' . esc(money($s['deposit'] / 100, 'ZAR')) : ', below the R5 smallest payment, so no deposit is asked' ?></li>
                 <?php endforeach ?>
             </ul>
             <p class="mt-3 text-sm font-semibold"><?= $payments['ready'] ? 'Customers pay these deposits when they book.' : 'No account is on, so customers book these without a deposit.' ?></p>
@@ -40,7 +40,7 @@ $input  = static fn (string $provider, string $field, string $label, bool $secre
                     <?= $acc['health'] === 'ok' ? 'Checked: the details work.' : ($acc['health'] === 'failed' ? esc((string) $acc['last_error']) : 'Not checked yet.') ?>
                 </p>
             <?php endif ?>
-            <form method="post" action="<?= base_url('business/settings/payments') ?>" data-provider-form>
+            <form method="post" action="<?= base_url('bookings/settings/payments') ?>" data-provider-form>
                 <?= csrf_field() ?>
                 <div class="field">
                     <label for="pay-provider">Take deposits with</label>
@@ -82,12 +82,12 @@ $input  = static fn (string $provider, string $field, string $label, bool $secre
                 <button type="submit" class="btn btn-primary">Save</button>
             </form>
             <?php if ($acc['provider'] !== ''): ?>
-                <form method="post" action="<?= base_url('business/settings/payments/check') ?>" class="mt-4">
+                <form method="post" action="<?= base_url('bookings/settings/payments/check') ?>" class="mt-4">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-ghost">Check the details with <?= esc(BookingIntegrations::PROVIDER_LABELS[$acc['provider']]) ?></button>
                 </form>
             <?php endif ?>
-            <p class="mt-4 text-sm"><a class="underline" href="<?= base_url('business/payments') ?>">See payments</a></p>
+            <p class="mt-4 text-sm"><a class="underline" href="<?= base_url('bookings/payments') ?>">See payments</a></p>
             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Keys are stored encrypted and never shown again. Every admin of the business gets an email when this account changes.</p>
         <?php endif ?>
     </section>

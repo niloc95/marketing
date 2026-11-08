@@ -245,20 +245,20 @@ final class BookingAppointmentsTest extends CIUnitTestCase
 
     public function testQuestionsSettingsTab(): void
     {
-        $this->signedIn()->get('business/settings/questions')->assertOK();
-        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [
+        $this->signedIn()->get('bookings/settings/questions')->assertOK();
+        $this->signedIn()->post('bookings/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [
             1 => ['title' => 'Allergies', 'type' => 'text', 'enabled' => '1', 'required' => '1'],
             2 => ['title' => 'Colour', 'type' => 'select', 'options' => "Red\n\nRed\nBlue", 'enabled' => '1'],
-        ]])->assertRedirectTo(base_url('business/settings/questions'));
+        ]])->assertRedirectTo(base_url('bookings/settings/questions'));
 
         $fields = (new CustomerService($this->listingId))->customFields();
         $this->assertSame(['Allergies', 'Colour'], array_column($fields, 'title'));
         $this->assertSame(['Red', 'Blue'], $fields[1]['options']);
 
-        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [1 => ['title' => 'Pick', 'type' => 'select', 'enabled' => '1']]]);
+        $this->signedIn()->post('bookings/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [1 => ['title' => 'Pick', 'type' => 'select', 'enabled' => '1']]]);
 
         // Asking for neither email nor phone is refused (we must reach every customer).
-        $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => ['surname' => ['display' => '1']], 'q' => []]);
+        $this->signedIn()->post('bookings/settings/questions', [csrf_token() => csrf_hash(), 'field' => ['surname' => ['display' => '1']], 'q' => []]);
         $this->assertSame('1', BookingSettings::for($this->listingId)->get('booking.email_required'));
         $this->assertSame('Colour', array_column((new CustomerService($this->listingId))->customFields(), 'title')[1] ?? null, 'A list without choices is refused and nothing is saved');
     }
@@ -344,28 +344,44 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $a = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
         $me = $this->signedIn();
 
-        $r = $me->get('business/calendar');
+        $r = $me->get('bookings/calendar');
         $r->assertOK();
         $this->assertStringContainsString('data-calendar', $r->getBody());
-        $week = json_decode($me->get('business/api/calendar/week?date=' . self::MONDAY)->getJSON(), true);
+        $week = json_decode($me->get('bookings/api/calendar/week?date=' . self::MONDAY)->getJSON(), true);
         $this->assertSame([$a['id']], array_column($week['data']['appointments'], 'id'));
-        $month = json_decode($me->get('business/api/calendar/month?year=2030&month=1')->getJSON(), true);
+        $month = json_decode($me->get('bookings/api/calendar/month?year=2030&month=1')->getJSON(), true);
         $this->assertSame(1, $month['data']['totalAppointments']);
-        $this->signedIn()->get('business/api/calendar/day?date=nope')->assertStatus(422);
-        $detail = json_decode($this->signedIn()->get('business/api/appointments/' . $a['id'])->getJSON(), true);
+        $this->signedIn()->get('bookings/api/calendar/day?date=nope')->assertStatus(422);
+        $detail = json_decode($this->signedIn()->get('bookings/api/appointments/' . $a['id'])->getJSON(), true);
         $this->assertSame('alice@example.test', $detail['data']['email']);
-        $r = $this->signedIn()->get('business/customers');
+        $r = $this->signedIn()->get('bookings/customers');
         $r->assertOK();
         $r->assertSee('Alice');
         $hash = (new CustomerService($this->listingId))->findByEmail('alice@example.test')['hash'];
-        $r = $this->signedIn()->get('business/customers/' . $hash);
+        $r = $this->signedIn()->get('bookings/customers/' . $hash);
         $r->assertOK();
         $r->assertSee('Delete this customer');
-        $r = $this->signedIn()->get('business/appointments/new');
+        $r = $this->signedIn()->get('bookings/appointments/new');
         $r->assertOK();
         $r->assertSee('Book an appointment');
-        $found = json_decode($this->signedIn()->get('business/api/customers?q=ali')->getJSON(), true);
+        $found = json_decode($this->signedIn()->get('bookings/api/customers?q=ali')->getJSON(), true);
         $this->assertSame(['Alice'], array_column($found['data'], 'name'));
+    }
+
+    public function testBookingFromACustomersPageStartsWithThatCustomer(): void
+    {
+        $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
+        $alice = (new CustomerService($this->listingId))->findByEmail('alice@example.test');
+
+        $this->assertStringContainsString('bookings/appointments/new?customer=' . $alice['hash'], $this->signedIn()->get('bookings/customers/' . $alice['hash'])->getBody());
+        $page = $this->signedIn()->get('bookings/appointments/new?customer=' . $alice['hash'])->getBody();
+        $this->assertStringContainsString('data-customer-url=', $page, 'the page finds customers as you type');
+        $this->assertStringContainsString('data-customer-initial=', $page);
+        $this->assertStringContainsString('name="customer_id" value="' . $alice['id'] . '"', $page);
+
+        // Another business's customer is never chosen, not even by its hash.
+        $page = $this->signedIn($this->otherAccountId, $this->otherListingId)->get('bookings/appointments/new?customer=' . $alice['hash'])->getBody();
+        $this->assertStringNotContainsString('data-customer-initial=', $page);
     }
 
     public function testAnotherBusinessGetsNotFound(): void
@@ -374,9 +390,9 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $hash  = (new CustomerService($this->listingId))->findByEmail('alice@example.test')['hash'];
         $other = $this->signedIn($this->otherAccountId, $this->otherListingId);
 
-        $other->get('business/api/appointments/' . $a['id'])->assertStatus(404);
-        $this->signedIn($this->otherAccountId, $this->otherListingId)->get('business/customers/' . $hash)->assertStatus(404);
-        $week = json_decode($this->signedIn($this->otherAccountId, $this->otherListingId)->get('business/api/calendar/week?date=' . self::MONDAY)->getJSON(), true);
+        $other->get('bookings/api/appointments/' . $a['id'])->assertStatus(404);
+        $this->signedIn($this->otherAccountId, $this->otherListingId)->get('bookings/customers/' . $hash)->assertStatus(404);
+        $week = json_decode($this->signedIn($this->otherAccountId, $this->otherListingId)->get('bookings/api/calendar/week?date=' . self::MONDAY)->getJSON(), true);
         $this->assertSame([], $week['data']['appointments']);
     }
 

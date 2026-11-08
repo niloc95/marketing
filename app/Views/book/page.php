@@ -10,6 +10,8 @@
  * @var list<array<string,mixed>>      $providers
  * @var array<string,mixed>|null       $provider
  * @var string                         $who       '' not chosen, 'any', or a provider id
+ * @var int                            $withId    the person a "Book with" link named, 0 for none
+ * @var array<int,string>              $places    location id (0 = main address) => name
  * @var string                         $from
  * @var string                         $today
  * @var list<string>                   $days
@@ -91,7 +93,7 @@ $whoParam = $who === '' ? null : $who;
                 <ul class="divide-y divide-slate-100 dark:divide-slate-800">
                     <?php foreach ($services as $s): ?>
                         <li>
-                            <a class="flex items-center gap-3 py-3 hover:text-primary-600" href="<?= $link(['service' => $s['id']]) ?>">
+                            <a class="flex items-center gap-3 py-3 hover:text-primary-600" href="<?= $link(['service' => $s['id']] + ($withId > 0 ? ['provider' => $withId] : [])) ?>">
                                 <span class="flex-1">
                                     <span class="block font-semibold"><?= esc((string) $s['name']) ?></span>
                                     <?php if (trim((string) ($s['description'] ?? '')) !== ''): ?><span class="block text-sm text-slate-500"><?= esc((string) $s['description']) ?></span><?php endif ?>
@@ -115,7 +117,10 @@ $whoParam = $who === '' ? null : $who;
                     <div class="flex flex-wrap gap-2">
                         <a class="btn btn-ghost" href="<?= $link(['service' => $service['id'], 'provider' => 'any']) ?>">Anyone available</a>
                         <?php foreach ($providers as $p): ?>
-                            <a class="btn btn-ghost" href="<?= $link(['service' => $service['id'], 'provider' => $p['id']]) ?>"><?= esc((string) $p['name']) ?></a>
+                            <a class="btn btn-ghost book-who" href="<?= $link(['service' => $service['id'], 'provider' => $p['id']]) ?>">
+                                <?php if (! empty($p['photo_path'])): ?><img src="<?= esc(base_url($p['photo_path'])) ?>" alt="" width="32" height="32" class="book-who-photo" loading="lazy"><?php endif ?>
+                                <span class="text-left"><?= esc((string) $p['name']) ?><?php if (trim((string) ($p['title'] ?? '')) !== ''): ?><span class="block text-xs font-normal text-slate-500 dark:text-slate-400"><?= esc((string) $p['title']) ?></span><?php endif ?></span>
+                            </a>
                         <?php endforeach ?>
                     </div>
                 <?php endif ?>
@@ -127,7 +132,7 @@ $whoParam = $who === '' ? null : $who;
             <div class="panel mb-4" id="time">
                 <h2 class="mb-3 font-bold"><?= count($providers) > 1 ? '3' : '2' ?>. Choose a time</h2>
                 <?php if ($slot !== null): ?>
-                    <p class="flex flex-wrap items-center gap-3"><strong><?= esc($longDay((string) $date)) ?>, <?= esc($clock($slot['time'])) ?></strong>
+                    <p class="flex flex-wrap items-center gap-3"><strong><?= esc($longDay((string) $date)) ?>, <?= esc($clock($slot['time'])) ?><?php if (count($places) > 1 && array_key_exists('location_id', $slot)): ?> at <?= esc($places[(int) ($slot['location_id'] ?? 0)] ?? '') ?><?php endif ?></strong>
                         <a class="text-sm underline" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'date' => $date]) ?>#time">Change</a></p>
                 <?php else: ?>
                     <div class="mb-3 flex items-center gap-2 text-sm">
@@ -152,11 +157,22 @@ $whoParam = $who === '' ? null : $who;
                         <?php if ($times === []): ?>
                             <p class="text-sm">No times left on this day. Try another day.</p>
                         <?php else: ?>
-                            <div class="flex flex-wrap gap-2">
-                                <?php foreach ($times as $t): ?>
-                                    <a class="btn btn-ghost btn-xs tabular-nums" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => $from, 'date' => $date, 'start' => $t['start']]) ?>#details"><?= esc($clock($t['time'])) ?></a>
-                                <?php endforeach ?>
-                            </div>
+                            <?php
+                            // A person working at two places that day (T29):
+                            // the times under each place's name.
+                            $byPlace = [];
+                            foreach ($times as $t) {
+                                $byPlace[array_key_exists('location_id', $t) ? (int) ($t['location_id'] ?? 0) : -1][] = $t;
+                            }
+                            ?>
+                            <?php foreach ($byPlace as $placeId => $group): ?>
+                                <?php if (count($byPlace) > 1 && $placeId >= 0): ?><p class="mt-3 mb-1 text-sm font-semibold">At <?= esc($places[$placeId] ?? '') ?></p><?php endif ?>
+                                <div class="flex flex-wrap gap-2">
+                                    <?php foreach ($group as $t): ?>
+                                        <a class="btn btn-ghost btn-xs tabular-nums" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => $from, 'date' => $date, 'start' => $t['start']]) ?>#details"><?= esc($clock($t['time'])) ?></a>
+                                    <?php endforeach ?>
+                                </div>
+                            <?php endforeach ?>
                         <?php endif ?>
                     <?php endif ?>
                 <?php endif ?>

@@ -150,7 +150,9 @@ class ServiceMenuService
      */
     public function sync(int $listingId, ?int $categoryId, array $input): void
     {
-        if (array_key_exists(self::SERVICES_MARKER, $input)) {
+        // While the booking catalogue owns the list (T28) the form shows it
+        // read only and sends no marker; a crafted one is ignored too.
+        if (array_key_exists(self::SERVICES_MARKER, $input) && ! $this->ownedByBookings($listingId)) {
             $this->services->where('listing_id', $listingId)->delete();
 
             $position = 0;
@@ -170,6 +172,43 @@ class ServiceMenuService
 
         if (array_key_exists(self::ATTRIBUTES_MARKER, $input)) {
             $this->attributes->sync($listingId, $this->allowedKeys($categoryId, $input['attributes'] ?? null));
+        }
+    }
+
+    /**
+     * Replace the services list with the booking catalogue's bookable
+     * services (decision T28; CatalogueService::mirrorToProfile() is the only
+     * caller). A row without a price keeps the label it had, and every row
+     * keeps its link, matched by name, so turning bookings off later leaves
+     * a list the owner recognises.
+     *
+     * @param list<array{name:string,price_label:string}> $rows
+     */
+    public function mirror(int $listingId, array $rows): void
+    {
+        $old = [];
+        foreach ($this->servicesFor($listingId) as $row) {
+            $old[mb_strtolower(trim((string) $row['name']))] ??= $row;
+        }
+
+        $db = db_connect();
+        $db->resetTransStatus()->transStart();
+        $this->services->where('listing_id', $listingId)->delete();
+        $position = 0;
+        foreach (array_slice($rows, 0, self::MAX_SERVICES) as $row) {
+            $name  = mb_substr($this->clean($row['name']), 0, self::MAX_NAME_LENGTH);
+            $was   = $old[mb_strtolower($name)] ?? null;
+            $price = $row['price_label'] !== '' ? $row['price_label'] : (string) ($was['price_label'] ?? '');
+            $this->services->insert([
+                'listing_id'  => $listingId,
+                'name'        => $name,
+                'price_label' => $price !== '' ? mb_substr($price, 0, self::MAX_PRICE_LENGTH) : null,
+                'link_url'    => $was['link_url'] ?? null,
+                'sort_order'  => $position++,
+            ]);
+        }
+        if ($db->transComplete() === false) {
+            throw new \RuntimeException('Mirroring booking services to the profile was rolled back.');
         }
     }
 
@@ -233,6 +272,14 @@ class ServiceMenuService
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** Whether the booking catalogue owns this listing's services (T28). */
+    public function ownedByBookings(int $listingId): bool
+    {
+        $listing = (new \App\Models\DirectoryListingModel())->find($listingId);
+
+        return is_array($listing) && \App\Services\Bookings\CatalogueService::ownsProfileServices($listing);
+    }
 
     /**
      * Trimmed rows with a blank or ticked-Remove row reduced to empty strings,

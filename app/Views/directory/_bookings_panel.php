@@ -18,5 +18,5 @@ $on = $setup->isOn($listing);
         <?= $on ? 'On. Manage your calendar, team and settings in your business area.' : 'Let customers book a time with you, with a calendar for your team and reminders.' ?>
         <?php if (! $on && App\Services\Bookings\Plans\BookingPlanService::required()): ?>Free for <?= (int) config('Bookings')->trialDays ?> days to try.<?php endif ?>
     </p>
-    <a class="btn btn-ghost mt-3" href="<?= base_url($on ? 'business' : 'manage/bookings') ?>"><?= $on ? 'Open your bookings' : 'Set up online bookings' ?></a>
+    <a class="btn btn-ghost mt-3" href="<?= base_url($on ? 'manage/bookings/open' : 'manage/bookings') ?>"><?= $on ? 'Open your bookings' : 'Set up online bookings' ?></a>
 </div>

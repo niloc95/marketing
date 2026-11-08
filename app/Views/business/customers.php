@@ -8,12 +8,12 @@
 <?= $this->section('content') ?>
 <div class="flex flex-wrap items-center gap-3">
     <h1 class="text-xl font-bold text-slate-900 dark:text-white">Customers</h1>
-    <a href="<?= base_url('business/customers/new') ?>" class="btn btn-primary btn-xs ml-auto"><?= lucide('plus', 'h-4 w-4') ?> Add a customer</a>
+    <a href="<?= base_url('bookings/customers/new') ?>" class="btn btn-primary btn-xs ml-auto"><?= lucide('plus', 'h-4 w-4') ?> Add a customer</a>
 </div>
-<form method="get" action="<?= base_url('business/customers') ?>" class="mt-4 flex items-start gap-2" role="search">
+<form method="get" action="<?= base_url('bookings/customers') ?>" class="mt-4 flex items-start gap-2" role="search">
     <div class="field mb-0 flex-1">
         <label class="sr-only" for="cust-q">Find a customer</label>
-        <input id="cust-q" type="text" name="q" value="<?= esc($q, 'attr') ?>" placeholder="Find a customer by name, email or phone">
+        <input id="cust-q" type="text" name="q" value="<?= esc($q, 'attr') ?>" placeholder="Find by name, email, phone or reference">
     </div>
     <button type="submit" class="btn btn-ghost">Find</button>
 </form>
@@ -27,7 +27,7 @@
             <tbody>
                 <?php foreach ($result['rows'] as $c): ?>
                     <tr>
-                        <td><a class="underline font-medium" href="<?= base_url('business/customers/' . $c['hash']) ?>"><?= esc($c['name']) ?></a></td>
+                        <td><a class="underline font-medium" href="<?= base_url('bookings/customers/' . $c['hash']) ?>"><?= esc($c['name']) ?></a></td>
                         <td><?= esc((string) ($c['email'] ?? '')) ?></td>
                         <td class="whitespace-nowrap"><?= esc((string) ($c['phone'] ?? '')) ?></td>
                         <td class="whitespace-nowrap"><?= esc((new DateTimeImmutable((string) $c['created_at'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone(service('businessContext')->timezone()))->format('j M Y')) ?></td>
@@ -38,9 +38,9 @@
     </div>
     <?php if ($result['pages'] > 1): ?>
         <nav class="mt-4 flex items-center gap-3 text-sm" aria-label="Pages">
-            <?php if ($result['page'] > 1): ?><a class="underline" href="<?= base_url('business/customers?' . http_build_query(['q' => $q, 'page' => $result['page'] - 1])) ?>">Previous</a><?php endif ?>
+            <?php if ($result['page'] > 1): ?><a class="underline" href="<?= base_url('bookings/customers?' . http_build_query(['q' => $q, 'page' => $result['page'] - 1])) ?>">Previous</a><?php endif ?>
             <span>Page <?= $result['page'] ?> of <?= $result['pages'] ?></span>
-            <?php if ($result['page'] < $result['pages']): ?><a class="underline" href="<?= base_url('business/customers?' . http_build_query(['q' => $q, 'page' => $result['page'] + 1])) ?>">Next</a><?php endif ?>
+            <?php if ($result['page'] < $result['pages']): ?><a class="underline" href="<?= base_url('bookings/customers?' . http_build_query(['q' => $q, 'page' => $result['page'] + 1])) ?>">Next</a><?php endif ?>
         </nav>
     <?php endif ?>
 <?php endif ?>

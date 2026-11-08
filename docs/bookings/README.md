@@ -52,7 +52,7 @@ The working rules for code live in the project skill `.claude/skills/bookings/SK
 | # | Phase | Main output |
 |---|---|---|
 | 0 | Specification | this folder, the `bookings` skill |
-| 1 | Foundation | accounts, memberships, RBAC, audit log, `/business` shell, Vite bundle, settings store, flag, "Turn on bookings" |
+| 1 | Foundation | accounts, memberships, RBAC, audit log, `/bookings` shell, Vite bundle, settings store, flag, "Turn on bookings" |
 | 2 | Catalogue | booking services, providers, provider hours and breaks, staff assignments, locations, blocked times, business user management |
 | 3 | Scheduling engine | availability, conflicts, timezones, buffers, lead time, horizon, golden tests |
 | 4 | Appointments and customers | calendar day/week/month/agenda, drag to reschedule, form, statuses, custom fields, customers |

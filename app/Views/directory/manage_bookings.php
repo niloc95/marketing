@@ -21,7 +21,7 @@
             <p class="mb-5 text-sm text-slate-500 dark:text-slate-400"><?= esc((string) $listing['display_name']) ?></p>
             <?php if ($isOn): ?>
                 <p class="mb-5 text-sm">Online bookings are on for this business.</p>
-                <a class="btn btn-primary btn-block" href="<?= base_url('business') ?>">Open your bookings</a>
+                <a class="btn btn-primary btn-block" href="<?= base_url('manage/bookings/open') ?>">Open your bookings</a>
             <?php elseif ($whyNot !== null): ?>
                 <div class="alert alert-info"><?= esc($whyNot) ?></div>
             <?php else: ?>

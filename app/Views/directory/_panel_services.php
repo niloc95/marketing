@@ -13,12 +13,19 @@
  * for anything that is not a food listing — DirectoryService::getProfile()
  * decides that, not this view.
  *
+ * A profile that takes online bookings shows its booking services here
+ * instead of its own list (decision T28, Directory::show() fills
+ * _booking_services): length, price, who offers it on a Verified or Plus
+ * profile, and a Book link that opens the booking page on that service. Its
+ * own list stays saved and comes back if bookings are switched off.
+ *
  * @var array $l
  * @var array $v
  */
-$menu = $l['menu'] ?? [];
+$menu    = $l['menu'] ?? [];
+$booking = $l['_booking_services'] ?? [];
 
-if (empty($l['services']) && $menu === []) {
+if (empty($l['services']) && $menu === [] && $booking === []) {
     return;
 }
 
@@ -55,7 +62,35 @@ $size  = $bytes <= 0 ? '' : ($bytes >= 1_048_576
         </div>
     <?php endif; ?>
 
-    <?php if (! empty($l['services'])): ?>
+    <?php if ($booking !== []): ?>
+        <?php // Who offers it only helps when there is a choice of person. ?>
+        <?php $withNames = count($l['_practitioners'] ?? []) > 1; ?>
+        <ul class="service-list service-list-book<?= $menu !== [] ? ' mt-4' : '' ?>">
+            <?php foreach ($booking as $svc): ?>
+                <li>
+                    <div class="service-main">
+                        <span class="service-name"><?= esc($svc['name']) ?></span>
+                        <?php
+                        $meta = array_filter([
+                            $svc['duration_min'] > 0 ? $svc['duration_min'] . ' min' : '',
+                            $withNames && count($svc['people']) > 0 ? 'with ' . implode(', ', $svc['people']) : '',
+                        ]);
+                        ?>
+                        <?php if ($meta !== []): ?><span class="service-meta"><?= esc(implode(', ', $meta)) ?></span><?php endif; ?>
+                        <?php if ($svc['description'] !== ''): ?>
+                            <span class="service-desc"><?= esc($svc['description']) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="service-side">
+                        <?php if ($svc['price'] !== ''): ?><span class="service-price"><?= esc($svc['price']) ?></span><?php endif; ?>
+                        <?php if ($svc['book_url'] !== ''): ?>
+                            <a class="service-book" href="<?= esc($svc['book_url'], 'attr') ?>" data-stat="booking">Book<span class="sr-only"> <?= esc($svc['name']) ?></span></a>
+                        <?php endif; ?>
+                    </div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php elseif (! empty($l['services'])): ?>
         <ul class="service-list<?= $menu !== [] ? ' mt-4' : '' ?>">
             <?php foreach ($l['services'] as $svc): ?>
                 <?php // safe_external_url() again at render, for the reason _contact_panel.php gives. ?>

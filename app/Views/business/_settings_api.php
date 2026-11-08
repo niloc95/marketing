@@ -35,7 +35,7 @@ $when = static fn (?string $utc): string => $utc ? (new DateTimeImmutable($utc, 
                             </p>
                         </div>
                         <?php if (! $k['revoked_at']): ?>
-                            <form method="post" action="<?= base_url('business/settings/api/keys/' . (int) $k['id'] . '/revoke') ?>">
+                            <form method="post" action="<?= base_url('bookings/settings/api/keys/' . (int) $k['id'] . '/revoke') ?>">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-ghost">Revoke</button>
                             </form>
@@ -48,7 +48,7 @@ $when = static fn (?string $utc): string => $utc ? (new DateTimeImmutable($utc, 
 
     <section class="form-card">
         <h2 class="mb-2 font-bold">Make a key</h2>
-        <form method="post" action="<?= base_url('business/settings/api/keys') ?>">
+        <form method="post" action="<?= base_url('bookings/settings/api/keys') ?>">
             <?= csrf_field() ?>
             <div class="field">
                 <label for="key-name">Name</label>

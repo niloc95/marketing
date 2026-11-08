@@ -3,52 +3,63 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\AvailabilityOverview;
 use App\Services\Bookings\AvailabilityService;
+use App\Services\Bookings\BusinessLocale;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\TeamService;
+use DateTimeImmutable;
 
 /**
- * "When can customers book?": pick a service, a person (or anyone) and a
- * date, see the times the engine offers. The same answer as JSON for the
- * calendar (Phase 4). Limited to the people this member may see.
+ * "When can customers book?": all services or one, everyone or one person,
+ * a day, a week, a month or a year (AvailabilityOverview), with why a day
+ * has no times. The JSON for the calendar (Phase 4) stays one service and
+ * one day. Limited to the people this member may see.
  */
 class Availability extends BaseController
 {
     public function index()
     {
         $context   = service('businessContext');
-        $engine    = new AvailabilityService($context->listing());
+        $listing   = $context->listing();
         $services  = (new CatalogueService($context->listingId()))->services();
         $providers = $this->providers();
-        $serviceId = (int) ($this->request->getGet('service_id') ?? ($services[0]['id'] ?? 0));
-        $who       = (string) ($this->request->getGet('provider_id') ?? 'any');
-        $date      = (string) ($this->request->getGet('date') ?? (new \DateTimeImmutable('now', $engine->timezone()))->format('Y-m-d'));
         $public    = $this->request->getGet('as') !== 'business';
 
-        $slots = [];
-        $next  = null;
-        if ($serviceId > 0 && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            if ($who === 'any' && $context->providerScope() === null) {
-                $slots = $engine->slotsForAnyone($serviceId, $date, $public);
-                $next  = $slots === [] ? $engine->nextAvailable($serviceId, null, $date) : null;
-            } elseif (in_array((int) $who, array_column($providers, 'id'), true)) {
-                $slots = $engine->slots((int) $who, $serviceId, $date, $public);
-                $next  = $slots === [] ? $engine->nextAvailable($serviceId, (int) $who, $date) : null;
-            }
-        }
+        // All services or one; everyone (in this member's scope) or one person.
+        $service = (string) ($this->request->getGet('service_id') ?? 'all');
+        $chosen  = $service === 'all' ? $services : array_values(array_filter($services, static fn (array $s): bool => (string) $s['id'] === $service));
+        $service = $chosen === $services ? 'all' : $service;
+        $who     = (string) ($this->request->getGet('provider_id') ?? 'any');
+        $people  = in_array((int) $who, array_column($providers, 'id'), true) ? [(int) $who] : array_column($providers, 'id');
+        $who     = count($people) === 1 && (string) $people[0] === $who ? $who : 'any';
+
+        $tz   = BusinessLocale::zone($listing);
+        $date = (string) ($this->request->getGet('date') ?? '');
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) && checkdate((int) substr($date, 5, 2), (int) substr($date, 8, 2), (int) substr($date, 0, 4))
+            ? $date
+            : (new DateTimeImmutable('now', $tz))->format('Y-m-d');
+        $view = (string) ($this->request->getGet('view') ?? 'day');
+        $view = array_key_exists($view, AvailabilityOverview::VIEWS) ? $view : 'day';
+
+        $overview = new AvailabilityOverview($listing, $chosen, $people, $public);
+        [$from, $to] = AvailabilityOverview::span($view, $date);
 
         return view('business/availability', [
             'services'  => $services,
             'providers' => $providers,
-            'serviceId' => $serviceId,
+            'service'   => $service,
             'who'       => $who,
             'date'      => $date,
+            'view'      => $view,
             'public'    => $public,
-            'slots'     => $slots,
-            'next'      => $next,
-            'window'    => preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $engine->businessWindow($date) : null,
-            'anyAllowed' => $context->providerScope() === null,
-            'timezone'  => $engine->timezone()->getName(),
+            'from'      => $from,
+            'to'        => $to,
+            'day'       => $view === 'day' ? $overview->day($date) : null,
+            'days'      => $view === 'day' ? [] : $overview->range($from, $to),
+            'horizon'   => $overview->engine()->customerHorizon(),
+            'today'     => (new DateTimeImmutable('now', $tz))->format('Y-m-d'),
+            'timezone'  => $tz->getName(),
         ]);
     }
 

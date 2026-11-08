@@ -22,7 +22,7 @@ they hold the rules that are not obvious from the code.
   tables (`DirectoryService` reads, `DirectoryListingMutationService` writes for the
   public and owners, `DirectoryAdminService` for admin) → models (`xs_` tables). Shared
   view helpers in `app/Helpers/` (autoloaded), one public layout (`layouts/public.php`;
-  `/admin` and `/business` use the app shell, `layouts/_shell.php`), one
+  `/admin` and `/bookings` use the app shell, `layouts/_shell.php`), one
   stylesheet (`resources/directory.css` → `public/assets/directory.css`, Tailwind with
   tokens shared with the marketing site in `tailwind.tokens.cjs`), one script
   (`public/assets/directory.js`).
@@ -67,6 +67,9 @@ they hold the rules that are not obvious from the code.
   - Dev site: always http://localhost:8095, kept running by launchd (`npm run dev:install`
     once; `dev:status`, `dev:restart` after a composer or `.env` change). It serves whatever
     branch is checked out. Never start another server.
+  - The same `dev:install` also installs the booking jobs (launchd, every minute:
+    `bookings:dispatch`, and `bookings:payments` every five), so booking messages reach
+    Mailpit as on production. A job, not a server. Logs: `~/Library/Logs/webscheduler-dev-jobs.log`.
   - Dev DB `webscheduler_directory`, test DB `webscheduler_directory_tests`.
 - **System handbook** (`/admin/documents/system`): every change that adds or alters a
   table, route group, service, dependency, design token, cron job, external service, id

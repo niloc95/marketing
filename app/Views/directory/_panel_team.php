@@ -8,19 +8,21 @@
  * people" for a firm. See _panel_description.php for the contract.
  *
  * Empty unless the listing carries a live Verified Business badge; the gate is in
- * getProfile(), not here.
+ * getProfile(), not here. The bookable people (_practitioners, decision T28)
+ * have the same gate, in PublicBookingService::profileView().
  *
  * @var array $l
  * @var array $v
  */
-if (empty($l['team'])) {
+if (empty($l['team']) && empty($l['_practitioners'])) {
     return;
 }
 ?>
 <?= view('directory/_team_panel', [
-    'members'     => $l['team'],
-    'teamHeading' => $v['headings']['team'],
-    'business'    => (string) ($l['display_name'] ?? ''),
+    'members'       => $l['team'] ?? [],
+    'practitioners' => $l['_practitioners'] ?? [],
+    'teamHeading'   => $v['headings']['team'],
+    'business'      => (string) ($l['display_name'] ?? ''),
     // Each person's registration is read against the listing's regulator.
-    'regulator'   => \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null),
+    'regulator'     => \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null),
 ], ['saveData' => false]) ?>

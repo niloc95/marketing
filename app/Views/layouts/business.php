@@ -1,6 +1,6 @@
 <?php
 /**
- * Layout for /business, the online bookings area (docs/bookings/): the app
+ * Layout for /bookings, the online bookings area (docs/bookings/): the app
  * shell (layouts/_shell.php) with the business sidebar. Separate from
  * layouts/public.php on purpose: no analytics, no Clarity, no consent
  * banner, no discovery header, and every page private (noindex, no-store).
@@ -18,38 +18,38 @@ $context = service('businessContext');
 $listing = $context->isSet() ? $context->listing() : null;
 $items   = [];
 if ($listing !== null) {
-    $items[] = ['business', 'Dashboard', 'layout-dashboard'];
+    $items[] = ['bookings', 'Dashboard', 'layout-dashboard'];
     $unread  = (new \App\Services\Bookings\Notifications\NotificationCentre($context->listingId(), (int) $context->member()['id']))->unread();
-    $items[] = ['business/notifications', 'Notices', 'bell', $unread, 'unread'];
+    $items[] = ['bookings/notifications', 'Notices', 'bell', $unread, 'unread'];
     if ($context->can('appointments.manage')) {
-        $items[] = ['business/calendar', 'Calendar', 'calendar'];
+        $items[] = ['bookings/calendar', 'Calendar', 'calendar'];
     }
     if ($context->can('customers.manage')) {
-        $items[] = ['business/customers', 'Customers', 'contact'];
+        $items[] = ['bookings/customers', 'Customers', 'contact'];
     }
     if ($context->can('services.manage')) {
-        $items[] = ['business/services', 'Services', 'list'];
+        $items[] = ['bookings/services', 'Services', 'list'];
     }
     if ($context->can('providers.manage')) {
-        $items[] = ['business/team', 'Team', 'users'];
-        $items[] = ['business/time-off', 'Time off', 'calendar-off'];
+        $items[] = ['bookings/team', 'Team', 'users'];
+        $items[] = ['bookings/time-off', 'Time off', 'calendar-off'];
     }
     if ($context->can('appointments.manage')) {
-        $items[] = ['business/availability', 'Availability', 'calendar-days'];
+        $items[] = ['bookings/availability', 'Availability', 'calendar-days'];
     }
     if ($context->can('analytics.view')) {
-        $items[] = ['business/analytics', 'Analytics', 'chart-column'];
+        $items[] = ['bookings/analytics', 'Analytics', 'chart-column'];
     }
     // Only once deposits are taken: the nav is full, and without an account
     // the Payments settings tab says what to do.
     if ($context->can('payments.manage') && App\Services\Bookings\Payments\DepositService::gatewayFor($context->listingId()) !== null) {
-        $items[] = ['business/payments', 'Payments', 'wallet'];
+        $items[] = ['bookings/payments', 'Payments', 'wallet'];
     }
     if ($context->can('settings.manage')) {
-        $items[] = ['business/settings', 'Settings', 'settings'];
+        $items[] = ['bookings/settings', 'Settings', 'settings'];
     }
     if ($context->can('audit.view')) {
-        $items[] = ['business/audit', 'Activity', 'history'];
+        $items[] = ['bookings/audit', 'Activity', 'history'];
     }
 }
 $here     = trim(uri_string(), '/');
@@ -59,7 +59,7 @@ $navItems = array_map(static fn (array $i): array => [
     'icon'       => $i[2],
     'count'      => $i[3] ?? 0,
     'countLabel' => $i[4] ?? 'waiting',
-    'active'     => $here === $i[0] || ($i[0] !== 'business' && str_starts_with($here, $i[0] . '/')),
+    'active'     => $here === $i[0] || ($i[0] !== 'bookings' && str_starts_with($here, $i[0] . '/')),
 ], $items);
 // The page's name is the item it sits under; pages outside the nav pass $title.
 $pageTitle = $title ?? null;
@@ -72,16 +72,17 @@ $pageTitle ??= 'Online bookings';
 
 $footer = '';
 if ($context->hasAccount()) {
-    $footer = '<a class="shell-link" href="' . base_url('business/account') . '">' . lucide('circle-user', 'shell-link-icon h-5 w-5')
+    $footer = '<a class="shell-link" href="' . base_url('bookings/account') . '">' . lucide('circle-user', 'shell-link-icon h-5 w-5')
         . '<span class="shell-text truncate">' . esc((string) ($context->account()['name'] ?: 'Your account')) . '</span></a>'
-        . '<form method="post" action="' . base_url('business/sign-out') . '" data-biz-sign-out data-no-spa>' . csrf_field()
+        . '<form method="post" action="' . base_url('bookings/sign-out') . '" data-biz-sign-out data-no-spa>' . csrf_field()
         . '<button type="submit" class="shell-link w-full">' . lucide('log-out', 'shell-link-icon h-5 w-5') . '<span class="shell-text">Sign out</span></button></form>';
 }
 ?>
 <?= $this->extend('layouts/_shell') ?>
 
 <?= $this->section('head') ?>
-<title><?= esc($pageTitle . ' | WebScheduler Local') ?></title>
+<?php // "Appointments | Dr Bertus Mensveld | WebScheduler Local" (owner, 6 Nov 2026); no name before a business is chosen. ?>
+<title><?= esc(implode(' | ', array_filter([$title ?? 'Appointments', $listing !== null ? (string) $listing['display_name'] : '', 'WebScheduler Local']))) ?></title>
 <?= $this->endSection() ?>
 
 <?= $this->section('assets') ?>
@@ -96,14 +97,14 @@ if ($context->hasAccount()) {
 // Built in PHP: attributes written out as text here would read as copy to
 // BookingFoundationTest's copy rules.
 $attrs = [
-    'data-shell'       => 'business',
-    'data-shell-scope' => rtrim((string) parse_url(base_url('business'), PHP_URL_PATH), '/'),
+    'data-shell'       => 'bookings',
+    'data-shell-scope' => rtrim((string) parse_url(base_url('bookings'), PHP_URL_PATH), '/'),
 ];
 if ($context->hasAccount()) {
     $attrs += [
         'data-biz-session'   => '',
-        'data-ping-url'      => base_url('business/ping'),
-        'data-sign-in-url'   => base_url('business/sign-in?expired=1'),
+        'data-ping-url'      => base_url('bookings/ping'),
+        'data-sign-in-url'   => base_url('bookings/sign-in?expired=1'),
         'data-idle-seconds'  => (string) (int) config('Bookings')->idleSeconds,
     ];
 } else {
@@ -120,9 +121,9 @@ foreach ($attrs as $name => $value) {
 <?php if ($context->hasAccount()): ?>
 <?= view('layouts/_sidebar', [
     'label'       => 'Online bookings',
-    'home'        => 'business',
+    'home'        => 'bookings',
     'context'     => $listing !== null ? (string) $listing['display_name'] : '',
-    'contextHref' => 'business/choose',
+    'contextHref' => 'bookings/choose',
     'groups'      => [[
         'heading' => null,
         'items'   => $navItems,
@@ -158,7 +159,7 @@ if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::req
 ?>
 <?php if ($planLine !== null): ?>
     <div class="alert alert-info mb-5" role="status"><?= esc($planLine) ?>
-        <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('business/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
+        <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('bookings/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
     </div>
 <?php endif ?>
 <?= $this->endSection() ?>

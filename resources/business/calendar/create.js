@@ -4,67 +4,19 @@
  * an existing customer as you type, or takes a new one's details; sends
  * JSON and shows each field's error in place.
  */
-import { getJson, postJson } from './api.js';
-import { el } from './chip.js';
+import { postJson } from './api.js';
 import { MSG } from './messages.js';
+import { initCustomerPicker } from '../customer-picker.js';
 
 export function initCreate(root, scheduler) {
   const dialog = root.querySelector('[data-cal-create]');
   const form = dialog.querySelector('[data-cal-create-form]');
-  const picker = form.querySelector('[data-customer-picker]');
-  const idInput = picker.querySelector('[data-customer-id]');
-  const query = picker.querySelector('[data-customer-query]');
-  const results = picker.querySelector('[data-customer-results]');
-  const chosen = picker.querySelector('[data-customer-chosen]');
-  const fresh = picker.querySelector('[data-customer-new]');
   const formError = form.querySelector('[data-create-error]');
-  let timer = null;
+  // Find a customer as you type: shared with /bookings/appointments/new.
+  const { choose } = initCustomerPicker(form.querySelector('[data-customer-picker]'), root.dataset.customerUrl, form);
 
-  picker.querySelector('[data-customer-find]').hidden = false;
   dialog.querySelectorAll('[data-cal-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => scheduler.busy(false));
-
-  function choose(customer) {
-    idInput.value = customer ? String(customer.id) : '';
-    fresh.hidden = !!customer;
-    results.hidden = true;
-    chosen.replaceChildren();
-    chosen.classList.toggle('hidden', !customer);
-    if (customer) {
-      const change = el('button', 'ml-2 underline', MSG.changeCustomer);
-      change.type = 'button';
-      change.addEventListener('click', () => { choose(null); query.focus(); });
-      chosen.append(el('strong', '', customer.name), document.createTextNode(` ${[customer.email, customer.phone].filter(Boolean).join(', ')}`), change);
-      Object.entries(customer.custom_fields || {}).forEach(([key, value]) => {
-        const input = form.querySelector(`[name="${key}"]`);
-        if (!input) return;
-        if (input.type === 'checkbox') input.checked = input.checked || value === 'Yes';
-        else if (!input.value) input.value = value;
-      });
-    }
-  }
-
-  query.addEventListener('input', () => {
-    clearTimeout(timer);
-    const q = query.value.trim();
-    if (q.length < 2) { results.hidden = true; return; }
-    timer = setTimeout(async () => {
-      let body;
-      try { body = await getJson(`${root.dataset.customerUrl}?q=${encodeURIComponent(q)}`); } catch { return; }
-      results.replaceChildren();
-      body.data.forEach((c) => {
-        const li = el('li');
-        const b = el('button', 'block w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700');
-        b.type = 'button';
-        b.append(el('span', 'font-medium', c.name), el('span', 'ml-2 text-slate-500', [c.email, c.phone].filter(Boolean).join(', ')));
-        b.addEventListener('click', () => choose(c));
-        li.append(b);
-        results.append(li);
-      });
-      if (!body.data.length) results.append(el('li', 'px-3 py-2 text-slate-500', `${MSG.noneMatch} ${MSG.newCustomer}: fill in below.`));
-      results.hidden = false;
-    }, 250);
-  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

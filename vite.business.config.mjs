@@ -1,5 +1,5 @@
 /**
- * Vite build for the signed in app shell's scripts: /business (online
+ * Vite build for the signed in app shell's scripts: /bookings (online
  * bookings, docs/bookings/) and the /admin shell. Public pages keep
  * public/assets/directory.js and the Tailwind CLI; nothing here touches them.
  *

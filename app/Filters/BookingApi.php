@@ -14,7 +14,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 /**
  * Gate for /api/v1 (online bookings, Phase 9). `bookingapi:<scope>`.
  *
- * 1. Bookings off, or not on this site: 404, as for /business.
+ * 1. Bookings off, or not on this site: 404, as for /bookings.
  * 2. `Authorization: Bearer wsk_...` decides everything: no session, no
  *    cookie, and a `listing_id` in the request can never point the key at
  *    another business (permissions.md). Unknown, revoked or expired keys,

@@ -83,6 +83,68 @@ class AppointmentService
         return is_array($row) && $this->inScope((int) $row['provider_id']) ? $row : null;
     }
 
+    /**
+     * Free times to move an appointment to, for the details panel: the next
+     * few from now, and every free time on one date when asked, each with
+     * the place it would be at (T29: a person may work at two practices in
+     * one day). With the same person unless another who offers the service
+     * is chosen. The appointment's own time is left out. Read only; the
+     * move itself goes through reschedule().
+     *
+     * @return array{provider_id:int,next:list<array<string,mixed>>,day:list<array<string,mixed>>}|null null when not in scope
+     */
+    public function freeTimes(int $id, ?int $providerId = null, ?string $date = null, int $count = 6): ?array
+    {
+        $row = $this->find($id);
+        if ($row === null) {
+            return null;
+        }
+        $serviceId  = (int) $row['service_id'];
+        $service    = (new CatalogueService($this->listingId))->service($serviceId);
+        $providerId = $providerId !== null && $this->inScope($providerId) && in_array($providerId, $service['provider_ids'] ?? [], true)
+            ? $providerId
+            : (int) $row['provider_id'];
+
+        $engine = new AvailabilityService($this->listing, $this->now);
+        $places = (new TeamService($this->listingId))->locationChoices($this->listing);
+        $nowUtc = $this->now->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $own    = (int) $row['provider_id'] === $providerId ? (string) $row['start_at'] : '';
+        $shape  = static function (string $day, array $slot) use ($places, $engine): array {
+            $place = (int) ($slot['location_id'] ?? 0);
+
+            return [
+                'date'        => $day,
+                'time'        => $slot['time'],
+                'start'       => $slot['start'],
+                'location_id' => $slot['location_id'] ?? null,
+                'place'       => $places[$place] ?? '',
+                'label'       => (new DateTimeImmutable($day, $engine->timezone()))->format('D j M') . ', ' . $slot['time'],
+            ];
+        };
+        $free = fn (string $day): array => array_values(array_filter(
+            $engine->slots($providerId, $serviceId, $day, false, $id),
+            static fn (array $s): bool => $s['start'] > $nowUtc && $s['start'] !== $own,
+        ));
+
+        $next = [];
+        $day  = $this->now->setTimezone($engine->timezone());
+        for ($i = 0; $i < 60 && count($next) < $count; $i++, $day = $day->modify('+1 day')) {
+            foreach ($free($day->format('Y-m-d')) as $slot) {
+                $next[] = $shape($day->format('Y-m-d'), $slot);
+                if (count($next) >= $count) {
+                    break;
+                }
+            }
+        }
+
+        $chosen = [];
+        if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $chosen = array_map(static fn (array $s): array => $shape($date, $s), $free($date));
+        }
+
+        return ['provider_id' => $providerId, 'next' => $next, 'day' => $chosen];
+    }
+
     /** @return array<string,mixed>|null */
     public function findByHash(string $hash): ?array
     {
@@ -381,37 +443,33 @@ class AppointmentService
     ];
 
     /**
-     * Find appointments by reference, customer name, email or phone
-     * ("Find", Bookings' GlobalSearchService), newest first, in scope.
+     * Find appointments by reference, customer name, email or phone, or
+     * service ("Find", BookingSearch), best first, newest first within a
+     * rank, in scope.
      *
      * @return list<array<string,mixed>> calendar shaped
      */
     public function findMatching(string $query, int $limit = 20): array
     {
-        $query = trim($query);
-        if ($query === '' || $this->scope === []) {
+        if (trim($query) === '' || $this->scope === []) {
             return [];
         }
-        $a     = 'xs_booking_appointments';
-        $model = BookingAppointmentModel::forBusiness($this->listingId)
+        $ids = array_column((new BookingSearch($this->listingId, (string) ($this->listing['country_code'] ?? 'ZA')))->appointments($query, $this->scope, $limit), 'id');
+        if ($ids === []) {
+            return [];
+        }
+        $a    = 'xs_booking_appointments';
+        $rows = BookingAppointmentModel::forBusiness($this->listingId)
             ->select($a . '.*, c.first_name AS customer_first_name, c.last_name AS customer_last_name,'
                 . ' c.email AS customer_email, c.phone AS customer_phone, c.hash AS customer_hash, p.color AS provider_color')
             ->join('xs_booking_customers c', 'c.id = ' . $a . '.customer_id AND c.listing_id = ' . $a . '.listing_id', 'left')
             ->join('xs_booking_providers p', 'p.id = ' . $a . '.provider_id AND p.listing_id = ' . $a . '.listing_id', 'left')
-            ->groupStart()
-            ->like($a . '.reference', $query)
-            ->orLike('c.first_name', $query)
-            ->orLike('c.last_name', $query)
-            ->orLike('c.email', $query)
-            ->orLike('c.phone', preg_replace('/\s+/', '', $query))
-            ->orLike($a . '.service_name', $query)
-            ->groupEnd();
-        if ($this->scope !== null) {
-            $model->whereIn($a . '.provider_id', $this->scope);
-        }
+            ->whereIn($a . '.id', $ids)
+            ->findAll();
+        $rows  = array_column($rows, null, 'id');
         $query = new CalendarQuery($this->listingId, $this->tz);
 
-        return array_map(static fn (array $r): array => $query->format($r), $model->orderBy($a . '.start_at', 'DESC')->findAll($limit));
+        return array_values(array_map(static fn (int $id): array => $query->format($rows[$id]), array_filter($ids, static fn (int $id): bool => isset($rows[$id]))));
     }
 
     // Internals

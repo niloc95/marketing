@@ -17,7 +17,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 <div class="mb-4 flex flex-wrap items-center gap-3">
     <h1 class="text-xl font-bold text-slate-900 dark:text-white">Notices</h1>
     <?php if ($unread > 0): ?>
-        <form method="post" action="<?= base_url('business/notifications/read') ?>" class="ml-auto">
+        <form method="post" action="<?= base_url('bookings/notifications/read') ?>" class="ml-auto">
             <?= csrf_field() ?>
             <button type="submit" class="btn btn-ghost btn-xs">Mark all as read</button>
         </form>
@@ -38,10 +38,10 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
                     <p class="text-xs text-slate-500 dark:text-slate-400"><?= esc($local((string) $n['created_at'])) ?></p>
                 </div>
                 <?php if (! empty($n['appointment_hash'])): ?>
-                    <a class="btn btn-ghost btn-xs" href="<?= base_url('business/calendar?view=day&date=' . (new DateTimeImmutable((string) $n['start_at'], new DateTimeZone('UTC')))->setTimezone($zone)->format('Y-m-d') . '&open=' . $n['appointment_hash']) ?>">Open</a>
+                    <a class="btn btn-ghost btn-xs" href="<?= base_url('bookings/calendar?view=day&date=' . (new DateTimeImmutable((string) $n['start_at'], new DateTimeZone('UTC')))->setTimezone($zone)->format('Y-m-d') . '&open=' . $n['appointment_hash']) ?>">Open</a>
                 <?php endif ?>
                 <?php if ($n['read_at'] === null): ?>
-                    <form method="post" action="<?= base_url('business/notifications/read') ?>">
+                    <form method="post" action="<?= base_url('bookings/notifications/read') ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= (int) $n['id'] ?>">
                         <button type="submit" class="btn btn-ghost btn-xs">Read</button>
@@ -52,13 +52,13 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
     </ul>
 <?php endif ?>
 
-<form method="post" action="<?= base_url('business/notifications/preferences') ?>" class="form-card form-card-narrow mt-8">
+<form method="post" action="<?= base_url('bookings/notifications/preferences') ?>" class="form-card form-card-narrow mt-8">
     <?= csrf_field() ?>
     <h2 class="mb-2 font-bold">Email me too</h2>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="notify" value="1"<?= $notify ? ' checked' : '' ?>> Email me when a customer books, moves or cancels online</label>
     <button type="submit" class="btn btn-primary mt-3">Save</button>
 </form>
 <?php if ($canLog): ?>
-    <p class="mt-6 text-sm"><a class="underline" href="<?= base_url('business/notifications/sent') ?>">See messages sent to customers and the team</a></p>
+    <p class="mt-6 text-sm"><a class="underline" href="<?= base_url('bookings/notifications/sent') ?>">See messages sent to customers and the team</a></p>
 <?php endif ?>
 <?= $this->endSection() ?>

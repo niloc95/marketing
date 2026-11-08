@@ -20,11 +20,11 @@ use Tests\Support\WithEnv;
 
 /**
  * Phase 1 of online bookings (docs/bookings/): accounts, memberships, the
- * /business gate, per business settings and the audit log.
+ * /bookings gate, per business settings and the audit log.
  *
  * Pinned:
  *
- * 1. **Dark until switched on.** With bookings.enabled off every /business
+ * 1. **Dark until switched on.** With bookings.enabled off every /bookings
  *    route and /manage/bookings is a 404 and the owner dashboard shows nothing.
  * 2. **One business never sees another's rows.** A scoped model refuses to
  *    run unscoped, and every read, count, update and insert stays inside its
@@ -80,8 +80,8 @@ final class BookingFoundationTest extends CIUnitTestCase
     {
         $id = $this->listing();
 
-        $this->get('business/sign-in')->assertStatus(404);
-        $this->get('business')->assertStatus(404);
+        $this->get('bookings/sign-in')->assertStatus(404);
+        $this->get('bookings')->assertStatus(404);
         $this->withSession([Manage::SESSION_KEY => $id])->get('manage/bookings')->assertStatus(404);
 
         $panel = view('directory/_bookings_panel', ['listing' => $this->listings->find($id)], ['saveData' => false]);
@@ -141,7 +141,7 @@ final class BookingFoundationTest extends CIUnitTestCase
 
         $result = $this->withSession([Manage::SESSION_KEY => $id])
             ->post('manage/bookings', [csrf_token() => csrf_hash()]);
-        $result->assertRedirectTo(base_url('business/account?welcome=1'));
+        $result->assertRedirectTo(base_url('bookings/account?welcome=1'));
         $result->assertSessionHas(BusinessSession::LISTING, $id);
 
         $this->assertSame(1, (int) $this->listings->find($id)['bookings_enabled']);
@@ -186,14 +186,14 @@ final class BookingFoundationTest extends CIUnitTestCase
         [$listingId, $accountId] = $this->business();
         (new AccountService())->setPassword($accountId, 'correct horse battery');
 
-        $this->post('business/sign-in', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test', 'password' => 'wrong password here'])
-            ->assertRedirectTo(base_url('business/sign-in'));
+        $this->post('bookings/sign-in', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test', 'password' => 'wrong password here'])
+            ->assertRedirectTo(base_url('bookings/sign-in'));
 
-        $ok = $this->post('business/sign-in', [csrf_token() => csrf_hash(), 'email' => 'OWNER@example.test ', 'password' => 'correct horse battery']);
-        $ok->assertRedirectTo(base_url('business'));
+        $ok = $this->post('bookings/sign-in', [csrf_token() => csrf_hash(), 'email' => 'OWNER@example.test ', 'password' => 'correct horse battery']);
+        $ok->assertRedirectTo(base_url('bookings'));
         $ok->assertSessionHas(BusinessSession::ACCOUNT, $accountId);
 
-        $home = $this->signedIn($accountId, $listingId)->get('business');
+        $home = $this->signedIn($accountId, $listingId)->get('bookings');
         $home->assertOK();
         $home->assertSee('Salon Lumi');
         $this->assertStringContainsString('no-store', $home->response()->getHeaderLine('Cache-Control'));
@@ -227,31 +227,31 @@ final class BookingFoundationTest extends CIUnitTestCase
         [, $accountId] = $this->business();
         $this->setEnv('bookings.enabled', 'true');
 
-        $this->post('business/password', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test'])
-            ->assertRedirectTo(base_url('business/sign-in'));
+        $this->post('bookings/password', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test'])
+            ->assertRedirectTo(base_url('bookings/sign-in'));
         $this->assertCount(1, $this->sent);
-        $token = $this->tokenFrom($this->sent[0], 'business/password/');
+        $token = $this->tokenFrom($this->sent[0], 'bookings/password/');
 
         $stored = (new AccountModel())->find($accountId);
         $this->assertSame(hash('sha256', $token), $stored['reset_token_hash']);
         $this->assertStringNotContainsString($token, json_encode($stored));
 
         // Opening the link does not use it up.
-        $this->get('business/password/' . $token)->assertSee('Choose a new password');
-        $this->get('business/password/' . $token)->assertSee('Choose a new password');
+        $this->get('bookings/password/' . $token)->assertSee('Choose a new password');
+        $this->get('bookings/password/' . $token)->assertSee('Choose a new password');
 
-        $this->post('business/password/' . $token, [csrf_token() => csrf_hash(), 'password' => 'a brand new password', 'password_confirm' => 'a brand new password'])
-            ->assertRedirectTo(base_url('business'));
+        $this->post('bookings/password/' . $token, [csrf_token() => csrf_hash(), 'password' => 'a brand new password', 'password_confirm' => 'a brand new password'])
+            ->assertRedirectTo(base_url('bookings'));
         $this->assertTrue(password_verify('a brand new password', (new AccountModel())->find($accountId)['password_hash']));
-        $this->get('business/password/' . $token)->assertSee('This link has expired');
+        $this->get('bookings/password/' . $token)->assertSee('This link has expired');
     }
 
     public function testFormsGiveTheSameAnswerForAnEmailWithNoAccount(): void
     {
         $this->business();
 
-        $known   = $this->post('business/password', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test']);
-        $unknown = $this->post('business/password', [csrf_token() => csrf_hash(), 'email' => 'stranger@example.test']);
+        $known   = $this->post('bookings/password', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test']);
+        $unknown = $this->post('bookings/password', [csrf_token() => csrf_hash(), 'email' => 'stranger@example.test']);
 
         $this->assertSame($known->response()->getHeaderLine('Location'), $unknown->response()->getHeaderLine('Location'));
         $this->assertCount(1, $this->sent);
@@ -261,16 +261,16 @@ final class BookingFoundationTest extends CIUnitTestCase
     {
         [$listingId, $accountId] = $this->business();
 
-        $this->post('business/sign-in/link', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test']);
-        $token = $this->tokenFrom($this->sent[0], 'business/sign-in/');
+        $this->post('bookings/sign-in/link', [csrf_token() => csrf_hash(), 'email' => 'owner@example.test']);
+        $token = $this->tokenFrom($this->sent[0], 'bookings/sign-in/');
 
-        $this->get('business/sign-in/' . $token)->assertSee('Sign in to your business');
-        $first = $this->post('business/sign-in/' . $token, [csrf_token() => csrf_hash()]);
-        $first->assertRedirectTo(base_url('business'));
+        $this->get('bookings/sign-in/' . $token)->assertSee('Sign in to your Dashboard');
+        $first = $this->post('bookings/sign-in/' . $token, [csrf_token() => csrf_hash()]);
+        $first->assertRedirectTo(base_url('bookings'));
         $first->assertSessionHas(BusinessSession::ACCOUNT, $accountId);
 
-        $this->post('business/sign-in/' . $token, [csrf_token() => csrf_hash()])
-            ->assertRedirectTo(base_url('business/sign-in'));
+        $this->post('bookings/sign-in/' . $token, [csrf_token() => csrf_hash()])
+            ->assertRedirectTo(base_url('bookings/sign-in'));
     }
 
     // 5. The gate
@@ -278,12 +278,12 @@ final class BookingFoundationTest extends CIUnitTestCase
     public function testARemovedMemberIsOutOnTheNextRequest(): void
     {
         [$listingId, $accountId] = $this->business();
-        $this->signedIn($accountId, $listingId)->get('business')->assertOK();
+        $this->signedIn($accountId, $listingId)->get('bookings')->assertOK();
 
         $member = BusinessMemberModel::forBusiness($listingId)->where('account_id', $accountId)->first();
         BusinessMemberModel::forBusiness($listingId)->update((int) $member['id'], ['status' => 'removed']);
 
-        $this->signedIn($accountId, $listingId)->get('business')->assertRedirectTo(base_url('business/choose'));
+        $this->signedIn($accountId, $listingId)->get('bookings')->assertRedirectTo(base_url('bookings/choose'));
     }
 
     public function testAnotherBusinessCannotBeChosenOrReached(): void
@@ -292,11 +292,11 @@ final class BookingFoundationTest extends CIUnitTestCase
         [$otherId]               = $this->business(['slug' => 'other-salon', 'email' => 'b@example.test', 'display_name' => 'Other Salon']);
 
         // A session pointing at a business the account is not part of.
-        $this->signedIn($accountId, $otherId)->get('business')->assertRedirectTo(base_url('business/choose'));
+        $this->signedIn($accountId, $otherId)->get('bookings')->assertRedirectTo(base_url('bookings/choose'));
 
         $this->signedIn($accountId, $listingId)
-            ->post('business/choose', [csrf_token() => csrf_hash(), 'listing_id' => $otherId])
-            ->assertRedirectTo(base_url('business/choose'));
+            ->post('bookings/choose', [csrf_token() => csrf_hash(), 'listing_id' => $otherId])
+            ->assertRedirectTo(base_url('bookings/choose'));
     }
 
     public function testAnIdleSessionEnds(): void
@@ -307,7 +307,7 @@ final class BookingFoundationTest extends CIUnitTestCase
             BusinessSession::ACCOUNT => $accountId,
             BusinessSession::LISTING => $listingId,
             BusinessSession::SEEN    => time() - config('Bookings')->idleSeconds - 1,
-        ])->get('business')->assertRedirectTo(base_url('business/sign-in?expired=1'));
+        ])->get('bookings')->assertRedirectTo(base_url('bookings/sign-in?expired=1'));
     }
 
     public function testRolesLimitPages(): void
@@ -316,9 +316,9 @@ final class BookingFoundationTest extends CIUnitTestCase
         $provider    = (new AccountService())->findOrCreate('stylist@example.test', 'Lerato');
         BusinessMemberModel::forBusiness($listingId)->insert(['account_id' => $provider['id'], 'role' => 'provider', 'status' => 'active']);
 
-        $this->signedIn((int) $provider['id'], $listingId)->get('business')->assertOK();
-        $this->signedIn((int) $provider['id'], $listingId)->get('business/settings/general')->assertStatus(403);
-        $this->signedIn((int) $provider['id'], $listingId)->get('business/audit')->assertStatus(403);
+        $this->signedIn((int) $provider['id'], $listingId)->get('bookings')->assertOK();
+        $this->signedIn((int) $provider['id'], $listingId)->get('bookings/settings/general')->assertStatus(403);
+        $this->signedIn((int) $provider['id'], $listingId)->get('bookings/audit')->assertStatus(403);
     }
 
     public function testSavingSettingsIsAudited(): void
@@ -326,15 +326,15 @@ final class BookingFoundationTest extends CIUnitTestCase
         [$listingId, $accountId] = $this->business();
 
         $this->signedIn($accountId, $listingId)
-            ->post('business/settings/localization', [csrf_token() => csrf_hash(), 'time_format' => '12h', 'first_day' => 'sunday'])
-            ->assertRedirectTo(base_url('business/settings/localization'));
+            ->post('bookings/settings/localization', [csrf_token() => csrf_hash(), 'time_format' => '12h', 'first_day' => 'sunday'])
+            ->assertRedirectTo(base_url('bookings/settings/localization'));
 
         $this->assertSame('12h', BookingSettings::for($listingId)->get('localization.time_format'));
         $log = BookingAuditLogModel::forBusiness($listingId)->where('action', 'settings.saved')->first();
         $this->assertSame($accountId, (int) $log['account_id']);
         $this->assertStringContainsString('12h', (string) $log['new_value']);
 
-        $this->signedIn($accountId, $listingId)->get('business/audit')->assertSee('Changed settings');
+        $this->signedIn($accountId, $listingId)->get('bookings/audit')->assertSee('Changed settings');
     }
 
     public function testTurningOffKeepsEverything(): void
@@ -343,12 +343,12 @@ final class BookingFoundationTest extends CIUnitTestCase
         BookingSettings::for($listingId)->save(['localization.first_day' => 'sunday'], $accountId);
 
         $this->signedIn($accountId, $listingId)
-            ->post('business/turn-off', [csrf_token() => csrf_hash(), 'confirm' => 'yes'])
-            ->assertRedirectTo(base_url('business/choose'));
+            ->post('bookings/turn-off', [csrf_token() => csrf_hash(), 'confirm' => 'yes'])
+            ->assertRedirectTo(base_url('bookings/choose'));
 
         $this->assertSame(0, (int) $this->listings->find($listingId)['bookings_enabled']);
         $this->assertSame('sunday', BookingSettings::for($listingId)->get('localization.first_day'));
-        $this->signedIn($accountId, $listingId)->get('business')->assertRedirectTo(base_url('business/choose'));
+        $this->signedIn($accountId, $listingId)->get('bookings')->assertRedirectTo(base_url('bookings/choose'));
     }
 
     public function testBusinessViewsFollowTheCopyRules(): void

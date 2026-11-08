@@ -13,7 +13,7 @@ use App\Services\Bookings\TeamService;
 /**
  * Appointments: the JSON the calendar's details panel, drag and create form
  * use (Bookings' /api/appointments), and a plain form at
- * /business/appointments/new that works without the script.
+ * /bookings/appointments/new that works without the script.
  *
  * JSON writes answer {ok, error|errors, data?, csrf}. The CSRF token
  * regenerates on every POST, so each answer carries the next one.
@@ -30,6 +30,22 @@ class Appointments extends BaseController
         $detail['can_payments'] = service('businessContext')->can('payments.manage');
 
         return $this->json(['ok' => true, 'data' => $detail]);
+    }
+
+    /**
+     * Free times to move it to (the details panel): ?provider= another
+     * person who offers the service, ?date= every free time that day.
+     */
+    public function free(int $id)
+    {
+        $provider = (int) $this->request->getGet('provider');
+        $date     = (string) $this->request->getGet('date');
+        $free     = $this->service()->freeTimes($id, $provider > 0 ? $provider : null, $date !== '' ? $date : null);
+        if ($free === null) {
+            return $this->json(['ok' => false, 'error' => AppointmentService::PROBLEMS['not_found']], 404);
+        }
+
+        return $this->json(['ok' => true, 'data' => $free]);
     }
 
     /** Deposit: {action: paid|refunded}. Only for an appointment in the member's scope. */
@@ -101,13 +117,24 @@ class Appointments extends BaseController
     {
         $context = service('businessContext');
         $scope   = $context->providerScope();
+        $old     = flash('appointment_old') ?: ['date' => $this->request->getGet('date'), 'time' => $this->request->getGet('time'), 'provider_id' => $this->request->getGet('provider_id'), 'service_id' => $this->request->getGet('service_id')];
+
+        // "Book" on a customer's page: that customer, already chosen (?customer=hash).
+        $customers = new CustomerService($context->listingId());
+        $initial   = null;
+        $hash      = (string) ($this->request->getGet('customer') ?? '');
+        if ($hash !== '' && ($c = $customers->findByHash($hash)) !== null && $customers->visible((int) $c['id'], $scope)) {
+            $initial            = ['id' => (int) $c['id'], 'name' => $c['name'], 'email' => $c['email'], 'phone' => $c['phone'], 'custom_fields' => $c['custom_fields'] ?? []];
+            $old['customer_id'] = (string) $c['id'];
+        }
 
         return view('business/appointment_form', [
             'providers'    => array_values(array_filter((new TeamService($context->listingId()))->providers(), static fn (array $p): bool => $scope === null || in_array((int) $p['id'], $scope, true))),
             'services'     => (new CatalogueService($context->listingId()))->services(),
             'customFields' => (new CustomerService($context->listingId()))->customFields(),
             'statuses'     => array_values(array_filter(AppointmentStatus::options(), static fn (array $s): bool => in_array($s['value'], AppointmentStatus::UPCOMING, true))),
-            'old'          => flash('appointment_old') ?: ['date' => $this->request->getGet('date'), 'time' => $this->request->getGet('time'), 'provider_id' => $this->request->getGet('provider_id'), 'service_id' => $this->request->getGet('service_id')],
+            'old'          => $old,
+            'initialCustomer' => $initial,
             'errors'       => flash('errors') ?: [],
             'timezone'     => $context->timezone(),
         ]);
@@ -118,13 +145,13 @@ class Appointments extends BaseController
         $input  = $this->input();
         $result = $this->service()->create($input);
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('business/appointments/new'))
+            return redirect()->to(base_url('bookings/appointments/new'))
                 ->with('errors', $result['errors'])
                 ->with('appointment_old', $input)
                 ->with('error', 'Please check the highlighted fields.');
         }
 
-        return redirect()->to(base_url('business/calendar?view=day&date=' . rawurlencode((string) $input['date']) . '&open=' . $result['hash']))
+        return redirect()->to(base_url('bookings/calendar?view=day&date=' . rawurlencode((string) $input['date']) . '&open=' . $result['hash']))
             ->with('success', 'Booked ' . $result['reference'] . '.');
     }
 

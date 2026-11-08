@@ -178,7 +178,7 @@ class IntegrationSync
             $lines[] = 'Join online: ' . $a['video_link'];
         }
         $lines[] = 'Reference: ' . $a['reference'];
-        $lines[] = 'Open in WebScheduler Local: ' . listing_site_url($this->listing, 'business/calendar?open=' . $a['hash']);
+        $lines[] = 'Open in WebScheduler Local: ' . listing_site_url($this->listing, 'bookings/calendar?open=' . $a['hash']);
 
         $where = $a['delivery_mode'] === 'onsite'
             ? trim((string) ($a['location_name'] ?? '') . ', ' . (string) ($a['location_address'] ?? ''), ', ')

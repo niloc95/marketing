@@ -12,7 +12,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
 ?>
 <div class="prose-legal">
     <p>
-        Any business profile can take online bookings: a calendar for the business at <code>/business</code>, a booking page on
+        Any business profile can take online bookings: a calendar for the business at <code>/bookings</code>, a booking page on
         the profile for customers, reminders, deposits, an API. A port of the separate WebScheduler Bookings app (frozen at
         v2.7.0 in <code>xscheduler_ci4</code>, one install per business) into Local's one install and one database.
         On this server it is <strong><?= $ids === null ? 'unknown' : ($ids['bookings'] ? 'on' : 'off') ?></strong>

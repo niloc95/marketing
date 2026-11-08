@@ -13,8 +13,8 @@
  * @var string|null               $cancelRefusal
  * @var array<string,mixed>       $policies
  * @var string                    $today
- * @var string                    $from
- * @var list<string>              $days
+ * @var array<string,mixed>|null  $calendar    PublicBookingService::rescheduleMonth(), null when it cannot move
+ * @var array<string,mixed>|null  $nextFree    the first free time for the same service and person
  * @var string|null               $date
  * @var list<array<string,mixed>> $times
  * @var bool                      $twelveHour
@@ -82,18 +82,41 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
                 <?php if ($moveRefusal !== null): ?>
                     <p class="text-sm"><?= esc($moveRefusal) ?></p>
                 <?php else: ?>
-                    <div class="mb-3 flex items-center gap-2 text-sm">
-                        <?php if ($from > $today): ?><a class="underline" href="<?= base_url($path) . '?from=' . max($today, (new DateTimeImmutable($from, $timezone))->modify('-14 days')->format('Y-m-d')) ?>#change">Earlier</a><?php endif ?>
-                        <a class="underline" href="<?= base_url($path) . '?from=' . (new DateTimeImmutable($from, $timezone))->modify('+14 days')->format('Y-m-d') ?>#change">Later</a>
+                    <?php
+                    // The rules in plain words: how late it can change, and how far ahead.
+                    $hours = (int) $policies['reschedule_hours'];
+                    $month = new DateTimeImmutable($calendar['month'] . '-01', $timezone);
+                    $free  = array_flip($calendar['free']);
+                    $monthLink = static fn (string $m): string => base_url($path) . '?month=' . $m . '#change';
+                    ?>
+                    <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">
+                        You can move it to any free time up to <strong><?= esc($tzDay($calendar['last'])) ?> <?= esc((new DateTimeImmutable($calendar['last'], $timezone))->format('Y')) ?></strong>, as long as you change it at least <?= $hours ?> <?= $hours === 1 ? 'hour' : 'hours' ?> before your appointment.
+                    </p>
+                    <?php if ($nextFree !== null): ?>
+                        <p class="mb-3 text-sm">Next free time:
+                            <a class="font-semibold underline" href="<?= base_url($path) . '?month=' . substr($nextFree['date'], 0, 7) . '&date=' . $nextFree['date'] ?>#change"><?= esc($tzDay($nextFree['date'])) ?>, <?= esc($twelveHour ? (new DateTimeImmutable($nextFree['start'], new DateTimeZone('UTC')))->setTimezone($timezone)->format('g:ia') : $nextFree['time']) ?></a>
+                        </p>
+                    <?php endif ?>
+                    <div class="mb-2 flex items-center gap-2">
+                        <?php if ($calendar['prev'] !== null): ?><a class="btn btn-ghost btn-xs" href="<?= $monthLink($calendar['prev']) ?>" aria-label="Earlier month"><?= lucide('chevron-left', 'h-4 w-4') ?></a><?php endif ?>
+                        <h3 class="font-semibold"><?= $month->format('F Y') ?></h3>
+                        <?php if ($calendar['next'] !== null): ?><a class="btn btn-ghost btn-xs" href="<?= $monthLink($calendar['next']) ?>" aria-label="Later month"><?= lucide('chevron-right', 'h-4 w-4') ?></a><?php endif ?>
                     </div>
-                    <?php if ($days === []): ?>
-                        <p class="text-sm">No free times in these days.</p>
-                    <?php else: ?>
-                        <div class="flex flex-wrap gap-2">
-                            <?php foreach ($days as $d): ?>
-                                <a class="<?= $d === $date ? 'btn btn-primary' : 'btn btn-ghost' ?> btn-xs" href="<?= base_url($path) . '?from=' . $from . '&date=' . $d ?>#change"><?= esc($tzDay($d)) ?></a>
-                            <?php endforeach ?>
-                        </div>
+                    <?php // Free days are links; the rest are plain numbers. ?>
+                    <div class="avail-grid max-w-md">
+                        <?php foreach (['M', 'T', 'W', 'T', 'F', 'S', 'S'] as $wd): ?><span class="avail-wd"><?= $wd ?></span><?php endforeach ?>
+                        <?php for ($i = 1; $i < (int) $month->format('N'); $i++): ?><span></span><?php endfor ?>
+                        <?php for ($d = $month; $d->format('m') === $month->format('m'); $d = $d->modify('+1 day')): ?>
+                            <?php $iso = $d->format('Y-m-d'); ?>
+                            <?php if (isset($free[$iso])): ?>
+                                <a class="avail-day avail-free<?= $iso === $date ? ' avail-today' : '' ?>" href="<?= base_url($path) . '?month=' . $calendar['month'] . '&date=' . $iso ?>#change"<?= $iso === $date ? ' aria-current="date"' : '' ?>><span class="avail-day-num"><?= $d->format('j') ?></span></a>
+                            <?php else: ?>
+                                <span class="avail-day avail-off" aria-disabled="true"><span class="avail-day-num"><?= $d->format('j') ?></span></span>
+                            <?php endif ?>
+                        <?php endfor ?>
+                    </div>
+                    <?php if ($calendar['free'] === []): ?>
+                        <p class="mt-2 text-sm">No free times this month.<?= $calendar['next'] !== null ? ' Try the next month.' : '' ?></p>
                     <?php endif ?>
                     <?php if ($date !== null): ?>
                         <?php if ($times === []): ?>

@@ -82,6 +82,191 @@ class PublicBookingService
         return self::takesBookings($listing) ? base_url('directory/' . $listing['slug'] . '/book') : '';
     }
 
+    /**
+     * What a profile that takes bookings shows instead of its own services
+     * list, and its bookable people (decision T28). Empty while it takes no
+     * bookings, so the profile stays exactly as it was. People only on a
+     * Verified or Plus profile, the same gate as its team cards.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return array{services:list<array<string,mixed>>,practitioners:list<array<string,mixed>>}
+     */
+    public static function profileView(array $listing): array
+    {
+        if (! self::takesBookings($listing)) {
+            return ['services' => [], 'practitioners' => []];
+        }
+        $self = new self($listing);
+
+        return [
+            'services'      => $self->profileServices(),
+            'practitioners' => listing_has_premium($listing) ? $self->practitioners() : [],
+        ];
+    }
+
+    /**
+     * The services customers can book, for the profile: price as text in
+     * the business's currency, who offers each, and a link that opens the
+     * booking page on that service.
+     *
+     * @return list<array{id:int,name:string,description:string,duration_min:int,price:string,price_cents:?int,currency:string,people:list<string>,book_url:string}>
+     */
+    public function profileServices(): array
+    {
+        $names = [];
+        foreach ($this->bookableProviders() as $p) {
+            $names[(int) $p['id']] = (string) $p['name'];
+        }
+        // A service with no price shows the label its profile row had
+        // ("Medical Aid Rates", "from R150"), by name: the mirror keeps it.
+        $labels = [];
+        foreach ((new \App\Services\ServiceMenuService())->servicesFor($this->listingId) as $row) {
+            $labels[mb_strtolower(trim((string) $row['name']))] ??= trim((string) ($row['price_label'] ?? ''));
+        }
+        $base = base_url('directory/' . $this->listing['slug'] . '/book');
+        $out  = [];
+        // Listed, not only bookable: a service still waiting for its length
+        // stays on the profile, without a Book link (T29).
+        foreach ((new CatalogueService($this->listingId))->listed() as $s) {
+            $cents = $s['price_cents'] !== null ? (int) $s['price_cents'] : null;
+            $price = CatalogueService::priceText($cents, (string) $s['currency']);
+            $out[] = [
+                'id'           => (int) $s['id'],
+                'name'         => (string) $s['name'],
+                'description'  => trim((string) ($s['description'] ?? '')),
+                // A copied service's 30 minutes is a guess until confirmed (T29).
+                'duration_min' => (int) $s['length_checked'] === 1 ? (int) $s['duration_min'] : 0,
+                'price'        => $price !== '' ? $price : ($labels[mb_strtolower(trim((string) ($s['profile_service_name'] ?? $s['name'])))] ?? $labels[mb_strtolower(trim((string) $s['name']))] ?? ''),
+                'price_cents'  => $cents,
+                'currency'     => (string) $s['currency'],
+                'people'       => array_values(array_intersect_key($names, array_flip($s['provider_ids']))),
+                'book_url'     => (int) $s['length_checked'] === 1 ? $base . '?service=' . (int) $s['id'] : '',
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The people customers can book, for the profile: who they are, what
+     * they offer, and their usual week, which may be shorter than the
+     * business's (reception 08:00 to 17:00, a practitioner 10:00 to 15:00).
+     * Reception staff are members, not providers, so they never appear.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function practitioners(): array
+    {
+        $services = [];
+        foreach ($this->services() as $s) {
+            foreach ($s['provider_ids'] as $pid) {
+                $services[$pid][] = ['id' => (int) $s['id'], 'name' => (string) $s['name']];
+            }
+        }
+        $places = (new TeamService($this->listingId))->locationChoices($this->listing);
+        $base   = base_url('directory/' . $this->listing['slug'] . '/book');
+        $out    = [];
+        foreach ($this->bookableProviders() as $p) {
+            $id      = (int) $p['id'];
+            $offered = $services[$id] ?? [];
+            if ($offered === []) {
+                continue;
+            }
+            $out[] = [
+                'id'             => $id,
+                'name'           => (string) $p['name'],
+                'title'          => trim((string) ($p['title'] ?? '')),
+                'bio'            => trim((string) ($p['bio'] ?? '')),
+                'team_member_id' => $p['team_member_id'] !== null ? (int) $p['team_member_id'] : null,
+                'services'       => $offered,
+                'week'           => self::weekLines($this->engine->weekPeriods($id), $places, array_column($offered, 'name', 'id')),
+                'book_url'       => $base . '?provider=' . $id . (count($offered) === 1 ? '&service=' . $offered[0]['id'] : ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * A week of periods as lines, consecutive days with the same periods
+     * joined: "Mon to Fri" 10:00 to 15:00. Each period names its place when it
+     * is a branch, or when the person works in more than one place, and the
+     * services when only some are offered there (T29).
+     *
+     * @param array<int,list<array{start:string,end:string,location_id:?int,service_ids?:?list<int>}>> $week
+     * @param array<int,string>                                                                    $places   location id (0 = main) => label
+     * @param array<int,string>                                                                    $services service id => name
+     *
+     * @return list<array{days:string,periods:list<array{start:string,end:string,place:string,services:list<string>}>}>
+     */
+    public static function weekLines(array $week, array $places, array $services = []): array
+    {
+        $short   = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'];
+        $used    = [];
+        foreach ($week as $periods) {
+            foreach ($periods as $p) {
+                $used[(int) ($p['location_id'] ?? 0)] = true;
+            }
+        }
+        $nameAll = count($used) > 1;
+        $lines   = [];
+        $run     = null;
+        foreach ($short as $day => $label) {
+            $periods = $week[$day] ?? [];
+            $key     = $periods === [] ? null : json_encode(array_map(static fn (array $p): array => [$p['start'], $p['end'], $p['location_id'], $p['service_ids'] ?? null], $periods));
+            if ($run !== null && $key === $run['key'] && $day === $run['last'] + 1) {
+                $run['last'] = $day;
+
+                continue;
+            }
+            if ($run !== null) {
+                $lines[] = $run;
+            }
+            $run = $key === null ? null : ['key' => $key, 'first' => $day, 'last' => $day, 'periods' => $periods];
+        }
+        if ($run !== null) {
+            $lines[] = $run;
+        }
+
+        return array_map(static fn (array $r): array => [
+            'days'    => $short[$r['first']] . ($r['last'] === $r['first'] ? '' : ($r['last'] === $r['first'] + 1 ? ', ' : ' to ') . $short[$r['last']]),
+            'periods' => array_map(static fn (array $p): array => [
+                'start'    => $p['start'],
+                'end'      => $p['end'],
+                'place'    => $p['location_id'] !== null || $nameAll ? (string) ($places[(int) ($p['location_id'] ?? 0)] ?? '') : '',
+                'services' => array_values(array_filter(array_map(static fn (int $id): string => $services[$id] ?? '', $p['service_ids'] ?? []))),
+            ], $r['periods']),
+        ], $lines);
+    }
+
+    /**
+     * How a "Book with" button names someone: the first name, or the title
+     * and surname when the name starts with one ("Dr Mensveld", not "Dr").
+     */
+    public static function shortName(string $name): string
+    {
+        $words = preg_split('/\s+/u', trim($name)) ?: [];
+        if ($words === [] || $words[0] === '') {
+            return trim($name);
+        }
+        $title = rtrim(mb_strtolower($words[0]), '.');
+        if (in_array($title, ['dr', 'prof', 'professor', 'mr', 'mrs', 'ms', 'miss', 'mx', 'adv', 'sr', 'sister', 'rev', 'pastor', 'chef'], true)) {
+            return count($words) > 1 ? $words[0] . ' ' . $words[count($words) - 1] : $words[0];
+        }
+
+        return $words[0];
+    }
+
+    /** Bookable, not archived people, in team order. @return list<array<string,mixed>> */
+    private function bookableProviders(): array
+    {
+        return array_values(array_filter(
+            (new TeamService($this->listingId))->providers(),
+            static fn (array $p): bool => (int) $p['bookable'] === 1,
+        ));
+    }
+
     public function timezone(): DateTimeZone
     {
         return $this->engine->timezone();
@@ -100,22 +285,7 @@ class PublicBookingService
      */
     public function services(): array
     {
-        $bookable = array_map('intval', array_column(
-            BookingProviderModel::forBusiness($this->listingId)->where('archived_at', null)->where('bookable', 1)->findAll(),
-            'id',
-        ));
-        if ($bookable === []) {
-            return [];
-        }
-        $offered = array_map('intval', array_column(
-            BookingProviderServiceModel::forBusiness($this->listingId)->whereIn('provider_id', $bookable)->findAll(),
-            'service_id',
-        ));
-
-        return array_values(array_filter(
-            (new CatalogueService($this->listingId))->services(),
-            static fn (array $s): bool => in_array((int) $s['id'], $offered, true),
-        ));
+        return (new CatalogueService($this->listingId))->bookable();
     }
 
     /** @return array<string,mixed>|null */
@@ -489,6 +659,54 @@ class PublicBookingService
         }
 
         return $this->engine->slots((int) $appointment['provider_id'], (int) $appointment['service_id'], $date, true, (int) $appointment['id']);
+    }
+
+    /** The last local date customers may book or move to (Booking rules, future booking limit). */
+    public function horizon(): string
+    {
+        return $this->engine->customerHorizon();
+    }
+
+    /**
+     * One month of the "Change your booking" calendar: the days with a free
+     * time for the same service and person, from today to the horizon, and
+     * the months either side that still have days in that range. The whole
+     * horizon is reachable (a 180 day limit is six months), not two weeks.
+     *
+     * @param array<string,mixed> $appointment
+     *
+     * @return array{month:string,free:list<string>,prev:?string,next:?string,first:string,last:string}
+     */
+    public function rescheduleMonth(array $appointment, ?string $month): array
+    {
+        $today   = $this->today();
+        $horizon = $this->horizon();
+        $month   = $month !== null && preg_match('/^\d{4}-\d{2}$/', $month) ? $month : substr($today, 0, 7);
+        $month   = max(substr($today, 0, 7), min(substr($horizon, 0, 7), $month));
+        $start   = new DateTimeImmutable($month . '-01', $this->timezone());
+        $from    = max($today, $start->format('Y-m-d'));
+        $to      = min($horizon, $start->format('Y-m-t'));
+
+        return [
+            'month' => $month,
+            'free'  => $from <= $to ? $this->engine->availableDates((int) $appointment['service_id'], (int) $appointment['provider_id'], $from, $to, (int) $appointment['id']) : [],
+            'prev'  => $month > substr($today, 0, 7) ? $start->modify('-1 month')->format('Y-m') : null,
+            'next'  => $month < substr($horizon, 0, 7) ? $start->modify('+1 month')->format('Y-m') : null,
+            'first' => $today,
+            'last'  => $horizon,
+        ];
+    }
+
+    /**
+     * The first free time to move a booking to: same service and person.
+     *
+     * @param array<string,mixed> $appointment
+     *
+     * @return array<string,mixed>|null
+     */
+    public function rescheduleNext(array $appointment): ?array
+    {
+        return $this->engine->nextAvailable((int) $appointment['service_id'], (int) $appointment['provider_id'], null, 60, (int) $appointment['id']);
     }
 
     /** @param array<string,mixed> $appointment */

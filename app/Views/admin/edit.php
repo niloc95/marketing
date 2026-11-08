@@ -211,6 +211,7 @@ if (! is_array($old['hours'] ?? null)) {
                     'vLocations'   => is_array($old['locations'] ?? null) ? $old['locations'] : $locations,
                     // Marker, not the array — see manage_edit.php.
                     'vServices'    => array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services,
+                    'servicesFromBookings' => $servicesFromBookings ?? false,
                     'vAttributes'  => array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes,
                     'vFacets'      => array_key_exists('facets_present', $old)
                         ? (new App\Services\ListingFacetService())->groupedFromInput(

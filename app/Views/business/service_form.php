@@ -24,8 +24,8 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/services') ?>">Services</a></p>
-<form method="post" action="<?= base_url($service === null ? 'business/services/new' : 'business/services/' . $service['id']) ?>" class="form-card form-card-narrow">
+<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('bookings/services') ?>">Services</a></p>
+<form method="post" action="<?= base_url($service === null ? 'bookings/services/new' : 'bookings/services/' . $service['id']) ?>" class="form-card form-card-narrow">
     <?= csrf_field() ?>
     <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white"><?= $service === null ? 'Add a service' : 'Edit service' ?></h1>
 
@@ -41,7 +41,10 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
     </div>
     <div class="grid gap-4 sm:grid-cols-2">
         <div class="field">
-            <label for="svc-duration">Length in minutes</label>
+            <label for="svc-duration">Appointment duration (minutes)</label>
+            <?php if ($service !== null && ! (int) $service['length_checked']): ?>
+                <p class="mb-1 text-sm text-amber-700 dark:text-amber-400">Copied from your profile with 30 minutes as a guess. Set the real appointment duration and save, and customers can book it online.</p>
+            <?php endif ?>
             <input id="svc-duration" type="number" name="duration_min" value="<?= (int) $v['duration_min'] ?>" min="5" max="<?= CatalogueService::MAX_DURATION ?>" step="5" required>
             <?= $err('duration_min') ?>
         </div>

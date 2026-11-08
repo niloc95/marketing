@@ -16,7 +16,7 @@ use Tests\Support\FreshDatabase;
 use Tests\Support\WithEnv;
 
 /**
- * The signed in app shell (layouts/_shell.php): /admin and /business get the
+ * The signed in app shell (layouts/_shell.php): /admin and /bookings get the
  * sidebar and the swappable #spa-content (resources/shell/spa.js); public
  * pages keep layouts/public.php, and admin no longer carries the public
  * header, its Popular categories strip or the footer.
@@ -111,16 +111,16 @@ final class AppShellTest extends CIUnitTestCase
     {
         [$listingId, $ownerId] = $this->business();
 
-        $owner = (string) $this->signedIn($ownerId, $listingId)->get('business/calendar')->response()->getBody();
-        $this->assertStringContainsString('data-shell="business"', $owner);
+        $owner = (string) $this->signedIn($ownerId, $listingId)->get('bookings/calendar')->response()->getBody();
+        $this->assertStringContainsString('data-shell="bookings"', $owner);
         $this->assertStringContainsString('data-page-title="Calendar"', $owner);
-        $this->assertStringContainsString('<title>Calendar | WebScheduler Local</title>', $owner);
+        $this->assertStringContainsString('<title>Appointments | Salon Lumi | WebScheduler Local</title>', $owner);
         $this->assertStringContainsString('title="Settings"', $owner);
         $this->assertStringContainsString('Salon Lumi', $owner, 'the business, to switch from');
 
         $desk = (new AccountService())->findOrCreate('desk@example.test', 'Desk');
         BusinessMemberModel::forBusiness($listingId)->insert(['account_id' => $desk['id'], 'role' => 'staff', 'status' => 'active'], true);
-        $staff = (string) $this->signedIn((int) $desk['id'], $listingId)->get('business/calendar')->response()->getBody();
+        $staff = (string) $this->signedIn((int) $desk['id'], $listingId)->get('bookings/calendar')->response()->getBody();
         $this->assertStringContainsString('title="Calendar"', $staff);
         $this->assertStringNotContainsString('title="Settings"', $staff, 'reception does not manage settings');
         $this->assertStringNotContainsString('title="Analytics"', $staff);
@@ -128,7 +128,7 @@ final class AppShellTest extends CIUnitTestCase
 
     public function testBusinessSignInHasNoSidebar(): void
     {
-        $html = (string) $this->get('business/sign-in')->response()->getBody();
+        $html = (string) $this->get('bookings/sign-in')->response()->getBody();
 
         $this->assertStringContainsString('data-shell-bare', $html);
         $this->assertStringNotContainsString('data-shell-nav', $html);

@@ -1,7 +1,7 @@
 <?php
 /**
  * The app shell's sidebar (layouts/_shell.php), shared by admin and
- * /business. Each layout builds its own items; this only draws them.
+ * /bookings. Each layout builds its own items; this only draws them.
  *
  * - Phone: a drawer behind the Menu button. Tablet: a rail of icons that
  *   opens to the full width. Desktop: always open. All CSS (.shell-sidebar),

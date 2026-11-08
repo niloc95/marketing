@@ -25,6 +25,7 @@ the dashboard. Bookings' own wording is **rewritten, not carried over**. Code id
 | team member, or the person's name | provider (internal word only) |
 | reception, assistant | staff (in UI copy; the role key stays `staff`) |
 | time off | blocked time, block-out |
+| duration, appointment duration (how long a service takes; a figure alone reads "60 min") | length (owner, 6 Nov 2026) |
 | no show | no-show |
 | sign in, sign out | log in, log-in, login (as a verb) |
 | email | e-mail |

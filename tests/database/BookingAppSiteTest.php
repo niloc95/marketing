@@ -24,7 +24,7 @@ use Tests\Support\WithEnv;
  * Online bookings on local.webscheduler.app (decision D2, owner 5 Nov 2026).
  *
  * A business abroad turns bookings on like one at home and uses its own
- * site's host for everything (booking page, /business, the API); prices are
+ * site's host for everything (booking page, /bookings, the API); prices are
  * in its own currency on its own clock; no deposits (rand only); its plan is
  * shown in US dollars and charged in rand at the Plus rate, with no rand
  * figure on its pages. co.za businesses stay on co.za.
@@ -98,13 +98,23 @@ final class BookingAppSiteTest extends CIUnitTestCase
         $this->assertSame(\Config\Sites::APP, site()->forRow($london), 'links leave through listing_site_url(), to .app');
     }
 
+    public function testTheProfileListsBookingServicesInItsOwnCurrency(): void
+    {
+        $page = $this->withHeaders(['Host' => self::APP])->get('directory/london-salon');
+        $page->assertStatus(200);
+        $this->assertStringContainsString('service-list-book', $page->getBody(), 'booking services stand in for the list (T28)');
+        $page->assertSee('£45');
+        $page->assertDontSee('R45');
+        $this->assertStringContainsString('"priceCurrency":"GBP"', $page->getBody());
+    }
+
     public function testNoDepositsAbroad(): void
     {
         $this->assertNull((new \App\Services\Bookings\Payments\DepositService($this->listings->find($this->londonId)))->depositFor(
             (new CatalogueService($this->londonId))->service($this->serviceId),
         ), 'a GBP price never asks a deposit');
-        $this->app()->get('business/settings/payments')->assertStatus(404);
-        $form = $this->app()->get('business/services/' . $this->serviceId);
+        $this->app()->get('bookings/settings/payments')->assertStatus(404);
+        $form = $this->app()->get('bookings/services/' . $this->serviceId);
         $form->assertSee('Price in GBP');
         $form->assertDontSee('Deposit (%)');
     }
@@ -114,10 +124,10 @@ final class BookingAppSiteTest extends CIUnitTestCase
         // co.za's business on .app: not there.
         $this->withHeaders(['Host' => self::APP])->get('directory/salon-lumi/book')->assertStatus(301);
         // The London business's area on the co.za host follows it to .app.
-        $res = $this->withHeaders([])->withSession($this->session())->get('business');
-        $this->assertMatchesRegularExpression('#^https?://' . preg_quote(self::APP, '#') . '(:\d+)?/business$#', $res->response()->getHeaderLine('Location'));
-        $this->withHeaders([])->withSession($this->session())->post('business/settings/localization', ['time_format' => '24h', 'first_day' => 'monday', csrf_token() => csrf_hash()])->assertStatus(404);
-        $this->app()->get('business')->assertStatus(200);
+        $res = $this->withHeaders([])->withSession($this->session())->get('bookings');
+        $this->assertMatchesRegularExpression('#^https?://' . preg_quote(self::APP, '#') . '(:\d+)?/bookings$#', $res->response()->getHeaderLine('Location'));
+        $this->withHeaders([])->withSession($this->session())->post('bookings/settings/localization', ['time_format' => '24h', 'first_day' => 'monday', csrf_token() => csrf_hash()])->assertStatus(404);
+        $this->app()->get('bookings')->assertStatus(200);
     }
 
     public function testTheApiAnswersOnTheBusinesssOwnHost(): void
@@ -147,15 +157,15 @@ final class BookingAppSiteTest extends CIUnitTestCase
         $status = (new BookingPlanService())->status($this->londonId);
         $this->assertSame(['166.32', true], [$status['price'], $status['can_subscribe']], 'US$8.99 at R18.50');
 
-        $tab = $this->app()->get('business/settings/plan');
+        $tab = $this->app()->get('bookings/settings/plan');
         $tab->assertSee('$8.99');
         $tab->assertSee('Billed in South African rand');
         $this->assertDoesNotMatchRegularExpression('/R\s?\d/', strip_tags((string) $tab->getBody()), 'no rand figure on .app');
 
-        $this->app()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirect();
+        $this->app()->post('bookings/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirect();
         $init = service('paystack')->callsOf('initialize')[0][1];
         $this->assertSame([16632, 'PLN_monthly_16632'], [$init['amountCents'], $init['planCode']]);
-        $this->assertStringEndsWith('/business/plan/paystack', $init['callbackUrl']);
+        $this->assertStringEndsWith('/bookings/plan/paystack', $init['callbackUrl']);
         $this->assertSame('Solo', (new BookingPlanService())->forListing($this->londonId)['checkout_tier']);
     }
 

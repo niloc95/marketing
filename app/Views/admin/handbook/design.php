@@ -11,7 +11,7 @@
     <ul>
         <li><strong>Layout:</strong> <code>app/Views/layouts/public.php</code> for every public Local page (header, footer, analytics, consent);
             the app shell <code>layouts/_shell.php</code> (sidebar, top bar, <code>#spa-content</code>) for <code>/admin</code>
-            (<code>layouts/admin.php</code>) and <code>/business</code> (<code>layouts/business.php</code>), with page swaps instead of reloads.</li>
+            (<code>layouts/admin.php</code>) and <code>/bookings</code> (<code>layouts/business.php</code>), with page swaps instead of reloads.</li>
         <li><strong>Stylesheet:</strong> <code>resources/directory.css</code> → Tailwind 3 (<code>tailwind.directory.cjs</code>) →
             <code>public/assets/directory.css</code>, linked with <code>?v=&lt;filemtime&gt;</code>. Components are named classes in
             <code>@layer components</code> (<code>.btn</code>, <code>.panel</code>, <code>.table</code>, <code>.faq-item</code>,

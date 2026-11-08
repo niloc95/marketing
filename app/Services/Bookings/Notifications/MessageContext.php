@@ -131,7 +131,7 @@ class MessageContext
             'answers'      => $answers,
             'manage_url'   => $manageUrl,
             'booking_url'  => $bookingUrl,
-            'calendar_url' => listing_site_url($listing, 'business/calendar?date=' . $start->format('Y-m-d')),
+            'calendar_url' => listing_site_url($listing, 'bookings/calendar?date=' . $start->format('Y-m-d')),
             'from_name'    => ($fromName !== '' ? $fromName : $business) . ' via WebScheduler Local',
             'reply_to'     => $replyTo !== '' ? $replyTo : (string) ($listing['email'] ?? ''),
             'timezone'     => $tz->getName(),

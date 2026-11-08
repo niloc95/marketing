@@ -18,7 +18,7 @@ $roles = config('BookingPermissions')->roleLabels;
         <ul class="space-y-2">
             <?php foreach ($businesses as $b): ?>
                 <li>
-                    <form method="post" action="<?= base_url('business/choose') ?>">
+                    <form method="post" action="<?= base_url('bookings/choose') ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="listing_id" value="<?= (int) $b['listing_id'] ?>">
                         <button type="submit" class="panel flex w-full items-center justify-between text-left hover:border-brand-ocean">
