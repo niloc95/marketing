@@ -17,12 +17,41 @@
  */
 
 import { spawn, execFileSync } from 'child_process';
+import fs from 'fs';
 import net from 'net';
+import os from 'os';
+import path from 'path';
 
 const SMTP_PORT = 1025;
 const UI_PORT = 8025;
 const HOST = '127.0.0.1';
 const UI_URL = `http://localhost:${UI_PORT}`;
+// The inbox listens on every interface, so a phone or another PC on the LAN
+// can read the mail the dev site sends (the dev site is reachable there too,
+// see app.devHostnames in .env). SMTP stays on loopback: only this machine's
+// app sends to it, and an open relay on the LAN is no use to anyone.
+const UI_LISTEN = '0.0.0.0';
+// A fixed database rather than Mailpit's default temp file, which is deleted
+// when it stops: the inbox survives a restart.
+const DATABASE = path.join(os.homedir(), '.mailpit', 'mailpit.db');
+
+/** The LAN addresses the inbox can be opened on. */
+function lanUrls() {
+  // The Bonjour name (nilos-mac-studio.local); os.hostname() drops its hyphens.
+  let name = os.hostname().replace(/\.local$/i, '');
+  try {
+    name = execFileSync('scutil', ['--get', 'LocalHostName'], { encoding: 'utf8' }).trim() || name;
+  } catch {
+    // Not macOS: keep the hostname.
+  }
+  const urls = [`http://${name.toLowerCase()}.local:${UI_PORT}`];
+  for (const nets of Object.values(os.networkInterfaces())) {
+    for (const n of nets ?? []) {
+      if (n.family === 'IPv4' && !n.internal) urls.push(`http://${n.address}:${UI_PORT}`);
+    }
+  }
+  return urls;
+}
 
 /** Resolves true when something accepts a TCP connection on `port`. */
 function portInUse(port) {
@@ -63,6 +92,7 @@ if (smtpUp) {
     console.log(`   SMTP  ${HOST}:${SMTP_PORT}`);
     console.log(`   Inbox ${UI_URL}`);
     console.log('   Nothing to do — leaving the existing instance alone.');
+    console.log(`   (If it should be on the LAN and is not, it was started before ${UI_LISTEN}: stop it and run this again.)`);
     process.exit(0);
   }
   console.error(`❌ Port ${SMTP_PORT} is in use, but it does not answer as Mailpit.`);
@@ -83,10 +113,13 @@ try {
   process.exit(1);
 }
 
+fs.mkdirSync(path.dirname(DATABASE), { recursive: true });
 console.log(`📬 Starting Mailpit — SMTP ${HOST}:${SMTP_PORT}, inbox ${UI_URL}`);
+console.log(`   On the LAN: ${lanUrls().join('  ')}`);
+console.log(`   Mail kept in ${DATABASE}`);
 const child = spawn(
   'mailpit',
-  ['--smtp', `${HOST}:${SMTP_PORT}`, '--listen', `${HOST}:${UI_PORT}`],
+  ['--smtp', `${HOST}:${SMTP_PORT}`, '--listen', `${UI_LISTEN}:${UI_PORT}`, '--database', DATABASE],
   { stdio: 'inherit' }
 );
 
