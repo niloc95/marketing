@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => ($listing ? 'Edit' : 'New') . ' listing | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -32,7 +31,6 @@ if (! is_array($old['hours'] ?? null)) {
     $vHours['holidays'] = hours_holiday_rule($base['trading_hours'] ?? null);
 }
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

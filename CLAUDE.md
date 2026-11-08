@@ -21,7 +21,8 @@ they hold the rules that are not obvious from the code.
 - **Layers.** Thin controllers → one service per feature, which is the only writer of its
   tables (`DirectoryService` reads, `DirectoryListingMutationService` writes for the
   public and owners, `DirectoryAdminService` for admin) → models (`xs_` tables). Shared
-  view helpers in `app/Helpers/` (autoloaded), one layout (`layouts/public.php`), one
+  view helpers in `app/Helpers/` (autoloaded), one public layout (`layouts/public.php`;
+  `/admin` and `/business` use the app shell, `layouts/_shell.php`), one
   stylesheet (`resources/directory.css` → `public/assets/directory.css`, Tailwind with
   tokens shared with the marketing site in `tailwind.tokens.cjs`), one script
   (`public/assets/directory.js`).

@@ -6,6 +6,7 @@
  * once it is known.
  */
 $entries = [
+    ['2026-11-07', 'App shell for /admin and /business: sidebar, top bar and page swaps without reloads (layouts/_shell.php, resources/shell/), ported from Bookings; admin leaves the public layout and its Popular categories strip.'],
     ['2026-11-07', 'System handbook added at /admin/documents/system; document library (Config\Documents) puts every published PDF in public/assets/documents/.'],
     ['2026-11-07', 'Offsite backups to S3 af-south-1 live (8aaab6e).'],
     ['2026-11-05', 'Bookings phases 0 to 10 and .app merged to main, dark behind bookings.enabled (caf5511).'],

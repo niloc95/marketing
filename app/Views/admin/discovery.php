@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Discovery | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -26,7 +25,6 @@ $blockForm = static function (string $kind, string $word, string $target) use ($
     return $html . '<button type="submit" class="btn btn-ghost btn-xs">Block</button></form>';
 };
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

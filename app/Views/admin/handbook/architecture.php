@@ -18,7 +18,8 @@
             <code>Paystack</code>, <code>PaymentReference</code>, geocoders, holiday calendars, text and image processing.</li>
         <li><strong>Helpers</strong> (<code>app/Helpers/</code>, autoloaded): view helpers such as <code>listing_url()</code>,
             <code>site_url_for()</code>, <code>money()</code>, <code>listing_public_view()</code>, badges and gates.</li>
-        <li><strong>Views</strong>: one layout (<code>layouts/public.php</code>; Bookings has <code>layouts/business.php</code>),
+        <li><strong>Views</strong>: one public layout (<code>layouts/public.php</code>); <code>/admin</code> and <code>/business</code>
+            use the app shell (<code>layouts/_shell.php</code>, a sidebar and page swaps),
             partials per page part, emails through <code>emails/_layout.php</code>.</li>
         <li><strong>Commands</strong> (<code>app/Commands/</code>): spark jobs run by cron (Operations chapter).</li>
     </ul>

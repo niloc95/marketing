@@ -78,13 +78,13 @@ final class AdminFormsTest extends CIUnitTestCase
         $this->assertStringContainsString('Website', $this->section($this->page('?site=app'), 'What trips people up'));
     }
 
-    public function testALostSubmissionShowsInTheAdminBarAndOnTheHomePage(): void
+    public function testALostSubmissionShowsInTheSidebarAndOnTheHomePage(): void
     {
         $this->row('signup', 'lost', 'bad_redirect index.php/add-profile');
 
         $home = (string) $this->withSession(['dir_admin' => true, AdminFilter::SEEN_KEY => time()])->get('admin')->response()->getBody();
         $this->assertStringContainsString('form submission was lost in the last 24 hours', $home);
-        $this->assertMatchesRegularExpression('#href="[^"]*admin/forms"[^>]*>\s*Form health\s*<span class="admin-count"#', $home);
+        $this->assertMatchesRegularExpression('#href="[^"]*admin/forms"[^>]*>.*?Form health</span>\s*<span class="shell-count"#s', $home);
     }
 
     public function testNothingYetSaysSo(): void

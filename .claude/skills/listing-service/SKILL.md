@@ -52,7 +52,7 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 | `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
 | `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Handbook` (the system handbook), `Hostnames`, `ContentSecurityPolicy` |
 | `app/Models/` | One per table, `xs_` prefix. `DirectoryListingModel` is the hub; `Concerns/DerivesCountryCode` |
-| `app/Views/` | `layouts/public.php` (one layout for every page, header, footer, analytics), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
+| `app/Views/` | `layouts/public.php` (every public page: header, footer, analytics), `layouts/_shell.php` + `admin.php` / `business.php` (the app shell for `/admin` and `/business`, see "App shell"), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
 | `app/Commands/` | spark commands, see Commands below |
 | `resources/directory.css` → `public/assets/directory.css` | Tailwind (`tailwind.directory.cjs`, tokens shared with the marketing site in `tailwind.tokens.cjs`) |
 | `public/assets/directory.js` | every client behaviour, one file: typeahead, address lookup and maps, form steps, repeaters, photo band, lightbox, consent |
@@ -932,7 +932,7 @@ list points there now.
   and `ProfileSetupOrderModel::statusCounts()`. Its only own SQL is new profiles per day
   (site scoped like `unseen()`; "paid" = a verification row for the site's plan, plus
   `admin_plan = 'verified'` for the badge).
-- **`queueCounts()`** is the one source of the admin bar's tab counts and the
+- **`queueCounts()`** is the one source of the admin sidebar's counts and the
   dashboard's "Needs action" tiles. A new queue goes there.
 - `?site=app`, `?days=7|30|90`. The plan follows the site (Verified on co.za, Plus on
   .app). Health, queues and setup orders cover both sites.
@@ -940,6 +940,59 @@ list points there now.
   written out in full in the partial: a concatenated class is purged and draws black) and
   `_meter_rows.php`. Colours validated with the dataviz validator, light and dark.
 - Tests: `tests/database/AdminDashboardTest.php`.
+
+## App shell: sidebar and page swaps for `/admin` and `/business` (since 7 Nov 2026, unreleased)
+
+Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-sidebar.js`
+(branch `feat/spa-shell`). Public pages and profiles are untouched: they keep
+`layouts/public.php`.
+
+- **Layouts.** `layouts/_shell.php` is the frame (sidebar slot, top bar with the page
+  title and theme switch, `<main id="spa-content">`); `layouts/admin.php` and
+  `layouts/business.php` extend it, and draw their items through `layouts/_sidebar.php`.
+  Every admin view extends `layouts/admin`: no public header, no Popular categories strip
+  (`header_quick_categories()`), no footer, no GA. The admin nav is built in
+  `layouts/admin.php` (groups, icons, `queueCounts()`); the old `admin/_bar.php` is gone.
+  Add an admin page to the sidebar there; the top bar title is the active item's label.
+  `admin/login.php` sets a `bare` section (shell without sidebar); /business is bare while
+  signed out.
+- **Nested layouts:** every `view()` call in `admin.php` / `business.php` sits inside a
+  section. One outside a section renders the layout early, because the page's `extend()`
+  is still pending on the shared renderer. Body attributes for business are built in PHP
+  (text in a section reads as copy to `BookingFoundationTest`).
+- **Script.** `resources/shell/` (`spa.js`, `sidebar.js`, `lifecycle.js`), built by
+  `npm run biz:build` into `public/assets/business/business.js` (with the bookings code)
+  and `public/assets/business/shell.js` (admin, next to `directory.js`), plus a hashed
+  shared chunk.
+- **How a swap works.** A click on a link inside the shell's own path (`data-shell-scope`)
+  or a submit of a form inside `#spa-content` or the sidebar is fetched in full (header
+  `X-Shell: 1`, never `X-Requested-With`, which `isAJAX()` would read); fetch follows a
+  POST's redirect, and `#spa-content` plus the sidebar's `[data-shell-nav]` and
+  `[data-shell-foot]` are swapped in. Controllers need nothing: flash, validation errors
+  and `old()` render as on a page load. The submit listener is on `window`, so
+  `form[data-confirm]` and `data-submit-once` (on `document`) run first.
+- **Falls back to a plain page load** when the response has no `#spa-content` (sign in
+  after an idle timeout, Cloudflare Access, error pages), is not HTML (downloads), leaves
+  the origin, belongs to another shell or a bare one, carries a different
+  `meta[name=shell-version]` (a release), or its `main` has `data-spa-full` or a
+  `<script>`. A page with a `scripts` section (admin/edit and admin/new: Leaflet, Quill)
+  gets `data-spa-full` automatically. Opt a link or form out with `data-no-spa` (both Sign
+  out forms have it).
+- **Page scripts must survive a swap.** In `/business`, register with
+  `registerPage(selector, init)` (`resources/shell/lifecycle.js`); `init(el)` returns a
+  cleanup that runs before the page leaves (the calendar's 60 s poll and the dashboard's
+  refresh clear their timers there). In `directory.js`, anything an admin page uses must
+  be delegated on `document` or looked up when used (`data-copy`, `data-confirm`, the
+  handbook's print hook already are).
+- **CSP.** Scripts in swapped markup never run (their nonce is the new response's). The
+  fetched HTML has its `<style>` elements removed before `DOMParser` (each would be a CSP
+  report); the honeypot's `#hpc { display: none }` is also in `directory.css` for that
+  reason.
+- **CSRF** tokens change after every POST (`Config\Security::$regenerate`), which is why
+  the sidebar foot (Sign out) is swapped too.
+- Tests: `tests/database/AppShellTest.php` (every admin page in the shell without the
+  public header, roles in the business sidebar, bare sign in pages, public pages
+  unchanged). The browser behaviour was checked headless with Playwright on dev.
 
 ## Profile statistics (`ListingStatsService`, since 30 Oct 2026, unreleased)
 

@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Documents | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -11,7 +10,6 @@
  * @var list<array{key:string,title:string,description:string,file:string,bytes:int|null,modified:int|null}> $docs
  */
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

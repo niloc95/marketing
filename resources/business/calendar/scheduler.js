@@ -65,9 +65,18 @@ export class Scheduler {
 
     await this.reload();
     if (this.root.dataset.open) this.openByHash(this.root.dataset.open);
-    setInterval(() => {
+    if (this.stopped) return;
+    this.poll = setInterval(() => {
       if (document.visibilityState === 'visible' && this.busyCount === 0) this.reload({ passive: true });
     }, POLL_MS);
+  }
+
+  /** The page is leaving (resources/shell/lifecycle.js): stop polling and loading. */
+  destroy() {
+    this.stopped = true;
+    clearInterval(this.poll);
+    clearTimeout(this.toastTimer);
+    if (this.request) this.request.abort();
   }
 
   /** Something modal is happening: hold the background reload. */
@@ -108,7 +117,8 @@ export class Scheduler {
   syncAddress() {
     const params = new URLSearchParams({ view: this.view, date: this.date });
     Object.entries(this.filters).forEach(([k, v]) => { if (v) params.set(k, v); });
-    history.replaceState(null, '', `${location.pathname}?${params}`);
+    // Keep the state: the shell's back and forward need it (resources/shell/spa.js).
+    history.replaceState(history.state, '', `${location.pathname}?${params}`);
     this.root.querySelectorAll('[data-cal-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.calView === this.view)));
   }
 
@@ -206,7 +216,9 @@ export class Scheduler {
   }
 }
 
-export function initCalendar() {
-  const root = document.querySelector('[data-calendar]');
-  if (root) new Scheduler(root).init();
+/** One calendar per page; the shell runs this for each page that has one. */
+export function initCalendar(root) {
+  const scheduler = new Scheduler(root);
+  scheduler.init();
+  return () => scheduler.destroy();
 }

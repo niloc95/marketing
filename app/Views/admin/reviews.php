@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Reviews queue | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -29,7 +28,6 @@ $tabs = [
 
 $link = static fn (string $s) => base_url('admin/reviews') . '?' . http_build_query(['status' => $s]);
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

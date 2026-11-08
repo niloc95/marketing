@@ -85,6 +85,8 @@ const ICONS = [
   'chart-column', 'wallet', 'circle-alert', 'info',
   // The calendar and customers (business/calendar.php, business/customer*.php).
   'contact', 'user',
+  // The admin and /business sidebar (layouts/_sidebar.php): Documents and Sign out.
+  'file-text', 'log-out',
 ];
 
 /**

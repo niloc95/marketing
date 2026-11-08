@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Hero photos | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -45,7 +44,6 @@ $categorySelect = static function (?int $selected) use ($grouped): string {
     return $html;
 };
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

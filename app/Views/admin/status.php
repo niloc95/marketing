@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'System status | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -15,7 +14,6 @@
 $pill = static fn (bool $ok) => $ok ? 'pill pill-published' : 'pill pill-pending';
 $when = static fn (?int $ts) => $ts ? date('j M Y H:i', $ts) : 'n/a';
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

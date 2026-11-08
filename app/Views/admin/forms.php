@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Form health | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -82,7 +81,6 @@ $columns = [
 $alarming = ['lost', 'send_failed'];
 $banner   = $data['banner'];
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

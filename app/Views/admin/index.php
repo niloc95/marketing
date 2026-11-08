@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Admin | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -23,7 +22,6 @@ $link = function (array $overrides = []) use ($status, $filters) {
 $isTrash = $status === 'trashed';
 $quality = new \App\Services\ListingQualityService();
 ?>
-<?= view('admin/_bar') ?>
 
 <?php // Outbound mail failing is the one outage the public site hides completely:
       // signups still report "check your email". Nobody would think to look for

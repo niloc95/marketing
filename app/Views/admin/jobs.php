@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Jobs queue | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -35,7 +34,6 @@ $prettyDate = static function (?string $date): string {
     return $ts === false ? 'n/a' : date('j M Y', $ts);
 };
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

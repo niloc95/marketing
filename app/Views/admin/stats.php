@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Stats | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -57,7 +56,6 @@ for ($t = strtotime($from); $t <= strtotime($to); $t += DAY) {
 }
 $kinds = ['taps_call' => 'Call', 'taps_whatsapp' => 'WhatsApp', 'taps_website' => 'Website', 'taps_directions' => 'Directions', 'taps_booking' => 'Booking', 'taps_email' => 'Email shown'];
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

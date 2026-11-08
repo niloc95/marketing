@@ -186,7 +186,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Zip updater, packaging, `version.json` | `Services/Updater/*`, `scripts/package.js` | Skip | | git branches, `deploy-production`, tags `bookings-pN`, `/health` commit |
 | Audit log | `xs_audit_logs` | Port | 1 | per business, plus a viewer (Bookings has none) |
 | Dark mode | inline bootstrap script | Rebuild | 1 | from a file (CSP) |
-| SPA shell, sidebar | `spa.js`, `unified-sidebar.js` | Rebuild | 1 | plain page loads first; partial swaps only if needed |
+| SPA shell, sidebar | `spa.js`, `unified-sidebar.js` | Rebuild | 1 | built 7 Nov 2026 (`feat/spa-shell`): `layouts/_shell.php`, `resources/shell/`, shared with `/admin`; full page fetch, swap of `#spa-content`, POSTs followed by fetch, cleanups per page |
 | Help centre | stub | Skip | | |
 | Languages other than English | `localization.language` key, no UI | Later ⚠ | | |
 | PWA | none | Later | | |

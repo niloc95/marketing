@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Dashboard | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -112,7 +111,6 @@ $pills[] = ['.app', (bool) $health['appEnabled'], $health['appEnabled'] ? 'switc
 $planStates = ['submitted' => 'Waiting for review', 'approved' => 'Approved, not paid', 'active' => 'Active', 'lapsed' => 'Lapsed', 'rejected' => 'Rejected'];
 $orderStatuses = \App\Models\ProfileSetupOrderModel::STATUSES;
 ?>
-<?= view('admin/_bar') ?>
 
 <?php if (! empty($health['mailError'])): ?>
     <div class="container mt-5">

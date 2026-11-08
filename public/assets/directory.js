@@ -583,37 +583,20 @@
     }
   });
 
-  // ---------------------------------------------------------- admin More menu
-  // A <details>, so it opens without this. This only closes it the way a menu
-  // should: a click anywhere else, or Escape (focus returns to its button).
-  var adminMore = document.querySelector('[data-admin-more]');
-  if (adminMore) {
-    document.addEventListener('click', function (e) {
-      if (adminMore.open && !adminMore.contains(e.target)) adminMore.open = false;
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && adminMore.open) {
-        adminMore.open = false;
-        adminMore.querySelector('summary').focus();
-      }
-    });
-    // Keep the current tab in view when the strip scrolls on a phone.
-    var activeTab = document.querySelector('.admin-tab.is-active[aria-current]');
-    if (activeTab && activeTab.scrollIntoView) activeTab.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }
-
   // ------------------------------------------------------------ copy buttons
   // <button data-copy="text"> copies its text and says so for a moment. Used
-  // by the partner dashboard for the partner's link.
-  document.querySelectorAll('[data-copy]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      if (!navigator.clipboard) return;
-      navigator.clipboard.writeText(btn.getAttribute('data-copy')).then(function () {
-        var label = btn.textContent;
-        btn.textContent = 'Copied';
-        setTimeout(function () { btn.textContent = label; }, 1500);
-      });
-    });
+  // by the partner dashboard for the partner's link and by admin's preview
+  // link. Delegated: admin pages arrive by the shell's page swaps
+  // (resources/shell/spa.js), after this file has run.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-copy]') : null;
+    if (!btn || !navigator.clipboard || btn.hasAttribute('data-copying')) return;
+    btn.setAttribute('data-copying', '');
+    navigator.clipboard.writeText(btn.getAttribute('data-copy')).then(function () {
+      var label = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = label; btn.removeAttribute('data-copying'); }, 1500);
+    }, function () { btn.removeAttribute('data-copying'); });
   });
 
   // ------------------------------------------------------------ image uploads
@@ -5521,19 +5504,21 @@
 
   // System handbook (admin/handbook.php): print every chapter in full. A
   // closed <details> prints its summary only, so open them all first and put
-  // them back after.
+  // them back after. Looked up when printing, not at load: the handbook may
+  // arrive by the admin shell's page swap (resources/shell/spa.js).
   (function () {
-    var book = document.querySelector('.handbook');
-    if (!book) return;
-    document.documentElement.classList.add('handbook-print');
     var opened = [];
     window.addEventListener('beforeprint', function () {
+      var book = document.querySelector('.handbook');
+      if (!book) return;
+      document.documentElement.classList.add('handbook-print');
       opened = Array.prototype.filter.call(book.querySelectorAll('details:not([open])'), function (d) {
         d.open = true;
         return true;
       });
     });
     window.addEventListener('afterprint', function () {
+      document.documentElement.classList.remove('handbook-print');
       opened.forEach(function (d) { d.open = false; });
       opened = [];
     });

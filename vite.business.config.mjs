@@ -1,14 +1,16 @@
 /**
- * Vite build for the /business dashboard script only (online bookings,
- * docs/bookings/). Public pages keep public/assets/directory.js and the
- * Tailwind CLI; nothing here touches them.
+ * Vite build for the signed in app shell's scripts: /business (online
+ * bookings, docs/bookings/) and the /admin shell. Public pages keep
+ * public/assets/directory.js and the Tailwind CLI; nothing here touches them.
  *
- * Input:  resources/business/main.js
- * Output: public/assets/business/business.js   (npm run biz:build)
+ * Inputs:  resources/business/main.js  → public/assets/business/business.js
+ *          resources/shell/admin.js    → public/assets/business/shell.js
+ *          (npm run biz:build)
  *
- * Fixed file names, no hashes: layouts/business.php busts caches with
- * ?v=<filemtime>, like directory.css. One ES module, loaded with
- * type="module" from a file, so the strict CSP needs nothing new.
+ * Fixed file names, no hashes: the layouts bust caches with ?v=<filemtime>,
+ * like directory.css. The two entries share resources/shell/, which Rollup
+ * puts in a shared chunk. ES modules loaded with type="module" from files, so
+ * the strict CSP needs nothing new.
  */
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
@@ -25,10 +27,14 @@ export default defineConfig({
     target: 'es2020',
     sourcemap: false,
     rollupOptions: {
-      input: 'resources/business/main.js',
+      input: {
+        business: 'resources/business/main.js',
+        shell: 'resources/shell/admin.js',
+      },
       output: {
-        entryFileNames: 'business.js',
-        chunkFileNames: '[name].js',
+        entryFileNames: '[name].js',
+        // Hashed: the entries import it without a ?v= stamp.
+        chunkFileNames: '[name]-[hash].js',
         assetFileNames: '[name][extname]',
       },
     },

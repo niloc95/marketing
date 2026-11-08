@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Partner payouts | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -12,7 +11,6 @@
  * @var App\Services\PartnerService  $svc
  */
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

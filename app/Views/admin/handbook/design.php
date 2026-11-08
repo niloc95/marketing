@@ -9,15 +9,17 @@
 <div class="prose-legal">
     <h3>One layout, one stylesheet, one script</h3>
     <ul>
-        <li><strong>Layout:</strong> <code>app/Views/layouts/public.php</code> for every Local page (header, footer, analytics, consent);
-            <code>layouts/business.php</code> for <code>/business</code>.</li>
+        <li><strong>Layout:</strong> <code>app/Views/layouts/public.php</code> for every public Local page (header, footer, analytics, consent);
+            the app shell <code>layouts/_shell.php</code> (sidebar, top bar, <code>#spa-content</code>) for <code>/admin</code>
+            (<code>layouts/admin.php</code>) and <code>/business</code> (<code>layouts/business.php</code>), with page swaps instead of reloads.</li>
         <li><strong>Stylesheet:</strong> <code>resources/directory.css</code> → Tailwind 3 (<code>tailwind.directory.cjs</code>) →
             <code>public/assets/directory.css</code>, linked with <code>?v=&lt;filemtime&gt;</code>. Components are named classes in
             <code>@layer components</code> (<code>.btn</code>, <code>.panel</code>, <code>.table</code>, <code>.faq-item</code>,
             <code>.chip</code>, <code>.prose-legal</code>, <code>.cal-*</code> for the calendar).</li>
         <li><strong>Script:</strong> <code>public/assets/directory.js</code>, every client behaviour in one file (typeahead, address lookup,
             maps, form steps, repeaters, photo band, lightbox, consent, beacons). Bookings has its own Vite bundle,
-            <code>resources/business/*.js</code> → <code>public/assets/business/business.js</code>.</li>
+            <code>resources/business/*.js</code> → <code>public/assets/business/business.js</code>; the app shell's page swaps
+            (<code>resources/shell/</code>) are in it and, for admin, in <code>public/assets/business/shell.js</code>.</li>
         <li><strong>Icons:</strong> Lucide, vendored as SVG in <code>resources/icons/</code>, drawn by <code>lucide()</code>.</li>
         <li><strong>Charts:</strong> inline SVG partials (<code>_bar_chart.php</code>, <code>_stacked_bar_chart.php</code>, <code>_meter_rows.php</code>), no chart library.</li>
     </ul>

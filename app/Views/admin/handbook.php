@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'System handbook | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -27,7 +26,6 @@
  */
 $data = compact('tables', 'siteCounts', 'breakdowns', 'migrations', 'routes', 'stack', 'schedule', 'tokens', 'ids');
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container handbook">

@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Online bookings | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -25,7 +24,6 @@ $planText = static fn (array $p): string => match ($p['state']) {
     default       => 'No plan',
 };
 ?>
-<?= view('admin/_bar') ?>
 <section class="section">
     <div class="container">
         <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Online bookings</h1>

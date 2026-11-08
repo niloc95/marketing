@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => ($role === null ? 'New role' : 'Edit role') . ' | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -26,7 +25,6 @@ $v      = static fn (string $f) => (string) ($values[$f] ?? '');
 $err    = static fn (string $f) => isset($errors[$f]) ? '<div class="err">' . esc($errors[$f]) . '</div>' : '';
 $action = base_url($role === null ? 'admin/careers/new' : 'admin/careers/' . $role['id']);
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

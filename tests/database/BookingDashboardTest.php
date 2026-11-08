@@ -308,7 +308,7 @@ final class BookingDashboardTest extends CIUnitTestCase
         $r = $this->signedIn()->get('business/api/dashboard/today');
         $r->assertOK();
         $r->assertSee('No appointments today.');
-        $this->assertStringNotContainsString('aria-label="Business"', $r->getBody(), 'Only the partial, not the layout');
+        $this->assertStringNotContainsString('data-shell-nav', $r->getBody(), 'Only the partial, not the layout');
 
         foreach (['overview', 'services', 'team', 'customers'] as $tab) {
             $r = $this->signedIn()->get('business/analytics?tab=' . $tab . '&period=90d');

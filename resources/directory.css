@@ -98,6 +98,11 @@
      shape marketing-site/src/styles.css uses. */
   .dark body { @apply bg-surface-page text-slate-100; }
   ::selection { @apply bg-brand-orange/20; }
+  /* The honeypot's container (Config\Honeypot). CI4 also injects a nonced
+     <style> for it into <head>, but only into the page that loaded first:
+     a form swapped in by the app shell (resources/shell/spa.js) relies on
+     this rule. */
+  #hpc { display: none; }
   a { @apply no-underline; }
 }
 
@@ -366,40 +371,6 @@
   .dark .site-footer-legal button { @apply text-slate-400 hover:text-white; }
 
   /* Already ocean-on-white — only its seam against the page needs darkening. */
-  /* Admin bar (admin/_bar.php): queue tabs that scroll sideways on a phone,
-     and a More menu that does not. More's panel hangs below the bar, so the
-     bar itself must not clip: only the tab strip scrolls. */
-  .admin-bar       { @apply relative z-30 border-b border-slate-200 bg-primary-500 text-sm text-white; }
-  .dark .admin-bar { @apply border-slate-800; }
-  .admin-bar-inner { @apply flex items-center gap-2 py-2 sm:gap-3; }
-  .admin-bar-brand { @apply shrink-0 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white hover:bg-white/20; }
-  .admin-bar-scroll { @apply relative min-w-0 flex-1 overflow-x-auto; scrollbar-width: none; }  /* relative: clips the sr-only text in a count, which is absolutely positioned */
-  .admin-bar-scroll::-webkit-scrollbar { display: none; }
-  /* Below md the tabs can run off either edge; a soft fade says "there is more". */
-  @media (max-width: 767px) {
-    .admin-bar-scroll { -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
-    .admin-tabs { @apply px-4; }
-  }
-  .admin-tabs      { @apply flex w-max min-w-full items-center gap-1 whitespace-nowrap; }
-  .admin-tab       { @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white; }
-  .admin-tab.is-active { @apply bg-white text-primary-600 hover:bg-white hover:text-primary-600; }
-  .admin-count     { @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
-
-  .admin-more      { @apply relative shrink-0; }
-  .admin-more > summary { list-style: none; }
-  .admin-more > summary::-webkit-details-marker { display: none; }
-  .admin-more-chevron { @apply transition-transform; }
-  .admin-more[open] .admin-more-chevron { @apply rotate-180; }
-  .admin-more-panel { @apply absolute right-0 top-full z-50 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 text-slate-700 shadow-xl; }
-  .dark .admin-more-panel { @apply border-slate-700 bg-slate-900 text-slate-200; }
-  .admin-more-heading { @apply px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400; }
-  .admin-more-link { @apply block w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900; }
-  .dark .admin-more-link { @apply text-slate-200 hover:bg-slate-800 hover:text-white; }
-  .admin-more-link.is-active { @apply bg-primary-50 font-semibold text-primary-600; }
-  .dark .admin-more-link.is-active { @apply bg-white/10 text-white; }
-  /* Sign out is a POST (see Routes.php), so it is a button dressed as a link. */
-  .admin-more-signout { @apply mt-1 border-t border-slate-200 pt-1; }
-  .dark .admin-more-signout { @apply border-slate-700; }
 
   /* ------------------------------------------------------ corner standard */
   /* The floor for every form control on the site, wherever it sits: one-line
@@ -4360,13 +4331,110 @@
   .biz-state.is-time_off { @apply bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300; }
 }
 
+/* ------------------------------------------------------------ app shell
+   The signed in shell for /admin and /business (layouts/_shell.php,
+   layouts/_sidebar.php, resources/shell/), ported from WebScheduler Bookings'
+   _app-layout.scss and _unified-sidebar.scss in Local's tokens.
+
+   Phone: the sidebar is a drawer behind the Menu button. Tablet (md): a rail
+   of icons that opens to full width over the page. Desktop (lg): a panel
+   inset from the window's edges, always open. The page scrolls the window;
+   the top bar is sticky. */
+@layer components {
+  body.shell { @apply block bg-slate-50 text-slate-800; }
+  .dark body.shell { @apply bg-surface-page text-slate-100; }
+  html:has(> body.shell) { @apply scroll-pt-20; }
+  html.shell-locked { @apply overflow-hidden; }
+
+  .shell-skip { @apply sr-only; }
+  .shell-skip:focus { @apply not-sr-only fixed left-4 top-4 z-50 rounded-lg bg-white px-4 py-2 font-semibold text-brand-ocean shadow-lg; }
+
+  .shell-sidebar { @apply fixed bottom-0 left-0 top-0 z-40 flex w-72 max-w-[85vw] -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200; }
+  .dark .shell-sidebar { @apply border-slate-800 bg-surface-tone; }
+  .shell-sidebar.is-open { @apply translate-x-0 shadow-2xl; }
+  .shell-overlay { @apply fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm; }
+
+  .shell-brand { @apply flex h-16 shrink-0 items-center gap-2 px-4; }
+  .shell-brand-link { @apply flex min-w-0 flex-1 items-center gap-2.5 leading-tight text-slate-900; }
+  .dark .shell-brand-link { @apply text-white; }
+  /* Two classes deep: .shell-icon-btn, later in the file, would show it. */
+  .shell-brand .shell-close { @apply hidden; }
+  .shell-sidebar.is-open .shell-close { @apply grid; }
+  .shell-context { @apply mx-3 mb-1 block truncate rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200; }
+  .dark .shell-context { @apply bg-white/5 text-slate-200 hover:bg-white/10; }
+
+  .shell-nav { @apply min-h-0 flex-1 overflow-y-auto px-3 py-2; }
+  .shell-group { @apply px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400; }
+  .dark .shell-group { @apply text-slate-500; }
+  .shell-list { @apply space-y-0.5; }
+  .shell-link { @apply flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900; }
+  .dark .shell-link { @apply text-slate-300 hover:bg-white/5 hover:text-white; }
+  .shell-link.is-active { @apply bg-brand-ocean text-white shadow-brand hover:bg-brand-ocean hover:text-white; }
+  .dark .shell-link.is-active { @apply bg-primary-600 text-white; }
+  .shell-link-icon { @apply shrink-0; }
+  .shell-count { @apply ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
+  .shell-foot { @apply shrink-0 space-y-0.5 border-t border-slate-200 px-3 py-3; }
+  .dark .shell-foot { @apply border-slate-800; }
+
+  .shell-topbar { @apply sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-slate-200/70 bg-slate-50/85 px-4 backdrop-blur; }
+  .dark .shell-topbar { @apply border-slate-800 bg-surface-page/85; }
+  .shell-title { @apply min-w-0 truncate text-base font-semibold text-slate-900; }
+  .dark .shell-title { @apply text-white; }
+  .shell-icon-btn { @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-slate-500 hover:bg-slate-200/60 hover:text-slate-900; }
+  .dark .shell-icon-btn { @apply text-slate-400 hover:bg-white/10 hover:text-white; }
+
+  /* Loading: a bar under the top bar, and the old page dims only if the next
+     one takes a moment, so a quick swap does not flicker. */
+  .shell-progress { @apply pointer-events-none absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-0 bg-brand-orange opacity-0; }
+  .shell-loading .shell-progress { @apply opacity-100; animation: shell-progress 8s cubic-bezier(.1, .7, .2, 1) forwards; }
+  .shell-content { @apply min-w-0 outline-none transition-opacity duration-150; }
+  .shell-loading .shell-content { @apply opacity-60 delay-200; }
+
+  body[data-shell-bare] [data-shell-menu] { @apply hidden; }
+}
+
+@keyframes shell-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(.92); }
+}
+
+/* Tablet: the rail. Only icons until opened; opening widens it over the page. */
+@media (min-width: 768px) {
+  .shell-sidebar { @apply w-16 max-w-none translate-x-0; }
+  .shell-sidebar.is-open { @apply w-72; }
+  .shell-main { @apply pl-16; }
+  .shell-topbar { @apply px-6; }
+}
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .shell-sidebar:not(.is-open) :is(.shell-text, .shell-group, .shell-count, .shell-context) { display: none; }
+  .shell-sidebar:not(.is-open) .shell-brand { @apply justify-center px-0; }
+  .shell-sidebar:not(.is-open) .shell-brand-link { @apply flex-none; }
+  .shell-sidebar:not(.is-open) .shell-nav,
+  .shell-sidebar:not(.is-open) .shell-foot { @apply px-2; }
+  .shell-sidebar:not(.is-open) .shell-link { @apply justify-center px-0; }
+}
+
+/* Desktop: always open, inset from the window's edges. */
+@media (min-width: 1024px) {
+  .shell-sidebar,
+  .shell-sidebar.is-open { @apply bottom-4 left-4 top-4 w-64 rounded-surface border shadow-brand; }
+  .shell-main { @apply pl-[18rem]; }
+  .shell-overlay { display: none; }
+}
+
+body[data-shell-bare] .shell-main { padding-left: 0; }
+
+@media print {
+  .shell-sidebar, .shell-topbar, .shell-overlay, .shell-skip { display: none !important; }
+  .shell-main { padding-left: 0 !important; }
+}
+
 /* The system handbook prints as a document: no site chrome, no contents box,
    every chapter on paper. directory.js opens each table's <details> before
    printing, since a closed one prints its summary only. */
 @media print {
   .handbook-print .site-header,
   .handbook-print .site-footer,
-  .handbook-print .admin-bar,
   .handbook-print .handbook-toc { display: none !important; }
   .handbook-print .tablewrap { overflow: visible; box-shadow: none; }
   .handbook-chapter { break-inside: auto; }
