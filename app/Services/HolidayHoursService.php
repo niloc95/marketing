@@ -165,7 +165,7 @@ class HolidayHoursService
                 'msg' => trim((string) preg_replace('/\s+/', ' ', $e->getMessage())),
             ]);
 
-            return listing_site_url($id, 'manage');
+            return listing_site_url($id, 'business/profile/where');
         }
     }
 }

@@ -132,7 +132,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
     <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Your name, address and opening hours come from your business profile.</p>
     <p class="mt-3 flex flex-wrap gap-2">
         <a class="btn btn-ghost btn-xs" href="<?= esc(listing_url($listing), 'attr') ?>">View profile</a>
-        <a class="btn btn-ghost btn-xs" href="<?= base_url('manage') ?>">Edit profile</a>
+        <a class="btn btn-ghost btn-xs" href="<?= base_url('business/profile/details') ?>">Edit profile</a>
     </p>
 </div>
 <?= $this->endSection() ?>

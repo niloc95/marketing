@@ -426,7 +426,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
 
         $this->withSession(\Tests\Support\OwnerSession::for($other))
             ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()])
-            ->assertRedirectTo(base_url('manage/edit'));
+            ->assertRedirectTo(base_url('business/badge'));
 
         $this->assertSame([], $this->paystack->callsOf('initialize'));
         $this->assertSame('vb-theirs', $this->verifications->find((int) $row['id'])['pf_m_payment_id']);

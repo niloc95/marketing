@@ -617,7 +617,7 @@ class ReviewService
                 'You can reply publicly from your dashboard. A short, polite reply helps the next customer more than the review alone, whatever the rating.',
             ],
             'button'     => ['See it on your profile', listing_site_url($listing, 'directory/' . $listing['slug']) . '#reviews'],
-            'footnote'   => 'To reply, sign in to your dashboard: request a link at ' . listing_site_url($listing, 'manage') . '. If you believe the review breaks our terms, report it from the dashboard and we will look at it.',
+            'footnote'   => 'To reply, sign in to your business: ' . listing_site_url($listing, 'business/reviews') . '. If you believe the review breaks our terms, report it from the dashboard and we will look at it.',
         ]);
     }
 

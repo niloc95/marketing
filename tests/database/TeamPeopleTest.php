@@ -202,9 +202,8 @@ final class TeamPeopleTest extends CIUnitTestCase
         $person->assertSee('Qualifications');
         $this->assertStringContainsString('enctype="multipart/form-data"', $person->getBody());
 
-        $edit = $this->withSession(\Tests\Support\OwnerSession::for($id))->get('manage/edit')->getBody();
-        $this->assertStringContainsString('team[0][takes_bookings]', $edit);
-        $this->assertStringContainsString('Show on my profile', $edit);
+        // One Team page: while bookings are on, the profile's Team is the page above.
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/team')->assertRedirectTo(base_url('business/team'));
     }
 
     // Fixtures

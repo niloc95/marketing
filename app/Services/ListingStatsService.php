@@ -177,7 +177,7 @@ class ListingStatsService
     }
 
     /**
-     * Everything the owner's stats panel shows, for /manage/edit and the
+     * Everything the owner's stats panel shows, for /business/stats and the
      * admin's view of a profile.
      *
      * Every owner gets the last 30 days against the 30 before, and the tips.

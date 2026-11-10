@@ -145,27 +145,19 @@ $routes->get('description/prompt', 'DescriptionHelper::prompt');
 $routes->get('manage', 'Manage::index');
 $routes->post('manage', 'Manage::request');
 $routes->get('manage/edit', 'Manage::edit');
-$routes->post('manage/edit', 'Manage::update');
+$routes->post('manage/edit', static fn () => redirect()->to(base_url('business/profile/details'), 307));
 // The edit form's "Preview changes" button: renders, never saves.
-$routes->post('manage/preview', 'Manage::preview');
+$routes->post('manage/preview', static fn () => redirect()->to(base_url('business/profile/details/preview'), 307));
 $routes->get('manage/signout', 'Manage::signout');
-$routes->post('manage/photo-delete/(:num)', 'Manage::deletePhoto/$1');
-$routes->post('manage/brand-delete/(:num)', 'Manage::deleteBrand/$1');
-// A listed business posting to the Jobs board. Handled by Jobs, which owns
-// the board, but under manage/ because the manage session is the credential.
-$routes->get('manage/jobs/new', 'Jobs::ownerCreate');
-$routes->post('manage/jobs', 'Jobs::ownerStore');
-$routes->post('manage/jobs/alerts', 'Jobs::ownerAlerts');
-$routes->get('manage/jobs/(:num)/edit', 'Jobs::ownerEdit/$1');
-$routes->post('manage/jobs/(:num)/edit', 'Jobs::ownerUpdate/$1');
-$routes->post('manage/jobs/(:num)/close', 'Jobs::ownerClose/$1');
-$routes->post('manage/jobs/(:num)/renew', 'Jobs::ownerRenew/$1');
-// The owner's switch for new reviews, their public reply to a review, and
-// their report of one. Handled by
-// Reviews; under manage/ because the manage session is the credential.
-$routes->post('manage/reviews/switch', 'Reviews::ownerToggle');
-$routes->post('manage/reviews/(:num)/reply', 'Reviews::ownerReply/$1');
-$routes->post('manage/reviews/(:num)/report', 'Reviews::ownerReport/$1');
+$routes->post('manage/photo-delete/(:num)', static fn (string $id) => redirect()->to(base_url('business/profile/photo-delete/' . $id), 307));
+$routes->post('manage/brand-delete/(:num)', static fn (string $id) => redirect()->to(base_url('business/profile/brand-delete/' . $id), 307));
+// The owner's jobs and reviews moved into the business area (10 Nov 2026,
+// group below); old GETs follow, and a form still open on the old path
+// keeps its POST (307).
+$routes->get('manage/jobs/(:any)', static fn (string ...$rest) => redirect()->to(base_url('business/jobs/' . implode('/', $rest)) . (($q = service('request')->getUri()->getQuery()) !== '' ? '?' . $q : ''), 301));
+$routes->post('manage/jobs', static fn () => redirect()->to(base_url('business/jobs'), 307));
+$routes->post('manage/jobs/(:any)', static fn (string ...$rest) => redirect()->to(base_url('business/jobs/' . implode('/', $rest)), 307));
+$routes->post('manage/reviews/(:any)', static fn (string ...$rest) => redirect()->to(base_url('business/reviews/' . implode('/', $rest)), 307));
 // Online bookings are turned on in the business area now (10 Nov 2026).
 $routes->get('manage/bookings', static fn () => redirect()->to(base_url('business/calendar'), 301));
 $routes->get('manage/bookings/open', static fn () => redirect()->to(base_url('business'), 301));
@@ -334,6 +326,35 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
     $routes->get('notifications/sent', 'Business\Notifications::sent');
     $routes->get('notifications/sent.csv', 'Business\Notifications::export');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
+});
+// The rest of the old /manage/edit dashboard (Business\Owner), and the jobs
+// and reviews actions (Jobs and Reviews, which own those tables).
+$routes->get('business/badge', 'Business\Owner::badge', ['filter' => ['businessauth:owner', 'businesscan:profile.billing']]);
+$routes->get('business/stats', 'Business\Owner::stats', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']]);
+$routes->group('business/jobs', ['filter' => ['businessauth:owner', 'businesscan:jobs.manage']], static function ($routes) {
+    $routes->get('/', 'Business\Owner::jobs');
+    $routes->get('new', 'Jobs::ownerCreate');
+    $routes->post('/', 'Jobs::ownerStore');
+    $routes->post('alerts', 'Jobs::ownerAlerts');
+    $routes->get('(:num)/edit', 'Jobs::ownerEdit/$1');
+    $routes->post('(:num)/edit', 'Jobs::ownerUpdate/$1');
+    $routes->post('(:num)/close', 'Jobs::ownerClose/$1');
+    $routes->post('(:num)/renew', 'Jobs::ownerRenew/$1');
+});
+$routes->group('business/reviews', ['filter' => ['businessauth:owner', 'businesscan:reviews.reply']], static function ($routes) {
+    $routes->get('/', 'Business\Owner::reviews');
+    $routes->post('switch', 'Reviews::ownerToggle');
+    $routes->post('(:num)/reply', 'Reviews::ownerReply/$1');
+    $routes->post('(:num)/report', 'Reviews::ownerReport/$1');
+});
+// The business profile, one page per part (Business\Profile, Config\ProfileSections).
+$routes->group('business/profile', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']], static function ($routes) {
+    $routes->get('/', static fn () => redirect()->to(base_url('business/profile/details')));
+    $routes->post('photo-delete/(:num)', 'Business\Profile::deletePhoto/$1');
+    $routes->post('brand-delete/(:num)', 'Business\Profile::deleteBrand/$1');
+    $routes->get('(:segment)', 'Business\Profile::section/$1');
+    $routes->post('(:segment)/preview', 'Business\Profile::preview/$1');
+    $routes->post('(:segment)', 'Business\Profile::save/$1');
 });
 $routes->post('business/bookings/turn-on', 'Business\Bookings::turnOn', ['filter' => ['businessauth:owner', 'businesscan:profile.billing']]);
 $routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);

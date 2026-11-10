@@ -7,7 +7,7 @@ use App\Services\ReviewService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 /**
- * Customer reviews: /reviews/* for visitors, /manage/reviews/* for the
+ * Customer reviews: /reviews/* for visitors, /business/reviews/* for the
  * signed-in owner. Top-level rather than under /directory so the routes
  * never meet the directory/{segment} catch-all.
  *
@@ -136,13 +136,13 @@ class Reviews extends BaseController
         if ($listing === null) {
             return $ajax
                 ? $this->switchJson(false, 'Your session has ended. Please request a new link to manage your profile.', 401)
-                : redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
+                : redirect()->to(base_url('business/sign-in'))->with('error', 'Please sign in to your business first.');
         }
 
         // The marker is what lets an unticked box mean "off": an unticked
         // checkbox posts nothing at all.
         if ($this->request->getPost('reviews_present') === null) {
-            return $ajax ? $this->switchJson(false, 'Nothing was changed.', 400) : redirect()->to(base_url('manage/edit') . '#reviews');
+            return $ajax ? $this->switchJson(false, 'Nothing was changed.', 400) : redirect()->to(base_url('business/reviews'));
         }
 
         $on = $this->request->getPost('reviews_enabled') === '1';
@@ -151,14 +151,14 @@ class Reviews extends BaseController
 
         return $ajax
             ? $this->switchJson(true, $message, 200, $on)
-            : redirect()->to(base_url('manage/edit') . '#reviews')->with('success', $message);
+            : redirect()->to(base_url('business/reviews'))->with('success', $message);
     }
 
     public function ownerReply(int $id)
     {
         $listing = $this->ownerListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
+            return redirect()->to(base_url('business/sign-in'))->with('error', 'Please sign in to your business first.');
         }
 
         $outcome  = (new ReviewService())->reply($listing, $id, (string) $this->request->getPost('reply'));
@@ -170,25 +170,25 @@ class Reviews extends BaseController
         ];
         [$level, $text] = $messages[$outcome];
 
-        return redirect()->to(base_url('manage/edit') . '#reviews')->with($level, $text);
+        return redirect()->to(base_url('business/reviews'))->with($level, $text);
     }
 
     public function ownerReport(int $id)
     {
         $listing = $this->ownerListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
+            return redirect()->to(base_url('business/sign-in'))->with('error', 'Please sign in to your business first.');
         }
 
         $reason = trim((string) $this->request->getPost('reason'));
         if ($reason === '') {
-            return redirect()->to(base_url('manage/edit') . '#reviews')
+            return redirect()->to(base_url('business/reviews'))
                 ->with('error', 'Please tell us which of our terms the review breaks.');
         }
 
         $ok = (new ReviewService())->report($id, '', $reason, (int) $listing['id']);
 
-        return redirect()->to(base_url('manage/edit') . '#reviews')->with(
+        return redirect()->to(base_url('business/reviews'))->with(
             $ok ? 'success' : 'error',
             $ok ? 'Thanks. We will read the review against our terms and let you know if we take it down.' : 'That review is not on your profile.'
         );

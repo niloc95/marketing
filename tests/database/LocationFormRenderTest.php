@@ -235,6 +235,8 @@ final class LocationFormRenderTest extends CIUnitTestCase
         helper(['directory_hours', 'directory_ui', 'slug']);
 
         return view('directory/_form_fields', [
+            // The whole form: never one business area page (see business/profile.php).
+            'section' => null,
             'v'          => static fn (string $f, string $d = ''): string => $values[$f] ?? $d,
             'err'        => static fn (string $f): string => '',
             'categories' => [],

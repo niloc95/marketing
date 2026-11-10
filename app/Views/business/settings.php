@@ -34,7 +34,7 @@ $labels = [
                 <dt class="text-slate-500 dark:text-slate-400">Phone</dt><dd class="col-span-2"><?= esc((string) ($listing['phone'] ?? '')) ?></dd>
                 <dt class="text-slate-500 dark:text-slate-400">Time zone</dt><dd class="col-span-2"><?= esc(\App\Services\Bookings\BusinessLocale::timezoneName($listing)) ?></dd>
             </dl>
-            <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">To change these, or your opening hours, <a class="underline" href="<?= base_url('manage') ?>">edit your business profile</a>.</p>
+            <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">To change these, or your opening hours, <a class="underline" href="<?= base_url('business') ?>">edit your business profile</a>.</p>
         </div>
 
         <div class="panel">

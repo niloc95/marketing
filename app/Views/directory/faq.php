@@ -108,7 +108,7 @@ $groups = [
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',
-                'a' => 'Send us two documents (your company registration document and an ID document for the owner) either from the optional section on the <a href="' . base_url('add-profile') . '">business profile</a> form or, at any time afterwards, from <a href="' . base_url('manage') . '">manage your profile</a>. We review them, usually within two working days, and email you either way. <strong>You are only asked to pay after we have approved you.</strong> If we cannot verify your business, nothing is charged and you are told exactly why, so you can send better documents.',
+                'a' => 'Send us two documents (your company registration document and an ID document for the owner) either from the optional section on the <a href="' . base_url('add-profile') . '">business profile</a> form or, at any time afterwards, from <a href="' . base_url('business') . '">manage your profile</a>. We review them, usually within two working days, and email you either way. <strong>You are only asked to pay after we have approved you.</strong> If we cannot verify your business, nothing is charged and you are told exactly why, so you can send better documents.',
             ],
             [
                 'q' => 'What happens to my registration document and ID?',
@@ -116,7 +116,7 @@ $groups = [
             ],
             [
                 'q' => 'Can I cancel the badge?',
-                'a' => 'Any time, with one button on <a href="' . base_url('manage') . '">your dashboard</a>: no email, no waiting for us. The badge stays up for the month you have already paid for and then quietly comes down. Your business profile is completely unaffected: it stays published exactly as it is.',
+                'a' => 'Any time, with one button on <a href="' . base_url('business') . '">your dashboard</a>: no email, no waiting for us. The badge stays up for the month you have already paid for and then quietly comes down. Your business profile is completely unaffected: it stays published exactly as it is.',
             ],
             [
                 'q' => 'How do I add my business?',
@@ -128,7 +128,7 @@ $groups = [
             ],
             [
                 'q' => 'Can I add a logo and photos?',
-                'a' => 'Yes, one logo and up to ' . (int) $gallery . ' photographs of your work or premises. You can add or replace them at any time from <a href="' . base_url('manage') . '">manage your profile</a>.',
+                'a' => 'Yes, one logo and up to ' . (int) $gallery . ' photographs of your work or premises. You can add or replace them at any time from <a href="' . base_url('business') . '">manage your profile</a>.',
             ],
             [
                 'q' => 'What appears publicly on my profile?',
@@ -141,11 +141,11 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'How do I edit my profile? Do I need a password?',
-                'a' => 'No password. There is no account to create. Go to <a href="' . base_url('manage') . '">manage your profile</a>, enter the email address on your profile, and we email you a link that signs you in. The link works once and lasts an hour.',
+                'a' => 'No password needed. Go to <a href="' . base_url('business/sign-in') . '">sign in to your business</a>, enter the email address on your profile, and we email you a link that signs you in. The link works once and lasts a short time. You can set a password afterwards if you prefer one.',
             ],
             [
                 'q' => 'My edit link expired.',
-                'a' => 'Request another from <a href="' . base_url('manage') . '">manage your profile</a>. They are short lived on purpose: an old link in an inbox should not still open your profile months later.',
+                'a' => 'Request another from <a href="' . base_url('business/sign-in') . '">sign in to your business</a>. They are short lived on purpose: an old link in an inbox should not still open your profile months later.',
             ],
             [
                 'q' => 'Can I change the email address on my profile?',
@@ -172,7 +172,7 @@ $groups = [
             ],
             [
                 'q' => 'What emails will you send me?',
-                'a' => 'The ones your profile needs (verification, edit links and, if you buy the Verified Business badge, billing notices) plus a monthly report on your own profile: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('manage') . '">Manage your profile</a>, or use the unsubscribe link in any report. Doing so is free and changes nothing about your profile. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
+                'a' => 'The ones your profile needs (verification, edit links and, if you buy the Verified Business badge, billing notices) plus a monthly report on your own profile: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('business') . '">Manage your profile</a>, or use the unsubscribe link in any report. Doing so is free and changes nothing about your profile. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
             ],
             [
                 'q' => 'Is this the same thing as WebScheduler, the booking software?',

@@ -154,7 +154,7 @@ final class JobBoardFlowTest extends CIUnitTestCase
         ]);
         $session = \Tests\Support\OwnerSession::for((int) $listing['id']);
 
-        $form = (string) $this->withSession($session)->get('manage/jobs/new?kind=job')->response()->getBody();
+        $form = (string) $this->withSession($session)->get('business/jobs/new?kind=job')->response()->getBody();
         $this->assertMatchesRegularExpression('/name="at_listing_address" value="1" checked/', $form, 'ticked on a new post');
         $this->assertStringContainsString('34 Collins Road, Birnam Park, Johannesburg, Gauteng, 2196', $form);
 
@@ -180,7 +180,7 @@ final class JobBoardFlowTest extends CIUnitTestCase
             'address_line' => '34 Collins Road', 'customer_location' => 'travel', 'show_address' => 0,
         ]);
 
-        $form = (string) $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->get('manage/jobs/new?kind=job')->response()->getBody();
+        $form = (string) $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->get('business/jobs/new?kind=job')->response()->getBody();
         $this->assertStringNotContainsString('at_listing_address', $form);
     }
 
@@ -315,11 +315,11 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $id      = $this->svc->submitForListing($listing, $this->jobInput())['id'];
         $session = \Tests\Support\OwnerSession::for((int) $listing['id']);
 
-        $page = $this->withSession($session)->get('manage/jobs/' . $id . '/edit');
+        $page = $this->withSession($session)->get('business/jobs/' . $id . '/edit');
         $page->assertOK();
         $html = (string) $page->response()->getBody();
         $this->assertStringContainsString('value="Qualified&#x20;electrician"', $html, 'the form is filled from the post');
-        $this->assertStringContainsString('Edit</a>', (string) $this->withSession($session)->get('manage/edit')->response()->getBody());
+        $this->assertStringContainsString('Edit</a>', (string) $this->withSession($session)->get('business/jobs')->response()->getBody());
 
         $edit = $this->svc->updatePost($id, $this->jobInput(['title' => 'Senior electrician', 'company_name' => 'Somebody Else']), $listing);
         $this->assertTrue($edit['ok'], json_encode($edit['errors']));
@@ -333,7 +333,7 @@ final class JobBoardFlowTest extends CIUnitTestCase
 
         // Another business cannot open it.
         $other = $this->listing();
-        $this->withSession(\Tests\Support\OwnerSession::for((int) $other['id']))->get('manage/jobs/' . $id . '/edit')->assertRedirect();
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $other['id']))->get('business/jobs/' . $id . '/edit')->assertRedirect();
     }
 
     public function testConfirmingTheEmailOpensTheManagePage(): void
@@ -350,13 +350,13 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $listing = $this->listing();
         $this->svc->submitForListing($listing, $this->jobInput());
 
-        $page = $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->get('manage/edit');
+        $page = $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->get('business/jobs');
         $page->assertOK();
         $html = (string) $page->response()->getBody();
         $this->assertStringContainsString('Jobs &amp; services', $html);
         $this->assertStringContainsString('Qualified electrician', $html);
 
-        $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->get('manage/jobs/new?kind=service')->assertOK();
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->get('business/jobs/new?kind=service')->assertOK();
     }
 
     // ------------------------------------------------------ service replies
@@ -577,10 +577,10 @@ final class JobBoardFlowTest extends CIUnitTestCase
     {
         $id = (int) $this->listing()['id'];
 
-        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/jobs/alerts', ['alerts_present' => '1'] + $this->csrf())->assertRedirect();
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/jobs/alerts', ['alerts_present' => '1'] + $this->csrf())->assertRedirect();
         $this->assertSame(0, (int) (new DirectoryListingModel())->find($id)['job_alerts'], 'unticked means off');
 
-        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/jobs/alerts', ['alerts_present' => '1', 'job_alerts' => '1'] + $this->csrf());
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/jobs/alerts', ['alerts_present' => '1', 'job_alerts' => '1'] + $this->csrf());
         $this->assertSame(1, (int) (new DirectoryListingModel())->find($id)['job_alerts']);
     }
 

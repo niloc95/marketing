@@ -25,7 +25,7 @@ $siteName = config('Directory')->siteName();
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">This link isn't valid</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">
                     It may have been copied incompletely. You can change your email preferences any time from
-                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Manage your profile</a>.
+                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">Manage your profile</a>.
                 </p>
             <?php elseif ($done): ?>
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">You're unsubscribed</h1>
@@ -33,7 +33,7 @@ $siteName = config('Directory')->siteName();
                     We won't send monthly profile analytics to <?= esc($listing['display_name']) ?> any more.
                     Emails about the profile itself (edit links and any badge billing) still arrive.
                     Changed your mind? Opt back in from
-                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Manage your profile</a>.
+                    <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">Manage your profile</a>.
                 </p>
             <?php else: ?>
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Stop the monthly analytics email?</h1>

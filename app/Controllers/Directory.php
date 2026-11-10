@@ -1162,7 +1162,7 @@ class Directory extends BaseController
             if (! $verification->mayPublish($listing)) {
                 $verification->ensureInternationalSubscription((int) $listing['id']);
 
-                $to = $verification->canTakePayment() ? 'manage/verification/checkout' : 'manage/edit';
+                $to = $verification->canTakePayment() ? 'manage/verification/checkout' : 'business/badge';
 
                 return redirect()->to(base_url($to))
                     ->with('success', 'Your email is confirmed and you are signed in. '
@@ -1176,7 +1176,7 @@ class Directory extends BaseController
             if ($verification->plusAvailableFor($listing) && ! listing_subscription_active($listing)) {
                 $usd = $verification->plusPriceUsd();
 
-                return redirect()->to(base_url('manage/edit') . '#get-plus')
+                return redirect()->to(base_url('business/badge'))
                     ->with('success', 'Your business profile is live and you are signed in. Want more on show? '
                         . 'Plus adds your other locations, your team and job vacancies'
                         . ($usd !== null ? ' for ' . money($usd, 'USD') . ' a month' : '')
@@ -1192,13 +1192,13 @@ class Directory extends BaseController
             // Verified by an admin while the profile was being built: the
             // documents are approved, only the payment is left.
             if ($verification->isEnabled() && ($badge['verification']['state'] ?? '') === DirectoryVerificationModel::STATE_APPROVED) {
-                return redirect()->to(base_url('manage/edit') . '#get-verified')
+                return redirect()->to(base_url('business/badge'))
                     ->with('success', 'Your business profile is live and your documents are approved. '
                         . 'Activate your Verified Business badge below.');
             }
 
             if ($verification->isEnabled() && $badge === null) {
-                return redirect()->to(base_url('manage/edit') . '#get-verified')
+                return redirect()->to(base_url('business/badge'))
                     ->with('success', 'Your business profile is live. Next: Get Verified. '
                         . 'Send your company registration and the owner\'s ID below. There is nothing '
                         . 'to pay until we have checked them, and your business profile stays free either way.');

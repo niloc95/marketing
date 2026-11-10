@@ -2,7 +2,7 @@
 /**
  * The profile setup service, offered in one bold line where an owner fills
  * in their profile: the signup form (form.php) and the owner's edit page
- * (manage_edit.php). One copy so the price and wording cannot drift; the
+ * (business/profile.php). One copy so the price and wording cannot drift; the
  * price comes from the same service the /profile-setup page reads.
  */
 // The dollar price on local.webscheduler.app (ProfileSetupService::usdAmount()).

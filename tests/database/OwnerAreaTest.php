@@ -187,6 +187,101 @@ final class OwnerAreaTest extends CIUnitTestCase
         $this->assertStringContainsString('<span class="shell-text">Calendar</span>', $home);
     }
 
+    // 5. The profile in pages
+
+    public function testSavingOnePageLeavesTheOthersAsStored(): void
+    {
+        $id = $this->listing([
+            'trading_hours' => '{"mon":{"open":"08:00","close":"17:00"}}',
+            'latitude'      => '-26.1450000',
+            'longitude'     => '28.0410000',
+            'title'         => 'Ms',
+            'position'      => 'Owner',
+            'phone'         => '011 555 0100',
+            'address_line'  => '1 Jan Smuts Avenue',
+            'city'          => 'Johannesburg',
+            'province'      => 'Gauteng',
+            'logo_path'     => 'assets/listings/existing-logo.webp',
+        ]);
+        (new \App\Services\ServiceMenuService())->sync($id, $this->categoryId, ['services_present' => '1', 'services' => [['name' => 'Cut and blow', 'price_label' => 'R350']]]);
+        $team    = new \App\Models\DirectoryListingTeamModel();
+        $card    = (int) $team->insert(['listing_id' => $id, 'name' => 'Lerato Dube', 'slug' => 'lerato-dube'], true);
+        $before  = $this->listings->find($id);
+        $session = \Tests\Support\OwnerSession::for($id);
+
+        $this->withSession($session)->post('business/profile/details', [
+            csrf_token()     => csrf_hash(),
+            'display_name'   => 'Salon Lumi Rosebank',
+            'contact_person' => 'Thandi Mokoena',
+            'title'          => 'Ms',
+            'position'       => 'Owner',
+            'category_id'    => (string) $this->categoryId,
+            'description'    => '<p>A friendly hair salon in the heart of Rosebank, open six days a week.</p>',
+            // Not this page's: dropped.
+            'address_line'   => 'Somewhere else',
+            'team'           => [],
+        ])->assertRedirectTo(base_url('business/profile/details'));
+
+        $after = $this->listings->find($id);
+        $this->assertSame('Salon Lumi Rosebank', $after['display_name']);
+        foreach (['trading_hours', 'latitude', 'longitude', 'address_line', 'city', 'phone', 'logo_path'] as $column) {
+            $this->assertSame($before[$column], $after[$column], $column . ' changed on a Details save');
+        }
+        $this->assertSame(['Cut and blow'], array_column((new \App\Services\ServiceMenuService())->servicesFor($id), 'name'));
+        $this->assertNotNull($team->find($card), 'the team is not the Details page\'s');
+
+        $this->withSession($session)->post('business/profile/where', [
+            csrf_token()    => csrf_hash(),
+            'address_line'  => '1 Jan Smuts Avenue',
+            'city'          => 'Johannesburg',
+            'province'      => 'Gauteng',
+            'latitude'      => '-26.1450000',
+            'longitude'     => '28.0410000',
+            'hours'         => array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri'], ['open' => '09:00', 'close' => '17:00'])
+                + ['sat' => ['closed' => '1'], 'sun' => ['closed' => '1']],
+            'description'   => '<p>Overwritten</p>',
+        ])->assertRedirectTo(base_url('business/profile/where'));
+        $where = $this->listings->find($id);
+        $this->assertStringContainsString('09:00', (string) $where['trading_hours']);
+        $this->assertSame($after['description'], $where['description'], 'the description is not the Where page\'s');
+    }
+
+    public function testAFreeOwnersTeamAndBranchesAreLocked(): void
+    {
+        $id      = $this->listing(['verified_until' => null, 'hosting_paid_until' => null]);
+        $session = \Tests\Support\OwnerSession::for($id);
+
+        foreach (['team', 'branches'] as $section) {
+            $page = $this->withSession($session)->get('business/profile/' . $section);
+            $page->assertStatus(403);
+            $page->assertSee('Get the Verified Business badge');
+            $this->withSession($session)->post('business/profile/' . $section, [csrf_token() => csrf_hash(), 'team' => [['name' => 'Someone']]])->assertStatus(403);
+        }
+        $this->assertSame(0, (new \App\Models\DirectoryListingTeamModel())->where('listing_id', $id)->countAllResults());
+        $this->withSession($session)->get('business/profile/details')->assertOK();
+        $this->withSession($session)->get('business/badge')->assertOK();
+    }
+
+    public function testReceptionCannotOpenTheProfilePages(): void
+    {
+        $id   = $this->listing();
+        (new BookingSetupService())->turnOn($this->listings->find($id));
+        $desk = (new AccountService())->findOrCreate('desk@example.test', 'Desk');
+        BusinessMemberModel::forBusiness($id)->insert(['account_id' => $desk['id'], 'role' => 'staff', 'status' => 'active']);
+        $session = [BusinessSession::ACCOUNT => (int) $desk['id'], BusinessSession::LISTING => $id, BusinessSession::SEEN => time()];
+
+        foreach (['business/profile/details', 'business/badge', 'business/jobs', 'business/reviews'] as $path) {
+            $this->withSession($session)->get($path)->assertStatus(403);
+        }
+    }
+
+    public function testOldManageAddressesLeadIntoTheBusinessArea(): void
+    {
+        $this->get('manage')->assertRedirectTo(base_url('business/sign-in'));
+        $this->get('manage/edit')->assertRedirectTo(base_url('business'));
+        $this->assertSame(307, $this->post('manage/edit', [csrf_token() => csrf_hash()])->response()->getStatusCode());
+    }
+
     // Helpers
 
     /** @param array<string,mixed> $overrides */

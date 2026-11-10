@@ -56,7 +56,7 @@ if ($paid) {
         $faqs[] = [
             'q' => 'Can I pay yearly instead of monthly?',
             'a' => 'Yes. Pick yearly when you pay and it renews once a year. Already paying monthly? Choose "Switch to yearly" on '
-                . '<a href="' . esc(base_url('manage'), 'attr') . '">your dashboard</a>: the year starts after the time you have already paid for, '
+                . '<a href="' . esc(base_url('business'), 'attr') . '">your dashboard</a>: the year starts after the time you have already paid for, '
                 . 'and your monthly payments stop.',
         ];
     }

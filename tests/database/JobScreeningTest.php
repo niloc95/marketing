@@ -107,14 +107,14 @@ final class JobScreeningTest extends CIUnitTestCase
     {
         $listing = $this->listing();
         $html    = (string) $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))
-            ->get('manage/jobs/new?kind=job')->response()->getBody();
+            ->get('business/jobs/new?kind=job')->response()->getBody();
         $this->assertStringContainsString('name="screening_level"', $html);
 
         $html = (string) $this->get('jobs/post?kind=job')->response()->getBody();
         $this->assertStringNotContainsString('name="screening_level"', $html, 'the public form has no level');
 
         $html = (string) $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))
-            ->get('manage/jobs/new?kind=service')->response()->getBody();
+            ->get('business/jobs/new?kind=service')->response()->getBody();
         $this->assertStringNotContainsString('name="screening_level"', $html, 'a service request asks nothing');
     }
 

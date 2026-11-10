@@ -736,7 +736,7 @@ class JobBoardService
             $paragraphs[] = 'Keep this email. The link below lets you edit, close or renew the post at any time. Anyone with the link can do the same, so do not forward it.';
             $paragraphs[] = 'Manage your post: ' . $manageLink;
         } else {
-            $paragraphs[] = 'You can close or renew it from your profile dashboard: ' . listing_site_url((int) $post['listing_id'], 'manage');
+            $paragraphs[] = 'You can close or renew it in your business area: ' . listing_site_url((int) $post['listing_id'], 'business/jobs');
         }
 
         (new Mailer())->notice($this->contactEmail($post), 'Your post is live: ' . Input::line($post['title'], 120), [
@@ -1634,7 +1634,7 @@ class JobBoardService
             ]);
             $link = row_site_url($post, 'jobs/manage/' . $token);
         } else {
-            $link = listing_site_url((int) $post['listing_id'], 'manage');
+            $link = listing_site_url((int) $post['listing_id'], 'business/jobs');
         }
 
         (new Mailer())->notice($this->contactEmail($post), 'Your post closes soon: ' . Input::line($post['title'], 120), [

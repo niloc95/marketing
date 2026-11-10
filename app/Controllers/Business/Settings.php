@@ -10,7 +10,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
 
 /**
  * Business settings (docs/bookings/settings.md). Phase 1 has two tabs:
- * General (read from the profile, edited at /manage/edit) and Local time.
+ * General (read from the profile, edited at /business/profile) and Local time.
  * More tabs arrive with the phases that use them.
  */
 class Settings extends BaseController

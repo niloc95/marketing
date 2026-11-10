@@ -99,7 +99,7 @@ $archived   = $provider['archived_at'] !== null;
                     <dt class="font-semibold"><?= $label ?></dt><dd><?= esc($openingWeek[$day] ?? 'Closed') ?></dd>
                 <?php endforeach ?>
             </dl>
-            <p class="mb-4 text-sm"><a class="underline" href="<?= base_url('manage') ?>">Change your opening hours</a></p>
+            <p class="mb-4 text-sm"><a class="underline" href="<?= base_url('business/profile/where') ?>">Change your opening hours</a></p>
             <div class="flex flex-wrap gap-2">
                 <button type="submit" name="hours_mode" value="<?= ProviderWeek::OWN ?>" class="btn btn-primary">Set own hours</button>
             </div>

@@ -32,11 +32,12 @@ if ($listing !== null) {
     if ($owner) {
         $profile[] = ['business/profile/details', 'Details', 'file-text'];
         $profile[] = ['business/profile/where', 'Where and hours', 'map-pin'];
-        $profile[] = [$bookable ? 'business/services' : 'business/profile/services', 'Services', 'list'];
+        // Services and Team are the bookings pages while bookings write them.
+        $profile[] = [$bookable && App\Services\Bookings\CatalogueService::ownsProfileServices($listing) ? 'business/services' : 'business/profile/services', 'Services', 'list'];
         $profile[] = ['business/profile/photos', 'Photos and video', 'image'];
     }
     if ($owner || ($bookable && $context->can('providers.manage'))) {
-        $profile[] = ['business/team', 'Team', 'users', 0, '', ! $premium];
+        $profile[] = [$bookable ? 'business/team' : 'business/profile/team', 'Team', 'users', 0, '', ! $premium];
     }
     if ($owner) {
         $profile[] = ['business/profile/branches', 'Branches', 'building-2', 0, '', ! $premium];
@@ -92,7 +93,7 @@ if ($listing !== null) {
         ['heading' => null, 'items' => [['business', $bookable ? 'Dashboard' : 'Overview', 'layout-dashboard']]],
         ['heading' => 'Your profile', 'items' => $profile],
         ['heading' => 'Bookings', 'items' => $bookings],
-        ['heading' => null, 'items' => $more],
+        ['heading' => 'Plan', 'items' => $more],
     ];
 }
 $here   = trim(uri_string(), '/');
@@ -163,6 +164,23 @@ if ($context->hasAccount()) {
 } else {
     $attrs['data-shell-bare'] = '';
 }
+// The profile pages (business/profile) run the profile form's script,
+// directory.js, which reads where a map opens and where a pin may go, as in
+// layouts/admin.php.
+if (! empty($profileForm)) {
+    $countryViews = [];
+    $countryBoxes = [];
+    foreach (config('Countries')->profiles as $code => $profile) {
+        $name                = (string) config('Countries')->nameForCode($code);
+        $countryViews[$name] = $profile['mapView'];
+        $countryBoxes[$name] = $profile['bbox'];
+    }
+    $attrs += [
+        'data-site-map-view'  => (string) json_encode(site()->profile()['mapView']),
+        'data-country-views'  => (string) json_encode($countryViews, JSON_UNESCAPED_UNICODE),
+        'data-country-bboxes' => (string) json_encode($countryBoxes, JSON_UNESCAPED_UNICODE),
+    ];
+}
 foreach ($attrs as $name => $value) {
     echo ' ', $name, $value === '' ? '' : '="' . esc($value, 'attr') . '"';
 }
@@ -230,3 +248,13 @@ if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::req
     </div>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?php // The owner pages built from the public partials (profile form, jobs,
+      // reviews, badge) run their script, directory.js. In the scripts section,
+      // after the page's own (Leaflet, Quill), which also makes the shell load
+      // these pages whole instead of swapping them (data-spa-full). ?>
+<?php if (! empty($profileForm)): ?>
+<?= $this->section('scripts') ?>
+    <script defer src="<?= base_url('assets/directory.js') ?>?v=<?= @filemtime(FCPATH . 'assets/directory.js') ?: 0 ?>"></script>
+<?= $this->endSection() ?>
+<?php endif ?>

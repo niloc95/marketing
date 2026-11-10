@@ -45,6 +45,15 @@ class BusinessAuth implements FilterInterface
 
         $accountId = BusinessSession::accountId();
         if ($accountId <= 0) {
+            if ($request->isAJAX()) {
+                return $this->signedOutJson();
+            }
+            // A link into the area (an upgrade button, a job's email) opens
+            // that page once signed in.
+            if ($request->getMethod() === 'GET') {
+                BusinessSession::rememberReturn(uri_string());
+            }
+
             return redirect()->to(base_url('business/sign-in'));
         }
 
@@ -52,7 +61,7 @@ class BusinessAuth implements FilterInterface
         if (time() - $seen > $config->idleSeconds) {
             BusinessSession::signOut();
 
-            return redirect()->to(base_url('business/sign-in?expired=1'));
+            return $request->isAJAX() ? $this->signedOutJson() : redirect()->to(base_url('business/sign-in?expired=1'));
         }
 
         $account = (new AccountModel())->find($accountId);
@@ -119,6 +128,19 @@ class BusinessAuth implements FilterInterface
                 'feature' => 'bookings',
                 'reason'  => $reason,
             ], ['saveData' => false]));
+    }
+
+    /**
+     * A page's script (a photo delete, the reviews switch, the calendar) gets
+     * a 401 it can act on instead of the sign in page's HTML.
+     */
+    private function signedOutJson(): ResponseInterface
+    {
+        return service('response')->setStatusCode(401)->setJSON([
+            'ok'       => false,
+            'error'    => 'Your session has ended. Please sign in again.',
+            'redirect' => base_url('business/sign-in'),
+        ]);
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)

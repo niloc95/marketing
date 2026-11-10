@@ -67,7 +67,7 @@ final class ForgedTeamPhotoPathTest extends CIUnitTestCase
         $inside  = $this->probe('assets/listings/');
 
         foreach ([$outside, $inside] as $probe) {
-            $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/edit', [
+            $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/team', [
                 'display_name' => '', // fails validation, taking the discard branch
                 'category_id'  => $this->categoryId,
                 'team'         => [['name' => 'Decoy', 'photo_path' => $probe['rel']]],
@@ -82,7 +82,7 @@ final class ForgedTeamPhotoPathTest extends CIUnitTestCase
         $id    = $this->listing(['verified_until' => date('Y-m-d', strtotime('+1 year'))]);
         $probe = $this->probe('assets/listings/');
 
-        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/edit', $this->withRequiredSections([
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/team', $this->withRequiredSections([
             'display_name'   => 'Hands & Co Attorneys',
             'contact_person' => 'Jane Hands',
             'title'          => 'Ms',

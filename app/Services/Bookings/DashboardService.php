@@ -257,7 +257,7 @@ class DashboardService
             $out[] = [
                 'code' => 'holiday', 'level' => 'info',
                 'text' => $h['name'] . ' (' . date('D j M', (int) strtotime($h['date'])) . ') is a public holiday and your profile does not say if you are open, so customers cannot book online that day.',
-                'link' => 'manage', 'action' => 'Set holiday hours',
+                'link' => 'business/profile/where', 'action' => 'Set holiday hours',
             ];
         }
 

@@ -45,9 +45,10 @@ class Auth extends BaseController
 
         if ($outcome['result'] === AccountService::SIGNED_IN) {
             OwnerAccess::claimByEmail($outcome['account']);
+            $return = BusinessSession::returnPath();
             BusinessSession::signIn((int) $outcome['account']['id']);
 
-            return redirect()->to(base_url('business'));
+            return redirect()->to(base_url($return));
         }
 
         $message = match ($outcome['result']) {
@@ -103,9 +104,10 @@ class Auth extends BaseController
                 ->with('error', 'That sign in link has expired or was already used. Ask for a new one.');
         }
         OwnerAccess::claimByEmail($account);
+        $return = BusinessSession::returnPath();
         BusinessSession::signIn((int) $account['id']);
 
-        return redirect()->to(base_url('business'));
+        return redirect()->to(base_url($return));
     }
 
     public function signOut()

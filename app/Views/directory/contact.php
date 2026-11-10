@@ -30,7 +30,7 @@ $admin = config('Directory')->adminEmail();
             <div class="mb-6 rounded-surface bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
                 <p class="font-medium text-slate-700 dark:text-slate-200">Looking for one of these?</p>
                 <ul class="mt-2 space-y-1 text-slate-500 dark:text-slate-400">
-                    <li>Editing your own business details: <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>, no password needed.</li>
+                    <li>Editing your own business details: <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">manage your profile</a>, no password needed.</li>
                     <li>No profile yet: <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(signup_cta()['url']) ?>"><?= esc(lcfirst(signup_cta()['label'])) ?></a>.</li>
                     <li>Something else: the <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('faq') ?>">FAQ</a> may already answer it.</li>
                 </ul>

@@ -212,7 +212,7 @@ final class SignupModesTest extends CIUnitTestCase
     public function testConfirmingLandsOnTheBadgePanelOnlyWithoutAnApplication(): void
     {
         [$id, $token] = $this->pendingListing('first@example.test', 'first-co');
-        $this->get('directory/verify/' . $token)->assertRedirectTo(base_url('manage/edit') . '#get-verified');
+        $this->get('directory/verify/' . $token)->assertRedirectTo(base_url('business/badge'));
 
         [$id2, $token2] = $this->pendingListing('second@example.test', 'second-co');
         (new DirectoryVerificationModel())->insert([

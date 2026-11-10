@@ -12,7 +12,7 @@ use Tests\Support\FreshDatabase;
 use Tests\Support\WithEnv;
 
 /**
- * The owner's stats panel on /manage/edit (_stats_panel.php, data from
+ * The owner's stats panel on /business/stats (_stats_panel.php, data from
  * ListingStatsService::forOwner()): basic for every owner, full with the
  * badge or Plus, tips that only name empty parts of the profile.
  *
@@ -164,8 +164,7 @@ final class OwnerStatsTest extends CIUnitTestCase
 
         $html = $this->withHeaders(['Host' => 'local.webscheduler.app'])
             ->withSession(\Tests\Support\OwnerSession::for($this->abroad))
-            ->get('manage/edit')->getBody();
-
+            ->get('business/stats')->getBody();
         $panel = $this->panel($html);
         $this->assertNotSame('', $panel);
         $this->assertStringNotContainsString('Verified', $panel);
@@ -239,7 +238,7 @@ final class OwnerStatsTest extends CIUnitTestCase
 
     private function manage(int $listingId): string
     {
-        return (string) $this->withSession(\Tests\Support\OwnerSession::for($listingId))->get('manage/edit')->getBody();
+        return (string) $this->withSession(\Tests\Support\OwnerSession::for($listingId))->get('business/stats')->getBody();
     }
 
     /** @return array<string,mixed> */
@@ -252,6 +251,6 @@ final class OwnerStatsTest extends CIUnitTestCase
 
     private function panel(string $html): string
     {
-        return preg_match('#<div class="panel stats-panel".*?<div class="panel strength-panel"#s', $html, $m) === 1 ? $m[0] : '';
+        return preg_match('#<div class="panel stats-panel".*?</main>#s', $html, $m) === 1 ? $m[0] : '';
     }
 }

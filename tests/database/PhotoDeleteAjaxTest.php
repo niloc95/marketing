@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
 use CodeIgniter\Test\CIUnitTestCase;
@@ -49,13 +48,13 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
 
         $result = $this->ajax()
             ->withSession(\Tests\Support\OwnerSession::for($listing))
-            ->post('manage/photo-delete/' . $gone);
+            ->post('business/profile/photo-delete/' . $gone);
 
         $result->assertOK();
         $json = json_decode($result->getJSON(), true);
         $this->assertTrue($json['ok']);
         $this->assertSame(1, $json['remaining']);
-        $this->assertSame(Manage::GALLERY_MAX - 1, $json['slots']);
+        $this->assertSame(\App\Controllers\Listing::GALLERY_MAX - 1, $json['slots']);
         $this->assertNotEmpty($json['csrf']['name']);
         $this->assertNotEmpty($json['csrf']['hash']);
 
@@ -70,7 +69,7 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
 
         $result = $this->ajax()
             ->withSession(\Tests\Support\OwnerSession::for($mine))
-            ->post('manage/photo-delete/' . $theirs);
+            ->post('business/profile/photo-delete/' . $theirs);
 
         $result->assertStatus(404);
         $this->assertFalse(json_decode($result->getJSON(), true)['ok']);
@@ -81,7 +80,7 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
     {
         $photo = $this->photo($this->listing('mine'));
 
-        $result = $this->ajax()->post('manage/photo-delete/' . $photo);
+        $result = $this->ajax()->post('business/profile/photo-delete/' . $photo);
 
         $result->assertStatus(401);
         $this->assertNotNull($this->photos->find($photo));
@@ -94,9 +93,9 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
         $photo   = $this->photo($listing);
 
         $result = $this->withSession(\Tests\Support\OwnerSession::for($listing))
-            ->post('manage/photo-delete/' . $photo);
+            ->post('business/profile/photo-delete/' . $photo);
 
-        $result->assertRedirectTo(base_url('manage/edit'));
+        $result->assertRedirectTo(base_url('business/profile/photos'));
         $this->assertNull($this->photos->find($photo));
     }
 

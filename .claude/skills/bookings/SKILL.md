@@ -34,6 +34,12 @@ No decisions open (D10, D11, D13 became T25 to T27: English only, the feature is
 
 Update this table and the decisions file as phases land.
 
+**Owner area (10 Nov 2026, `feat/business-area`):** every path moved from `/bookings` to
+`/business` (old GETs 301, POSTs 307). `/business` is every owner's back office, Free
+included (listing-service skill, "Owner area"); bookings pages use the default
+`businessauth` level and show `business/locked` when bookings are not usable. Turning on
+is `POST business/bookings/turn-on` (`Business\Bookings`); `ManageBookings` is gone.
+
 ## Where things are
 
 - **Spec:** `docs/bookings/`. The README, `parity.md` (every feature: Port / Rebuild /

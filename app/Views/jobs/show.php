@@ -227,7 +227,7 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
                         Get verified from your dashboard and you can reply to work like this, and be among
                         the first we alert when new requests come in.
                     </p>
-                    <a class="btn btn-accent" href="<?= base_url('manage/edit') ?>#get-verified">Get verified to reply</a>
+                    <a class="btn btn-accent" href="<?= base_url('business/badge') ?>">Get verified to reply</a>
                 <?php elseif ($responder !== null && ($responder['status'] ?? '') === 'published'): ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
                         Replying as <strong><?= esc($responder['display_name']) ?></strong>. Your message, profile link, phone and email go to the customer,
@@ -247,7 +247,7 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
                     </p>
                     <div class="flex flex-wrap gap-2">
                         <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
-                        <a class="btn btn-ghost" href="<?= base_url('manage') ?>">I have a profile: sign in</a>
+                        <a class="btn btn-ghost" href="<?= base_url('business') ?>">I have a profile: sign in</a>
                     </div>
                 <?php endif; ?>
             </div>

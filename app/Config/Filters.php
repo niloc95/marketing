@@ -154,9 +154,10 @@ class Filters extends BaseFilters
             // preview for hours, past the two hour CSRF cookie, and a stale
             // form token cost them their note (29 Oct 2026).
             //
-            // manage/preview renders the owner's unsaved form and writes
-            // nothing; its POST would otherwise rotate the token under the
-            // edit tab. Manage::preview() refuses cross site requests itself.
+            // manage/preview and business/profile/*/preview render the owner's
+            // unsaved form and write nothing; their POST would otherwise
+            // rotate the token under the edit tab. Both refuse cross site
+            // requests themselves.
             //
             // discovery/opened is a navigator.sendBeacon from the results page,
             // which cannot carry the token. It writes one anonymous row, at most
@@ -188,7 +189,7 @@ class Filters extends BaseFilters
             // key on every request (App\Filters\BookingApi). A browser cannot
             // add that header across sites without CORS, which we never grant,
             // so there is nothing for a forged request to ride on.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*', 'book/payfast/notify', 'api/v1/*']],
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'payfast/setup-notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'business/profile/*/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*', 'book/payfast/notify', 'api/v1/*']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',

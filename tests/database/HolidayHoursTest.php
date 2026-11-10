@@ -103,7 +103,7 @@ final class HolidayHoursTest extends CIUnitTestCase
     public function testTheOwnerFormOffersTheAnswer(): void
     {
         $id   = $this->listing(['trading_hours' => hours_encode(['holidays' => ['mode' => 'closed']])]);
-        $html = (string) $this->withSession(\Tests\Support\OwnerSession::for($id))->get('manage/edit')->response()->getBody();
+        $html = (string) $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/where')->response()->getBody();
 
         $this->assertMatchesRegularExpression('/<option value="closed" selected>Closed<\/option>/', $html);
         $this->assertStringContainsString('Different on some holidays?', $html);
@@ -128,7 +128,7 @@ final class HolidayHoursTest extends CIUnitTestCase
         $this->assertSame('usual', $rule['except']['heritage']['mode'], 'a holiday given twice keeps the last row');
 
         // The saved exceptions come back as rows.
-        $html = (string) $this->withSession(\Tests\Support\OwnerSession::for($id))->get('manage/edit')->response()->getBody();
+        $html = (string) $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/where')->response()->getBody();
         $rows = preg_replace('#<(template|noscript)\b.*?</\1>#s', '', $html);
         $this->assertSame(2, substr_count($rows, 'data-holiday-pick'));
         $this->assertMatchesRegularExpression('/<option value="christmas" selected>Christmas Day, /', $rows);

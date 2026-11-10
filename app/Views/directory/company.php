@@ -153,7 +153,7 @@ $looking = [
                 <span class="company-step-num">03</span>
                 <div>
                     <h3>Keep it up to date</h3>
-                    <p>Change anything at any time from <a href="<?= base_url('manage') ?>">Manage your profile</a>. No password needed.</p>
+                    <p>Change anything at any time from <a href="<?= base_url('business') ?>">Manage your profile</a>. No password needed.</p>
                 </div>
             </li>
             <?php if ($offered): ?>
