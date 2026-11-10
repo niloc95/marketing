@@ -318,6 +318,8 @@ final class BookingCatalogueTest extends CIUnitTestCase
             'email'            => 'owner@example.test',
             'slug'             => 'salon-lumi',
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,
             'trading_hours'    => json_encode($hours),

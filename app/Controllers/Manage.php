@@ -190,6 +190,7 @@ class Manage extends BaseController
             'services'   => $services,
             // Read only while the booking catalogue writes the list (T28).
             'servicesFromBookings' => \App\Services\Bookings\CatalogueService::ownsProfileServices($listing),
+            'bookingPeople'        => \App\Services\Bookings\TeamService::profileFormPeople($listing),
             'attributes' => $attributes,
             'facets'     => $facets,
             'photos'     => $photos,

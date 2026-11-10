@@ -57,7 +57,7 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $category       = (int) (new DirectoryCategoryModel())->insert(['name' => 'Endocrinologist', 'slug' => 'endocrinologist', 'group_name' => 'Health & Medical', 'is_active' => 1], true);
         $this->practiceId = (int) $this->listings->insert([
             'type' => 'practice', 'display_name' => 'Dr Bertus Mensveld', 'contact_person' => 'Bertus Mensveld', 'email' => 'bertus@example.test',
-            'slug' => 'dr-bertus', 'status' => 'published', 'is_verified' => 1, 'country' => 'South Africa', 'category_id' => $category,
+            'slug' => 'dr-bertus', 'status' => 'published', 'is_verified' => 1, 'verified_until' => '2099-12-31', 'country' => 'South Africa', 'category_id' => $category,
             'trading_hours' => self::RECEPTION, 'location_name' => 'Practice A', 'verified_until' => '2031-01-01',
             'description' => '<p>Specialist physician in Sandton, Johannesburg, seeing adults by appointment.</p>', 'description_text' => 'Specialist physician in Sandton, Johannesburg, seeing adults by appointment.',
         ], true);

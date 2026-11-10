@@ -285,6 +285,8 @@ final class BookingSearchTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,
             'description'      => '<p>An endocrinology practice in Birnam Park, Johannesburg, seeing patients by appointment.</p>',

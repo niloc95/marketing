@@ -170,6 +170,8 @@ final class BookingUrlTest extends CIUnitTestCase
             'email'        => 'salon@example.test',
             'slug'         => 'test-salon',
             'status'       => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'category_id'  => $this->categoryId,
         ], true);
     }

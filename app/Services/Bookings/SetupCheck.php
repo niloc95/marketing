@@ -48,8 +48,14 @@ class SetupCheck
             && Payments\DepositService::gatewayFor($listingId) === null) {
             $out[] = ['code' => 'deposit_no_account', 'text' => 'Some services ask for a deposit, but no payment account is on, so customers book them without one.', 'link' => 'bookings/settings/payments'];
         }
+        $listing = (new \App\Models\DirectoryListingModel())->find($listingId);
+        // The badge (co.za) or Plus (.app) lapsed: bookings stop, nothing is deleted.
+        if ($listing !== null && ! listing_has_premium($listing)) {
+            $za    = site()->forRow($listing) === \Config\Sites::ZA;
+            $out[] = ['code' => 'premium_ended', 'text' => BookingSetupService::premiumNeeded(site()->forRow($listing)) . ' Customers cannot book online until it is renewed.', 'link' => $za ? 'verified' : 'plus'];
+        }
         // The plan has ended: customers cannot book until it is renewed (Phase 10).
-        if (Plans\BookingPlanService::required() && ($listing = (new \App\Models\DirectoryListingModel())->find($listingId)) !== null
+        if (Plans\BookingPlanService::required() && $listing !== null
             && ! (new Plans\BookingPlanService())->allows($listing)) {
             $out[] = ['code' => 'plan_ended', 'text' => 'Your online bookings plan has ended, so customers cannot book online. Choose the plan to carry on.', 'link' => 'bookings/settings/plan'];
         }

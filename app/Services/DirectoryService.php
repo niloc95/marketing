@@ -501,6 +501,7 @@ class DirectoryService
             ->where($this->published('l.'), null, false)
             ->where('l.deleted_at', null)
             ->where('l.verified_until >=', date('Y-m-d'))
+            ->where('tm.show_on_profile', 1)
             ->like('tm.name', $q)
             ->orderBy('LOCATE(' . $escaped . ', tm.name) = 1', 'DESC', false)
             ->orderBy('tm.name', 'ASC')
@@ -1759,6 +1760,7 @@ class DirectoryService
         return 'EXISTS (SELECT 1 FROM xs_directory_listing_team tm'
             . ' WHERE tm.listing_id = xs_directory_listings.id'
             . ' AND xs_directory_listings.verified_until >= CURDATE()'
+            . ' AND tm.show_on_profile = 1'
             . ' AND (tm.name LIKE ' . $like . " ESCAPE '!'"
             . ' OR tm.role LIKE ' . $like . " ESCAPE '!'"
             . ' OR tm.credentials LIKE ' . $like . " ESCAPE '!'"
@@ -1899,8 +1901,9 @@ class DirectoryService
         // JSON-LD both follow from it, and a listing without a live badge does
         // not pay for the query. The rows are untouched — see
         // TeamMemberService::canManage().
+        // People only in Bookings (show_on_profile off, T31) are not shown.
         $listing['team'] = listing_has_premium($listing)
-            ? $this->team->forListing((int) $listing['id'])
+            ? $this->team->forProfile((int) $listing['id'])
             : [];
 
         // The profile video, on the team's terms: paid, so gated here at load,

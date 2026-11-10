@@ -25,6 +25,11 @@ $booking = $tables === null ? [] : array_values(array_filter(
         <li>A business is a profile: <code>listing_id</code> on every <code><?= esc($prefix) ?>booking_*</code> table, and
             <code>BookingScopedModel</code> refuses unscoped reads and writes.</li>
         <li>Own tables for services and providers (profile services are reinserted on every save, so their ids are unstable).</li>
+        <li>One person, one record (T31): each provider is its own profile team card (<code><?= esc($prefix) ?>directory_listing_team</code>,
+            unique <code>team_member_id</code>). Name, position, qualifications, bio and photo are the card, written by
+            <code>TeamMemberService</code> from the profile form or the person page; the provider keeps colour, bookable, hours,
+            services and sign in, plus a copy of name, title and bio. A card has <code>show_on_profile</code>: people added in
+            Bookings start hidden. Bookings needs the Verified badge (co.za) or Plus (.app).</li>
         <li>People: <code><?= esc($prefix) ?>accounts</code> (sign in) plus <code><?= esc($prefix) ?>business_members</code>
             (account x profile x role: admin, provider, staff). Customers have no accounts; they get hash and token links.</li>
         <li>Appointments store UTC and snapshot service, duration, price, person and location. Created only through

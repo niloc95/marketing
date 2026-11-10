@@ -74,13 +74,17 @@ class PublicBookingService
         return self::allowed($listing) && (new self($listing))->services() !== [];
     }
 
-    /** takesBookings() without the services: the flag, site, switch, status and plan. */
+    /**
+     * takesBookings() without the services: the flag, site, switch, status,
+     * the badge or Plus (a lapsed one stops bookings, deletes nothing) and plan.
+     */
     private static function allowed(array $listing): bool
     {
         return config('Bookings')->siteAllowed(site()->key())
             && site()->forRow($listing) === site()->key()
             && (int) ($listing['bookings_enabled'] ?? 0) === 1
             && ($listing['status'] ?? '') === 'published'
+            && listing_has_premium($listing)
             && (new Plans\BookingPlanService())->allows($listing);
     }
 
@@ -93,8 +97,8 @@ class PublicBookingService
     /**
      * What a profile that takes bookings shows instead of its own services
      * list, and its bookable people (decision T28). Empty while it takes no
-     * bookings, so the profile stays exactly as it was. People only on a
-     * Verified or Plus profile, the same gate as its team cards.
+     * bookings, so the profile stays exactly as it was. Bookings needs a
+     * Verified or Plus profile (allowed()), the same gate as its team cards.
      *
      * @param array<string,mixed> $listing
      *
@@ -113,7 +117,7 @@ class PublicBookingService
         return [
             'book_url'      => base_url('directory/' . $listing['slug'] . '/book'),
             'services'      => $self->profileServices(),
-            'practitioners' => listing_has_premium($listing) ? $self->practitioners() : [],
+            'practitioners' => $self->practitioners(),
         ];
     }
 

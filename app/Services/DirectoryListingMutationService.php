@@ -1750,6 +1750,12 @@ class DirectoryListingMutationService
             $result  = $team->syncFromForm($id, $input['team'], $regulator, $admin);
             $errors  = array_merge($errors, $result['errors']);
             $orphans = array_merge($orphans, $result['orphans']);
+
+            // One person, one record (T31): Bookings takes each card's new
+            // name, title and bio, and the "Takes bookings" ticks.
+            if ($result['errors'] === [] && config('Bookings')->enabled() && (int) ($listing['bookings_enabled'] ?? 0) === 1) {
+                (new \App\Services\Bookings\TeamService($id))->fromProfileForm($result['ids'], is_array($input['team']) ? $input['team'] : []);
+            }
         }
 
         if (array_key_exists('locations', $input) && $locations->canManage($listing)) {

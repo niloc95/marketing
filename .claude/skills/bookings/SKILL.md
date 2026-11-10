@@ -80,8 +80,16 @@ Bookings rules that still hold after the port:
   refuses unscoped reads, and a test proves one business never sees another's rows.
 - **Own tables for services and providers** (`xs_booking_services`, `xs_booking_providers`).
   Local's `ServiceMenuService` deletes and reinserts the profile's services on every save,
-  so those ids are unstable. Team members and extra branches are Verified or Plus features.
-  A provider may link to a team card (`team_member_id`); a service records the profile row it
+  so those ids are unstable. Team members and extra branches are Verified or Plus features,
+  and so is Bookings itself (owner, 10 Nov 2026: never free; `whyNot()` and `takesBookings()`
+  check `listing_has_premium()`, a lapsed badge stops booking and deletes nothing).
+  **One person, one record (T31, branch `feat/one-person-record`):** every provider is its own
+  team card (`team_member_id` unique). Name, position, qualifications, registration, bio and
+  photo are the card, written only by `TeamMemberService` (`syncFromForm()` from the profile
+  form, `saveOne()` via `TeamService::saveProvider()`); the provider keeps colour, bookable,
+  hours, services, sign in and a copy of name/title/bio. `show_on_profile` off = in Bookings
+  only (people added in Bookings start hidden). Removing a card Bookings still has only hides
+  it. Both forms render `directory/_person_fields.php`. A service records the profile row it
   was copied from (`profile_service_name`). While bookings are on, the catalogue writes the
   profile's services list (T28, see "Profile view" below).
 - Locations are the profile's address (`location_id` null) or a branch id.

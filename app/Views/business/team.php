@@ -5,7 +5,7 @@
  * @var array<int,bool>                          $hoursChanged opening hours changed since their own hours were set
  * @var list<array<string,mixed>>           $members
  * @var bool                                $canAdd
- * @var list<array<string,mixed>>           $profileTeam
+ * @var list<array<string,mixed>>           $profileTeam  profile cards nobody in bookings is yet
  * @var array<string,string>                $roleLabels
  * @var int                                 $myMemberId
  */
@@ -38,25 +38,50 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 </div>
 
 <?php if ($canAdd): ?>
-    <form method="post" action="<?= base_url('bookings/team') ?>" class="panel mt-4 flex flex-wrap items-end gap-2">
+    <?php // One person, one record (T31): adding someone here adds their profile team card too. ?>
+    <form method="post" action="<?= base_url('bookings/team') ?>" class="form-card mt-4">
         <?= csrf_field() ?>
-        <div class="min-w-0 flex-1">
-            <label for="prov-name" class="mb-1 block text-sm font-semibold">Add someone customers can book</label>
-            <input id="prov-name" type="text" name="name" placeholder="Name" maxlength="120" class="w-full">
-        </div>
-        <?php if ($profileTeam !== []): ?>
-            <div>
-                <label for="prov-card" class="mb-1 block text-sm font-semibold">Or from your profile's team</label>
-                <select id="prov-card" name="team_member_id">
-                    <option value="0">Choose</option>
-                    <?php foreach ($profileTeam as $t): ?>
-                        <option value="<?= (int) $t['id'] ?>"><?= esc((string) $t['name']) ?></option>
+        <h2 class="mb-3 font-bold">Add a person</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="field"><label for="prov-name">Name</label><input id="prov-name" type="text" name="name" maxlength="150" required></div>
+            <div class="field"><label for="prov-role">Position <span class="font-normal text-slate-500">(optional)</span></label><input id="prov-role" type="text" name="role" maxlength="120" placeholder="e.g. Senior stylist"></div>
+            <div class="field"><label for="prov-email">Email <span class="font-normal text-slate-500">(optional)</span></label><input id="prov-email" type="email" name="email" autocomplete="off"></div>
+            <div class="field">
+                <label for="prov-member-role">They sign in as</label>
+                <select id="prov-member-role" name="member_role">
+                    <?php foreach ($roleLabels as $role => $label): ?>
+                        <option value="<?= $role ?>"<?= $role === 'provider' ? ' selected' : '' ?>><?= esc($label) ?></option>
                     <?php endforeach ?>
                 </select>
             </div>
-        <?php endif ?>
-        <button type="submit" class="btn btn-ghost">Add</button>
+        </div>
+        <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="bookable" value="1" checked> Customers can book them online</label>
+        <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="show_on_profile" value="1"> Show on my profile</label>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">With an email, we send them a link to set their own password, valid for <?= TeamService::INVITE_DAYS ?> days. Add their photo and qualifications on the next page.</p>
+        <button type="submit" class="btn btn-primary">Add</button>
     </form>
+
+    <?php if ($profileTeam !== []): ?>
+        <section class="panel mt-4">
+            <h2 class="mb-1 font-bold">On your profile, not in bookings</h2>
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">People from your profile&rsquo;s team. Add them here to give them hours, services and a calendar.</p>
+            <ul class="space-y-2">
+                <?php foreach ($profileTeam as $t): ?>
+                    <li class="flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                            <span class="font-semibold"><?= esc((string) $t['name']) ?></span>
+                            <?php if (! empty($t['role'])): ?><span class="text-sm text-slate-500 dark:text-slate-400"> <?= esc((string) $t['role']) ?></span><?php endif ?>
+                        </span>
+                        <form method="post" action="<?= base_url('bookings/team') ?>">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="team_member_id" value="<?= (int) $t['id'] ?>">
+                            <button type="submit" class="btn btn-ghost btn-xs">Add to bookings</button>
+                        </form>
+                    </li>
+                <?php endforeach ?>
+            </ul>
+        </section>
+    <?php endif ?>
 
     <section class="mt-8" id="access">
         <h2 class="text-lg font-bold text-slate-900 dark:text-white">Who can sign in</h2>

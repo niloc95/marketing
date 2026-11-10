@@ -29,6 +29,7 @@
  *                            switch says Verified ([data-admin-plan-extras], directory.js)
  * @var array    $vServices   service rows (old input wins), rendered by _service_fields.php
  * @var bool     $servicesFromBookings the booking catalogue writes the services (T28): read only
+ * @var array|null $bookingPeople card id => provider while bookings are on (T31)
  * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
  * @var array    $vFacets     stored facet rows keyed by facet (old input wins), rendered by _facet_fields.php
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
@@ -232,6 +233,8 @@ helper('directory_hours');
         'v'          => $v,
         'categories' => $categories,
         'adminEdit'  => ! empty($adminEdit),
+        // card id => provider while bookings are on (T31): a "Takes bookings" tick per person.
+        'bookingPeople' => $bookingPeople ?? null,
     ], ['saveData' => false]) ?>
     </div>
 <?php endif; ?>

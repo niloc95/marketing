@@ -79,7 +79,9 @@ class TeamService
      * A business with no provider gets one named after itself, working the
      * profile's opening hours, linked to the given membership (the owner).
      * Most small businesses are one person; they should not have to set up a
-     * "team" before taking a booking.
+     * "team" before taking a booking. When a team card carries the owner's
+     * or the business's name, that card is the person (T31), so the profile
+     * does not show them twice.
      *
      * @param array<string,mixed> $listing
      */
@@ -88,10 +90,20 @@ class TeamService
         if (BookingProviderModel::forBusiness($this->listingId)->countAllResults() > 0) {
             return;
         }
-        $result = $this->saveProvider(null, [
-            'name'      => (string) $listing['display_name'],
-            'member_id' => $memberId,
-        ], null);
+        $names = array_filter(array_map(
+            static fn ($n): string => mb_strtolower(trim((string) $n)),
+            [$listing['contact_person'] ?? '', $listing['display_name'] ?? '']
+        ));
+        $card = null;
+        foreach ((new DirectoryListingTeamModel())->forListing($this->listingId) as $row) {
+            if (in_array(mb_strtolower(trim((string) $row['name'])), $names, true)) {
+                $card = (int) $row['id'];
+                break;
+            }
+        }
+        $result = $this->saveProvider(null, $card !== null
+            ? ['team_member_id' => $card, 'member_id' => $memberId]
+            : ['name' => (string) $listing['display_name'], 'member_id' => $memberId], null);
         if ($result['id'] !== null) {
             // Follows the opening hours: a change on the profile reaches booking at once.
             BookingProviderModel::forBusiness($this->listingId)->update((int) $result['id'], ['hours_mode' => ProviderWeek::PROFILE]);
@@ -99,47 +111,47 @@ class TeamService
     }
 
     /**
-     * @param array<string,mixed> $input name, title, bio, color, bookable, team_member_id, member_id
+     * Add or change a person (T31: one person, one record). Who they are
+     * (name, position, qualifications, registration, focus, bio, photo, shown
+     * on the profile or not) is their team card, written by
+     * TeamMemberService::saveOne(); this keeps the booking parts (colour,
+     * bookable, sign in) and a copy of the card's name, title and bio for
+     * the calendar, messages and snapshots. A new person gets a new card,
+     * hidden from the profile, unless `team_member_id` names an existing
+     * card that nobody in bookings is yet.
      *
-     * @return array{id:?int,errors:array<string,string>}
+     * @param array<string,mixed> $input name, title (or role), bio, credentials, specializations, registration,
+     *                                   photo_path, show_present, show_on_profile; color, bookable,
+     *                                   team_member_id (new only), member_id
+     *
+     * @return array{id:?int,errors:array<string,string>,orphans:array<int,string>} orphans: photo files to unlink
      */
     public function saveProvider(?int $id, array $input, ?int $accountId): array
     {
-        if ($id !== null && $this->provider($id) === null) {
-            return ['id' => null, 'errors' => ['name' => 'That person is not part of this business.']];
+        $current = $id !== null ? $this->provider($id) : null;
+        if ($id !== null && $current === null) {
+            return ['id' => null, 'errors' => ['name' => 'That person is not part of this business.'], 'orphans' => []];
         }
         if ($id === null && count($this->providers(true)) >= self::MAX_PROVIDERS) {
-            return ['id' => null, 'errors' => ['name' => 'A business can have up to ' . self::MAX_PROVIDERS . ' people to book.']];
+            return ['id' => null, 'errors' => ['name' => 'A business can have up to ' . self::MAX_PROVIDERS . ' people to book.'], 'orphans' => []];
         }
 
         $errors = [];
         $data   = [];
+        $cards  = new DirectoryListingTeamModel();
+        $cardId = $current !== null && $current['team_member_id'] !== null ? (int) $current['team_member_id'] : null;
 
-        // Made from a team card on the profile: copy name, title and bio once.
+        // From a card already on the profile: that card is the person.
         $teamMemberId = (int) ($input['team_member_id'] ?? 0);
-        if ($teamMemberId > 0) {
-            $card = (new DirectoryListingTeamModel())->where('listing_id', $this->listingId)->find($teamMemberId);
-            if (! is_array($card)) {
+        if ($id === null && $teamMemberId > 0) {
+            $card = $cards->findForListing($teamMemberId, $this->listingId);
+            if ($card === null) {
                 $errors['team_member_id'] = 'Choose a person from your business profile.';
+            } elseif ($this->providerForCard($teamMemberId) !== null) {
+                $errors['team_member_id'] = $card['name'] . ' is already in your bookings.';
             } else {
-                $input['name']  = trim((string) ($input['name'] ?? '')) ?: (string) $card['name'];
-                $input['title'] = trim((string) ($input['title'] ?? '')) ?: (string) ($card['role'] ?? '');
-                $input['bio']   = trim((string) ($input['bio'] ?? '')) ?: (string) ($card['bio'] ?? '');
-                $data['team_member_id'] = $teamMemberId;
+                $cardId = $teamMemberId;
             }
-        }
-
-        $name = trim(preg_replace('/\s+/u', ' ', (string) ($input['name'] ?? '')) ?? '');
-        if (mb_strlen($name) < 2 || mb_strlen($name) > 120) {
-            $errors['name'] = 'Enter a name of 2 to 120 characters.';
-        }
-        $title = trim((string) ($input['title'] ?? ''));
-        if (mb_strlen($title) > 120) {
-            $errors['title'] = 'Keep the title under 120 characters.';
-        }
-        $bio = trim((string) ($input['bio'] ?? ''));
-        if (mb_strlen($bio) > 1200) {
-            $errors['bio'] = 'Keep the bio under 1200 characters.';
         }
 
         if (array_key_exists('member_id', $input)) {
@@ -151,33 +163,214 @@ class TeamService
         }
 
         if ($errors !== []) {
-            return ['id' => null, 'errors' => $errors];
+            return ['id' => null, 'errors' => $errors, 'orphans' => []];
         }
 
-        $data += [
-            'name'     => $name,
-            'title'    => $title === '' ? null : $title,
-            'bio'      => $bio === '' ? null : $bio,
-            'color'    => in_array($input['color'] ?? '', CatalogueService::COLORS, true) ? $input['color'] : 'ocean',
-            'bookable' => array_key_exists('bookable', $input) ? (int) (bool) $input['bookable'] : 1,
+        $db = db_connect();
+        $db->resetTransStatus()->transStart();
+
+        $saved = (new \App\Services\TeamMemberService())->saveOne(
+            $this->listingId,
+            $cardId,
+            $this->personRow($cardId, $input),
+            $this->regulator()
+        );
+        if ($saved['errors'] !== []) {
+            $db->transRollback();
+
+            // The provider form calls the position "title".
+            $errors = $saved['errors'];
+            if (isset($errors['role'])) {
+                $errors['title'] = $errors['role'];
+            }
+
+            return ['id' => null, 'errors' => $errors, 'orphans' => $saved['orphans']];
+        }
+        $card = $cards->find((int) $saved['id']);
+
+        $data += self::fromCard($card) + [
+            'team_member_id' => (int) $card['id'],
+            'color'          => in_array($input['color'] ?? '', CatalogueService::COLORS, true) ? $input['color'] : ($current['color'] ?? 'ocean'),
+            'bookable'       => array_key_exists('bookable', $input) ? (int) (bool) $input['bookable'] : (int) ($current['bookable'] ?? 1),
         ];
 
         $catalogue = new CatalogueService($this->listingId, $this->audit);
         $owned     = $catalogue->ownsList();
         helper('slug');
-        $data['slug'] = ensure_unique_slug(BookingProviderModel::forBusiness($this->listingId), 'slug', $name, $id, [], 120);
+        $data['slug'] = ensure_unique_slug(BookingProviderModel::forBusiness($this->listingId), 'slug', $data['name'], $id, [], 120);
 
         if ($id === null) {
             $id = (int) BookingProviderModel::forBusiness($this->listingId)->insert($data);
-            $this->audit->record($this->listingId, $accountId, 'provider.created', 'provider', $id, null, ['name' => $name]);
+            $this->audit->record($this->listingId, $accountId, 'provider.created', 'provider', $id, null, ['name' => $data['name']]);
         } else {
             BookingProviderModel::forBusiness($this->listingId)->update($id, $data);
-            $this->audit->record($this->listingId, $accountId, 'provider.updated', 'provider', $id, null, ['name' => $name]);
+            $this->audit->record($this->listingId, $accountId, 'provider.updated', 'provider', $id, null, ['name' => $data['name']]);
         }
         // Bookable or not decides which services the profile lists (T28).
         $catalogue->mirrorToProfile($owned);
 
-        return ['id' => $id, 'errors' => []];
+        if (! $db->transComplete()) {
+            throw new \RuntimeException('The person could not be saved.');
+        }
+
+        return ['id' => $id, 'errors' => [], 'orphans' => $saved['orphans']];
+    }
+
+    /** The provider (archived or not) a team card is, if any. @return array<string,mixed>|null */
+    public function providerForCard(int $cardId): ?array
+    {
+        $row = BookingProviderModel::forBusiness($this->listingId)->where('team_member_id', $cardId)->first();
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * For the profile form while bookings are on: card id => the provider
+     * that person is (id, bookable). Null while bookings are off, so the
+     * form shows no bookings tick.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return array<int,array{id:int,bookable:bool}>|null
+     */
+    public static function profileFormPeople(array $listing): ?array
+    {
+        if (! config('Bookings')->enabled() || (int) ($listing['bookings_enabled'] ?? 0) !== 1) {
+            return null;
+        }
+        $out = [];
+        foreach ((new self((int) $listing['id']))->providers() as $p) {
+            if ($p['team_member_id'] !== null) {
+                $out[(int) $p['team_member_id']] = ['id' => (int) $p['id'], 'bookable' => (bool) $p['bookable']];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * After the profile form saved the team (T31): every provider takes the
+     * new name, title and bio of their card, and the "Takes bookings" tick is
+     * applied. Ticked for a card nobody in bookings is yet adds that person,
+     * on the opening hours; unticked makes a person not bookable (they stay,
+     * with their hours and sign in). Rows without the tick's marker (bookings
+     * off when the form was drawn) change nothing but the copy.
+     *
+     * @param array<int|string,int>    $ids  form index => card id (TeamMemberService::syncFromForm())
+     * @param array<int|string,mixed>  $rows the posted team rows
+     */
+    public function fromProfileForm(array $ids, array $rows, ?int $accountId = null): void
+    {
+        $catalogue = new CatalogueService($this->listingId, $this->audit);
+        $owned     = $catalogue->ownsList();
+        $cards     = new DirectoryListingTeamModel();
+        $changed   = false;
+
+        foreach ($ids as $index => $cardId) {
+            $row      = is_array($rows[$index] ?? null) ? $rows[$index] : [];
+            $marked   = ! empty($row['bookings_present']);
+            $ticked   = ! empty($row['takes_bookings']);
+            $provider = $this->providerForCard((int) $cardId);
+            $card     = $cards->findForListing((int) $cardId, $this->listingId);
+            if ($card === null) {
+                continue;
+            }
+
+            if ($provider === null) {
+                if (! $marked || ! $ticked || count($this->providers(true)) >= self::MAX_PROVIDERS) {
+                    continue;
+                }
+                helper('slug');
+                $data = self::fromCard($card) + ['team_member_id' => (int) $cardId, 'bookable' => 1, 'hours_mode' => ProviderWeek::PROFILE];
+                $data['slug'] = ensure_unique_slug(BookingProviderModel::forBusiness($this->listingId), 'slug', $data['name'], null, [], 120);
+                $new = (int) BookingProviderModel::forBusiness($this->listingId)->insert($data);
+                $this->audit->record($this->listingId, $accountId, 'provider.created', 'provider', $new, null, ['name' => $data['name'], 'from' => 'profile']);
+                $changed = true;
+
+                continue;
+            }
+
+            $data = self::fromCard($card);
+            if ($marked && $provider['archived_at'] === null) {
+                $data['bookable'] = (int) $ticked;
+            }
+            $diff = array_diff_assoc(array_map('strval', array_map(static fn ($v) => $v ?? '', $data)), array_map('strval', array_map(static fn ($v) => $v ?? '', array_intersect_key($provider, $data))));
+            if ($diff !== []) {
+                BookingProviderModel::forBusiness($this->listingId)->update((int) $provider['id'], $data);
+                $this->audit->record($this->listingId, $accountId, 'provider.updated', 'provider', (int) $provider['id'], null, ['name' => $data['name'], 'from' => 'profile']);
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            // Names and who is bookable decide the profile's services list (T28).
+            $catalogue->mirrorToProfile($owned);
+        }
+    }
+
+    /**
+     * The provider's copy of its card: what the calendar, messages and
+     * appointment snapshots read (T31).
+     *
+     * @param array<string,mixed> $card
+     *
+     * @return array{name:string,title:?string,bio:?string}
+     */
+    private static function fromCard(array $card): array
+    {
+        $title = trim((string) ($card['role'] ?? ''));
+        $bio   = trim((string) ($card['bio'] ?? ''));
+
+        return [
+            'name'  => mb_substr(trim((string) $card['name']), 0, 120),
+            'title' => $title === '' ? null : $title,
+            'bio'   => $bio === '' ? null : $bio,
+        ];
+    }
+
+    /**
+     * The card row to save: the stored card with what was posted on top, so
+     * a form that sends only some fields (the old provider form, the API)
+     * never blanks the rest. The stored photo is never passed back: saveOne()
+     * would treat it as a new file and discard the old one, which is itself.
+     *
+     * @param array<string,mixed> $input
+     *
+     * @return array<string,mixed>
+     */
+    private function personRow(?int $cardId, array $input): array
+    {
+        $fields = ['name', 'role', 'credentials', 'specializations', 'bio', 'reg_number', 'orcid', 'researchgate_url', 'show_on_profile'];
+        $row    = [];
+        if ($cardId !== null) {
+            $card = (new DirectoryListingTeamModel())->findForListing($cardId, $this->listingId) ?? [];
+            $row  = array_intersect_key($card, array_flip($fields));
+            // Registration is written only when its marker is posted, so
+            // without it the stored number and checked mark stay as they are.
+            $row['show_present'] = '1';
+        }
+        if (array_key_exists('title', $input) && ! array_key_exists('role', $input)) {
+            $input['role'] = $input['title'];
+        }
+        foreach ([...$fields, 'photo_path', 'show_present', \App\Libraries\ProfessionalRegistration::MARKER] as $f) {
+            if (array_key_exists($f, $input) && ! ($f === 'name' && trim((string) $input[$f]) === '' && isset($row['name']))) {
+                $row[$f] = $input[$f];
+            }
+        }
+        // An unticked "Show on my profile" box posts nothing.
+        if (! empty($input['show_present']) && ! array_key_exists('show_on_profile', $input)) {
+            $row['show_on_profile'] = '';
+        }
+
+        return $row;
+    }
+
+    /** The regulator of the profile's category, for each person's registration number. @return array<string,mixed>|null */
+    private function regulator(): ?array
+    {
+        $listing = (new DirectoryListingModel())->find($this->listingId);
+
+        return \App\Libraries\ProfessionalRegistration::regulatorForCategoryId((int) ($listing['category_id'] ?? 0));
     }
 
     public function archiveProvider(int $id, ?int $accountId, bool $archive = true): bool

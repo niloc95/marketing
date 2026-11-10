@@ -125,9 +125,14 @@ class TeamMemberService
      *   row — never used to update theirs.** This is the same protection the
      *   per-row endpoints had; the ids simply arrive in a form body now instead
      *   of a URL, and nothing else stands between one owner and another's rows.
-     * - A stored row whose id is not in the submission is deleted.
+     * - A stored row whose id is not in the submission is deleted, **unless a
+     *   booking provider is that person** (T31): then it is only hidden from
+     *   the profile, and Bookings keeps them until they are archived there.
      * - sort_order is the submitted position, so reordering is just moving the
      *   fields.
+     * - "Show on my profile" is read only when the row carries its marker
+     *   (`show_present`), so a form without the switch leaves it as it is.
+     *   At most MAX_MEMBERS people are shown; hidden ones do not count.
      *
      * Deleted and replaced headshots are NOT unlinked here. Their paths come
      * back in `orphans` and the caller unlinks them after the transaction
@@ -142,7 +147,8 @@ class TeamMemberService
      * @param mixed                    $rows      the raw `team` array off the request
      * @param array<string,mixed>|null $regulator the listing category's, or null
      *
-     * @return array{errors:array<string,string>,orphans:array<int,string>}
+     * @return array{errors:array<string,string>,orphans:array<int,string>,ids:array<int|string,int>}
+     *         `ids` maps each saved row's form index to its card id
      */
     public function syncFromForm(int $listingId, mixed $rows, ?array $regulator = null, bool $admin = false): array
     {
@@ -158,8 +164,6 @@ class TeamMemberService
                 continue;
             }
 
-            $name = trim((string) ($row['name'] ?? ''));
-
             // Resolved before the blank check so that clearing a stored row's
             // name deletes it, rather than leaving an unreachable row behind.
             $existing = null;
@@ -171,47 +175,19 @@ class TeamMemberService
             // A blank name or a ticked Remove box both mean "this row is gone".
             // Neither is an error: a blank trailing slot is the normal way the
             // form offers somewhere to type.
-            if ($name === '' || ! empty($row['_remove'])) {
+            if (trim((string) ($row['name'] ?? '')) === '' || ! empty($row['_remove'])) {
                 continue;
             }
 
-            if (mb_strlen($name) < 2 || mb_strlen($name) > 150) {
-                $errors[sprintf('team.%d.name', $index)] = 'Each name must be between 2 and 150 characters.';
+            $data = $this->normaliseRow($row, $existing, $regulator, $admin, sprintf('team.%d.', $index), $errors);
+            if ($data === null) {
                 continue;
-            }
-
-            $prefix      = sprintf('team.%d.', $index);
-            $role        = $this->limited($row['role'] ?? '', 120, $prefix . 'role', 'The position', $errors);
-            $credentials = $this->limited($row['credentials'] ?? '', 255, $prefix . 'credentials', 'The qualifications', $errors);
-            $bio         = $this->limited($row['bio'] ?? '', self::MAX_BIO_LENGTH, $prefix . 'bio', 'The bio', $errors);
-
-            $specializations = $this->normaliseSpecializations(
-                $row['specializations'] ?? '',
-                $errors,
-                $prefix . 'specializations'
-            );
-
-            $registration = ProfessionalRegistration::personColumns(
-                $row,
-                $existing,
-                $regulator,
-                $admin && array_key_exists('reg_checked_present', $row) ? ! empty($row['reg_checked']) : null
-            );
-            foreach ($registration['errors'] as $field => $message) {
-                $errors[$prefix . $field] = $message;
             }
 
             $submitted[] = [
+                'index'    => $index,
                 'existing' => $existing,
-                'data'     => [
-                    'listing_id'      => $listingId,
-                    'name'            => $name,
-                    'role'            => $role ?: null,
-                    'credentials'     => $credentials ?: null,
-                    'specializations' => $specializations ?: null,
-                    'bio'             => $bio ?: null,
-                    'sort_order'      => $position++,
-                ] + $registration['columns'],
+                'data'     => ['listing_id' => $listingId, 'sort_order' => $position++] + $data,
                 // resolveTeamPhotos() put this here if a new file was uploaded
                 // for this row. Empty means "keep whatever the row already has",
                 // the same convention resolveLogo() uses for the listing.
@@ -219,11 +195,12 @@ class TeamMemberService
             ];
         }
 
-        if (count($submitted) > self::MAX_MEMBERS) {
+        $shown = count(array_filter($submitted, static fn (array $r): bool => (int) $r['data']['show_on_profile'] === 1));
+        if ($shown > self::MAX_MEMBERS) {
             $errors['team'] = sprintf(
-                'A profile can list at most %d team members. You have %d.',
+                'A profile can show at most %d team members. You have %d.',
                 self::MAX_MEMBERS,
-                count($submitted)
+                $shown
             );
         }
 
@@ -237,40 +214,29 @@ class TeamMemberService
                 }
             }
 
-            return ['errors' => $errors, 'orphans' => $orphans];
+            return ['errors' => $errors, 'orphans' => $orphans, 'ids' => []];
         }
 
         $keptIds = [];
+        $ids     = [];
 
         foreach ($submitted as $row) {
-            $data     = $row['data'];
-            $existing = $row['existing'];
-            $id       = $existing === null ? null : (int) $existing['id'];
-
-            $data['slug'] = $this->members->uniqueSlug(slugify($data['name']), $listingId, $id);
-
-            if ($row['photo'] !== '') {
-                $data['photo_path'] = $row['photo'];
-                // The file this one replaces is unreferenced the moment the row
-                // is written — but only once the transaction commits.
-                if ($existing !== null && ! empty($existing['photo_path'])) {
-                    $orphans[] = (string) $existing['photo_path'];
-                }
-            }
-
-            if ($id === null) {
-                $this->members->insert($data);
-                $keptIds[] = (int) $this->members->getInsertID();
-            } else {
-                $this->members->update($id, $data);
-                $keptIds[] = $id;
-            }
+            $id = $this->write($listingId, $row['existing'], $row['data'], $row['photo'], $orphans);
+            $keptIds[]          = $id;
+            $ids[$row['index']] = $id;
         }
 
         // Anything stored that the submission did not carry has been removed by
-        // the owner — either the Remove box or a cleared name.
+        // the owner — either the Remove box or a cleared name. A person Bookings
+        // still has is hidden instead (T31).
+        $inBookings = self::cardsInBookings($listingId);
         foreach ($this->members->forListing($listingId) as $stored) {
             if (in_array((int) $stored['id'], $keptIds, true)) {
+                continue;
+            }
+            if (in_array((int) $stored['id'], $inBookings, true)) {
+                $this->members->update((int) $stored['id'], ['show_on_profile' => 0]);
+
                 continue;
             }
 
@@ -280,7 +246,168 @@ class TeamMemberService
             $this->members->delete((int) $stored['id']);
         }
 
-        return ['errors' => $errors, 'orphans' => $orphans];
+        return ['errors' => $errors, 'orphans' => $orphans, 'ids' => $ids];
+    }
+
+    /**
+     * One person, from Bookings (T31): the same checks as a row of the
+     * profile form, without touching anyone else. Bookings writes only
+     * through here, so a person has one record wherever they were added.
+     * `show_on_profile` is honoured when the row carries `show_present`;
+     * a new person without it starts hidden.
+     *
+     * @param array<string,mixed>      $row       name, role, credentials, specializations, bio, photo_path, registration, show_on_profile
+     * @param array<string,mixed>|null $regulator the listing category's, or null
+     *
+     * @return array{id:?int,errors:array<string,string>,orphans:array<int,string>}
+     */
+    public function saveOne(int $listingId, ?int $id, array $row, ?array $regulator = null, bool $admin = false): array
+    {
+        $existing = null;
+        if ($id !== null) {
+            $existing = $this->members->findForListing($id, $listingId);
+            if ($existing === null) {
+                return ['id' => null, 'errors' => ['name' => 'That person is not part of this business.'], 'orphans' => []];
+            }
+        }
+        if ($existing === null && ! array_key_exists('show_present', $row)) {
+            $row['show_present'] = '1';
+            $row['show_on_profile'] = '';
+        }
+
+        $errors = [];
+        $photo  = trim((string) ($row['photo_path'] ?? ''));
+        $data   = trim((string) ($row['name'] ?? '')) === ''
+            ? null
+            : $this->normaliseRow($row, $existing, $regulator, $admin, '', $errors);
+        if ($data === null && $errors === []) {
+            $errors['name'] = 'Each name must be between 2 and 150 characters.';
+        }
+        if ($data !== null && (int) $data['show_on_profile'] === 1) {
+            $shown = $this->members->where('listing_id', $listingId)->where('show_on_profile', 1);
+            if ($id !== null) {
+                $shown->where('id !=', $id);
+            }
+            if ($shown->countAllResults() >= self::MAX_MEMBERS) {
+                $errors['show_on_profile'] = sprintf('A profile can show at most %d team members.', self::MAX_MEMBERS);
+            }
+        }
+        if ($errors !== []) {
+            return ['id' => null, 'errors' => $errors, 'orphans' => $photo !== '' ? [$photo] : []];
+        }
+
+        $data['listing_id'] = $listingId;
+        if ($existing === null) {
+            $last               = $this->members->selectMax('sort_order', 'n')->where('listing_id', $listingId)->first();
+            $data['sort_order'] = (int) ($last['n'] ?? -1) + 1;
+        }
+        $orphans = [];
+        $id      = $this->write($listingId, $existing, $data, $photo, $orphans);
+
+        return ['id' => $id, 'errors' => [], 'orphans' => $orphans];
+    }
+
+    /**
+     * Ids of this listing's cards that a booking provider (not archived) is.
+     *
+     * @return list<int>
+     */
+    public static function cardsInBookings(int $listingId): array
+    {
+        return array_map('intval', array_column(
+            db_connect()->table('xs_booking_providers')->select('team_member_id')
+                ->where('listing_id', $listingId)->where('archived_at', null)->where('team_member_id IS NOT NULL')
+                ->get()->getResultArray(),
+            'team_member_id'
+        ));
+    }
+
+    /**
+     * The checks every person goes through, from either form. Null when the
+     * name is unusable (its error is in $errors).
+     *
+     * @param array<string,mixed>      $row
+     * @param array<string,mixed>|null $existing
+     * @param array<string,mixed>|null $regulator
+     * @param array<string,string>     $errors
+     *
+     * @return array<string,mixed>|null
+     */
+    private function normaliseRow(array $row, ?array $existing, ?array $regulator, bool $admin, string $prefix, array &$errors): ?array
+    {
+        $name = trim((string) ($row['name'] ?? ''));
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 150) {
+            $errors[$prefix . 'name'] = 'Each name must be between 2 and 150 characters.';
+
+            return null;
+        }
+
+        $role        = $this->limited($row['role'] ?? '', 120, $prefix . 'role', 'The position', $errors);
+        $credentials = $this->limited($row['credentials'] ?? '', 255, $prefix . 'credentials', 'The qualifications', $errors);
+        $bio         = $this->limited($row['bio'] ?? '', self::MAX_BIO_LENGTH, $prefix . 'bio', 'The bio', $errors);
+
+        $specializations = $this->normaliseSpecializations(
+            $row['specializations'] ?? '',
+            $errors,
+            $prefix . 'specializations'
+        );
+
+        $registration = ProfessionalRegistration::personColumns(
+            $row,
+            $existing,
+            $regulator,
+            $admin && array_key_exists('reg_checked_present', $row) ? ! empty($row['reg_checked']) : null
+        );
+        foreach ($registration['errors'] as $field => $message) {
+            $errors[$prefix . $field] = $message;
+        }
+
+        // Absent marker: keep what is stored; a new card is shown, as the
+        // profile form always did.
+        $shown = array_key_exists('show_present', $row)
+            ? (int) ! empty($row['show_on_profile'])
+            : (int) ($existing['show_on_profile'] ?? 1);
+
+        return [
+            'name'            => $name,
+            'role'            => $role ?: null,
+            'credentials'     => $credentials ?: null,
+            'specializations' => $specializations ?: null,
+            'bio'             => $bio ?: null,
+            'show_on_profile' => $shown,
+        ] + $registration['columns'];
+    }
+
+    /**
+     * Insert or update one card, with its slug and photo.
+     *
+     * @param array<string,mixed>|null $existing
+     * @param array<string,mixed>      $data
+     * @param array<int,string>        $orphans
+     */
+    private function write(int $listingId, ?array $existing, array $data, string $photo, array &$orphans): int
+    {
+        $id = $existing === null ? null : (int) $existing['id'];
+
+        $data['slug'] = $this->members->uniqueSlug(slugify($data['name']), $listingId, $id);
+
+        if ($photo !== '') {
+            $data['photo_path'] = $photo;
+            // The file this one replaces is unreferenced the moment the row
+            // is written — but only once the transaction commits.
+            if ($existing !== null && ! empty($existing['photo_path'])) {
+                $orphans[] = (string) $existing['photo_path'];
+            }
+        }
+
+        if ($id === null) {
+            $this->members->insert($data);
+
+            return (int) $this->members->getInsertID();
+        }
+        $this->members->update($id, $data);
+
+        return $id;
     }
 
     /**

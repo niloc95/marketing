@@ -203,6 +203,8 @@ final class BookingAppSiteTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'is_verified'      => 0,
             'country'          => $country,
             'province'         => $region,

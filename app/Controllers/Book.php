@@ -3,7 +3,10 @@
 namespace App\Controllers;
 
 use App\Controllers\Concerns\RedirectsToOwningSite;
+use App\Models\Bookings\BookingAppointmentModel;
 use App\Models\DirectoryListingModel;
+use App\Services\Bookings\AppointmentStatus;
+use App\Services\Bookings\Notifications\NotificationRules;
 use App\Services\Bookings\Payments\DepositService;
 use App\Services\Bookings\PublicBookingService;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -487,7 +490,19 @@ class Book extends BaseController
         // The old link stops working; the token path follows the new one.
         $next = $rotates ? 'book/' . $result['token'] : $path;
 
-        return redirect()->to(base_url($next))->with('success', 'Done. Your booking has a new time.' . ($rotates ? ' This page has a new address: keep this one.' : ''));
+        // Moving keeps the status, so the alert says what that status means
+        // for the customer (AppointmentStatus::customerMessage()). Waiting:
+        // also how they will hear, unless the business switched the
+        // confirmation email off.
+        $status  = (string) ($found['appointment']['status'] ?? '');
+        $message = trim('Done. Your booking has a new time. '
+            . AppointmentStatus::customerMessage($status, (string) $found['listing']['display_name']));
+        if ($status === BookingAppointmentModel::STATUS_PENDING
+            && (new NotificationRules((int) $found['listing']['id']))->enabled('confirmed', 'email')) {
+            $message = rtrim($message, '.') . ', and we will email you when they do.';
+        }
+
+        return redirect()->to(base_url($next))->with('success', $message);
     }
 
     /**

@@ -92,14 +92,16 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                 <option value="all">All</option>
             </select>
         </label>
-        <label class="cal-filter ml-auto">
-            <span>Find</span>
-            <input type="text" name="q" placeholder="Name, email, phone or reference" autocomplete="off" data-cal-find>
-        </label>
+        <p class="min-w-0 flex-1 basis-40 pb-1 text-xs text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. Drag an appointment to move it.</p>
+        <?php // Results open over the grid, so the grid keeps its size. ?>
+        <div class="relative ml-auto">
+            <label class="cal-filter">
+                <span>Find</span>
+                <input type="text" name="q" placeholder="Name, email, phone or reference" autocomplete="off" data-cal-find>
+            </label>
+            <ul class="cal-find-results" data-cal-find-results hidden></ul>
+        </div>
     </form>
-    <ul class="cal-find-results" data-cal-find-results hidden></ul>
-
-    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. Drag an appointment to move it.</p>
 
     <div class="cal-body mt-3" data-cal-body aria-busy="true">
         <noscript><p class="p-6 text-sm">The calendar needs JavaScript. You can still <a class="underline" href="<?= base_url('bookings/appointments/new') ?>">book an appointment</a> and see <a class="underline" href="<?= base_url('bookings/customers') ?>">your customers</a>.</p></noscript>

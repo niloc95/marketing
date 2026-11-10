@@ -803,6 +803,8 @@ final class BookingIntegrationsTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'is_verified'      => 1,
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,

@@ -6,6 +6,7 @@
  * once it is known.
  */
 $entries = [
+    ['2026-11-10', 'Bookings: one person, one record (T31). A provider is its own profile team card (xs_booking_providers.team_member_id unique, xs_directory_listing_team.show_on_profile); the profile form and the Bookings person page share directory/_person_fields.php; Bookings only for Verified or Plus profiles. Migration 2026-11-24-100000_UnifyTeamPeople.'],
     ['2026-11-10', 'Bookings: the team email is its own notice for staff (emails/booking-team.php: customer contact, maps links, Open the appointment, Reply to the customer); the customer email gains a heading, maps links, opening hours, Add to Google Calendar, Terms and Privacy.'],
     ['2026-11-10', 'Bookings: the Book form and dialog show the next free times (GET /bookings/api/appointments/free, shared with Move); a click fills the date and time.'],
     ['2026-11-10', 'Bookings: a person follows the profile\'s opening hours (live, xs_booking_providers.hours_mode = profile, read through ProviderWeek) or keeps own hours; hours_seen asks when the opening hours change under own hours.'],

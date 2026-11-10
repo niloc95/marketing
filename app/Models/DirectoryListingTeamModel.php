@@ -24,6 +24,8 @@ class DirectoryListingTeamModel extends Model
     protected $allowedFields = [
         'listing_id', 'name', 'slug', 'role', 'credentials', 'specializations',
         'bio', 'photo_path', 'sort_order',
+        // Off: in Bookings only, not on the public profile (T31).
+        'show_on_profile',
         // Professional registration, per person since 4 Nov 2026. Written only
         // by TeamMemberService::syncFromForm(); reg_checked_at by admin only.
         'reg_number', 'orcid', 'researchgate_url', 'reg_checked_at',
@@ -35,6 +37,21 @@ class DirectoryListingTeamModel extends Model
     public function forListing(int $listingId): array
     {
         return $this->where('listing_id', $listingId)
+            ->orderBy('sort_order', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->findAll();
+    }
+
+    /**
+     * The people the public profile shows: not those who are only in
+     * Bookings (show_on_profile off, T31). Every public read uses this.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function forProfile(int $listingId): array
+    {
+        return $this->where('listing_id', $listingId)
+            ->where('show_on_profile', 1)
             ->orderBy('sort_order', 'ASC')
             ->orderBy('id', 'ASC')
             ->findAll();

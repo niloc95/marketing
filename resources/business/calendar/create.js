@@ -44,7 +44,6 @@ export function initCreate(root, scheduler) {
   function open({ date, time, providerId } = {}) {
     form.reset();
     choose(null);
-    query.value = '';
     if (date) form.querySelector('[name="date"]').value = date;
     if (time) form.querySelector('[name="time"]').value = time;
     if (providerId) form.querySelector('[name="provider_id"]').value = String(providerId);

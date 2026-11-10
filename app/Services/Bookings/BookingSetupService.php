@@ -37,6 +37,21 @@ class BookingSetupService
      */
     public function whyNot(array $listing): ?string
     {
+        // Never free (owner, 10 Nov 2026): the Verified Business badge on
+        // co.za, Plus on .app, the same gate as the profile's team.
+        return $this->unavailable($listing)
+            ?? (listing_has_premium($listing) ? null : self::premiumNeeded(site()->forRow($listing)));
+    }
+
+    /**
+     * whyNot() without the badge: what no upgrade would change (the global
+     * switch, the country, a profile that is not live). The owner panel uses
+     * it to offer the upgrade instead of hiding bookings.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function unavailable(array $listing): ?string
+    {
         if (! $this->config->enabled()) {
             return 'Online bookings are not available yet.';
         }
@@ -52,6 +67,14 @@ class BookingSetupService
         }
 
         return null;
+    }
+
+    /** What a profile without the badge (co.za) or Plus (.app) is told. */
+    public static function premiumNeeded(string $siteKey): string
+    {
+        return $siteKey === Sites::ZA
+            ? 'Online bookings come with the Verified Business badge.'
+            : 'Online bookings come with Plus.';
     }
 
     /** @param array<string,mixed> $listing */

@@ -92,7 +92,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Services: duration, price, category, active, slug, description | `xs_services` | Rebuild | 2 | `xs_booking_services`; while bookings are on they are the profile's services list (T28, mirrored), see [data-model.md](data-model.md) |
 | Service categories with colour | `xs_categories` | Port | 2 | per business |
 | Delivery modes per service (on site, Zoom, Jitsi) | `delivery_modes[]` | Port | 2 | video links work in Phase 9 |
-| Providers with slug, bio, colour, photo | `xs_users` with provider role | Rebuild | 2 | `xs_booking_providers`, optionally tied to a team member and an account. No photo column: the profile and the booking page use the linked team card's photo (Verified or Plus) |
+| Providers with slug, bio, colour, photo | `xs_users` with provider role | Rebuild | 2 | `xs_booking_providers`, each tied to its own profile team card (T31) and optionally an account. Who they are (name, position, qualifications, bio, photo) is the card, edited with the same fields on the profile and in /bookings; the provider has colour, bookable, hours and services. Bookings' one users table per person is matched by one card per person |
 | Provider weekly hours and breaks | `xs_business_hours` | Port | 2 | |
 | Staff to provider assignments | `xs_provider_staff_assignments` | Port | 2 | |
 | Locations per provider, primary, active | `xs_locations` | Rebuild | 2 | use the profile's own address and branches (`xs_directory_practice_locations`) |

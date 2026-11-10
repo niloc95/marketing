@@ -262,6 +262,29 @@ trait HandlesListingUploads
     }
 
     /**
+     * One person's headshot, from the person page in Bookings (T31): the
+     * same processing and folder as resolveTeamPhotos(), for a single file
+     * input. No file is not an error (the photo is not being changed).
+     *
+     * @return array{path:?string,error:?string}
+     */
+    protected function resolvePersonPhoto(string $field = 'photo'): array
+    {
+        $file = $this->request->getFile($field);
+        if ($file === null || $file->getError() === UPLOAD_ERR_NO_FILE) {
+            return ['path' => null, 'error' => null];
+        }
+        $result = (new ListingImageProcessor())->process(
+            $file,
+            rtrim(FCPATH, '/') . '/' . TeamMemberService::UPLOAD_DIR,
+            'team',
+            TeamMemberService::PHOTO_SIZE
+        );
+
+        return $result['ok'] ? ['path' => $result['path'], 'error' => null] : ['path' => null, 'error' => $result['error']];
+    }
+
+    /**
      * Add the brands posted as brand_name[i] + brand_logo[i].
      *
      * After the save, like the gallery: it needs the id, and a logo that fails

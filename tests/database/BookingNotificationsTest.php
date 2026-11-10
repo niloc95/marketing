@@ -682,6 +682,8 @@ final class BookingNotificationsTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'is_verified'      => 1,
             'country'          => 'South Africa',
             'phone'            => '011 555 0000',

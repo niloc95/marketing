@@ -18,6 +18,9 @@ import { addDays, addMonths, longDay, shortDay, toDate } from './dates.js';
 import { MSG } from './messages.js';
 
 const POLL_MS = 60000;
+// Matches the desktop rules for .cal in directory.css: there the page has a
+// fixed height and the day and week grids are fitted into it.
+const DESKTOP = '(min-width: 1024px)';
 
 export class Scheduler {
   constructor(root) {
@@ -62,6 +65,11 @@ export class Scheduler {
     }, true);
     enableDragDrop(this.body, this);
     this.initFind();
+    this.onResize = () => {
+      clearTimeout(this.resizeTimer);
+      this.resizeTimer = setTimeout(() => { if (this.model) this.render(); }, 150);
+    };
+    window.addEventListener('resize', this.onResize);
 
     await this.reload();
     if (this.root.dataset.open) this.openByHash(this.root.dataset.open);
@@ -76,6 +84,8 @@ export class Scheduler {
     this.stopped = true;
     clearInterval(this.poll);
     clearTimeout(this.toastTimer);
+    clearTimeout(this.resizeTimer);
+    window.removeEventListener('resize', this.onResize);
     if (this.request) this.request.abort();
   }
 
@@ -147,7 +157,7 @@ export class Scheduler {
     this.byId = new Map((m.appointments || []).map((a) => [a.id, a]));
     const scroller = this.body.querySelector('.cal-scroll');
     const keepScroll = scroller ? scroller.scrollTop : null;
-    const ctx = { today: this.today, timezone: this.timezone, goTo: (v, d) => this.goTo(v, d), onSlot: (date, time, providerId) => this.create.open({ date, time, providerId }) };
+    const ctx = { today: this.today, timezone: this.timezone, fitHeight: this.fitHeight(), goTo: (v, d) => this.goTo(v, d), onSlot: (date, time, providerId) => this.create.open({ date, time, providerId }) };
     const out = this.view === 'month' ? renderMonth(m, ctx)
       : this.view === 'agenda' ? renderAgenda(m)
         : renderTimeGrid(m, this.view, ctx);
@@ -160,6 +170,11 @@ export class Scheduler {
       : this.view === 'day' ? longDay(m.date)
         : m.weekLabel;
     this.syncAddress();
+  }
+
+  /** The height a day or week grid fills on a desktop, or 0 to keep the server's scale. */
+  fitHeight() {
+    return window.matchMedia(DESKTOP).matches ? this.body.clientHeight : 0;
   }
 
   /** Move an appointment; reloads either way. Returns true when moved. */

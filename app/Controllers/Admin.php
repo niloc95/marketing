@@ -253,6 +253,7 @@ class Admin extends BaseController
             'strengthTarget' => (int) config('Directory')->qualityTarget,
             // Read only while the booking catalogue writes the list (T28).
             'servicesFromBookings' => $listing !== null && \App\Services\Bookings\CatalogueService::ownsProfileServices($listing),
+            'bookingPeople'        => $listing !== null ? \App\Services\Bookings\TeamService::profileFormPeople($listing) : null,
             'listing'    => $listing,
             'old'        => session()->getFlashdata('old') ?? [],
             'errors'     => session()->getFlashdata('errors') ?? [],

@@ -3,6 +3,8 @@
  * One person customers book: their details, services, hours and reception.
  *
  * @var array<string,mixed>          $provider
+ * @var array<string,mixed>|null     $card      their profile team card (T31)
+ * @var array<string,mixed>|null     $regulator the profile category's regulator
  * @var array<int,array<string,mixed>> $hours  TeamService::hoursForForm(): periods per day
  * @var list<string>                 $hourWarnings times outside the opening hours of their place
  * @var string                       $hoursMode    profile (follows the opening hours) or own
@@ -30,21 +32,17 @@ $archived   = $provider['archived_at'] !== null;
 <h1 class="mb-5 text-xl font-bold text-slate-900 dark:text-white"><?= esc((string) $provider['name']) ?></h1>
 
 <div class="grid gap-6 lg:grid-cols-2">
-    <form method="post" action="<?= base_url('bookings/team/' . $provider['id']) ?>" class="form-card">
+    <form method="post" action="<?= base_url('bookings/team/' . $provider['id']) ?>" class="form-card" enctype="multipart/form-data">
         <?= csrf_field() ?>
-        <div class="field">
-            <label for="p-name">Name</label>
-            <input id="p-name" type="text" name="name" value="<?= esc((string) $provider['name']) ?>" maxlength="120" required>
-            <?php if (isset($errors['name'])): ?><p class="mt-1 text-sm text-rose-600"><?= esc((string) $errors['name']) ?></p><?php endif ?>
-        </div>
-        <div class="field">
-            <label for="p-title">Title <span class="font-normal text-slate-500">(optional)</span></label>
-            <input id="p-title" type="text" name="title" value="<?= esc((string) ($provider['title'] ?? '')) ?>" maxlength="120" placeholder="Senior stylist">
-        </div>
-        <div class="field">
-            <label for="p-bio">About <span class="font-normal text-slate-500">(optional)</span></label>
-            <textarea id="p-bio" name="bio" rows="3" maxlength="1200"><?= esc((string) ($provider['bio'] ?? '')) ?></textarea>
-        </div>
+        <?php // Who they are is their profile team card (T31): the same fields as "Add your people". ?>
+        <?= view('directory/_person_fields', [
+            'name'      => static fn (string $f): string => $f,
+            'photoName' => 'photo',
+            'm'         => $card ?? ['name' => $provider['name'], 'role' => $provider['title'], 'bio' => $provider['bio'], 'show_on_profile' => '0'],
+            'e'         => static fn (string $f): string => (string) ($errors[$f] ?? ($f === 'role' ? ($errors['title'] ?? '') : '')),
+            'regulator' => $regulator,
+        ], ['saveData' => false]) ?>
+        <p class="hint mb-4">These details are also your profile&rsquo;s team card. &ldquo;Show on my profile&rdquo; puts them on your public profile.</p>
         <div class="field">
             <label for="p-color">Calendar colour</label>
             <select id="p-color" name="color">
