@@ -47,6 +47,7 @@ class AppointmentService
         AvailabilityService::NOT_ON_THE_GRID => 'Choose one of the times offered.',
         'not_found'                          => 'That appointment was not found.',
         'not_upcoming'                       => 'Only upcoming appointments can be moved.',
+        'not_offered'                        => 'They do not offer that service. Choose someone who does.',
     ];
 
     private int $listingId;
@@ -104,12 +105,40 @@ class AppointmentService
         $providerId = $providerId !== null && $this->inScope($providerId) && in_array($providerId, $service['provider_ids'] ?? [], true)
             ? $providerId
             : (int) $row['provider_id'];
+        $own = (int) $row['provider_id'] === $providerId ? (string) $row['start_at'] : '';
 
+        return ['provider_id' => $providerId] + $this->free($serviceId, $providerId, $date, $id, $own, $count);
+    }
+
+    /**
+     * Free times for a new appointment (the Book form and dialog): the same
+     * next few and chosen date as freeTimes(), so nobody guesses a time.
+     * Null when the person is out of scope or does not offer the service.
+     *
+     * @return array{provider_id:int,next:list<array<string,mixed>>,day:list<array<string,mixed>>}|null
+     */
+    public function freeForNew(int $serviceId, int $providerId, ?string $date = null, int $count = 6): ?array
+    {
+        $service = (new CatalogueService($this->listingId))->service($serviceId);
+        if ($service === null || ! $this->inScope($providerId) || ! in_array($providerId, $service['provider_ids'] ?? [], true)) {
+            return null;
+        }
+
+        return ['provider_id' => $providerId] + $this->free($serviceId, $providerId, $date, null, '', $count);
+    }
+
+    /**
+     * The next free times from now (up to 60 days) and every free time on
+     * one date, each with its place. Read only.
+     *
+     * @return array{next:list<array<string,mixed>>,day:list<array<string,mixed>>}
+     */
+    private function free(int $serviceId, int $providerId, ?string $date, ?int $excludeId, string $own, int $count): array
+    {
         // Read only, up to 60 days: hours and place windows asked once.
         $engine = (new AvailabilityService($this->listing, $this->now))->remember();
         $places = (new TeamService($this->listingId))->locationChoices($this->listing);
         $nowUtc = $this->now->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-        $own    = (int) $row['provider_id'] === $providerId ? (string) $row['start_at'] : '';
         $shape  = static function (string $day, array $slot) use ($places, $engine): array {
             $place = (int) ($slot['location_id'] ?? 0);
 
@@ -123,7 +152,7 @@ class AppointmentService
             ];
         };
         $free = fn (string $day): array => array_values(array_filter(
-            $engine->slots($providerId, $serviceId, $day, false, $id),
+            $engine->slots($providerId, $serviceId, $day, false, $excludeId),
             static fn (array $s): bool => $s['start'] > $nowUtc && $s['start'] !== $own,
         ));
 
@@ -143,7 +172,7 @@ class AppointmentService
             $chosen = array_map(static fn (array $s): array => $shape($date, $s), $free($date));
         }
 
-        return ['provider_id' => $providerId, 'next' => $next, 'day' => $chosen];
+        return ['next' => $next, 'day' => $chosen];
     }
 
     /** @return array<string,mixed>|null */

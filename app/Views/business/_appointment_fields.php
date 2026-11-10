@@ -60,6 +60,15 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
     <?php endif ?>
 </div>
 
+<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's. A click fills Date and Time. Hidden without the script. ?>
+<div class="free-times mb-4" data-free hidden>
+    <p class="free-times-heading">Next free times</p>
+    <div class="free-times-list" data-free-next></div>
+    <p class="free-times-heading" data-free-day-heading hidden></p>
+    <div class="free-times-list" data-free-day hidden></div>
+    <p class="free-times-chosen" data-free-chosen hidden></p>
+</div>
+
 <fieldset class="mt-2" data-customer-picker<?php if (! empty($initialCustomer)): ?> data-customer-initial="<?= esc(json_encode($initialCustomer), 'attr') ?>"<?php endif ?>>
     <legend class="text-sm font-semibold text-slate-900 dark:text-white">Customer</legend>
     <input type="hidden" name="customer_id" value="<?= esc($val('customer_id'), 'attr') ?>" data-customer-id>

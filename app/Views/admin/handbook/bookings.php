@@ -37,6 +37,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
     <ul>
         <li><strong>Catalogue and team:</strong> <code>CatalogueService</code>, <code>TeamService</code>, <code>TimeOffService</code>.</li>
         <li><strong>Scheduling:</strong> <code>AvailabilityService</code> (half open intervals, buffers, the profile's hours and holidays).</li>
+        <li><strong>Working hours:</strong> each person follows the profile's opening hours (<code>hours_mode</code> profile, the default for a new business; nothing copied, so a change on the profile reaches booking at once) or keeps own hours (<code>own</code>, rows in <code>xs_booking_provider_hours</code>, kept while following). Every reader goes through <code>ProviderWeek</code>. <code>hours_seen</code> fingerprints the opening hours, so the team page and the setup check ask "Follow our opening hours" or "Keep mine" when they change.</li>
         <li><strong>Calendar and customers:</strong> <code>AppointmentService</code>, <code>CustomerService</code>, calendar view models in
             <code>Services/Bookings/Calendar/</code>, script built by Vite from <code>resources/business/</code>.</li>
         <li><strong>Public booking:</strong> <code>PublicBookingService</code>, controller <code>Book</code> (sessionless until the details step).</li>
@@ -51,6 +52,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
     <ul>
         <li>Nothing booking related changes discovery ranking or the quality score.</li>
         <li>Public profile pages stay sessionless; notifications are enqueued, never sent in a request.</li>
+        <li><strong>Emails:</strong> the customer gets <code>emails/booking-notification.php</code> (from "{business} via WebScheduler Local", Reply-To the business; heading, place with Google Maps and Waze, opening hours, Add to Google Calendar, Terms and Privacy). The team gets <code>emails/booking-team.php</code> (from "WebScheduler Local", Reply-To the customer; customer contact, links into /bookings). Both are built by <code>Notifications\Channels::email()</code> from <code>MessageContext</code>, which keeps a hidden address out of both.</li>
         <li>Each business on its own site's host; clock and currency from <code>BusinessLocale</code>; no rand on .app.</li>
     </ul>
 

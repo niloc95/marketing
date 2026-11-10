@@ -2,6 +2,7 @@
 /**
  * @var list<array<string,mixed>>           $providers
  * @var array<int,array<int,array<string,mixed>>> $hours
+ * @var array<int,bool>                          $hoursChanged opening hours changed since their own hours were set
  * @var list<array<string,mixed>>           $members
  * @var bool                                $canAdd
  * @var list<array<string,mixed>>           $profileTeam
@@ -25,6 +26,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                 <span class="block font-semibold"><?= esc((string) $p['name']) ?></span>
                 <?php if ($p['title']): ?><span class="text-sm text-slate-500 dark:text-slate-400"><?= esc((string) $p['title']) ?></span><?php endif ?>
                 <?php if ($archived): ?><span class="pill pill-unpublished">Archived</span><?php elseif (! $p['bookable']): ?><span class="pill pill-pending">Not bookable</span><?php endif ?>
+                <?php if (! $archived && ($hoursChanged[(int) $p['id']] ?? false)): ?><span class="pill pill-pending">Opening hours changed</span><?php endif ?>
             </span>
             <span class="flex gap-1 text-xs" aria-label="Working days">
                 <?php foreach ($days as $i => $d): ?>

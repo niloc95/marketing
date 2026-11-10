@@ -63,6 +63,10 @@ class SetupCheck
             if (array_filter($week, static fn (array $d): bool => $d['active']) === []) {
                 $out[] = ['code' => 'provider_no_hours', 'text' => $p['name'] . ' has no working hours.', 'link' => 'bookings/team/' . $p['id'] . '#hours'];
             }
+            // Own hours, and the opening hours moved since: ask, never change them.
+            if ($team->openingHoursChanged((int) $p['id'], $p)) {
+                $out[] = ['code' => 'provider_hours_changed', 'text' => 'Your opening hours changed. Check ' . $p['name'] . '\'s working hours: they keep their own times until you choose.', 'link' => 'bookings/team/' . $p['id'] . '#hours'];
+            }
             if ($services !== [] && $catalog->servicesForProvider((int) $p['id']) === []) {
                 $out[] = ['code' => 'provider_no_services', 'text' => $p['name'] . ' offers no services.', 'link' => 'bookings/team/' . $p['id']];
             }

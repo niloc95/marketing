@@ -33,45 +33,66 @@ class Channels
             return ['ok' => false, 'error' => 'No valid email address.'];
         }
         $values = $context['values'];
+        $config = config('BookingNotifications');
+        $split  = static fn (string $body): array => array_values(array_filter(array_map('trim', preg_split("/\n\s*\n/", $body) ?: []), static fn (string $p): bool => $p !== ''));
+
         if ($team) {
-            $t        = config('BookingNotifications')->teamTemplates[$event] ?? null;
+            // A notice for staff: from the platform, Reply goes to the customer,
+            // their contact details and links into /bookings. Not the customer's email.
+            $t = $config->teamTemplates[$event] ?? null;
             if ($t === null) {
                 return ['ok' => false, 'error' => 'No team message for this event.'];
             }
-            $filled   = NotificationTemplates::fill(['subject' => $t['subject'], 'body' => $t['body']], $values);
-            $button   = ['Open the calendar', $context['calendar_url']];
-            $answers  = $context['answers'];
-            $footer   = 'You get these emails because you are on the team of ' . $values['{business}'] . ' on WebScheduler Local. You can turn them off under Notices.';
-            $headers  = [];
-            $replyTo  = '';
-            $policy   = '';
-            $unsub    = '';
-        } else {
-            $showAnswers = str_contains($template['body'], '{answers}');
-            $filled      = NotificationTemplates::fill($template, ['{answers}' => ''] + $values);
-            $button      = $context['manage_url'] !== '' && ! in_array($event, ['cancelled', 'no_show'], true)
-                ? ['Change or cancel your booking', $context['manage_url']]
-                : ['Book again', $context['booking_url']];
-            $answers     = $showAnswers ? $context['answers'] : [];
-            $footer      = 'Sent by WebScheduler Local for ' . $values['{business}'] . '. Reply to this email to reach them.';
-            $unsub       = $context['customer'] !== null
-                ? listing_site_url($listing, 'book/unsubscribe/' . $context['customer']['hash'])
-                : '';
-            $headers     = $unsub !== '' ? ['List-Unsubscribe' => '<' . $unsub . '>', 'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click'] : [];
-            $replyTo     = filter_var($context['reply_to'], FILTER_VALIDATE_EMAIL) !== false ? $context['reply_to'] : '';
-            $policy      = in_array($event, ['pending', 'confirmed', 'rescheduled', 'reminder'], true) ? trim($values['{cancellation_policy}']) : '';
+            $filled  = NotificationTemplates::fill(['subject' => $t['subject'], 'body' => $t['body']], $values);
+            $contact = $context['customer_contact'];
+            $body    = view('emails/booking-team', [
+                'business'   => $values['{business}'],
+                'heading'    => $config->teamHeadings[$event] ?? $t['subject'],
+                'paragraphs' => $split($filled['body']),
+                'contact'    => $contact,
+                'details'    => $context['details'],
+                'place'      => $context['place'],
+                'answers'    => $context['answers'],
+                'view_url'   => $context['view_url'],
+                'customer_page_url' => $context['customer_page_url'],
+                'booked'     => $context['booked'],
+                'footer'     => 'You get these emails because you are on the team of ' . $values['{business}'] . ' on WebScheduler Local. You can turn them off under Notices.',
+            ], ['saveData' => false]);
+            $replyTo = filter_var($contact['email'], FILTER_VALIDATE_EMAIL) !== false ? $contact['email'] : '';
+            $ok      = (new Mailer())->send($to, $filled['subject'], $body, $replyTo, ['fromName' => 'WebScheduler Local']);
+
+            return $ok ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => 'The mail server did not accept the email.'];
         }
 
-        $paragraphs = array_values(array_filter(array_map('trim', preg_split("/\n\s*\n/", $filled['body']) ?: []), static fn (string $p): bool => $p !== ''));
-        $body       = view('emails/booking-notification', [
-            'business'    => $values['{business}'],
-            'paragraphs'  => $paragraphs,
-            'details'     => $context['details'],
-            'answers'     => $answers,
-            'button'      => $button,
-            'policy'      => $policy,
-            'unsubscribe' => $unsub,
-            'footer'      => $footer,
+        $showAnswers = str_contains($template['body'], '{answers}');
+        $filled      = NotificationTemplates::fill($template, ['{answers}' => ''] + $values);
+        $upcoming    = in_array($event, ['pending', 'confirmed', 'rescheduled', 'reminder'], true);
+        $button      = $context['manage_url'] !== '' && ! in_array($event, ['cancelled', 'no_show'], true)
+            ? ['Change or cancel your booking', $context['manage_url']]
+            : ['Book again', $context['booking_url']];
+        $unsub       = $context['customer'] !== null
+            ? listing_site_url($listing, 'book/unsubscribe/' . $context['customer']['hash'])
+            : '';
+        $headers     = $unsub !== '' ? ['List-Unsubscribe' => '<' . $unsub . '>', 'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click'] : [];
+        $replyTo     = filter_var($context['reply_to'], FILTER_VALIDATE_EMAIL) !== false ? $context['reply_to'] : '';
+
+        $body = view('emails/booking-notification', [
+            'business'      => $values['{business}'],
+            'heading'       => $config->customerHeadings[$event] ?? '',
+            'paragraphs'    => $split($filled['body']),
+            'details'       => $context['details'],
+            'place'         => $upcoming ? $context['place'] : null,
+            'hours'         => $upcoming ? $context['hours'] : [],
+            'timezone_note' => $context['timezone_note'],
+            'enquiries'     => $context['enquiries'],
+            'answers'       => $showAnswers ? $context['answers'] : [],
+            'button'        => $button,
+            'calendar_link' => $upcoming ? $context['calendar_link'] : '',
+            'policy'        => $upcoming ? trim($values['{cancellation_policy}']) : '',
+            'terms_url'     => $context['terms_url'],
+            'privacy_url'   => $context['privacy_url'],
+            'unsubscribe'   => $unsub,
+            'footer'        => 'Sent by WebScheduler Local for ' . $values['{business}'] . '. Reply to this email to reach them.',
         ], ['saveData' => false]);
 
         $ok = (new Mailer())->send($to, $filled['subject'], $body, $replyTo, ['fromName' => $context['from_name'], 'headers' => $headers]);

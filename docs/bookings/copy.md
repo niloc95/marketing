@@ -64,6 +64,29 @@ Every customer email:
   unsubscribe link for reminders
 - has times in the business's own timezone, with the zone named when it differs from
   the customer's site
+- (10 Nov 2026) opens with a heading per event (`Config\BookingNotifications::$customerHeadings`),
+  then the business's own paragraphs; the details card shows Where with "Open in Google
+  Maps" and "Open in Waze" and an Enquiries line; pending, confirmed, rescheduled and
+  reminder add the place's opening hours and "Add to Google Calendar"; a copy this link
+  fallback under the button; Terms (when the business has them) and Privacy in the footer
+
+## Team email (10 Nov 2026)
+
+A notice for staff, not the customer's email (`emails/booking-team.php`): From
+"WebScheduler Local", Reply-To the customer. Heading per event
+(`$teamHeadings`: New booking request, New booking, Booking moved, Booking cancelled), the
+fixed sentence (`$teamTemplates`), the customer's name, phone and email, the appointment
+with its place and Google Maps and Waze links, "Their answers", buttons "Open the
+appointment" (calendar, opened) and links "Customer page" and "Email the customer", and
+"Booked online by the customer, {date} at {time}" (or "by {team member}"). No checklist:
+the reference app's "Prepare patient file" was medical only.
+
+| Event | Subject |
+|---|---|
+| pending | New booking request: {Service} {when} |
+| confirmed | New booking: {Service} {when} |
+| rescheduled | Booking moved: {Service} is now {when} |
+| cancelled | Booking cancelled: {Service} {when} |
 
 ## Rewrites of Bookings strings found so far
 

@@ -2,9 +2,9 @@
 
 namespace App\Services\Bookings\Calendar;
 
-use App\Models\Bookings\BookingProviderHoursModel;
 use App\Services\Bookings\AvailabilityService;
 use App\Services\Bookings\BookingSettings;
+use App\Services\Bookings\ProviderWeek;
 
 /**
  * Whose hours the calendar shades and how much of the day it draws.
@@ -62,9 +62,12 @@ class CalendarHours
         foreach ($ids as $id) {
             $this->rows[$id] = [];
         }
-        foreach (BookingProviderHoursModel::forBusiness($this->listingId)->whereIn('provider_id', $ids)->findAll() as $row) {
-            // Several periods a day since T29: the day's rows, in time order.
-            $this->rows[(int) $row['provider_id']][(int) $row['weekday']][] = $row;
+        // Their own rows, or the profile's opening hours (ProviderWeek).
+        foreach (ProviderWeek::rows($this->listingId, $ids, $this->listing['trading_hours'] ?? null) as $id => $rows) {
+            foreach ($rows as $row) {
+                // Several periods a day since T29: the day's rows, in time order.
+                $this->rows[$id][(int) $row['weekday']][] = $row;
+            }
         }
     }
 

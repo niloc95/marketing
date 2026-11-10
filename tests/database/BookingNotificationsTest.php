@@ -193,6 +193,73 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertArrayNotHasKey('List-Unsubscribe', $this->sent[1]['headers'], 'Team mail is not a list');
     }
 
+    public function testTheTeamGetsANoticeForStaffNotTheCustomersEmail(): void
+    {
+        $this->listings->update($this->listingId, ['address_line' => '12 Jan Smuts Avenue', 'suburb' => 'Rosebank', 'city' => 'Johannesburg']);
+        $id = $this->bookOnline();
+        $this->dispatch();
+
+        [$customer, $team] = $this->sent;
+        $appt = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        $body = (string) $team['body'];
+        $this->assertStringContainsString('WebScheduler Local', (string) $team['headers']['From']);
+        $this->assertStringNotContainsString('via WebScheduler Local', (string) $team['headers']['From'], 'Not dressed as the business');
+        $this->assertSame('alice@example.test', $team['replyTo'] ?? null, 'Reply goes to the customer');
+        $this->assertStringContainsString('New booking request</h1>', $body);
+        $this->assertStringContainsString('tel:0825551234', $body);
+        $this->assertStringContainsString('mailto:alice@example.test', $body);
+        $this->assertStringContainsString('bookings/calendar?view=day&amp;date=2030-01-10&amp;open=' . $appt['hash'], $body);
+        $this->assertStringContainsString('google.com/maps/dir/', $body);
+        $this->assertStringContainsString('waze.com/ul', $body);
+        $this->assertStringContainsString('Booked online by the customer', $body);
+        $this->assertStringNotContainsString('Change or cancel', $body);
+        $this->assertStringNotContainsString('Your answers', $body);
+        $this->assertNotSame($customer['body'], $team['body']);
+    }
+
+    public function testTheCustomerEmailHasTheHeadingPlaceHoursAndCalendar(): void
+    {
+        $this->listings->update($this->listingId, [
+            'address_line' => '12 Jan Smuts Avenue', 'suburb' => 'Rosebank', 'city' => 'Johannesburg',
+            'trading_hours' => '{"mon":{"closed":false,"open":"08:00","close":"17:00","note":""},"sun":{"closed":true,"open":"","close":"","note":""}}',
+        ]);
+        $id = $this->book('2030-01-08', '10:00', 'confirmed');
+        $this->dispatch();
+
+        $body = (string) $this->sent[0]['body'];
+        $this->assertStringContainsString('Booking confirmed</h1>', $body);
+        $this->assertStringContainsString('Open in Google Maps', $body);
+        $this->assertStringContainsString('Open in Waze', $body);
+        $this->assertStringContainsString('Opening hours', $body);
+        $this->assertStringContainsString('08:00 to 17:00', $body);
+        $this->assertStringContainsString('dates=20300108T080000Z/20300108T090000Z', $body, 'UTC, one hour');
+        $this->assertStringContainsString('If the button does not work', $body);
+        $this->assertStringContainsString('/privacy', $body);
+        $this->assertStringContainsString('salon-lumi@example.test', $body, 'Enquiries');
+
+        $this->appointments()->setStatus($id, 'cancelled');
+        $this->dispatch();
+        $cancelled = (string) end($this->sent)['body'];
+        $this->assertStringContainsString('Booking cancelled</h1>', $cancelled);
+        $this->assertStringNotContainsString('calendar.google.com', $cancelled);
+        $this->assertStringNotContainsString('Opening hours', $cancelled);
+    }
+
+    public function testAHiddenAddressStaysOutOfBothEmails(): void
+    {
+        $this->listings->update($this->listingId, [
+            'address_line' => '12 Jan Smuts Avenue', 'suburb' => 'Rosebank', 'city' => 'Johannesburg',
+            'customer_location' => 'travel', 'show_address' => 0,
+        ]);
+        $this->bookOnline();
+        $this->dispatch();
+
+        foreach ($this->sent as $mail) {
+            $this->assertStringNotContainsString('Jan Smuts', (string) $mail['body']);
+            $this->assertStringNotContainsString('google.com/maps', (string) $mail['body']);
+        }
+    }
+
     public function testSensitiveAnswersNeverReachAnEmail(): void
     {
         BookingSettings::for($this->listingId)->save([
