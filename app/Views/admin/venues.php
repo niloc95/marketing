@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Venues | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -22,7 +21,6 @@
  * @var array $provinces
  */
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

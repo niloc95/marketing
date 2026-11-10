@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Career applications | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -27,7 +26,6 @@ $link = static fn (array $q) => base_url('admin/careers/applications') . '?' . h
     static fn ($v) => $v !== null && $v !== ''
 ));
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

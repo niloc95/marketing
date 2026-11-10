@@ -165,6 +165,8 @@ class TeamService
             BookingProviderModel::forBusiness($this->listingId)->update($id, $data);
             $this->audit->record($this->listingId, $accountId, 'provider.updated', 'provider', $id, null, ['name' => $name]);
         }
+        // Bookable or not decides which services the profile lists (T28).
+        (new CatalogueService($this->listingId, $this->audit))->mirrorToProfile();
 
         return ['id' => $id, 'errors' => []];
     }
@@ -176,6 +178,7 @@ class TeamService
         }
         BookingProviderModel::forBusiness($this->listingId)->update($id, ['archived_at' => $archive ? gmdate('Y-m-d H:i:s') : null]);
         $this->audit->record($this->listingId, $accountId, $archive ? 'provider.archived' : 'provider.restored', 'provider', $id);
+        (new CatalogueService($this->listingId, $this->audit))->mirrorToProfile();
 
         return true;
     }
@@ -183,39 +186,55 @@ class TeamService
     // Weekly hours
 
     /**
-     * A provider's week, 1 to 7, with `active` false on days off.
+     * A provider's week, 1 to 7, with `active` false on days off. Each day is
+     * a list of periods (decision T29), in time order, each at a place
+     * (location_id null = the profile's own address) and for some services
+     * (service_ids null = everything they offer). start, end, break and
+     * location_id at the top are the day's first period, for callers that
+     * only need the outline.
      *
-     * @return array<int,array{active:bool,start:string,end:string,break_start:string,break_end:string,location_id:?int}>
+     * @return array<int,array{active:bool,start:string,end:string,break_start:string,break_end:string,location_id:?int,periods:list<array{start:string,end:string,break_start:string,break_end:string,location_id:?int,service_ids:?list<int>}>}>
      */
     public function hours(int $providerId): array
     {
         $week = [];
         foreach (array_keys(self::WEEKDAYS) as $day) {
-            $week[$day] = ['active' => false, 'start' => '', 'end' => '', 'break_start' => '', 'break_end' => '', 'location_id' => null];
+            $week[$day] = ['active' => false, 'start' => '', 'end' => '', 'break_start' => '', 'break_end' => '', 'location_id' => null, 'periods' => []];
         }
-        $rows = BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)->findAll();
+        $rows = BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)
+            ->orderBy('weekday', 'ASC')->orderBy('start_time', 'ASC')->findAll();
         foreach ($rows as $row) {
             $breaks = json_decode((string) $row['breaks'], true) ?: [];
-            $week[(int) $row['weekday']] = [
-                'active'      => true,
+            $ids    = $row['service_ids'] !== null ? json_decode((string) $row['service_ids'], true) : null;
+            $period = [
                 'start'       => substr((string) $row['start_time'], 0, 5),
                 'end'         => substr((string) $row['end_time'], 0, 5),
                 'break_start' => (string) ($breaks[0]['start'] ?? ''),
                 'break_end'   => (string) ($breaks[0]['end'] ?? ''),
                 'location_id' => $row['location_id'] !== null ? (int) $row['location_id'] : null,
+                'service_ids' => is_array($ids) ? array_map('intval', $ids) : null,
             ];
+            $day = (int) $row['weekday'];
+            if (! $week[$day]['active']) {
+                $week[$day] = ['active' => true] + array_diff_key($period, ['service_ids' => 1]) + ['periods' => []];
+            }
+            $week[$day]['periods'][] = $period;
         }
 
         return $week;
     }
 
     /**
-     * Save a provider's week. Rules from Bookings' ScheduleValidationService:
-     * start before end; a break needs both ends, starts before it ends, and
-     * falls inside the working hours. Days not ticked are days off. Nothing is
-     * written unless every day is valid.
+     * Save a provider's week. Each ticked day holds one or more periods
+     * (`periods`: start, end, location_id, and service_ids when only some
+     * services are offered there), or, the shape before T29, one period with
+     * start, end, an optional break and location_id. Rules from Bookings'
+     * ScheduleValidationService, plus: periods on a day must not overlap,
+     * and a period limited to some services names at least one the person
+     * offers. Days not ticked are days off. Nothing is written unless every
+     * day is valid.
      *
-     * @param array<int|string,array<string,mixed>> $input weekday => active, start, end, break_start, break_end, location_id
+     * @param array<int|string,array<string,mixed>> $input weekday => active, periods | start, end, break_start, break_end, location_id
      *
      * @return array<int,string> weekday => problem
      */
@@ -225,6 +244,7 @@ class TeamService
             return [0 => 'That person is not part of this business.'];
         }
         $locations = $this->locationIds();
+        $offered   = (new CatalogueService($this->listingId))->servicesForProvider($providerId);
         $clean     = [];
         $errors    = [];
 
@@ -233,40 +253,40 @@ class TeamService
             if (empty($row['active'])) {
                 continue;
             }
-            $start      = self::time($row['start'] ?? '');
-            $end        = self::time($row['end'] ?? '');
-            $breakStart = self::time($row['break_start'] ?? '');
-            $breakEnd   = self::time($row['break_end'] ?? '');
-            $rawBreak   = trim((string) ($row['break_start'] ?? '')) !== '' || trim((string) ($row['break_end'] ?? '')) !== '';
-
-            if ($start === null || $end === null) {
+            $periods = is_array($row['periods'] ?? null) ? array_values(array_filter(
+                $row['periods'],
+                static fn ($p): bool => is_array($p) && (trim((string) ($p['start'] ?? '')) !== '' || trim((string) ($p['end'] ?? '')) !== ''),
+            )) : [$row];
+            if ($periods === []) {
                 $errors[$day] = 'Enter a start and an end time.';
-            } elseif ($start >= $end) {
-                $errors[$day] = 'Start must be before the end.';
-            } elseif ($rawBreak && ($breakStart === null || $breakEnd === null)) {
-                $errors[$day] = 'Give the break a start and an end, or leave both empty.';
-            } elseif ($breakStart !== null && $breakStart >= $breakEnd) {
-                $errors[$day] = 'The break must start before it ends.';
-            } elseif ($breakStart !== null && ($breakStart < $start || $breakEnd > $end)) {
-                $errors[$day] = 'The break must fall inside the working hours.';
+
+                continue;
             }
 
-            $locationId = (int) ($row['location_id'] ?? 0);
-            if ($locationId > 0 && ! in_array($locationId, $locations, true)) {
-                $errors[$day] = 'Choose one of your addresses.';
+            $dayRows = [];
+            foreach ($periods as $period) {
+                [$data, $problem] = $this->period($providerId, $day, $period, $locations, $offered);
+                if ($problem !== null) {
+                    $errors[$day] = $problem;
+
+                    break;
+                }
+                $dayRows[] = $data;
             }
             if (isset($errors[$day])) {
                 continue;
             }
+            usort($dayRows, static fn (array $a, array $b): int => strcmp($a['start_time'], $b['start_time']));
+            for ($i = 1, $n = count($dayRows); $i < $n; $i++) {
+                if ($dayRows[$i]['start_time'] < $dayRows[$i - 1]['end_time']) {
+                    $errors[$day] = 'Two of these times overlap. One person can be in one place at a time.';
 
-            $clean[$day] = [
-                'provider_id' => $providerId,
-                'weekday'     => $day,
-                'start_time'  => $start . ':00',
-                'end_time'    => $end . ':00',
-                'breaks'      => json_encode($breakStart !== null ? [['start' => $breakStart, 'end' => $breakEnd]] : []),
-                'location_id' => $locationId > 0 ? $locationId : null,
-            ];
+                    break;
+                }
+            }
+            if (! isset($errors[$day])) {
+                $clean[$day] = $dayRows;
+            }
         }
 
         if ($errors !== []) {
@@ -277,8 +297,10 @@ class TeamService
         $db = db_connect();
         $db->resetTransStatus()->transStart();
         BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)->delete();
-        foreach ($clean as $row) {
-            BookingProviderHoursModel::forBusiness($this->listingId)->insert($row);
+        foreach ($clean as $dayRows) {
+            foreach ($dayRows as $row) {
+                BookingProviderHoursModel::forBusiness($this->listingId)->insert($row);
+            }
         }
         if ($db->transComplete() === false) {
             throw new \RuntimeException('Saving working hours was rolled back.');
@@ -286,6 +308,137 @@ class TeamService
         $this->audit->record($this->listingId, $accountId, 'provider.hours_saved', 'provider', $providerId, null, ['days' => array_keys($clean)]);
 
         return [];
+    }
+
+    /**
+     * One period as a row, or the reason it cannot be.
+     *
+     * @param array<string,mixed> $period
+     * @param list<int>           $locations
+     * @param list<int>           $offered
+     *
+     * @return array{0:array<string,mixed>,1:?string}
+     */
+    private function period(int $providerId, int $day, array $period, array $locations, array $offered): array
+    {
+        $start      = self::time($period['start'] ?? '');
+        $end        = self::time($period['end'] ?? '');
+        $breakStart = self::time($period['break_start'] ?? '');
+        $breakEnd   = self::time($period['break_end'] ?? '');
+        $rawBreak   = trim((string) ($period['break_start'] ?? '')) !== '' || trim((string) ($period['break_end'] ?? '')) !== '';
+
+        if ($start === null || $end === null) {
+            return [[], 'Enter a start and an end time.'];
+        }
+        if ($start >= $end) {
+            return [[], 'Start must be before the end.'];
+        }
+        if ($rawBreak && ($breakStart === null || $breakEnd === null)) {
+            return [[], 'Give the break a start and an end, or leave both empty.'];
+        }
+        if ($breakStart !== null && $breakStart >= $breakEnd) {
+            return [[], 'The break must start before it ends.'];
+        }
+        if ($breakStart !== null && ($breakStart < $start || $breakEnd > $end)) {
+            return [[], 'The break must fall inside the working hours.'];
+        }
+        $locationId = (int) ($period['location_id'] ?? 0);
+        if ($locationId > 0 && ! in_array($locationId, $locations, true)) {
+            return [[], 'Choose one of your addresses.'];
+        }
+
+        // Only some services here: the ones ticked, a subset of what they
+        // offer. Ticking one is enough (the form has no separate switch since
+        // 6 Nov 2026); none ticked means every service. `services_limited`
+        // with nothing ticked (an API style call) is still refused.
+        $serviceIds = null;
+        $ticked     = array_filter((array) ($period['service_ids'] ?? []), static fn ($v): bool => (int) $v > 0);
+        if (! empty($period['services_limited']) || $ticked !== []) {
+            $serviceIds = array_values(array_intersect(array_unique(array_map('intval', $ticked)), $offered));
+            if ($serviceIds === []) {
+                return [[], 'Choose at least one of their services for that time, or tick none for all of them.'];
+            }
+            sort($serviceIds);
+            $all = array_values(array_unique($offered));
+            sort($all);
+            if ($serviceIds === $all) {
+                $serviceIds = null; // All of them is the same as not limited.
+            }
+        }
+
+        return [[
+            'provider_id' => $providerId,
+            'weekday'     => $day,
+            'start_time'  => $start . ':00',
+            'end_time'    => $end . ':00',
+            'breaks'      => json_encode($breakStart !== null ? [['start' => $breakStart, 'end' => $breakEnd]] : []),
+            'location_id' => $locationId > 0 ? $locationId : null,
+            'service_ids' => $serviceIds !== null ? json_encode($serviceIds) : null,
+        ], null];
+    }
+
+    /**
+     * A provider's week as the hours form edits it: each day's periods with a
+     * break split into two periods at the same place (a break is simply the
+     * gap between two periods since T29).
+     *
+     * @return array<int,array{active:bool,periods:list<array{start:string,end:string,location_id:?int,service_ids:?list<int>}>}>
+     */
+    public function hoursForForm(int $providerId): array
+    {
+        $out = [];
+        foreach ($this->hours($providerId) as $day => $d) {
+            $periods = [];
+            foreach ($d['periods'] as $p) {
+                $base = ['location_id' => $p['location_id'], 'service_ids' => $p['service_ids']];
+                if ($p['break_start'] !== '') {
+                    $periods[] = ['start' => $p['start'], 'end' => $p['break_start']] + $base;
+                    $periods[] = ['start' => $p['break_end'], 'end' => $p['end']] + $base;
+                } else {
+                    $periods[] = ['start' => $p['start'], 'end' => $p['end']] + $base;
+                }
+            }
+            $out[$day] = ['active' => $d['active'], 'periods' => $periods];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Plain warnings for the hours form: a period outside the opening hours
+     * of the place it is at, or on a day that place is closed. Customers can
+     * only book inside both (AvailabilityService), so the owner should know.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return list<string>
+     */
+    public function hoursWarnings(int $providerId, array $listing): array
+    {
+        helper('directory_hours');
+        $places = $this->locationChoices($listing);
+        $hours  = [0 => hours_decode($listing['trading_hours'] ?? null)];
+        foreach ((new DirectoryPracticeLocationModel())->forListing($this->listingId) as $loc) {
+            $hours[(int) $loc['id']] = hours_decode($loc['trading_hours'] ?? null);
+        }
+        $out = [];
+        foreach ($this->hoursForForm($providerId) as $day => $d) {
+            foreach ($d['periods'] as $p) {
+                $at    = (int) ($p['location_id'] ?? 0);
+                $place = $hours[$at][self::PROFILE_DAY_KEYS[$day]] ?? null;
+                if (! is_array($place)) {
+                    continue; // No hours given there: their own hours decide.
+                }
+                $label = self::WEEKDAYS[$day] . ' ' . $p['start'] . ' to ' . $p['end'] . ' at ' . ($places[$at] ?? 'your address');
+                if ($place['closed']) {
+                    $out[] = $label . ': that place is closed on ' . self::WEEKDAYS[$day] . ', so nobody can book this time.';
+                } elseif ($place['open'] !== '' && ($p['start'] < $place['open'] || $p['end'] > $place['close'])) {
+                    $out[] = $label . ': customers can only book from ' . max($p['start'], $place['open']) . ' to ' . min($p['end'], $place['close']) . ', inside its opening hours (' . $place['open'] . ' to ' . $place['close'] . ').';
+                }
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -443,7 +596,7 @@ class TeamService
             'business' => (string) $listing['display_name'],
             'inviter'  => (string) ($inviter['name'] ?? ''),
             'role'     => config('BookingPermissions')->roleLabels[$role],
-            'url'      => site_url_for('za', 'business/invite/' . $token),
+            'url'      => site_url_for('za', 'bookings/invite/' . $token),
             'days'     => self::INVITE_DAYS,
         ], ['saveData' => false]);
         (new Mailer())->send($email, 'Join ' . $listing['display_name'] . ' on WebScheduler Local', $body);

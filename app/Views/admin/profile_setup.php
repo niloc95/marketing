@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Profile setup orders | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -20,7 +19,6 @@ use App\Models\ProfileSetupOrderModel;
  */
 $link = static fn (string $s) => base_url('admin/profile-setup') . '?status=' . rawurlencode($s);
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

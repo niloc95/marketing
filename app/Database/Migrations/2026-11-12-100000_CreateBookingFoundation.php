@@ -8,7 +8,7 @@ use CodeIgniter\Database\Migration;
  * Phase 1 of online bookings (docs/bookings/data-model.md): who signs in, which
  * businesses they belong to, per business settings and the audit log.
  *
- * - `accounts`: a person who signs in to /business. Not tied to one business,
+ * - `accounts`: a person who signs in to /bookings. Not tied to one business,
  *   so one person can work at two. Password and emailed tokens are stored only
  *   as hashes (password_hash(), TokenHash).
  * - `business_members`: account × profile × role. The profile is the business;

@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Funnel | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -21,7 +20,6 @@ $convTable = static function (array $rows) use ($pct): string {
     return $html;
 };
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

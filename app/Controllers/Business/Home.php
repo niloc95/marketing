@@ -7,7 +7,7 @@ use App\Services\Bookings\BusinessMemberService;
 use App\Services\Bookings\BusinessSession;
 use App\Services\Bookings\DashboardService;
 
-/** The /business dashboard and the business picker. */
+/** The /bookings dashboard and the business picker. */
 class Home extends BaseController
 {
     public function index()
@@ -66,10 +66,10 @@ class Home extends BaseController
 
         // Only a business this account belongs to: the id comes from the form.
         if (! in_array($listingId, array_column($businesses, 'listing_id'), true)) {
-            return redirect()->to(base_url('business/choose'))->with('error', 'Choose one of your businesses.');
+            return redirect()->to(base_url('bookings/choose'))->with('error', 'Choose one of your businesses.');
         }
         BusinessSession::chooseBusiness($listingId);
 
-        return redirect()->to(base_url('business'));
+        return redirect()->to(base_url('bookings'));
     }
 }

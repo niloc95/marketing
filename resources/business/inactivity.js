@@ -1,5 +1,5 @@
 /**
- * Inactivity warning and keepalive for /business, ported from Bookings'
+ * Inactivity warning and keepalive for /bookings, ported from Bookings'
  * resources/js/modules/auth/inactivity-monitor.js. What it keeps:
  *
  * - Wall clock, not timer ticks. Browsers throttle timers in background tabs
@@ -13,7 +13,8 @@
  * - Activity is shared across tabs through localStorage.
  * - While the warning shows, only "Stay signed in" counts as activity.
  *
- * What changed: no SPA hooks (plain page loads), markup lives in the layout
+ * What changed: no SPA hooks (it runs once per load; the shell's page swaps
+ * leave the layout's dialog and body alone), markup lives in the layout
  * (no innerHTML, CSP), sign out is the layout's POST form, and the session
  * length comes from data-idle-seconds (Config\Bookings::$idleSeconds).
  */

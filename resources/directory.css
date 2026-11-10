@@ -98,6 +98,11 @@
      shape marketing-site/src/styles.css uses. */
   .dark body { @apply bg-surface-page text-slate-100; }
   ::selection { @apply bg-brand-orange/20; }
+  /* The honeypot's container (Config\Honeypot). CI4 also injects a nonced
+     <style> for it into <head>, but only into the page that loaded first:
+     a form swapped in by the app shell (resources/shell/spa.js) relies on
+     this rule. */
+  #hpc { display: none; }
   a { @apply no-underline; }
 }
 
@@ -366,40 +371,6 @@
   .dark .site-footer-legal button { @apply text-slate-400 hover:text-white; }
 
   /* Already ocean-on-white — only its seam against the page needs darkening. */
-  /* Admin bar (admin/_bar.php): queue tabs that scroll sideways on a phone,
-     and a More menu that does not. More's panel hangs below the bar, so the
-     bar itself must not clip: only the tab strip scrolls. */
-  .admin-bar       { @apply relative z-30 border-b border-slate-200 bg-primary-500 text-sm text-white; }
-  .dark .admin-bar { @apply border-slate-800; }
-  .admin-bar-inner { @apply flex items-center gap-2 py-2 sm:gap-3; }
-  .admin-bar-brand { @apply shrink-0 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white hover:bg-white/20; }
-  .admin-bar-scroll { @apply relative min-w-0 flex-1 overflow-x-auto; scrollbar-width: none; }  /* relative: clips the sr-only text in a count, which is absolutely positioned */
-  .admin-bar-scroll::-webkit-scrollbar { display: none; }
-  /* Below md the tabs can run off either edge; a soft fade says "there is more". */
-  @media (max-width: 767px) {
-    .admin-bar-scroll { -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
-    .admin-tabs { @apply px-4; }
-  }
-  .admin-tabs      { @apply flex w-max min-w-full items-center gap-1 whitespace-nowrap; }
-  .admin-tab       { @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white; }
-  .admin-tab.is-active { @apply bg-white text-primary-600 hover:bg-white hover:text-primary-600; }
-  .admin-count     { @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
-
-  .admin-more      { @apply relative shrink-0; }
-  .admin-more > summary { list-style: none; }
-  .admin-more > summary::-webkit-details-marker { display: none; }
-  .admin-more-chevron { @apply transition-transform; }
-  .admin-more[open] .admin-more-chevron { @apply rotate-180; }
-  .admin-more-panel { @apply absolute right-0 top-full z-50 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 text-slate-700 shadow-xl; }
-  .dark .admin-more-panel { @apply border-slate-700 bg-slate-900 text-slate-200; }
-  .admin-more-heading { @apply px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400; }
-  .admin-more-link { @apply block w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900; }
-  .dark .admin-more-link { @apply text-slate-200 hover:bg-slate-800 hover:text-white; }
-  .admin-more-link.is-active { @apply bg-primary-50 font-semibold text-primary-600; }
-  .dark .admin-more-link.is-active { @apply bg-white/10 text-white; }
-  /* Sign out is a POST (see Routes.php), so it is a button dressed as a link. */
-  .admin-more-signout { @apply mt-1 border-t border-slate-200 pt-1; }
-  .dark .admin-more-signout { @apply border-slate-700; }
 
   /* ------------------------------------------------------ corner standard */
   /* The floor for every form control on the site, wherever it sits: one-line
@@ -2283,6 +2254,18 @@
   .dark a.service-name   { @apply text-primary-300; }
   .dark .service-price   { @apply text-slate-300; }
 
+  /* Booking services (decision T28): the same rows, with length, who offers
+     it and a Book link on the right. */
+  .service-list-book li { @apply items-start; }
+  .service-main  { @apply flex min-w-0 flex-col; }
+  .service-meta  { @apply text-xs text-slate-500; }
+  .service-desc  { @apply mt-0.5 text-xs text-slate-600; }
+  .service-side  { @apply flex shrink-0 items-baseline gap-3; }
+  .service-book  { @apply font-medium text-primary-500 underline-offset-2 hover:underline; }
+  .dark .service-meta { @apply text-slate-400; }
+  .dark .service-desc { @apply text-slate-300; }
+  .dark .service-book { @apply text-primary-300; }
+
   .feature-list    { @apply m-0 grid list-none gap-x-6 gap-y-2 p-0 sm:grid-cols-2; }
   .feature-list li { @apply flex items-start gap-2 text-sm text-slate-700; }
   .feature-check   { @apply mt-0.5 h-4 w-4 shrink-0 text-emerald-600; }
@@ -3671,6 +3654,88 @@
   .dark .team-member-credentials { @apply text-slate-400; }
   .dark .team-member-bio         { @apply text-slate-300; }
 
+  /* A bookable person's own week, what they offer and their Book button
+     (_team_booking.php). Their hours may be shorter than reception's. */
+  .team-booking   { @apply mt-3; }
+  .team-hours     { @apply m-0 grid gap-0.5 text-sm text-slate-700; }
+  .team-hours-row { @apply flex gap-3; }
+  .team-hours dt  { @apply w-24 shrink-0 font-medium text-slate-900; }
+  .team-hours dd  { @apply m-0; }
+  .team-hours-place { @apply ml-1 text-xs text-slate-500; }
+  .team-hours-period { @apply block; }
+  .team-book      { @apply mt-3 gap-2; }
+  .dark .team-hours    { @apply text-slate-300; }
+  .dark .team-hours dt { @apply text-white; }
+  .dark .team-hours-place { @apply text-slate-400; }
+
+  /* The booking page's "With" choices, with a headshot when there is one. */
+  .book-who       { @apply gap-2; }
+  .book-who-photo { @apply h-8 w-8 shrink-0 rounded-full object-cover; }
+
+  /* Free times in the calendar's move form: when, and where under it. */
+  .free-times         { @apply mt-3; }
+  .free-times-heading { @apply mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .free-times-list    { @apply flex flex-wrap gap-2; }
+  .free-times-empty   { @apply text-sm text-slate-500; }
+  .free-times-chosen  { @apply mt-2 text-sm font-semibold text-brand-ocean; }
+  .free-time          { @apply flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-left text-sm hover:border-brand-ocean; }
+  .free-time[aria-pressed='true'] { @apply border-brand-ocean bg-primary-50 ring-1 ring-brand-ocean; }
+  .free-time-when     { @apply font-semibold text-slate-900; }
+  .free-time-place    { @apply text-xs text-slate-500; }
+  .dark .free-times-heading, .dark .free-times-empty, .dark .free-time-place { @apply text-slate-400; }
+  .dark .free-times-chosen { @apply text-white; }
+  .dark .free-time    { @apply border-slate-700 bg-slate-900; }
+  .dark .free-time-when { @apply text-white; }
+  .dark .free-time[aria-pressed='true'] { @apply border-primary-300 bg-primary-500/15 ring-primary-300; }
+
+  /* /bookings/availability: free times by day, and month or year grids. */
+  .avail-note      { @apply mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900; }
+  .dark .avail-note { @apply bg-amber-950/40 text-amber-200; }
+  .avail-time      { @apply flex flex-col rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm; }
+  .avail-time-when { @apply font-semibold tabular-nums; }
+  .avail-time-where { @apply text-xs text-slate-500; }
+  .dark .avail-time { @apply border-slate-700 bg-slate-900; }
+  .dark .avail-time-where { @apply text-slate-400; }
+  .avail-year      { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4; }
+  .avail-month     { @apply mb-0 p-3; }
+  .avail-grid      { @apply grid grid-cols-7 gap-1 text-center text-xs; }
+  .avail-wd        { @apply font-semibold text-slate-400; }
+  .avail-day       { @apply flex min-h-8 flex-col items-center justify-center rounded-md border border-transparent px-1 py-1 no-underline; }
+  .avail-month-wrap .avail-day { @apply min-h-16; }
+  .avail-day-num   { @apply font-semibold tabular-nums; }
+  .avail-day-info  { @apply mt-0.5 hidden text-[11px] leading-tight sm:block; }
+  .avail-free      { @apply bg-emerald-100 text-emerald-900 hover:border-emerald-500; }
+  .avail-full      { @apply bg-amber-100 text-amber-900 hover:border-amber-500; }
+  .avail-off       { @apply bg-slate-100 text-slate-500 hover:border-slate-400; }
+  .avail-closed    { @apply bg-slate-50 text-slate-400 line-through hover:border-slate-300; }
+  .avail-too_far   { @apply bg-white text-slate-400 hover:border-slate-300; border-style: dashed; border-color: theme('colors.slate.300'); }
+  .avail-past      { @apply text-slate-300; }
+  .avail-today     { @apply ring-2 ring-brand-ocean; }
+  .avail-reason    { @apply rounded px-2 py-0.5 text-xs; }
+  .avail-legend    { @apply mt-3 flex flex-wrap gap-2 text-xs; }
+  .avail-legend .avail-day { @apply min-h-0 px-2 py-1; }
+  .dark .avail-free   { @apply bg-emerald-500/20 text-emerald-200; }
+  .dark .avail-full   { @apply bg-amber-500/20 text-amber-200; }
+  .dark .avail-off    { @apply bg-slate-800 text-slate-400; }
+  .dark .avail-closed { @apply bg-slate-900 text-slate-500; }
+  .dark .avail-too_far { @apply bg-transparent text-slate-500; border-color: theme('colors.slate.700'); }
+  .dark .avail-past   { @apply text-slate-600; }
+  .dark .avail-today  { @apply ring-primary-300; }
+
+  /* The hours form in /bookings (T29): periods per day, an example, warnings. */
+  .hours-period          { @apply mt-2; }
+  .hours-period + .hours-period { @apply border-t border-dashed border-slate-200 pt-2; }
+  .dark .hours-period + .hours-period { @apply border-slate-700; }
+  .hours-example         { @apply rounded-xl bg-slate-50 p-3 text-sm text-slate-700; }
+  .hours-example summary { @apply cursor-pointer font-semibold text-primary-600; }
+  .hours-example p, .hours-example ul { @apply mt-2; }
+  .hours-example ul      { @apply list-disc pl-5; }
+  .dark .hours-example   { @apply bg-slate-800 text-slate-300; }
+  .dark .hours-example summary { @apply text-primary-300; }
+  .hours-warnings        { @apply rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900; }
+  .hours-warnings ul     { @apply mt-1 list-disc pl-5; }
+  .dark .hours-warnings  { @apply border-amber-700 bg-amber-950/40 text-amber-200; }
+
   /* "Other locations" on the profile. Not a card itself — each branch stacks
      the same Contact / Location / Trading hours panels the listing's own
      address gets, and a card around cards double-borders every one of them.
@@ -3969,6 +4034,28 @@
   .table th  { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
   .table td  { @apply border-t border-slate-100 px-4 py-3 align-top; }
   .actions   { @apply flex flex-wrap items-center gap-1.5; }
+
+  /* The system handbook (admin/handbook.php). Chapters reuse .prose-legal,
+     but the page itself is full width so the table list fits. */
+  .handbook-head      { @apply mb-6; }
+  .handbook-toc       { @apply mb-10 rounded-surface border border-slate-200 bg-white p-6; }
+  .handbook-toc ol    { @apply grid list-decimal gap-x-8 gap-y-1 pl-5 text-sm sm:grid-cols-2 lg:grid-cols-3; }
+  .handbook-toc a     { @apply font-medium text-primary-600 hover:underline; }
+  .handbook-chapter   { @apply mb-14 scroll-mt-24; }
+  .handbook-chapter > h2 { @apply mb-4 border-b border-slate-200 pb-2 text-2xl font-bold tracking-tight text-primary-500; }
+  .handbook .prose-legal { @apply mx-0 max-w-4xl; }
+  .handbook-columns   { @apply grid gap-6 lg:grid-cols-2; }
+  .handbook-columns .tablewrap { @apply self-start; }
+  /* Table names and class paths are one long word: let them wrap on a phone. */
+  .handbook code      { overflow-wrap: anywhere; }
+  .handbook .faq-item summary > span { @apply block; }
+  .handbook-swatches  { @apply mb-2 grid grid-cols-2 gap-3 text-xs text-slate-600 sm:grid-cols-4 lg:grid-cols-6; }
+  .handbook-swatches li { @apply flex items-center gap-2; }
+  .handbook-swatches svg { @apply shrink-0 text-slate-900; }
+  .dark .handbook-toc { @apply border-slate-800 bg-surface-card; }
+  .dark .handbook-chapter > h2 { @apply border-slate-800 text-white; }
+  .dark .handbook-swatches { @apply text-slate-400; }
+  .dark .handbook-swatches svg { @apply text-white; }
 
   /* The admin profile list (admin/index.php). Six columns and icon actions so
      it fits a laptop screen without the sideways scroll the eleven column
@@ -4273,7 +4360,13 @@
   .cal-col.is-closed { @apply bg-slate-50 dark:bg-slate-950; }
   .cal-line { @apply pointer-events-none absolute inset-x-0 border-t border-slate-100 dark:border-slate-800; }
   .cal-line.is-hour { @apply border-slate-200 dark:border-slate-700; }
-  .cal-off { @apply pointer-events-none absolute inset-x-0 bg-slate-100/70 dark:bg-slate-800/60; }
+  /* Not working: a light hatch, so a short working day does not turn the
+     whole week grey (owner, 6 Nov 2026). */
+  .cal-off {
+    @apply pointer-events-none absolute inset-x-0;
+    background-image: repeating-linear-gradient(135deg, rgb(148 163 184 / 0.10) 0 6px, transparent 6px 12px);
+  }
+  .dark .cal-off { background-image: repeating-linear-gradient(135deg, rgb(148 163 184 / 0.08) 0 6px, transparent 6px 12px); }
   .cal-drop { @apply absolute inset-x-0; }
   .cal-drop.is-over { @apply bg-primary-50 ring-2 ring-inset ring-primary-400 dark:bg-primary-900/30; }
   .cal-now { @apply pointer-events-none absolute inset-x-0 z-10 border-t-2 border-rose-500; }
@@ -4336,4 +4429,114 @@
   .biz-state.is-break    { @apply bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200; }
   .biz-state.is-off,
   .biz-state.is-time_off { @apply bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300; }
+}
+
+/* ------------------------------------------------------------ app shell
+   The signed in shell for /admin and /business (layouts/_shell.php,
+   layouts/_sidebar.php, resources/shell/), ported from WebScheduler Bookings'
+   _app-layout.scss and _unified-sidebar.scss in Local's tokens.
+
+   Phone: the sidebar is a drawer behind the Menu button. Tablet (md): a rail
+   of icons that opens to full width over the page. Desktop (lg): a panel
+   inset from the window's edges, always open. The page scrolls the window;
+   the top bar is sticky. */
+@layer components {
+  body.shell { @apply block bg-slate-50 text-slate-800; }
+  .dark body.shell { @apply bg-surface-page text-slate-100; }
+  html:has(> body.shell) { @apply scroll-pt-20; }
+  html.shell-locked { @apply overflow-hidden; }
+
+  .shell-skip { @apply sr-only; }
+  .shell-skip:focus { @apply not-sr-only fixed left-4 top-4 z-50 rounded-lg bg-white px-4 py-2 font-semibold text-brand-ocean shadow-lg; }
+
+  .shell-sidebar { @apply fixed bottom-0 left-0 top-0 z-40 flex w-72 max-w-[85vw] -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200; }
+  .dark .shell-sidebar { @apply border-slate-800 bg-surface-tone; }
+  .shell-sidebar.is-open { @apply translate-x-0 shadow-2xl; }
+  .shell-overlay { @apply fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm; }
+
+  .shell-brand { @apply flex h-16 shrink-0 items-center gap-2 px-4; }
+  .shell-brand-link { @apply flex min-w-0 flex-1 items-center gap-2.5 leading-tight text-slate-900; }
+  .dark .shell-brand-link { @apply text-white; }
+  /* Two classes deep: .shell-icon-btn, later in the file, would show it. */
+  .shell-brand .shell-close { @apply hidden; }
+  .shell-sidebar.is-open .shell-close { @apply grid; }
+  .shell-context { @apply mx-3 mb-1 block truncate rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200; }
+  .dark .shell-context { @apply bg-white/5 text-slate-200 hover:bg-white/10; }
+
+  .shell-nav { @apply min-h-0 flex-1 overflow-y-auto px-3 py-2; }
+  .shell-group { @apply px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400; }
+  .dark .shell-group { @apply text-slate-500; }
+  .shell-list { @apply space-y-0.5; }
+  .shell-link { @apply flex min-h-10 w-full cursor-pointer items-center gap-3 rounded-xl border-0 bg-transparent px-3 py-2 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900; }
+  .dark .shell-link { @apply text-slate-300 hover:bg-white/5 hover:text-white; }
+  .shell-link.is-active { @apply bg-brand-ocean text-white shadow-brand hover:bg-brand-ocean hover:text-white; }
+  .dark .shell-link.is-active { @apply bg-primary-600 text-white; }
+  .shell-link-icon { @apply shrink-0; }
+  .shell-count { @apply ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
+  .shell-foot { @apply shrink-0 space-y-0.5 border-t border-slate-200 px-3 py-3; }
+  .dark .shell-foot { @apply border-slate-800; }
+
+  .shell-topbar { @apply sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-slate-200/70 bg-slate-50/85 px-4 backdrop-blur; }
+  .dark .shell-topbar { @apply border-slate-800 bg-surface-page/85; }
+  .shell-title { @apply min-w-0 truncate text-base font-semibold text-slate-900; }
+  .dark .shell-title { @apply text-white; }
+  .shell-icon-btn { @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-slate-500 hover:bg-slate-200/60 hover:text-slate-900; }
+  .dark .shell-icon-btn { @apply text-slate-400 hover:bg-white/10 hover:text-white; }
+
+  /* Loading: a bar under the top bar, and the old page dims only if the next
+     one takes a moment, so a quick swap does not flicker. */
+  .shell-progress { @apply pointer-events-none absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-0 bg-brand-orange opacity-0; }
+  .shell-loading .shell-progress { @apply opacity-100; animation: shell-progress 8s cubic-bezier(.1, .7, .2, 1) forwards; }
+  .shell-content { @apply min-w-0 outline-none transition-opacity duration-150; }
+  .shell-loading .shell-content { @apply opacity-60 delay-200; }
+
+  body[data-shell-bare] [data-shell-menu] { @apply hidden; }
+}
+
+@keyframes shell-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(.92); }
+}
+
+/* Tablet: the rail. Only icons until opened; opening widens it over the page. */
+@media (min-width: 768px) {
+  .shell-sidebar { @apply w-16 max-w-none translate-x-0; }
+  .shell-sidebar.is-open { @apply w-72; }
+  .shell-main { @apply pl-16; }
+  .shell-topbar { @apply px-6; }
+}
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .shell-sidebar:not(.is-open) :is(.shell-text, .shell-group, .shell-count, .shell-context) { display: none; }
+  .shell-sidebar:not(.is-open) .shell-brand { @apply justify-center px-0; }
+  .shell-sidebar:not(.is-open) .shell-brand-link { @apply flex-none; }
+  .shell-sidebar:not(.is-open) .shell-nav,
+  .shell-sidebar:not(.is-open) .shell-foot { @apply px-2; }
+  .shell-sidebar:not(.is-open) .shell-link { @apply justify-center px-0; }
+}
+
+/* Desktop: always open, inset from the window's edges. */
+@media (min-width: 1024px) {
+  .shell-sidebar,
+  .shell-sidebar.is-open { @apply bottom-4 left-4 top-4 w-64 rounded-surface border shadow-brand; }
+  .shell-main { @apply pl-[18rem]; }
+  .shell-overlay { display: none; }
+}
+
+body[data-shell-bare] .shell-main { padding-left: 0; }
+
+@media print {
+  .shell-sidebar, .shell-topbar, .shell-overlay, .shell-skip { display: none !important; }
+  .shell-main { padding-left: 0 !important; }
+}
+
+/* The system handbook prints as a document: no site chrome, no contents box,
+   every chapter on paper. directory.js opens each table's <details> before
+   printing, since a closed one prints its summary only. */
+@media print {
+  .handbook-print .site-header,
+  .handbook-print .site-footer,
+  .handbook-print .handbook-toc { display: none !important; }
+  .handbook-print .tablewrap { overflow: visible; box-shadow: none; }
+  .handbook-chapter { break-inside: auto; }
+  .handbook-chapter > h2 { break-after: avoid; }
 }

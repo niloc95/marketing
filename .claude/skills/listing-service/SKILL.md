@@ -50,9 +50,9 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 | `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
 | `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
 | `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
-| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `AdminDocuments`, `Hostnames`, `ContentSecurityPolicy` |
+| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Handbook` (the system handbook), `Hostnames`, `ContentSecurityPolicy` |
 | `app/Models/` | One per table, `xs_` prefix. `DirectoryListingModel` is the hub; `Concerns/DerivesCountryCode` |
-| `app/Views/` | `layouts/public.php` (one layout for every page, header, footer, analytics), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
+| `app/Views/` | `layouts/public.php` (every public page: header, footer, analytics), `layouts/_shell.php` + `admin.php` / `business.php` (the app shell for `/admin` and `/bookings`, see "App shell"), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
 | `app/Commands/` | spark commands, see Commands below |
 | `resources/directory.css` → `public/assets/directory.css` | Tailwind (`tailwind.directory.cjs`, tokens shared with the marketing site in `tailwind.tokens.cjs`) |
 | `public/assets/directory.js` | every client behaviour, one file: typeahead, address lookup and maps, form steps, repeaters, photo band, lightbox, consent |
@@ -632,14 +632,83 @@ referred businesses pay. Rules are in `PartnerService`, the only writer of the
 - Terms §19, privacy §10, and the cookie policy describe all of this.
 - Tests: `tests/database/PartnerProgramTest.php`.
 
-## Internal documents (`/admin/documents`)
+## System handbook (`/admin/documents/system`, since 7 Nov 2026)
 
-PDFs for staff only (the Partner Program guide, the founder's proposal). Files
-in `resources/documents/`, registered in `Config\AdminDocuments`; the build
-copies them into `directory-app/` outside the web root and fails on a missing
-one. `Admin::document($key)` streams by registry key, never by path, with the
-same nosniff/no-store/locked CSP as verification documents. Tests:
-`tests/database/AdminDocumentsTest.php`.
+One internal page that describes everything: Local on both sites, Bookings, the brand site,
+architecture, design, tech stack, every table, ids and formats, operations. First row on
+`/admin/documents`. Owner rule (7 Nov 2026): **every change keeps it true.**
+
+- **Live half** (`App\Services\SystemHandbookService`, read on every open, nothing to
+  edit): tables from `information_schema` with exact `COUNT(*)`, highest id and next
+  AUTO_INCREMENT (it sets `information_schema_stats_expiry = 0`), columns, indexes, foreign
+  keys, scope from the columns (`country_code` = site, `listing_id` = profile or business),
+  rows per site, breakdowns (status, signup source, plans, newsletter source, bookings),
+  migrations, routes, PHP/CI/MySQL versions, `composer.lock` and `package.json` packages,
+  `deploy/cron/webscheduler`, `tailwind.tokens.cjs` colours, `PaymentReference` prefixes,
+  GA4 / Clarity / Search Console ids per site, the `.app` and Bookings switches.
+  `scripts/build-listing-app.js` ships `package.json`, `tailwind.tokens.cjs` and the cron
+  template in the bundle so production reads the same files. Each section is read on its
+  own (`AdminHandbook`), so one failure shows "Not available right now" and logs.
+- **Written half:** `app/Config/Handbook.php` (`$chapters`, and `$tables`: purpose,
+  writer, product, personal data and retention for **every** table) and the chapter views
+  in `app/Views/admin/handbook/` (overview, architecture, two-sites, bookings, brand-site,
+  stack, design, database, ids, operations, changelog).
+- **What to update, in the same commit as the change:**
+  | Change | Update |
+  |---|---|
+  | New or dropped table (any migration) | `Config\Handbook::$tables` entry (the test fails otherwise) |
+  | New service, filter, layer rule, security boundary | `architecture.php` |
+  | Anything that differs per site, new country support | `two-sites.php` |
+  | Bookings feature or rule | `bookings.php` |
+  | Brand site change (in its repo) | `brand-site.php` here |
+  | New external service, server change, dependency with a role | `stack.php` |
+  | CSS component, layout, token, icon or chart rule | `design.php` (tokens themselves are live) |
+  | New payment reference prefix, token, slug or id format, analytics property | `ids.php` (the test fails for an unexplained prefix) |
+  | Cron job, switch, rollback, release step | `operations.php` |
+  | Any of the above | one dated line at the top of `changelog.php` |
+- **Never print a secret.** Only ids that are public anyway (GA4, Clarity, Search Console
+  property names). `SystemHandbookTest` checks the page for the database password,
+  `encryption.key`, Paystack, Mapbox and admin values, and for `style="` (CSP).
+- Prints to PDF from the browser: `@media print` drops the site chrome, and
+  `directory.js` opens every table's `<details>` on `beforeprint`.
+- Tests: `tests/database/SystemHandbookTest.php`.
+
+## Document library (every PDF we publish, since 7 Nov 2026)
+
+One registry, `app/Config/Documents.php`, and two folders. Never put a document anywhere
+else, and never link one that is not in the registry.
+
+| | Folder | Registry | Reached at |
+|---|---|---|---|
+| Public (guides, brochure, outlook, playbook, proposal) | `public/assets/documents/` | `$published` | `/assets/documents/<file>.pdf` |
+| Staff only (Partner Program guide, founder's proposal) | `resources/documents/` | `$internal` | `/admin/documents/<key>` only |
+
+- **`$published`** entries carry `title, summary, file, pages, tag, inside, listed,
+  builder`. `/resources` (`Contact::resources()`) lists those with `listed` true, in
+  registry order, with `?v=<filemtime>` (a replaced file needs no Cloudflare purge).
+  `listed => false` (the proposal) is public but only linked where we send it.
+  `builder` is the rebuild command, `null` for the two built outside the repo
+  (Verified brochure, 2027 outlook): replace those files by hand.
+- **`$internal`**: the build copies `resources/documents/` into `directory-app/` outside
+  the web root. `Admin::document($key)` streams by registry key, never by path, with the
+  same nosniff/no-store/locked CSP as verification documents. Never put these in public/.
+- **Old URLs** `/assets/playbook/…` and `/assets/proposal/…` 301 to the library through
+  `Contact::legacyDocument()`, only for a file `$published` names (else 404). Sent
+  emails, signatures and printed proposals still carry them: keep the routes.
+- **Builders** in `marketing-site/outreach/*` publish into the library (`--publish` →
+  public, `--admin` → `resources/documents/`).
+- **Guards:** `scripts/build-listing-app.js` fails when an entry's file is missing from
+  its folder; `DocumentLibraryTest` fails on a missing file, a public PDF anywhere under
+  `public/assets/` outside the library or not registered, a broken legacy redirect, or
+  an unlisted document showing on `/resources`. `AdminDocumentsTest` pins the staff side,
+  `ResourcesPageTest` the page.
+
+**To add or replace a document:** build it (or take the supplied PDF, after checking the
+copy rules: no dashes, discover wording, nothing South African for .app readers) → put
+it in the right folder under its published name (`webscheduler-local-<topic>.pdf`) → add
+or update the entry (an `inside` list from its headings, the real page count) → run the
+tests → check `/resources` and the file URL. A file renamed later needs its old name
+kept working, as the legacy routes do.
 
 ## The profile page (`directory/show.php`)
 
@@ -806,9 +875,8 @@ look at the rejection table and `Paystack:` / `Paystack return:` log lines first
 
 ## Content pages and analytics
 
-- `/resources`: the list is hardcoded in `Contact::resources()`; PDFs in
-  `public/assets/documents/` and `public/assets/playbook/`, linked with `?v=<filemtime>`.
-  Two PDFs have no builder in the repo: replace the file by hand.
+- `/resources`: the listed entries of the document library (`Config\Documents`, see
+  Document library above).
 - `/media`: logo downloads (`public/assets/brand/`), embed snippet, usage rules. The
   Verified badge is shown but never offered as a file; Terms §20 covers misuse.
 - `/compare`, `/faq`, `/company`, `/verified`, `/plus`: see their sections.
@@ -864,7 +932,7 @@ list points there now.
   and `ProfileSetupOrderModel::statusCounts()`. Its only own SQL is new profiles per day
   (site scoped like `unseen()`; "paid" = a verification row for the site's plan, plus
   `admin_plan = 'verified'` for the badge).
-- **`queueCounts()`** is the one source of the admin bar's tab counts and the
+- **`queueCounts()`** is the one source of the admin sidebar's counts and the
   dashboard's "Needs action" tiles. A new queue goes there.
 - `?site=app`, `?days=7|30|90`. The plan follows the site (Verified on co.za, Plus on
   .app). Health, queues and setup orders cover both sites.
@@ -872,6 +940,59 @@ list points there now.
   written out in full in the partial: a concatenated class is purged and draws black) and
   `_meter_rows.php`. Colours validated with the dataviz validator, light and dark.
 - Tests: `tests/database/AdminDashboardTest.php`.
+
+## App shell: sidebar and page swaps for `/admin` and `/bookings` (since 7 Nov 2026, unreleased)
+
+Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-sidebar.js`
+(branch `feat/spa-shell`). Public pages and profiles are untouched: they keep
+`layouts/public.php`.
+
+- **Layouts.** `layouts/_shell.php` is the frame (sidebar slot, top bar with the page
+  title and theme switch, `<main id="spa-content">`); `layouts/admin.php` and
+  `layouts/business.php` extend it, and draw their items through `layouts/_sidebar.php`.
+  Every admin view extends `layouts/admin`: no public header, no Popular categories strip
+  (`header_quick_categories()`), no footer, no GA. The admin nav is built in
+  `layouts/admin.php` (groups, icons, `queueCounts()`); the old `admin/_bar.php` is gone.
+  Add an admin page to the sidebar there; the top bar title is the active item's label.
+  `admin/login.php` sets a `bare` section (shell without sidebar); /bookings is bare while
+  signed out.
+- **Nested layouts:** every `view()` call in `admin.php` / `business.php` sits inside a
+  section. One outside a section renders the layout early, because the page's `extend()`
+  is still pending on the shared renderer. Body attributes for business are built in PHP
+  (text in a section reads as copy to `BookingFoundationTest`).
+- **Script.** `resources/shell/` (`spa.js`, `sidebar.js`, `lifecycle.js`), built by
+  `npm run biz:build` into `public/assets/business/business.js` (with the bookings code)
+  and `public/assets/business/shell.js` (admin, next to `directory.js`), plus a hashed
+  shared chunk.
+- **How a swap works.** A click on a link inside the shell's own path (`data-shell-scope`)
+  or a submit of a form inside `#spa-content` or the sidebar is fetched in full (header
+  `X-Shell: 1`, never `X-Requested-With`, which `isAJAX()` would read); fetch follows a
+  POST's redirect, and `#spa-content` plus the sidebar's `[data-shell-nav]` and
+  `[data-shell-foot]` are swapped in. Controllers need nothing: flash, validation errors
+  and `old()` render as on a page load. The submit listener is on `window`, so
+  `form[data-confirm]` and `data-submit-once` (on `document`) run first.
+- **Falls back to a plain page load** when the response has no `#spa-content` (sign in
+  after an idle timeout, Cloudflare Access, error pages), is not HTML (downloads), leaves
+  the origin, belongs to another shell or a bare one, carries a different
+  `meta[name=shell-version]` (a release), or its `main` has `data-spa-full` or a
+  `<script>`. A page with a `scripts` section (admin/edit and admin/new: Leaflet, Quill)
+  gets `data-spa-full` automatically. Opt a link or form out with `data-no-spa` (both Sign
+  out forms have it).
+- **Page scripts must survive a swap.** In `/bookings`, register with
+  `registerPage(selector, init)` (`resources/shell/lifecycle.js`); `init(el)` returns a
+  cleanup that runs before the page leaves (the calendar's 60 s poll and the dashboard's
+  refresh clear their timers there). In `directory.js`, anything an admin page uses must
+  be delegated on `document` or looked up when used (`data-copy`, `data-confirm`, the
+  handbook's print hook already are).
+- **CSP.** Scripts in swapped markup never run (their nonce is the new response's). The
+  fetched HTML has its `<style>` elements removed before `DOMParser` (each would be a CSP
+  report); the honeypot's `#hpc { display: none }` is also in `directory.css` for that
+  reason.
+- **CSRF** tokens change after every POST (`Config\Security::$regenerate`), which is why
+  the sidebar foot (Sign out) is swapped too.
+- Tests: `tests/database/AppShellTest.php` (every admin page in the shell without the
+  public header, roles in the business sidebar, bare sign in pages, public pages
+  unchanged). The browser behaviour was checked headless with Playwright on dev.
 
 ## Profile statistics (`ListingStatsService`, since 30 Oct 2026, unreleased)
 

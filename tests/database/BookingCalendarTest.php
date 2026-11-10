@@ -120,7 +120,7 @@ final class BookingCalendarTest extends CIUnitTestCase
 
         $week = $this->week()->build(self::MONDAY);
 
-        $this->assertCount(7, $week['days']);
+        $this->assertCount(5, $week['days'], 'Monday to Friday: nobody works or opens at the weekend');
         $this->assertSame(3, $week['totalAppointments']);
         $byId = array_column($week['appointments'], null, 'id');
         $this->assertSame(2, $byId[$a]['_columns_total']);
@@ -150,8 +150,17 @@ final class BookingCalendarTest extends CIUnitTestCase
 
         $week = $this->week()->build(self::MONDAY);
 
-        $this->assertSame([1, 1, 1, 1, 1, 0, 0], array_column($week['days'], 'appointmentCount'));
+        $this->assertSame([1, 1, 1, 1, 1], array_column($week['days'], 'appointmentCount'));
         $this->assertCount(5, array_unique(array_map(static fn (array $e): string => substr($e['start'], 0, 10), $week['appointments'])));
+    }
+
+    public function testAWeekendDayShowsWhenSomeoneWorksOrSomethingIsBooked(): void
+    {
+        $this->seed($this->sarah, '2030-01-12 10:00', 30); // Saturday, booked by the business
+        $this->assertSame(['2030-01-07', '2030-01-08', '2030-01-09', '2030-01-10', '2030-01-11', '2030-01-12'], array_column($this->week()->build(self::MONDAY)['days'], 'date'));
+
+        (new TeamService($this->listingId))->saveHours($this->james, [7 => ['active' => 1, 'start' => '10:00', 'end' => '12:00']], null);
+        $this->assertContains('2030-01-13', array_column($this->week()->build(self::MONDAY)['days'], 'date'), 'James works Sundays');
     }
 
     public function testTheSameTimeForTwoPeopleIsNotAnOverlap(): void

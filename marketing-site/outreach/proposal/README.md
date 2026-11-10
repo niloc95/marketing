@@ -40,9 +40,11 @@ both.
 ../playbook/.venv/bin/python build_proposal.py --publish
 ```
 
-copies the web build to `public/assets/proposal/webscheduler-local-proposal.pdf`,
-served at `https://local.webscheduler.co.za/assets/proposal/webscheduler-local-proposal.pdf`
-after the next release. The web build
+copies the web build into the document library,
+`public/assets/documents/webscheduler-local-proposal.pdf` (entry `proposal` in
+`app/Config/Documents.php`, unlisted on `/resources`), served at
+`https://local.webscheduler.co.za/assets/documents/webscheduler-local-proposal.pdf`
+after the next release. The old `/assets/proposal/…` URL 301s there. The web build
 has live links; the QR on the last page opens `/add-profile` with
 `utm_medium=proposal`.
 

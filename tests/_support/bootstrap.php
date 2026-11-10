@@ -36,6 +36,6 @@ foreach (['directory.paystackSecretKey', 'directory.paymentProvider'] as $key) {
 }
 
 // Online bookings: off unless a test switches them on (WithEnv), so a
-// developer trying /business locally cannot change what the suite sees.
+// developer trying /bookings locally cannot change what the suite sees.
 unset($_ENV['bookings.enabled'], $_SERVER['bookings.enabled']);
 putenv('bookings.enabled');

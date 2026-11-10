@@ -35,7 +35,7 @@ Full suite green before the merge (`php vendor/bin/phpunit`).
 3. Cron: reinstall `/etc/cron.d/webscheduler` from `deploy/cron/webscheduler`. New lines:
    `bookings:dispatch` (every minute), `bookings:payments` (every 5 minutes),
    `bookings:prune` 04:35, `bookings:plans` 04:40, `bookings:retention` 04:45.
-4. Still dark: `bookings.enabled` stays off. Check both hosts: no Book online button, `/business`,
+4. Still dark: `bookings.enabled` stays off. Check both hosts: no Book online button, `/bookings`,
    `/api/v1/*` and `/developers/bookings` answer 404, .app shows nothing of it.
 
 ## 4. Drills on production (owner's OK)
@@ -73,7 +73,7 @@ The brand site's pricing (`/pricing.json`) does not list the Bookings plan yet.
 ## 7. Google Calendar (T22, owner's step)
 
 Create the OAuth client in Google Cloud (Web application, redirect
-`https://local.webscheduler.co.za/business/connections/google/callback`, scope
+`https://local.webscheduler.co.za/bookings/connections/google/callback`, scope
 `https://www.googleapis.com/auth/calendar.events`), set `bookings.googleClientId` and
 `bookings.googleClientSecret`, and apply for Google's verification of the sensitive scope.
 Until verified, only test users added in Google Cloud can connect.
@@ -90,9 +90,9 @@ on. The owner reads it before the switch. The Terms may need a matching line for
 - The plan abroad needs the Plus rate: `usd_zar_rate@app` in `/admin/settings` (already set for
   Plus). Without it the trial runs and the plan shows as not on sale.
 - Google Calendar: add the second redirect URI
-  `https://local.webscheduler.app/business/connections/google/callback` to the OAuth client.
+  `https://local.webscheduler.app/bookings/connections/google/callback` to the OAuth client.
 - Check both hosts after the switch: a London test profile books on .app in pounds, no deposit
-  field, no rand anywhere; its `/business` and `/api/v1` only on .app; co.za pages unchanged
+  field, no rand anywhere; its `/bookings` and `/api/v1` only on .app; co.za pages unchanged
   (diff a co.za booking page against `main`).
 - The .app privacy policy has an "Online bookings" part (shown only while bookings are on); the
   lawyer who reviewed the .app legal pages should read it, then bump `Legal::APP_LAST_UPDATED`.
@@ -107,6 +107,6 @@ on. The owner reads it before the switch. The Terms may need a matching line for
 
 ## Rollback
 
-`bookings.enabled = false` hides everything at once: booking pages, `/business`, the API,
+`bookings.enabled = false` hides everything at once: booking pages, `/bookings`, the API,
 emails (queued messages are cancelled at send time). Data stays. The migrations have `down()`
 methods, but rolling them back deletes booking data: dump first (see `ci4-rollback` notes).

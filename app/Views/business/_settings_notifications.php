@@ -18,7 +18,7 @@ $current   = static function (string $value) use ($reminders): array {
     return isset($reminders[$value]) ? $reminders : $reminders + [$value => $value . ' minutes before'];
 };
 ?>
-<form method="post" action="<?= base_url('business/settings/notifications') ?>" class="form-card">
+<form method="post" action="<?= base_url('bookings/settings/notifications') ?>" class="form-card">
     <?= csrf_field() ?>
     <h2 class="mb-2 font-bold">What customers get</h2>
     <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Emails are sent by WebScheduler Local in your name, and replies reach you. WhatsApp needs your own account (below) and is charged by that provider.</p>
@@ -87,7 +87,7 @@ $current   = static function (string $value) use ($reminders): array {
                     <tr>
                         <td><?= esc($label) ?></td>
                         <?php foreach (Catalog::CHANNELS as $ch): ?>
-                            <td><a class="underline" href="<?= base_url('business/settings/notifications?edit=' . $event . '.' . $ch . '#wording') ?>"><?= $templates[$event][$ch]['custom'] ? 'Yours' : 'Standard' ?></a></td>
+                            <td><a class="underline" href="<?= base_url('bookings/settings/notifications?edit=' . $event . '.' . $ch . '#wording') ?>"><?= $templates[$event][$ch]['custom'] ? 'Yours' : 'Standard' ?></a></td>
                         <?php endforeach ?>
                     </tr>
                 <?php endforeach ?>
@@ -96,7 +96,7 @@ $current   = static function (string $value) use ($reminders): array {
     </div>
     <?php if ($edit !== null): ?>
         <?php [$event, $ch] = $edit; $t = $templates[$event][$ch]; ?>
-        <form method="post" action="<?= base_url('business/settings/notifications/template') ?>" class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+        <form method="post" action="<?= base_url('bookings/settings/notifications/template') ?>" class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
             <?= csrf_field() ?>
             <input type="hidden" name="event" value="<?= esc($event, 'attr') ?>">
             <input type="hidden" name="channel" value="<?= esc($ch, 'attr') ?>">
@@ -150,7 +150,7 @@ $current   = static function (string $value) use ($reminders): array {
                     <?= $acc['health'] === 'ok' ? 'Working.' : ($acc['health'] === 'failed' ? 'The last message did not go: ' . esc((string) $acc['last_error']) : 'Not tested yet.') ?>
                 </p>
             <?php endif ?>
-            <form method="post" action="<?= base_url('business/settings/notifications/' . $channel) ?>" data-provider-form>
+            <form method="post" action="<?= base_url('bookings/settings/notifications/' . $channel) ?>" data-provider-form>
                 <?= csrf_field() ?>
                 <div class="field">
                     <label for="<?= $channel ?>-provider">Provider</label>
@@ -181,7 +181,7 @@ $current   = static function (string $value) use ($reminders): array {
                 <button type="submit" class="btn btn-primary">Save</button>
             </form>
             <?php if ($acc['provider'] !== '' && $acc['provider'] !== 'link'): ?>
-                <form method="post" action="<?= base_url('business/settings/notifications/' . $channel . '/test') ?>" class="mt-4 flex flex-wrap items-end gap-2">
+                <form method="post" action="<?= base_url('bookings/settings/notifications/' . $channel . '/test') ?>" class="mt-4 flex flex-wrap items-end gap-2">
                     <?= csrf_field() ?>
                     <div class="field mb-0">
                         <label for="<?= $channel ?>-test">Send a test to</label>
@@ -193,4 +193,4 @@ $current   = static function (string $value) use ($reminders): array {
         <?php endif ?>
     </section>
 <?php endforeach ?>
-<p class="mt-6 text-sm"><a class="underline" href="<?= base_url('business/notifications/sent') ?>">See sent messages</a></p>
+<p class="mt-6 text-sm"><a class="underline" href="<?= base_url('bookings/notifications/sent') ?>">See sent messages</a></p>

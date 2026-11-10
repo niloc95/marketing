@@ -8,7 +8,7 @@ use App\Models\Bookings\AccountModel;
 use Config\Bookings;
 
 /**
- * Accounts for /business: password sign in, emailed sign in links, password
+ * Accounts for /bookings: password sign in, emailed sign in links, password
  * reset. The only writer of xs_accounts.
  *
  * Ported from Bookings' Auth controller (lockout 5 per 15 minutes per IP,
@@ -186,13 +186,13 @@ class AccountService
      */
     public function sendPasswordReset(string $email): void
     {
-        $this->sendLink($email, 'reset', 'business/password/', 'Reset your WebScheduler Local password', 'emails/booking-password-reset');
+        $this->sendLink($email, 'reset', 'bookings/password/', 'Reset your WebScheduler Local password', 'emails/booking-password-reset');
     }
 
     /** Email a one use sign in link. Silent when the email has no account. */
     public function sendSignInLink(string $email): void
     {
-        $this->sendLink($email, 'login', 'business/sign-in/', 'Your WebScheduler Local sign in link', 'emails/booking-sign-in');
+        $this->sendLink($email, 'login', 'bookings/sign-in/', 'Your WebScheduler Local sign in link', 'emails/booking-sign-in');
     }
 
     /**

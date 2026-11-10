@@ -1,4 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
+
+<?php // Signed out: the shell without the sidebar. ?>
+<?= $this->section('bare') ?>1<?= $this->endSection() ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Admin sign in | ' . config('Directory')->siteName()]) ?>

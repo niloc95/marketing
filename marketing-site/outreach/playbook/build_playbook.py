@@ -84,7 +84,7 @@ PDF_STEM = "WebScheduler-Local-Visibility-Playbook"
 # Where the listing app serves the playbook from. `public/` is copied wholesale
 # into the deploy bundle by scripts/build-listing-app.js, so a file dropped here
 # ships with the next release and needs no separate upload.
-PUBLISH_DIR = REPO / "public" / "assets" / "playbook"
+PUBLISH_DIR = REPO / "public" / "assets" / "documents"
 PUBLISH_STEM = "webscheduler-local-visibility-playbook"
 
 
@@ -1026,7 +1026,7 @@ def main() -> int:
     ap.add_argument("--out", default=str(HERE / "build"), help="output directory")
     ap.add_argument("--clean", action="store_true", help="wipe the output directory first")
     ap.add_argument("--publish", action="store_true",
-                    help="copy the web PDF into public/assets/playbook/ for the listing app")
+                    help="copy the web PDF into the document library, public/assets/documents/")
     args = ap.parse_args()
 
     out_dir = Path(args.out).resolve()

@@ -1,5 +1,5 @@
 /**
- * The /business dashboard and analytics (business/home.php, analytics.php).
+ * The /bookings dashboard and analytics (business/home.php, analytics.php).
  *
  * - Today's figures and list refresh every two minutes while the tab is in
  *   view, and at once when it comes back (Bookings' dashboard-refresh.js).
@@ -11,18 +11,19 @@
  */
 const REFRESH_MS = 120000;
 
-function paintDots(root) {
-    root.querySelectorAll('.biz-dot[data-color]').forEach((dot) => {
-        if (/^#[0-9a-f]{6}$/i.test(dot.dataset.color)) {
-            dot.style.backgroundColor = dot.dataset.color;
-        }
-    });
+function paintDot(dot) {
+    if (/^#[0-9a-f]{6}$/i.test(dot.dataset.color)) {
+        dot.style.backgroundColor = dot.dataset.color;
+    }
 }
 
-function initRefresh() {
-    const box = document.querySelector('[data-dash-today]');
-    if (!box || !box.dataset.refreshUrl) {
-        return;
+function paintDots(root) {
+    root.querySelectorAll('.biz-dot[data-color]').forEach(paintDot);
+}
+
+function initRefresh(box) {
+    if (!box.dataset.refreshUrl) {
+        return undefined;
     }
     let last = Date.now();
     let busy = false;
@@ -51,31 +52,39 @@ function initRefresh() {
         }
     };
 
-    setInterval(() => {
+    const timer = setInterval(() => {
         if (document.visibilityState === 'visible' && Date.now() - last >= REFRESH_MS) {
             refresh();
         }
     }, 15000);
-    document.addEventListener('visibilitychange', () => {
+    const onVisible = () => {
         if (document.visibilityState === 'visible' && Date.now() - last >= REFRESH_MS / 2) {
             refresh();
         }
-    });
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    // The page is leaving (resources/shell/lifecycle.js).
+    return () => {
+        clearInterval(timer);
+        document.removeEventListener('visibilitychange', onVisible);
+    };
 }
 
-function initAutosubmit() {
-    document.querySelectorAll('select[data-autosubmit]').forEach((select) => {
-        const form = select.form;
-        if (!form) {
-            return;
-        }
-        form.querySelectorAll('[data-autosubmit-button]').forEach((b) => b.classList.add('hidden'));
-        select.addEventListener('change', () => form.submit());
-    });
+function initAutosubmit(select) {
+    const form = select.form;
+    if (!form) {
+        return;
+    }
+    form.querySelectorAll('[data-autosubmit-button]').forEach((b) => b.classList.add('hidden'));
+    // requestSubmit, not submit: it fires the submit event, so the shell
+    // swaps the page instead of reloading it.
+    select.addEventListener('change', () => (form.requestSubmit ? form.requestSubmit() : form.submit()));
 }
 
-export function initDashboard() {
-    paintDots(document);
-    initRefresh();
-    initAutosubmit();
-}
+/** Registered with the shell (resources/business/main.js), run for every page. */
+export const dashboardPages = [
+    ['[data-dash-today]', initRefresh],
+    ['.biz-dot[data-color]', paintDot],
+    ['select[data-autosubmit]', initAutosubmit],
+];

@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Comparison | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -46,7 +45,6 @@ if (! empty($lastChange['at'])) {
         . (empty($lastChange['by']) ? '' : ' by ' . $lastChange['by']) . '.';
 }
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

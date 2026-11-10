@@ -19,7 +19,7 @@ $new = $invite !== null && empty($invite['password_hash']);
         <?php else: ?>
             <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Join <?= esc((string) $invite['display_name']) ?></h1>
             <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">As <?= esc($roleLabel) ?>, signed in with <?= esc((string) $invite['account_email']) ?>.</p>
-            <form method="post" action="<?= base_url('business/invite/' . $token) ?>">
+            <form method="post" action="<?= base_url('bookings/invite/' . $token) ?>">
                 <?= csrf_field() ?>
                 <div class="field">
                     <label for="inv-pw"><?= $new ? 'Choose a password' : 'Your password' ?></label>

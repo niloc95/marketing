@@ -62,6 +62,9 @@ class AvailabilityService
     /** @var array<string,mixed> */
     private array $cache = [];
 
+    /** Remember hours, busy time and opening hours per day (remember()). */
+    private bool $remember = false;
+
     /**
      * @param array<string,mixed> $listing the profile (trading_hours, timezone, holidays)
      */
@@ -74,6 +77,31 @@ class AvailabilityService
         $this->settings  = BookingSettings::for($this->listingId);
         $this->catalog   = new CatalogueService($this->listingId);
         $this->team      = new TeamService($this->listingId);
+    }
+
+    /**
+     * Keep each person's hours, busy time and each place's window in memory
+     * for the life of this object: for read only pages that ask about many
+     * days (the availability overview, a year of them). Never for writes:
+     * BookingLock builds its own engine inside the lock.
+     */
+    public function remember(): static
+    {
+        $this->remember = true;
+
+        return $this;
+    }
+
+    /** The last local date customers may book (`business.future_limit` days ahead). */
+    public function customerHorizon(): string
+    {
+        return $this->now->modify('+' . $this->settings->int('business.future_limit') . ' days')->format('Y-m-d');
+    }
+
+    /** Whether a person works at all that day (for that service): a period, inside its place's hours. */
+    public function works(int $providerId, string $date, ?int $serviceId = null): bool
+    {
+        return $this->validDate($date) && $this->windows($providerId, $date, $serviceId) !== [];
     }
 
     public function timezone(): DateTimeZone
@@ -89,7 +117,7 @@ class AvailabilityService
      */
     public function slots(int $providerId, int $serviceId, string $date, bool $public = true, ?int $excludeAppointmentId = null): array
     {
-        $service = $this->bookable($providerId, $serviceId, $public);
+        $service = $this->bookable($providerId, $serviceId, $public, $excludeAppointmentId !== null);
         if ($service === null || ! $this->validDate($date) || ($public && $this->dateProblem($date) !== null)) {
             return [];
         }
@@ -101,7 +129,7 @@ class AvailabilityService
         $busy     = $this->busy($providerId, $date, $excludeAppointmentId);
         $out      = [];
 
-        foreach ($this->windows($providerId, $date) as $w) {
+        foreach ($this->windows($providerId, $date, $serviceId) as $w) {
             // The gaps must fit inside working time too: setting up before the
             // first booking and clearing up after the last are work.
             for ($t = $w['start'] + $before; $t + $duration + $after <= $w['end']; $t += $step) {
@@ -142,7 +170,7 @@ class AvailabilityService
      */
     public function problem(int $providerId, int $serviceId, string $startUtc, bool $public = true, ?int $excludeAppointmentId = null): ?string
     {
-        $service = $this->bookable($providerId, $serviceId, $public);
+        $service = $this->bookable($providerId, $serviceId, $public, $excludeAppointmentId !== null);
         if ($service === null) {
             return self::NOT_OFFERED;
         }
@@ -175,7 +203,7 @@ class AvailabilityService
      *
      * @return array{date:string,start:string,end:string,time:string,provider_id:int}|null
      */
-    public function nextAvailable(int $serviceId, ?int $providerId, ?string $fromDate = null, int $days = 60): ?array
+    public function nextAvailable(int $serviceId, ?int $providerId, ?string $fromDate = null, int $days = 60, ?int $moving = null): ?array
     {
         $date = $fromDate ?? $this->now->format('Y-m-d');
         for ($i = 0; $i < $days; $i++) {
@@ -184,7 +212,7 @@ class AvailabilityService
                 return null;
             }
             $slots = $providerId !== null
-                ? $this->slots($providerId, $serviceId, $day)
+                ? $this->slots($providerId, $serviceId, $day, true, $moving)
                 : array_map(static fn (array $s): array => $s + ['provider_id' => $s['provider_ids'][0]], $this->slotsForAnyone($serviceId, $day));
             if ($slots !== []) {
                 return ['date' => $day, 'start' => $slots[0]['start'], 'end' => $slots[0]['end'], 'time' => $slots[0]['time'], 'provider_id' => (int) $slots[0]['provider_id']];
@@ -200,14 +228,14 @@ class AvailabilityService
      *
      * @return list<string>
      */
-    public function availableDates(int $serviceId, ?int $providerId, string $from, string $to): array
+    public function availableDates(int $serviceId, ?int $providerId, string $from, string $to, ?int $moving = null): array
     {
         $out  = [];
         $day  = new DateTimeImmutable($from, $this->tz);
         $last = new DateTimeImmutable($to, $this->tz);
         for ($i = 0; $day <= $last && $i < 62; $i++, $day = $day->modify('+1 day')) {
             $d     = $day->format('Y-m-d');
-            $slots = $providerId !== null ? $this->slots($providerId, $serviceId, $d) : $this->slotsForAnyone($serviceId, $d);
+            $slots = $providerId !== null ? $this->slots($providerId, $serviceId, $d, true, $moving) : $this->slotsForAnyone($serviceId, $d);
             if ($slots !== []) {
                 $out[] = $d;
             }
@@ -219,18 +247,31 @@ class AvailabilityService
     /**
      * The business's own window for a local date: null when closed, ['', '']
      * when its profile gives no hours for the day (people's hours decide), or
-     * open and close as HH:MM.
+     * open and close as HH:MM. With a branch id, that branch's own hours and
+     * holiday answer (T29: a person may work at a branch on a day the main
+     * address is closed, or for shorter hours).
      *
      * @return array{0:string,1:string}|null
      */
-    public function businessWindow(string $date): ?array
+    public function businessWindow(string $date, ?int $locationId = null): ?array
     {
-        $hours   = hours_decode($this->listing['trading_hours'] ?? null);
+        if ($this->remember) {
+            $key = 'win' . $date . '|' . $locationId;
+            if (! array_key_exists($key, $this->cache)) {
+                $this->remember = false;
+                $this->cache[$key] = $this->businessWindow($date, $locationId);
+                $this->remember = true;
+            }
+
+            return $this->cache[$key];
+        }
+        $raw     = $this->placeHours($locationId);
+        $hours   = is_array($raw) ? $raw : hours_decode($raw);
         $weekday = hours_weekday_row($hours, $date);
         $holiday = hours_within($this->listing, static fn () => hours_calendar()->on($date));
 
         if ($holiday !== null) {
-            $answer = hours_holiday_answer(hours_holiday_rule($this->listing['trading_hours'] ?? null), (string) $holiday['key'], $weekday);
+            $answer = hours_holiday_answer(hours_holiday_rule(is_array($raw) ? json_encode($raw) : $raw), (string) $holiday['key'], $weekday);
             if ($answer === null || $answer['state'] === 'closed') {
                 return null;
             }
@@ -248,32 +289,74 @@ class AvailabilityService
         return [(string) $weekday['open'], (string) $weekday['close']];
     }
 
-    // Internals
+    /**
+     * A provider's usual week as the profile shows it: weekday 1 to 7 =>
+     * working periods as HH:MM, after the same clamp to the profile's hours
+     * and the same breaks as windows(), so the profile never shows a time
+     * the engine would not book. Holidays and time off are left out: this is
+     * the usual week, not a calendar.
+     *
+     * @return array<int,list<array{start:string,end:string,location_id:?int}>>
+     */
+    public function weekPeriods(int $providerId): array
+    {
+        $rows = BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)
+            ->orderBy('weekday', 'ASC')->orderBy('start_time', 'ASC')->findAll();
+        $week = [];
+        foreach ($rows as $row) {
+            $day      = (int) $row['weekday'];
+            $location = $row['location_id'] !== null ? (int) $row['location_id'] : null;
+            $raw      = $this->placeHours($location);
+            $hours    = is_array($raw) ? $raw : hours_decode($raw);
+            $place    = $hours[TeamService::PROFILE_DAY_KEYS[$day] ?? ''] ?? null;
+            if (is_array($place) && $place['closed']) {
+                continue;
+            }
+            $business = is_array($place) ? [(string) $place['open'], (string) $place['close']] : ['', ''];
+            $ids      = $row['service_ids'] !== null ? array_map('intval', json_decode((string) $row['service_ids'], true) ?: []) : null;
+            foreach (self::periods($row, $business) as $p) {
+                $week[$day][] = ['start' => $p[0], 'end' => $p[1], 'location_id' => $location, 'service_ids' => $ids];
+            }
+        }
+
+        return $week;
+    }
 
     /**
-     * Working periods of a provider on a local date, as timestamps: their
-     * hours minus breaks, clamped to the business window.
-     *
-     * @return list<array{start:int,end:int,location_id:?int}>
+     * Where an appointment starting then takes place: the place of the
+     * person's period that holds it (T29), or null for the profile's own
+     * address.
      */
-    private function windows(int $providerId, string $date): array
+    public function locationAt(int $providerId, ?int $serviceId, string $startUtc): ?int
     {
-        $business = $this->businessWindow($date);
-        if ($business === null) {
-            return [];
-        }
-        $weekday = (int) (new DateTimeImmutable($date, $this->tz))->format('N');
-        $row     = BookingProviderHoursModel::forBusiness($this->listingId)
-            ->where('provider_id', $providerId)->where('weekday', $weekday)->first();
-        if (! is_array($row)) {
-            return [];
+        $start = $this->utc($startUtc);
+        $date  = (new DateTimeImmutable('@' . $start))->setTimezone($this->tz)->format('Y-m-d');
+        foreach ($this->windows($providerId, $date, $serviceId) as $w) {
+            if ($start >= $w['start'] && $start < $w['end']) {
+                return $w['location_id'];
+            }
         }
 
-        $start = $this->at($date, substr((string) $row['start_time'], 0, 5));
-        $end   = $this->at($date, substr((string) $row['end_time'], 0, 5));
+        return null;
+    }
+
+    /**
+     * One day of a provider's hours row as HH:MM periods: start to end,
+     * clamped to the business window (['', ''] = no window), minus breaks.
+     * HH:MM strings sort as times, so this needs no clock.
+     *
+     * @param array<string,mixed>      $row      a BookingProviderHoursModel row
+     * @param array{0:string,1:string} $business
+     *
+     * @return list<array{0:string,1:string}>
+     */
+    public static function periods(array $row, array $business): array
+    {
+        $start = substr((string) $row['start_time'], 0, 5);
+        $end   = substr((string) $row['end_time'], 0, 5);
         if ($business[0] !== '' && $business[1] !== '') {
-            $start = max($start, $this->at($date, $business[0]));
-            $end   = min($end, $this->at($date, $business[1]));
+            $start = max($start, $business[0]);
+            $end   = min($end, $business[1]);
         }
         if ($start >= $end) {
             return [];
@@ -281,8 +364,8 @@ class AvailabilityService
 
         $segments = [[$start, $end]];
         foreach (json_decode((string) $row['breaks'], true) ?: [] as $break) {
-            $bs   = $this->at($date, (string) $break['start']);
-            $be   = $this->at($date, (string) $break['end']);
+            $bs   = (string) $break['start'];
+            $be   = (string) $break['end'];
             $next = [];
             foreach ($segments as [$s, $e]) {
                 if ($be <= $s || $bs >= $e) {
@@ -300,9 +383,63 @@ class AvailabilityService
             $segments = $next;
         }
 
-        $location = $row['location_id'] !== null ? (int) $row['location_id'] : null;
+        return $segments;
+    }
 
-        return array_map(static fn (array $seg): array => ['start' => $seg[0], 'end' => $seg[1], 'location_id' => $location], $segments);
+    // Internals
+
+    /**
+     * Working periods of a provider on a local date, as timestamps: each of
+     * their periods that day (T29) offering the service, minus breaks,
+     * clamped to the window of the place it is at (periods()).
+     *
+     * @return list<array{start:int,end:int,location_id:?int}>
+     */
+    private function windows(int $providerId, string $date, ?int $serviceId = null): array
+    {
+        $weekday = (int) (new DateTimeImmutable($date, $this->tz))->format('N');
+        $rows    = $this->remember
+            ? array_values(array_filter($this->cache['hours' . $providerId] ??= BookingProviderHoursModel::forBusiness($this->listingId)
+                ->where('provider_id', $providerId)->orderBy('start_time', 'ASC')->findAll(), static fn (array $r): bool => (int) $r['weekday'] === $weekday))
+            : BookingProviderHoursModel::forBusiness($this->listingId)
+                ->where('provider_id', $providerId)->where('weekday', $weekday)->orderBy('start_time', 'ASC')->findAll();
+        $out = [];
+        foreach ($rows as $row) {
+            if ($serviceId !== null && $row['service_ids'] !== null
+                && ! in_array($serviceId, array_map('intval', json_decode((string) $row['service_ids'], true) ?: []), true)) {
+                continue;
+            }
+            $location = $row['location_id'] !== null ? (int) $row['location_id'] : null;
+            $business = $this->businessWindow($date, $location);
+            if ($business === null) {
+                continue;
+            }
+            foreach (self::periods($row, $business) as $seg) {
+                $out[] = ['start' => $this->at($date, $seg[0]), 'end' => $this->at($date, $seg[1]), 'location_id' => $location];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The opening hours of a place: the profile's, or a branch's (null when
+     * the branch gave none, so people's hours decide there). Cached.
+     *
+     * @return array<string,mixed>|string|null decoded on the profile page, JSON otherwise
+     */
+    private function placeHours(?int $locationId): array|string|null
+    {
+        if ($locationId === null) {
+            return $this->listing['trading_hours'] ?? null;
+        }
+
+        if (! array_key_exists('place' . $locationId, $this->cache)) {
+            $row = (new \App\Models\DirectoryPracticeLocationModel())->where('listing_id', $this->listingId)->find($locationId);
+            $this->cache['place' . $locationId] = is_array($row) ? ($row['trading_hours'] ?? null) : null;
+        }
+
+        return $this->cache['place' . $locationId];
     }
 
     /**
@@ -314,6 +451,16 @@ class AvailabilityService
      */
     private function busy(int $providerId, string $date, ?int $excludeAppointmentId): array
     {
+        if ($this->remember && $excludeAppointmentId === null) {
+            $key = 'busy' . $providerId . '|' . $date;
+            if (! array_key_exists($key, $this->cache)) {
+                $this->remember = false;
+                $this->cache[$key] = $this->busy($providerId, $date, null);
+                $this->remember = true;
+            }
+
+            return $this->cache[$key];
+        }
         // A day either side catches long appointments and long gaps.
         $from = gmdate('Y-m-d H:i:s', $this->at($date, '00:00') - DAY);
         $to   = gmdate('Y-m-d H:i:s', $this->at($date, '00:00') + 2 * DAY);
@@ -361,13 +508,14 @@ class AvailabilityService
     /** @param array<string,mixed> $service */
     private function whyNotFree(int $providerId, array $service, int $start, string $date, ?int $excludeAppointmentId): ?string
     {
-        if ($this->businessWindow($date) === null) {
+        $windows = $this->windows($providerId, $date, (int) $service['id']);
+        if ($windows === [] && $this->businessWindow($date) === null) {
             return self::CLOSED;
         }
         $duration = (int) $service['duration_min'] * 60;
         [$before, $after] = $this->holds($service);
         $inWindow = false;
-        foreach ($this->windows($providerId, $date) as $w) {
+        foreach ($windows as $w) {
             if ($start - $before >= $w['start'] && $start + $duration + $after <= $w['end']) {
                 $inWindow = true;
 
@@ -390,14 +538,17 @@ class AvailabilityService
      *
      * @return array<string,mixed>|null
      */
-    private function bookable(int $providerId, int $serviceId, bool $public): ?array
+    private function bookable(int $providerId, int $serviceId, bool $public, bool $moving = false): ?array
     {
         $provider = $this->cache['p' . $providerId] ??= $this->team->provider($providerId) ?? false;
         $service  = $this->cache['s' . $serviceId] ??= $this->catalog->service($serviceId) ?? false;
         if ($provider === false || $service === false || $provider['archived_at'] !== null || $service['archived_at'] !== null) {
             return null;
         }
-        if ($public && ! (int) $provider['bookable']) {
+        // Customers cannot book a person marked not bookable, nor a new
+        // booking of a service whose duration nobody has confirmed yet (T29);
+        // moving a booking they already have is fine. The business can.
+        if ($public && (! (int) $provider['bookable'] || (! $moving && ! (int) $service['length_checked']))) {
             return null;
         }
 

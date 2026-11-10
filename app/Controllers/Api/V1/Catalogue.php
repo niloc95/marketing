@@ -10,7 +10,7 @@ use App\Services\Bookings\TeamService;
 /**
  * What the business offers: itself, its services, categories, team members
  * and locations (scope catalogue.read). Read only: the catalogue is changed
- * in /business, where its rules and audit live.
+ * in /bookings, where its rules and audit live.
  */
 class Catalogue extends ApiController
 {

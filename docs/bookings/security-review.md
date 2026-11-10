@@ -8,7 +8,7 @@ routes.
 
 | Area | Guard |
 |---|---|
-| Every `/business*` route behind `businessauth`, every `/api/v1/*` route behind `bookingapi:<scope>`, every `/admin/*` route behind `admin` | `BookingLaunchTest::testEveryBookingsRouteIsBehindItsGate` (reads the route table) |
+| Every `/bookings*` route behind `businessauth`, every `/api/v1/*` route behind `bookingapi:<scope>`, every `/admin/*` route behind `admin` | `BookingLaunchTest::testEveryBookingsRouteIsBehindItsGate` (reads the route table) |
 | One business never sees another's rows | `BookingScopedModel` throws on unscoped reads; scope tests in every phase; `BookingIntegrationsTest::testAKeyOnlyEverSeesItsOwnBusiness` (a `listing_id` parameter cannot widen a key) |
 | Every POST is a known form or a listed exception | `FormsRegistryTest`, `FormHealthServiceTest` |
 | The OpenAPI file matches the routes and their scopes | `BookingIntegrationsTest::testTheOpenApiFileDescribesEveryRouteAndNothingElse` |

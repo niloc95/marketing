@@ -69,6 +69,35 @@ function writeStamp() {
 }
 
 /**
+ * Only real edits count. On macOS a read can raise a watch event too: when the
+ * file's access time moves (the project sits on an APFS USB volume that keeps
+ * atime), kqueue reports an attribute change, which fs.watch hands over as
+ * 'change'. Something reads directory.js and directory.css every five seconds,
+ * so every open page reloaded every five seconds (7 Nov 2026). An event counts
+ * only when the file's mtime or size moved, or it appeared or went away.
+ */
+const seen = new Map();
+
+function fingerprint(abs) {
+  try {
+    const st = fs.statSync(abs);
+    return st.isDirectory() ? null : `${st.mtimeMs}:${st.size}`;
+  } catch {
+    return 'gone';
+  }
+}
+
+function changed(abs) {
+  const now = fingerprint(abs);
+  if (now === null) return false;
+  if (seen.get(abs) === now) return false;
+  // Includes a file met for the first time inside a watched folder: a save we
+  // have no baseline for, so it counts. Single files get theirs at startup.
+  seen.set(abs, now);
+  return true;
+}
+
+/**
  * Records a change and schedules one write for the whole burst.
  *
  * Kinds accumulate rather than overwrite: a save that triggers both a view
@@ -97,12 +126,17 @@ function touch(kind, label) {
  */
 function watchDir(abs, kind, rel) {
   try {
-    return fs.watch(abs, { recursive: true }, (_event, file) =>
-      touch(kind, path.join(rel, file || '')));
+    return fs.watch(abs, { recursive: true }, (_event, file) => {
+      if (file && !changed(path.join(abs, file))) return;
+      touch(kind, path.join(rel, file || ''));
+    });
   } catch (err) {
     if (err.code !== 'ERR_FEATURE_UNAVAILABLE_ON_PLATFORM') throw err;
     console.warn(`  ! ${rel}: recursive watch unavailable on this platform, watching the top level only`);
-    return fs.watch(abs, (_event, file) => touch(kind, path.join(rel, file || '')));
+    return fs.watch(abs, (_event, file) => {
+      if (file && !changed(path.join(abs, file))) return;
+      touch(kind, path.join(rel, file || ''));
+    });
   }
 }
 
@@ -122,7 +156,12 @@ for (const { rel, kind, dir } of WATCHED) {
 
   try {
     if (dir) watchDir(abs, kind, rel);
-    else fs.watch(abs, () => touch(kind, rel));
+    else {
+      seen.set(abs, fingerprint(abs));
+      fs.watch(abs, () => {
+        if (changed(abs)) touch(kind, rel);
+      });
+    }
     watching++;
     console.log(`  • ${kind.padEnd(6)} ${rel}`);
   } catch (err) {

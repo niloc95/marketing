@@ -2,7 +2,7 @@
 
 ## How a request finds its business
 
-- Business pages live under `/business`. The signed in account picks a business. If it
+- Business pages live under `/bookings`. The signed in account picks a business. If it
   belongs to more than one, a switcher is shown. The chosen `listing_id` goes into the
   session. **Every request re checks** that the account holds an active membership for
   that business before the controller runs (`businessauth` filter), so a stale session
@@ -68,7 +68,7 @@ an appointment for that provider (Bookings' `CustomerAppointmentService` rule).
 
 - `/manage` (owner magic link) stays for profile editing. "Turn on bookings" there creates
   the owner's account and an `admin` membership. Later, `/manage` becomes a section of
-  `/business`.
+  `/bookings`.
 - Platform admin (`/admin`, Cloudflare Access + password) can see every business's booking
   setup and switch bookings off. Customer data and appointment contents are not shown by
   default (decision D12). It never signs in as a member.

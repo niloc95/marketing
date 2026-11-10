@@ -38,7 +38,7 @@ def main() -> int:
     ap.add_argument("--profile", choices=["web", "print", "both"], default="web")
     ap.add_argument("--out", default=str(HERE / "build"))
     ap.add_argument("--publish", action="store_true",
-                    help="copy the WEB build to public/assets/proposal/ for the listing app")
+                    help="copy the WEB build to the document library, public/assets/documents/")
     ap.add_argument("--admin", action="store_true",
                     help="copy the PRINT build to resources/documents/ for /admin/documents")
     args = ap.parse_args()
@@ -69,7 +69,7 @@ def main() -> int:
         if not src.exists():
             print(f"  ! nothing to publish: {src.name} was not built", file=sys.stderr)
             return 1
-        dst = B.REPO / "public" / "assets" / "proposal" / "webscheduler-local-proposal.pdf"
+        dst = B.REPO / "public" / "assets" / "documents" / "webscheduler-local-proposal.pdf"
         dst.parent.mkdir(parents=True, exist_ok=True)
         import shutil
         shutil.copy2(src, dst)

@@ -19,7 +19,7 @@ use Tests\Support\FreshDatabase;
 use Tests\Support\WithEnv;
 
 /**
- * Phase 7 of online bookings: the /business dashboard and analytics.
+ * Phase 7 of online bookings: the /bookings dashboard and analytics.
  *
  * Bookings' cases first: today's figures by scope (DashboardLandingTest), a
  * staff member with no people seeing nothing, the pending confirmations
@@ -300,36 +300,36 @@ final class BookingDashboardTest extends CIUnitTestCase
 
     public function testDashboardAndAnalyticsPages(): void
     {
-        $r = $this->signedIn()->get('business');
+        $r = $this->signedIn()->get('bookings');
         $r->assertOK();
         $r->assertSee('Free times today');
         $this->assertStringContainsString('data-refresh-url', $r->getBody());
 
-        $r = $this->signedIn()->get('business/api/dashboard/today');
+        $r = $this->signedIn()->get('bookings/api/dashboard/today');
         $r->assertOK();
         $r->assertSee('No appointments today.');
-        $this->assertStringNotContainsString('aria-label="Business"', $r->getBody(), 'Only the partial, not the layout');
+        $this->assertStringNotContainsString('data-shell-nav', $r->getBody(), 'Only the partial, not the layout');
 
         foreach (['overview', 'services', 'team', 'customers'] as $tab) {
-            $r = $this->signedIn()->get('business/analytics?tab=' . $tab . '&period=90d');
+            $r = $this->signedIn()->get('bookings/analytics?tab=' . $tab . '&period=90d');
             $r->assertOK();
             $r->assertSee('Analytics');
         }
-        $this->assertStringContainsString('business/analytics', $this->signedIn()->get('business')->getBody(), 'In the menu');
+        $this->assertStringContainsString('bookings/analytics', $this->signedIn()->get('bookings')->getBody(), 'In the menu');
     }
 
     public function testReceptionHasNoAnalytics(): void
     {
         $desk = $this->reception();
-        $this->signedIn((int) $desk['account_id'])->get('business/analytics')->assertStatus(403);
-        $r = $this->signedIn((int) $desk['account_id'])->get('business');
+        $this->signedIn((int) $desk['account_id'])->get('bookings/analytics')->assertStatus(403);
+        $r = $this->signedIn((int) $desk['account_id'])->get('bookings');
         $r->assertOK();
         $r->assertDontSee('Booked this month');
     }
 
     public function testQuickBookPrefillsTheForm(): void
     {
-        $r = $this->signedIn()->get('business/appointments/new?provider_id=' . $this->james . '&service_id=' . $this->serviceId . '&date=2030-01-07&time=11:00');
+        $r = $this->signedIn()->get('bookings/appointments/new?provider_id=' . $this->james . '&service_id=' . $this->serviceId . '&date=2030-01-07&time=11:00');
         $r->assertOK();
         $this->assertMatchesRegularExpression('/<option value="' . $this->james . '" selected>/', $r->getBody());
         $this->assertMatchesRegularExpression('/<option value="' . $this->serviceId . '" selected>/', $r->getBody());

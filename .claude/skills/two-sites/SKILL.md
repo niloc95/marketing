@@ -151,7 +151,7 @@ country on the .app signup form.
 ## Online bookings on both sites
 
 Since decision T24 (5 Nov 2026, `docs/bookings/decisions.md`; skill `bookings`): a business
-takes bookings on its own site's host only (booking page, `/business`, `/api/v1`). Clock and
+takes bookings on its own site's host only (booking page, `/bookings`, `/api/v1`). Clock and
 currency come from `App\Services\Bookings\BusinessLocale` (profile timezone, else the country's;
 the country's currency). Deposits are rand only, so co.za only. The Bookings plan abroad is shown
 in US dollars (`Config\Bookings::$planTiers` `usd`) and charged in rand at `usd_zar_rate@app`,
@@ -188,6 +188,13 @@ like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
 - The dev DB is a copy of production, so .app shows the real foreign profiles. The old
   `international-app` worktree, its port 8098 and its `_intl` databases were removed on
   29 Oct 2026.
+
+## System handbook
+
+A change to anything in this skill (a per site difference, a country, a setting, copy,
+legal, SEO, analytics ids) updates `app/Views/admin/handbook/two-sites.php` (and `ids.php`
+for analytics or search ids) plus a dated `changelog.php` line in the same commit; see
+the `listing-service` skill, "System handbook". Rows per site there are live.
 
 ## Tests
 

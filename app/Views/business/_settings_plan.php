@@ -28,7 +28,7 @@ $price = $plan['display'];
         </p>
         <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Your calendar, team, customers and settings always stay here, whatever the plan. Your place in discovery results never depends on it.</p>
         <?php if ($plan['can_subscribe']): ?>
-            <form method="post" action="<?= base_url('business/settings/plan/subscribe') ?>" class="mt-4">
+            <form method="post" action="<?= base_url('bookings/settings/plan/subscribe') ?>" class="mt-4">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-primary">Pay <?= esc($price) ?> a month</button>
                 <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Paid by card through Paystack, renewing monthly until you stop it.<?= $plan['abroad'] ? ' Billed in South African rand by WebScheduler, a South African company, so your bank converts the amount and it may vary a little from month to month.' : '' ?> <?= $plan['state'] === 'trial' ? 'Paying now adds the month after your trial, so you lose no free days.' : '' ?></p>
@@ -38,7 +38,7 @@ $price = $plan['display'];
                 You are on <?= esc((string) $plan['paid_tier']) ?>, but with <?= (int) $plan['people'] ?> bookable <?= (int) $plan['people'] === 1 ? 'person' : 'people' ?> your plan is now <?= esc($plan['tier']) ?> at <?= esc($price) ?> a month.
                 Moving charges <?= esc($price) ?> now, adds a month to your paid time, and stops the old payments.
             </div>
-            <form method="post" action="<?= base_url('business/settings/plan/subscribe') ?>" class="mt-3">
+            <form method="post" action="<?= base_url('bookings/settings/plan/subscribe') ?>" class="mt-3">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-primary">Move to <?= esc($plan['tier']) ?></button>
             </form>
@@ -55,7 +55,7 @@ $price = $plan['display'];
             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">People are the team members customers can book.</p>
         </details>
         <?php if ($plan['renews']): ?>
-            <form method="post" action="<?= base_url('business/settings/plan/cancel') ?>" class="mt-4">
+            <form method="post" action="<?= base_url('bookings/settings/plan/cancel') ?>" class="mt-4">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-ghost">Stop renewing</button>
             </form>

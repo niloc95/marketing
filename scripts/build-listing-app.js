@@ -43,7 +43,10 @@ const appOut = path.join(outDir, 'directory-app');
 const webOut = path.join(outDir, 'docroot');
 
 /** Files copied verbatim into the app root. */
-const APP_FILES = ['composer.json', 'composer.lock', 'spark'];
+// package.json, tailwind.tokens.cjs and the cron template ride along for the
+// system handbook (/admin/documents/system, SystemHandbookService), which
+// reads them from ROOTPATH. None is under public/, so none has a URL.
+const APP_FILES = ['composer.json', 'composer.lock', 'spark', 'package.json', 'tailwind.tokens.cjs'];
 
 /** writable/ subdirectories the framework requires at runtime.
  *
@@ -113,15 +116,26 @@ if (!fs.existsSync(iconsFrom)) {
 copyDir(iconsFrom, path.join(appOut, 'resources', 'icons'));
 console.log('  • resources/icons/ (' + fs.readdirSync(iconsFrom).length + ' icons)');
 
-// 2a') Internal documents for /admin/documents (Config\AdminDocuments). Beside
-//      the code in directory-app/, never under public/: they must have no URL
-//      of their own. Every file the registry names must be here, or the admin
+// 2a') The document library (Config\Documents). Internal documents for
+//      /admin/documents go beside the code in directory-app/, never under
+//      public/: they must have no URL of their own. Published ones ride along
+//      with public/. Every file the registry names must be in its folder, or a
 //      page would offer a document the server cannot open.
 const docsFrom = path.join(projectRoot, 'resources', 'documents');
-const docsRegistry = fs.readFileSync(path.join(projectRoot, 'app', 'Config', 'AdminDocuments.php'), 'utf8');
-for (const m of docsRegistry.matchAll(/'file'\s*=>\s*'([^']+)'/g)) {
-  if (!fs.existsSync(path.join(docsFrom, m[1]))) {
-    fail('Config\\AdminDocuments names resources/documents/' + m[1] + ', which does not exist.');
+const libraryFrom = path.join(projectRoot, 'public', 'assets', 'documents');
+const docsRegistry = fs.readFileSync(path.join(projectRoot, 'app', 'Config', 'Documents.php'), 'utf8');
+const internalAt = docsRegistry.indexOf('public array $internal');
+if (internalAt < 0) {
+  fail('Config\\Documents has no $internal list.');
+}
+for (const [part, dir, label] of [
+  [docsRegistry.slice(0, internalAt), libraryFrom, 'public/assets/documents/'],
+  [docsRegistry.slice(internalAt), docsFrom, 'resources/documents/'],
+]) {
+  for (const m of part.matchAll(/'file'\s*=>\s*'([^']+)'/g)) {
+    if (!fs.existsSync(path.join(dir, m[1]))) {
+      fail('Config\\Documents names ' + label + m[1] + ', which does not exist.');
+    }
   }
 }
 if (fs.existsSync(docsFrom)) {
@@ -144,6 +158,9 @@ for (const line of log.split('\n')) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(line)) commitDate = line;
   else if (line && commitDate && !(line in lastmod)) lastmod[line] = commitDate;
 }
+// The cron template, for the handbook's schedule (see APP_FILES).
+fs.mkdirSync(path.join(appOut, 'deploy', 'cron'), { recursive: true });
+fs.copyFileSync(path.join(projectRoot, 'deploy', 'cron', 'webscheduler'), path.join(appOut, 'deploy', 'cron', 'webscheduler'));
 fs.writeFileSync(path.join(appOut, 'view-lastmod.json'), JSON.stringify(lastmod, null, 1) + '\n');
 console.log('  • view-lastmod.json (' + Object.keys(lastmod).length + ' files)');
 

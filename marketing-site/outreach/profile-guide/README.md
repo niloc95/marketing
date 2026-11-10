@@ -22,7 +22,8 @@ build/                   output, gitignored
 ```
 
 `--publish` copies the PDF to
-`public/assets/documents/webscheduler-local-profile-guide.pdf`; it ships with
+`public/assets/documents/webscheduler-local-profile-guide.pdf`, the document
+library (entry `profile-guide` in `app/Config/Documents.php`); it ships with
 the next release, and the `?v=` stamp on `/resources` means no Cloudflare purge.
 The cover uses the playbook's `assets/cover-banner.webp`, which is not
 committed: copy it in before building for publication (see the playbook README).

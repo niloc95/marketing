@@ -170,8 +170,8 @@ class BookingLock
 
     /**
      * Where the appointment is: the caller's location_id if given, else the
-     * branch on the person's hours for that weekday, else the profile's own
-     * address (null). With its name and address as they are today.
+     * place of the person's period that holds the time (T29), else the
+     * profile's own address (null). With its name and address as they are today.
      *
      * @param array<string,mixed> $listing
      * @param array<string,mixed> $data
@@ -185,10 +185,9 @@ class BookingLock
         if (array_key_exists('location_id', $data)) {
             $locationId = $data['location_id'] !== null && (int) $data['location_id'] > 0 ? (int) $data['location_id'] : null;
         } else {
-            $weekday    = (int) $startUtc->setTimezone($engine->timezone())->format('N');
-            $row        = \App\Models\Bookings\BookingProviderHoursModel::forBusiness($listingId)
-                ->where('provider_id', $providerId)->where('weekday', $weekday)->first();
-            $locationId = is_array($row) && $row['location_id'] !== null ? (int) $row['location_id'] : null;
+            // The place of the person's period that holds this time (T29).
+            $serviceId  = (int) ($data['service_id'] ?? 0);
+            $locationId = $engine->locationAt($providerId, $serviceId > 0 ? $serviceId : null, $startUtc->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'));
         }
 
         if ($locationId !== null) {

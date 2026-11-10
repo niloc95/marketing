@@ -6,8 +6,9 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * The week view's render model: seven days, each built by DayView on one
- * grid shared by the whole week. Ported from Bookings' WeekViewService.
+ * The week view's render model: the week's working days (weekdays nobody
+ * works and no place opens are left out), each built by DayView on one grid
+ * shared by the whole week. Ported from Bookings' WeekViewService.
  *
  * Model (JSON safe):
  *   startDate, endDate, weekLabel, timezone, businessHours {startTime, endTime},
@@ -59,6 +60,14 @@ class WeekView
         $byDate = CalendarQuery::byDate($events);
         $dates  = array_column($week['days'], 'date');
         $grid   = $this->hours->grid($dates, array_column($this->dayView->providers($filters, $events), 'id'), $events);
+
+        // Weekdays nobody ever works, at a place that never opens then, are
+        // left out (a practice closed at weekends shows Monday to Friday),
+        // unless something is booked on them. All seven if that leaves none.
+        $people = array_column($this->dayView->providers($filters, $events), 'id');
+        $shown  = array_values(array_filter($week['days'], fn (array $d): bool => isset($byDate[$d['date']])
+            || $this->hours->weekdayUsed((int) (new DateTimeImmutable($d['date']))->format('N'), $people)));
+        $week['days'] = $shown !== [] ? $shown : $week['days'];
 
         $all  = [];
         $days = [];

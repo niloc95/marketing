@@ -12,39 +12,39 @@ New top level segments: `business`, `book`, `api`. Check `listing_reserved_slugs
 
 | Bookings | Local | Phase |
 |---|---|---|
-| `GET/POST /login`, `/auth/*`, `/auth/logout` | `GET/POST /business/sign-in`, `POST /business/sign-out` | 1 |
-| `/auth/forgot-password`, `reset-password/{token}` | `/business/password`, `/business/password/{token}` | 1 |
-| `GET /auth/ping` | `GET /business/ping` | 1 |
+| `GET/POST /login`, `/auth/*`, `/auth/logout` | `GET/POST /bookings/sign-in`, `POST /bookings/sign-out` | 1 |
+| `/auth/forgot-password`, `reset-password/{token}` | `/bookings/password`, `/bookings/password/{token}` | 1 |
+| `GET /auth/ping` | `GET /bookings/ping` | 1 |
 | none | `GET /manage/bookings` (turn on, from the owner magic link session) | 1 |
-| none | `GET /business/invite/{token}` (accept an invitation, set a password) | 2 |
-| `/profile/*` | `/business/account` | 1 |
-| `/dashboard` | `GET /business` | 7 (shell in 1; built 5 Nov 2026) |
-| `/appointments` (+ `?open={hash}`) | `/business/calendar` (+ `?open={hash}`) | 4 |
-| `/appointments/create`, `edit/{hash}` | modal inside the calendar, plus `/business/appointments/new` without JS | 4 |
-| `/customer-management/*` | `/business/customers`, `/business/customers/{hash}` | 4 |
-| `/services/*`, `/services/categories` | `/business/services`, `/business/services/categories` | 2 |
-| `/user-management/*`, `/providers/{id}/schedule`, `/provider-staff/*`, `/staff-providers/*` | `/business/team`, `/business/team/{id}`, `/business/team/{id}/hours` | 2 |
-| none (blocked times had no UI) | `/business/time-off` | 2 |
-| `/notifications` | `/business/notifications` | 6 |
-| `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/business/analytics` (`?tab=overview|services|team|customers`, `?period=7d|30d|90d|12m`, `?provider=`; built) | 7 |
-| `/settings` (tabs) | `/business/settings/{tab}` | 1 to 9 |
-| none | `/business/audit` | 1 |
-| `/search`, `/dashboard/search` | `/business/search` | 4 |
+| none | `GET /bookings/invite/{token}` (accept an invitation, set a password) | 2 |
+| `/profile/*` | `/bookings/account` | 1 |
+| `/dashboard` | `GET /bookings` | 7 (shell in 1; built 5 Nov 2026) |
+| `/appointments` (+ `?open={hash}`) | `/bookings/calendar` (+ `?open={hash}`) | 4 |
+| `/appointments/create`, `edit/{hash}` | modal inside the calendar, plus `/bookings/appointments/new` without JS | 4 |
+| `/customer-management/*` | `/bookings/customers`, `/bookings/customers/{hash}` | 4 |
+| `/services/*`, `/services/categories` | `/bookings/services`, `/bookings/services/categories` | 2 |
+| `/user-management/*`, `/providers/{id}/schedule`, `/provider-staff/*`, `/staff-providers/*` | `/bookings/team`, `/bookings/team/{id}`, `/bookings/team/{id}/hours` | 2 |
+| none (blocked times had no UI) | `/bookings/time-off` | 2 |
+| `/notifications` | `/bookings/notifications` | 6 |
+| `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/bookings/analytics` (`?tab=overview|services|team|customers`, `?period=7d|30d|90d|12m`, `?provider=`; built) | 7 |
+| `/settings` (tabs) | `/bookings/settings/{tab}` | 1 to 9 |
+| none | `/bookings/audit` | 1 |
+| `/search`, `/dashboard/search` | `/bookings/search` | 4 |
 | `/admin/updater`, `/setup/*`, `/help/*` | none | skip |
 
 ## Business JSON (session, CSRF on writes)
 
 The dashboard bundle calls these. They share code with the public API (Phase 9) but sit
-under `/business/api/` so session and CSRF rules stay simple.
+under `/bookings/api/` so session and CSRF rules stay simple.
 
 | Bookings | Local | Phase |
 |---|---|---|
-| `GET /api/calendar/day|week|month` | `GET /business/api/calendar/{view}` | 4 |
-| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/business/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); `POST /{id}/notify` (6); `POST /{id}/payment` {action: paid or refunded} (8, `payments.manage`); `/business/payments` and `/business/settings/payments` (+ `/check`) (8) | 4, 6, 8 |
-| `GET /api/availability/*` | `GET /business/api/availability/*` | 3 |
-| `GET /api/customers/*` | `/business/api/customers/*` | 4 |
-| `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /business/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
-| `GET/POST integrations/*` | plain forms under `/business/settings/connections/*` (zoom, jitsi, zoom/check, google, google/check, google/disconnect, webhook, webhook/test, webhook/secret, webhook/remove, webhook/{id}/retry) and `/business/settings/api/keys` (+ `/{id}/revoke`); built 5 Nov 2026 | 9 |
+| `GET /api/calendar/day|week|month` | `GET /bookings/api/calendar/{view}` | 4 |
+| `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/bookings/api/appointments`: `GET /{id}`, `GET /find?q=`, `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); `POST /{id}/notify` (6); `POST /{id}/payment` {action: paid or refunded} (8, `payments.manage`); `/bookings/payments` and `/bookings/settings/payments` (+ `/check`) (8) | 4, 6, 8 |
+| `GET /api/availability/*` | `GET /bookings/api/availability/*` | 3 |
+| `GET /api/customers/*` | `/bookings/api/customers/*` | 4 |
+| `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /bookings/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
+| `GET/POST integrations/*` | plain forms under `/bookings/settings/connections/*` (zoom, jitsi, zoom/check, google, google/check, google/disconnect, webhook, webhook/test, webhook/secret, webhook/remove, webhook/{id}/retry) and `/bookings/settings/api/keys` (+ `/{id}/revoke`); built 5 Nov 2026 | 9 |
 
 ## Public booking (no account; session starts only at the details step)
 
@@ -68,7 +68,7 @@ under `/business/api/` so session and CSRF rules stay simple.
 |---|---|---|
 | `POST /public/payments/payfast/notify` | `POST /book/payfast/notify` (one address for every business; the reference finds the business, its passphrase checks the notice). Paystack has no webhook here: verified on return and by `bookings:payments`; built 5 Nov 2026 | 8 |
 | `POST /public/payments/stripe/webhook` | `POST /book/stripe/webhook` if D6 says Stripe | later |
-| `/oauth/google/authorize|callback` | `POST /business/settings/connections/google` (state in the session), `GET /business/connections/google/callback`; built 5 Nov 2026 | 9 |
+| `/oauth/google/authorize|callback` | `POST /bookings/settings/connections/google` (state in the session), `GET /bookings/connections/google/callback`; built 5 Nov 2026 | 9 |
 
 ## Public API (Phase 9, Bearer key, JSON, `{data, meta}` / `{error}`)
 
@@ -86,9 +86,9 @@ are off.
 
 ## Phase 10
 
-`POST /business/settings/plan/subscribe`, `/cancel`, `GET /business/plan/paystack` (return
-from Paystack), tab `/business/settings/plan` (only while the plan is required);
-`GET /business/customers/{hash}/export` (admins); `GET /admin/bookings`,
+`POST /bookings/settings/plan/subscribe`, `/cancel`, `GET /bookings/plan/paystack` (return
+from Paystack), tab `/bookings/settings/plan` (only while the plan is required);
+`GET /bookings/customers/{hash}/export` (admins); `GET /admin/bookings`,
 `POST /admin/bookings/{id}/extend`, `POST /admin/bookings/{id}/support`.
 
 ## Cron

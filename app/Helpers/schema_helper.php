@@ -721,6 +721,20 @@ if (! function_exists('schema_local_business')) {
                 'worksFor'      => ['@id' => $canonical . '#business'],
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
         }
+        // Bookable people without a team card (T28) are on the page too.
+        $cardIds = array_map('intval', array_column($l['team'] ?? [], 'id'));
+        foreach ($l['_practitioners'] ?? [] as $p) {
+            if ($p['team_member_id'] !== null && in_array($p['team_member_id'], $cardIds, true)) {
+                continue;
+            }
+            $employees[] = array_filter([
+                '@type'       => 'Person',
+                'name'        => (string) $p['name'],
+                'jobTitle'    => (string) $p['title'],
+                'description' => (string) $p['bio'],
+                'worksFor'    => ['@id' => $canonical . '#business'],
+            ], static fn ($v) => $v !== '');
+        }
         if ($isPerson && ! $personSeen) {
             array_unshift($employees, ['@id' => $personId]);
         }
@@ -728,8 +742,21 @@ if (! function_exists('schema_local_business')) {
         // "Services & prices" as an offer catalogue. The price label is free
         // text ("from R150", "POA"), which schema.org's numeric `price` cannot
         // hold honestly, so it goes in the offer's description instead.
+        //
+        // A profile taking online bookings shows its booking services instead
+        // (T28). Those carry a real price in cents, so they get a numeric
+        // price and currency, and the link that books them.
         $offers = [];
-        foreach ($l['services'] ?? [] as $service) {
+        foreach ($l['_booking_services'] ?? [] as $service) {
+            $offers[] = array_filter([
+                '@type'         => 'Offer',
+                'itemOffered'   => array_filter(['@type' => 'Service', 'name' => $service['name'], 'description' => $service['description']], static fn ($v) => $v !== ''),
+                'price'         => $service['price_cents'] !== null ? number_format($service['price_cents'] / 100, 2, '.', '') : '',
+                'priceCurrency' => $service['price_cents'] !== null ? $service['currency'] : '',
+                'url'           => $service['book_url'],
+            ], static fn ($v) => $v !== '' && $v !== null);
+        }
+        foreach (($l['_booking_services'] ?? []) === [] ? ($l['services'] ?? []) : [] as $service) {
             $name = trim((string) ($service['name'] ?? ''));
             if ($name === '') {
                 continue;

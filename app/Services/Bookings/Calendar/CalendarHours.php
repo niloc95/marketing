@@ -38,7 +38,7 @@ class CalendarHours
     private array $windows = [];
 
     /** @param array<string,mixed> $listing */
-    public function __construct(array $listing, private CalendarRange $range, ?AvailabilityService $engine = null)
+    public function __construct(private array $listing, private CalendarRange $range, ?AvailabilityService $engine = null)
     {
         $this->listingId = (int) $listing['id'];
         $this->engine    = $engine ?? new AvailabilityService($listing);
@@ -59,7 +59,8 @@ class CalendarHours
             $this->rows[$id] = [];
         }
         foreach (BookingProviderHoursModel::forBusiness($this->listingId)->whereIn('provider_id', $ids)->findAll() as $row) {
-            $this->rows[(int) $row['provider_id']][(int) $row['weekday']] = $row;
+            // Several periods a day since T29: the day's rows, in time order.
+            $this->rows[(int) $row['provider_id']][(int) $row['weekday']][] = $row;
         }
     }
 
@@ -121,21 +122,63 @@ class CalendarHours
             return ['isActive' => false] + $business;
         }
 
-        $breaks = array_values(array_map(
-            static fn (array $b): array => ['start' => (string) $b['start'], 'end' => (string) $b['end']],
-            json_decode((string) $row['breaks'], true) ?: [],
-        ));
+        // The day from its first start to its last end; the gaps between
+        // periods (another place, or lunch) show as breaks, like a break.
+        usort($row, static fn (array $a, array $b): int => strcmp((string) $a['start_time'], (string) $b['start_time']));
+        $breaks = [];
+        foreach ($row as $i => $period) {
+            foreach (json_decode((string) $period['breaks'], true) ?: [] as $b) {
+                $breaks[] = ['start' => (string) $b['start'], 'end' => (string) $b['end']];
+            }
+            if ($i > 0 && substr((string) $row[$i - 1]['end_time'], 0, 5) < substr((string) $period['start_time'], 0, 5)) {
+                $breaks[] = ['start' => substr((string) $row[$i - 1]['end_time'], 0, 5), 'end' => substr((string) $period['start_time'], 0, 5)];
+            }
+        }
+        usort($breaks, static fn (array $a, array $b): int => strcmp($a['start'], $b['start']));
+        $first = $row[0];
 
         return [
-            'startTime'   => substr((string) $row['start_time'], 0, 5),
-            'endTime'     => substr((string) $row['end_time'], 0, 5),
+            'startTime'   => substr((string) $first['start_time'], 0, 5),
+            'endTime'     => substr((string) max(array_column($row, 'end_time')), 0, 5),
             'breakStart'  => $breaks[0]['start'] ?? null,
             'breakEnd'    => $breaks[0]['end'] ?? null,
             'breaks'      => $breaks,
             'source'      => 'provider_hours',
             'isActive'    => true,
-            'location_id' => $row['location_id'] !== null ? (int) $row['location_id'] : null,
+            'location_id' => $first['location_id'] !== null ? (int) $first['location_id'] : null,
         ];
+    }
+
+    /**
+     * Whether a weekday (1 Monday to 7 Sunday) is ever a working day: the
+     * profile or a branch opens that weekday, or one of these people has
+     * hours on it. The week view leaves the others out (owner, 6 Nov 2026:
+     * no Saturday and Sunday columns for a practice closed at weekends).
+     *
+     * @param list<int> $providerIds
+     */
+    public function weekdayUsed(int $weekday, array $providerIds): bool
+    {
+        $this->load($providerIds);
+        foreach ($providerIds as $id) {
+            if (isset($this->rows[$id][$weekday])) {
+                return true;
+            }
+        }
+        helper('directory_hours');
+        $key   = \App\Services\Bookings\TeamService::PROFILE_DAY_KEYS[$weekday];
+        $hours = [hours_decode(is_array($this->listing['trading_hours'] ?? null) ? json_encode($this->listing['trading_hours']) : ($this->listing['trading_hours'] ?? null))];
+        foreach ((new \App\Models\DirectoryPracticeLocationModel())->forListing($this->listingId) as $branch) {
+            $hours[] = hours_decode($branch['trading_hours'] ?? null);
+        }
+        foreach ($hours as $week) {
+            $day = $week[$key] ?? null;
+            if (is_array($day) && ! $day['closed'] && $day['open'] !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Whether anyone of these people works on a date the business is open. */

@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Documents | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -11,7 +10,6 @@
  * @var list<array{key:string,title:string,description:string,file:string,bytes:int|null,modified:int|null}> $docs
  */
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">
@@ -27,6 +25,19 @@
                 <table class="table">
                     <thead><tr><th>Document</th><th>Updated</th><th>Size</th><th></th></tr></thead>
                     <tbody>
+                    <tr>
+                        <td>
+                            <strong>System handbook</strong>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Everything about Local, Bookings, both sites and the brand site: architecture, design, tech stack, every table with live row counts and ids. Read live each time it opens.</div>
+                        </td>
+                        <td>Live</td>
+                        <td></td>
+                        <td>
+                            <div class="actions">
+                                <a class="btn btn-primary btn-xs" href="<?= base_url('admin/documents/system') ?>">Open</a>
+                            </div>
+                        </td>
+                    </tr>
                     <?php foreach ($docs as $d): ?>
                         <tr>
                             <td>

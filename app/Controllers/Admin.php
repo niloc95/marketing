@@ -251,6 +251,8 @@ class Admin extends BaseController
                 : null,
             'strengthFloor'  => (int) config('Directory')->recentMinQuality,
             'strengthTarget' => (int) config('Directory')->qualityTarget,
+            // Read only while the booking catalogue writes the list (T28).
+            'servicesFromBookings' => $listing !== null && \App\Services\Bookings\CatalogueService::ownsProfileServices($listing),
             'listing'    => $listing,
             'old'        => session()->getFlashdata('old') ?? [],
             'errors'     => session()->getFlashdata('errors') ?? [],
@@ -697,12 +699,12 @@ class Admin extends BaseController
 
     // ------------------------------------------------------------- documents
 
-    /** Internal documents (Config\AdminDocuments), for staff only. */
+    /** Internal documents (Config\Documents::$internal), for staff only. */
     public function documents()
     {
-        $config = config('AdminDocuments');
+        $config = config('Documents');
         $docs   = [];
-        foreach ($config->documents as $key => $doc) {
+        foreach ($config->internal as $key => $doc) {
             $path   = $config->path($key);
             $docs[] = $doc + [
                 'key'      => $key,
@@ -720,7 +722,7 @@ class Admin extends BaseController
      */
     public function document(string $key)
     {
-        $config = config('AdminDocuments');
+        $config = config('Documents');
         $path   = $config->path($key);
         if ($path === null) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -737,7 +739,7 @@ class Admin extends BaseController
             ->setStatusCode(200)
             ->setHeader('Content-Type', 'application/pdf')
             ->setHeader('Content-Length', (string) strlen($contents))
-            ->setHeader('Content-Disposition', ($download ? 'attachment' : 'inline') . '; filename="' . basename($config->documents[$key]['file']) . '"')
+            ->setHeader('Content-Disposition', ($download ? 'attachment' : 'inline') . '; filename="' . basename($config->internal[$key]['file']) . '"')
             ->setHeader('X-Content-Type-Options', 'nosniff')
             ->setHeader('Cache-Control', 'no-store, private, max-age=0')
             ->setBody($contents);

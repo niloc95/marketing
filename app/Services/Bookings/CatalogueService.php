@@ -76,6 +76,137 @@ class CatalogueService
         return $rows;
     }
 
+    /**
+     * Services customers can book: listed() with their length confirmed (T29).
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function bookable(): array
+    {
+        return array_values(array_filter($this->listed(), static fn (array $s): bool => (int) $s['length_checked'] === 1));
+    }
+
+    /**
+     * Services the business offers through someone customers can book: not
+     * archived, with at least one bookable, not archived person. Includes
+     * the ones still waiting for their length (T29): the profile lists them,
+     * without a Book link, so confirming lengths one by one never drops one.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listed(): array
+    {
+        $people = array_map('intval', array_column(
+            BookingProviderModel::forBusiness($this->listingId)->where('archived_at', null)->where('bookable', 1)->findAll(),
+            'id',
+        ));
+        if ($people === []) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->services(),
+            static fn (array $s): bool => array_intersect($s['provider_ids'], $people) !== [],
+        ));
+    }
+
+    /**
+     * Whether the booking catalogue, not the profile form, owns the
+     * profile's "Services and prices" (decision T28): bookings switched on
+     * and at least one service customers can book. While it does, the form
+     * shows the list read only and every catalogue change is mirrored.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public static function ownsProfileServices(array $listing): bool
+    {
+        return config('Bookings')->enabled()
+            && (int) ($listing['bookings_enabled'] ?? 0) === 1
+            && (new self((int) $listing['id']))->bookable() !== [];
+    }
+
+    /**
+     * Copy the profile's services into an empty catalogue when bookings are
+     * turned on (T28), so the owner adjusts rather than retypes: 30 minutes,
+     * the price when the label is a plain amount ("R450", "450.00"), offered
+     * by the default person. The 30 minutes is a guess, so each one waits,
+     * not offered online, until the owner saves it with its real length
+     * (`length_checked`, T29).
+     */
+    public function seedFromProfile(?int $providerId, ?int $accountId): int
+    {
+        if (BookingServiceModel::forBusiness($this->listingId)->countAllResults() > 0) {
+            return 0;
+        }
+        $added    = 0;
+        $currency = $this->currency();
+        foreach (array_slice((new \App\Services\ServiceMenuService())->servicesFor($this->listingId), 0, self::MAX_SERVICES) as $row) {
+            $cents  = self::plainAmount((string) ($row['price_label'] ?? ''), $currency);
+            $result = $this->saveService(null, [
+                'name'           => mb_substr((string) $row['name'], 0, 120),
+                'duration_min'   => 30,
+                'price'          => $cents !== null ? number_format($cents / 100, 2, '.', '') : '',
+                'delivery_modes' => ['onsite'],
+                'provider_ids'   => $providerId !== null ? [$providerId] : [],
+            ], $accountId, false);
+            if ($result['id'] !== null) {
+                // The profile's order, so the list reads the same after the mirror.
+                BookingServiceModel::forBusiness($this->listingId)->update($result['id'], ['profile_service_name' => $row['name'], 'sort_order' => $added, 'length_checked' => 0]);
+                $added++;
+            }
+        }
+        if ($added > 0) {
+            $this->audit->record($this->listingId, $accountId, 'catalogue.seeded', null, null, null, ['services' => $added]);
+        }
+
+        return $added;
+    }
+
+    /**
+     * Cents for a price label that is only an amount, bare or with the
+     * business's own currency sign: "R450", "R 1 200", "450.00". Anything
+     * else ("from R150", "POA", another currency) is null: the owner sets
+     * the price in Bookings.
+     */
+    public static function plainAmount(string $label, string $currency = 'ZAR'): ?int
+    {
+        helper('money');
+        $symbol = trim((string) (money_currencies()[$currency]['symbol'] ?? $currency));
+        $label  = trim(str_replace(["\u{00A0}", ' ', ','], '', $label));
+        foreach ([$symbol, $currency] as $prefix) {
+            if ($prefix !== '' && str_starts_with($label, $prefix)) {
+                $label = substr($label, strlen($prefix));
+
+                break;
+            }
+        }
+        if (! preg_match('/^(\d{1,6})(?:\.(\d{1,2}))?$/', $label, $m)) {
+            return null;
+        }
+
+        return (int) $m[1] * 100 + (int) str_pad($m[2] ?? '0', 2, '0');
+    }
+
+    /**
+     * Write the bookable services into the profile's "Services and prices"
+     * (T28), so Discover and the quality score read the same table for every
+     * profile. A service without a price keeps the old row's label, and
+     * every row keeps its link, matched by name. Nothing happens while the
+     * catalogue does not own the list.
+     */
+    public function mirrorToProfile(): void
+    {
+        $listing = (new \App\Models\DirectoryListingModel())->find($this->listingId);
+        if (! is_array($listing) || ! self::ownsProfileServices($listing)) {
+            return;
+        }
+        $rows = array_map(static fn (array $s): array => [
+            'name'        => (string) $s['name'],
+            'price_label' => self::priceText($s['price_cents'] !== null ? (int) $s['price_cents'] : null, (string) $s['currency']),
+        ], $this->listed());
+        (new \App\Services\ServiceMenuService())->mirror($this->listingId, $rows);
+    }
+
     /** @return array<string,mixed>|null */
     public function service(int $id): ?array
     {
@@ -95,7 +226,7 @@ class CatalogueService
      *
      * @return array{id:?int,errors:array<string,string>}
      */
-    public function saveService(?int $id, array $input, ?int $accountId): array
+    public function saveService(?int $id, array $input, ?int $accountId, bool $mirror = true): array
     {
         $existing = $id !== null ? $this->service($id) : null;
         if ($id !== null && $existing === null) {
@@ -130,6 +261,9 @@ class CatalogueService
         if ($db->transComplete() === false) {
             throw new \RuntimeException('Saving a booking service was rolled back.');
         }
+        if ($mirror) {
+            $this->mirrorToProfile();
+        }
 
         return ['id' => $id, 'errors' => []];
     }
@@ -141,6 +275,7 @@ class CatalogueService
         }
         BookingServiceModel::forBusiness($this->listingId)->update($id, ['archived_at' => $archive ? gmdate('Y-m-d H:i:s') : null]);
         $this->audit->record($this->listingId, $accountId, $archive ? 'service.archived' : 'service.restored', 'service', $id);
+        $this->mirrorToProfile();
 
         return true;
     }
@@ -243,6 +378,7 @@ class CatalogueService
         foreach ($valid as $serviceId) {
             BookingProviderServiceModel::forBusiness($this->listingId)->insert(['provider_id' => $providerId, 'service_id' => $serviceId]);
         }
+        $this->mirrorToProfile();
     }
 
     /** @return list<string> */
@@ -292,7 +428,7 @@ class CatalogueService
 
         $duration = filter_var($input['duration_min'] ?? null, FILTER_VALIDATE_INT);
         if ($duration === false || $duration < 5 || $duration > self::MAX_DURATION || $duration % 5 !== 0) {
-            $errors['duration_min'] = 'Choose a length between 5 minutes and 12 hours, in steps of 5 minutes.';
+            $errors['duration_min'] = 'Choose a duration between 5 minutes and 12 hours, in steps of 5 minutes.';
         }
 
         $priceCents = null;
@@ -335,6 +471,8 @@ class CatalogueService
             'name'          => $name,
             'description'   => $description === '' ? null : $description,
             'duration_min'  => (int) $duration,
+            // Saved by someone, so the length is theirs (T29).
+            'length_checked' => 1,
             'price_cents'   => $priceCents,
             'currency'      => $this->currency(),
             'deposit_pct'   => (int) $deposit,

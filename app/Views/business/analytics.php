@@ -1,6 +1,6 @@
 <?php
 /**
- * /business/analytics (Phase 7): how bookings went over a period, by tab.
+ * /bookings/analytics (Phase 7): how bookings went over a period, by tab.
  * Charts are the inline SVG partials the admin dashboard uses
  * (directory/_bar_chart.php and friends), never Chart.js: no new script, and
  * a table under each chart for anyone who cannot see it.
@@ -20,7 +20,7 @@ $money    = static fn (int $cents): string => CatalogueService::priceText($cents
 $num      = static fn (int|float $n): string => number_format((float) $n, is_float($n) && floor($n) !== $n ? 1 : 0);
 $hours    = static fn (int $minutes): string => $minutes < 60 ? $minutes . ' min' : $num(round($minutes / 60, 1)) . ' h';
 $change   = static fn (?float $pct): string => $pct === null ? 'nothing to compare with' : ($pct > 0 ? '+' : '') . $pct . '% on the period before';
-$link     = static fn (array $q): string => base_url('business/analytics') . '?' . http_build_query(array_filter($q + ['tab' => $tab, 'period' => $period, 'provider' => $provider], static fn ($v): bool => $v !== '' && $v !== 0 && $v !== null));
+$link     = static fn (array $q): string => base_url('bookings/analytics') . '?' . http_build_query(array_filter($q + ['tab' => $tab, 'period' => $period, 'provider' => $provider], static fn ($v): bool => $v !== '' && $v !== 0 && $v !== null));
 $date     = static fn (string $d): string => date('j M Y', (int) strtotime($d));
 $series   = $report['series'];
 $every    = max(1, (int) ceil(count($series) / 6)); // axis labels: about six, or they overlap on a phone
@@ -32,7 +32,7 @@ $tileCols = [3 => 'sm:grid-cols-3', 6 => 'sm:grid-cols-3 lg:grid-cols-6'];
 <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Analytics</h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400"><?= esc($date($report['from'])) ?> to <?= esc($date($report['to'])) ?>. Bookings count on the day they start. Value is worked out from your prices; it is not money received.</p>
 
-<form method="get" action="<?= base_url('business/analytics') ?>" class="mt-4 flex flex-wrap items-end gap-3">
+<form method="get" action="<?= base_url('bookings/analytics') ?>" class="mt-4 flex flex-wrap items-end gap-3">
     <input type="hidden" name="tab" value="<?= esc($tab, 'attr') ?>">
     <div class="field mb-0">
         <label for="an-period">Period</label>
@@ -199,7 +199,7 @@ $tileCols = [3 => 'sm:grid-cols-3', 6 => 'sm:grid-cols-3 lg:grid-cols-6'];
             <ul class="stats-list dash-list mt-3">
                 <?php foreach ($report['top'] as $c): ?>
                     <li>
-                        <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('business/customers/' . $c['hash']) ?>"><?= esc($c['name'] !== '' ? $c['name'] : 'No name') ?></a>
+                        <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('bookings/customers/' . $c['hash']) ?>"><?= esc($c['name'] !== '' ? $c['name'] : 'No name') ?></a>
                         <span class="stats-list-n"><?= $num($c['booked']) ?> booked<?= $c['value_cents'] > 0 ? ', ' . esc($money((int) $c['value_cents'])) : '' ?></span>
                     </li>
                 <?php endforeach ?>

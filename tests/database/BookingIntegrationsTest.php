@@ -404,7 +404,7 @@ final class BookingIntegrationsTest extends CIUnitTestCase
         $this->assertSame('Bearer ya29', $options['headers']['Authorization']);
         $this->assertSame('Cut with Alice Johnson', $options['json']['summary']);
         $this->assertSame(['2030-01-09T08:00:00Z', 'Africa/Johannesburg'], [$options['json']['start']['dateTime'], $options['json']['start']['timeZone']]);
-        $this->assertStringContainsString('business/calendar?open=', $options['json']['description']);
+        $this->assertStringContainsString('bookings/calendar?open=', $options['json']['description']);
         $this->assertSame('evt1', A::forBusiness($this->listingId)->find($id)['google_event_id']);
 
         $this->appointments()->reschedule($id, '2030-01-09', '15:00');
@@ -453,7 +453,8 @@ final class BookingIntegrationsTest extends CIUnitTestCase
         $r->assertJSONFragment(['error' => ['code' => 'unauthenticated']]);
         $this->api('wsk_000000000000_' . str_repeat('0', 40))->get('api/v1/appointments')->assertStatus(401);
         $key = $this->apiKey(['appointments.read']);
-        $this->api(substr($key, 0, -1) . '0')->get('api/v1/appointments')->assertStatus(401);
+        // A different last character: '0' every time failed 1 in 16 runs, when the key already ended in 0.
+        $this->api(substr($key, 0, -1) . ($key[-1] === '0' ? '1' : '0'))->get('api/v1/appointments')->assertStatus(401);
         $this->api($key)->get('api/v1/appointments')->assertStatus(200);
     }
 
@@ -640,18 +641,18 @@ final class BookingIntegrationsTest extends CIUnitTestCase
 
     public function testTheSettingsTabsShowAndSave(): void
     {
-        $r = $this->signedIn()->get('business/settings/connections');
+        $r = $this->signedIn()->get('bookings/settings/connections');
         $r->assertStatus(200);
         $r->assertSee('Online meetings by Zoom');
-        $r = $this->signedIn()->get('business/settings/api');
+        $r = $this->signedIn()->get('bookings/settings/api');
         $r->assertStatus(200);
         $r->assertSee('Make a key');
 
-        $this->signedIn()->post('business/settings/api/keys', ['name' => 'Till', 'scopes' => ['appointments.read'], 'expires' => '90', csrf_token() => csrf_hash()])->assertRedirect();
+        $this->signedIn()->post('bookings/settings/api/keys', ['name' => 'Till', 'scopes' => ['appointments.read'], 'expires' => '90', csrf_token() => csrf_hash()])->assertRedirect();
         $this->assertSame(['Till'], array_column((new ApiKeys($this->listingId))->list(), 'name'));
-        $this->signedIn()->get('business/settings/api')->assertSee('Till');
+        $this->signedIn()->get('bookings/settings/api')->assertSee('Till');
 
-        $this->signedIn()->post('business/settings/connections/webhook', ['url' => 'https://hooks.example.com/in', 'events' => ['appointment.created'], 'active' => '1', csrf_token() => csrf_hash()])->assertRedirect();
+        $this->signedIn()->post('bookings/settings/connections/webhook', ['url' => 'https://hooks.example.com/in', 'events' => ['appointment.created'], 'active' => '1', csrf_token() => csrf_hash()])->assertRedirect();
         $this->assertTrue((new Webhooks($this->listingId))->settings()['active']);
     }
 

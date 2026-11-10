@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Support view | Admin']) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -20,7 +19,6 @@
 $tz   = \App\Services\Bookings\BusinessLocale::zone($listing);
 $when = static fn (string $utc): string => (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($tz)->format('D j M H:i');
 ?>
-<?= view('admin/_bar') ?>
 <section class="section">
     <div class="container">
         <p class="mb-2 text-sm"><a class="underline" href="<?= base_url('admin/bookings') ?>">Online bookings</a></p>

@@ -88,8 +88,9 @@ class CustomerService
     }
 
     /**
-     * Find customers by name, email or phone ("Find a customer"), newest
-     * first, limited to the member's scope.
+     * Every customer newest first, or those matching a name, email, phone or
+     * reference ("Find a customer", BookingSearch) best first, limited to the
+     * member's scope.
      *
      * @param list<int>|null $scope
      *
@@ -100,23 +101,22 @@ class CustomerService
         if ($scope === []) {
             return ['rows' => [], 'total' => 0, 'page' => 1, 'pages' => 1];
         }
+        $query = trim($query);
+        if ($query !== '') {
+            $ids   = array_column((new BookingSearch($this->listingId))->customers($query, $scope), 'id');
+            $total = count($ids);
+            $pages = max(1, (int) ceil($total / $perPage));
+            $page  = min(max(1, $page), $pages);
+            $ids   = array_slice($ids, ($page - 1) * $perPage, $perPage);
+            $rows  = $ids === [] ? [] : array_column(BookingCustomerModel::forBusiness($this->listingId)->whereIn('id', $ids)->findAll(), null, 'id');
+
+            return ['rows' => array_map(fn (int $id): array => $this->decode($rows[$id]), array_values(array_filter($ids, static fn (int $id): bool => isset($rows[$id])))),
+                'total' => $total, 'page' => $page, 'pages' => $pages];
+        }
         $c     = 'xs_booking_customers';
         $model = BookingCustomerModel::forBusiness($this->listingId)->select($c . '.*');
         // Customers past the keeping period (Privacy\Retention) are kept only as counts.
         $model->where($c . '.purged_at', null);
-        $query = trim($query);
-        if ($query !== '') {
-            $model->groupStart()
-                ->like($c . '.first_name', $query)
-                ->orLike($c . '.last_name', $query)
-                ->orLike($c . '.email', $query)
-                ->orLike($c . '.phone', preg_replace('/\s+/', '', $query));
-            $words = preg_split('/\s+/', $query, 2);
-            if (count($words) === 2) {
-                $model->orGroupStart()->like($c . '.first_name', $words[0], 'after')->like($c . '.last_name', $words[1], 'after')->groupEnd();
-            }
-            $model->groupEnd();
-        }
         if ($scope !== null) {
             $ids = array_map('intval', $scope);
             $model->where($c . '.id IN (SELECT customer_id FROM xs_booking_appointments WHERE listing_id = ' . $this->listingId

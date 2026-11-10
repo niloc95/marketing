@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Settings | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -53,7 +52,6 @@ $changeNote = static function (?array $change): string {
         . (empty($change['by']) ? '' : ' by ' . $change['by']);
 };
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">

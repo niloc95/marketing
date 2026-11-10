@@ -17,7 +17,7 @@
 
     <div class="form-card">
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Signed in as <?= esc((string) $account['email']) ?></p>
-        <form method="post" action="<?= base_url('business/account/name') ?>">
+        <form method="post" action="<?= base_url('bookings/account/name') ?>">
             <?= csrf_field() ?>
             <div class="field">
                 <label for="biz-name">Your name</label>
@@ -30,7 +30,7 @@
     <div class="form-card" id="password">
         <h2 class="mb-1.5 font-bold text-slate-900 dark:text-white"><?= $hasPassword ? 'Change your password' : 'Choose a password' ?></h2>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">At least <?= $minLength ?> characters.</p>
-        <form method="post" action="<?= base_url('business/account/password') ?>">
+        <form method="post" action="<?= base_url('bookings/account/password') ?>">
             <?= csrf_field() ?>
             <?php if ($hasPassword): ?>
                 <div class="field">
@@ -50,6 +50,6 @@
         </form>
     </div>
 
-    <p class="text-sm"><a class="underline" href="<?= base_url('business/choose') ?>">Your businesses</a></p>
+    <p class="text-sm"><a class="underline" href="<?= base_url('bookings/choose') ?>">Your businesses</a></p>
 </div>
 <?= $this->endSection() ?>

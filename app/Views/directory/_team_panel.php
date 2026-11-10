@@ -19,12 +19,25 @@ use App\Services\TeamMemberService;
  * would inherit one of theirs instead of falling back to its own default.
  *
  * @var array  $members     rows from DirectoryListingTeamModel::forListing()
+ * @var array  $practitioners bookable people (PublicBookingService::practitioners()):
+ *                          joined to their team card by team_member_id, and
+ *                          shown as a plain card when they have none
  * @var string $teamHeading panel heading; the vertical's word for these people
  * @var string $business    the business's name, for the headshots' alt text
  * @var array|null $regulator the listing category's regulator, for each person's registration
  */
 $teamHeading = $teamHeading ?? 'Our team';
 $regulator   = $regulator ?? null;
+$bookable    = [];
+$cardless    = [];
+foreach ($practitioners ?? [] as $p) {
+    $cardIds = array_map('intval', array_column($members, 'id'));
+    if ($p['team_member_id'] !== null && in_array($p['team_member_id'], $cardIds, true)) {
+        $bookable[$p['team_member_id']] = $p;
+    } else {
+        $cardless[] = $p;
+    }
+}
 $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underline';
 ?>
 <div class="panel mb-5">
@@ -89,6 +102,27 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if (! empty($m['bio'])): ?>
                         <p class="team-member-bio"><?= esc($m['bio']) ?></p>
                     <?php endif; ?>
+
+                    <?php if (isset($m['id'], $bookable[(int) $m['id']])): ?>
+                        <?= view('directory/_team_booking', ['p' => $bookable[(int) $m['id']]], ['saveData' => false]) ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+
+        <?php // Bookable people with no team card: what booking knows of them. ?>
+        <?php foreach ($cardless as $p): ?>
+            <div class="team-member">
+                <span class="team-avatar team-avatar-empty" aria-hidden="true"><?= esc(mb_substr(trim($p['name']), 0, 1)) ?></span>
+                <div class="team-member-body">
+                    <p class="team-member-name"><?= esc($p['name']) ?></p>
+                    <?php if ($p['title'] !== ''): ?>
+                        <p class="team-member-role"><?= esc($p['title']) ?></p>
+                    <?php endif; ?>
+                    <?php if ($p['bio'] !== ''): ?>
+                        <p class="team-member-bio"><?= esc($p['bio']) ?></p>
+                    <?php endif; ?>
+                    <?= view('directory/_team_booking', ['p' => $p], ['saveData' => false]) ?>
                 </div>
             </div>
         <?php endforeach; ?>

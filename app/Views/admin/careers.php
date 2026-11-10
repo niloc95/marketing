@@ -1,8 +1,7 @@
-<?= $this->extend('layouts/public') ?>
+<?= $this->extend('layouts/admin') ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta(['title' => 'Careers | ' . config('Directory')->siteName()]) ?>
-<meta name="robots" content="noindex, nofollow">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -23,7 +22,6 @@ $chip = [
     CareerRoleModel::STATUS_CLOSED => 'badge badge-category cat-tint-slate',
 ];
 ?>
-<?= view('admin/_bar') ?>
 
 <section class="section">
     <div class="container">
