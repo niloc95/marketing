@@ -7,6 +7,7 @@
 import { postJson } from './api.js';
 import { MSG } from './messages.js';
 import { initCustomerPicker } from '../customer-picker.js';
+import { initFreeTimes } from '../free-times.js';
 
 export function initCreate(root, scheduler) {
   const dialog = root.querySelector('[data-cal-create]');
@@ -14,6 +15,8 @@ export function initCreate(root, scheduler) {
   const formError = form.querySelector('[data-create-error]');
   // Find a customer as you type: shared with /bookings/appointments/new.
   const { choose } = initCustomerPicker(form.querySelector('[data-customer-picker]'), root.dataset.customerUrl, form);
+  // Next free times for the chosen service and person: a click fills Date and Time.
+  const free = initFreeTimes(form, `${root.dataset.appointmentUrl}/free`);
 
   dialog.querySelectorAll('[data-cal-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => scheduler.busy(false));
@@ -45,6 +48,7 @@ export function initCreate(root, scheduler) {
     if (date) form.querySelector('[name="date"]').value = date;
     if (time) form.querySelector('[name="time"]').value = time;
     if (providerId) form.querySelector('[name="provider_id"]').value = String(providerId);
+    free.refresh();
     scheduler.busy(true);
     dialog.showModal();
   }

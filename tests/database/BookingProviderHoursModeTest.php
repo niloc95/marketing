@@ -135,6 +135,21 @@ final class BookingProviderHoursModeTest extends CIUnitTestCase
         $this->assertSame([1, 2, 3, 4, 5], array_column($rows[$this->doctor], 'weekday'));
     }
 
+    public function testANewBookingIsOfferedTheNextFreeTimes(): void
+    {
+        $listing = $this->listings->find($this->listingId);
+        $now     = new DateTimeImmutable('2030-01-07 06:00', new DateTimeZone('Africa/Johannesburg'));
+        $service = new \App\Services\Bookings\AppointmentService($listing, null, 0, null, $now);
+
+        $free = $service->freeForNew($this->consult, $this->doctor, self::MONDAY);
+        $this->assertSame(['09:00', '10:00', '11:00', '12:00', '09:00', '10:00'], array_column($free['next'], 'time'), 'today first, then the next days');
+        $this->assertSame('2030-01-07', $free['next'][0]['date']);
+        $this->assertSame(['09:00', '10:00', '11:00', '12:00'], array_column($free['day'], 'time'));
+
+        $other = (int) (new TeamService($this->listingId))->saveProvider(null, ['name' => 'Someone else'], null)['id'];
+        $this->assertNull($service->freeForNew($this->consult, $other), 'they do not offer it');
+    }
+
     /** @return list<string> */
     private function times(): array
     {

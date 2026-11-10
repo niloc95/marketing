@@ -11,6 +11,7 @@
 import { getJson } from './calendar/api.js';
 import { el } from './calendar/chip.js';
 import { MSG } from './calendar/messages.js';
+import { initFreeTimes } from './free-times.js';
 
 export function initCustomerPicker(picker, url, form) {
   const idInput = picker.querySelector('[data-customer-id]');
@@ -82,4 +83,6 @@ export function initCustomerPicker(picker, url, form) {
 export function initBookingForm(form) {
   const picker = form.querySelector('[data-customer-picker]');
   if (picker) initCustomerPicker(picker, form.dataset.customerUrl, form);
+  // Next free times: a click fills Date and Time.
+  initFreeTimes(form, form.dataset.freeUrl);
 }

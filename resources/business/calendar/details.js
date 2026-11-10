@@ -9,6 +9,7 @@ import { getJson, postJson } from './api.js';
 import { el } from './chip.js';
 import { dateOf, hhmm, longDay } from './dates.js';
 import { MSG } from './messages.js';
+import { renderFreeTimes } from '../free-times.js';
 
 export function initDetails(root, scheduler) {
   const dialog = root.querySelector('[data-cal-details]');
@@ -112,22 +113,14 @@ export function initDetails(root, scheduler) {
   let freeAsk = 0;
 
   function timeButtons(box, times, empty) {
-    box.replaceChildren(...times.map((t) => {
-      const b = el('button', 'free-time', '');
-      b.type = 'button';
-      b.append(el('span', 'free-time-when', t.label));
-      if (t.place) b.append(el('span', 'free-time-place', t.place));
-      b.addEventListener('click', () => {
-        q('[data-d-date]').value = t.date;
-        q('[data-d-time]').value = t.time;
-        dialog.querySelectorAll('.free-time[aria-pressed]').forEach((x) => x.removeAttribute('aria-pressed'));
-        b.setAttribute('aria-pressed', 'true');
-        chosen.textContent = MSG.chosenTime(t.label, t.place);
-        chosen.hidden = false;
-      });
-      return b;
-    }));
-    if (!times.length) box.append(el('p', 'free-times-empty', empty));
+    renderFreeTimes(box, times, empty, (t, b) => {
+      q('[data-d-date]').value = t.date;
+      q('[data-d-time]').value = t.time;
+      dialog.querySelectorAll('.free-time[aria-pressed]').forEach((x) => x.removeAttribute('aria-pressed'));
+      b.setAttribute('aria-pressed', 'true');
+      chosen.textContent = MSG.chosenTime(t.label, t.place);
+      chosen.hidden = false;
+    });
   }
 
   async function loadFree(withDate) {

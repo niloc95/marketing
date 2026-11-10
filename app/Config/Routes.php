@@ -373,6 +373,7 @@ $routes->group('bookings', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->get('appointments/new', 'Business\Appointments::new');
     $routes->post('appointments/new', 'Business\Appointments::saveNew');
     $routes->get('api/appointments/find', 'Business\Appointments::find');
+    $routes->get('api/appointments/free', 'Business\Appointments::freeNew');
     $routes->get('api/appointments/(:num)', 'Business\Appointments::show/$1');
     $routes->get('api/appointments/(:num)/free', 'Business\Appointments::free/$1');
     $routes->post('api/appointments', 'Business\Appointments::create');

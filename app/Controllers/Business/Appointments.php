@@ -48,6 +48,22 @@ class Appointments extends BaseController
         return $this->json(['ok' => true, 'data' => $free]);
     }
 
+    /**
+     * Free times for a new appointment (the Book form and dialog):
+     * ?service_id, ?provider_id, and ?date for every free time that day.
+     */
+    public function freeNew()
+    {
+        $date = (string) $this->request->getGet('date');
+        $free = $this->service()->freeForNew((int) $this->request->getGet('service_id'), (int) $this->request->getGet('provider_id'), $date !== '' ? $date : null);
+        if ($free === null) {
+            // 200: the form shows the reason in place of the times (getJson() throws on 4xx).
+            return $this->json(['ok' => false, 'error' => AppointmentService::PROBLEMS['not_offered']]);
+        }
+
+        return $this->json(['ok' => true, 'data' => $free]);
+    }
+
     /** Deposit: {action: paid|refunded}. Only for an appointment in the member's scope. */
     public function payment(int $id)
     {

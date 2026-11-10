@@ -17,7 +17,7 @@
 <?= $this->section('content') ?>
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('bookings/calendar') ?>">Calendar</a></p>
 <?php // data-customer-url: customer-picker.js finds existing customers as you type. ?>
-<form method="post" action="<?= base_url('bookings/appointments/new') ?>" class="form-card form-card-narrow" data-customer-url="<?= esc(base_url('bookings/api/customers'), 'attr') ?>">
+<form method="post" action="<?= base_url('bookings/appointments/new') ?>" class="form-card form-card-narrow" data-customer-url="<?= esc(base_url('bookings/api/customers'), 'attr') ?>" data-free-url="<?= esc(base_url('bookings/api/appointments/free'), 'attr') ?>">
     <?= csrf_field() ?>
     <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Book an appointment</h1>
     <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. You can book any free time in working hours.</p>
