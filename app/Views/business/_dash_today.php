@@ -1,7 +1,7 @@
 <?php
 /**
  * The dashboard's figures and today's list. Rendered inside business/home.php
- * and again by /bookings/api/dashboard/today, which dashboard.js fetches every
+ * and again by /business/api/dashboard/today, which dashboard.js fetches every
  * two minutes while the tab is open (Bookings' dashboard-refresh.js).
  *
  * @var array<string,mixed>       $cards    DashboardService::cards()
@@ -40,7 +40,7 @@ if ($canValue) {
     <div class="dash-panel-head">
         <h2 class="strength-panel-title">Today, <?= esc(date('l j F', (int) strtotime($today))) ?></h2>
         <?php if ($canBook): ?>
-            <a class="dash-more" href="<?= base_url('bookings/calendar?view=day&date=' . $today) ?>">Open the day</a>
+            <a class="dash-more" href="<?= base_url('business/calendar?view=day&date=' . $today) ?>">Open the day</a>
         <?php endif ?>
     </div>
     <?php if ($schedule === []): ?>
@@ -53,7 +53,7 @@ if ($canValue) {
                     <ul class="stats-list dash-list">
                         <?php foreach ($person['appointments'] as $a): ?>
                             <li class="biz-when-<?= esc($a['when'], 'attr') ?>">
-                                <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('bookings/calendar?view=day&date=' . $today . '&open=' . $a['hash']) ?>">
+                                <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= base_url('business/calendar?view=day&date=' . $today . '&open=' . $a['hash']) ?>">
                                     <span class="tabular-nums"><?= esc($a['time']) ?></span>
                                     <?= esc((string) ($a['customer_name'] ?? 'No customer')) ?>
                                 </a>

@@ -13,7 +13,7 @@ export function initCreate(root, scheduler) {
   const dialog = root.querySelector('[data-cal-create]');
   const form = dialog.querySelector('[data-cal-create-form]');
   const formError = form.querySelector('[data-create-error]');
-  // Find a customer as you type: shared with /bookings/appointments/new.
+  // Find a customer as you type: shared with /business/appointments/new.
   const { choose } = initCustomerPicker(form.querySelector('[data-customer-picker]'), root.dataset.customerUrl, form);
   // Next free times for the chosen service and person: a click fills Date and Time.
   const free = initFreeTimes(form, `${root.dataset.appointmentUrl}/free`);

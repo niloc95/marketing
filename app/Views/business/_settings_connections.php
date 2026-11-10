@@ -29,7 +29,7 @@ $zoom = $c['zoom'];
         <?php if ($c['canEncrypt']): ?>
             <details class="mt-3">
                 <summary class="cursor-pointer text-sm font-semibold">Use your own Jitsi server</summary>
-                <form method="post" action="<?= base_url('bookings/settings/connections/jitsi') ?>" class="mt-3">
+                <form method="post" action="<?= base_url('business/settings/connections/jitsi') ?>" class="mt-3">
                     <?= csrf_field() ?>
                     <div class="field">
                         <label for="jitsi-server">Jitsi server address (leave empty for meet.jit.si)</label>
@@ -52,7 +52,7 @@ $zoom = $c['zoom'];
                 <p class="mt-3 text-sm"><?= esc($health($zoom)) ?></p>
             <?php endif ?>
             <p class="mt-3 text-sm">In the Zoom App Marketplace, build a Server to Server OAuth app with the scopes to read your user and to create, update and delete meetings, then paste its App credentials here.</p>
-            <form method="post" action="<?= base_url('bookings/settings/connections/zoom') ?>" class="mt-3">
+            <form method="post" action="<?= base_url('business/settings/connections/zoom') ?>" class="mt-3">
                 <?= csrf_field() ?>
                 <div class="field">
                     <label for="zoom-account">Account ID</label>
@@ -71,11 +71,11 @@ $zoom = $c['zoom'];
             </form>
             <?php if ($zoom['provider'] !== ''): ?>
                 <div class="mt-4 flex flex-wrap gap-2">
-                    <form method="post" action="<?= base_url('bookings/settings/connections/zoom/check') ?>">
+                    <form method="post" action="<?= base_url('business/settings/connections/zoom/check') ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost">Check the details with Zoom</button>
                     </form>
-                    <form method="post" action="<?= base_url('bookings/settings/connections/zoom') ?>">
+                    <form method="post" action="<?= base_url('business/settings/connections/zoom') ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="remove" value="1">
                         <button type="submit" class="btn btn-ghost">Remove Zoom</button>
@@ -97,23 +97,23 @@ $zoom = $c['zoom'];
             </p>
             <div class="mt-3 flex flex-wrap gap-2">
                 <?php if (! $c['google']['active']): ?>
-                    <form method="post" action="<?= base_url('bookings/settings/connections/google') ?>">
+                    <form method="post" action="<?= base_url('business/settings/connections/google') ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-primary">Connect again</button>
                     </form>
                 <?php else: ?>
-                    <form method="post" action="<?= base_url('bookings/settings/connections/google/check') ?>">
+                    <form method="post" action="<?= base_url('business/settings/connections/google/check') ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost">Check the connection</button>
                     </form>
                 <?php endif ?>
-                <form method="post" action="<?= base_url('bookings/settings/connections/google/disconnect') ?>">
+                <form method="post" action="<?= base_url('business/settings/connections/google/disconnect') ?>">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-ghost">Disconnect</button>
                 </form>
             </div>
         <?php else: ?>
-            <form method="post" action="<?= base_url('bookings/settings/connections/google') ?>" class="mt-3">
+            <form method="post" action="<?= base_url('business/settings/connections/google') ?>" class="mt-3">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-primary">Connect Google Calendar</button>
             </form>
@@ -128,7 +128,7 @@ $zoom = $c['zoom'];
             <?php if ($c['webhook']['set']): ?>
                 <p class="mt-3 text-sm"><?= esc($health($c['webhook'])) ?></p>
             <?php endif ?>
-            <form method="post" action="<?= base_url('bookings/settings/connections/webhook') ?>" class="mt-3">
+            <form method="post" action="<?= base_url('business/settings/connections/webhook') ?>" class="mt-3">
                 <?= csrf_field() ?>
                 <div class="field">
                     <label for="hook-url">Your address</label>
@@ -148,17 +148,17 @@ $zoom = $c['zoom'];
                     <summary class="cursor-pointer text-sm font-semibold">Signing secret</summary>
                     <p class="mt-2 text-sm">Check the signature on each message with this secret, as the developer page shows. Keep it private.</p>
                     <p class="mt-2 break-all rounded bg-slate-100 p-2 font-mono text-sm dark:bg-slate-800"><?= esc($c['secret']) ?></p>
-                    <form method="post" action="<?= base_url('bookings/settings/connections/webhook/secret') ?>" class="mt-2">
+                    <form method="post" action="<?= base_url('business/settings/connections/webhook/secret') ?>" class="mt-2">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost">Make a new secret</button>
                     </form>
                 </details>
                 <div class="mt-4 flex flex-wrap gap-2">
-                    <form method="post" action="<?= base_url('bookings/settings/connections/webhook/test') ?>">
+                    <form method="post" action="<?= base_url('business/settings/connections/webhook/test') ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost">Send a test</button>
                     </form>
-                    <form method="post" action="<?= base_url('bookings/settings/connections/webhook/remove') ?>">
+                    <form method="post" action="<?= base_url('business/settings/connections/webhook/remove') ?>">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost">Remove the webhook</button>
                     </form>
@@ -188,7 +188,7 @@ $zoom = $c['zoom'];
                                 }) ?></td>
                                 <td class="py-1 text-right">
                                     <?php if ($d['status'] === 'failed'): ?>
-                                        <form method="post" action="<?= base_url('bookings/settings/connections/webhook/' . (int) $d['id'] . '/retry') ?>">
+                                        <form method="post" action="<?= base_url('business/settings/connections/webhook/' . (int) $d['id'] . '/retry') ?>">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-ghost">Send again</button>
                                         </form>

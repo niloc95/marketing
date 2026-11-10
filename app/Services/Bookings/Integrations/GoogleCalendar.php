@@ -48,7 +48,7 @@ class GoogleCalendar
     {
         helper('site');
 
-        return listing_site_url($this->listing, 'bookings/connections/google/callback');
+        return listing_site_url($this->listing, 'business/connections/google/callback');
     }
 
     /** Where to send the admin to say yes at Google. */

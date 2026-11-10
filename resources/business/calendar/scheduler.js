@@ -1,7 +1,7 @@
 /**
  * The calendar core (Bookings' scheduler-core, server mode only): view,
  * date and filters, kept in the address bar; loads the render model from
- * /bookings/api/calendar/{view}; draws it; reloads it after every change
+ * /business/api/calendar/{view}; draws it; reloads it after every change
  * and once a minute while the tab is visible and nobody is mid action
  * (Bookings' background poll). Bookings' flat appointment list fallback is
  * not carried.

@@ -16,7 +16,7 @@ $rows = $tables === null ? null : array_sum(array_column($tables, 'rows'));
             <thead><tr><th>Product</th><th>Lives at</th><th>Code</th></tr></thead>
             <tbody>
                 <tr><td><strong>WebScheduler Local</strong>, a local business discovery and visibility platform</td><td>local.webscheduler.co.za (South Africa), local.webscheduler.app (every other country)</td><td><code>niloc95/marketing</code>: <code>app/</code>, <code>public/</code>, <code>resources/</code>, <code>tests/</code></td></tr>
-                <tr><td><strong>Bookings</strong>, online bookings for any business profile</td><td>Inside Local: <code>/bookings</code>, the booking page on a profile, <code>/api/v1</code></td><td>Same repo, <code>App\Services\Bookings\…</code>, spec in <code>docs/bookings/</code></td></tr>
+                <tr><td><strong>Bookings</strong>, online bookings for any business profile</td><td>Inside Local: <code>/business</code> (the owner area), the booking page on a profile, <code>/api/v1</code></td><td>Same repo, <code>App\Services\Bookings\…</code>, spec in <code>docs/bookings/</code></td></tr>
                 <tr><td><strong>Brand site</strong>, what WebScheduler is</td><td>webscheduler.co.za</td><td><code>niloc95/webscheduler-site</code> (static plus <code>contact.php</code>)</td></tr>
             </tbody>
         </table>

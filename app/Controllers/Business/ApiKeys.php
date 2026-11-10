@@ -6,13 +6,13 @@ use App\Controllers\BaseController;
 use App\Services\Bookings\Api\ApiKeys as Keys;
 
 /**
- * Settings, API keys tab (/bookings/settings/api, Phase 9). Admins only
+ * Settings, API keys tab (/business/settings/api, Phase 9). Admins only
  * (api_keys.manage). A new key is shown once, on the page after it is made,
  * and never again.
  */
 class ApiKeys extends BaseController
 {
-    private const BACK = 'bookings/settings/api';
+    private const BACK = 'business/settings/api';
 
     /** @return array<string,mixed> */
     public static function viewData(int $listingId): array

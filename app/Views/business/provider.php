@@ -28,11 +28,11 @@ $archived   = $provider['archived_at'] !== null;
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('bookings/team') ?>">Team</a></p>
+<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/team') ?>">Team</a></p>
 <h1 class="mb-5 text-xl font-bold text-slate-900 dark:text-white"><?= esc((string) $provider['name']) ?></h1>
 
 <div class="grid gap-6 lg:grid-cols-2">
-    <form method="post" action="<?= base_url('bookings/team/' . $provider['id']) ?>" class="form-card" enctype="multipart/form-data">
+    <form method="post" action="<?= base_url('business/team/' . $provider['id']) ?>" class="form-card" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <?php // Who they are is their profile team card (T31): the same fields as "Add your people". ?>
         <?= view('directory/_person_fields', [
@@ -56,7 +56,7 @@ $archived   = $provider['archived_at'] !== null;
         <fieldset class="field">
             <legend class="mb-1 font-semibold">Services</legend>
             <?php if ($services === []): ?>
-                <p class="text-sm text-slate-500"><a class="underline" href="<?= base_url('bookings/services/new') ?>">Add your first service</a>.</p>
+                <p class="text-sm text-slate-500"><a class="underline" href="<?= base_url('business/services/new') ?>">Add your first service</a>.</p>
             <?php endif ?>
             <?php foreach ($services as $s): ?>
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="service_ids[]" value="<?= (int) $s['id'] ?>"<?= in_array((int) $s['id'], $offered, true) ? ' checked' : '' ?>> <?= esc((string) $s['name']) ?></label>
@@ -87,7 +87,7 @@ $archived   = $provider['archived_at'] !== null;
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
 
-    <form method="post" action="<?= base_url('bookings/team/' . $provider['id'] . '/hours') ?>" class="form-card" id="hours">
+    <form method="post" action="<?= base_url('business/team/' . $provider['id'] . '/hours') ?>" class="form-card" id="hours">
         <?= csrf_field() ?>
         <h2 class="mb-1 font-bold">Working hours</h2>
         <?php if ($hoursMode === ProviderWeek::PROFILE): ?>
@@ -193,7 +193,7 @@ $archived   = $provider['archived_at'] !== null;
 </div>
 
 <?php if ($isAdmin): ?>
-    <form method="post" action="<?= base_url('bookings/team/' . $provider['id'] . '/archive') ?>" class="mt-6">
+    <form method="post" action="<?= base_url('business/team/' . $provider['id'] . '/archive') ?>" class="mt-6">
         <?= csrf_field() ?>
         <?php if ($archived): ?><input type="hidden" name="restore" value="1"><?php endif ?>
         <button type="submit" class="btn btn-ghost"><?= $archived ? 'Bring back to the team' : 'Archive' ?></button>

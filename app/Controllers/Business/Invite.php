@@ -28,10 +28,10 @@ class Invite extends BaseController
     {
         $result = TeamService::acceptInvitation($token, (string) $this->request->getPost('password'));
         if ($result['error'] !== null) {
-            return redirect()->to(base_url('bookings/invite/' . $token))->with('error', $result['error']);
+            return redirect()->to(base_url('business/invite/' . $token))->with('error', $result['error']);
         }
         BusinessSession::signIn((int) $result['account_id'], (int) $result['listing_id']);
 
-        return redirect()->to(base_url('bookings'))->with('success', 'Welcome. You are part of the business now.');
+        return redirect()->to(base_url('business'))->with('success', 'Welcome. You are part of the business now.');
     }
 }

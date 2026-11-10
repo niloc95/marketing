@@ -13,18 +13,22 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
 /**
- * Gate for every /bookings route (online bookings, docs/bookings/).
+ * Gate for every /business route: every owner's back office, the profile and
+ * online bookings in one place (10 Nov 2026).
  *
- * 1. Bookings switched off, or not offered on this site: 404, as if the area
- *    did not exist. That is the whole effect of `businessauth:guest` (sign in
- *    and password pages).
+ * 1. `businessauth:guest` lets everyone through (sign in, password, invite).
  * 2. No signed in account, or a session idle longer than
  *    Config\Bookings::$idleSeconds: back to sign in.
  * 3. `businessauth:account` stops here (business picker, account page).
  * 4. Otherwise the chosen business is checked **against the database on
- *    every request**: an active membership, and the profile still published
- *    with bookings on. A member removed a minute ago is out on their next
- *    click, whatever their session says.
+ *    every request**: an active membership and the profile still there, on
+ *    its own site's host. A member removed a minute ago is out on their next
+ *    click, whatever their session says. `businessauth:owner` stops here, so
+ *    a Free profile's owner gets their profile pages.
+ * 5. No argument: online bookings must be usable for the business (the
+ *    switch, the site, turned on, the badge or Plus). When they are not, a
+ *    page shows why and what unlocks it (business/locked), and anything else
+ *    is refused. A lapsed badge lands there with all its data kept.
  *
  * What it found goes into service('businessContext'), the only place
  * controllers read the account, membership and business from.
@@ -33,11 +37,7 @@ class BusinessAuth implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $config = config('Bookings');
-        if (! $config->siteAllowed(site()->key())) {
-            throw PageNotFoundException::forPageNotFound();
-        }
-
+        $config    = config('Bookings');
         $arguments = (array) $arguments;
         if (in_array('guest', $arguments, true)) {
             return null;
@@ -45,21 +45,21 @@ class BusinessAuth implements FilterInterface
 
         $accountId = BusinessSession::accountId();
         if ($accountId <= 0) {
-            return redirect()->to(base_url('bookings/sign-in'));
+            return redirect()->to(base_url('business/sign-in'));
         }
 
         $seen = (int) (session()->get(BusinessSession::SEEN) ?? 0);
         if (time() - $seen > $config->idleSeconds) {
             BusinessSession::signOut();
 
-            return redirect()->to(base_url('bookings/sign-in?expired=1'));
+            return redirect()->to(base_url('business/sign-in?expired=1'));
         }
 
         $account = (new AccountModel())->find($accountId);
         if (! is_array($account) || $account['status'] !== AccountModel::STATUS_ACTIVE) {
             BusinessSession::signOut();
 
-            return redirect()->to(base_url('bookings/sign-in'));
+            return redirect()->to(base_url('business/sign-in'));
         }
 
         session()->set(BusinessSession::SEEN, time());
@@ -75,7 +75,7 @@ class BusinessAuth implements FilterInterface
         if ($listingId <= 0) {
             $businesses = $members->businessesFor($accountId);
             if (count($businesses) !== 1) {
-                return redirect()->to(base_url('bookings/choose'));
+                return redirect()->to(base_url('business/choose'));
             }
             $listingId = $businesses[0]['listing_id'];
             BusinessSession::chooseBusiness($listingId);
@@ -83,12 +83,10 @@ class BusinessAuth implements FilterInterface
 
         $member  = $members->activeMembership($accountId, $listingId);
         $listing = (new DirectoryListingModel())->find($listingId);
-        if ($member === null || ! is_array($listing)
-            || ! (new BookingSetupService())->isOn($listing)
-            || (new BookingSetupService())->whyNot($listing) !== null) {
+        if ($member === null || ! is_array($listing)) {
             session()->remove(BusinessSession::LISTING);
 
-            return redirect()->to(base_url('bookings/choose'));
+            return redirect()->to(base_url('business/choose'));
         }
 
         // The business area is on the business's own site's host (D2). Pages
@@ -100,12 +98,27 @@ class BusinessAuth implements FilterInterface
                 throw PageNotFoundException::forPageNotFound();
             }
 
-            return redirect()->to(listing_site_url($listing, 'bookings'));
+            return redirect()->to(listing_site_url($listing, 'business'));
         }
 
         $context->set($account, $member, $listing);
 
-        return null;
+        if (in_array('owner', $arguments, true)) {
+            return null;
+        }
+
+        $setup  = new BookingSetupService();
+        $reason = $setup->isOn($listing) ? $setup->whyNot($listing) : ($setup->whyNot($listing) ?? 'Online bookings are off for this business.');
+        if ($reason === null) {
+            return null;
+        }
+
+        return service('response')
+            ->setStatusCode(403)
+            ->setBody(view('business/locked', [
+                'feature' => 'bookings',
+                'reason'  => $reason,
+            ], ['saveData' => false]));
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)

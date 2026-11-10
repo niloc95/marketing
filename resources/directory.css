@@ -4486,6 +4486,7 @@
   .dark .shell-link.is-active { @apply bg-primary-600 text-white; }
   .shell-link-icon { @apply shrink-0; }
   .shell-count { @apply ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
+  .shell-lock { @apply ml-auto inline-flex items-center text-slate-400 dark:text-slate-500; }
   .shell-foot { @apply shrink-0 space-y-0.5 border-t border-slate-200 px-3 py-3; }
   .dark .shell-foot { @apply border-slate-800; }
 

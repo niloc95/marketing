@@ -7,13 +7,13 @@ use App\Services\Bookings\Plans\BookingPlanService;
 use App\Services\PaystackPayments;
 
 /**
- * Settings, Plan tab (/bookings/settings/plan, Phase 10): the business's
+ * Settings, Plan tab (/business/settings/plan, Phase 10): the business's
  * Bookings plan, its free trial, paying by Paystack and stopping renewal.
  * Admins only (settings.manage). Shown only while the plan is required.
  */
 class PlanSettings extends BaseController
 {
-    private const BACK = 'bookings/settings/plan';
+    private const BACK = 'business/settings/plan';
 
     /** @return array<string,mixed> */
     public static function viewData(int $listingId): array
@@ -30,7 +30,7 @@ class PlanSettings extends BaseController
         if (! $status['can_subscribe'] && ! $status['can_move']) {
             return redirect()->to(base_url(self::BACK))->with('error', 'Your plan is already paid up.');
         }
-        $checkout = (new BookingPlanService())->checkout($context->listing(), (string) $context->account()['email'], listing_site_url($context->listing(), 'bookings/plan/paystack'));
+        $checkout = (new BookingPlanService())->checkout($context->listing(), (string) $context->account()['email'], listing_site_url($context->listing(), 'business/plan/paystack'));
         if ($checkout === null) {
             return redirect()->to(base_url(self::BACK))->with('error', 'We could not open the payment page. Please try again in a few minutes.');
         }

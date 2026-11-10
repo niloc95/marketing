@@ -1143,10 +1143,9 @@ class Directory extends BaseController
         $mut     = new DirectoryListingMutationService();
         $listing = $mut->verify($token);
         if ($listing !== null) {
-            // regenerate(true) — the session is about to carry authority, so the
-            // pre-authentication id must die with it. See Manage::redeem().
-            session()->regenerate(true);
-            session()->set(Manage::SESSION_KEY, (int) $listing['id']);
+            // Signed in to /business as the owner: the link proved the email.
+            // BusinessSession::signIn() regenerates the session id.
+            \App\Services\OwnerAccess::signInFor($listing);
 
             // A listing outside South Africa is verified but not yet published:
             // verify() left it 'pending' because the International Listing

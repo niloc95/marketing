@@ -2,7 +2,7 @@
  * Page changes without reloads in the app shell (layouts/_shell.php), ported
  * from Bookings' resources/js/spa.js.
  *
- * A link or form inside the shell's own area (/admin or /bookings) is
+ * A link or form inside the shell's own area (/admin or /business) is
  * fetched in full, like a page load; only #spa-content and the sidebar's item
  * list are swapped in, so the server renders every page exactly as it would
  * without this script, flash messages and validation errors included.

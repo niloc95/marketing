@@ -46,8 +46,8 @@ $actions = [
         </table>
     </div>
     <p class="mt-4 flex gap-3 text-sm">
-        <?php if ($page > 1): ?><a class="underline" href="<?= base_url('bookings/audit?page=' . ($page - 1)) ?>">Newer</a><?php endif ?>
-        <?php if (count($rows) === $pageSize): ?><a class="underline" href="<?= base_url('bookings/audit?page=' . ($page + 1)) ?>">Older</a><?php endif ?>
+        <?php if ($page > 1): ?><a class="underline" href="<?= base_url('business/audit?page=' . ($page - 1)) ?>">Newer</a><?php endif ?>
+        <?php if (count($rows) === $pageSize): ?><a class="underline" href="<?= base_url('business/audit?page=' . ($page + 1)) ?>">Older</a><?php endif ?>
     </p>
 <?php endif ?>
 <?= $this->endSection() ?>

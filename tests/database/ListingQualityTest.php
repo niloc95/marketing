@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
@@ -234,7 +233,7 @@ final class ListingQualityTest extends CIUnitTestCase
 
         $withPhoto = $this->quality->recalculate($id);
 
-        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/photo-delete/' . $photoId);
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/photo-delete/' . $photoId);
 
         $this->assertSame(
             $withPhoto - ListingQualityService::PTS_PHOTO,
@@ -273,7 +272,7 @@ final class ListingQualityTest extends CIUnitTestCase
         $this->quality->recalculate($id);
         $earned = (int) $this->listings->find($id)['quality_score'];
 
-        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/edit', [
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/edit', [
             'display_name'  => 'Flow Yoga',
             'category_id'   => $this->categoryId,
             'quality_score' => 100,

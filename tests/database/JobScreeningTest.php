@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Libraries\Screening;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -107,14 +106,14 @@ final class JobScreeningTest extends CIUnitTestCase
     public function testTheVacancyFormOffersTheLevelOnlyToAListedBusiness(): void
     {
         $listing = $this->listing();
-        $html    = (string) $this->withSession([Manage::SESSION_KEY => (int) $listing['id']])
+        $html    = (string) $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))
             ->get('manage/jobs/new?kind=job')->response()->getBody();
         $this->assertStringContainsString('name="screening_level"', $html);
 
         $html = (string) $this->get('jobs/post?kind=job')->response()->getBody();
         $this->assertStringNotContainsString('name="screening_level"', $html, 'the public form has no level');
 
-        $html = (string) $this->withSession([Manage::SESSION_KEY => (int) $listing['id']])
+        $html = (string) $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))
             ->get('manage/jobs/new?kind=service')->response()->getBody();
         $this->assertStringNotContainsString('name="screening_level"', $html, 'a service request asks nothing');
     }

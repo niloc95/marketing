@@ -21,7 +21,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 <div class="mt-5 space-y-2">
     <?php foreach ($providers as $p): ?>
         <?php $archived = $p['archived_at'] !== null; $week = $hours[(int) $p['id']]; ?>
-        <a href="<?= base_url('bookings/team/' . $p['id']) ?>" class="panel flex flex-wrap items-center justify-between gap-3 hover:border-brand-ocean<?= $archived ? ' opacity-60' : '' ?>">
+        <a href="<?= base_url('business/team/' . $p['id']) ?>" class="panel flex flex-wrap items-center justify-between gap-3 hover:border-brand-ocean<?= $archived ? ' opacity-60' : '' ?>">
             <span>
                 <span class="block font-semibold"><?= esc((string) $p['name']) ?></span>
                 <?php if ($p['title']): ?><span class="text-sm text-slate-500 dark:text-slate-400"><?= esc((string) $p['title']) ?></span><?php endif ?>
@@ -39,7 +39,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 <?php if ($canAdd): ?>
     <?php // One person, one record (T31): adding someone here adds their profile team card too. ?>
-    <form method="post" action="<?= base_url('bookings/team') ?>" class="form-card mt-4">
+    <form method="post" action="<?= base_url('business/team') ?>" class="form-card mt-4">
         <?= csrf_field() ?>
         <h2 class="mb-3 font-bold">Add a person</h2>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -72,7 +72,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                             <span class="font-semibold"><?= esc((string) $t['name']) ?></span>
                             <?php if (! empty($t['role'])): ?><span class="text-sm text-slate-500 dark:text-slate-400"> <?= esc((string) $t['role']) ?></span><?php endif ?>
                         </span>
-                        <form method="post" action="<?= base_url('bookings/team') ?>">
+                        <form method="post" action="<?= base_url('business/team') ?>">
                             <?= csrf_field() ?>
                             <input type="hidden" name="team_member_id" value="<?= (int) $t['id'] ?>">
                             <button type="submit" class="btn btn-ghost btn-xs">Add to bookings</button>
@@ -98,7 +98,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                                 <?php if ($m['status'] === 'invited'): ?><span class="pill pill-pending">Invited</span><?php endif ?>
                             </td>
                             <td>
-                                <form method="post" action="<?= base_url('bookings/team/members/' . $m['id'] . '/role') ?>" class="flex gap-2">
+                                <form method="post" action="<?= base_url('business/team/members/' . $m['id'] . '/role') ?>" class="flex gap-2">
                                     <?= csrf_field() ?>
                                     <select name="role" aria-label="Role">
                                         <?php foreach ($roleLabels as $role => $label): ?>
@@ -110,7 +110,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                             </td>
                             <td>
                                 <?php if ((int) $m['id'] !== $myMemberId): ?>
-                                    <form method="post" action="<?= base_url('bookings/team/members/' . $m['id'] . '/remove') ?>">
+                                    <form method="post" action="<?= base_url('business/team/members/' . $m['id'] . '/remove') ?>">
                                         <?= csrf_field() ?>
                                         <button type="submit" class="btn btn-ghost btn-xs">Remove</button>
                                     </form>
@@ -122,7 +122,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             </table>
         </div>
 
-        <form method="post" action="<?= base_url('bookings/team/invite') ?>" class="form-card mt-4">
+        <form method="post" action="<?= base_url('business/team/invite') ?>" class="form-card mt-4">
             <?= csrf_field() ?>
             <h3 class="mb-3 font-bold">Invite someone</h3>
             <div class="grid gap-4 sm:grid-cols-2">

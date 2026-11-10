@@ -10,7 +10,9 @@ use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
 use App\Models\DirectoryReviewModel;
 use App\Models\JobPostModel;
+use App\Services\Bookings\BusinessSession;
 use App\Services\DirectoryListingMutationService;
+use App\Services\OwnerAccess;
 use App\Services\DirectoryService;
 use App\Services\ListingFacetService;
 use App\Services\ListingBrandService;
@@ -127,10 +129,13 @@ class Manage extends BaseController
                 ->with('error', 'That link is invalid or has expired. Request a new one below.');
         }
 
-        // regenerate(true) — see Admin::attemptLogin(). The old id must die here:
-        // the magic link it was presented with is a bearer credential.
-        session()->regenerate(true); // the session now carries authority — close fixation
-        session()->set(self::SESSION_KEY, (int) $listing['id']);
+        // One sign in for every owner (10 Nov 2026): the link proved the
+        // profile's email, so it signs in as the account on that email.
+        // BusinessSession::signIn() regenerates the session id.
+        if (OwnerAccess::signInFor($listing) === null) {
+            return redirect()->to(base_url('business/sign-in'))
+                ->with('error', 'This account is switched off. Contact us if you think that is a mistake.');
+        }
 
         // is_string, not a cast: ?to[]=checkout hands back an array, and casting
         // that is a fatal — a mangled link would burn the token and then 500.
@@ -934,23 +939,22 @@ class Manage extends BaseController
 
     public function signout()
     {
-        session()->remove(self::SESSION_KEY);
-        return redirect()->to(base_url('/'))->with('info', 'Signed out of profile management.');
+        BusinessSession::signOut();
+
+        return redirect()->to(base_url('business/sign-in?signed_out=1'));
     }
 
     /** @return array<string,mixed>|null */
     private function currentListing(): ?array
     {
-        $id = (int) (session()->get(self::SESSION_KEY) ?? 0);
-        if ($id <= 0) {
+        $row = OwnerAccess::listing();
+        if ($row === null) {
             // Signed out (the session ended while the page was open): form
             // health counts it, since whatever was typed is gone.
             form_outcome('expired');
-
-            return null;
         }
-        $row = model('App\Models\DirectoryListingModel')->find($id);
-        return is_array($row) ? $row : null;
+
+        return $row;
     }
 
 }

@@ -56,7 +56,7 @@ class Bookings extends BaseConfig
      * Google Calendar (Phase 9): our one OAuth client, from .env
      * (`bookings.googleClientId`, `bookings.googleClientSecret`). Each business
      * connects its own calendar through it. Empty: Google Calendar is not
-     * offered. Its redirect address is /bookings/connections/google/callback
+     * offered. Its redirect address is /business/connections/google/callback
      * on local.webscheduler.co.za.
      */
     public string $googleClientId = '';

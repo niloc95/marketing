@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Libraries\PayFast;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryVerificationEventModel;
@@ -376,7 +375,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
     {
         $row = $this->approvedBadge('30.00', 'vb-button');
 
-        $result = $this->withSession([Manage::SESSION_KEY => (int) $row['listing_id']])
+        $result = $this->withSession(\Tests\Support\OwnerSession::for((int) $row['listing_id']))
             ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()]);
 
         $result->assertRedirectTo('https://checkout.paystack.com/fake123');
@@ -386,7 +385,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
     {
         $row = $this->approvedBadge('30.00', 'vb-overlay');
 
-        $result = $this->withSession([Manage::SESSION_KEY => (int) $row['listing_id']])
+        $result = $this->withSession(\Tests\Support\OwnerSession::for((int) $row['listing_id']))
             ->withHeaders(['Accept' => 'application/json'])
             ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()]);
 
@@ -403,7 +402,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
     {
         $row = $this->approvedBadge('30.00', 'vb-not-yours');
 
-        $result = $this->withSession([Manage::SESSION_KEY => $this->makeListing()])
+        $result = $this->withSession(\Tests\Support\OwnerSession::for($this->makeListing()))
             ->withHeaders(['Accept' => 'application/json'])
             ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()]);
 
@@ -425,7 +424,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $row   = $this->approvedBadge('30.00', 'vb-theirs');
         $other = $this->makeListing();
 
-        $this->withSession([Manage::SESSION_KEY => $other])
+        $this->withSession(\Tests\Support\OwnerSession::for($other))
             ->post('manage/verification/pay', ['verification' => $row['id'], 'switch' => '0', csrf_token() => csrf_hash()])
             ->assertRedirectTo(base_url('manage/edit'));
 

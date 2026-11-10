@@ -9,9 +9,9 @@ use App\Services\Bookings\Notifications\DeliveryLog;
 use App\Services\Bookings\Notifications\NotificationCentre;
 
 /**
- * Notices (/bookings/notifications): the team member's own list of
+ * Notices (/business/notifications): the team member's own list of
  * bookings, moves and cancellations customers made online, and their choice
- * to get them by email. "Sent messages" (/bookings/notifications/sent) is the
+ * to get them by email. "Sent messages" (/business/notifications/sent) is the
  * delivery log, admins only. Ported from Bookings' Notifications controller.
  */
 class Notifications extends BaseController
@@ -36,7 +36,7 @@ class Notifications extends BaseController
         $id      = (int) $this->request->getPost('id');
         (new NotificationCentre($context->listingId(), (int) $context->member()['id']))->markRead($id > 0 ? $id : null);
 
-        return redirect()->to(base_url('bookings/notifications'));
+        return redirect()->to(base_url('business/notifications'));
     }
 
     /** The member's own "email me" choice for this business. */
@@ -46,7 +46,7 @@ class Notifications extends BaseController
         $on      = $this->request->getPost('notify') !== null;
         (new BusinessMemberService())->setNotify($context->listingId(), (int) $context->member()['id'], $on, $context->accountId());
 
-        return redirect()->to(base_url('bookings/notifications'))->with('success', $on ? 'You will get these by email.' : 'You will see these here only.');
+        return redirect()->to(base_url('business/notifications'))->with('success', $on ? 'You will get these by email.' : 'You will see these here only.');
     }
 
     public function sent()

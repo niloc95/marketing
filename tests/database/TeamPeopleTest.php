@@ -100,7 +100,7 @@ final class TeamPeopleTest extends CIUnitTestCase
         [$id, $owner] = $this->businessWithOwner('salon-lumi');
         $providerId   = (int) (new TeamService($id))->providers()[0]['id'];
 
-        $this->signedIn($owner, $id)->post('bookings/team/' . $providerId, [
+        $this->signedIn($owner, $id)->post('business/team/' . $providerId, [
             csrf_token() => csrf_hash(), 'name' => 'Thandi Mokoena', 'role' => 'Senior stylist', 'credentials' => 'Diploma in Hairdressing',
             'bio' => 'Colour and cuts.', 'show_present' => '1', 'show_on_profile' => '1', 'color' => 'teal', 'bookable' => '1',
         ])->assertRedirect();
@@ -190,19 +190,19 @@ final class TeamPeopleTest extends CIUnitTestCase
         ], true);
         $providerId = (int) (new TeamService($id))->providers()[0]['id'];
 
-        $team = $this->signedIn($owner, $id)->get('bookings/team');
+        $team = $this->signedIn($owner, $id)->get('business/team');
         $team->assertOK();
         $team->assertSee('Add a person');
         $team->assertSee('On your profile, not in bookings');
         $this->assertStringContainsString('name="team_member_id" value="' . $card . '"', $team->getBody());
 
-        $person = $this->signedIn($owner, $id)->get('bookings/team/' . $providerId);
+        $person = $this->signedIn($owner, $id)->get('business/team/' . $providerId);
         $person->assertOK();
         $person->assertSee('Show on my profile');
         $person->assertSee('Qualifications');
         $this->assertStringContainsString('enctype="multipart/form-data"', $person->getBody());
 
-        $edit = $this->withSession([App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit')->getBody();
+        $edit = $this->withSession(\Tests\Support\OwnerSession::for($id))->get('manage/edit')->getBody();
         $this->assertStringContainsString('team[0][takes_bookings]', $edit);
         $this->assertStringContainsString('Show on my profile', $edit);
     }

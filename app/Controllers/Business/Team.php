@@ -123,7 +123,7 @@ class Team extends BaseController
     {
         $context = service('businessContext');
         if (! $context->can('members.manage')) {
-            return redirect()->to(base_url('bookings/team'))->with('error', 'Only an admin can add people.');
+            return redirect()->to(base_url('business/team'))->with('error', 'Only an admin can add people.');
         }
         $team   = new TeamService($context->listingId());
         $cardId = (int) $this->request->getPost('team_member_id');
@@ -138,7 +138,7 @@ class Team extends BaseController
             ];
         $result = $team->saveProvider(null, $input, $context->accountId());
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/team'))->with('error', implode(' ', $result['errors']));
+            return redirect()->to(base_url('business/team'))->with('error', implode(' ', $result['errors']));
         }
 
         $email = trim((string) $this->request->getPost('email'));
@@ -146,13 +146,13 @@ class Team extends BaseController
             $provider = $team->provider((int) $result['id']);
             $invited  = $team->invite($context->listing(), $email, (string) $provider['name'], (string) ($this->request->getPost('member_role') ?: BookingPermissions::PROVIDER), (int) $result['id'], $context->accountId());
             if ($invited['errors'] !== []) {
-                return redirect()->to(base_url('bookings/team/' . $result['id']))->with('error', 'Added, but the invitation was not sent. ' . implode(' ', $invited['errors']));
+                return redirect()->to(base_url('business/team/' . $result['id']))->with('error', 'Added, but the invitation was not sent. ' . implode(' ', $invited['errors']));
             }
 
-            return redirect()->to(base_url('bookings/team/' . $result['id']))->with('success', 'Added, and we emailed them an invitation to sign in. Set their working hours and services.');
+            return redirect()->to(base_url('business/team/' . $result['id']))->with('success', 'Added, and we emailed them an invitation to sign in. Set their working hours and services.');
         }
 
-        return redirect()->to(base_url('bookings/team/' . $result['id']))->with('success', 'Added. Set their working hours and services.');
+        return redirect()->to(base_url('business/team/' . $result['id']))->with('success', 'Added. Set their working hours and services.');
     }
 
     public function saveProvider(int $id)
@@ -176,7 +176,7 @@ class Team extends BaseController
         }
         $photo = $this->resolvePersonPhoto();
         if ($photo['error'] !== null) {
-            return redirect()->to(base_url('bookings/team/' . $id))->with('errors', ['photo' => $photo['error']]);
+            return redirect()->to(base_url('business/team/' . $id))->with('errors', ['photo' => $photo['error']]);
         }
         if ($photo['path'] !== null) {
             $input['photo_path'] = $photo['path'];
@@ -189,7 +189,7 @@ class Team extends BaseController
         // Replaced photos, or the new one when the save failed: after the commit.
         (new TeamMemberService())->discardFiles($result['orphans']);
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/team/' . $id))->with('errors', $result['errors']);
+            return redirect()->to(base_url('business/team/' . $id))->with('errors', $result['errors']);
         }
 
         (new CatalogueService($context->listingId()))->setServicesForProvider($id, array_map('intval', (array) $this->request->getPost('service_ids')));
@@ -197,7 +197,7 @@ class Team extends BaseController
             $team->setStaff($id, array_map('intval', (array) $this->request->getPost('staff_ids')), $context->accountId());
         }
 
-        return redirect()->to(base_url('bookings/team/' . $id))->with('success', 'Saved.');
+        return redirect()->to(base_url('business/team/' . $id))->with('success', 'Saved.');
     }
 
     public function saveHours(int $id)
@@ -206,7 +206,7 @@ class Team extends BaseController
         $this->guard($id);
         $team = new TeamService($context->listingId());
 
-        $back = base_url('bookings/team/' . $id . '#hours');
+        $back = base_url('business/team/' . $id . '#hours');
         $mode = (string) $this->request->getPost('hours_mode');
         if ($mode !== '') {
             $team->setHoursMode($id, $mode, $context->listing(), $context->accountId());
@@ -233,12 +233,12 @@ class Team extends BaseController
     {
         $context = service('businessContext');
         if (! $context->can('members.manage')) {
-            return redirect()->to(base_url('bookings/team'))->with('error', 'Only an admin can do that.');
+            return redirect()->to(base_url('business/team'))->with('error', 'Only an admin can do that.');
         }
         $restore = $this->request->getPost('restore') === '1';
         (new TeamService($context->listingId()))->archiveProvider($id, $context->accountId(), ! $restore);
 
-        return redirect()->to(base_url('bookings/team'))->with('success', $restore ? 'Back on the team.' : 'Archived. Customers can no longer book them.');
+        return redirect()->to(base_url('business/team'))->with('success', $restore ? 'Back on the team.' : 'Archived. Customers can no longer book them.');
     }
 
     public function invite()
@@ -254,10 +254,10 @@ class Team extends BaseController
             $context->accountId(),
         );
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/team#access'))->with('error', implode(' ', $result['errors']));
+            return redirect()->to(base_url('business/team#access'))->with('error', implode(' ', $result['errors']));
         }
 
-        return redirect()->to(base_url('bookings/team#access'))->with('success', 'Invitation sent. The link works for ' . TeamService::INVITE_DAYS . ' days.');
+        return redirect()->to(base_url('business/team#access'))->with('success', 'Invitation sent. The link works for ' . TeamService::INVITE_DAYS . ' days.');
     }
 
     public function changeRole(int $memberId)
@@ -265,7 +265,7 @@ class Team extends BaseController
         $context = service('businessContext');
         $problem = (new TeamService($context->listingId()))->changeRole($memberId, (string) $this->request->getPost('role'), $context->accountId());
 
-        return redirect()->to(base_url('bookings/team#access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Role changed.');
+        return redirect()->to(base_url('business/team#access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Role changed.');
     }
 
     public function removeMember(int $memberId)
@@ -273,7 +273,7 @@ class Team extends BaseController
         $context = service('businessContext');
         $problem = (new TeamService($context->listingId()))->removeMember($memberId, $context->accountId());
 
-        return redirect()->to(base_url('bookings/team#access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Access removed.');
+        return redirect()->to(base_url('business/team#access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Access removed.');
     }
 
     /** 404 for a provider of another business, 403 for one this member may not change. */

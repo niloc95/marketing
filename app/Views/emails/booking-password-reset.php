@@ -1,6 +1,6 @@
 <?php
 /**
- * Password reset for /bookings (AccountService::sendPasswordReset()).
+ * Password reset for /business (AccountService::sendPasswordReset()).
  *
  * @var string $name
  * @var string $url

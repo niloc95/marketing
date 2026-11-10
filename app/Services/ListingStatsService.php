@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Controllers\Manage;
+use App\Services\OwnerAccess;
 use App\Services\Search\DiscoveryEventService;
 use CodeIgniter\HTTP\IncomingRequest;
 
@@ -74,7 +74,7 @@ class ListingStatsService
         // otherwise start one, and set a cookie, for every visitor and crawler.
         if ($request->getCookie(config('Session')->cookieName) !== null || isset($_SESSION)) {
             $session = session();
-            if ($session->get('dir_admin') || (int) $session->get(Manage::SESSION_KEY) === $listingId) {
+            if ($session->get('dir_admin') || OwnerAccess::sessionListingId() === $listingId) {
                 return false;
             }
         }

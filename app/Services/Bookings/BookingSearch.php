@@ -8,7 +8,7 @@ use App\Models\Bookings\BookingCustomerModel;
 use Normalizer;
 
 /**
- * "Find" inside /bookings: one business's own customers and appointments,
+ * "Find" inside /business: one business's own customers and appointments,
  * for the customer picker, the calendar's Find box and the Customers list.
  *
  * Not Discover. Discover answers "which business" from a learned public

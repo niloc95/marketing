@@ -13,7 +13,7 @@ use App\Services\Bookings\TeamService;
 /**
  * Appointments: the JSON the calendar's details panel, drag and create form
  * use (Bookings' /api/appointments), and a plain form at
- * /bookings/appointments/new that works without the script.
+ * /business/appointments/new that works without the script.
  *
  * JSON writes answer {ok, error|errors, data?, csrf}. The CSRF token
  * regenerates on every POST, so each answer carries the next one.
@@ -161,13 +161,13 @@ class Appointments extends BaseController
         $input  = $this->input();
         $result = $this->service()->create($input);
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/appointments/new'))
+            return redirect()->to(base_url('business/appointments/new'))
                 ->with('errors', $result['errors'])
                 ->with('appointment_old', $input)
                 ->with('error', 'Please check the highlighted fields.');
         }
 
-        return redirect()->to(base_url('bookings/calendar?view=day&date=' . rawurlencode((string) $input['date']) . '&open=' . $result['hash']))
+        return redirect()->to(base_url('business/calendar?view=day&date=' . rawurlencode((string) $input['date']) . '&open=' . $result['hash']))
             ->with('success', 'Booked ' . $result['reference'] . '.');
     }
 

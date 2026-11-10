@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingTeamModel;
@@ -178,7 +177,7 @@ final class OwnerEditTamperTest extends CIUnitTestCase
     /** @param array<string,mixed> $fields */
     private function edit(int $listingId, array $fields): void
     {
-        $this->withSession([Manage::SESSION_KEY => $listingId])
+        $this->withSession(\Tests\Support\OwnerSession::for($listingId))
             ->post('manage/edit', $this->form($fields))
             ->assertRedirectTo(base_url('manage/edit'));
     }

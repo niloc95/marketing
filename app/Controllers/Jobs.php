@@ -95,7 +95,7 @@ class Jobs extends BaseController
 
         session()->set('job_page_rendered_at', time());
 
-        $listingId = (int) (session(Manage::SESSION_KEY) ?? 0);
+        $listingId = \App\Services\OwnerAccess::sessionListingId();
         $responder = $listingId > 0 ? (new DirectoryListingModel())->find($listingId) : null;
 
         return view('jobs/show', [
@@ -684,15 +684,14 @@ class Jobs extends BaseController
     /** @return array<string,mixed>|null */
     private function ownerListing(): ?array
     {
-        $id = (int) (session(Manage::SESSION_KEY) ?? 0);
-        if ($id <= 0) {
+        $row = \App\Services\OwnerAccess::listing();
+        if ($row === null) {
             // Signed out (the session ended while the page was open): form
             // health counts it, since whatever was typed is gone.
             form_outcome('expired');
 
             return null;
         }
-        $row = (new DirectoryListingModel())->find($id);
 
         return is_array($row) ? $row : null;
     }

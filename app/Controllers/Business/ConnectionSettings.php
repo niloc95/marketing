@@ -12,7 +12,7 @@ use App\Services\Bookings\Integrations\Zoom;
 use App\Services\Bookings\Notifications\BookingIntegrations;
 
 /**
- * Settings, Connections tab (/bookings/settings/connections, Phase 9):
+ * Settings, Connections tab (/business/settings/connections, Phase 9):
  * online meetings (Zoom, Jitsi), Google Calendar and the webhook. Admins
  * only (settings.manage). Everything a connection sends goes out from
  * bookings:dispatch, except the two buttons an admin presses and waits for:
@@ -20,7 +20,7 @@ use App\Services\Bookings\Notifications\BookingIntegrations;
  */
 class ConnectionSettings extends BaseController
 {
-    private const BACK = 'bookings/settings/connections';
+    private const BACK = 'business/settings/connections';
 
     /** Session key for the Google sign in in progress: state, business, time. */
     private const GOOGLE_STATE = 'bookings_google_state';

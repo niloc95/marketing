@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Services\ListingStatsService;
@@ -164,7 +163,7 @@ final class OwnerStatsTest extends CIUnitTestCase
         Services::resetSingle('site');
 
         $html = $this->withHeaders(['Host' => 'local.webscheduler.app'])
-            ->withSession([Manage::SESSION_KEY => $this->abroad])
+            ->withSession(\Tests\Support\OwnerSession::for($this->abroad))
             ->get('manage/edit')->getBody();
 
         $panel = $this->panel($html);
@@ -240,7 +239,7 @@ final class OwnerStatsTest extends CIUnitTestCase
 
     private function manage(int $listingId): string
     {
-        return (string) $this->withSession([Manage::SESSION_KEY => $listingId])->get('manage/edit')->getBody();
+        return (string) $this->withSession(\Tests\Support\OwnerSession::for($listingId))->get('manage/edit')->getBody();
     }
 
     /** @return array<string,mixed> */

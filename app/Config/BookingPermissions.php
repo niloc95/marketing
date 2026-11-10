@@ -39,6 +39,12 @@ class BookingPermissions extends BaseConfig
         'api_keys.manage'      => [self::ADMIN],
         'audit.view'           => [self::ADMIN],
         'bookings.turn_off'    => [self::ADMIN],
+        // The business profile itself (owner area, 10 Nov 2026): the owner's
+        // admins only. Team members and reception work in Bookings only.
+        'profile.edit'         => [self::ADMIN],
+        'profile.billing'      => [self::ADMIN],
+        'jobs.manage'          => [self::ADMIN],
+        'reviews.reply'        => [self::ADMIN],
     ];
 
     /** Labels for the roles, as owners read them (docs/bookings/copy.md). */

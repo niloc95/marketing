@@ -208,7 +208,7 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertStringContainsString('New booking request</h1>', $body);
         $this->assertStringContainsString('tel:0825551234', $body);
         $this->assertStringContainsString('mailto:alice@example.test', $body);
-        $this->assertStringContainsString('bookings/calendar?view=day&amp;date=2030-01-10&amp;open=' . $appt['hash'], $body);
+        $this->assertStringContainsString('business/calendar?view=day&amp;date=2030-01-10&amp;open=' . $appt['hash'], $body);
         $this->assertStringContainsString('google.com/maps/dir/', $body);
         $this->assertStringContainsString('waze.com/ul', $body);
         $this->assertStringContainsString('Booked online by the customer', $body);
@@ -547,36 +547,36 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->dispatch();
         $this->signIn();
 
-        $tab = $this->get('bookings/settings/notifications');
+        $tab = $this->get('business/settings/notifications');
         $tab->assertOK();
         $tab->assertSee('What customers get');
         $tab->assertSee('Wording');
 
-        $edit = $this->get('bookings/settings/notifications?edit=confirmed.whatsapp');
+        $edit = $this->get('business/settings/notifications?edit=confirmed.whatsapp');
         $edit->assertSee('Booking confirmed, WhatsApp');
 
-        $this->post('bookings/settings/notifications', [
+        $this->post('business/settings/notifications', [
             csrf_token() => csrf_hash(), 'customer' => ['confirmed' => ['email' => '1']], 'team' => [],
             'reminder_primary' => '120', 'reminder_secondary' => '0', 'from_name' => 'Lumi', 'reply_to' => 'not an email',
         ])->assertRedirect();
         $this->assertSame('1440', BookingSettings::for($this->listingId)->get('notifications.reminder_primary'), 'Nothing saved with a bad reply address');
-        $this->post('bookings/settings/notifications', [
+        $this->post('business/settings/notifications', [
             csrf_token() => csrf_hash(), 'customer' => ['confirmed' => ['email' => '1']], 'team' => [],
             'reminder_primary' => '120', 'reminder_secondary' => '0', 'from_name' => 'Lumi', 'reply_to' => '',
         ])->assertRedirect();
         $this->assertSame('120', BookingSettings::for($this->listingId)->get('notifications.reminder_primary'));
         $this->assertFalse((new NotificationRules($this->listingId))->enabled('pending', 'email'));
 
-        $notices = $this->get('bookings/notifications');
+        $notices = $this->get('business/notifications');
         $notices->assertOK();
         $notices->assertSee('New booking request from Alice Johnson');
-        $this->post('bookings/notifications/read', [csrf_token() => csrf_hash()])->assertRedirect();
+        $this->post('business/notifications/read', [csrf_token() => csrf_hash()])->assertRedirect();
         $this->assertSame(0, BookingInboxModel::forBusiness($this->listingId)->where('read_at', null)->countAllResults());
 
-        $sent = $this->get('bookings/notifications/sent');
+        $sent = $this->get('business/notifications/sent');
         $sent->assertOK();
         $sent->assertSee('a***@example.test');
-        $csv = $this->get('bookings/notifications/sent.csv');
+        $csv = $this->get('business/notifications/sent.csv');
         $csv->assertOK();
         $this->assertStringContainsString('"Booking request received",Email,a***@example.test,Sent', (string) $csv->response()->getBody());
     }

@@ -342,24 +342,24 @@ final class BookingPaymentsTest extends CIUnitTestCase
         $this->connectPaystack();
         $a = $this->dueAppointment();
 
-        $res = $this->signedIn()->post('bookings/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'paid']);
+        $res = $this->signedIn()->post('business/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'paid']);
         $res->assertOK();
         $row = A::forBusiness($this->listingId)->find($a['id']);
         $this->assertSame(['confirmed', 'paid'], [$row['status'], $row['payment_status']]);
         $manual = P::forBusiness($this->listingId)->where('gateway', 'manual')->first();
         $this->assertSame(['paid', 5000], [$manual['status'], (int) $manual['amount_cents']]);
 
-        $detail = json_decode((string) $this->signedIn()->get('bookings/api/appointments/' . $a['id'])->response()->getBody(), true)['data'];
+        $detail = json_decode((string) $this->signedIn()->get('business/api/appointments/' . $a['id'])->response()->getBody(), true)['data'];
         $this->assertSame(['paid', 'Deposit paid', true, true], [$detail['payment']['status'], $detail['payment']['label'], $detail['payment']['can_refund'], $detail['can_payments']]);
 
-        $this->signedIn()->post('bookings/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'refunded'])->assertOK();
+        $this->signedIn()->post('business/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'refunded'])->assertOK();
         $this->assertSame('refunded', A::forBusiness($this->listingId)->find($a['id'])['payment_status']);
         $this->assertSame('refunded', P::forBusiness($this->listingId)->find($manual['id'])['status']);
 
         // Reception has no payments at all.
         $desk = $this->reception();
-        $this->signedIn((int) $desk['account_id'])->post('bookings/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'paid'])->assertStatus(403);
-        $this->signedIn((int) $desk['account_id'])->get('bookings/payments')->assertStatus(403);
+        $this->signedIn((int) $desk['account_id'])->post('business/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'paid'])->assertStatus(403);
+        $this->signedIn((int) $desk['account_id'])->get('business/payments')->assertStatus(403);
     }
 
     public function testATeamMemberCannotMarkSomeoneElsesDeposit(): void
@@ -370,18 +370,18 @@ final class BookingPaymentsTest extends CIUnitTestCase
         $member  = (int) BusinessMemberModel::forBusiness($this->listingId)->insert(['account_id' => $account['id'], 'role' => 'provider', 'status' => 'active'], true);
         (new TeamService($this->listingId))->saveProvider($this->sarah, ['name' => 'Sarah', 'bookable' => 1, 'member_id' => $member], null);
 
-        $this->signedIn((int) $account['id'])->post('bookings/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'paid'])->assertStatus(404);
+        $this->signedIn((int) $account['id'])->post('business/api/appointments/' . $a['id'] . '/payment', [csrf_token() => csrf_hash(), 'action' => 'paid'])->assertStatus(404);
         $this->assertSame('due', A::forBusiness($this->listingId)->find($a['id'])['payment_status']);
     }
 
     public function testThePaymentsTabKeepsKeysWriteOnlyAndTellsTheAdmins(): void
     {
-        $bad = $this->signedIn()->post('bookings/settings/payments', [csrf_token() => csrf_hash(), 'provider' => 'paystack', 'cfg' => ['paystack' => ['secret_key' => 'pk_live_nope']], 'active' => '1', 'hold_minutes' => '30']);
+        $bad = $this->signedIn()->post('business/settings/payments', [csrf_token() => csrf_hash(), 'provider' => 'paystack', 'cfg' => ['paystack' => ['secret_key' => 'pk_live_nope']], 'active' => '1', 'hold_minutes' => '30']);
         $bad->assertRedirect();
         $this->assertNull((new BookingIntegrations($this->listingId))->account('payment'));
 
         $key = 'sk_live_' . str_repeat('a1', 15);
-        $this->signedIn()->post('bookings/settings/payments', [csrf_token() => csrf_hash(), 'provider' => 'paystack', 'cfg' => ['paystack' => ['secret_key' => $key]], 'active' => '1', 'hold_minutes' => '45'])->assertRedirect();
+        $this->signedIn()->post('business/settings/payments', [csrf_token() => csrf_hash(), 'provider' => 'paystack', 'cfg' => ['paystack' => ['secret_key' => $key]], 'active' => '1', 'hold_minutes' => '45'])->assertRedirect();
         $row = db_connect()->table('xs_booking_integrations')->where('listing_id', $this->listingId)->where('channel', 'payment')->get()->getRowArray();
         $this->assertStringNotContainsString($key, (string) $row['config'], 'Encrypted');
         $this->assertSame($key, (new BookingIntegrations($this->listingId))->account('payment')['config']['secret_key']);
@@ -390,13 +390,13 @@ final class BookingPaymentsTest extends CIUnitTestCase
         $this->assertStringContainsString('Payment account changed', (string) $this->sent[0]['subject']);
         $this->assertStringNotContainsString($key, (string) $this->sent[0]['body']);
 
-        $tab = $this->signedIn()->get('bookings/settings/payments');
+        $tab = $this->signedIn()->get('business/settings/payments');
         $tab->assertOK();
         $tab->assertSee('Saved. Leave empty to keep it.');
         $tab->assertDontSee($key);
 
         // Saving again with the key left empty keeps it, and tells nobody.
-        $this->signedIn()->post('bookings/settings/payments', [csrf_token() => csrf_hash(), 'provider' => 'paystack', 'cfg' => ['paystack' => ['secret_key' => '']], 'active' => '1', 'hold_minutes' => '45'])->assertRedirect();
+        $this->signedIn()->post('business/settings/payments', [csrf_token() => csrf_hash(), 'provider' => 'paystack', 'cfg' => ['paystack' => ['secret_key' => '']], 'active' => '1', 'hold_minutes' => '45'])->assertRedirect();
         $this->assertSame($key, (new BookingIntegrations($this->listingId))->account('payment')['config']['secret_key']);
         $this->assertCount(1, $this->sent);
     }
@@ -408,7 +408,7 @@ final class BookingPaymentsTest extends CIUnitTestCase
         $errors = (new BookingIntegrations($this->listingId))->save('payment', 'paystack', ['secret_key' => 'sk_test_' . str_repeat('b2', 15)], true, null);
         $this->assertNotSame([], $errors);
         $this->assertNull(DepositService::gatewayFor($this->listingId));
-        $this->signedIn()->get('bookings/settings/payments')->assertSee('Connecting a payment account is not available yet.');
+        $this->signedIn()->get('business/settings/payments')->assertSee('Connecting a payment account is not available yet.');
     }
 
     public function testThePaymentsPageAndAnotherBusinessesPayments(): void
@@ -421,7 +421,7 @@ final class BookingPaymentsTest extends CIUnitTestCase
             'amount_cents' => 9900, 'currency' => 'ZAR', 'status' => 'paid', 'created_at' => gmdate('Y-m-d H:i:s'),
         ]);
 
-        $page = $this->signedIn()->get('bookings/payments');
+        $page = $this->signedIn()->get('business/payments');
         $page->assertOK();
         $page->assertSee('-P1');
         $page->assertSee('Not finished');

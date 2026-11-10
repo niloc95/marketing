@@ -363,44 +363,6 @@ final class BookingProfileTest extends CIUnitTestCase
         $this->assertSame(['Typed by hand'], array_column((new ServiceMenuService())->servicesFor($this->clinicId), 'name'), 'editable again once bookings are off');
     }
 
-    // Opening bookings from /manage
-
-    public function testOpenYourBookingsOpensThisBusinessNotTheLastOne(): void
-    {
-        // One person admin of both businesses, last working in the other one.
-        $account = (int) (new \App\Services\Bookings\AccountService())->findByEmail('other-spa@example.test')['id'];
-        (new \App\Services\Bookings\BusinessMemberService())->ensureAdmin($this->clinicId, $account);
-
-        $res = $this->withSession([
-            \App\Controllers\Manage::SESSION_KEY        => $this->clinicId,
-            \App\Services\Bookings\BusinessSession::ACCOUNT => $account,
-            \App\Services\Bookings\BusinessSession::LISTING => $this->otherId,
-            \App\Services\Bookings\BusinessSession::SEEN    => time(),
-        ])->get('manage/bookings/open');
-
-        $res->assertRedirectTo(base_url('bookings'));
-        $this->assertSame($this->clinicId, (int) session(\App\Services\Bookings\BusinessSession::LISTING));
-        $this->assertSame($account, (int) session(\App\Services\Bookings\BusinessSession::ACCOUNT), 'still the same person');
-    }
-
-    public function testOpenYourBookingsSignsTheOwnerInWhenNobodyIs(): void
-    {
-        $owner = (int) (new \App\Services\Bookings\AccountService())->findByEmail('soul-clinic@example.test')['id'];
-
-        $this->withSession([\App\Controllers\Manage::SESSION_KEY => $this->clinicId])->get('manage/bookings/open')->assertRedirect();
-        $this->assertSame([$owner, $this->clinicId], [
-            (int) session(\App\Services\Bookings\BusinessSession::ACCOUNT),
-            (int) session(\App\Services\Bookings\BusinessSession::LISTING),
-        ]);
-    }
-
-    public function testOpenYourBookingsNeedsTheManageSession(): void
-    {
-        $this->get('manage/bookings/open')->assertRedirectTo(base_url('manage'));
-    }
-
-    // Schema
-
     public function testOffersCarryAPriceAndTheBookLink(): void
     {
         $html = $this->get('directory/soul-clinic')->getBody();

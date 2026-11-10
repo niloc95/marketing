@@ -166,11 +166,9 @@ $routes->post('manage/jobs/(:num)/renew', 'Jobs::ownerRenew/$1');
 $routes->post('manage/reviews/switch', 'Reviews::ownerToggle');
 $routes->post('manage/reviews/(:num)/reply', 'Reviews::ownerReply/$1');
 $routes->post('manage/reviews/(:num)/report', 'Reviews::ownerReport/$1');
-// Online bookings: the owner turns them on from the manage session
-// (docs/bookings/). 404 while bookings.enabled is off.
-$routes->get('manage/bookings', 'ManageBookings::show');
-$routes->post('manage/bookings', 'ManageBookings::turnOn');
-$routes->get('manage/bookings/open', 'ManageBookings::open');
+// Online bookings are turned on in the business area now (10 Nov 2026).
+$routes->get('manage/bookings', static fn () => redirect()->to(base_url('business/calendar'), 301));
+$routes->get('manage/bookings/open', static fn () => redirect()->to(base_url('business'), 301));
 // Verified Business: apply, pay, and where PayFast returns the browser to.
 // Like every literal above, these must stay ahead of the catch-all below —
 // 'manage/verification' would otherwise be read as a magic-link token.
@@ -253,21 +251,29 @@ $routes->get('admin/login', 'Admin::login');
 $routes->post('admin/login', 'Admin::attemptLogin');
 // POST, not GET: a GET sign-out can be fired by any page that embeds the URL.
 $routes->post('admin/logout', 'Admin::logout');
-// The business area was /bookings until 5 Nov 2026 (owner: /bookings). Old
-// links (invitations, sign in and password emails already sent, bookmarks)
-// keep working: any GET moves for good, with its path and query.
-$routes->get('business', static fn () => redirect()->to(base_url('bookings'), 301));
-$routes->get('business/(:any)', static function (string ...$rest) {
+// The business area is /business, every owner's back office (owner, 10 Nov
+// 2026: one view for the profile and online bookings). It was /bookings from
+// 5 to 10 Nov 2026, and links from then (booking emails already queued,
+// invitations, sign in and password emails, the Google callback, bookmarks)
+// keep working: a GET moves for good with its path and query; a POST from a
+// page still open moves with 307, which keeps the method and the form.
+$movedBusiness = static function (string ...$rest) {
     $query = service('request')->getUri()->getQuery();
+    $path  = 'business' . ($rest === [] ? '' : '/' . implode('/', $rest));
+    $code  = service('request')->getMethod() === 'GET' ? 301 : 307;
 
-    return redirect()->to(base_url('bookings/' . implode('/', $rest)) . ($query !== '' ? '?' . $query : ''), 301);
-});
-// Online bookings, the booking area (docs/bookings/routes.md). Every route
-// passes App\Filters\BusinessAuth, which 404s the lot while bookings are off
-// or not offered on this site. `guest`: sign in pages; `account`: signed in,
-// before a business is chosen; no argument: signed in to one business, checked
-// against the database on every request.
-$routes->group('bookings', ['filter' => 'businessauth:guest'], static function ($routes) {
+    return redirect()->to(base_url($path) . ($query !== '' ? '?' . $query : ''), $code);
+};
+$routes->get('bookings', $movedBusiness);
+$routes->get('bookings/(:any)', $movedBusiness);
+$routes->post('bookings/(:any)', $movedBusiness);
+// The business area (docs/bookings/routes.md). Every route passes
+// App\Filters\BusinessAuth. `guest`: sign in pages; `account`: signed in,
+// before a business is chosen; `owner`: signed in to one business, checked
+// against the database on every request (Free profiles included); no
+// argument: that, and online bookings usable for the business, else the
+// locked page.
+$routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
     $routes->get('sign-in', 'Business\Auth::signIn');
     $routes->post('sign-in', 'Business\Auth::attempt');
     $routes->post('sign-in/link', 'Business\Auth::requestLink');
@@ -279,7 +285,7 @@ $routes->group('bookings', ['filter' => 'businessauth:guest'], static function (
     $routes->get('password/(:segment)', 'Business\Auth::resetPage/$1');
     $routes->post('password/(:segment)', 'Business\Auth::reset/$1');
 });
-$routes->group('bookings', ['filter' => 'businessauth:account'], static function ($routes) {
+$routes->group('business', ['filter' => 'businessauth:account'], static function ($routes) {
     $routes->get('ping', 'Business\Auth::ping');
     $routes->get('choose', 'Business\Home::choose');
     $routes->post('choose', 'Business\Home::switch');
@@ -287,17 +293,17 @@ $routes->group('bookings', ['filter' => 'businessauth:account'], static function
     $routes->post('account/name', 'Business\Account::saveName');
     $routes->post('account/password', 'Business\Account::savePassword');
 });
-$routes->get('bookings', 'Business\Home::index', ['filter' => 'businessauth']);
+$routes->get('business', 'Business\Home::index', ['filter' => 'businessauth:owner']);
 // Phase 7: the dashboard's refresh (today's list and figures, as HTML) and analytics.
-$routes->get('bookings/api/dashboard/today', 'Business\Home::today', ['filter' => 'businessauth']);
-$routes->get('bookings/analytics', 'Business\Analytics::index', ['filter' => ['businessauth', 'businesscan:analytics.view']]);
+$routes->get('business/api/dashboard/today', 'Business\Home::today', ['filter' => 'businessauth']);
+$routes->get('business/analytics', 'Business\Analytics::index', ['filter' => ['businessauth', 'businesscan:analytics.view']]);
 // Phase 6: every member's own notices.
-$routes->group('bookings', ['filter' => 'businessauth'], static function ($routes) {
+$routes->group('business', ['filter' => 'businessauth'], static function ($routes) {
     $routes->get('notifications', 'Business\Notifications::index');
     $routes->post('notifications/read', 'Business\Notifications::read');
     $routes->post('notifications/preferences', 'Business\Notifications::preferences');
 });
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:settings.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.manage']], static function ($routes) {
     $routes->get('settings', 'Business\Settings::index');
     $routes->post('settings/localization', 'Business\Settings::saveLocalization');
     $routes->post('settings/booking', 'Business\Settings::saveBooking');
@@ -329,9 +335,10 @@ $routes->group('bookings', ['filter' => ['businessauth', 'businesscan:settings.m
     $routes->get('notifications/sent.csv', 'Business\Notifications::export');
     $routes->get('settings/(:segment)', 'Business\Settings::tab/$1');
 });
-$routes->post('bookings/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
+$routes->post('business/bookings/turn-on', 'Business\Bookings::turnOn', ['filter' => ['businessauth:owner', 'businesscan:profile.billing']]);
+$routes->post('business/turn-off', 'Business\Settings::turnOff', ['filter' => ['businessauth', 'businesscan:bookings.turn_off']]);
 // Phase 9: API keys (admins).
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:api_keys.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:api_keys.manage']], static function ($routes) {
     $routes->post('settings/api/keys', 'Business\ApiKeys::create');
     $routes->post('settings/api/keys/(:num)/revoke', 'Business\ApiKeys::revoke/$1');
 });
@@ -360,14 +367,14 @@ $routes->group('api/v1', static function ($routes) {
 // The API's reference, public but only where bookings are on.
 $routes->get('developers/bookings', 'Developers::bookings');
 $routes->get('developers/bookings/openapi.json', 'Developers::openapi');
-$routes->get('bookings/audit', 'Business\Audit::index', ['filter' => ['businessauth', 'businesscan:audit.view']]);
+$routes->get('business/audit', 'Business\Audit::index', ['filter' => ['businessauth', 'businesscan:audit.view']]);
 // Phase 3: the scheduling engine, for every member (scoped inside).
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
     $routes->get('availability', 'Business\Availability::index');
     $routes->get('api/availability/slots', 'Business\Availability::slots');
 });
 // Phase 4: the calendar, appointments and customers, for every member (scoped inside).
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:appointments.manage']], static function ($routes) {
     $routes->get('calendar', 'Business\Calendar::index');
     $routes->get('api/calendar/(day|week|month|agenda)', 'Business\Calendar::model/$1');
     $routes->get('appointments/new', 'Business\Appointments::new');
@@ -383,11 +390,11 @@ $routes->group('bookings', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->post('api/appointments/(:num)/notify', 'Business\Appointments::notify/$1');
 });
 // Phase 8: deposits. Mark one paid or refunded from the details panel, and the list.
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:payments.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:payments.manage']], static function ($routes) {
     $routes->post('api/appointments/(:num)/payment', 'Business\Appointments::payment/$1');
     $routes->get('payments', 'Business\Payments::index');
 });
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:customers.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.manage']], static function ($routes) {
     $routes->get('customers', 'Business\Customers::index');
     $routes->get('customers/new', 'Business\Customers::new');
     $routes->post('customers/new', 'Business\Customers::create');
@@ -396,15 +403,15 @@ $routes->group('bookings', ['filter' => ['businessauth', 'businesscan:customers.
     $routes->post('customers/(:segment)/emails', 'Business\Customers::emailsAgain/$1');
     $routes->post('customers/(:segment)', 'Business\Customers::save/$1');
 });
-$routes->post('bookings/customers/(:segment)/delete', 'Business\Customers::delete/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
+$routes->post('business/customers/(:segment)/delete', 'Business\Customers::delete/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
 // Phase 10: a customer's whole record, for a POPIA access request (admins).
-$routes->get('bookings/customers/(:segment)/export', 'Business\Customers::export/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
+$routes->get('business/customers/(:segment)/export', 'Business\Customers::export/$1', ['filter' => ['businessauth', 'businesscan:customers.delete']]);
 // Phase 2: the catalogue, the team and time off.
-$routes->group('bookings', ['filter' => 'businessauth:guest'], static function ($routes) {
+$routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
     $routes->get('invite/(:segment)', 'Business\Invite::show/$1');
     $routes->post('invite/(:segment)', 'Business\Invite::accept/$1');
 });
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:services.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:services.manage']], static function ($routes) {
     $routes->get('services', 'Business\Services::index');
     $routes->get('services/new', 'Business\Services::new');
     $routes->post('services/new', 'Business\Services::save');
@@ -415,13 +422,13 @@ $routes->group('bookings', ['filter' => ['businessauth', 'businesscan:services.m
     $routes->post('services/(:num)', 'Business\Services::save/$1');
     $routes->post('services/(:num)/archive', 'Business\Services::archive/$1');
 });
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:members.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:members.manage']], static function ($routes) {
     $routes->post('team/invite', 'Business\Team::invite');
     $routes->post('team/members/(:num)/role', 'Business\Team::changeRole/$1');
     $routes->post('team/members/(:num)/remove', 'Business\Team::removeMember/$1');
     $routes->post('team/(:num)/archive', 'Business\Team::archive/$1');
 });
-$routes->group('bookings', ['filter' => ['businessauth', 'businesscan:providers.manage']], static function ($routes) {
+$routes->group('business', ['filter' => ['businessauth', 'businesscan:providers.manage']], static function ($routes) {
     $routes->get('team', 'Business\Team::index');
     $routes->post('team', 'Business\Team::addProvider');
     $routes->get('team/(:num)', 'Business\Team::provider/$1');

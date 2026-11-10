@@ -331,13 +331,13 @@ final class InternationalListingTest extends CIUnitTestCase
 
         [$abroad, $token] = $this->signup(local: false);
         $this->mutations->verify($token);
-        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $abroad])->get('manage/edit')->getBody();
+        $html = $this->withSession(\Tests\Support\OwnerSession::for($abroad))->get('manage/edit')->getBody();
         $this->assertStringContainsString('id="get-plus"', $html);
         $this->assertStringContainsString('manage/verification/checkout?plan=plus', $html);
 
         [$local, $token] = $this->signup(local: true);
         $this->mutations->verify($token);
-        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $local])->get('manage/edit')->getBody();
+        $html = $this->withSession(\Tests\Support\OwnerSession::for($local))->get('manage/edit')->getBody();
         $this->assertStringNotContainsString('id="get-plus"', $html);
     }
 
@@ -453,7 +453,7 @@ final class InternationalListingTest extends CIUnitTestCase
         ], 'test');
 
         \Config\Services::resetSingle('site');
-        $page = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/verification/checkout?plan=plus');
+        $page = $this->withSession(\Tests\Support\OwnerSession::for($id))->get('manage/verification/checkout?plan=plus');
         $page->assertOK();
         // Dollars on the page, never a rand figure (it moves with the rate);
         // only that it is billed in rand. The rand charged is on the row.

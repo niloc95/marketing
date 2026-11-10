@@ -34,7 +34,7 @@ class TimeOff extends BaseController
         $providerId = (int) $this->request->getPost('provider_id');
         $scope      = $context->providerScope();
         if ($scope !== null && ! in_array($providerId, $scope, true)) {
-            return redirect()->to(base_url('bookings/time-off'))->with('error', 'You can add time off for yourself only.');
+            return redirect()->to(base_url('business/time-off'))->with('error', 'You can add time off for yourself only.');
         }
         $result = $this->service()->add(
             $providerId > 0 ? $providerId : null,
@@ -44,10 +44,10 @@ class TimeOff extends BaseController
             $context->accountId(),
         );
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/time-off'))->with('error', implode(' ', $result['errors']));
+            return redirect()->to(base_url('business/time-off'))->with('error', implode(' ', $result['errors']));
         }
 
-        return redirect()->to(base_url('bookings/time-off'))->with('success', 'Time off added.');
+        return redirect()->to(base_url('business/time-off'))->with('success', 'Time off added.');
     }
 
     public function delete(int $id)
@@ -60,7 +60,7 @@ class TimeOff extends BaseController
         }
         $this->service()->delete($id, $context->accountId());
 
-        return redirect()->to(base_url('bookings/time-off'))->with('success', 'Time off removed.');
+        return redirect()->to(base_url('business/time-off'))->with('success', 'Time off removed.');
     }
 
     private function service(): TimeOffService

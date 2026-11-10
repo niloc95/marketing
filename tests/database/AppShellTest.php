@@ -111,24 +111,25 @@ final class AppShellTest extends CIUnitTestCase
     {
         [$listingId, $ownerId] = $this->business();
 
-        $owner = (string) $this->signedIn($ownerId, $listingId)->get('bookings/calendar')->response()->getBody();
+        $owner = (string) $this->signedIn($ownerId, $listingId)->get('business/calendar')->response()->getBody();
         $this->assertStringContainsString('data-shell="bookings"', $owner);
         $this->assertStringContainsString('data-page-title="Calendar"', $owner);
         $this->assertStringContainsString('<title>Appointments | Salon Lumi | WebScheduler Local</title>', $owner);
-        $this->assertStringContainsString('title="Settings"', $owner);
+        $this->assertStringContainsString('<span class="shell-text">Booking settings</span>', $owner);
         $this->assertStringContainsString('Salon Lumi', $owner, 'the business, to switch from');
 
         $desk = (new AccountService())->findOrCreate('desk@example.test', 'Desk');
         BusinessMemberModel::forBusiness($listingId)->insert(['account_id' => $desk['id'], 'role' => 'staff', 'status' => 'active'], true);
-        $staff = (string) $this->signedIn((int) $desk['id'], $listingId)->get('bookings/calendar')->response()->getBody();
+        $staff = (string) $this->signedIn((int) $desk['id'], $listingId)->get('business/calendar')->response()->getBody();
         $this->assertStringContainsString('title="Calendar"', $staff);
-        $this->assertStringNotContainsString('title="Settings"', $staff, 'reception does not manage settings');
+        $this->assertStringNotContainsString('<span class="shell-text">Booking settings</span>', $staff, 'reception does not manage settings');
+        $this->assertStringNotContainsString('title="Details"', $staff, 'nor the profile');
         $this->assertStringNotContainsString('title="Analytics"', $staff);
     }
 
     public function testBusinessSignInHasNoSidebar(): void
     {
-        $html = (string) $this->get('bookings/sign-in')->response()->getBody();
+        $html = (string) $this->get('business/sign-in')->response()->getBody();
 
         $this->assertStringContainsString('data-shell-bare', $html);
         $this->assertStringNotContainsString('data-shell-nav', $html);

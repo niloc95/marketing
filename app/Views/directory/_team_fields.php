@@ -118,7 +118,7 @@ $row = function ($i, array $m = [], bool $spare = false) use ($err, $regulator, 
                 Takes bookings
             </label>
             <?php if ($in !== null): ?>
-                <div class="hint">In your bookings. <a class="underline" href="<?= base_url('bookings/team/' . $in['id']) ?>">Hours, services and sign in</a></div>
+                <div class="hint">In your bookings. <a class="underline" href="<?= base_url('business/team/' . $in['id']) ?>">Hours, services and sign in</a></div>
             <?php endif; ?>
         <?php endif; ?>
     </div>

@@ -6,7 +6,7 @@ use App\Models\Bookings\BookingInboxModel;
 use DateTimeImmutable;
 
 /**
- * The team's notification centre (/bookings/notifications): new bookings,
+ * The team's notification centre (/business/notifications): new bookings,
  * moves and cancellations made by customers online. Ported from Bookings'
  * NotificationCenterService, which built the list from the queue; here each
  * team member has their own rows and read flag. The only writer of

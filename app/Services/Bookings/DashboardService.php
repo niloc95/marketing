@@ -11,7 +11,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * The /bookings landing page: today's figures, today's appointments, the
+ * The /business landing page: today's figures, today's appointments, the
  * team's free times, and what needs attention. Ported from Bookings'
  * DashboardService, with these changes (parity.md §3):
  *
@@ -243,7 +243,7 @@ class DashboardService
             $out[] = [
                 'code' => 'pending', 'level' => 'warn',
                 'text' => $pending === 1 ? 'One booking is waiting for your confirmation.' : $pending . ' bookings are waiting for your confirmation.',
-                'link' => 'bookings#waiting', 'action' => 'Review',
+                'link' => 'business#waiting', 'action' => 'Review',
             ];
         }
 
@@ -265,7 +265,7 @@ class DashboardService
             $out[] = [
                 'code' => 'closed', 'level' => 'info',
                 'text' => 'The business is closed from ' . $c['from'] . ' to ' . $c['to'] . ($c['reason'] !== '' ? ' (' . $c['reason'] . ')' : '') . '.',
-                'link' => 'bookings/time-off', 'action' => 'Time off',
+                'link' => 'business/time-off', 'action' => 'Time off',
             ];
         }
 
@@ -275,7 +275,7 @@ class DashboardService
                 $out[] = [
                     'code' => 'refund', 'level' => 'warn',
                     'text' => ($refunds === 1 ? 'One deposit was' : $refunds . ' deposits were') . ' paid on a booking that is cancelled or was freed. Refund in your PayFast or Paystack account if your terms say so, then mark it refunded.',
-                    'link' => 'bookings/payments', 'action' => 'See payments',
+                    'link' => 'business/payments', 'action' => 'See payments',
                 ];
             }
         }
@@ -286,7 +286,7 @@ class DashboardService
                 $out[] = [
                     'code' => 'messages', 'level' => 'warn',
                     'text' => ($failed === 1 ? 'One message' : $failed . ' messages') . ' to customers could not be sent in the last 7 days.',
-                    'link' => 'bookings/notifications/sent?outcome=failed', 'action' => 'See why',
+                    'link' => 'business/notifications/sent?outcome=failed', 'action' => 'See why',
                 ];
             }
         }

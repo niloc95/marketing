@@ -48,7 +48,7 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
         $gone    = $this->photo($listing);
 
         $result = $this->ajax()
-            ->withSession([Manage::SESSION_KEY => $listing])
+            ->withSession(\Tests\Support\OwnerSession::for($listing))
             ->post('manage/photo-delete/' . $gone);
 
         $result->assertOK();
@@ -69,7 +69,7 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
         $theirs = $this->photo($this->listing('theirs'));
 
         $result = $this->ajax()
-            ->withSession([Manage::SESSION_KEY => $mine])
+            ->withSession(\Tests\Support\OwnerSession::for($mine))
             ->post('manage/photo-delete/' . $theirs);
 
         $result->assertStatus(404);
@@ -93,7 +93,7 @@ final class PhotoDeleteAjaxTest extends CIUnitTestCase
         $listing = $this->listing('mine');
         $photo   = $this->photo($listing);
 
-        $result = $this->withSession([Manage::SESSION_KEY => $listing])
+        $result = $this->withSession(\Tests\Support\OwnerSession::for($listing))
             ->post('manage/photo-delete/' . $photo);
 
         $result->assertRedirectTo(base_url('manage/edit'));

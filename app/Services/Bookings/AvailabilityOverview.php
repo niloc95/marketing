@@ -5,7 +5,7 @@ namespace App\Services\Bookings;
 use DateTimeImmutable;
 
 /**
- * "When can customers book?" (/bookings/availability): the free times for
+ * "When can customers book?" (/business/availability): the free times for
  * all services or one, everyone or one person, on a day or across a week, a
  * month or a year, and why a day has none.
  *

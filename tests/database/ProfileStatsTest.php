@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Services\ListingStatsService;
@@ -82,7 +81,7 @@ final class ProfileStatsTest extends CIUnitTestCase
 
     public function testTheOwnerAndTheAdminAreNotCounted(): void
     {
-        $this->withSession([Manage::SESSION_KEY => $this->bakery])->withHeaders(['User-Agent' => self::BROWSER])
+        $this->withSession(\Tests\Support\OwnerSession::for($this->bakery))->withHeaders(['User-Agent' => self::BROWSER])
             ->get('directory/cape-crumb-bakery')->assertOK();
         $this->withSession(['dir_admin' => true])->withHeaders(['User-Agent' => self::BROWSER])
             ->get('directory/cape-crumb-bakery')->assertOK();
@@ -92,7 +91,7 @@ final class ProfileStatsTest extends CIUnitTestCase
 
     public function testAnOwnerOfAnotherProfileStillCounts(): void
     {
-        $this->withSession([Manage::SESSION_KEY => $this->abroad])->withHeaders(['User-Agent' => self::BROWSER])
+        $this->withSession(\Tests\Support\OwnerSession::for($this->abroad))->withHeaders(['User-Agent' => self::BROWSER])
             ->get('directory/cape-crumb-bakery')->assertOK();
 
         $this->assertSame(1, $this->total($this->bakery, 'views'));

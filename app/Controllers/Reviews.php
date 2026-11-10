@@ -233,15 +233,14 @@ class Reviews extends BaseController
 
     private function ownerListing(): ?array
     {
-        $id = (int) (session(Manage::SESSION_KEY) ?? 0);
-        if ($id <= 0) {
+        $row = \App\Services\OwnerAccess::listing();
+        if ($row === null) {
             // Signed out (the session ended while the page was open): form
             // health counts it, since whatever was typed is gone.
             form_outcome('expired');
 
             return null;
         }
-        $row = (new DirectoryListingModel())->find($id);
 
         return is_array($row) ? $row : null;
     }

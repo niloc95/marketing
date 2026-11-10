@@ -1,7 +1,8 @@
 <?php
 /**
- * Layout for /bookings, the online bookings area (docs/bookings/): the app
- * shell (layouts/_shell.php) with the business sidebar. Separate from
+ * Layout for /business, every owner's back office: the profile and online
+ * bookings (docs/bookings/) in the app shell (layouts/_shell.php) with the
+ * business sidebar. Separate from
  * layouts/public.php on purpose: no analytics, no Clarity, no consent
  * banner, no discovery header, and every page private (noindex, no-store).
  *
@@ -16,65 +17,117 @@
  */
 $context = service('businessContext');
 $listing = $context->isSet() ? $context->listing() : null;
-$items   = [];
+$groups  = [];
 if ($listing !== null) {
-    $items[] = ['bookings', 'Dashboard', 'layout-dashboard'];
-    $unread  = (new \App\Services\Bookings\Notifications\NotificationCentre($context->listingId(), (int) $context->member()['id']))->unread();
-    $items[] = ['bookings/notifications', 'Notices', 'bell', $unread, 'unread'];
-    if ($context->can('appointments.manage')) {
-        $items[] = ['bookings/calendar', 'Calendar', 'calendar'];
+    // One area for the profile and online bookings (owner, 10 Nov 2026).
+    // Paid parts stay in the menu for a Free profile, with a lock: the page
+    // says what they are and what opens them (business/locked).
+    $premium  = listing_has_premium($listing);
+    $setup    = new App\Services\Bookings\BookingSetupService();
+    $bookable = $setup->isOn($listing) && $setup->whyNot($listing) === null;
+    $owner    = $context->can('profile.edit');
+
+    // [path, label, icon, count, count label, locked]
+    $profile = [];
+    if ($owner) {
+        $profile[] = ['business/profile/details', 'Details', 'file-text'];
+        $profile[] = ['business/profile/where', 'Where and hours', 'map-pin'];
+        $profile[] = [$bookable ? 'business/services' : 'business/profile/services', 'Services', 'list'];
+        $profile[] = ['business/profile/photos', 'Photos and video', 'image'];
     }
-    if ($context->can('customers.manage')) {
-        $items[] = ['bookings/customers', 'Customers', 'contact'];
+    if ($owner || ($bookable && $context->can('providers.manage'))) {
+        $profile[] = ['business/team', 'Team', 'users', 0, '', ! $premium];
     }
-    if ($context->can('services.manage')) {
-        $items[] = ['bookings/services', 'Services', 'list'];
+    if ($owner) {
+        $profile[] = ['business/profile/branches', 'Branches', 'building-2', 0, '', ! $premium];
+        $profile[] = ['business/reviews', 'Reviews', 'star'];
+        $profile[] = ['business/jobs', 'Jobs', 'briefcase', 0, '', ! $premium];
+        $profile[] = ['business/stats', 'Stats', 'chart-line'];
     }
-    if ($context->can('providers.manage')) {
-        $items[] = ['bookings/team', 'Team', 'users'];
-        $items[] = ['bookings/time-off', 'Time off', 'calendar-off'];
+
+    $bookings = [];
+    if ($bookable) {
+        $unread     = (new \App\Services\Bookings\Notifications\NotificationCentre($context->listingId(), (int) $context->member()['id']))->unread();
+        $bookings[] = ['business/notifications', 'Notices', 'bell', $unread, 'unread'];
+        if ($context->can('appointments.manage')) {
+            $bookings[] = ['business/calendar', 'Calendar', 'calendar'];
+        }
+        if ($context->can('customers.manage')) {
+            $bookings[] = ['business/customers', 'Customers', 'contact'];
+        }
+        if ($context->can('services.manage') && ! $owner) {
+            $bookings[] = ['business/services', 'Services', 'list'];
+        }
+        if ($context->can('providers.manage')) {
+            $bookings[] = ['business/time-off', 'Time off', 'calendar-off'];
+        }
+        if ($context->can('appointments.manage')) {
+            $bookings[] = ['business/availability', 'Availability', 'calendar-days'];
+        }
+        if ($context->can('analytics.view')) {
+            $bookings[] = ['business/analytics', 'Analytics', 'chart-column'];
+        }
+        // Only once deposits are taken: the nav is full, and without an account
+        // the Payments settings tab says what to do.
+        if ($context->can('payments.manage') && App\Services\Bookings\Payments\DepositService::gatewayFor($context->listingId()) !== null) {
+            $bookings[] = ['business/payments', 'Payments', 'wallet'];
+        }
+        if ($context->can('settings.manage')) {
+            $bookings[] = ['business/settings', 'Booking settings', 'settings'];
+        }
+    } elseif ($owner) {
+        // One item that says what to do: turn on, or upgrade first.
+        $bookings[] = ['business/calendar', 'Online bookings', 'calendar', 0, '', ! $premium];
     }
-    if ($context->can('appointments.manage')) {
-        $items[] = ['bookings/availability', 'Availability', 'calendar-days'];
+
+    $more = [];
+    if ($context->can('profile.billing')) {
+        $more[] = ['business/badge', site()->forRow($listing) === Config\Sites::ZA ? 'Verified badge' : 'Plus', 'badge-check'];
     }
-    if ($context->can('analytics.view')) {
-        $items[] = ['bookings/analytics', 'Analytics', 'chart-column'];
+    if ($context->can('audit.view') && $bookable) {
+        $more[] = ['business/audit', 'Activity', 'history'];
     }
-    // Only once deposits are taken: the nav is full, and without an account
-    // the Payments settings tab says what to do.
-    if ($context->can('payments.manage') && App\Services\Bookings\Payments\DepositService::gatewayFor($context->listingId()) !== null) {
-        $items[] = ['bookings/payments', 'Payments', 'wallet'];
-    }
-    if ($context->can('settings.manage')) {
-        $items[] = ['bookings/settings', 'Settings', 'settings'];
-    }
-    if ($context->can('audit.view')) {
-        $items[] = ['bookings/audit', 'Activity', 'history'];
-    }
+
+    $groups = [
+        ['heading' => null, 'items' => [['business', $bookable ? 'Dashboard' : 'Overview', 'layout-dashboard']]],
+        ['heading' => 'Your profile', 'items' => $profile],
+        ['heading' => 'Bookings', 'items' => $bookings],
+        ['heading' => null, 'items' => $more],
+    ];
 }
-$here     = trim(uri_string(), '/');
-$navItems = array_map(static fn (array $i): array => [
-    'label'      => $i[1],
-    'path'       => $i[0],
-    'icon'       => $i[2],
-    'count'      => $i[3] ?? 0,
-    'countLabel' => $i[4] ?? 'waiting',
-    'active'     => $here === $i[0] || ($i[0] !== 'bookings' && str_starts_with($here, $i[0] . '/')),
-], $items);
+$here   = trim(uri_string(), '/');
+$active = static fn (string $path): bool => $here === $path || ($path !== 'business' && str_starts_with($here, $path . '/'));
+foreach ($groups as $g => $group) {
+    $groups[$g]['items'] = array_map(static fn (array $i): array => [
+        'label'      => $i[1],
+        'path'       => $i[0],
+        'icon'       => $i[2],
+        'count'      => $i[3] ?? 0,
+        'countLabel' => ($i[4] ?? '') ?: 'waiting',
+        'locked'     => (bool) ($i[5] ?? false),
+        'active'     => $active($i[0]),
+    ], $group['items']);
+}
 // The page's name is the item it sits under; pages outside the nav pass $title.
+// The tab reads "Appointments" on the bookings pages (owner, 6 Nov 2026).
 $pageTitle = $title ?? null;
-foreach ($navItems as $navItem) {
-    if ($pageTitle === null && $navItem['active']) {
-        $pageTitle = $navItem['label'];
+$tabTitle  = $title ?? null;
+foreach ($groups as $group) {
+    foreach ($group['items'] as $navItem) {
+        if ($pageTitle === null && $navItem['active']) {
+            $pageTitle = $navItem['label'];
+            $tabTitle  = $group['heading'] === 'Bookings' || ($navItem['path'] === 'business' && ! empty($bookable)) ? 'Appointments' : $navItem['label'];
+        }
     }
 }
-$pageTitle ??= 'Online bookings';
+$pageTitle ??= 'Your business';
+$tabTitle  ??= $pageTitle;
 
 $footer = '';
 if ($context->hasAccount()) {
-    $footer = '<a class="shell-link" href="' . base_url('bookings/account') . '">' . lucide('circle-user', 'shell-link-icon h-5 w-5')
+    $footer = '<a class="shell-link" href="' . base_url('business/account') . '">' . lucide('circle-user', 'shell-link-icon h-5 w-5')
         . '<span class="shell-text truncate">' . esc((string) ($context->account()['name'] ?: 'Your account')) . '</span></a>'
-        . '<form method="post" action="' . base_url('bookings/sign-out') . '" data-biz-sign-out data-no-spa>' . csrf_field()
+        . '<form method="post" action="' . base_url('business/sign-out') . '" data-biz-sign-out data-no-spa>' . csrf_field()
         . '<button type="submit" class="shell-link w-full">' . lucide('log-out', 'shell-link-icon h-5 w-5') . '<span class="shell-text">Sign out</span></button></form>';
 }
 ?>
@@ -82,7 +135,7 @@ if ($context->hasAccount()) {
 
 <?= $this->section('head') ?>
 <?php // "Appointments | Dr Bertus Mensveld | WebScheduler Local" (owner, 6 Nov 2026); no name before a business is chosen. ?>
-<title><?= esc(implode(' | ', array_filter([$title ?? 'Appointments', $listing !== null ? (string) $listing['display_name'] : '', 'WebScheduler Local']))) ?></title>
+<title><?= esc(implode(' | ', array_filter([$tabTitle, $listing !== null ? (string) $listing['display_name'] : '', 'WebScheduler Local']))) ?></title>
 <?= $this->endSection() ?>
 
 <?= $this->section('assets') ?>
@@ -98,13 +151,13 @@ if ($context->hasAccount()) {
 // BookingFoundationTest's copy rules.
 $attrs = [
     'data-shell'       => 'bookings',
-    'data-shell-scope' => rtrim((string) parse_url(base_url('bookings'), PHP_URL_PATH), '/'),
+    'data-shell-scope' => rtrim((string) parse_url(base_url('business'), PHP_URL_PATH), '/'),
 ];
 if ($context->hasAccount()) {
     $attrs += [
         'data-biz-session'   => '',
-        'data-ping-url'      => base_url('bookings/ping'),
-        'data-sign-in-url'   => base_url('bookings/sign-in?expired=1'),
+        'data-ping-url'      => base_url('business/ping'),
+        'data-sign-in-url'   => base_url('business/sign-in?expired=1'),
         'data-idle-seconds'  => (string) (int) config('Bookings')->idleSeconds,
     ];
 } else {
@@ -120,14 +173,11 @@ foreach ($attrs as $name => $value) {
 <?php // Signed in without a business chosen yet (business/choose): no items, but the foot with account and sign out. ?>
 <?php if ($context->hasAccount()): ?>
 <?= view('layouts/_sidebar', [
-    'label'       => 'Online bookings',
-    'home'        => 'bookings',
+    'label'       => 'Your business',
+    'home'        => 'business',
     'context'     => $listing !== null ? (string) $listing['display_name'] : '',
-    'contextHref' => 'bookings/choose',
-    'groups'      => [[
-        'heading' => null,
-        'items'   => $navItems,
-    ]],
+    'contextHref' => 'business/choose',
+    'groups'      => $groups,
     'footer' => $footer,
 ], ['saveData' => false]) ?>
 <?php endif ?>
@@ -159,7 +209,7 @@ if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::req
 ?>
 <?php if ($planLine !== null): ?>
     <div class="alert alert-info mb-5" role="status"><?= esc($planLine) ?>
-        <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('bookings/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
+        <?php if ($bizContext->can('settings.manage')): ?><a class="underline" href="<?= base_url('business/settings/plan') ?>">See your plan</a><?php else: ?>An admin of the business can choose the plan.<?php endif ?>
     </div>
 <?php endif ?>
 <?= $this->endSection() ?>

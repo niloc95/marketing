@@ -6,7 +6,7 @@ use App\Controllers\BaseController;
 use App\Services\Bookings\Payments\DepositService;
 
 /**
- * Payments (/bookings/payments, Phase 8): deposits to refund, and every try
+ * Payments (/business/payments, Phase 8): deposits to refund, and every try
  * at paying a deposit, newest first (Bookings' transactions list). For
  * admins and team members (payments.manage), each seeing the people in
  * their scope. Marking paid or refunded is in the appointment details.

@@ -3,7 +3,7 @@
 namespace App\Services\Bookings;
 
 /**
- * The /bookings session keys, in one place. Only /bookings starts a session
+ * The /business session keys, in one place. Only /business starts a session
  * for these; public pages stay sessionless.
  */
 final class BusinessSession

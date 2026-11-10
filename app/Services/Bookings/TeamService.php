@@ -874,7 +874,7 @@ class TeamService
             'business' => (string) $listing['display_name'],
             'inviter'  => (string) ($inviter['name'] ?? ''),
             'role'     => config('BookingPermissions')->roleLabels[$role],
-            'url'      => site_url_for('za', 'bookings/invite/' . $token),
+            'url'      => site_url_for('za', 'business/invite/' . $token),
             'days'     => self::INVITE_DAYS,
         ], ['saveData' => false]);
         (new Mailer())->send($email, 'Join ' . $listing['display_name'] . ' on WebScheduler Local', $body);

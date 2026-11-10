@@ -18,12 +18,12 @@ $query = static fn (array $extra): string => http_build_query(array_filter($extr
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('bookings/settings/notifications') ?>">Settings, Messages</a></p>
+<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/settings/notifications') ?>">Settings, Messages</a></p>
 <div class="mb-4 flex flex-wrap items-center gap-3">
     <h1 class="text-xl font-bold text-slate-900 dark:text-white">Sent messages</h1>
-    <a class="btn btn-ghost btn-xs ml-auto" href="<?= base_url('bookings/notifications/sent.csv') ?>" download>Download</a>
+    <a class="btn btn-ghost btn-xs ml-auto" href="<?= base_url('business/notifications/sent.csv') ?>" download>Download</a>
 </div>
-<form method="get" action="<?= base_url('bookings/notifications/sent') ?>" class="mb-4 flex flex-wrap items-end gap-3">
+<form method="get" action="<?= base_url('business/notifications/sent') ?>" class="mb-4 flex flex-wrap items-end gap-3">
     <div class="field mb-0">
         <label for="f-channel">Channel</label>
         <select id="f-channel" name="channel">

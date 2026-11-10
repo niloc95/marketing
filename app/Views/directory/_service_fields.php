@@ -33,7 +33,7 @@ if (! empty($fromBookings)) {
         <div class="disclosure-body">
             <p class="hint">
                 You take online bookings, so your profile lists the services people can book.
-                Change them in <a class="underline" href="<?= esc(base_url('bookings/services'), 'attr') ?>">your bookings</a>; this list follows.
+                Change them in <a class="underline" href="<?= esc(base_url('business/services'), 'attr') ?>">your bookings</a>; this list follows.
             </p>
             <ul class="service-list">
                 <?php foreach ($named as $r): ?>

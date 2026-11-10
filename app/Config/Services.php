@@ -205,7 +205,7 @@ class Services extends BaseService
     }
 
     /**
-     * Who is signed in to /bookings, and in which business, for this request
+     * Who is signed in to /business, and in which business, for this request
      * (online bookings). Filled only by App\Filters\BusinessAuth.
      */
     public static function businessContext(bool $getShared = true): \App\Services\Bookings\BusinessContext

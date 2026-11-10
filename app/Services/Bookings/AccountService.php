@@ -8,7 +8,7 @@ use App\Models\Bookings\AccountModel;
 use Config\Bookings;
 
 /**
- * Accounts for /bookings: password sign in, emailed sign in links, password
+ * Accounts for /business: password sign in, emailed sign in links, password
  * reset. The only writer of xs_accounts.
  *
  * Ported from Bookings' Auth controller (lockout 5 per 15 minutes per IP,
@@ -186,13 +186,13 @@ class AccountService
      */
     public function sendPasswordReset(string $email): void
     {
-        $this->sendLink($email, 'reset', 'bookings/password/', 'Reset your WebScheduler Local password', 'emails/booking-password-reset');
+        $this->sendLink($email, 'reset', 'business/password/', 'Reset your WebScheduler Local password', 'emails/booking-password-reset');
     }
 
     /** Email a one use sign in link. Silent when the email has no account. */
     public function sendSignInLink(string $email): void
     {
-        $this->sendLink($email, 'login', 'bookings/sign-in/', 'Your WebScheduler Local sign in link', 'emails/booking-sign-in');
+        $this->sendLink($email, 'login', 'business/sign-in/', 'Your WebScheduler Local sign in link', 'emails/booking-sign-in');
     }
 
     /**
@@ -252,11 +252,34 @@ class AccountService
 
         $body = view($view, [
             'name'    => (string) $account['name'],
-            'url'     => site_url_for('za', $path . $token),
+            'url'     => site_url_for($this->siteFor((int) $account['id']), $path . $token),
             'minutes' => intdiv($seconds, 60),
         ], ['saveData' => false]);
 
         (new Mailer())->send((string) $account['email'], $subject, $body);
+    }
+
+    /**
+     * The site an account's links open on: its first business's own site, so
+     * an owner on .app signs in on .app (the session belongs to the host).
+     * Before the first sign in, the first profile on the account's email;
+     * co.za when there is none.
+     */
+    private function siteFor(int $accountId): string
+    {
+        $email = (string) ($this->find($accountId)['email'] ?? '');
+        $listingId = db_connect()->table('xs_business_members')
+            ->select('listing_id')
+            ->where('account_id', $accountId)
+            ->where('status', 'active')
+            ->orderBy('id', 'ASC')
+            ->get(1)->getRowArray()['listing_id'] ?? null;
+        $listings = new \App\Models\DirectoryListingModel();
+        $listing  = $listingId !== null
+            ? $listings->find((int) $listingId)
+            : ($email !== '' ? $listings->where('email', $email)->orderBy('id', 'ASC')->first() : null);
+
+        return is_array($listing) ? site()->forRow($listing) : \Config\Sites::ZA;
     }
 
     /** @return array<string,mixed>|null */

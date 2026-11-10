@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Services\DirectoryService;
@@ -207,7 +206,7 @@ final class ListingVideoTest extends CIUnitTestCase
     /** @param array<string,string> $extra */
     private function save(int $id, string $videoUrl, array $extra = []): void
     {
-        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/edit', $this->withRequiredSections([
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('manage/edit', $this->withRequiredSections([
             'display_name'   => 'Hands & Co Attorneys',
             'contact_person' => 'Jane Hands',
             'category_id'    => $this->categoryId,

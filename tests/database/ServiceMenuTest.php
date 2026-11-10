@@ -263,7 +263,7 @@ final class ServiceMenuTest extends CIUnitTestCase
         ]);
 
         foreach ([
-            $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit'),
+            $this->withSession(\Tests\Support\OwnerSession::for($id))->get('manage/edit'),
             $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
         ] as $result) {
             $result->assertOK();

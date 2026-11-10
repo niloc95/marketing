@@ -23,7 +23,7 @@ use DateTimeImmutable;
  *   turn on never restarts it). While the trial runs, or the plan is paid
  *   up (plus a few days' grace while Paystack retries a card), customers can
  *   book and the API answers. After that the business keeps its calendar and
- *   data in /bookings, and the booking page and API stop until it pays.
+ *   data in /business, and the booking page and API stop until it pays.
  * - The price follows the number of bookable people (T23: Solo, Team,
  *   Business; Config\Bookings::$planTiers), worked out at checkout and kept
  *   on the row. A business that grows or shrinks past its tier is offered the
@@ -437,7 +437,7 @@ class BookingPlanService
             ->where('m.listing_id', $listingId)->where('m.role', 'admin')->where('m.status', 'active')->where('a.status', 'active')
             ->get()->getResultArray(), 'email');
         $tier = config('Bookings')->planTierFor(self::people($listingId));
-        $body = view($view, $data + ['listing' => $listing, 'url' => listing_site_url($listing, 'bookings/settings/plan'), 'price' => self::display($tier, self::abroad($listingId))], ['saveData' => false]);
+        $body = view($view, $data + ['listing' => $listing, 'url' => listing_site_url($listing, 'business/settings/plan'), 'price' => self::display($tier, self::abroad($listingId))], ['saveData' => false]);
         foreach (array_unique($emails) as $email) {
             (new Mailer())->send((string) $email, $subject, $body);
         }

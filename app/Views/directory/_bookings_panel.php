@@ -23,7 +23,7 @@ $za      = site()->forRow($listing) === Config\Sites::ZA;
         <?php if (! $premium): ?><?= esc(App\Services\Bookings\BookingSetupService::premiumNeeded(site()->forRow($listing))) ?><?php elseif (! $on && App\Services\Bookings\Plans\BookingPlanService::required()): ?>Free for <?= (int) config('Bookings')->trialDays ?> days to try.<?php endif ?>
     </p>
     <?php if ($on || $premium): ?>
-        <a class="btn btn-ghost mt-3" href="<?= base_url($on ? 'manage/bookings/open' : 'manage/bookings') ?>"><?= $on ? 'Open your bookings' : 'Set up online bookings' ?></a>
+        <a class="btn btn-ghost mt-3" href="<?= base_url($on ? 'business' : 'business/calendar') ?>"><?= $on ? 'Open your bookings' : 'Set up online bookings' ?></a>
     <?php else: ?>
         <a class="btn btn-ghost mt-3" href="<?= base_url($za ? 'verified' : 'plus') ?>"><?= $za ? 'See the Verified Business badge' : 'See Plus' ?></a>
     <?php endif ?>
