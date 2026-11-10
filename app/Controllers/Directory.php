@@ -925,11 +925,11 @@ class Directory extends BaseController
         (new ListingStatsService())->countView($this->request, (int) $listing['id']);
 
         // Online bookings on the platform: the contact panel's Book online
-        // button and the JSON-LD ReserveAction. '' while bookings are off.
-        $listing['_book_url'] = \App\Services\Bookings\PublicBookingService::bookUrl($listing);
-        // While it does, its booking services stand in for its own services
-        // list, and its bookable people join the team panel (T28).
+        // button and the JSON-LD ReserveAction ('' while bookings are off).
+        // While it takes bookings, its booking services stand in for its own
+        // services list, and its bookable people join the team panel (T28).
         $booking                      = \App\Services\Bookings\PublicBookingService::profileView($listing);
+        $listing['_book_url']         = $booking['book_url'];
         $listing['_booking_services'] = $booking['services'];
         $listing['_practitioners']    = $booking['practitioners'];
 

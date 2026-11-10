@@ -23,7 +23,9 @@
  *   the current item, the counts and Sign out's CSRF token are never worked
  *   out here.
  *
- * Opt out per link or form with data-no-spa.
+ * Opt out per link or form with data-no-spa. A link to a file needs the
+ * download attribute: the shell would otherwise fetch it once to find out,
+ * then the browser a second time (an export audited twice).
  */
 import { startPages, stopPages } from './lifecycle.js';
 
@@ -189,6 +191,10 @@ function sendForm(e) {
   if (!(form instanceof HTMLFormElement) || !form.closest('#spa-content, [data-shell-sidebar]')) return;
   const submitter = e.submitter || null;
   if (form.hasAttribute('data-no-spa') || submitter?.hasAttribute('data-no-spa')) return;
+  // A page with its own scripts (data-spa-full) is reloaded after a save
+  // anyway: let the browser send its forms, so the result arrives in one
+  // request with its flash messages.
+  if (main()?.hasAttribute('data-spa-full')) return;
   const target = submitter?.getAttribute('formtarget') || form.getAttribute('target');
   if (target && target !== '_self') return;
   const method = (submitter?.getAttribute('formmethod') || form.getAttribute('method') || 'get').toLowerCase();

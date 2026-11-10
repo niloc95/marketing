@@ -34,6 +34,9 @@ final class AvailabilityOverview
     /** @var array<int,string> provider id => name */
     private array $names = [];
 
+    /** @var list<int> people customers can book (not archived, bookable) */
+    private array $bookable = [];
+
     private string $today;
 
     /**
@@ -53,6 +56,9 @@ final class AvailabilityOverview
         $this->places = (new TeamService((int) $listing['id']))->locationChoices($listing);
         foreach ((new TeamService((int) $listing['id']))->providers() as $p) {
             $this->names[(int) $p['id']] = (string) $p['name'];
+            if ((int) $p['bookable'] === 1) {
+                $this->bookable[] = (int) $p['id'];
+            }
         }
     }
 
@@ -169,7 +175,9 @@ final class AvailabilityOverview
     }
 
     /**
-     * The chosen people who offer a service (customers: bookable ones only).
+     * The chosen people who offer a service. Customers: bookable people
+     * only, and nobody for a service whose duration is not confirmed (T29),
+     * so such a day reads "off", not "full".
      *
      * @param array<string,mixed> $service
      *
@@ -177,6 +185,14 @@ final class AvailabilityOverview
      */
     private function offering(array $service): array
     {
-        return array_values(array_intersect($this->providerIds, array_map('intval', $service['provider_ids'])));
+        $people = array_intersect($this->providerIds, array_map('intval', $service['provider_ids']));
+        if ($this->public) {
+            if ((int) ($service['length_checked'] ?? 1) !== 1) {
+                return [];
+            }
+            $people = array_intersect($people, $this->bookable);
+        }
+
+        return array_values($people);
     }
 }

@@ -28,6 +28,16 @@
 $asset = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0);
 $pageTitle = trim(strip_tags($this->renderSection('page_title')));
 $scripts   = $this->renderSection('scripts');
+// spa.js opens a page with scripts by asking for it again with a plain page
+// load. When it fetched this one (X-Shell), keep the flash messages, old
+// input and validation errors for that second request, or the save's
+// result (admin/edit's one time preview link) is lost.
+if (trim($scripts) !== '' && service('request')->getHeaderLine('X-Shell') === '1' && session_status() === PHP_SESSION_ACTIVE) {
+    $flashKeys = session()->getFlashKeys();
+    if ($flashKeys !== []) {
+        session()->keepFlashdata($flashKeys);
+    }
+}
 // A new stylesheet or script after a release: the next click loads the whole
 // page instead of swapping new markup into old code (spa.js compares this).
 $version = 0;

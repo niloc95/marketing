@@ -13,8 +13,9 @@ use App\Services\Bookings\BookingSettings;
  *
  * - A person's hours for a date are their weekly row for that weekday
  *   (breaks included). Bookings fell back to the business's hours, marked
- *   inactive, when a person had none; so does this, and a day the business
- *   is closed (profile hours or a public holiday) is inactive for everyone.
+ *   inactive, when a person had none; so does this. A period counts only
+ *   when its place (the profile or a branch) is open that date, so a day
+ *   the main address is closed still shows the people working at a branch.
  * - The window drawn is the earliest open or start to the latest close or
  *   end, widened to whole hours and to every appointment shown, so an
  *   appointment booked outside hours is still on the grid. With nothing to
@@ -36,6 +37,9 @@ class CalendarHours
 
     /** @var array<string,array{0:string,1:string}|null> */
     private array $windows = [];
+
+    /** @var list<array<string,array{closed:bool,open:string}>>|null the profile's and each branch's week, read once */
+    private ?array $placeWeeks = null;
 
     /** @param array<string,mixed> $listing */
     public function __construct(private array $listing, private CalendarRange $range, ?AvailabilityService $engine = null)
@@ -111,14 +115,14 @@ class CalendarHours
     public function workingHours(int $providerId, string $date): array
     {
         $business = $this->businessHours($date);
-        if ($providerId === 0 || ! $business['isActive']) {
+        if ($providerId === 0) {
             return $business;
         }
 
-        $this->load([$providerId]);
-        $weekday = (int) (new \DateTimeImmutable($date, $this->range->timezone()))->format('N');
-        $row     = $this->rows[$providerId][$weekday] ?? null;
-        if ($row === null) {
+        // Only periods whose place is open that day: a branch period counts
+        // on a day the main address is closed, as the engine books it (T29).
+        $row = $this->openPeriods($providerId, $date);
+        if ($row === []) {
             return ['isActive' => false] + $business;
         }
 
@@ -165,13 +169,15 @@ class CalendarHours
                 return true;
             }
         }
-        helper('directory_hours');
-        $key   = \App\Services\Bookings\TeamService::PROFILE_DAY_KEYS[$weekday];
-        $hours = [hours_decode(is_array($this->listing['trading_hours'] ?? null) ? json_encode($this->listing['trading_hours']) : ($this->listing['trading_hours'] ?? null))];
-        foreach ((new \App\Models\DirectoryPracticeLocationModel())->forListing($this->listingId) as $branch) {
-            $hours[] = hours_decode($branch['trading_hours'] ?? null);
+        if ($this->placeWeeks === null) {
+            helper('directory_hours');
+            $this->placeWeeks = [hours_decode(is_array($this->listing['trading_hours'] ?? null) ? json_encode($this->listing['trading_hours']) : ($this->listing['trading_hours'] ?? null))];
+            foreach ((new \App\Models\DirectoryPracticeLocationModel())->forListing($this->listingId) as $branch) {
+                $this->placeWeeks[] = hours_decode($branch['trading_hours'] ?? null);
+            }
         }
-        foreach ($hours as $week) {
+        $key = \App\Services\Bookings\TeamService::PROFILE_DAY_KEYS[$weekday];
+        foreach ($this->placeWeeks as $week) {
             $day = $week[$key] ?? null;
             if (is_array($day) && ! $day['closed'] && $day['open'] !== '') {
                 return true;
@@ -181,21 +187,43 @@ class CalendarHours
         return false;
     }
 
-    /** Whether anyone of these people works on a date the business is open. */
+    /** Whether anyone of these people has a period that day at a place that is open. */
     public function anyoneWorks(string $date, array $providerIds): bool
     {
-        if ($this->businessWindow($date) === null) {
-            return false;
-        }
         $this->load($providerIds);
-        $weekday = (int) (new \DateTimeImmutable($date, $this->range->timezone()))->format('N');
         foreach ($providerIds as $id) {
-            if (isset($this->rows[$id][$weekday])) {
+            if ($this->openPeriods($id, $date) !== []) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * A person's periods on a date, in time order, leaving out those at a
+     * place that is closed then (the profile's hours or a branch's, and
+     * public holidays).
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function openPeriods(int $providerId, string $date): array
+    {
+        $this->load([$providerId]);
+        $weekday = (int) (new \DateTimeImmutable($date, $this->range->timezone()))->format('N');
+        $open    = [];
+        foreach ($this->rows[$providerId][$weekday] ?? [] as $period) {
+            $location = $period['location_id'] !== null ? (int) $period['location_id'] : null;
+            $key      = $location === null ? $date : $date . '@' . $location;
+            if (! array_key_exists($key, $this->windows)) {
+                $this->windows[$key] = $this->engine->businessWindow($date, $location);
+            }
+            if ($this->windows[$key] !== null) {
+                $open[] = $period;
+            }
+        }
+
+        return $open;
     }
 
     /**

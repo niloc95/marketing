@@ -125,6 +125,14 @@ class CatalogueService
             && (new self((int) $listing['id']))->bookable() !== [];
     }
 
+    /** ownsProfileServices() for this business. */
+    public function ownsList(): bool
+    {
+        $listing = (new \App\Models\DirectoryListingModel())->find($this->listingId);
+
+        return is_array($listing) && self::ownsProfileServices($listing);
+    }
+
     /**
      * Copy the profile's services into an empty catalogue when bookings are
      * turned on (T28), so the owner adjusts rather than retypes: 30 minutes,
@@ -164,7 +172,9 @@ class CatalogueService
 
     /**
      * Cents for a price label that is only an amount, bare or with the
-     * business's own currency sign: "R450", "R 1 200", "450.00". Anything
+     * business's own currency sign: "R450", "R 1 200", "450.00", "R450,00".
+     * A comma before one or two final digits is a decimal mark (usual in
+     * South Africa); any other comma separates thousands ("R1,200"). Anything
      * else ("from R150", "POA", another currency) is null: the owner sets
      * the price in Bookings.
      */
@@ -172,7 +182,11 @@ class CatalogueService
     {
         helper('money');
         $symbol = trim((string) (money_currencies()[$currency]['symbol'] ?? $currency));
-        $label  = trim(str_replace(["\u{00A0}", ' ', ','], '', $label));
+        $label  = trim(str_replace(["\u{00A0}", ' '], '', $label));
+        if (! str_contains($label, '.')) {
+            $label = (string) preg_replace('/,(\d{1,2})$/', '.$1', $label);
+        }
+        $label = str_replace(',', '', $label);
         foreach ([$symbol, $currency] as $prefix) {
             if ($prefix !== '' && str_starts_with($label, $prefix)) {
                 $label = substr($label, strlen($prefix));
@@ -192,12 +206,13 @@ class CatalogueService
      * (T28), so Discover and the quality score read the same table for every
      * profile. A service without a price keeps the old row's label, and
      * every row keeps its link, matched by name. Nothing happens while the
-     * catalogue does not own the list.
+     * catalogue does not own the list, unless it did before this change
+     * ($ownedBefore, from ownsList()): archiving the last bookable service
+     * must still take it off the profile.
      */
-    public function mirrorToProfile(): void
+    public function mirrorToProfile(bool $ownedBefore = false): void
     {
-        $listing = (new \App\Models\DirectoryListingModel())->find($this->listingId);
-        if (! is_array($listing) || ! self::ownsProfileServices($listing)) {
+        if (! $ownedBefore && ! $this->ownsList()) {
             return;
         }
         $rows = array_map(static fn (array $s): array => [
@@ -232,6 +247,7 @@ class CatalogueService
         if ($id !== null && $existing === null) {
             return ['id' => null, 'errors' => ['name' => 'That service is not part of this business.']];
         }
+        $owned = $mirror && $this->ownsList();
         if ($id === null && count($this->services(true)) >= self::MAX_SERVICES) {
             return ['id' => null, 'errors' => ['name' => 'A business can have up to ' . self::MAX_SERVICES . ' services.']];
         }
@@ -262,7 +278,7 @@ class CatalogueService
             throw new \RuntimeException('Saving a booking service was rolled back.');
         }
         if ($mirror) {
-            $this->mirrorToProfile();
+            $this->mirrorToProfile($owned);
         }
 
         return ['id' => $id, 'errors' => []];
@@ -273,9 +289,10 @@ class CatalogueService
         if ($this->service($id) === null) {
             return false;
         }
+        $owned = $this->ownsList();
         BookingServiceModel::forBusiness($this->listingId)->update($id, ['archived_at' => $archive ? gmdate('Y-m-d H:i:s') : null]);
         $this->audit->record($this->listingId, $accountId, $archive ? 'service.archived' : 'service.restored', 'service', $id);
-        $this->mirrorToProfile();
+        $this->mirrorToProfile($owned);
 
         return true;
     }
@@ -374,11 +391,12 @@ class CatalogueService
     {
         $known = array_map('intval', array_column($this->services(true), 'id'));
         $valid = array_values(array_intersect(array_unique(array_map('intval', $serviceIds)), $known));
+        $owned = $this->ownsList();
         BookingProviderServiceModel::forBusiness($this->listingId)->where('provider_id', $providerId)->delete();
         foreach ($valid as $serviceId) {
             BookingProviderServiceModel::forBusiness($this->listingId)->insert(['provider_id' => $providerId, 'service_id' => $serviceId]);
         }
-        $this->mirrorToProfile();
+        $this->mirrorToProfile($owned);
     }
 
     /** @return list<string> */

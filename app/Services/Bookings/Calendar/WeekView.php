@@ -59,12 +59,12 @@ class WeekView
         $events = $this->query->forRange($week['startDate'], $week['endDate'], $filters, $this->scope);
         $byDate = CalendarQuery::byDate($events);
         $dates  = array_column($week['days'], 'date');
-        $grid   = $this->hours->grid($dates, array_column($this->dayView->providers($filters, $events), 'id'), $events);
+        $people = array_column($this->dayView->providers($filters, $events), 'id');
+        $grid   = $this->hours->grid($dates, $people, $events);
 
         // Weekdays nobody ever works, at a place that never opens then, are
         // left out (a practice closed at weekends shows Monday to Friday),
         // unless something is booked on them. All seven if that leaves none.
-        $people = array_column($this->dayView->providers($filters, $events), 'id');
         $shown  = array_values(array_filter($week['days'], fn (array $d): bool => isset($byDate[$d['date']])
             || $this->hours->weekdayUsed((int) (new DateTimeImmutable($d['date']))->format('N'), $people)));
         $week['days'] = $shown !== [] ? $shown : $week['days'];

@@ -52,7 +52,7 @@
                                 <?php else: ?>
                                     <div class="actions">
                                         <a class="btn btn-primary btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>" target="_blank" rel="noopener">Open</a>
-                                        <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>?download=1">Download</a>
+                                        <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>?download=1" download>Download</a>
                                     </div>
                                 <?php endif; ?>
                             </td>

@@ -161,6 +161,15 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $this->assertSame('09:00', $saturday[0], 'inside practice B\'s own hours');
         $this->assertSame('11:30', end($saturday));
 
+        // The calendar shows him working that Saturday, at practice B.
+        $tz    = new DateTimeZone('Africa/Johannesburg');
+        $hours = new \App\Services\Bookings\Calendar\CalendarHours($this->listings->find($this->practiceId), new \App\Services\Bookings\Calendar\CalendarRange($tz, 1, new DateTimeImmutable('2030-01-07 06:00', $tz)), $this->engine());
+        $day   = $hours->workingHours($this->doctor, '2030-01-19');
+        $this->assertTrue($day['isActive'], 'not greyed out while customers book him');
+        $this->assertSame(['08:00', $this->practiceB], [$day['startTime'], $day['location_id']]);
+        $this->assertTrue($hours->anyoneWorks('2030-01-19', [$this->doctor]));
+        $this->assertFalse($hours->anyoneWorks('2030-01-20', [$this->doctor]), 'Sunday: nobody');
+
         $warnings = (new TeamService($this->practiceId))->hoursWarnings($this->doctor, $this->listings->find($this->practiceId));
         $this->assertCount(1, $warnings);
         $this->assertStringContainsString('Saturday 08:00 to 13:00 at Practice B: customers can only book from 09:00 to 12:00', $warnings[0]);
@@ -246,6 +255,11 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $this->assertGreaterThan(0, $business->day('2030-06-03')['count'], 'the business sees it');
         $this->assertSame('past', $business->day('2030-01-01')['reason']);
         $this->assertSame(['2030-06-01', '2031-05-31'], \App\Services\Bookings\AvailabilityOverview::span('year', '2030-06-03'), 'twelve months from the chosen one');
+
+        // A person customers cannot book: for customers he is off, not full.
+        \App\Models\Bookings\BookingProviderModel::forBusiness($this->practiceId)->update($this->doctor, ['bookable' => 0]);
+        $hidden = new \App\Services\Bookings\AvailabilityOverview($listing, $services, [$this->doctor], true, $now);
+        $this->assertSame('off', $hidden->day(self::MONDAY)['reason']);
     }
 
     public function testACustomerCanMoveTheirBookingAnywhereUpToTheFutureLimit(): void
@@ -270,6 +284,7 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $this->assertSame(['2030-07', '2030-06', null], [$july['month'], $july['prev'], $july['next']], 'six months on, and no further');
         $this->assertSame(['2030-07-01', '2030-07-02'], $july['free'], 'only up to 6 July');
         $this->assertSame('2030-07', $svc->rescheduleMonth($a, '2031-03')['month'], 'a month past the limit shows the last one');
+        $this->assertSame('2030-01', $svc->rescheduleMonth($a, '2030-13')['month'], 'a month that does not exist shows this one, not a 500');
 
         // A duration not confirmed yet stops new online bookings, not moving one already made.
         \App\Models\Bookings\BookingServiceModel::forBusiness($this->practiceId)->update($this->consult, ['length_checked' => 0]);
