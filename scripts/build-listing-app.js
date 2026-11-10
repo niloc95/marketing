@@ -164,6 +164,18 @@ fs.copyFileSync(path.join(projectRoot, 'deploy', 'cron', 'webscheduler'), path.j
 fs.writeFileSync(path.join(appOut, 'view-lastmod.json'), JSON.stringify(lastmod, null, 1) + '\n');
 console.log('  • view-lastmod.json (' + Object.keys(lastmod).length + ' files)');
 
+// 2a) The bookings API reference: Controllers\Developers reads
+//     ROOTPATH/docs/bookings/openapi.json for /developers/bookings and serves
+//     it as /developers/bookings/openapi.json. Nothing else from docs/ ships.
+const openapiFrom = path.join(projectRoot, 'docs', 'bookings', 'openapi.json');
+if (!fs.existsSync(openapiFrom)) {
+  console.error('✗ docs/bookings/openapi.json is missing: /developers/bookings would 500');
+  process.exit(1);
+}
+fs.mkdirSync(path.join(appOut, 'docs', 'bookings'), { recursive: true });
+fs.copyFileSync(openapiFrom, path.join(appOut, 'docs', 'bookings', 'openapi.json'));
+console.log('  • docs/bookings/openapi.json');
+
 // 2b) writable/ skeleton: the directory structure and its deny rules, never the
 //     local cache/logs/session contents.
 const writableOut = path.join(appOut, 'writable');
