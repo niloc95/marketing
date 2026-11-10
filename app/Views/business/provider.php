@@ -5,6 +5,9 @@
  * @var array<string,mixed>          $provider
  * @var array<int,array<string,mixed>> $hours  TeamService::hoursForForm(): periods per day
  * @var list<string>                 $hourWarnings times outside the opening hours of their place
+ * @var string                       $hoursMode    profile (follows the opening hours) or own
+ * @var bool                         $hoursChanged the opening hours changed since their own hours were set or kept
+ * @var array<int,string>            $openingWeek  weekday => the profile's opening hours that day
  * @var array<int,string>            $locations
  * @var list<array<string,mixed>>    $services
  * @var list<int>                    $offered
@@ -16,6 +19,7 @@
  * @var array<string,mixed>          $errors
  */
 use App\Services\Bookings\CatalogueService;
+use App\Services\Bookings\ProviderWeek;
 
 $hourErrors = $errors['hours'] ?? [];
 $archived   = $provider['archived_at'] !== null;
@@ -88,6 +92,32 @@ $archived   = $provider['archived_at'] !== null;
     <form method="post" action="<?= base_url('bookings/team/' . $provider['id'] . '/hours') ?>" class="form-card" id="hours">
         <?= csrf_field() ?>
         <h2 class="mb-1 font-bold">Working hours</h2>
+        <?php if ($hoursMode === ProviderWeek::PROFILE): ?>
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                <?= esc((string) $provider['name']) ?> works your opening hours. When you change your opening hours, customers can book the new times at once.
+            </p>
+            <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                <?php foreach ($weekdays as $day => $label): ?>
+                    <dt class="font-semibold"><?= $label ?></dt><dd><?= esc($openingWeek[$day] ?? 'Closed') ?></dd>
+                <?php endforeach ?>
+            </dl>
+            <p class="mb-4 text-sm"><a class="underline" href="<?= base_url('manage') ?>">Change your opening hours</a></p>
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" name="hours_mode" value="<?= ProviderWeek::OWN ?>" class="btn btn-primary">Set own hours</button>
+            </div>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Own hours let <?= esc((string) $provider['name']) ?> work fewer hours, at a branch, or only some services at some times.</p>
+        <?php else: ?>
+        <?php if ($hoursChanged): ?>
+            <div class="hours-warnings mb-4" role="status">
+                <p class="font-semibold">Your opening hours changed</p>
+                <p class="mb-2">These are <?= esc((string) $provider['name']) ?>'s own hours, so customers can still only book the times below. Your opening hours are now:</p>
+                <ul><?php foreach ($weekdays as $day => $label): ?><li><?= $label ?>: <?= esc($openingWeek[$day] ?? 'Closed') ?></li><?php endforeach ?></ul>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="submit" name="hours_mode" value="<?= ProviderWeek::PROFILE ?>" class="btn btn-primary">Follow our opening hours</button>
+                    <button type="submit" name="keep_hours" value="1" class="btn btn-ghost">Keep mine</button>
+                </div>
+            </div>
+        <?php endif ?>
         <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
             When and where <?= esc((string) $provider['name']) ?> sees people. Customers book these times, never your reception hours.
             A day can have more than one time, each at its own place and, if you like, for only some services.
@@ -158,8 +188,9 @@ $archived   = $provider['archived_at'] !== null;
         </div>
         <div class="mt-4 flex flex-wrap gap-2">
             <button type="submit" class="btn btn-primary">Save hours</button>
-            <button type="submit" name="use_profile_hours" value="1" class="btn btn-ghost">Use our opening hours</button>
+            <button type="submit" name="hours_mode" value="<?= ProviderWeek::PROFILE ?>" class="btn btn-ghost">Follow our opening hours</button>
         </div>
+        <?php endif ?>
     </form>
 </div>
 

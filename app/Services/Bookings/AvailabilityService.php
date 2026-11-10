@@ -4,7 +4,6 @@ namespace App\Services\Bookings;
 
 use App\Models\Bookings\BookingAppointmentModel;
 use App\Models\Bookings\BookingBlockedTimeModel;
-use App\Models\Bookings\BookingProviderHoursModel;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -300,8 +299,7 @@ class AvailabilityService
      */
     public function weekPeriods(int $providerId): array
     {
-        $rows = BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)
-            ->orderBy('weekday', 'ASC')->orderBy('start_time', 'ASC')->findAll();
+        $rows = $this->providerRows($providerId);
         $week = [];
         foreach ($rows as $row) {
             $day      = (int) $row['weekday'];
@@ -398,11 +396,7 @@ class AvailabilityService
     private function windows(int $providerId, string $date, ?int $serviceId = null): array
     {
         $weekday = (int) (new DateTimeImmutable($date, $this->tz))->format('N');
-        $rows    = $this->remember
-            ? array_values(array_filter($this->cache['hours' . $providerId] ??= BookingProviderHoursModel::forBusiness($this->listingId)
-                ->where('provider_id', $providerId)->orderBy('start_time', 'ASC')->findAll(), static fn (array $r): bool => (int) $r['weekday'] === $weekday))
-            : BookingProviderHoursModel::forBusiness($this->listingId)
-                ->where('provider_id', $providerId)->where('weekday', $weekday)->orderBy('start_time', 'ASC')->findAll();
+        $rows    = array_values(array_filter($this->providerRows($providerId), static fn (array $r): bool => (int) $r['weekday'] === $weekday));
         $out = [];
         foreach ($rows as $row) {
             if ($serviceId !== null && $row['service_ids'] !== null
@@ -420,6 +414,21 @@ class AvailabilityService
         }
 
         return $out;
+    }
+
+    /**
+     * A person's weekly rows (ProviderWeek: their own, or the profile's
+     * opening hours), in weekday and start order. Cached while remembering.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function providerRows(int $providerId): array
+    {
+        if ($this->remember) {
+            return $this->cache['hours' . $providerId] ??= ProviderWeek::forProvider($this->listingId, $providerId, $this->placeHours(null));
+        }
+
+        return ProviderWeek::forProvider($this->listingId, $providerId, $this->placeHours(null));
     }
 
     /**

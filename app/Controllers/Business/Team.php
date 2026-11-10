@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\DirectoryListingTeamModel;
 use App\Services\Bookings\BookingAuthorization;
 use App\Services\Bookings\CatalogueService;
+use App\Services\Bookings\ProviderWeek;
 use App\Services\Bookings\TeamService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use Config\BookingPermissions;
@@ -26,14 +27,17 @@ class Team extends BaseController
             $team->providers(true),
             static fn (array $p): bool => $scope === null || in_array((int) $p['id'], $scope, true),
         ));
-        $hours = [];
+        $hours   = [];
+        $changed = [];
         foreach ($providers as $p) {
-            $hours[(int) $p['id']] = $team->hours((int) $p['id']);
+            $hours[(int) $p['id']]   = $team->hours((int) $p['id']);
+            $changed[(int) $p['id']] = $team->openingHoursChanged((int) $p['id'], $p);
         }
 
         return view('business/team', [
             'providers'     => $providers,
             'hours'         => $hours,
+            'hoursChanged'  => $changed,
             'members'       => $context->can('members.manage') ? $team->members() : [],
             'canAdd'        => $context->can('members.manage'),
             'profileTeam'   => (new DirectoryListingTeamModel())->forListing($context->listingId()),
@@ -53,6 +57,9 @@ class Team extends BaseController
             'provider'     => $provider,
             'hours'        => $team->hoursForForm($id),
             'hourWarnings' => $team->hoursWarnings($id, $context->listing()),
+            'hoursMode'    => $team->hoursMode($id),
+            'hoursChanged' => $team->openingHoursChanged($id, $provider),
+            'openingWeek'  => $this->openingWeek($context->listing()),
             'locations'    => $team->locationChoices($context->listing()),
             'services'     => (new CatalogueService($context->listingId()))->services(),
             'offered'      => (new CatalogueService($context->listingId()))->servicesForProvider($id),
@@ -63,6 +70,27 @@ class Team extends BaseController
             'weekdays'     => TeamService::WEEKDAYS,
             'errors'       => flash('errors') ?: [],
         ]);
+    }
+
+    /**
+     * The profile's opening hours as one line a day, for the hours card.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return array<int,string> weekday => "08:00 to 16:30", "Closed" or "No hours given"
+     */
+    private function openingWeek(array $listing): array
+    {
+        $out = [];
+        foreach (ProviderWeek::fromProfile(0, (int) $listing['id'], $listing['trading_hours'] ?? null) as $row) {
+            $out[(int) $row['weekday']] = substr((string) $row['start_time'], 0, 5) . ' to ' . substr((string) $row['end_time'], 0, 5);
+        }
+        $week = [];
+        foreach (array_keys(TeamService::WEEKDAYS) as $day) {
+            $week[$day] = $out[$day] ?? 'Closed';
+        }
+
+        return $week;
     }
 
     public function addProvider()
@@ -119,18 +147,27 @@ class Team extends BaseController
         $this->guard($id);
         $team = new TeamService($context->listingId());
 
-        if ($this->request->getPost('use_profile_hours') === '1') {
-            $team->copyProfileHours($id, $context->listing(), $context->accountId());
+        $back = base_url('bookings/team/' . $id . '#hours');
+        $mode = (string) $this->request->getPost('hours_mode');
+        if ($mode !== '') {
+            $team->setHoursMode($id, $mode, $context->listing(), $context->accountId());
 
-            return redirect()->to(base_url('bookings/team/' . $id . '#hours'))->with('success', 'Working hours set to your business opening hours.');
+            return redirect()->to($back)->with('success', $mode === ProviderWeek::PROFILE
+                ? 'Working hours now follow your opening hours. A change to your opening hours reaches bookings at once.'
+                : 'Set own hours. Change the times below and save.');
+        }
+        if ($this->request->getPost('keep_hours') === '1') {
+            $team->keepOwnHours($id, $context->accountId());
+
+            return redirect()->to($back)->with('success', 'Kept these working hours.');
         }
 
         $errors = $team->saveHours($id, (array) $this->request->getPost('hours'), $context->accountId());
         if ($errors !== []) {
-            return redirect()->to(base_url('bookings/team/' . $id . '#hours'))->with('errors', ['hours' => $errors]);
+            return redirect()->to($back)->with('errors', ['hours' => $errors]);
         }
 
-        return redirect()->to(base_url('bookings/team/' . $id . '#hours'))->with('success', 'Working hours saved.');
+        return redirect()->to($back)->with('success', 'Working hours saved.');
     }
 
     public function archive(int $id)

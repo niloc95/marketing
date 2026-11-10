@@ -60,6 +60,18 @@ existing ones.
 holiday answers (`hours_holiday_rule()`) plus `xs_booking_blocked_times` rows with no
 provider. Provider hours are clipped to the business window for the day.
 
+**Whose hours a person works** (owner, 10 Nov 2026). `xs_booking_providers.hours_mode`:
+`profile` follows the profile's opening hours as they are now (one period a day at the
+profile's address, every service; the default provider of a new business), `own` uses
+their rows in `xs_booking_provider_hours` (existing people, and anyone whose hours are
+saved). Rows are kept while a person follows, so switching back restores them; a first
+switch to own starts from the opening hours. Every reader (`AvailabilityService`,
+`CalendarHours`, `TeamService::hours()`) goes through `ProviderWeek`. `hours_seen` is a
+fingerprint of the profile's and branches' opening hours when own hours were last set or
+kept; when it no longer matches, the person page and `SetupCheck`
+(`provider_hours_changed`) ask "Follow our opening hours" or "Keep mine". Own hours are
+never changed by the profile.
+
 ## Appointments and customers (appointments built in Phase 3, customers Phase 4)
 
 | Table | Columns | Notes |

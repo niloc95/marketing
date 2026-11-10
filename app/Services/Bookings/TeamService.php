@@ -9,6 +9,7 @@ use App\Models\Bookings\BookingProviderHoursModel;
 use App\Models\Bookings\BookingProviderModel;
 use App\Models\Bookings\BookingStaffAssignmentModel;
 use App\Models\Bookings\BusinessMemberModel;
+use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingTeamModel;
 use App\Models\DirectoryPracticeLocationModel;
 use Config\BookingPermissions;
@@ -34,6 +35,11 @@ class TeamService
     public const MAX_PROVIDERS = 50;
 
     public const INVITE_DAYS = 7;
+
+    /** The profile's trading_hours, read once (ProviderWeek). */
+    private array|string|null $tradingHours = null;
+
+    private bool $tradingHoursRead = false;
 
     public function __construct(private int $listingId, private ?BookingAudit $audit = null)
     {
@@ -87,7 +93,8 @@ class TeamService
             'member_id' => $memberId,
         ], null);
         if ($result['id'] !== null) {
-            $this->copyProfileHours((int) $result['id'], $listing, null);
+            // Follows the opening hours: a change on the profile reaches booking at once.
+            BookingProviderModel::forBusiness($this->listingId)->update((int) $result['id'], ['hours_mode' => ProviderWeek::PROFILE]);
         }
     }
 
@@ -205,9 +212,7 @@ class TeamService
         foreach (array_keys(self::WEEKDAYS) as $day) {
             $week[$day] = ['active' => false, 'start' => '', 'end' => '', 'break_start' => '', 'break_end' => '', 'location_id' => null, 'periods' => []];
         }
-        $rows = BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)
-            ->orderBy('weekday', 'ASC')->orderBy('start_time', 'ASC')->findAll();
-        foreach ($rows as $row) {
+        foreach (ProviderWeek::forProvider($this->listingId, $providerId, $this->tradingHours()) as $row) {
             $breaks = json_decode((string) $row['breaks'], true) ?: [];
             $ids    = $row['service_ids'] !== null ? json_decode((string) $row['service_ids'], true) : null;
             $period = [
@@ -309,6 +314,8 @@ class TeamService
         if ($db->transComplete() === false) {
             throw new \RuntimeException('Saving working hours was rolled back.');
         }
+        // Saving their own times means they keep their own times.
+        BookingProviderModel::forBusiness($this->listingId)->update($providerId, ['hours_mode' => ProviderWeek::OWN, 'hours_seen' => $this->openingHoursFingerprint()]);
         $this->audit->record($this->listingId, $accountId, 'provider.hours_saved', 'provider', $providerId, null, ['days' => array_keys($clean)]);
 
         return [];
@@ -419,6 +426,9 @@ class TeamService
      */
     public function hoursWarnings(int $providerId, array $listing): array
     {
+        if ($this->hoursMode($providerId) === ProviderWeek::PROFILE) {
+            return []; // Their hours are the opening hours.
+        }
         helper('directory_hours');
         $places = $this->locationChoices($listing);
         $hours  = [0 => hours_decode($listing['trading_hours'] ?? null)];
@@ -443,6 +453,77 @@ class TeamService
         }
 
         return $out;
+    }
+
+    /** `profile` (follows the opening hours) or `own`. */
+    public function hoursMode(int $providerId): string
+    {
+        return ($this->provider($providerId)['hours_mode'] ?? ProviderWeek::OWN) === ProviderWeek::PROFILE ? ProviderWeek::PROFILE : ProviderWeek::OWN;
+    }
+
+    /**
+     * Switch a person between following the opening hours and their own.
+     * Their own rows are kept while they follow, so switching back brings
+     * them back; with none saved yet, they start from the opening hours.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function setHoursMode(int $providerId, string $mode, array $listing, ?int $accountId): bool
+    {
+        if ($this->provider($providerId) === null || ! in_array($mode, [ProviderWeek::PROFILE, ProviderWeek::OWN], true)) {
+            return false;
+        }
+        if ($mode === ProviderWeek::OWN
+            && BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)->countAllResults() === 0) {
+            $this->copyProfileHours($providerId, $listing, $accountId); // Sets own as well.
+        }
+        BookingProviderModel::forBusiness($this->listingId)->update($providerId, [
+            'hours_mode' => $mode,
+            'hours_seen' => $mode === ProviderWeek::OWN ? $this->openingHoursFingerprint() : null,
+        ]);
+        $this->audit->record($this->listingId, $accountId, 'provider.hours_mode', 'provider', $providerId, null, ['mode' => $mode]);
+
+        return true;
+    }
+
+    /** "Keep mine": the opening hours changed and this person keeps their own times. */
+    public function keepOwnHours(int $providerId, ?int $accountId): void
+    {
+        if ($this->provider($providerId) === null) {
+            return;
+        }
+        BookingProviderModel::forBusiness($this->listingId)->update($providerId, ['hours_seen' => $this->openingHoursFingerprint()]);
+        $this->audit->record($this->listingId, $accountId, 'provider.hours_kept', 'provider', $providerId);
+    }
+
+    /**
+     * Whether the opening hours (profile or a branch) changed since this
+     * person's own hours were last set or kept. Never for people who follow
+     * the opening hours: those changes reach them by themselves.
+     *
+     * @param array<string,mixed>|null $provider a provider row, to save a read
+     */
+    public function openingHoursChanged(int $providerId, ?array $provider = null): bool
+    {
+        $provider ??= $this->provider($providerId);
+        if ($provider === null || ($provider['hours_mode'] ?? ProviderWeek::OWN) === ProviderWeek::PROFILE) {
+            return false;
+        }
+
+        return ! hash_equals($this->openingHoursFingerprint(), (string) ($provider['hours_seen'] ?? ''));
+    }
+
+    /** A fingerprint of the profile's and every branch's opening hours. */
+    public function openingHoursFingerprint(): string
+    {
+        helper('directory_hours');
+        $all = ['main' => hours_decode(is_string($h = $this->tradingHours()) ? $h : json_encode($h))];
+        foreach ((new DirectoryPracticeLocationModel())->forListing($this->listingId) as $loc) {
+            $all[(int) $loc['id']] = hours_decode($loc['trading_hours'] ?? null);
+        }
+        ksort($all, SORT_STRING);
+
+        return hash('sha256', (string) json_encode($all));
     }
 
     /**
@@ -713,7 +794,19 @@ class TeamService
     }
 
     /** @return list<int> */
-    private function locationIds(): array
+    /** @return array<string,mixed>|string|null */
+    private function tradingHours(): array|string|null
+    {
+        if (! $this->tradingHoursRead) {
+            $row                    = (new DirectoryListingModel())->select('trading_hours')->find($this->listingId);
+            $this->tradingHours     = is_array($row) ? ($row['trading_hours'] ?? null) : null;
+            $this->tradingHoursRead = true;
+        }
+
+        return $this->tradingHours;
+    }
+
+        private function locationIds(): array
     {
         return array_map('intval', array_column((new DirectoryPracticeLocationModel())->forListing($this->listingId), 'id'));
     }
