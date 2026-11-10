@@ -52,6 +52,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
     <ul>
         <li>Nothing booking related changes discovery ranking or the quality score.</li>
         <li>Public profile pages stay sessionless; notifications are enqueued, never sent in a request.</li>
+        <li><strong>Emails:</strong> the customer gets <code>emails/booking-notification.php</code> (from "{business} via WebScheduler Local", Reply-To the business; heading, place with Google Maps and Waze, opening hours, Add to Google Calendar, Terms and Privacy). The team gets <code>emails/booking-team.php</code> (from "WebScheduler Local", Reply-To the customer; customer contact, links into /bookings). Both are built by <code>Notifications\Channels::email()</code> from <code>MessageContext</code>, which keeps a hidden address out of both.</li>
         <li>Each business on its own site's host; clock and currency from <code>BusinessLocale</code>; no rand on .app.</li>
     </ul>
 

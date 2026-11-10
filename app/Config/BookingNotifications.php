@@ -158,6 +158,35 @@ class BookingNotifications extends BaseConfig
     ];
 
     /**
+     * The heading of each customer email, above the business's own
+     * paragraphs, so the email reads at a glance (the reference app's
+     * "Appointment Confirmed" line). Fixed wording.
+     *
+     * @var array<string,string>
+     */
+    public array $customerHeadings = [
+        'pending'     => 'Booking request received',
+        'confirmed'   => 'Booking confirmed',
+        'rescheduled' => 'New time for your booking',
+        'cancelled'   => 'Booking cancelled',
+        'reminder'    => 'A reminder of your booking',
+        'no_show'     => 'We missed you',
+    ];
+
+    /**
+     * The heading of each team email. The reference app headed its pending
+     * notice "Appointment Confirmed"; here each event says what happened.
+     *
+     * @var array<string,string>
+     */
+    public array $teamHeadings = [
+        'pending'     => 'New booking request',
+        'confirmed'   => 'New booking',
+        'rescheduled' => 'Booking moved',
+        'cancelled'   => 'Booking cancelled',
+    ];
+
+    /**
      * Team emails (fixed wording). {customer_name}, {service}, {when} and
      * {team_member} as above; the email adds a button to the calendar.
      *

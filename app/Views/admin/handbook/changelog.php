@@ -6,6 +6,7 @@
  * once it is known.
  */
 $entries = [
+    ['2026-11-10', 'Bookings: the team email is its own notice for staff (emails/booking-team.php: customer contact, maps links, Open the appointment, Reply to the customer); the customer email gains a heading, maps links, opening hours, Add to Google Calendar, Terms and Privacy.'],
     ['2026-11-10', 'Bookings: the Book form and dialog show the next free times (GET /bookings/api/appointments/free, shared with Move); a click fills the date and time.'],
     ['2026-11-10', 'Bookings: a person follows the profile\'s opening hours (live, xs_booking_providers.hours_mode = profile, read through ProviderWeek) or keeps own hours; hours_seen asks when the opening hours change under own hours.'],
     ['2026-11-07', 'App shell for /admin and /bookings: sidebar, top bar and page swaps without reloads (layouts/_shell.php, resources/shell/), ported from Bookings; admin leaves the public layout and its Popular categories strip.'],

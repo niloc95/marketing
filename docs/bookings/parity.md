@@ -133,7 +133,7 @@ Items marked ⚠ have an open decision in [decisions.md](decisions.md).
 | Events: pending, confirmed, reminder, cancelled, rescheduled, payment confirmed | `NotificationCatalog` | Port | 6 | add no show |
 | Rules matrix event × channel, two reminder offsets | `xs_business_notification_rules` | Port | 6 | |
 | Stale reminder cancellation after reschedule | `schedule_fingerprint` | Port | 6 | |
-| Customer and internal templates, 37 placeholders | `NotificationTemplateService` | Port | 6 | copy rewritten to Local rules; emails in Local's `emails/_layout.php` style |
+| Customer and internal templates, 37 placeholders | `NotificationTemplateService` | Port | 6 | copy rewritten to Local rules; emails in Local's `emails/_layout.php` style; since 10 Nov 2026 two views: `emails/booking-notification.php` (customer: heading, maps links, opening hours, Google Calendar link, Terms and Privacy) and `emails/booking-team.php` (staff: customer contact, links into /bookings, booked by) |
 | Email | `MailerService` (SMTP per business) | Rebuild | 6 | Local `Mailer` (SES) only, From: the platform, Reply-To: the business |
 | SMS (Clickatell, Twilio) | yes | Skip | | built in Phase 6, removed 5 Nov 2026 (owner, T20) |
 | WhatsApp (link, Twilio, Meta Cloud) | yes | Port | 6 | |
