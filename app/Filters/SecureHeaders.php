@@ -56,9 +56,14 @@ class SecureHeaders extends FrameworkSecureHeaders
         // Vimeo's player joins YouTube's for the Verified Business profile
         // video, which plays in the lightbox on a click; both players get
         // fullscreen too, since a viewer pressing play may want it.
+        //
+        // geolocation is allowed for this origin only: "Use my location" on
+        // Discover asks for the visitor's position (directory.js, on a click,
+        // never on load). From 6 Aug to 9 Nov 2026 an empty allowlist blocked
+        // it on every page, so the button could only ever fail.
         'Permissions-Policy' => 'accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), camera=(), display-capture=(), '
             . 'encrypted-media=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), '
-            . 'fullscreen=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), geolocation=(), gyroscope=(), magnetometer=(), '
+            . 'fullscreen=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), geolocation=(self), gyroscope=(), magnetometer=(), '
             . 'microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), '
             . 'screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()',
     ];

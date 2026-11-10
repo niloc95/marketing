@@ -227,6 +227,8 @@ final class HeroBackgroundTest extends CIUnitTestCase
         $this->assertStringContainsString('autoplay=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com")', $perms);
         $this->assertStringNotContainsString('https://www.youtube.com', $perms);
         $this->assertStringContainsString('camera=()', $perms);
+        // "Use my location" on Discover: this origin may ask, embeds may not.
+        $this->assertStringContainsString('geolocation=(self)', $perms);
     }
 
     // -------------------------------------------------------------- helpers
