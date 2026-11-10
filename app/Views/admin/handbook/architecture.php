@@ -18,7 +18,7 @@
             <code>Paystack</code>, <code>PaymentReference</code>, geocoders, holiday calendars, text and image processing.</li>
         <li><strong>Helpers</strong> (<code>app/Helpers/</code>, autoloaded): view helpers such as <code>listing_url()</code>,
             <code>site_url_for()</code>, <code>money()</code>, <code>listing_public_view()</code>, badges and gates.</li>
-        <li><strong>Views</strong>: one public layout (<code>layouts/public.php</code>); <code>/admin</code> and <code>/bookings</code>
+        <li><strong>Views</strong>: one public layout (<code>layouts/public.php</code>); <code>/admin</code> and <code>/business</code>
             use the app shell (<code>layouts/_shell.php</code>, a sidebar and page swaps),
             partials per page part, emails through <code>emails/_layout.php</code>.</li>
         <li><strong>Commands</strong> (<code>app/Commands/</code>): spark jobs run by cron (Operations chapter).</li>
@@ -29,8 +29,8 @@
         <li>Cloudflare (TLS, scanner block rule, AI crawl control) → Apache vhost → PHP 8.3 FPM → <code>public/index.php</code>.</li>
         <li>Before filters: <code>FrontControllerPath</code> (404s a typed <code>/index.php/…</code>), <code>SiteResolver</code>,
             <code>BotTrap</code>, <code>CsrfGuard</code>, <code>SignupChannel</code> (<code>?via=</code>); on admin routes
-            <code>cfaccess</code> (Cloudflare Access JWT) then <code>admin</code> (password session); on <code>/bookings</code>
-            <code>businessauth</code> and <code>businesscan</code>; on <code>/api/v1</code> <code>bookingapi</code>.</li>
+            <code>cfaccess</code> (Cloudflare Access JWT) then <code>admin</code> (password session); on <code>/business</code>
+            <code>businessauth</code> (levels guest, account, owner, and the bookings level) and <code>businesscan</code>; on <code>/api/v1</code> <code>bookingapi</code>.</li>
         <li>Controller → service → model → database.</li>
         <li>After filters: <code>honeypot</code>, <code>PartnerRef</code> (<code>?ref=</code>), <code>FormOutcome</code> (form health),
             <code>SecureHeaders</code> (CSP and friends).</li>

@@ -146,7 +146,7 @@ $quality = new \App\Services\ListingQualityService();
                         <td class="whitespace-nowrap">
                             <span class="pill pill-<?= esc($l['status'], 'attr') ?>"><?= esc($l['status']) ?></span>
                             <?php // Profile strength (ListingQualityService), the same number the
-                                  // owner sees on /manage/edit. Open the profile for the checklist. ?>
+                                  // owner sees on /business. Open the profile for the checklist. ?>
                             <?php if (($l['quality_score'] ?? null) === null): ?>
                                 <span class="pill pill-unpublished" title="Not scored yet">n/a</span>
                             <?php else: ?>

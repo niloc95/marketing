@@ -171,7 +171,7 @@ final class PrivateDetailsRequiredTest extends CIUnitTestCase
 
         foreach ([
             $this->get('add-profile'),
-            $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit'),
+            $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/details'),
         ] as $result) {
             $result->assertOK();
             $this->assertStringContainsString('<label for="field-title">Title *</label>', $result->getBody());

@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingBrandModel;
 use App\Models\DirectoryListingModel;
@@ -123,8 +122,8 @@ final class BrandGalleryTest extends CIUnitTestCase
         $theirs = (int) $this->brands->insert(['listing_id' => $this->listing('theirs'), 'name' => 'Nike', 'logo_path' => 'assets/listings/brands/none.webp'], true);
 
         $result = $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
-            ->withSession([Manage::SESSION_KEY => $mine])
-            ->post('manage/brand-delete/' . $theirs);
+            ->withSession(\Tests\Support\OwnerSession::for($mine))
+            ->post('business/profile/brand-delete/' . $theirs);
 
         $result->assertStatus(404);
         $this->assertNotNull($this->brands->find($theirs));
@@ -137,8 +136,8 @@ final class BrandGalleryTest extends CIUnitTestCase
         $brand = (int) $this->brands->insert(['listing_id' => $mine, 'name' => 'Nike', 'logo_path' => 'assets/listings/brands/none.webp'], true);
 
         $result = $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
-            ->withSession([Manage::SESSION_KEY => $mine])
-            ->post('manage/brand-delete/' . $brand);
+            ->withSession(\Tests\Support\OwnerSession::for($mine))
+            ->post('business/profile/brand-delete/' . $brand);
 
         $result->assertOK();
         $json = json_decode($result->getJSON(), true);
@@ -153,10 +152,10 @@ final class BrandGalleryTest extends CIUnitTestCase
         $mine = $this->listing('mine');
         $this->brands->insert(['listing_id' => $mine, 'name' => 'Nike', 'logo_path' => 'assets/listings/brands/none.webp']);
 
-        $html = $this->withSession([Manage::SESSION_KEY => $mine])->get('manage/edit')->getBody();
+        $html = $this->withSession(\Tests\Support\OwnerSession::for($mine))->get('business/profile/photos')->getBody();
 
         $this->assertStringContainsString('Brands you carry', $html);
-        $this->assertMatchesRegularExpression('#formaction="[^"]*manage/brand-delete/\d+"#', $html);
+        $this->assertMatchesRegularExpression('#formaction="[^"]*business/profile/brand-delete/\d+"#', $html);
         $this->assertStringContainsString('name="brand_name[2]"', $html);
         $this->assertStringContainsString('name="brand_logo[0]"', $html);
         $this->assertStringContainsString('data-repeat-max="' . (ListingBrandService::MAX_BRANDS - 1) . '"', $html);

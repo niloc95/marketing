@@ -394,8 +394,8 @@ $contact   = config('Directory')->adminEmail();
                 <li>Object to certain processing activities where applicable; and</li>
                 <li>Lodge a complaint concerning the processing of your personal information.</li>
             </ul>
-            <p>Where profile management functionality is available, you can also update or remove your business profile directly using <a href="<?= base_url('manage') ?>">Manage your profile</a>.</p>
-            <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('manage') ?>">Manage your profile</a>. Opting out does not stop the service emails your profile needs, such as profile management links.</p>
+            <p>Where profile management functionality is available, you can also update or remove your business profile directly using <a href="<?= base_url('business') ?>">Manage your profile</a>.</p>
+            <p>You can stop the monthly analytics report at any time, free of charge, using the unsubscribe link in any report or the email preferences in <a href="<?= base_url('business') ?>">Manage your profile</a>. Opting out does not stop the service emails your profile needs, such as profile management links.</p>
             <p>You may contact us using the details provided below if you wish to exercise a right or make a privacy related request.</p>
 
             <h2>19. Complaints</h2>

@@ -6,39 +6,28 @@ use App\Controllers\Concerns\AnswersPaystackCheckout;
 use App\Controllers\Concerns\HandlesListingUploads;
 use App\Controllers\Concerns\HandlesVerificationUploads;
 use App\Libraries\PayFast;
-use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryVerificationModel;
-use App\Models\DirectoryReviewModel;
-use App\Models\JobPostModel;
+use App\Services\Bookings\BusinessSession;
 use App\Services\DirectoryListingMutationService;
-use App\Services\DirectoryService;
-use App\Services\ListingFacetService;
-use App\Services\ListingBrandService;
-use App\Services\ListingMenuService;
-use App\Services\ListingQualityService;
-use App\Services\ListingStatsService;
-use App\Services\PracticeLocationService;
-use App\Services\ServiceMenuService;
-use App\Services\TeamMemberService;
+use App\Services\OwnerAccess;
 use App\Services\VerificationService;
 
 /**
- * Owner self-service. Passwordless: control of the listing's email address is
- * the proof of ownership, using the same magic-link mechanism as signup
- * verification.
+ * What is left of /manage now that the owner's back office is the business
+ * area (/business, 10 Nov 2026): the emailed manage links (redeemed into a
+ * business area sign in), the old addresses (redirects), and the Verified
+ * badge, Plus and International Listing actions, whose routes payment returns
+ * and emails already carry. Their page is business/badge (Business\Owner).
  *
- * The redeemed token is exchanged for a session before the edit form renders,
- * so it never sits in the address bar while the owner is on the page — a token
- * in the URL leaks through the Referer header on any outbound click.
+ * A redeemed token is exchanged for a session before anything renders, so it
+ * never sits in the address bar while the owner is on a page: a token in the
+ * URL leaks through the Referer header on any outbound click.
  */
 class Manage extends BaseController
 {
     use AnswersPaystackCheckout;
     use HandlesListingUploads;
     use HandlesVerificationUploads;
-
-    /** Public so Directory::verify() can open the same session, not retype the key. */
-    public const SESSION_KEY = 'manage_listing_id';
 
     /**
      * Where a redeemed magic link may land, keyed by the ?to= value the link
@@ -76,9 +65,20 @@ class Manage extends BaseController
     /** Identical wording whichever branch runs — see request(). */
     private const SENT_MESSAGE = 'If that email has a profile, we have sent it a link to manage it. The link lasts one hour.';
 
+    /**
+     * /manage was the owner's sign in and dashboard until 10 Nov 2026. Every
+     * public link to it keeps working: it opens the business area, or its
+     * sign in.
+     */
     public function index()
     {
-        return view('directory/manage_request');
+        return redirect()->to(base_url(OwnerAccess::listing() !== null ? 'business' : 'business/sign-in'));
+    }
+
+    /** The old dashboard: its parts are pages of the business area now. */
+    public function edit()
+    {
+        return redirect()->to(base_url('business'));
     }
 
     /**
@@ -100,7 +100,7 @@ class Manage extends BaseController
             || ($email !== '' && $throttler->check($mailKey, 3, MINUTE * 10) === false)) {
             form_outcome('throttled');
 
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Too many requests. Please wait a few minutes and try again.');
         }
 
@@ -108,7 +108,7 @@ class Manage extends BaseController
             (new DirectoryListingMutationService())->requestManageLink($email);
         }
 
-        return redirect()->to(base_url('manage'))->with('info', self::SENT_MESSAGE);
+        return redirect()->to(base_url('business/sign-in'))->with('info', self::SENT_MESSAGE);
     }
 
     /**
@@ -123,336 +123,24 @@ class Manage extends BaseController
     {
         $listing = (new DirectoryListingMutationService())->redeemManageToken($token);
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'That link is invalid or has expired. Request a new one below.');
         }
 
-        // regenerate(true) — see Admin::attemptLogin(). The old id must die here:
-        // the magic link it was presented with is a bearer credential.
-        session()->regenerate(true); // the session now carries authority — close fixation
-        session()->set(self::SESSION_KEY, (int) $listing['id']);
+        // One sign in for every owner (10 Nov 2026): the link proved the
+        // profile's email, so it signs in as the account on that email.
+        // BusinessSession::signIn() regenerates the session id.
+        if (OwnerAccess::signInFor($listing) === null) {
+            return redirect()->to(base_url('business/sign-in'))
+                ->with('error', 'This account is switched off. Contact us if you think that is a mistake.');
+        }
 
         // is_string, not a cast: ?to[]=checkout hands back an array, and casting
         // that is a fatal — a mangled link would burn the token and then 500.
         $to = $this->request->getGet('to');
         $to = is_string($to) ? $to : '';
 
-        return redirect()->to(base_url(self::REDEEM_DESTINATIONS[$to] ?? 'manage/edit'));
-    }
-
-    public function edit()
-    {
-        $listing = $this->currentListing();
-        if ($listing === null) {
-            return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your profile.');
-        }
-
-        $svc             = new DirectoryService();
-        $verification    = new VerificationService();
-        $verificationRow = $verification->forListing((int) $listing['id']);
-        $hostingRow      = $verification->forListing(
-            (int) $listing['id'],
-            DirectoryVerificationModel::PLAN_INTERNATIONAL
-        );
-        $team            = new TeamMemberService();
-        $locations       = new PracticeLocationService();
-
-        $photos     = (new DirectoryListingPhotoModel())->forListing((int) $listing['id']);
-        $services   = (new ServiceMenuService())->servicesFor((int) $listing['id']);
-        $attributes = (new ServiceMenuService())->attributeKeysFor((int) $listing['id']);
-        $tags       = $svc->tagsForListing((int) $listing['id']);
-        $facets     = (new ListingFacetService())->storedFor((int) $listing['id']);
-        $menuFiles  = (new ListingMenuService())->forListing((int) $listing['id']);
-
-        // The five collections above are exactly what the rubric counts, so
-        // the strength meter costs no extra queries — that is what
-        // evaluate()'s optional $counts argument exists for. Facets are a
-        // map of facet key => rows, so the count the rubric wants is the
-        // number of stated values, not the number of facets answered.
-        $strength = (new ListingQualityService())->strength($listing, [
-            'photos'     => count($photos),
-            'services'   => count($services),
-            'attributes' => count($attributes),
-            'tags'       => count($tags),
-            'facets'     => array_sum(array_map('count', $facets)),
-            'menu'       => count($menuFiles),
-        ]);
-
-        return view('directory/manage_edit', [
-            'listing'    => $listing,
-            'old'        => session()->getFlashdata('old') ?? [],
-            'errors'     => session()->getFlashdata('errors') ?? [],
-            'categories' => $svc->categories(),
-            'provinces'  => $svc->provinces(),
-            'countries'  => config('Countries')->grouped(),
-            'tags'       => $tags,
-            'services'   => $services,
-            // Read only while the booking catalogue writes the list (T28).
-            'servicesFromBookings' => \App\Services\Bookings\CatalogueService::ownsProfileServices($listing),
-            'attributes' => $attributes,
-            'facets'     => $facets,
-            'photos'     => $photos,
-            'brands'     => (new ListingBrandService())->forListing((int) $listing['id']),
-            'menuFiles'  => $menuFiles,
-
-            'strength' => $strength,
-            // Basic for everyone, full with the badge or Plus. Nothing to show
-            // until the profile is public.
-            'stats' => $listing['status'] === 'published'
-                ? (new ListingStatsService())->forOwner($listing, $strength['items'], listing_has_premium($listing))
-                : null,
-            'strengthFloor' => (int) config('Directory')->recentMinQuality,
-            'strengthTarget' => (int) config('Directory')->qualityTarget,
-            'slots'      => $this->gallerySlots((int) $listing['id']),
-            'galleryMax' => self::GALLERY_MAX,
-
-            // Rows are read whatever the badge says — a lapsed subscriber keeps
-            // their team and branches, they just stop rendering. The flags are
-            // what hide the two sections of the form; the services re-check.
-            'team'      => $team->forListing((int) $listing['id']),
-            'locations' => $locations->forListing((int) $listing['id']),
-            'showExtras' => $team->canManage($listing),
-
-            'verificationOffered' => $verification->isEnabled(),
-            'verificationPayable' => $verification->canTakePayment(),
-            'verificationAmount'  => $verification->monthlyAmount(),
-            'verificationYearly'  => $verification->amountFor(DirectoryVerificationModel::PLAN_BADGE, DirectoryVerificationModel::CYCLE_YEARLY),
-            'verification'        => $verificationRow,
-            'verificationPending' => $this->paymentPending($verificationRow),
-
-            // The International Listing plan. Rendered only when it actually
-            // applies to this listing, so a South African owner never sees a
-            // panel about a country they are not in.
-            'hostingRequired' => $verification->requiresSubscription($listing),
-            // Plus on local.webscheduler.app: offered to a business abroad, and
-            // shown to one that still holds it even if it is no longer on sale.
-            'plusShown'       => $verification->plusMode()
-                && ($verification->plusAvailableFor($listing) || listing_subscription_active($listing)),
-            'plusUsd'         => $verification->plusPriceUsd(),
-            'plusUsdYearly'   => $verification->yearlyOffered(DirectoryVerificationModel::PLAN_INTERNATIONAL) ? $verification->plusYearlyPriceUsd() : null,
-            'hostingAmount'   => $verification->internationalAmount(),
-            'hosting'         => $hostingRow,
-            'hostingPending'  => $this->paymentPending($hostingRow),
-
-            'jobPosts' => (new JobPostModel())->forListing((int) $listing['id']),
-            'reviews'  => (new DirectoryReviewModel())->forOwner((int) $listing['id']),
-        ]);
-    }
-
-    public function update()
-    {
-        $listing = $this->currentListing();
-        if ($listing === null) {
-            return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your profile.');
-        }
-
-        $post = $this->request->getPost();
-        $logo = $this->resolveLogo();
-        $post['logo_path'] = $logo['path'];
-        $post['_has_photo'] = $this->hasPhoto($logo['path'], $listing);
-
-        // Headshots are processed before the save, like the logo, because their
-        // paths are part of the data being saved. Anything written here that the
-        // save then rejects comes back as an orphan below.
-        $headshots = $this->resolveTeamPhotos($post['team'] ?? null);
-        if (array_key_exists('team', $post)) {
-            $post['team'] = $headshots['team'];
-        }
-
-        $result = (new DirectoryListingMutationService())->updateOwn((int) $listing['id'], $post);
-
-        if (! $result['ok']) {
-            // See Listing::store() — the update was rejected, so this file is
-            // orphaned. The listing keeps whatever logo it already had.
-            $this->discardLogo($logo['path']);
-            $this->discardTeamPhotos($headshots['team']);
-
-            return $this->withUploadErrors(
-                redirect()->to(base_url('manage/edit'))
-                    ->with('errors', $this->withFilesNote($result['errors']))
-                    ->with('old', form_typed_fields($post))
-                    ->with('error', $result['message']),
-                array_filter(array_merge([$logo['error']], $headshots['errors']))
-            );
-        }
-
-        $gallery = $this->resolveGalleryPhotos((int) $listing['id']);
-        if ($gallery['photos'] !== []) {
-            (new DirectoryListingPhotoModel())->appendPhotos((int) $listing['id'], $gallery['photos']);
-        }
-        $menuErrors  = $this->applyMenuUpload((int) $listing['id']);
-        $brandErrors = $this->resolveBrands((int) $listing['id']);
-
-        // After the gallery, for the reason Listing::store() gives — photos are
-        // appended outside updateOwn()'s transaction and are worth ten points.
-        // Unconditional: this same request may have changed services, tags,
-        // features or hours, all of which score too.
-        (new ListingQualityService())->recalculate((int) $listing['id']);
-
-        return $this->withUploadErrors(
-            redirect()->to(base_url('manage/edit'))->with('success', $result['message']),
-            array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $headshots['errors']))
-        );
-    }
-
-    /**
-     * The profile as the edit form holds it right now, saved or not: the form's
-     * "Preview changes" button posts here into a new tab.
-     *
-     * Nothing is written, and that is the whole design. updateOwn() is not run
-     * and rolled back, because around its transaction it geocodes (billed),
-     * checks the video over the network and emails the admin. prepareOwnEdit() is its pure half, and the child rows the
-     * page shows (services, features, facets, tags) are built from the form by
-     * the same services that would save them. Uploads are ignored: photos,
-     * logo, team and branches show as saved, and the bar says so.
-     *
-     * Exempt from CSRF (Config\Filters): with token regeneration on, this POST
-     * would rotate the token and the edit tab's Save would then fail. It
-     * changes nothing and reads only the signed in owner's own profile. A
-     * forged cross site POST could still paint someone else's text on our page
-     * as the owner's draft, so a browser that says the request came from
-     * another site (Sec-Fetch-Site, else Origin) is refused.
-     *
-     * Errors never redirect, since that would take over the owner's edit tab:
-     * the page renders anyway with the problems listed in the bar.
-     */
-    public function preview()
-    {
-        $listing = $this->currentListing();
-        if ($listing === null) {
-            return redirect()->to(base_url('manage'))
-                ->with('error', 'Please request a link to manage your profile.');
-        }
-
-        if (! $this->sameSiteRequest()) {
-            return $this->response->setStatusCode(403)->setBody('Open the preview from your edit page.');
-        }
-
-        $post               = $this->request->getPost();
-        $post['logo_path']  = '';
-        $post['_has_photo'] = $this->hasPhoto('', $listing);
-
-        $mutation = new DirectoryListingMutationService();
-        $prepared = $mutation->prepareOwnEdit($listing, $post);
-        $row      = array_merge($listing, $prepared['data']);
-        $category = $row['category_id'] !== null ? (int) $row['category_id'] : null;
-
-        $menu      = new ServiceMenuService();
-        $overrides = [];
-        if (array_key_exists(ServiceMenuService::SERVICES_MARKER, $post)) {
-            $overrides['services'] = $menu->servicesFromInput($post['services'] ?? null);
-        }
-        if (array_key_exists(ServiceMenuService::ATTRIBUTES_MARKER, $post)) {
-            $overrides['attributes'] = $menu->attributeLabels($menu->allowedKeys($category, $post['attributes'] ?? null));
-        }
-        if (array_key_exists(ListingFacetService::FACETS_MARKER, $post)) {
-            $overrides['facets'] = (new ListingFacetService())->displayFromInput($category, $post['facets'] ?? null);
-        }
-        if (array_key_exists('specializations', $post)) {
-            $tags = $mutation->tagNames($post['specializations']);
-            sort($tags, SORT_NATURAL | SORT_FLAG_CASE);
-            $overrides['tags'] = $tags;
-        }
-
-        helper('directory_hours');
-        $profile = (new DirectoryService())->profileFor($row, $overrides);
-        hours_context($profile);
-
-        $this->privatePage();
-
-        return view('directory/show', [
-            'l'       => $profile,
-            'related' => [],
-            'preview' => ['mode' => 'draft', 'errors' => $prepared['errors']],
-        ]);
-    }
-
-    /**
-     * Whether the browser says this request came from our own pages. Browsers
-     * without Sec-Fetch-Site still send Origin on a POST; a client sending
-     * neither is not a browser a forged form could drive.
-     */
-    private function sameSiteRequest(): bool
-    {
-        $fetchSite = $this->request->getHeaderLine('Sec-Fetch-Site');
-        if ($fetchSite !== '') {
-            return in_array($fetchSite, ['same-origin', 'none'], true);
-        }
-        $origin = $this->request->getHeaderLine('Origin');
-        if ($origin === '') {
-            return true;
-        }
-
-        return strcasecmp((string) parse_url($origin, PHP_URL_HOST), $this->request->getUri()->getHost()) === 0;
-    }
-
-    /**
-     * Remove one gallery photo. The owner session grants authority over exactly
-     * one listing, so a photo belonging to any other one must be refused —
-     * the id in the URL is attacker-controlled.
-     */
-    public function deletePhoto(int $photoId)
-    {
-        // An in-place delete from the edit page's script gets JSON, so the page
-        // does not reload and lose unsaved edits — see photoDeleteJson(). A
-        // plain form post (no JavaScript) still gets the redirect.
-        $ajax = $this->request->isAJAX();
-
-        $listing = $this->currentListing();
-        if ($listing === null) {
-            $message = 'Your session has ended. Please request a new link to manage your profile.';
-
-            return $ajax
-                ? $this->photoDeleteJson(false, $message, 401)
-                : redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
-        }
-
-        $model = new DirectoryListingPhotoModel();
-        $photo = $model->find($photoId);
-
-        if (! is_array($photo) || (int) $photo['listing_id'] !== (int) $listing['id']) {
-            return $ajax
-                ? $this->photoDeleteJson(false, 'That photo could not be found.', 404)
-                : redirect()->to(base_url('manage/edit'))->with('error', 'That photo could not be found.');
-        }
-
-        $model->deleteWithFile($photo);
-
-        // The only path that LOWERS a score without touching the listing row,
-        // so it is the one a recompute hung off the edit form would miss.
-        (new ListingQualityService())->recalculate((int) $listing['id']);
-
-        return $ajax
-            ? $this->photoDeleteJson(true, 'Photo removed.', 200, (int) $listing['id'])
-            : redirect()->to(base_url('manage/edit'))->with('success', 'Photo removed.');
-    }
-
-    /**
-     * Remove one brand logo. Same ownership rule as deletePhoto(): the id in the
-     * URL is attacker-controlled, so a brand on any other listing is refused.
-     */
-    public function deleteBrand(int $brandId)
-    {
-        $ajax = $this->request->isAJAX();
-
-        $listing = $this->currentListing();
-        if ($listing === null) {
-            return $ajax
-                ? $this->brandDeleteJson(false, 'Your session has ended. Please request a new link to manage your profile.', 401)
-                : redirect()->to(base_url('manage'))->with('error', 'Please request a link to manage your profile.');
-        }
-
-        if ((new ListingBrandService())->delete($brandId, (int) $listing['id']) === null) {
-            return $ajax
-                ? $this->brandDeleteJson(false, 'That brand could not be found.', 404)
-                : redirect()->to(base_url('manage/edit'))->with('error', 'That brand could not be found.');
-        }
-
-        return $ajax
-            ? $this->brandDeleteJson(true, 'Brand removed.', 200, (int) $listing['id'])
-            : redirect()->to(base_url('manage/edit'))->with('success', 'Brand removed.');
+        return redirect()->to(base_url(self::REDEEM_DESTINATIONS[$to] ?? 'business'));
     }
 
     /**
@@ -465,7 +153,7 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
@@ -473,7 +161,7 @@ class Manage extends BaseController
         if (! $service->isEnabled()) {
             form_outcome('unavailable');
 
-            return redirect()->to(base_url('manage/edit'))
+            return redirect()->to(base_url('business/badge'))
                 ->with('error', 'Verification is not available at the moment.');
         }
 
@@ -485,7 +173,7 @@ class Manage extends BaseController
         if (service('throttler')->check('verify-doc-' . (int) $listing['id'], 5, HOUR) === false) {
             form_outcome('throttled');
 
-            return redirect()->to(base_url('manage/edit'))
+            return redirect()->to(base_url('business/badge'))
                 ->with('error', 'Too many upload attempts. Please wait a while and try again.');
         }
 
@@ -493,7 +181,7 @@ class Manage extends BaseController
 
         if ($resolved['docs'] === []) {
             return $this->withUploadErrors(
-                redirect()->to(base_url('manage/edit'))
+                redirect()->to(base_url('business/badge'))
                     ->with('error', 'Please choose both documents before submitting.'),
                 $resolved['errors']
             );
@@ -502,7 +190,7 @@ class Manage extends BaseController
         $result = $service->submitApplication((int) $listing['id'], $resolved['docs']);
 
         return $this->withUploadErrors(
-            redirect()->to(base_url('manage/edit'))
+            redirect()->to(base_url('business/badge'))
                 ->with($result['ok'] ? 'success' : 'error', $result['message']),
             $resolved['errors']
         );
@@ -527,14 +215,14 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
         $service = new VerificationService();
 
         if (! $service->canTakePayment()) {
-            return redirect()->to(base_url('manage/edit'))
+            return redirect()->to(base_url('business/badge'))
                 ->with('error', 'Card payments are not available at the moment. We will be in touch about payment.');
         }
 
@@ -581,7 +269,7 @@ class Manage extends BaseController
 
         if ($state !== DirectoryVerificationModel::STATE_APPROVED
             && $state !== DirectoryVerificationModel::STATE_LAPSED) {
-            return redirect()->to(base_url('manage/edit'))
+            return redirect()->to(base_url('business/badge'))
                 ->with('error', 'There is nothing to pay for yet.');
         }
 
@@ -688,13 +376,13 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
         $service = new VerificationService();
         if (! $service->canTakePayment()) {
-            return redirect()->to(base_url('manage/edit'))
+            return redirect()->to(base_url('business/badge'))
                 ->with('error', 'Card payments are not available at the moment. We will be in touch about payment.');
         }
 
@@ -704,7 +392,7 @@ class Manage extends BaseController
 
         $result = $service->startYearlySwitch((int) $listing['id'], $plan);
         if (! $result['ok']) {
-            return redirect()->to(base_url('manage/edit'))->with('error', $result['message']);
+            return redirect()->to(base_url('business/badge'))->with('error', $result['message']);
         }
 
         // The switch row as PayFast should see it: the yearly reference,
@@ -732,7 +420,7 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
@@ -745,7 +433,7 @@ class Manage extends BaseController
             }
         }
         if (! $result['ok']) {
-            return redirect()->to(base_url('manage/edit'))->with('info', $result['message']);
+            return redirect()->to(base_url('business/badge'))->with('info', $result['message']);
         }
 
         $row = $result['verification'];
@@ -768,12 +456,12 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return $this->checkoutFailed('Please request a link to manage your profile.', 'manage', 401);
+            return $this->checkoutFailed('Please sign in to your business first.', 'business/sign-in', 401);
         }
 
         $service = new VerificationService();
         if (! $service->canTakePayment() || $service->provider() !== DirectoryVerificationModel::PROVIDER_PAYSTACK) {
-            return $this->checkoutFailed('Card payments are not available at the moment. We will be in touch about payment.', 'manage/edit');
+            return $this->checkoutFailed('Card payments are not available at the moment. We will be in touch about payment.', 'business/badge');
         }
 
         $found  = (new DirectoryVerificationModel())->find((int) $this->request->getPost('verification'));
@@ -785,12 +473,12 @@ class Manage extends BaseController
             ? $row['state'] === DirectoryVerificationModel::STATE_ACTIVE
             : in_array($row['state'], [DirectoryVerificationModel::STATE_APPROVED, DirectoryVerificationModel::STATE_LAPSED], true));
         if (! $payable) {
-            return $this->checkoutFailed('That payment page has expired. Please start again from your dashboard.', 'manage/edit');
+            return $this->checkoutFailed('That payment page has expired. Please start again from your dashboard.', 'business/badge');
         }
 
         $checkout = $service->paystackCheckout($listing, $row, $switch);
         if ($checkout === null) {
-            return $this->checkoutFailed('We could not open the payment window just now. Please try again in a minute.', 'manage/edit', 502);
+            return $this->checkoutFailed('We could not open the payment window just now. Please try again in a minute.', 'business/badge', 502);
         }
 
         return $this->checkoutOpened($checkout, 'manage/verification/paystack');
@@ -831,7 +519,7 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
@@ -851,7 +539,7 @@ class Manage extends BaseController
 
         $result = (new VerificationService())->cancelSubscription((int) $listing['id'], $plan);
 
-        return redirect()->to(base_url('manage/edit'))
+        return redirect()->to(base_url('business/badge'))
             ->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
@@ -872,7 +560,7 @@ class Manage extends BaseController
     {
         $listing = $this->currentListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('error', 'Please request a link to manage your profile.');
         }
 
@@ -888,7 +576,7 @@ class Manage extends BaseController
 
         session()->set(self::PAYMENT_PENDING_KEY, time());
 
-        return redirect()->to(base_url('manage/edit'))->with(
+        return redirect()->to(base_url('business/badge'))->with(
             'info',
             'Thanks, we have your payment and are confirming it. It goes live within '
                 . 'a few minutes; refresh this page to check.'
@@ -910,7 +598,7 @@ class Manage extends BaseController
      *
      * @param array<string,mixed>|null $verification
      */
-    private function paymentPending(?array $verification): bool
+    public static function paymentPending(?array $verification): bool
     {
         $since = (int) (session()->get(self::PAYMENT_PENDING_KEY) ?? 0);
         if ($since <= 0) {
@@ -933,23 +621,22 @@ class Manage extends BaseController
 
     public function signout()
     {
-        session()->remove(self::SESSION_KEY);
-        return redirect()->to(base_url('/'))->with('info', 'Signed out of profile management.');
+        BusinessSession::signOut();
+
+        return redirect()->to(base_url('business/sign-in?signed_out=1'));
     }
 
     /** @return array<string,mixed>|null */
     private function currentListing(): ?array
     {
-        $id = (int) (session()->get(self::SESSION_KEY) ?? 0);
-        if ($id <= 0) {
+        $row = OwnerAccess::listing();
+        if ($row === null) {
             // Signed out (the session ended while the page was open): form
             // health counts it, since whatever was typed is gone.
             form_outcome('expired');
-
-            return null;
         }
-        $row = model('App\Models\DirectoryListingModel')->find($id);
-        return is_array($row) ? $row : null;
+
+        return $row;
     }
 
 }

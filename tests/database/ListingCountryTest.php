@@ -390,7 +390,7 @@ final class ListingCountryTest extends CIUnitTestCase
         $created = $this->svc->submitPublic($this->foreign());
         $id      = (int) $created['id'];
 
-        $result = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit');
+        $result = $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/where');
         $result->assertOK();
         $html = $result->getBody();
 

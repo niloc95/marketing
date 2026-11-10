@@ -1,6 +1,6 @@
 <?php
 /**
- * One use sign in link for /bookings (AccountService::sendSignInLink()).
+ * One use sign in link for /business (AccountService::sendSignInLink()).
  *
  * @var string $name
  * @var string $url

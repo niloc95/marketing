@@ -1,6 +1,6 @@
 /**
  * Free times as buttons: the details panel's Move (calendar/details.js) and
- * every Book form, the calendar's dialog and /bookings/appointments/new.
+ * every Book form, the calendar's dialog and /business/appointments/new.
  * Each button shows when and, with more than one place, where; a click
  * fills the date and time, so nobody guesses a free time.
  */
@@ -25,7 +25,7 @@ export function renderFreeTimes(box, times, empty, onPick) {
 /**
  * The [data-free] block of a Book form (business/_appointment_fields.php):
  * the next free times for the chosen service and person, and the chosen
- * date's. `url` is /bookings/api/appointments/free. Returns refresh(), for
+ * date's. `url` is /business/api/appointments/free. Returns refresh(), for
  * a dialog that fills the form before it opens.
  */
 export function initFreeTimes(form, url) {

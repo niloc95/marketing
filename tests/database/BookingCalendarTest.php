@@ -406,6 +406,8 @@ final class BookingCalendarTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,
             'description'      => '<p>A friendly hair salon in the heart of Rosebank, open six days a week.</p>',

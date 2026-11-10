@@ -155,7 +155,7 @@ final class YearlyBillingTest extends CIUnitTestCase
         $this->setEnv('directory.payfastMerchantKey', '46f0cd694581a');
         $this->setEnv('directory.payfastSandbox', 'true');
         $row     = $this->approvedBadge('30.00', 'vb-page');
-        $session = [\App\Controllers\Manage::SESSION_KEY => (int) $row['listing_id']];
+        $session = \Tests\Support\OwnerSession::for((int) $row['listing_id']);
 
         $monthly = (string) $this->withSession($session)->get('manage/verification/checkout')->getBody();
         $this->assertStringContainsString('cycle=yearly', $monthly);

@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Filters\AdminFilter;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -222,14 +221,20 @@ final class ProfilePreviewTest extends CIUnitTestCase
         $before = $this->listings->find($id);
         service('email')->archive = [];
 
-        $page = $this->withSession([Manage::SESSION_KEY => $id])->post('manage/preview', $this->ownerForm([
+        // Each page previews its own fields, with the rest as stored.
+        $details = $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/details/preview', $this->ownerForm([
             'display_name' => 'Smile Studio Rosebank',
-            'services'     => [['name' => 'Whitening', 'price_label' => 'Pay and claim', 'link_url' => 'example.co.za/whitening']],
+        ]));
+        $details->assertOK();
+        $details->assertSee('Smile Studio Rosebank');
+        $details->assertSee('Check up');
+
+        $page = $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/services/preview', $this->ownerForm([
+            'services' => [['name' => 'Whitening', 'price_label' => 'Pay and claim', 'link_url' => 'example.co.za/whitening']],
         ]));
 
         $page->assertOK();
         $page->assertSee('This is a preview of your unsaved changes');
-        $page->assertSee('Smile Studio Rosebank');
         $page->assertSee('Whitening');
         $page->assertSee('Pay and claim');
         $page->assertSee('href="https://example.co.za/whitening"');
@@ -248,7 +253,7 @@ final class ProfilePreviewTest extends CIUnitTestCase
     public function testManagePreviewOfAPendingProfileListsWhatSaveWouldRefuse(): void
     {
         $id   = $this->listing();
-        $page = $this->withSession([Manage::SESSION_KEY => $id])->post('manage/preview', $this->ownerForm([
+        $page = $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/services/preview', $this->ownerForm([
             'services' => [['name' => 'Consultation', 'link_url' => 'javascript:alert(1)']],
         ]));
 
@@ -262,21 +267,21 @@ final class ProfilePreviewTest extends CIUnitTestCase
     {
         $id = $this->listing(['status' => 'published']);
 
-        $this->post('manage/preview', $this->ownerForm())->assertRedirectTo(base_url('manage'));
+        $this->post('business/profile/details/preview', $this->ownerForm())->assertRedirectTo(base_url('business/sign-in'));
 
-        $this->withSession([Manage::SESSION_KEY => $id])
+        $this->withSession(\Tests\Support\OwnerSession::for($id))
             ->withHeaders(['Sec-Fetch-Site' => 'cross-site'])
-            ->post('manage/preview', $this->ownerForm())
+            ->post('business/profile/details/preview', $this->ownerForm())
             ->assertStatus(403);
     }
 
     public function testTheManageFormOffersPreviewChanges(): void
     {
         $id   = $this->listing(['status' => 'published']);
-        $html = $this->withSession([Manage::SESSION_KEY => $id])->get('manage/edit')->getBody();
+        $html = $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/details')->getBody();
 
-        $this->assertMatchesRegularExpression('#formaction="[^"]*manage/preview" formtarget="_blank" formnovalidate data-preview-submit>Preview changes#', $html);
-        $this->assertStringContainsString('View my live profile', $html);
+        $this->assertMatchesRegularExpression('#formaction="[^"]*business/profile/details/preview" formtarget="_blank" formnovalidate data-preview-submit>Preview#', $html);
+        $this->assertStringContainsString('>View profile</a>', $html);
     }
 
     // ------------------------------------------------------------ admin preview

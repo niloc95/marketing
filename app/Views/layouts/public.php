@@ -267,7 +267,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
             <?php // co.za explains the badge, .app explains Plus. ?>
             <?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus businesses</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?>
             <a href="<?= base_url('pricing') ?>">Pricing</a>
-            <a href="<?= base_url('manage') ?>">Manage your profile</a>
+            <a href="<?= base_url('business') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
             <a href="<?= site_url_for(\Config\Sites::ZA, 'careers') ?>">Careers</a>
             <a href="<?= base_url('contact') ?>">Contact</a>
@@ -384,7 +384,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
                     <?php endif; ?>
                     <li><a href="<?= site_url_for(\Config\Sites::ZA, 'partners') ?>">Partner Program</a></li>
-                    <li><a href="<?= base_url('manage') ?>">Manage your profile</a></li>
+                    <li><a href="<?= base_url('business') ?>">Manage your profile</a></li>
                 </ul>
             </div>
             <div class="site-footer-col">

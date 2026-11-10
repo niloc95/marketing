@@ -24,8 +24,8 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('bookings/services') ?>">Services</a></p>
-<form method="post" action="<?= base_url($service === null ? 'bookings/services/new' : 'bookings/services/' . $service['id']) ?>" class="form-card form-card-narrow">
+<p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/services') ?>">Services</a></p>
+<form method="post" action="<?= base_url($service === null ? 'business/services/new' : 'business/services/' . $service['id']) ?>" class="form-card form-card-narrow">
     <?= csrf_field() ?>
     <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white"><?= $service === null ? 'Add a service' : 'Edit service' ?></h1>
 

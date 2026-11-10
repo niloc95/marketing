@@ -12,7 +12,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
 ?>
 <div class="prose-legal">
     <p>
-        Any business profile can take online bookings: a calendar for the business at <code>/bookings</code>, a booking page on
+        Any business profile can take online bookings: a calendar for the business in the owner area at <code>/business</code> (locked until a Verified or Plus profile turns bookings on), a booking page on
         the profile for customers, reminders, deposits, an API. A port of the separate WebScheduler Bookings app (frozen at
         v2.7.0 in <code>xscheduler_ci4</code>, one install per business) into Local's one install and one database.
         On this server it is <strong><?= $ids === null ? 'unknown' : ($ids['bookings'] ? 'on' : 'off') ?></strong>
@@ -25,6 +25,11 @@ $booking = $tables === null ? [] : array_values(array_filter(
         <li>A business is a profile: <code>listing_id</code> on every <code><?= esc($prefix) ?>booking_*</code> table, and
             <code>BookingScopedModel</code> refuses unscoped reads and writes.</li>
         <li>Own tables for services and providers (profile services are reinserted on every save, so their ids are unstable).</li>
+        <li>One person, one record (T31): each provider is its own profile team card (<code><?= esc($prefix) ?>directory_listing_team</code>,
+            unique <code>team_member_id</code>). Name, position, qualifications, bio and photo are the card, written by
+            <code>TeamMemberService</code> from the profile form or the person page; the provider keeps colour, bookable, hours,
+            services and sign in, plus a copy of name, title and bio. A card has <code>show_on_profile</code>: people added in
+            Bookings start hidden. Bookings needs the Verified badge (co.za) or Plus (.app).</li>
         <li>People: <code><?= esc($prefix) ?>accounts</code> (sign in) plus <code><?= esc($prefix) ?>business_members</code>
             (account x profile x role: admin, provider, staff). Customers have no accounts; they get hash and token links.</li>
         <li>Appointments store UTC and snapshot service, duration, price, person and location. Created only through
@@ -52,7 +57,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
     <ul>
         <li>Nothing booking related changes discovery ranking or the quality score.</li>
         <li>Public profile pages stay sessionless; notifications are enqueued, never sent in a request.</li>
-        <li><strong>Emails:</strong> the customer gets <code>emails/booking-notification.php</code> (from "{business} via WebScheduler Local", Reply-To the business; heading, place with Google Maps and Waze, opening hours, Add to Google Calendar, Terms and Privacy). The team gets <code>emails/booking-team.php</code> (from "WebScheduler Local", Reply-To the customer; customer contact, links into /bookings). Both are built by <code>Notifications\Channels::email()</code> from <code>MessageContext</code>, which keeps a hidden address out of both.</li>
+        <li><strong>Emails:</strong> the customer gets <code>emails/booking-notification.php</code> (from "{business} via WebScheduler Local", Reply-To the business; heading, place with Google Maps and Waze, opening hours, Add to Google Calendar, Terms and Privacy). The team gets <code>emails/booking-team.php</code> (from "WebScheduler Local", Reply-To the customer; customer contact, links into /business). Both are built by <code>Notifications\Channels::email()</code> from <code>MessageContext</code>, which keeps a hidden address out of both.</li>
         <li>Each business on its own site's host; clock and currency from <code>BusinessLocale</code>; no rand on .app.</li>
     </ul>
 

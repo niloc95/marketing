@@ -39,7 +39,7 @@ $date     = static function (?string $d): string {
         Your reply appears under the review straight away. A short, polite reply helps the next customer, whatever the rating.
     </p>
 
-    <form method="post" action="<?= base_url('manage/reviews/switch') ?>" class="mt-4" data-autosubmit>
+    <form method="post" action="<?= base_url('business/reviews/switch') ?>" class="mt-4" data-autosubmit>
         <?= csrf_field() ?>
         <input type="hidden" name="reviews_present" value="1">
         <div class="flex flex-wrap items-center gap-3">
@@ -74,7 +74,7 @@ $date     = static function (?string $d): string {
                     <p class="review-body"><?= esc($rev['body']) ?></p>
 
                     <?php if ($rev['status'] === DirectoryReviewModel::STATUS_PUBLISHED): ?>
-                        <form method="post" action="<?= base_url('manage/reviews/' . (int) $rev['id'] . '/reply') ?>" class="mt-3">
+                        <form method="post" action="<?= base_url('business/reviews/' . (int) $rev['id'] . '/reply') ?>" class="mt-3">
                             <?= csrf_field() ?>
                             <label class="text-sm font-medium" for="reply-<?= (int) $rev['id'] ?>"><?= empty($rev['owner_reply']) ? 'Reply publicly' : 'Your public reply' ?></label>
                             <textarea id="reply-<?= (int) $rev['id'] ?>" name="reply" rows="3" maxlength="<?= $replyMax ?>" class="mt-1 w-full"><?= esc($rev['owner_reply'] ?? '') ?></textarea>
@@ -84,7 +84,7 @@ $date     = static function (?string $d): string {
 
                         <details class="review-report">
                             <summary>This review breaks the terms</summary>
-                            <form method="post" action="<?= base_url('manage/reviews/' . (int) $rev['id'] . '/report') ?>" class="block">
+                            <form method="post" action="<?= base_url('business/reviews/' . (int) $rev['id'] . '/report') ?>" class="block">
                                 <?= csrf_field() ?>
                                 <p class="hint">We take down reviews that are fake, from someone who was never a customer, abusive, or that share private details. A review is not taken down just for being negative.</p>
                                 <label class="sr-only" for="oreport-<?= (int) $rev['id'] ?>">Which term does it break?</label>

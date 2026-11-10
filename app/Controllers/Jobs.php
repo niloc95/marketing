@@ -15,7 +15,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
 
 /**
  * The Jobs board: /jobs and everything under it, plus the listed-owner posting
- * routes under /manage/jobs.
+ * routes under /business/jobs.
  *
  * Top-level rather than under /directory so it never meets the
  * directory/{segment} catch-all. The rules live in JobBoardService; this class
@@ -95,7 +95,7 @@ class Jobs extends BaseController
 
         session()->set('job_page_rendered_at', time());
 
-        $listingId = (int) (session(Manage::SESSION_KEY) ?? 0);
+        $listingId = \App\Services\OwnerAccess::sessionListingId();
         $responder = $listingId > 0 ? (new DirectoryListingModel())->find($listingId) : null;
 
         return view('jobs/show', [
@@ -263,7 +263,7 @@ class Jobs extends BaseController
     {
         $listing = $this->ownerListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))->with('info', 'Sign in to your profile to post a job or request a service.');
+            return redirect()->to(base_url('business/sign-in'))->with('info', 'Sign in to your profile to post a job or request a service.');
         }
 
         // Vacancies are a Verified Business feature (JobBoardService::
@@ -272,21 +272,21 @@ class Jobs extends BaseController
         // not after. submitForListing() enforces it again on save.
         if ($this->request->getGet('kind') === JobPostModel::KIND_JOB
             && ! (new JobBoardService())->canUseJobsFeatures($listing)) {
-            return redirect()->to(base_url('manage/edit') . '#get-verified')
+            return redirect()->to(base_url('business/badge'))
                 ->with('info', 'Posting job vacancies is part of the Verified Business badge. '
                     . 'Apply below. There is nothing to pay until we have checked your documents.');
         }
 
         session()->set('job_form_rendered_at', time());
 
-        return view('jobs/post', $this->formData('listed', base_url('manage/jobs'), null, $listing));
+        return view('jobs/post', $this->formData('listed', base_url('business/jobs'), null, $listing));
     }
 
     public function ownerStore()
     {
         $listing = $this->ownerListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'));
+            return redirect()->to(base_url('business/sign-in'));
         }
 
         $throttler = service('throttler');
@@ -309,17 +309,17 @@ class Jobs extends BaseController
             ? 'Your post is live.'
             : 'Thanks. Your post needs a quick check before it goes live; we will email you.';
 
-        return redirect()->to(base_url('manage/edit') . '#jobs')->with('success', $message);
+        return redirect()->to(base_url('business/jobs'))->with('success', $message);
     }
 
     public function ownerEdit(int $id)
     {
         [$listing, $post] = $this->ownedPost($id);
         if ($post === null) {
-            return redirect()->to(base_url('manage/edit') . '#jobs')->with('error', 'That post can no longer be edited.');
+            return redirect()->to(base_url('business/jobs'))->with('error', 'That post can no longer be edited.');
         }
 
-        return view('jobs/owner_edit', $this->formData('listed-edit', base_url('manage/jobs/' . $id . '/edit'), $post, $listing) + [
+        return view('jobs/owner_edit', $this->formData('listed-edit', base_url('business/jobs/' . $id . '/edit'), $post, $listing) + [
             'post' => $post,
         ]);
     }
@@ -328,12 +328,12 @@ class Jobs extends BaseController
     {
         [$listing, $post] = $this->ownedPost($id);
         if ($post === null) {
-            return redirect()->to(base_url('manage/edit') . '#jobs')->with('error', 'That post can no longer be edited.');
+            return redirect()->to(base_url('business/jobs'))->with('error', 'That post can no longer be edited.');
         }
 
         $result = (new JobBoardService())->updatePost($id, $this->request->getPost(), $listing);
         if (! $result['ok']) {
-            return redirect()->to(base_url('manage/jobs/' . $id . '/edit'))
+            return redirect()->to(base_url('business/jobs/' . $id . '/edit'))
                 ->with('old', form_typed_fields($this->request->getPost()))
                 ->with('errors', $result['errors'])
                 ->with('error', $result['errors']['post'] ?? 'Please correct the highlighted fields.');
@@ -343,7 +343,7 @@ class Jobs extends BaseController
             ? 'Saved. Your changes need a quick check before the post goes live again.'
             : 'Saved.';
 
-        return redirect()->to(base_url('manage/edit') . '#jobs')->with('success', $message);
+        return redirect()->to(base_url('business/jobs'))->with('success', $message);
     }
 
     public function ownerClose(int $id)
@@ -359,7 +359,7 @@ class Jobs extends BaseController
         $post    = (new JobPostModel())->find($id);
         if ($listing !== null && is_array($post) && $post['kind'] === JobPostModel::KIND_JOB
             && ! (new JobBoardService())->canUseJobsFeatures($listing)) {
-            return redirect()->to(base_url('manage/edit') . '#get-verified')
+            return redirect()->to(base_url('business/badge'))
                 ->with('info', 'Renewing a job vacancy is part of the Verified Business badge.');
         }
 
@@ -376,7 +376,7 @@ class Jobs extends BaseController
     {
         $listing = $this->ownerListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'));
+            return redirect()->to(base_url('business/sign-in'));
         }
 
         // The marker is what lets an unticked box mean "off": an unticked
@@ -385,13 +385,13 @@ class Jobs extends BaseController
             $on = $this->request->getPost('job_alerts') === '1';
             (new JobBoardService())->setAlerts((int) $listing['id'], $on);
 
-            return redirect()->to(base_url('manage/edit') . '#jobs')->with(
+            return redirect()->to(base_url('business/jobs'))->with(
                 'success',
                 $on ? 'You will be emailed about requests that match your business.' : 'Request alerts are off.'
             );
         }
 
-        return redirect()->to(base_url('manage/edit') . '#jobs');
+        return redirect()->to(base_url('business/jobs'));
     }
 
     // ------------------------------------------------------ lead-alert opt-out
@@ -569,7 +569,7 @@ class Jobs extends BaseController
 
         $listing = $this->ownerListing();
         if ($listing === null) {
-            return redirect()->to(base_url('manage'))
+            return redirect()->to(base_url('business/sign-in'))
                 ->with('info', 'Only Verified Businesses on ' . config('Directory')->siteName() . ' can reply to requests. Sign in to your profile to get verified.');
         }
 
@@ -684,15 +684,14 @@ class Jobs extends BaseController
     /** @return array<string,mixed>|null */
     private function ownerListing(): ?array
     {
-        $id = (int) (session(Manage::SESSION_KEY) ?? 0);
-        if ($id <= 0) {
+        $row = \App\Services\OwnerAccess::listing();
+        if ($row === null) {
             // Signed out (the session ended while the page was open): form
             // health counts it, since whatever was typed is gone.
             form_outcome('expired');
 
             return null;
         }
-        $row = (new DirectoryListingModel())->find($id);
 
         return is_array($row) ? $row : null;
     }
@@ -720,12 +719,12 @@ class Jobs extends BaseController
         $listing = $this->ownerListing();
         $post    = (new JobPostModel())->find($id);
         if ($listing === null || ! is_array($post) || (int) $post['listing_id'] !== (int) $listing['id']) {
-            return redirect()->to(base_url('manage'));
+            return redirect()->to(base_url('business/sign-in'));
         }
 
         $done = $action(new JobBoardService());
 
-        return redirect()->to(base_url('manage/edit') . '#jobs')->with($done ? 'success' : 'error', $done ? $ok : $fail);
+        return redirect()->to(base_url('business/jobs'))->with($done ? 'success' : 'error', $done ? $ok : $fail);
     }
 
     /**
@@ -765,7 +764,7 @@ class Jobs extends BaseController
     {
         $kind = (string) $this->request->getPost('kind');
 
-        return base_url('manage/jobs/new') . (preg_match('/^[a-z_]{1,20}$/', $kind) === 1 ? '?kind=' . $kind : '');
+        return base_url('business/jobs/new') . (preg_match('/^[a-z_]{1,20}$/', $kind) === 1 ? '?kind=' . $kind : '');
     }
 
     /** The posted fields to refill the form with, without tokens and traps. */

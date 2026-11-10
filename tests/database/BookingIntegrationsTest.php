@@ -404,7 +404,7 @@ final class BookingIntegrationsTest extends CIUnitTestCase
         $this->assertSame('Bearer ya29', $options['headers']['Authorization']);
         $this->assertSame('Cut with Alice Johnson', $options['json']['summary']);
         $this->assertSame(['2030-01-09T08:00:00Z', 'Africa/Johannesburg'], [$options['json']['start']['dateTime'], $options['json']['start']['timeZone']]);
-        $this->assertStringContainsString('bookings/calendar?open=', $options['json']['description']);
+        $this->assertStringContainsString('business/calendar?open=', $options['json']['description']);
         $this->assertSame('evt1', A::forBusiness($this->listingId)->find($id)['google_event_id']);
 
         $this->appointments()->reschedule($id, '2030-01-09', '15:00');
@@ -641,18 +641,18 @@ final class BookingIntegrationsTest extends CIUnitTestCase
 
     public function testTheSettingsTabsShowAndSave(): void
     {
-        $r = $this->signedIn()->get('bookings/settings/connections');
+        $r = $this->signedIn()->get('business/settings/connections');
         $r->assertStatus(200);
         $r->assertSee('Online meetings by Zoom');
-        $r = $this->signedIn()->get('bookings/settings/api');
+        $r = $this->signedIn()->get('business/settings/api');
         $r->assertStatus(200);
         $r->assertSee('Make a key');
 
-        $this->signedIn()->post('bookings/settings/api/keys', ['name' => 'Till', 'scopes' => ['appointments.read'], 'expires' => '90', csrf_token() => csrf_hash()])->assertRedirect();
+        $this->signedIn()->post('business/settings/api/keys', ['name' => 'Till', 'scopes' => ['appointments.read'], 'expires' => '90', csrf_token() => csrf_hash()])->assertRedirect();
         $this->assertSame(['Till'], array_column((new ApiKeys($this->listingId))->list(), 'name'));
-        $this->signedIn()->get('bookings/settings/api')->assertSee('Till');
+        $this->signedIn()->get('business/settings/api')->assertSee('Till');
 
-        $this->signedIn()->post('bookings/settings/connections/webhook', ['url' => 'https://hooks.example.com/in', 'events' => ['appointment.created'], 'active' => '1', csrf_token() => csrf_hash()])->assertRedirect();
+        $this->signedIn()->post('business/settings/connections/webhook', ['url' => 'https://hooks.example.com/in', 'events' => ['appointment.created'], 'active' => '1', csrf_token() => csrf_hash()])->assertRedirect();
         $this->assertTrue((new Webhooks($this->listingId))->settings()['active']);
     }
 
@@ -803,6 +803,8 @@ final class BookingIntegrationsTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'is_verified'      => 1,
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,

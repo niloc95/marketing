@@ -20,7 +20,7 @@
 use App\Services\Bookings\AvailabilityOverview;
 
 $params = ['service_id' => $service, 'provider_id' => $who, 'view' => $view, 'date' => $date] + ($public ? [] : ['as' => 'business']);
-$link   = static fn (array $over): string => base_url('bookings/availability') . '?' . http_build_query($over + $params);
+$link   = static fn (array $over): string => base_url('business/availability') . '?' . http_build_query($over + $params);
 $fmt    = static fn (string $d, string $f): string => (new DateTimeImmutable($d))->format($f);
 $shift  = static fn (int $by): string => (new DateTimeImmutable($date))->modify(match ($view) {
     'week' => ($by * 7) . ' days', 'month' => $by . ' months', 'year' => ($by * 12) . ' months', default => $by . ' days',
@@ -47,9 +47,9 @@ $byDate = array_column($days, null, 'date');
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The free times for all your services or one, everyone or one person, on a day, a week, a month or a year. Times are in <?= esc($timezone) ?>.</p>
 
 <?php if ($services === []): ?>
-    <div class="panel mt-5"><p class="text-sm"><a class="underline" href="<?= base_url('bookings/services/new') ?>">Add a service</a> first.</p></div>
+    <div class="panel mt-5"><p class="text-sm"><a class="underline" href="<?= base_url('business/services/new') ?>">Add a service</a> first.</p></div>
 <?php else: ?>
-    <form method="get" action="<?= base_url('bookings/availability') ?>" class="panel mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+    <form method="get" action="<?= base_url('business/availability') ?>" class="panel mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
         <div>
             <label for="av-service" class="mb-1 block text-sm font-semibold">Service</label>
             <select id="av-service" name="service_id" class="w-full">

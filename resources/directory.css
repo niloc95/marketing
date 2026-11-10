@@ -4342,8 +4342,8 @@
   .cal-filter { @apply flex flex-col gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300; }
   .cal-filter select,
   .cal-filter input { @apply h-9 rounded-control border-slate-200 bg-white py-0 pl-3 text-sm font-normal dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100; }
-  .cal-filter select { @apply pr-8; }
-  .cal-find-results { @apply mt-2 max-h-72 divide-y divide-slate-100 overflow-auto rounded-xl border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900; }
+  .cal-filter select { @apply max-w-[16rem] pr-8; }
+  .cal-find-results { @apply absolute right-0 top-full z-30 mt-1 w-[min(28rem,calc(100vw-2rem))] max-h-72 divide-y shadow-lg divide-slate-100 overflow-auto rounded-xl border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900; }
   .cal-find-results button { @apply block w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800; }
   .cal-body { @apply min-h-[20rem] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900; }
   .cal-body[aria-busy="true"] { @apply opacity-60; }
@@ -4354,7 +4354,7 @@
   .cal-times { @apply sticky left-0 z-10 w-14 shrink-0 border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900; }
   .cal-time { @apply absolute right-1 -translate-y-1/2 text-[11px] text-slate-400; }
   .cal-head { @apply sticky top-0 z-20 flex border-b border-slate-200 bg-white text-center text-xs font-semibold dark:border-slate-700 dark:bg-slate-900; }
-  .cal-head-cell { @apply min-w-[8rem] flex-1 truncate border-l border-slate-100 px-1 py-2 dark:border-slate-800; }
+  .cal-head-cell { @apply flex min-w-[8rem] flex-1 items-center justify-center truncate border-l border-slate-100 px-1 dark:border-slate-800; }
   .cal-head-cell.is-today { @apply text-primary-600 dark:text-primary-300; }
   .cal-col { @apply relative min-w-[8rem] flex-1 border-l border-slate-100 dark:border-slate-800; }
   .cal-col.is-closed { @apply bg-slate-50 dark:bg-slate-950; }
@@ -4405,6 +4405,19 @@
   /* A class that sets display must never beat the hidden attribute. */
   .cal [hidden] { display: none !important; }
   .cal-toast { @apply fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-white dark:text-slate-900; }
+
+  /* Desktop: the calendar page takes the full width and the window's height
+     below the top bar, and the grid fits into it (time-grid.js scales the
+     day to the space), so a working day or month needs no scrolling
+     (owner, 10 Nov 2026). Smaller screens keep the page scroll. */
+  @media (min-width: 1024px) {
+    .shell-content:has(> .cal) { @apply flex h-[calc(100dvh-3.5rem)] max-w-none flex-col py-4; }
+    .shell-content > .cal { @apply flex min-h-0 flex-1 flex-col; }
+    .cal .cal-body { @apply min-h-[16rem] flex-1 overflow-auto; }
+    .cal .cal-scroll { @apply h-full max-h-none; }
+    .cal .cal-month { @apply h-full; grid-template-rows: auto; grid-auto-rows: minmax(0, 1fr); }
+    .cal .cal-day { @apply min-h-0 overflow-hidden; }
+  }
 
   /* The /business dashboard and analytics (business/home.php, _dash_today.php,
      analytics.php). Tiles, lists and charts are the admin dashboard's
@@ -4473,6 +4486,7 @@
   .dark .shell-link.is-active { @apply bg-primary-600 text-white; }
   .shell-link-icon { @apply shrink-0; }
   .shell-count { @apply ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold leading-none text-white; }
+  .shell-lock { @apply ml-auto inline-flex items-center text-slate-400 dark:text-slate-500; }
   .shell-foot { @apply shrink-0 space-y-0.5 border-t border-slate-200 px-3 py-3; }
   .dark .shell-foot { @apply border-slate-800; }
 

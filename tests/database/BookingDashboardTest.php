@@ -300,36 +300,36 @@ final class BookingDashboardTest extends CIUnitTestCase
 
     public function testDashboardAndAnalyticsPages(): void
     {
-        $r = $this->signedIn()->get('bookings');
+        $r = $this->signedIn()->get('business');
         $r->assertOK();
         $r->assertSee('Free times today');
         $this->assertStringContainsString('data-refresh-url', $r->getBody());
 
-        $r = $this->signedIn()->get('bookings/api/dashboard/today');
+        $r = $this->signedIn()->get('business/api/dashboard/today');
         $r->assertOK();
         $r->assertSee('No appointments today.');
         $this->assertStringNotContainsString('data-shell-nav', $r->getBody(), 'Only the partial, not the layout');
 
         foreach (['overview', 'services', 'team', 'customers'] as $tab) {
-            $r = $this->signedIn()->get('bookings/analytics?tab=' . $tab . '&period=90d');
+            $r = $this->signedIn()->get('business/analytics?tab=' . $tab . '&period=90d');
             $r->assertOK();
             $r->assertSee('Analytics');
         }
-        $this->assertStringContainsString('bookings/analytics', $this->signedIn()->get('bookings')->getBody(), 'In the menu');
+        $this->assertStringContainsString('business/analytics', $this->signedIn()->get('business')->getBody(), 'In the menu');
     }
 
     public function testReceptionHasNoAnalytics(): void
     {
         $desk = $this->reception();
-        $this->signedIn((int) $desk['account_id'])->get('bookings/analytics')->assertStatus(403);
-        $r = $this->signedIn((int) $desk['account_id'])->get('bookings');
+        $this->signedIn((int) $desk['account_id'])->get('business/analytics')->assertStatus(403);
+        $r = $this->signedIn((int) $desk['account_id'])->get('business');
         $r->assertOK();
         $r->assertDontSee('Booked this month');
     }
 
     public function testQuickBookPrefillsTheForm(): void
     {
-        $r = $this->signedIn()->get('bookings/appointments/new?provider_id=' . $this->james . '&service_id=' . $this->serviceId . '&date=2030-01-07&time=11:00');
+        $r = $this->signedIn()->get('business/appointments/new?provider_id=' . $this->james . '&service_id=' . $this->serviceId . '&date=2030-01-07&time=11:00');
         $r->assertOK();
         $this->assertMatchesRegularExpression('/<option value="' . $this->james . '" selected>/', $r->getBody());
         $this->assertMatchesRegularExpression('/<option value="' . $this->serviceId . '" selected>/', $r->getBody());
@@ -436,6 +436,8 @@ final class BookingDashboardTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,
             'description'      => '<p>A friendly hair salon in the heart of Rosebank, open six days a week.</p>',

@@ -1156,7 +1156,7 @@ if (! function_exists('form_old_value')) {
      *
      * Arrays join on ', ' rather than being dropped, so the visitor gets their
      * input back in the shape the input expects — and it matches how
-     * manage_edit.php and admin/edit.php already present stored tags.
+     * business/profile.php and admin/edit.php already present stored tags.
      */
     function form_old_value(mixed $value): string
     {

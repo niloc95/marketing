@@ -3,7 +3,7 @@
 namespace App\Services\Bookings;
 
 /**
- * Who is signed in to /bookings and which business they are working in, for
+ * Who is signed in to /business and which business they are working in, for
  * the current request. Filled by App\Filters\BusinessAuth after it has checked
  * the session against the database, or for /api/v1 by App\Filters\BookingApi
  * from the API key (which then acts as the member it belongs to); read by

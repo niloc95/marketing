@@ -68,7 +68,8 @@ final class BookingProfileTest extends CIUnitTestCase
 
         $team       = new TeamService($this->clinicId);
         $this->anna = (int) $team->providers()[0]['id'];
-        $this->ben  = (int) $team->saveProvider(null, ['name' => 'Ben Dlamini', 'title' => 'Physiotherapist', 'bookable' => 1], null)['id'];
+        // Shown on the profile: people added in Bookings start hidden (T31).
+        $this->ben  = (int) $team->saveProvider(null, ['name' => 'Ben Dlamini', 'title' => 'Physiotherapist', 'bookable' => 1, 'show_present' => 1, 'show_on_profile' => 1], null)['id'];
         // Anna works reception's hours with a lunch break; Ben only 10:00 to 15:00, and asks for 07:00 on Monday.
         $team->saveHours($this->anna, array_fill_keys(range(1, 5), ['active' => 1, 'start' => '08:00', 'end' => '17:00', 'break_start' => '12:00', 'break_end' => '13:00']), null);
         $team->saveHours($this->ben, [1 => ['active' => 1, 'start' => '07:00', 'end' => '15:00']] + array_fill_keys(range(2, 5), ['active' => 1, 'start' => '10:00', 'end' => '15:00']), null);
@@ -180,15 +181,26 @@ final class BookingProfileTest extends CIUnitTestCase
 
     public function testAPractitionerWithATeamCardJoinsTheirCard(): void
     {
-        $cardId = (int) (new DirectoryListingTeamModel())->insert([
-            'listing_id' => $this->clinicId, 'name' => 'Ben Dlamini', 'slug' => 'ben-dlamini', 'role' => 'Physiotherapist', 'bio' => 'Sports injuries.', 'sort_order' => 0,
-        ], true);
-        \App\Models\Bookings\BookingProviderModel::forBusiness($this->clinicId)->update($this->ben, ['team_member_id' => $cardId]);
+        // Ben is one card (T31): what the profile form writes reaches Bookings.
+        $cardId = (int) (new TeamService($this->clinicId))->provider($this->ben)['team_member_id'];
+        (new \App\Services\TeamMemberService())->saveOne($this->clinicId, $cardId, ['name' => 'Ben Dlamini', 'role' => 'Physiotherapist', 'bio' => 'Sports injuries.']);
 
         $html = $this->get('directory/soul-clinic')->getBody();
         $this->assertSame(1, substr_count($html, '>Ben Dlamini</p>'), 'one card, not a card and a copy');
         $this->assertSame(1, substr_count($html, 'data-practitioner="' . $this->ben . '"'));
         $this->assertStringContainsString('Sports injuries.', $html);
+    }
+
+    public function testAPersonHiddenFromTheProfileIsStillBookable(): void
+    {
+        (new TeamService($this->clinicId))->saveProvider($this->ben, ['name' => 'Ben Dlamini', 'show_present' => 1], null);
+
+        $html = $this->get('directory/soul-clinic')->getBody();
+        $this->assertStringNotContainsString('>Ben Dlamini</p>', $html, 'not on the team panel');
+        $this->assertStringNotContainsString('"name":"Ben Dlamini"', $html, 'nor in the schema');
+        $page = $this->get('directory/soul-clinic/book?provider=' . $this->ben);
+        $page->assertSee('Sports massage');
+        $this->assertStringContainsString('provider=' . $this->ben, $page->getBody(), 'still booked by name');
     }
 
     public function testPeopleWhoCannotBeBookedAreNotShown(): void
@@ -351,44 +363,6 @@ final class BookingProfileTest extends CIUnitTestCase
         $this->assertSame(['Typed by hand'], array_column((new ServiceMenuService())->servicesFor($this->clinicId), 'name'), 'editable again once bookings are off');
     }
 
-    // Opening bookings from /manage
-
-    public function testOpenYourBookingsOpensThisBusinessNotTheLastOne(): void
-    {
-        // One person admin of both businesses, last working in the other one.
-        $account = (int) (new \App\Services\Bookings\AccountService())->findByEmail('other-spa@example.test')['id'];
-        (new \App\Services\Bookings\BusinessMemberService())->ensureAdmin($this->clinicId, $account);
-
-        $res = $this->withSession([
-            \App\Controllers\Manage::SESSION_KEY        => $this->clinicId,
-            \App\Services\Bookings\BusinessSession::ACCOUNT => $account,
-            \App\Services\Bookings\BusinessSession::LISTING => $this->otherId,
-            \App\Services\Bookings\BusinessSession::SEEN    => time(),
-        ])->get('manage/bookings/open');
-
-        $res->assertRedirectTo(base_url('bookings'));
-        $this->assertSame($this->clinicId, (int) session(\App\Services\Bookings\BusinessSession::LISTING));
-        $this->assertSame($account, (int) session(\App\Services\Bookings\BusinessSession::ACCOUNT), 'still the same person');
-    }
-
-    public function testOpenYourBookingsSignsTheOwnerInWhenNobodyIs(): void
-    {
-        $owner = (int) (new \App\Services\Bookings\AccountService())->findByEmail('soul-clinic@example.test')['id'];
-
-        $this->withSession([\App\Controllers\Manage::SESSION_KEY => $this->clinicId])->get('manage/bookings/open')->assertRedirect();
-        $this->assertSame([$owner, $this->clinicId], [
-            (int) session(\App\Services\Bookings\BusinessSession::ACCOUNT),
-            (int) session(\App\Services\Bookings\BusinessSession::LISTING),
-        ]);
-    }
-
-    public function testOpenYourBookingsNeedsTheManageSession(): void
-    {
-        $this->get('manage/bookings/open')->assertRedirectTo(base_url('manage'));
-    }
-
-    // Schema
-
     public function testOffersCarryAPriceAndTheBookLink(): void
     {
         $html = $this->get('directory/soul-clinic')->getBody();
@@ -420,6 +394,8 @@ final class BookingProfileTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'is_verified'      => 1,
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,

@@ -13,7 +13,7 @@ use App\Services\Bookings\Payments\GatewayConfig;
 use Config\Services;
 
 /**
- * Settings, Payments tab (/bookings/settings/payments): the business's own
+ * Settings, Payments tab (/business/settings/payments): the business's own
  * PayFast or Paystack account that deposits are paid into (decision D6),
  * and how long an unpaid deposit holds a time. Admins only (settings.manage).
  *
@@ -23,7 +23,7 @@ use Config\Services;
  */
 class PaymentSettings extends BaseController
 {
-    private const BACK = 'bookings/settings/payments';
+    private const BACK = 'business/settings/payments';
 
     /** @return array<string,mixed> what the tab shows */
     public static function viewData(int $listingId): array

@@ -65,7 +65,7 @@ class DirectoryListingModel extends Model
     /**
      * Fields an OWNER may write through the self-service edit form.
      *
-     * The security boundary for /manage/edit: status, is_featured, is_verified,
+     * The security boundary for the owner pages (/business/profile): status, is_featured, is_verified,
      * email and slug are absent on purpose, so a crafted POST cannot publish or
      * feature a listing, hijack another owner's address, or change a live URL.
      * Admins go through DirectoryAdminService instead, which has no such limit.

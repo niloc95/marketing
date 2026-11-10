@@ -721,10 +721,10 @@ if (! function_exists('schema_local_business')) {
                 'worksFor'      => ['@id' => $canonical . '#business'],
             ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
         }
-        // Bookable people without a team card (T28) are on the page too.
-        $cardIds = array_map('intval', array_column($l['team'] ?? [], 'id'));
+        // Bookable people without a team card (T28) are on the page too;
+        // those whose card is hidden from the profile (T31) are not.
         foreach ($l['_practitioners'] ?? [] as $p) {
-            if ($p['team_member_id'] !== null && in_array($p['team_member_id'], $cardIds, true)) {
+            if ($p['team_member_id'] !== null) {
                 continue;
             }
             $employees[] = array_filter([

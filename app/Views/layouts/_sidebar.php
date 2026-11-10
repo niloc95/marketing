@@ -1,7 +1,7 @@
 <?php
 /**
  * The app shell's sidebar (layouts/_shell.php), shared by admin and
- * /bookings. Each layout builds its own items; this only draws them.
+ * /business. Each layout builds its own items; this only draws them.
  *
  * - Phone: a drawer behind the Menu button. Tablet: a rail of icons that
  *   opens to the full width. Desktop: always open. All CSS (.shell-sidebar),
@@ -15,7 +15,7 @@
  * @var string $home    where the brand links
  * @var string $context small line under the brand (a business name), or ''
  * @var string $contextHref where that line links, or ''
- * @var list<array{heading: ?string, items: list<array{label: string, path: string, icon: string, active: bool, count?: int, countLabel?: string}>}> $groups
+ * @var list<array{heading: ?string, items: list<array{label: string, path: string, icon: string, active: bool, count?: int, countLabel?: string, locked?: bool}>}> $groups
  * @var string $footer  rendered HTML for the foot (account, sign out)
  */
 $brandUrl = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0);
@@ -53,6 +53,9 @@ $brandUrl = static fn (string $path): string => base_url($path) . '?v=' . (@file
                         <a class="shell-link<?= $item['active'] ? ' is-active' : '' ?>" href="<?= base_url($item['path']) ?>" title="<?= esc($item['label'], 'attr') ?>"<?= $item['active'] ? ' aria-current="page"' : '' ?>>
                             <?= lucide($item['icon'], 'shell-link-icon h-5 w-5') ?>
                             <span class="shell-text"><?= esc($item['label']) ?></span>
+                            <?php if (! empty($item['locked'])): ?>
+                                <span class="shell-lock shell-text" title="Comes with an upgrade"><?= lucide('lock', 'h-3.5 w-3.5') ?><span class="sr-only"> (locked)</span></span>
+                            <?php endif ?>
                             <?php if ($count > 0): ?>
                                 <span class="shell-count" title="<?= $count ?> <?= esc($countLabel, 'attr') ?>"><?= $count > 99 ? '99+' : $count ?><span class="sr-only"> <?= esc($countLabel) ?></span></span>
                             <?php endif ?>

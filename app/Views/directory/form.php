@@ -170,7 +170,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                     them, usually within two working days, and only ask for payment once
                                     they pass. Nothing to attach yet? Your profile still publishes without
                                     them, and you can send both later from
-                                    <a href="<?= base_url('manage') ?>">manage your profile</a>.
+                                    <a href="<?= base_url('business') ?>">manage your profile</a>.
                                 </p>
                                 <?= view('directory/_verification_fields', ['amount' => $verificationAmount]) ?>
                                 <?php // A link to the free route carrying the same data-plan-pick the
@@ -194,6 +194,8 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <?php // view() (not $this->include) — the partial needs $v/$err, which are
                       // locals here and so are not in the view's shared data. ?>
                 <?= view('directory/_form_fields', [
+                    // The whole form: never one business area page (see business/profile.php).
+                    'section' => null,
                     'v'           => $v,
                     'err'         => $err,
                     'categories'  => $categories,
@@ -270,7 +272,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
             </form>
 
             <p class="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-                Already added? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Manage your profile</a>.
+                Already added? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">Manage your profile</a>.
             </p>
         </div>
     </div>

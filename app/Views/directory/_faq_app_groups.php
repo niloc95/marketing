@@ -42,7 +42,7 @@ return [
             ],
             [
                 'q' => 'Can I add a logo and photos?',
-                'a' => 'Yes, one logo and up to ' . (int) $gallery . ' photographs of your work or premises. You can add or replace them at any time from <a href="' . base_url('manage') . '">manage your profile</a>.',
+                'a' => 'Yes, one logo and up to ' . (int) $gallery . ' photographs of your work or premises. You can add or replace them at any time from <a href="' . base_url('business') . '">manage your profile</a>.',
             ],
             [
                 'q' => 'What appears publicly on my profile?',
@@ -56,7 +56,7 @@ return [
             [
                 'id' => 'plus',
                 'q'  => 'What is Plus?',
-                'a'  => 'An optional upgrade for your profile. With Plus you can add up to ' . (int) $locations . ' more branches or offices, each with its own address, map pin, phone and hours; show up to ' . (int) $team . ' team members with a photo and what they do; post job vacancies and reply to requests for your kind of service on the <a href="' . base_url('jobs') . '">Jobs board</a>; and your profile carries a Plus label. Add it from <a href="' . base_url('manage') . '">your dashboard</a> once your profile is live.',
+                'a'  => 'An optional upgrade for your profile. With Plus you can add up to ' . (int) $locations . ' more branches or offices, each with its own address, map pin, phone and hours; show up to ' . (int) $team . ' team members with a photo and what they do; post job vacancies and reply to requests for your kind of service on the <a href="' . base_url('jobs') . '">Jobs board</a>; and your profile carries a Plus label. Add it from <a href="' . base_url('business') . '">your dashboard</a> once your profile is live.',
             ],
             [
                 'q' => 'What does Plus cost, and in which currency?',
@@ -72,7 +72,7 @@ return [
             ],
             [
                 'q' => 'Can I cancel Plus?',
-                'a' => 'Any time, with one button on <a href="' . base_url('manage') . '">your dashboard</a>. Plus stays on for the month you have already paid for, and then its features switch off. Your profile stays published, and nothing you added is deleted: your branches and team come back if you start Plus again.',
+                'a' => 'Any time, with one button on <a href="' . base_url('business') . '">your dashboard</a>. Plus stays on for the month you have already paid for, and then its features switch off. Your profile stays published, and nothing you added is deleted: your branches and team come back if you start Plus again.',
             ],
         ],
     ],
@@ -96,7 +96,7 @@ return [
             ],
             [
                 'q' => 'What emails will you send me?',
-                'a' => 'The ones your profile needs (verification, edit links and, if you buy Plus, billing notices) plus a monthly report on your own profile: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('manage') . '">Manage your profile</a>, or use the unsubscribe link in any report. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
+                'a' => 'The ones your profile needs (verification, edit links and, if you buy Plus, billing notices) plus a monthly report on your own profile: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('business') . '">Manage your profile</a>, or use the unsubscribe link in any report. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
             ],
         ],
     ],

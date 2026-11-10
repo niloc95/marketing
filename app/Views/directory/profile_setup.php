@@ -63,12 +63,12 @@ $faqs = [
         // local.webscheduler.app sells Plus, not the badge (VerificationService::plusMode()).
         'q' => $usd !== null ? 'Does this include Plus?' : 'Does this include the Verified Business badge?',
         'a' => $usd !== null
-            ? 'No. Plus is a separate monthly upgrade that adds your other locations, your team and the Jobs board. You can add it from <a href="' . base_url('manage') . '">your dashboard</a> at any time.'
+            ? 'No. Plus is a separate monthly upgrade that adds your other locations, your team and the Jobs board. You can add it from <a href="' . base_url('business') . '">your dashboard</a> at any time.'
             : 'No. The badge needs your business registration document and your ID, which only you can send. You can <a href="' . base_url('verified') . '">apply for it</a> at any time.',
     ],
     [
         'q' => 'Who owns the profile afterwards?',
-        'a' => 'You do. Your profile stays free, and you can change anything on it yourself at any time from <a href="' . base_url('manage') . '">manage your profile</a>.',
+        'a' => 'You do. Your profile stays free, and you can change anything on it yourself at any time from <a href="' . base_url('business') . '">manage your profile</a>.',
     ],
     [
         'q' => 'Is my payment safe?',

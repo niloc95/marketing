@@ -130,9 +130,11 @@ class DayView
     }
 
     /**
-     * The people shown: everyone in scope (or the one filtered), in team
-     * order, then anyone else who has an appointment here (archived people).
-     * A placeholder column when there is nobody.
+     * The people shown: everyone bookable in scope (or the one filtered), in
+     * team order, then anyone else who has an appointment here (archived or
+     * not bookable people). Reception, who is in bookings to sign in and
+     * appear on the profile (T31), gets no empty column. A placeholder
+     * column when there is nobody.
      *
      * @param array<string,mixed>       $filters
      * @param list<array<string,mixed>> $events
@@ -145,7 +147,7 @@ class DayView
         $out  = [];
         foreach ((new TeamService($this->listingId))->providers() as $p) {
             $id = (int) $p['id'];
-            if (($this->scope === null || in_array($id, $this->scope, true)) && ($only === 0 || $only === $id)) {
+            if (($this->scope === null || in_array($id, $this->scope, true)) && ($only === 0 ? (bool) $p['bookable'] : $only === $id)) {
                 $out[$id] = ['id' => $id, 'name' => (string) $p['name'], 'color' => \App\Services\Bookings\CatalogueService::hex($p['color'] ?? null)];
             }
         }

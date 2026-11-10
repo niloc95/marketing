@@ -160,7 +160,7 @@ $benefits = [
         <?php // Owners who already have a free profile are the closest to upgrading,
               // so their route is a row of its own, not small print. /manage emails a
               // sign in link that lands on manage/edit#get-verified. ?>
-        <a class="pricing-existing" href="<?= base_url('manage') ?>" data-track="pricing_cta" data-track-label="upgrade_existing">
+        <a class="pricing-existing" href="<?= base_url('business/badge') ?>" data-track="pricing_cta" data-track-label="upgrade_existing">
             <span class="pricing-existing-icon" aria-hidden="true"><?= lucide('circle-user', 'h-5 w-5') ?></span>
             <span class="pricing-existing-text">
                 <strong>Already have a free profile?</strong>

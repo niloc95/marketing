@@ -24,7 +24,7 @@
             </p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
                 If your profile is live, you can edit it any time from
-                <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">Manage your profile</a>.
+                <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">Manage your profile</a>.
                 Need a new preview? <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('contact') ?>">Contact us</a> and we'll send one.
             </p>
         </div>

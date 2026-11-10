@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingTeamModel;
@@ -11,7 +10,7 @@ use Tests\Support\ValidListingInput;
 use Tests\Support\FreshDatabase;
 
 /**
- * A signed in owner who hand crafts the manage/edit POST.
+ * A signed in owner who hand crafts a business/profile/{section} POST.
  *
  * Anyone can create a profile and redeem its manage link, so the edit form is
  * reachable by an attacker with a real session. What this pins, end to end
@@ -109,7 +108,7 @@ final class OwnerEditTamperTest extends CIUnitTestCase
         $payload  = "1' OR '1'='1'; DROP TABLE xs_directory_listings; --";
         $count    = $this->listings->countAllResults();
 
-        $this->edit($mine, ['address_line_2' => $payload]);
+        $this->edit($mine, ['address_line_2' => $payload], 'where');
 
         $this->assertSame($payload, $this->listings->find($mine)['address_line_2']);
         $this->assertSame($count, $this->listings->countAllResults());
@@ -132,10 +131,8 @@ final class OwnerEditTamperTest extends CIUnitTestCase
         $memberBefore = $team->find($member);
         $branchBefore = $locations->find($branch);
 
-        $this->edit($mine, [
-            'team'      => [['id' => (string) $member, 'name' => 'Hijacked Name']],
-            'locations' => [['id' => (string) $branch, 'name' => 'Hijacked Branch', 'city' => 'Cape Town']],
-        ]);
+        $this->edit($mine, ['team' => [['id' => (string) $member, 'name' => 'Hijacked Name']]], 'team');
+        $this->edit($mine, ['locations' => [['id' => (string) $branch, 'name' => 'Hijacked Branch', 'city' => 'Cape Town']]], 'branches');
 
         $this->assertSame($memberBefore, $team->find($member));
         $this->assertSame($branchBefore, $locations->find($branch));
@@ -149,8 +146,8 @@ final class OwnerEditTamperTest extends CIUnitTestCase
         $theirs = $this->listing();
         $before = $this->listings->find($theirs);
 
-        $this->post('manage/edit', $this->form(['display_name' => 'Hijacked', 'id' => (string) $theirs]))
-            ->assertRedirectTo(base_url('manage'));
+        $this->post('business/profile/details', $this->form(['display_name' => 'Hijacked', 'id' => (string) $theirs]))
+            ->assertRedirectTo(base_url('business/sign-in'));
 
         $this->assertSame($before, $this->listings->find($theirs));
     }
@@ -176,11 +173,11 @@ final class OwnerEditTamperTest extends CIUnitTestCase
     }
 
     /** @param array<string,mixed> $fields */
-    private function edit(int $listingId, array $fields): void
+    private function edit(int $listingId, array $fields, string $section = 'details'): void
     {
-        $this->withSession([Manage::SESSION_KEY => $listingId])
-            ->post('manage/edit', $this->form($fields))
-            ->assertRedirectTo(base_url('manage/edit'));
+        $this->withSession(\Tests\Support\OwnerSession::for($listingId))
+            ->post('business/profile/' . $section, $this->form($fields))
+            ->assertRedirectTo(base_url('business/profile/' . $section));
     }
 
     /**

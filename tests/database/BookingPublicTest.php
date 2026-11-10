@@ -114,9 +114,20 @@ final class BookingPublicTest extends CIUnitTestCase
         $moved->assertRedirect();
         preg_match('#/book/([0-9a-f]{64})$#', $moved->getRedirectUrl(), $n);
         $this->assertNotSame($token, $n[1], 'A new link after a change');
+        $this->assertSame(
+            'Done. Your booking has a new time. We have your request. Salon Lumi will confirm it, and we will email you when they do.',
+            $_SESSION['success'] ?? null,
+            'still pending: told the email follows'
+        );
         $this->assertSame($later['start'], BookingAppointmentModel::forBusiness($this->listingId)->find($row['id'])['start_at']);
         $this->get('book/' . $token)->assertStatus(404);
         $this->get('book/' . $n[1])->assertOK();
+
+        // Confirmed: the alert follows the status.
+        BookingAppointmentModel::forBusiness($this->listingId)->update($row['id'], ['status' => 'confirmed']);
+        $again = $this->firstSlot($this->sarah, $later['start']);
+        $this->post('book/' . $n[1] . '/reschedule', [csrf_token() => csrf_hash(), 'start' => $again['start']])->assertRedirect();
+        $this->assertSame('Done. Your booking has a new time. Your booking is confirmed.', $_SESSION['success'] ?? null);
     }
 
     public function testRescheduleAndCancelAreRefusedInsideThePolicyWindow(): void
@@ -425,6 +436,8 @@ final class BookingPublicTest extends CIUnitTestCase
             'email'            => $slug . '@example.test',
             'slug'             => $slug,
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'is_verified'      => 1,
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,

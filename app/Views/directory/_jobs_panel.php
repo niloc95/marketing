@@ -47,15 +47,15 @@ $canPostJobs = $svc->canUseJobsFeatures($listing);
         <?php endif; ?>
         <div class="mt-3 flex flex-wrap gap-2">
             <?php if ($canPostJobs): ?>
-                <a class="btn btn-accent btn-xs" href="<?= base_url('manage/jobs/new?kind=job') ?>"><?= lucide('briefcase', 'h-3.5 w-3.5 shrink-0') ?>Post a job</a>
+                <a class="btn btn-accent btn-xs" href="<?= base_url('business/jobs/new?kind=job') ?>"><?= lucide('briefcase', 'h-3.5 w-3.5 shrink-0') ?>Post a job</a>
             <?php endif; ?>
-            <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/jobs/new?kind=service') ?>"><?= lucide('wrench', 'h-3.5 w-3.5 shrink-0') ?>Request a service</a>
+            <a class="btn btn-ghost btn-xs" href="<?= base_url('business/jobs/new?kind=service') ?>"><?= lucide('wrench', 'h-3.5 w-3.5 shrink-0') ?>Request a service</a>
             <a class="btn btn-ghost btn-xs" href="<?= base_url('jobs?kind=service') ?>">See requests you could answer</a>
         </div>
         <?php // Its own small form, not a field of the profile form above:
               // job_alerts is deliberately outside OWNER_EDITABLE. The marker
               // lets an unticked box mean "off". ?>
-        <form method="post" action="<?= base_url('manage/jobs/alerts') ?>" class="mt-4 flex flex-wrap items-center gap-2">
+        <form method="post" action="<?= base_url('business/jobs/alerts') ?>" class="mt-4 flex flex-wrap items-center gap-2">
             <?= csrf_field() ?>
             <input type="hidden" name="alerts_present" value="1">
             <label class="text-sm text-slate-600 dark:text-slate-300">
@@ -96,16 +96,16 @@ $canPostJobs = $svc->canUseJobsFeatures($listing);
                         <td>
                             <div class="actions">
                                 <?php if (in_array($p['status'], [JobPostModel::STATUS_PENDING, JobPostModel::STATUS_PUBLISHED], true)): ?>
-                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('manage/jobs/' . (int) $p['id'] . '/edit') ?>">Edit</a>
+                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('business/jobs/' . (int) $p['id'] . '/edit') ?>">Edit</a>
                                 <?php endif; ?>
                                 <?php if ($svc->canRenew($p)): ?>
-                                    <form method="post" action="<?= base_url('manage/jobs/' . (int) $p['id'] . '/renew') ?>">
+                                    <form method="post" action="<?= base_url('business/jobs/' . (int) $p['id'] . '/renew') ?>">
                                         <?= csrf_field() ?>
                                         <button class="btn btn-accent btn-xs">Renew</button>
                                     </form>
                                 <?php endif; ?>
                                 <?php if (in_array($p['status'], [JobPostModel::STATUS_PENDING, JobPostModel::STATUS_PUBLISHED], true)): ?>
-                                    <form method="post" action="<?= base_url('manage/jobs/' . (int) $p['id'] . '/close') ?>" data-confirm="Close this post now?">
+                                    <form method="post" action="<?= base_url('business/jobs/' . (int) $p['id'] . '/close') ?>" data-confirm="Close this post now?">
                                         <?= csrf_field() ?>
                                         <button class="btn btn-ghost btn-xs">Close</button>
                                     </form>

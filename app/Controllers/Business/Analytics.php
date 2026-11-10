@@ -7,7 +7,7 @@ use App\Services\Bookings\AnalyticsService;
 use App\Services\Bookings\TeamService;
 
 /**
- * /bookings/analytics (routes.md): one page, tabs by ?tab=, the period by
+ * /business/analytics (routes.md): one page, tabs by ?tab=, the period by
  * ?period= and one person by ?provider=. Admins see everyone, a team member
  * only themselves (BookingAuthorization::providerScope()).
  */

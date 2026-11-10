@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Controllers\Reviews;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -192,12 +191,12 @@ final class ReviewFlowTest extends CIUnitTestCase
         $other   = $this->listing();
         $id      = $this->publishedReview($listing);
 
-        $this->withSession([Manage::SESSION_KEY => (int) $other['id']])
-            ->post('manage/reviews/' . $id . '/reply', ['reply' => 'Not my review'] + $this->csrf());
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $other['id']))
+            ->post('business/reviews/' . $id . '/reply', ['reply' => 'Not my review'] + $this->csrf());
         $this->assertNull($this->reviews->find($id)['owner_reply']);
 
-        $this->withSession([Manage::SESSION_KEY => (int) $listing['id']])
-            ->post('manage/reviews/' . $id . '/reply', ['reply' => 'Thank you, Thandi! See you next time.'] + $this->csrf());
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))
+            ->post('business/reviews/' . $id . '/reply', ['reply' => 'Thank you, Thandi! See you next time.'] + $this->csrf());
         $this->assertSame('Thank you, Thandi! See you next time.', $this->reviews->find($id)['owner_reply']);
         $this->svc->recalculate((int) $listing['id']);
         $this->assertStringContainsString('See you next time', $this->profileHtml($listing));
@@ -258,17 +257,17 @@ final class ReviewFlowTest extends CIUnitTestCase
     public function testTheOwnerSwitchesNewReviewsOffAndBackOn(): void
     {
         $listing = $this->listing();
-        $session = [Manage::SESSION_KEY => (int) $listing['id']];
+        $session = \Tests\Support\OwnerSession::for((int) $listing['id']);
 
-        $this->withSession($session)->post('manage/reviews/switch', ['reviews_present' => '1'] + $this->csrf())
+        $this->withSession($session)->post('business/reviews/switch', ['reviews_present' => '1'] + $this->csrf())
             ->assertRedirect();
         $this->assertSame(0, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
 
-        $this->withSession($session)->post('manage/reviews/switch', ['reviews_present' => '1', 'reviews_enabled' => '1'] + $this->csrf());
+        $this->withSession($session)->post('business/reviews/switch', ['reviews_present' => '1', 'reviews_enabled' => '1'] + $this->csrf());
         $this->assertSame(1, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
 
         // No marker: nothing changes.
-        $this->withSession($session)->post('manage/reviews/switch', $this->csrf());
+        $this->withSession($session)->post('business/reviews/switch', $this->csrf());
         $this->assertSame(1, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
     }
 
@@ -277,8 +276,8 @@ final class ReviewFlowTest extends CIUnitTestCase
         $listing = $this->listing();
         $ajax    = ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'];
 
-        $result = $this->withSession([Manage::SESSION_KEY => (int) $listing['id']])->withHeaders($ajax)
-            ->post('manage/reviews/switch', ['reviews_present' => '1'] + $this->csrf());
+        $result = $this->withSession(\Tests\Support\OwnerSession::for((int) $listing['id']))->withHeaders($ajax)
+            ->post('business/reviews/switch', ['reviews_present' => '1'] + $this->csrf());
         $result->assertStatus(200);
         $data = json_decode($result->getJSON(), true);
         $this->assertTrue($data['ok']);
@@ -287,7 +286,7 @@ final class ReviewFlowTest extends CIUnitTestCase
         $this->assertSame(0, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
 
         $this->withSession([])->withHeaders($ajax)
-            ->post('manage/reviews/switch', ['reviews_present' => '1', 'reviews_enabled' => '1'] + $this->csrf())
+            ->post('business/reviews/switch', ['reviews_present' => '1', 'reviews_enabled' => '1'] + $this->csrf())
             ->assertStatus(401);
         $this->assertSame(0, (int) (new DirectoryListingModel())->find((int) $listing['id'])['reviews_enabled']);
     }

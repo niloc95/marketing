@@ -3,7 +3,7 @@
  * The team's email about an online booking (Notifications\Channels::email()
  * with $team): a notice for staff, not the customer's email. The customer's
  * name, phone and email, the appointment with its place and maps links,
- * their answers, links into /bookings, and who made the booking when.
+ * their answers, links into /business, and who made the booking when.
  * From WebScheduler Local; Reply goes to the customer.
  *
  * @var string                         $business

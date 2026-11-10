@@ -58,7 +58,7 @@ class Handbook extends BaseConfig
         'xs_directory_listing_brands' => ['purpose' => '"Brands we carry" names and logos', 'owner' => 'ListingBrandService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_menu_files' => ['purpose' => 'Uploaded menu PDFs for food profiles', 'owner' => 'ListingMenuService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_facets' => ['purpose' => 'Category specific facts (facilities, languages, sport)', 'owner' => 'ListingFacetService', 'product' => 'local', 'personal' => null],
-        'xs_directory_listing_team' => ['purpose' => 'Team members shown on a profile (Verified or Plus)', 'owner' => 'TeamMemberService', 'product' => 'local', 'personal' => 'Names, roles, qualifications, registration numbers, as published'],
+        'xs_directory_listing_team' => ['purpose' => 'The people of a business (Verified or Plus): shown on the profile unless show_on_profile is off, and each booking provider\'s own record (T31)', 'owner' => 'TeamMemberService', 'product' => 'local', 'personal' => 'Names, roles, qualifications, registration numbers, as published'],
         'xs_directory_listing_services' => ['purpose' => '"Services and prices" rows (deleted and reinserted on every save)', 'owner' => 'ServiceMenuService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_attributes' => ['purpose' => '"Features and amenities" keys per profile', 'owner' => 'ServiceMenuService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_points' => ['purpose' => 'Spatial points for near me and the map (profile and branches)', 'owner' => 'DirectoryListingMutationService (via ListingGeocoder)', 'product' => 'local', 'personal' => null],
@@ -116,8 +116,8 @@ class Handbook extends BaseConfig
         'xs_migrations' => ['purpose' => 'Migrations applied, with batch numbers', 'owner' => 'CodeIgniter (php spark migrate)', 'product' => 'local', 'personal' => null],
 
         // ---------------------------------------------------------- bookings
-        'xs_accounts' => ['purpose' => 'Sign in accounts for /business (owners, team, reception)', 'owner' => 'AccountService', 'product' => 'bookings', 'personal' => 'Name, email, password hash'],
-        'xs_business_members' => ['purpose' => 'Account x profile x role (admin, provider, staff)', 'owner' => 'BusinessMemberService, TeamService', 'product' => 'bookings', 'personal' => null],
+        'xs_accounts' => ['purpose' => 'Sign in accounts for /business (every profile owner, team, reception)', 'owner' => 'AccountService, OwnerAccess', 'product' => 'bookings', 'personal' => 'Name, email, password hash'],
+        'xs_business_members' => ['purpose' => 'Account x profile x role (admin, provider, staff); every owner is an admin of their profiles', 'owner' => 'BusinessMemberService, TeamService', 'product' => 'bookings', 'personal' => null],
         'xs_booking_settings' => ['purpose' => 'Booking settings per business (key, value)', 'owner' => 'BookingSettings', 'product' => 'bookings', 'personal' => null],
         'xs_booking_audit_logs' => ['purpose' => 'Who changed what in /business', 'owner' => 'BookingAudit', 'product' => 'bookings', 'personal' => 'Account ids and IP addresses'],
         'xs_booking_services' => ['purpose' => 'Bookable services (own ids, stable)', 'owner' => 'CatalogueService', 'product' => 'bookings', 'personal' => null],

@@ -42,7 +42,7 @@
  * @var int $floor Config\Directory::$recentMinQuality — the homepage cut-off
  * @var int $target Config\Directory::$qualityTarget — the score owners are told
  *                  to aim for; at or above both floors, so the line is true
- * @var string $audience 'owner' (default, /manage/edit), 'admin' (/admin/edit,
+ * @var string $audience 'owner' (default, /business), 'admin' (/admin/edit,
  *                  speaks about the profile rather than to it) or 'signup'
  *                  (/add-profile, live; nothing is published yet, so the
  *                  "Recently added" note is left out). Wording only: every
@@ -110,7 +110,9 @@ $tone = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amb
             <?php foreach ($next as $step): ?>
                 <?php $remaining = (int) $step['points'] - (int) $step['earned']; ?>
                 <li class="strength-step">
-                    <a class="strength-step-link" href="#<?= esc($step['anchor'], 'attr') ?>">
+                    <?php // In the business area the form is split into pages: the
+                          // step opens the page that holds the field. ?>
+                    <a class="strength-step-link" href="<?= ! empty($anchorBase) ? esc(base_url($anchorBase . '/' . config('ProfileSections')->sectionForAnchor((string) $step['anchor'])), 'attr') : '' ?>#<?= esc($step['anchor'], 'attr') ?>">
                         <?= esc($step['label']) ?>
                     </a>
                     <span class="strength-step-points">+<?= $remaining ?></span>

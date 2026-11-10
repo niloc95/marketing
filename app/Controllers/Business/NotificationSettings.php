@@ -12,14 +12,14 @@ use App\Services\Bookings\Notifications\NotificationTemplates;
 use Config\BookingNotifications as Catalog;
 
 /**
- * Settings, Messages tab (/bookings/settings/notifications): which messages
+ * Settings, Messages tab (/business/settings/notifications): which messages
  * go out, reminders, the sender, the wording, and the WhatsApp
  * accounts. Admins only (settings.manage). Ported from Bookings' Settings
  * notifications tab (NotificationSettingsService).
  */
 class NotificationSettings extends BaseController
 {
-    private const BACK = 'bookings/settings/notifications';
+    private const BACK = 'business/settings/notifications';
 
     /** @return array<string,mixed> what the tab shows */
     public static function viewData(int $listingId, string $edit): array

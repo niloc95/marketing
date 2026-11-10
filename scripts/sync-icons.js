@@ -81,6 +81,8 @@ const ICONS = [
   'calendar',
   // Online bookings: the /business navigation (layouts/business.php).
   'layout-dashboard', 'settings', 'history', 'list', 'users', 'calendar-off', 'plus',
+  // The owner area's profile pages and locked items (10 Nov 2026).
+  'lock', 'image', 'chart-line',
   // The dashboard and analytics (business/home.php, layouts/business.php).
   'chart-column', 'wallet', 'circle-alert', 'info',
   // The calendar and customers (business/calendar.php, business/customer*.php).

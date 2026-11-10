@@ -4,7 +4,7 @@
  *
  * Rendered by three consumers, so they can never drift apart:
  *   - directory/form.php        public signup
- *   - directory/manage_edit.php owner self-service edit  ($lockEmail = true)
+ *   - business/profile.php      owner pages, one section each ($lockEmail = true)
  *   - admin/edit.php            admin edit/create        (+ its own privileged panel)
  *
  * These are the *business* fields only. Privileged fields (status, is_featured,
@@ -29,6 +29,7 @@
  *                            switch says Verified ([data-admin-plan-extras], directory.js)
  * @var array    $vServices   service rows (old input wins), rendered by _service_fields.php
  * @var bool     $servicesFromBookings the booking catalogue writes the services (T28): read only
+ * @var array|null $bookingPeople card id => provider while bookings are on (T31)
  * @var array    $vAttributes ticked feature keys (old input wins), rendered by _attribute_fields.php
  * @var array    $vFacets     stored facet rows keyed by facet (old input wins), rendered by _facet_fields.php
  * @var array    $photos      stored gallery photos (edit pages only), shown above the upload
@@ -40,6 +41,10 @@
  * @var bool     $privateDetailsRequired  insist on a title and a contact person (not admin intake)
  * @var array    $countries  Config\Countries::grouped()
  * @var bool     $lockCountry  show the country as read-only text (owner edit)
+ * @var string|null $section  one page of the business area (Config\ProfileSections:
+ *                            details, where, services, photos, team, branches), or
+ *                            null for the whole form (signup, admin). A page draws
+ *                            only its own fields, without the numbered steps.
  *
  * Layout: the essentials a profile cannot do without come first and are always
  * open — category, name, contact, a short description and where you are. Then
@@ -70,7 +75,7 @@ $menuFiles   = $menuFiles   ?? [];
 $deleteBase  = $deleteBase  ?? '';
 $brands          = $brands          ?? [];
 $brandDeleteBase = $brandDeleteBase ?? '';
-// The owner's own public address, passed by manage_edit.php only, so the
+// The owner's own public address, passed by business/profile.php only, so the
 // "no website?" hint can name it. Signup has no slug yet and admin does not
 // need telling, so both fall back to the generic wording.
 $profileUrl  = $profileUrl  ?? '';
@@ -101,6 +106,10 @@ $sectionsRequired = $privateDetailsRequired;
 $countries   = $countries   ?? [];
 $lockCountry = $lockCountry ?? false;
 helper('directory_hours');
+
+// One page of the business area, or the whole form.
+$section = $section ?? null;
+$in      = static fn (string ...$keys): bool => $section === null || in_array($section, $keys, true);
 ?>
 <?php if (($photos !== [] && $deleteBase !== '') || ($brands !== [] && $brandDeleteBase !== '')): ?>
     <?php // Pressing Enter in a text field submits the form through its *first*
@@ -116,9 +125,12 @@ helper('directory_hours');
       // (_form_steps_nav.php) follows the same five ids, form-step-1..5.
       // The number is in the heading, so the colour is never the only cue. ?>
 <?php $formSteps = listing_form_steps(); ?>
-<?php $stepOpen = static fn (int $i): string => '<section class="form-step ' . $formSteps[$i]['class'] . '" id="form-step-' . $i . '" data-form-step="' . $i . '">'; ?>
-<?php $stepNum = static fn (int $i): string => '<span class="form-step-num" aria-hidden="true">' . $i . '</span><span class="sr-only">Step ' . $i . ' of ' . count($formSteps) . ': </span>'; ?>
+<?php // On a business area page the steps are not drawn: the page is one of them. ?>
+<?php $stepOpen = static fn (int $i): string => $section !== null ? '' : '<section class="form-step ' . $formSteps[$i]['class'] . '" id="form-step-' . $i . '" data-form-step="' . $i . '">'; ?>
+<?php $stepClose = static fn (): string => $section !== null ? '' : '</section>'; ?>
+<?php $stepNum = static fn (int $i): string => $section !== null ? '' : '<span class="form-step-num" aria-hidden="true">' . $i . '</span><span class="sr-only">Step ' . $i . ' of ' . count($formSteps) . ': </span>'; ?>
 <?= $stepOpen(1) ?>
+<?php if ($in('details')): ?>
 <div class="form-section-head form-section-head-first">
     <h3><?= $stepNum(1) ?>What you do and who you are</h3>
     <p class="hint">Tell us who you are, then choose the kind of profile and the category customers would look for.</p>
@@ -219,12 +231,13 @@ helper('directory_hours');
         <?php if ($err('category_id')): ?><div class="err"><?= esc($err('category_id')) ?></div><?php endif; ?>
     </div>
 </div>
+<?php endif; ?>
 
 <?php // Directly under the profile type on purpose: "Business / practice" is the
       // answer that decides whether this listing has people at all, so "what
       // kind of business are you" reading straight into "who works here" is one
       // thought rather than two. ?>
-<?php if ($showExtras): ?>
+<?php if ($showExtras && $in('team')): ?>
     <?= $extrasWrap ?>
     <?= view('directory/_team_fields', [
         'rows'       => $vTeam,
@@ -232,11 +245,14 @@ helper('directory_hours');
         'v'          => $v,
         'categories' => $categories,
         'adminEdit'  => ! empty($adminEdit),
+        // card id => provider while bookings are on (T31): a "Takes bookings" tick per person.
+        'bookingPeople' => $bookingPeople ?? null,
     ], ['saveData' => false]) ?>
     </div>
 <?php endif; ?>
-</section>
+<?= $stepClose() ?>
 
+<?php if ($in('details')): ?>
 <?= $stepOpen(2) ?>
 <div class="form-section-head form-section-head-first">
     <h3><?= $stepNum(2) ?>How customers reach you</h3>
@@ -298,7 +314,7 @@ helper('directory_hours');
     <?php if ($err('website')): ?><div class="err"><?= esc($err('website')) ?></div><?php endif; ?>
 </div>
 
-</section>
+<?= $stepClose() ?>
 
 <?= $stepOpen(3) ?>
 <div class="form-section-head form-section-head-first">
@@ -382,9 +398,11 @@ helper('directory_hours');
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
 
-</section>
+<?= $stepClose() ?>
+<?php endif; ?>
 
 <?= $stepOpen(4) ?>
+<?php if ($in('where')): ?>
 <div class="form-section-head form-section-head-first">
     <h3><?= $stepNum(4) ?>Where you are and hours</h3>
     <p class="hint">Your address puts you on the map and in local discovery, and your hours tell customers when to come. You choose below whether the address shows on your profile.</p>
@@ -589,12 +607,13 @@ $hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool 
 ]) ?>
     </div>
 </details>
+<?php endif; ?>
 
 <?php // Other locations close section 4, after everything about the primary
       // one (name, address, pin, how customers meet you, hours): asking for a second
       // location before the first has been given reads backwards. Each branch
       // repeats the same address and hours fields, so it follows them. ?>
-<?php if ($showExtras): ?>
+<?php if ($showExtras && $in('branches')): ?>
     <?= $extrasWrap ?>
     <?= view('directory/_location_fields', [
         'rows'      => $vLocations,
@@ -604,13 +623,14 @@ $hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool 
     </div>
 <?php endif; ?>
 
-</section>
+<?= $stepClose() ?>
 
 <?php // data-standout: directory.js opens every section in here once the
       // contact person is filled in, so nobody finishes the form without
       // seeing what is below. It closes after the consent boxes. ?>
 <div data-standout>
 <?= $stepOpen(5) ?>
+<?php if ($section === null): ?>
 <div class="form-section-head form-section-head-first" id="standout-head">
     <h3><?= $stepNum(5) ?>Make your profile stand out</h3>
     <?php if ($sectionsRequired): ?>
@@ -619,7 +639,9 @@ $hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool 
         <p class="hint">All optional, and you can come back to any of it later. Each section you fill in adds a panel to your public profile.</p>
     <?php endif; ?>
 </div>
+<?php endif; ?>
 
+<?php if ($in('services')): ?>
 <div id="field-services">
 <?= view('directory/_service_fields', ['rows' => $vServices, 'err' => $err, 'required' => $sectionsRequired, 'fromBookings' => $servicesFromBookings ?? false]) ?>
 </div>
@@ -643,7 +665,9 @@ $hoursStarted   = $vByAppointment || array_filter($vHours, static fn ($d): bool 
     'facetValues' => $vFacets,
 ]) ?>
 </div>
+<?php endif; ?>
 
+<?php if ($in('details')): ?>
 <?php
 $socialNetworks = listing_social_networks();
 $socialFilled   = count(array_filter(array_keys($socialNetworks), static fn (string $f): bool => $v($f) !== ''));
@@ -668,7 +692,9 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
         </div>
     </div>
 </details>
+<?php endif; ?>
 
+<?php if ($in('photos')): ?>
 <?php // Open by default: photos do more for a profile than anything else on
       // this form, so this is the one optional section that is not folded away. ?>
 <details class="disclosure" id="field-photos" open>
@@ -760,7 +786,9 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 ], ['saveData' => false]) ?>
     </div>
 </details>
+<?php endif; ?>
 
+<?php if ($in('details')): ?>
 <details class="disclosure" <?= $v('credentials') !== '' || $v('specializations') !== '' || $err('credentials') !== '' || $err('specializations') !== '' ? 'open' : '' ?>>
     <summary class="disclosure-summary">
         <span>More details</span>
@@ -780,8 +808,9 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 </div>
     </div>
 </details>
+<?php endif; ?>
 
-</section>
+<?= $stepClose() ?>
 
 <?php if ($showConsent): ?>
     <?php // New tab for both links, so reading the terms never costs a half-filled form.
@@ -806,7 +835,7 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
           // marketing_present is the sticky-render marker only: on a rejected
           // save, a box the person unticked must come back unticked rather
           // than falling back to the default. Same mechanism as
-          // manage_edit.php, where the fallback is the stored value instead.
+          // business/profile.php, where the fallback is the stored value instead.
           $vMarketing = $v('marketing_present') === '1' ? $v('marketing_opt_in') === '1' : true; ?>
     <div class="field">
         <input type="hidden" name="marketing_present" value="1">

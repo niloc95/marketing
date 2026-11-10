@@ -35,6 +35,10 @@ use App\Services\TeamMemberService;
  * @var callable $v          the listing form's value reader, for the category
  * @var array    $categories rows with id, slug and group_name
  * @var bool     $adminEdit  admin edit: each person gets the "checked" tick
+ * @var array|null $bookingPeople card id => provider, while bookings are on
+ *
+ * The person's own fields are _person_fields.php, shared with the person page
+ * in Bookings (T31).
  */
 $regulator = null;
 foreach ($categories ?? [] as $c) {
@@ -49,16 +53,23 @@ $regLabels = array_map(
     config('Registrations')->regulators
 );
 
-$max   = TeamMemberService::MAX_MEMBERS;
-$rows  = array_values($rows);
-$used  = count($rows);
-$slots = max(0, $max - $used);
+// card id => ['id' => provider id, 'bookable' => bool] while bookings are
+// on (TeamService::profileFormPeople()), else null and no bookings tick.
+$bookingPeople = $bookingPeople ?? null;
+
+// Only people shown on the profile count towards the limit (T31): someone
+// who is only in Bookings takes no place on the team panel.
+$max    = TeamMemberService::MAX_MEMBERS;
+$rows   = array_values($rows);
+$used   = count($rows);
+$hidden = count(array_filter($rows, static fn ($m): bool => is_array($m) && (string) ($m['show_on_profile'] ?? '1') === '0'));
+$slots  = max(0, $max - ($used - $hidden));
 
 // Any error anywhere in the section forces it open, or the owner is told to
 // correct a field they cannot see.
 $hasError = false;
 foreach ($rows as $i => $_) {
-    foreach (['name', 'role', 'credentials', 'specializations', 'bio', 'reg_number', 'orcid', 'researchgate_url'] as $f) {
+    foreach (['name', 'role', 'credentials', 'specializations', 'bio', 'reg_number', 'orcid', 'researchgate_url', 'show_on_profile'] as $f) {
         if ($err('team.' . $i . '.' . $f) !== '') {
             $hasError = true;
         }
@@ -71,21 +82,18 @@ $hasError = $hasError || $err('team') !== '';
  * placeholder directory.js rewrites when it clones. Keeping the markup in one
  * closure is what stops the live rows and the cloned ones drifting apart.
  */
-$row = function ($i, array $m = [], bool $spare = false) use ($err, $regulator, $adminEdit): string {
-    $val = static fn (string $k): string => (string) ($m[$k] ?? '');
-    $e   = static fn (string $k): string => is_string($i) ? '' : $err('team.' . $i . '.' . $k);
+$row = function ($i, array $m = [], bool $spare = false) use ($err, $regulator, $adminEdit, $bookingPeople): string {
+    $e    = static fn (string $k): string => is_string($i) ? '' : $err('team.' . $i . '.' . $k);
+    $card = (int) ($m['id'] ?? 0);
+    $in   = $card > 0 ? ($bookingPeople[$card] ?? null) : null;
 
     ob_start(); ?>
     <div class="repeat-row" data-repeat-item<?= $spare ? ' data-repeat-spare' : '' ?>>
-        <?php if (! empty($m['id'])): ?>
-            <input type="hidden" name="team[<?= $i ?>][id]" value="<?= (int) $m['id'] ?>">
+        <?php if ($card > 0): ?>
+            <input type="hidden" name="team[<?= $i ?>][id]" value="<?= $card ?>">
         <?php endif; ?>
 
         <div class="repeat-row-head">
-            <?php if (! empty($m['photo_path'])): ?>
-                <img src="<?= esc(base_url($m['photo_path'])) ?>" alt=""
-                     width="48" height="48" class="team-avatar team-avatar-sm" loading="lazy">
-            <?php endif; ?>
             <label class="repeat-remove">
                 <input type="checkbox" name="team[<?= $i ?>][_remove]" value="1"
                        data-repeat-remove aria-label="Remove this person">
@@ -93,91 +101,26 @@ $row = function ($i, array $m = [], bool $spare = false) use ($err, $regulator, 
             </label>
         </div>
 
-        <div class="form-row">
-            <div class="field">
-                <label>Name</label>
-                <input type="text" name="team[<?= $i ?>][name]" maxlength="150"
-                       value="<?= esc($val('name'), 'attr') ?>" placeholder="e.g. Jane Smith">
-                <?php if ($e('name')): ?><div class="err"><?= esc($e('name')) ?></div><?php endif; ?>
-            </div>
-            <div class="field">
-                <label>Position</label>
-                <input type="text" name="team[<?= $i ?>][role]" maxlength="120"
-                       value="<?= esc($val('role'), 'attr') ?>" placeholder="e.g. Founding Partner">
-                <?php if ($e('role')): ?><div class="err"><?= esc($e('role')) ?></div><?php endif; ?>
-            </div>
-        </div>
-        <div class="field">
-            <label>Qualifications</label>
-            <input type="text" name="team[<?= $i ?>][credentials]" maxlength="255"
-                   value="<?= esc($val('credentials'), 'attr') ?>"
-                   placeholder="e.g. BA LLB (UCT), admitted attorney 1996">
-            <?php if ($e('credentials')): ?><div class="err"><?= esc($e('credentials')) ?></div><?php endif; ?>
-        </div>
-        <?php // Hidden AND disabled with no regulator, so nothing of it posts. ?>
-        <?php $off = $regulator === null; ?>
-        <fieldset class="field team-registration" data-registration <?= $off ? 'hidden disabled' : '' ?>>
-            <legend>Professional registration <span class="text-slate-400">(optional)</span></legend>
-            <input type="hidden" name="team[<?= $i ?>][<?= ProfessionalRegistration::MARKER ?>]" value="1">
-            <div class="form-row">
-                <div class="field">
-                    <label><span data-reg-short><?= esc($regulator['short'] ?? '') ?></span> registration number</label>
-                    <input type="text" name="team[<?= $i ?>][reg_number]" maxlength="40" autocomplete="off"
-                           value="<?= esc($val('reg_number'), 'attr') ?>" placeholder="<?= esc($regulator['example'] ?? '', 'attr') ?>">
-                    <?php if ($e('reg_number')): ?><div class="err"><?= esc($e('reg_number')) ?></div><?php endif; ?>
-                </div>
-            </div>
-            <?php // Disabled with it, so a hidden ORCID box cannot fail a lawyer's save. ?>
-            <fieldset class="form-row" data-reg-research <?= ($regulator['research'] ?? true) ? '' : 'hidden disabled' ?>>
-                <div class="field">
-                    <label>ORCID iD</label>
-                    <input type="text" name="team[<?= $i ?>][orcid]" maxlength="60" autocomplete="off"
-                           value="<?= esc($val('orcid'), 'attr') ?>" placeholder="0000-0002-1825-0097">
-                    <?php if ($e('orcid')): ?><div class="err"><?= esc($e('orcid')) ?></div><?php endif; ?>
-                </div>
-                <div class="field">
-                    <label>ResearchGate profile</label>
-                    <input type="text" name="team[<?= $i ?>][researchgate_url]" maxlength="255" inputmode="url"
-                           value="<?= esc($val('researchgate_url'), 'attr') ?>" placeholder="researchgate.net/profile/Your-Name">
-                    <?php if ($e('researchgate_url')): ?><div class="err"><?= esc($e('researchgate_url')) ?></div><?php endif; ?>
-                </div>
-            </fieldset>
-            <div class="hint">
-                As it appears on the <span data-reg-name><?= esc($regulator['name'] ?? '') ?></span> register.
-                Shown on this person&rsquo;s card as self declared, beside a link to the register so customers can check it.
-            </div>
-            <?php // Admin only: lets the card say "checked" instead of "self
-                  // declared". Offered beside a stored number; the owner
-                  // changing the number clears it. ?>
-            <?php if ($adminEdit && $val('reg_number') !== '' && ! empty($m['id'])): ?>
-                <input type="hidden" name="team[<?= $i ?>][reg_checked_present]" value="1">
-                <label class="mt-2 block font-medium"><input type="checkbox" name="team[<?= $i ?>][reg_checked]" value="1" <?= ! empty($m['reg_checked_at']) ? 'checked' : '' ?>> Number <?= esc($val('reg_number')) ?> checked against the register</label>
-                <?php if (! empty($m['reg_checked_at'])): ?><div class="hint">Checked <?= esc(date('j F Y', strtotime((string) $m['reg_checked_at']))) ?>.</div><?php endif; ?>
+        <?= view('directory/_person_fields', [
+            'name'      => static fn (string $f): string => 'team[' . $i . '][' . $f . ']',
+            'photoName' => 'team_photo[' . $i . ']',
+            'm'         => $m,
+            'e'         => $e,
+            'regulator' => $regulator,
+            'adminEdit' => $adminEdit,
+        ], ['saveData' => false]) ?>
+
+        <?php // Bookings on (T31): the same person takes bookings or not. ?>
+        <?php if ($bookingPeople !== null): ?>
+            <input type="hidden" name="team[<?= $i ?>][bookings_present]" value="1">
+            <label class="field block font-medium">
+                <input type="checkbox" name="team[<?= $i ?>][takes_bookings]" value="1" <?= $in !== null && $in['bookable'] ? 'checked' : '' ?>>
+                Takes bookings
+            </label>
+            <?php if ($in !== null): ?>
+                <div class="hint">In your bookings. <a class="underline" href="<?= base_url('business/team/' . $in['id']) ?>">Hours, services and sign in</a></div>
             <?php endif; ?>
-        </fieldset>
-        <div class="field">
-            <label>Areas of focus</label>
-            <input type="text" name="team[<?= $i ?>][specializations]" maxlength="500"
-                   value="<?= esc($val('specializations'), 'attr') ?>"
-                   placeholder="Comma separated, e.g. Conveyancing, Commercial litigation">
-            <div class="hint">Separate with commas, up to 12 per person.</div>
-            <?php if ($e('specializations')): ?><div class="err"><?= esc($e('specializations')) ?></div><?php endif; ?>
-        </div>
-        <div class="field">
-            <label>Short bio</label>
-            <textarea name="team[<?= $i ?>][bio]" rows="2" maxlength="1200"
-                      placeholder="A paragraph on what they do and who they help."><?= esc($val('bio')) ?></textarea>
-            <?php if ($e('bio')): ?><div class="err"><?= esc($e('bio')) ?></div><?php endif; ?>
-        </div>
-        <div class="field">
-            <label>Photo</label>
-            <?php // Indexed to match the row: resolveTeamPhotos() reads these
-                  // with getFileMultiple('team_photo') and merges each result
-                  // into team[same index]. accept="image/*" for the HEIC reason
-                  // spelled out in _form_fields.php. ?>
-            <input type="file" name="team_photo[<?= $i ?>]" accept="image/*">
-            <div class="hint"><?= ! empty($m['photo_path']) ? 'Choosing a file replaces the current photo.' : 'Head and shoulders. Up to 10 MB, resized here.' ?></div>
-        </div>
+        <?php endif; ?>
     </div>
     <?php
     return (string) ob_get_clean();
@@ -186,13 +129,16 @@ $row = function ($i, array $m = [], bool $spare = false) use ($err, $regulator, 
 <details class="disclosure" <?= $used > 0 || $hasError ? 'open' : '' ?> data-repeat data-regulators="<?= esc(json_encode($regLabels, JSON_UNESCAPED_SLASHES), 'attr') ?>">
     <summary class="disclosure-summary">
         <span>Add your people</span>
-        <span class="hint"><?= $used > 0 ? $used . ' of ' . $max : 'Partners, associates, practitioners' ?></span>
+        <span class="hint"><?= $used > 0 ? ($used - $hidden) . ' of ' . $max . ' shown' : 'Partners, associates, practitioners' ?></span>
     </summary>
 
     <div class="disclosure-body">
         <p class="hint">
             The people inside your business, each with their own position and areas of focus.
             They appear as an &ldquo;Our team&rdquo; panel on your public profile. Up to <?= (int) $max ?>.
+            <?php if ($bookingPeople !== null): ?>
+                The same people are your team in bookings. Untick &ldquo;Show on my profile&rdquo; for someone who only works in bookings.
+            <?php endif; ?>
         </p>
         <?php if ($err('team')): ?><div class="err"><?= esc($err('team')) ?></div><?php endif; ?>
 
@@ -217,7 +163,7 @@ $row = function ($i, array $m = [], bool $spare = false) use ($err, $regulator, 
         <template data-repeat-template><?= $row('__i__') ?></template>
 
         <button type="button" class="btn btn-ghost btn-xs" data-repeat-add
-                data-repeat-max="<?= (int) $max ?>"
+                data-repeat-max="<?= (int) $max + $hidden ?>"
                 data-repeat-full="You have added the maximum of <?= (int) $max ?> people.">
             + Add another person
         </button>

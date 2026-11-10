@@ -3,7 +3,7 @@
 namespace App\Services\Bookings;
 
 /**
- * The /bookings session keys, in one place. Only /bookings starts a session
+ * The /business session keys, in one place. Only /business starts a session
  * for these; public pages stay sessionless.
  */
 final class BusinessSession
@@ -11,6 +11,7 @@ final class BusinessSession
     public const ACCOUNT = 'biz_account_id';
     public const LISTING = 'biz_listing_id';
     public const SEEN    = 'biz_seen';
+    public const RETURN  = 'biz_return';
 
     /** Start a signed in session for an account. */
     public static function signIn(int $accountId, ?int $listingId = null): void
@@ -25,6 +26,24 @@ final class BusinessSession
         } else {
             session()->remove(self::LISTING);
         }
+    }
+
+    /** Where to go after signing in: a /business page asked for while signed out. */
+    public static function rememberReturn(string $path): void
+    {
+        $path = trim($path, '/');
+        if (preg_match('#^business(/[a-z0-9/_-]*)?$#', $path) === 1) {
+            session()->set(self::RETURN, $path);
+        }
+    }
+
+    /** The page remembered by rememberReturn(), once, or the business area. */
+    public static function returnPath(): string
+    {
+        $path = (string) (session()->get(self::RETURN) ?? '');
+        session()->remove(self::RETURN);
+
+        return $path !== '' ? $path : 'business';
     }
 
     public static function chooseBusiness(int $listingId): void
@@ -48,7 +67,7 @@ final class BusinessSession
      */
     public static function signOut(): void
     {
-        session()->remove([self::ACCOUNT, self::LISTING, self::SEEN]);
+        session()->remove([self::ACCOUNT, self::LISTING, self::SEEN, self::RETURN]);
         session()->destroy();
     }
 }

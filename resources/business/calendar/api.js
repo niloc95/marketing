@@ -1,5 +1,5 @@
 /**
- * Requests to /bookings/api/*. The CSRF token regenerates on every POST, so
+ * Requests to /business/api/*. The CSRF token regenerates on every POST, so
  * each JSON answer carries the next one (`csrf.hash`); it is kept here and
  * copied into any plain form on the page that still posts without script.
  */

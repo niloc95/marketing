@@ -38,7 +38,7 @@ class Channels
 
         if ($team) {
             // A notice for staff: from the platform, Reply goes to the customer,
-            // their contact details and links into /bookings. Not the customer's email.
+            // their contact details and links into /business. Not the customer's email.
             $t = $config->teamTemplates[$event] ?? null;
             if ($t === null) {
                 return ['ok' => false, 'error' => 'No team message for this event.'];

@@ -12,13 +12,13 @@ $roles = config('BookingPermissions')->roleLabels;
     <?php if ($businesses === []): ?>
         <div class="panel">
             <p class="text-sm text-slate-600 dark:text-slate-300">Your account is not part of a business with online bookings turned on.</p>
-            <p class="mt-3 text-sm">Own a business on WebScheduler Local? <a class="underline" href="<?= base_url('manage') ?>">Sign in to your business profile</a> and turn on online bookings there.</p>
+            <p class="mt-3 text-sm">Own a business on WebScheduler Local? <a class="underline" href="<?= base_url('business') ?>">Sign in to your business profile</a> and turn on online bookings there.</p>
         </div>
     <?php else: ?>
         <ul class="space-y-2">
             <?php foreach ($businesses as $b): ?>
                 <li>
-                    <form method="post" action="<?= base_url('bookings/choose') ?>">
+                    <form method="post" action="<?= base_url('business/choose') ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="listing_id" value="<?= (int) $b['listing_id'] ?>">
                         <button type="submit" class="panel flex w-full items-center justify-between text-left hover:border-brand-ocean">

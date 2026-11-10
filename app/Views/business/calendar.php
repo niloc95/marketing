@@ -2,7 +2,7 @@
 /**
  * The business calendar (Bookings' /appointments). The grid is drawn by the
  * scheduler script (resources/business/calendar/) from the server's render
- * models at /bookings/api/calendar/{view}; everything a person reads that
+ * models at /business/api/calendar/{view}; everything a person reads that
  * is not appointment data lives here, so the copy rules test sees it.
  *
  * @var string                                 $view day, week, month or agenda
@@ -22,10 +22,10 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <div class="cal" data-calendar
-     data-model-url="<?= esc(base_url('bookings/api/calendar'), 'attr') ?>"
-     data-appointment-url="<?= esc(base_url('bookings/api/appointments'), 'attr') ?>"
-     data-customer-url="<?= esc(base_url('bookings/api/customers'), 'attr') ?>"
-     data-customer-page="<?= esc(base_url('bookings/customers'), 'attr') ?>"
+     data-model-url="<?= esc(base_url('business/api/calendar'), 'attr') ?>"
+     data-appointment-url="<?= esc(base_url('business/api/appointments'), 'attr') ?>"
+     data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>"
+     data-customer-page="<?= esc(base_url('business/customers'), 'attr') ?>"
      data-view="<?= esc($view, 'attr') ?>" data-date="<?= esc($date, 'attr') ?>" data-today="<?= esc($today, 'attr') ?>"
      data-timezone="<?= esc($timezone, 'attr') ?>" data-open="<?= esc($open, 'attr') ?>"
      data-csrf-header="<?= esc(config('Security')->headerName, 'attr') ?>" data-csrf-hash="<?= esc(csrf_hash(), 'attr') ?>">
@@ -44,7 +44,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                     <button type="button" class="cal-view-btn" data-cal-view="<?= $key ?>" aria-pressed="<?= $key === $view ? 'true' : 'false' ?>"><?= $label ?></button>
                 <?php endforeach ?>
             </div>
-            <a href="<?= base_url('bookings/appointments/new') ?>" class="btn btn-primary btn-xs" data-cal-book><?= lucide('plus', 'h-4 w-4') ?> Book</a>
+            <a href="<?= base_url('business/appointments/new') ?>" class="btn btn-primary btn-xs" data-cal-book><?= lucide('plus', 'h-4 w-4') ?> Book</a>
         </div>
     </div>
 
@@ -92,22 +92,24 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                 <option value="all">All</option>
             </select>
         </label>
-        <label class="cal-filter ml-auto">
-            <span>Find</span>
-            <input type="text" name="q" placeholder="Name, email, phone or reference" autocomplete="off" data-cal-find>
-        </label>
+        <p class="min-w-0 flex-1 basis-40 pb-1 text-xs text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. Drag an appointment to move it.</p>
+        <?php // Results open over the grid, so the grid keeps its size. ?>
+        <div class="relative ml-auto">
+            <label class="cal-filter">
+                <span>Find</span>
+                <input type="text" name="q" placeholder="Name, email, phone or reference" autocomplete="off" data-cal-find>
+            </label>
+            <ul class="cal-find-results" data-cal-find-results hidden></ul>
+        </div>
     </form>
-    <ul class="cal-find-results" data-cal-find-results hidden></ul>
-
-    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. Drag an appointment to move it.</p>
 
     <div class="cal-body mt-3" data-cal-body aria-busy="true">
-        <noscript><p class="p-6 text-sm">The calendar needs JavaScript. You can still <a class="underline" href="<?= base_url('bookings/appointments/new') ?>">book an appointment</a> and see <a class="underline" href="<?= base_url('bookings/customers') ?>">your customers</a>.</p></noscript>
+        <noscript><p class="p-6 text-sm">The calendar needs JavaScript. You can still <a class="underline" href="<?= base_url('business/appointments/new') ?>">book an appointment</a> and see <a class="underline" href="<?= base_url('business/customers') ?>">your customers</a>.</p></noscript>
     </div>
     <p class="mt-2 hidden text-sm text-rose-600" data-cal-error role="alert"></p>
     <div class="cal-toast" data-cal-toast role="status" aria-live="polite" hidden></div>
 
-    <?php // Details panel: filled by details.js from /bookings/api/appointments/{id}. ?>
+    <?php // Details panel: filled by details.js from /business/api/appointments/{id}. ?>
     <dialog class="cal-dialog" data-cal-details aria-labelledby="cal-details-title">
         <div class="flex items-start gap-3">
             <span class="cal-swatch mt-1.5" data-d-swatch></span>
@@ -155,7 +157,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
 
         <details class="mt-4" data-d-move>
             <summary class="cursor-pointer text-sm font-semibold text-brand-ocean dark:text-white">Move to another time</summary>
-            <?php // Filled by details.js from /bookings/api/appointments/{id}/free: the
+            <?php // Filled by details.js from /business/api/appointments/{id}/free: the
                   // next free times, and the chosen date's, each with its place. ?>
             <div class="free-times" data-d-free>
                 <p class="free-times-heading">Next free times</p>
@@ -205,9 +207,9 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
         <p class="mt-3 hidden text-sm text-rose-600" data-d-error role="alert"></p>
     </dialog>
 
-    <?php // Book dialog: the same fields as /bookings/appointments/new, sent as JSON by create.js. ?>
+    <?php // Book dialog: the same fields as /business/appointments/new, sent as JSON by create.js. ?>
     <dialog class="cal-dialog" data-cal-create aria-labelledby="cal-create-title">
-        <form method="post" action="<?= base_url('bookings/appointments/new') ?>" data-cal-create-form novalidate>
+        <form method="post" action="<?= base_url('business/appointments/new') ?>" data-cal-create-form novalidate>
             <?= csrf_field() ?>
             <div class="mb-4 flex items-center gap-3">
                 <h2 id="cal-create-title" class="flex-1 text-lg font-bold text-slate-900 dark:text-white">Book an appointment</h2>

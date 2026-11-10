@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\JobPostModel;
@@ -80,12 +79,12 @@ final class JobBoardHttpTest extends CIUnitTestCase
     {
         $free = $this->listing(['verified_until' => null]);
 
-        $this->withSession([Manage::SESSION_KEY => (int) $free['id']])
-            ->get('manage/jobs/new?kind=job')
-            ->assertRedirectTo(base_url('manage/edit') . '#get-verified');
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $free['id']))
+            ->get('business/jobs/new?kind=job')
+            ->assertRedirectTo(base_url('business/badge'));
 
-        $this->withSession([Manage::SESSION_KEY => (int) $free['id']])
-            ->get('manage/jobs/new?kind=service')
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $free['id']))
+            ->get('business/jobs/new?kind=service')
             ->assertOK();
     }
 
@@ -95,9 +94,9 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $closes = date('Y-m-d', strtotime('+3 days'));
         $id     = $this->livePost(['listing_id' => (int) $lapsed['id'], 'valid_through' => $closes]);
 
-        $this->withSession([Manage::SESSION_KEY => (int) $lapsed['id']])
-            ->post('manage/jobs/' . $id . '/renew', $this->csrf())
-            ->assertRedirectTo(base_url('manage/edit') . '#get-verified');
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $lapsed['id']))
+            ->post('business/jobs/' . $id . '/renew', $this->csrf())
+            ->assertRedirectTo(base_url('business/badge'));
 
         $this->assertSame($closes, $this->posts->find($id)['valid_through'], 'the vacancy was not renewed');
     }
@@ -299,24 +298,24 @@ final class JobBoardHttpTest extends CIUnitTestCase
     public function testAListedOwnerPostsAndEditsThroughTheDashboardForms(): void
     {
         $listing = $this->listing();
-        $session = [Manage::SESSION_KEY => (int) $listing['id']];
+        $session = \Tests\Support\OwnerSession::for((int) $listing['id']);
 
-        $this->withSession($session)->post('manage/jobs', $this->jobForm() + $this->csrf())
-            ->assertRedirectTo(base_url('manage/edit') . '#jobs');
+        $this->withSession($session)->post('business/jobs', $this->jobForm() + $this->csrf())
+            ->assertRedirectTo(base_url('business/jobs'));
         $post = $this->posts->where('listing_id', $listing['id'])->first();
         $this->assertSame(JobPostModel::STATUS_PUBLISHED, $post['status']);
 
-        $this->withSession($session)->post('manage/jobs/' . $post['id'] . '/edit', ['title' => 'Senior electrician'] + $this->jobForm() + $this->csrf())
-            ->assertRedirectTo(base_url('manage/edit') . '#jobs');
+        $this->withSession($session)->post('business/jobs/' . $post['id'] . '/edit', ['title' => 'Senior electrician'] + $this->jobForm() + $this->csrf())
+            ->assertRedirectTo(base_url('business/jobs'));
         $this->assertSame('Senior electrician', $this->posts->find($post['id'])['title']);
 
-        $this->withSession($session)->post('manage/jobs/' . $post['id'] . '/close', $this->csrf());
+        $this->withSession($session)->post('business/jobs/' . $post['id'] . '/close', $this->csrf());
         $this->assertSame(JobPostModel::STATUS_CLOSED, $this->posts->find($post['id'])['status']);
     }
 
     public function testDashboardPostingNeedsASession(): void
     {
-        $this->post('manage/jobs', $this->jobForm() + $this->csrf())->assertRedirectTo(base_url('manage'));
+        $this->post('business/jobs', $this->jobForm() + $this->csrf())->assertRedirectTo(base_url('business/sign-in'));
         $this->assertSame(0, $this->posts->countAllResults());
     }
 
@@ -327,7 +326,7 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $id        = $this->livePost(['kind' => 'service', 'poster_email' => 'customer@example.test']);
         $responder = $this->listing();
 
-        $this->withSession([Manage::SESSION_KEY => (int) $responder['id']])
+        $this->withSession(\Tests\Support\OwnerSession::for((int) $responder['id']))
             ->post('jobs/' . $id . '/respond', ['message' => 'I can come out on Thursday morning.'] + $this->csrf())
             ->assertSessionHas('success');
 
@@ -342,7 +341,7 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $id = $this->livePost(['kind' => 'service']);
 
         $this->post('jobs/' . $id . '/respond', ['message' => 'I can come out on Thursday morning.'] + $this->csrf())
-            ->assertRedirectTo(base_url('manage'));
+            ->assertRedirectTo(base_url('business/sign-in'));
         $this->assertSame(0, (new JobResponseModel())->countAllResults());
         $this->assertSame([], $this->sent);
     }

@@ -10,7 +10,7 @@ use App\Models\DirectoryListingModel;
  *
  * The ONE source of truth for both halves of the feature: the number that
  * orders search results (DirectoryService::browse()) and the checklist the
- * owner sees on /manage/edit (directory/_strength_panel.php). evaluate()
+ * owner sees on /business (directory/_strength_panel.php). evaluate()
  * returns both from the same array, so the meter cannot promise points the
  * ranking does not pay, and adding a rubric line makes it appear in the UI
  * with no view change.
@@ -785,7 +785,7 @@ class ListingQualityService
      * Write scores without touching updated_at.
      *
      * A bare builder update rather than the model, deliberately: the model has
-     * useTimestamps, and manage_edit.php keys its draft versioning off
+     * useTimestamps, and business/profile.php keys its draft versioning off
      * updated_at. A rescore is not an edit, and bumping it would make an
      * owner's open tab think someone else had saved over them.
      *

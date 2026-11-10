@@ -120,7 +120,7 @@ class PayFast
             // signed out. The ITN always goes to co.za: every stored PayFast
             // subscription already points there.
             'return_url'   => row_site_url($listing, 'manage/verification/done'),
-            'cancel_url'   => row_site_url($listing, 'manage/edit'),
+            'cancel_url'   => row_site_url($listing, 'business/badge'),
             'notify_url'   => site_url_for(Sites::ZA, 'payfast/notify'),
 
             'email_address' => (string) ($listing['email'] ?? ''),

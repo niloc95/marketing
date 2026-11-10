@@ -6,12 +6,11 @@ use App\Controllers\BaseController;
 use App\Services\Bookings\BookingAudit;
 use App\Services\Bookings\BookingSettings;
 use App\Services\Bookings\BookingSetupService;
-use App\Services\Bookings\BusinessSession;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 /**
  * Business settings (docs/bookings/settings.md). Phase 1 has two tabs:
- * General (read from the profile, edited at /manage/edit) and Local time.
+ * General (read from the profile, edited at /business/profile) and Local time.
  * More tabs arrive with the phases that use them.
  */
 class Settings extends BaseController
@@ -36,7 +35,7 @@ class Settings extends BaseController
 
     public function index()
     {
-        return redirect()->to(base_url('bookings/settings/general'));
+        return redirect()->to(base_url('business/settings/general'));
     }
 
     public function tab(string $tab)
@@ -69,7 +68,7 @@ class Settings extends BaseController
         ], $context->accountId());
 
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/settings/localization'))->with('error', 'Please choose from the options.');
+            return redirect()->to(base_url('business/settings/localization'))->with('error', 'Please choose from the options.');
         }
         if ($result['changed'] !== []) {
             (new BookingAudit())->record(
@@ -83,7 +82,7 @@ class Settings extends BaseController
             );
         }
 
-        return redirect()->to(base_url('bookings/settings/localization'))->with('success', 'Saved.');
+        return redirect()->to(base_url('business/settings/localization'))->with('success', 'Saved.');
     }
 
     public function saveBooking()
@@ -100,7 +99,7 @@ class Settings extends BaseController
         ], $context->accountId());
 
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/settings/booking'))->with('error', implode(' ', array_unique($result['errors'])));
+            return redirect()->to(base_url('business/settings/booking'))->with('error', implode(' ', array_unique($result['errors'])));
         }
         if ($result['changed'] !== []) {
             (new BookingAudit())->record(
@@ -114,7 +113,7 @@ class Settings extends BaseController
             );
         }
 
-        return redirect()->to(base_url('bookings/settings/booking'))->with('success', 'Saved.');
+        return redirect()->to(base_url('business/settings/booking'))->with('success', 'Saved.');
     }
 
     /**
@@ -147,12 +146,12 @@ class Settings extends BaseController
             $values[$p . 'required']  = ! empty($row['required']) ? '1' : '0';
             $values[$p . 'sensitive'] = ! empty($row['sensitive']) ? '1' : '0';
             if ($values[$p . 'enabled'] === '1' && $values[$p . 'type'] === 'select' && $values[$p . 'options'] === '') {
-                return redirect()->to(base_url('bookings/settings/questions'))->with('error', 'Question ' . $n . ' is a list: add its choices, one per line.');
+                return redirect()->to(base_url('business/settings/questions'))->with('error', 'Question ' . $n . ' is a list: add its choices, one per line.');
             }
         }
         $result = BookingSettings::for($context->listingId())->save($values, $context->accountId());
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/settings/questions'))->with('error', implode(' ', array_unique($result['errors'])));
+            return redirect()->to(base_url('business/settings/questions'))->with('error', implode(' ', array_unique($result['errors'])));
         }
         if ($result['changed'] !== []) {
             (new BookingAudit())->record($context->listingId(), $context->accountId(), 'settings.saved', 'settings', null,
@@ -160,18 +159,18 @@ class Settings extends BaseController
                 array_map(static fn (array $c): string => $c[1], $result['changed']));
         }
 
-        return redirect()->to(base_url('bookings/settings/questions'))->with('success', 'Saved.');
+        return redirect()->to(base_url('business/settings/questions'))->with('success', 'Saved.');
     }
 
     public function turnOff()
     {
         $context = service('businessContext');
         if ($this->request->getPost('confirm') !== 'yes') {
-            return redirect()->to(base_url('bookings/settings/general'))->with('error', 'Tick the box to confirm.');
+            return redirect()->to(base_url('business/settings/general'))->with('error', 'Tick the box to confirm.');
         }
         (new BookingSetupService())->turnOff($context->listingId(), $context->accountId());
-        session()->remove(BusinessSession::LISTING);
 
-        return redirect()->to(base_url('bookings/choose'))->with('success', 'Online bookings are off for ' . $context->listing()['display_name'] . '. Nothing was deleted.');
+        // The business stays chosen: its profile pages are still the owner's.
+        return redirect()->to(base_url('business'))->with('success', 'Online bookings are off for ' . $context->listing()['display_name'] . '. Nothing was deleted.');
     }
 }

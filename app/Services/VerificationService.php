@@ -1950,7 +1950,7 @@ class VerificationService
     private function ownerLink(int $listingId, string $event): string
     {
         if (! in_array($event, ['approved', 'rejected', 'move'], true)) {
-            return listing_site_url($listingId, 'manage');
+            return listing_site_url($listingId, 'business/badge');
         }
 
         try {
@@ -1962,7 +1962,7 @@ class VerificationService
                 'msg' => Mailer::oneLine($e->getMessage()),
             ]);
 
-            return listing_site_url($listingId, 'manage');
+            return listing_site_url($listingId, 'business/badge');
         }
 
         return match ($event) {

@@ -274,15 +274,15 @@ final class BookingAvailabilityTest extends CIUnitTestCase
         $ownerId = (int) (new App\Models\Bookings\AccountModel())->findByEmail('owner@example.test')['id'];
         $session = [BusinessSession::ACCOUNT => $ownerId, BusinessSession::LISTING => $this->listingId, BusinessSession::SEEN => time()];
 
-        $this->withSession($session)->get('bookings/availability?service_id=' . $this->serviceId . '&provider_id=any&date=2030-01-07')->assertOK();
+        $this->withSession($session)->get('business/availability?service_id=' . $this->serviceId . '&provider_id=any&date=2030-01-07')->assertOK();
         // Every view, all services and everyone; a year far ahead says why it is empty for customers.
         foreach (['day', 'week', 'month', 'year'] as $view) {
-            $this->withSession($session)->get('bookings/availability?service_id=all&provider_id=any&view=' . $view . '&date=2031-03-01')->assertOK();
+            $this->withSession($session)->get('business/availability?service_id=all&provider_id=any&view=' . $view . '&date=2031-03-01')->assertOK();
         }
-        $this->withSession($session)->get('bookings/availability?view=day&date=2031-03-03')->assertSee('Customers cannot book this far ahead yet');
-        $this->withSession($session)->get('bookings/availability?view=year&date=2031-03-03')->assertSee('Not open yet');
+        $this->withSession($session)->get('business/availability?view=day&date=2031-03-03')->assertSee('Customers cannot book this far ahead yet');
+        $this->withSession($session)->get('business/availability?view=year&date=2031-03-03')->assertSee('Not open yet');
 
-        $json = $this->withSession($session)->get('bookings/api/availability/slots?service_id=' . $this->serviceId . '&provider_id=' . $this->providerId . '&date=2030-01-07');
+        $json = $this->withSession($session)->get('business/api/availability/slots?service_id=' . $this->serviceId . '&provider_id=' . $this->providerId . '&date=2030-01-07');
         $json->assertOK();
         $this->assertSame(['09:00', '10:00', '11:00'], array_column(json_decode($json->getJSON(), true)['data'], 'time'));
     }
@@ -369,6 +369,8 @@ final class BookingAvailabilityTest extends CIUnitTestCase
             'email'            => 'owner@example.test',
             'slug'             => 'salon-lumi',
             'status'           => 'published',
+            'verified_until'     => '2099-12-31',
+            'hosting_paid_until' => '2099-12-31',
             'country'          => 'South Africa',
             'category_id'      => $this->categoryId,
             'description'      => '<p>A friendly hair salon in the heart of Rosebank, open six days a week.</p>',

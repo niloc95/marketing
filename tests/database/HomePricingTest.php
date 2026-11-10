@@ -59,7 +59,7 @@ final class HomePricingTest extends CIUnitTestCase
 
         $this->assertMatchesRegularExpression('#href="[^"]*/add-profile\?plan=free"\s+data-track="pricing_cta" data-track-label="free"#', $html);
         $this->assertMatchesRegularExpression('#href="[^"]*/add-profile"\s+data-track="pricing_cta" data-track-label="verified"#', $html);
-        $this->assertMatchesRegularExpression('#href="[^"]*/manage" data-track="pricing_cta" data-track-label="upgrade_existing"#', $html);
+        $this->assertMatchesRegularExpression('#href="[^"]*/business/badge" data-track="pricing_cta" data-track-label="upgrade_existing"#', $html);
         $this->assertStringNotContainsString('via=', $html, 'a campaign source would hide the Free card');
 
         // The two signup targets open in the mode each button promises.

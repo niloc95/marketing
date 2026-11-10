@@ -44,18 +44,18 @@ class Customers extends BaseController
         $input  = $this->input();
         $result = $this->service()->save(null, $input, service('businessContext')->accountId());
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/customers/new'))->with('errors', $result['errors'])->with('customer_old', $input)
+            return redirect()->to(base_url('business/customers/new'))->with('errors', $result['errors'])->with('customer_old', $input)
                 ->with('error', 'Please check the highlighted fields.');
         }
 
         // A provider or reception member sees a customer once they have an
         // appointment with one of their people, so book one straight away.
         if (service('businessContext')->providerScope() !== null) {
-            return redirect()->to(base_url('bookings/appointments/new'))->with('appointment_old', $input)
+            return redirect()->to(base_url('business/appointments/new'))->with('appointment_old', $input)
                 ->with('success', 'Customer added. Choose a time for their first appointment.');
         }
 
-        return redirect()->to(base_url('bookings/customers/' . $this->service()->find((int) $result['id'])['hash']))->with('success', 'Customer added.');
+        return redirect()->to(base_url('business/customers/' . $this->service()->find((int) $result['id'])['hash']))->with('success', 'Customer added.');
     }
 
     public function show(string $hash)
@@ -86,7 +86,7 @@ class Customers extends BaseController
             (new \App\Services\Bookings\BookingAudit())->record($context->listingId(), $context->accountId(), 'customer.emails_again', 'customer', $customer['id']);
         }
 
-        return redirect()->to(base_url('bookings/customers/' . $hash))->with('success', 'Booking emails will reach them again.');
+        return redirect()->to(base_url('business/customers/' . $hash))->with('success', 'Booking emails will reach them again.');
     }
 
     public function save(string $hash)
@@ -95,11 +95,11 @@ class Customers extends BaseController
         $input    = $this->input();
         $result   = $this->service()->save($customer['id'], $input, service('businessContext')->accountId());
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('bookings/customers/' . $hash . '#edit'))->with('errors', $result['errors'])->with('customer_old', $input)
+            return redirect()->to(base_url('business/customers/' . $hash . '#edit'))->with('errors', $result['errors'])->with('customer_old', $input)
                 ->with('error', 'Please check the highlighted fields.');
         }
 
-        return redirect()->to(base_url('bookings/customers/' . $hash))->with('success', 'Saved.');
+        return redirect()->to(base_url('business/customers/' . $hash))->with('success', 'Saved.');
     }
 
     public function delete(string $hash)
@@ -107,10 +107,10 @@ class Customers extends BaseController
         $customer = $this->visible($hash);
         $error    = $this->service()->delete($customer['id'], service('businessContext')->accountId());
         if ($error !== null) {
-            return redirect()->to(base_url('bookings/customers/' . $hash . '#delete'))->with('error', $error);
+            return redirect()->to(base_url('business/customers/' . $hash . '#delete'))->with('error', $error);
         }
 
-        return redirect()->to(base_url('bookings/customers'))->with('success', 'Customer deleted.');
+        return redirect()->to(base_url('business/customers'))->with('success', 'Customer deleted.');
     }
 
     /**

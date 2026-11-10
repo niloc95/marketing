@@ -23,11 +23,6 @@
 use App\Services\Bookings\AppointmentStatus;
 
 $siteName = config('Directory')->siteName();
-$status   = [
-    'pending'   => 'We have your request. ' . $listing['display_name'] . ' will confirm it.',
-    'confirmed' => 'Your booking is confirmed.',
-    'cancelled' => 'Your booking is cancelled.',
-];
 $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))->format('D j M');
 ?>
 <?= $this->extend('layouts/public') ?>
@@ -49,7 +44,7 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc((string) $a['service_name']) ?></h1>
         <p class="text-slate-700 dark:text-slate-200"><?= view('book/_when', ['a' => $a, 'timezone' => $timezone, 'twelveHour' => $twelveHour]) ?></p>
         <p class="text-sm text-slate-500 dark:text-slate-400">with <?= esc((string) $a['provider_name']) ?><?= $a['location_name'] ? ', ' . esc((string) $a['location_name']) : '' ?><?= $a['location_address'] ? ', ' . esc((string) $a['location_address']) : '' ?></p>
-        <p class="mt-3 text-sm font-semibold"><?= esc($deposit !== null && $deposit['waiting'] ? 'Not booked yet: the time is held for you until the deposit is paid.' : ($status[$a['status']] ?? AppointmentStatus::label((string) $a['status']))) ?></p>
+        <p class="mt-3 text-sm font-semibold"><?= esc($deposit !== null && $deposit['waiting'] ? 'Not booked yet: the time is held for you until the deposit is paid.' : (AppointmentStatus::customerMessage((string) $a['status'], (string) $listing['display_name']) ?: AppointmentStatus::label((string) $a['status']))) ?></p>
         <p class="mt-1 text-xs text-slate-500">Reference <?= esc((string) $a['reference']) ?> · Times in <?= esc($timezone->getName()) ?></p>
 
         <?php if ($deposit !== null): ?>

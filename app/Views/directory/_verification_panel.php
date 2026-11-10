@@ -2,7 +2,7 @@
 /**
  * The owner's view of their Verified Business application.
  *
- * Rendered outside the main edit form on manage_edit.php, for the same reason
+ * Rendered outside the main edit form on business/profile.php, for the same reason
  * the gallery manager is: it posts its own multipart form, and forms cannot
  * nest.
  *

@@ -194,7 +194,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <li>not be discriminated against for exercising your rights; and</li>
                 <li>complain to a data protection authority (section 16).</li>
             </ul>
-            <p>You can also edit or remove your profile yourself in <a href="<?= base_url('manage') ?>">Manage your profile</a>, and stop the monthly report from any report or there. To exercise any right, contact us using the details in section 19. We will answer within one month, or sooner where your law requires, and may need to confirm your identity first. There is no charge.</p>
+            <p>You can also edit or remove your profile yourself in <a href="<?= base_url('business') ?>">Manage your profile</a>, and stop the monthly report from any report or there. To exercise any right, contact us using the details in section 19. We will answer within one month, or sooner where your law requires, and may need to confirm your identity first. There is no charge.</p>
 
             <h2>16. Complaints</h2>
             <p>Please contact us first so that we can try to put things right. You may also complain to the data protection authority where you live, including:</p>

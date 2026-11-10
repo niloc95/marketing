@@ -72,7 +72,7 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
                 <li><a class="<?= $link ?>" href="<?= base_url('directory') ?>">Discover every business</a></li>
                 <li><a class="<?= $link ?>" href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                 <?php if ($wasListing): ?>
-                    <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('manage') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>">add it again</a>.</li>
+                    <li>Is this your business? <a class="<?= $link ?>" href="<?= base_url('business') ?>">Manage your profile</a> or <a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>">add it again</a>.</li>
                 <?php else: ?>
                     <li><a class="<?= $link ?>" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a></li>
                 <?php endif; ?>

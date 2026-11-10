@@ -37,6 +37,21 @@ final class AppointmentStatus
         A::STATUS_NO_SHOW   => 'No show',
     ];
 
+    /**
+     * What the customer reads about a booking in each status (copy.md,
+     * "Customer sees"): the booking page and the alert after a change.
+     * Empty where copy.md has no message.
+     */
+    public static function customerMessage(?string $status, string $business): string
+    {
+        return match (self::normalize($status)) {
+            A::STATUS_PENDING   => 'We have your request. ' . $business . ' will confirm it.',
+            A::STATUS_CONFIRMED => 'Your booking is confirmed.',
+            A::STATUS_CANCELLED => 'Your booking is cancelled.',
+            default             => '',
+        };
+    }
+
     public static function normalize(?string $status): ?string
     {
         $s = strtolower(trim((string) $status));

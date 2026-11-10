@@ -5,7 +5,7 @@ namespace App\Models\Bookings;
 use CodeIgniter\Model;
 
 /**
- * People who sign in to /bookings (xs_accounts). Not scoped to a business:
+ * People who sign in to /business (xs_accounts). Not scoped to a business:
  * one account can belong to several, through BusinessMemberModel. Written
  * only by AccountService.
  */

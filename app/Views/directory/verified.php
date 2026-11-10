@@ -112,7 +112,7 @@ $faqs = [
                     Send us your company registration document and the owner's ID, either from the
                     <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('add-profile') ?>">create your business profile</a>
                     form or at any time afterwards from
-                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">manage your profile</a>.
+                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">manage your profile</a>.
                     We review them, usually within two working days.
                 </p>
                 <?php // The same pitch the signup form and the owner dashboard show, so a
@@ -126,7 +126,7 @@ $faqs = [
                     <a href="<?= base_url('privacy') ?>">privacy policy</a> for how long we keep them.
                 </p>
                 <p class="mt-5">
-                    <a class="btn btn-accent" href="<?= base_url('manage') ?>">Apply for the badge</a>
+                    <a class="btn btn-accent" href="<?= base_url('business/badge') ?>">Apply for the badge</a>
                 </p>
                 <p class="hint mt-3">
                     <a href="<?= base_url('compare') ?>">See which features are free and which need the badge, next to Google, LinkedIn and South African directories</a>.

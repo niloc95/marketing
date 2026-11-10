@@ -103,7 +103,7 @@ $faqs = [
                 <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Get Plus</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
                     Plus is <strong><?= esc(price_terms($usd, plus_yearly_usd(), 'USD')) ?></strong>, added from
-                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage') ?>">your dashboard</a>
+                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">your dashboard</a>
                     once your profile is live. Your business profile stays free either way.
                 </p>
                 <p class="hint mt-3">
@@ -112,7 +112,7 @@ $faqs = [
                     on until the month you have paid for ends. See section 4 of our <a href="<?= base_url('terms#plus') ?>">terms</a>.
                 </p>
                 <p class="mt-5">
-                    <a class="btn btn-accent" href="<?= base_url('manage') ?>">Get Plus</a>
+                    <a class="btn btn-accent" href="<?= base_url('business/badge') ?>">Get Plus</a>
                     <a class="btn btn-ghost ml-2" href="<?= base_url('add-profile') ?>">Add your business</a>
                 </p>
             </div>

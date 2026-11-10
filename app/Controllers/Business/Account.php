@@ -27,7 +27,7 @@ class Account extends BaseController
             (string) $this->request->getPost('name'),
         );
 
-        return redirect()->to(base_url('bookings/account'))
+        return redirect()->to(base_url('business/account'))
             ->with($problem === null ? 'success' : 'error', $problem ?? 'Your name is saved.');
     }
 
@@ -40,17 +40,17 @@ class Account extends BaseController
         // A password that is already set must be given again to change it, so
         // a session left open on a shared computer cannot take the account.
         if ($hash !== '' && ! password_verify((string) $this->request->getPost('current_password'), $hash)) {
-            return redirect()->to(base_url('bookings/account#password'))->with('error', 'Your current password is not right.');
+            return redirect()->to(base_url('business/account#password'))->with('error', 'Your current password is not right.');
         }
         $password = (string) $this->request->getPost('password');
         if ($password !== (string) $this->request->getPost('password_confirm')) {
-            return redirect()->to(base_url('bookings/account#password'))->with('error', 'The two passwords are not the same.');
+            return redirect()->to(base_url('business/account#password'))->with('error', 'The two passwords are not the same.');
         }
         $problem = $service->setPassword((int) $account['id'], $password);
         if ($problem !== null) {
-            return redirect()->to(base_url('bookings/account#password'))->with('error', $problem);
+            return redirect()->to(base_url('business/account#password'))->with('error', $problem);
         }
 
-        return redirect()->to(base_url('bookings/account'))->with('success', 'Your password is saved.');
+        return redirect()->to(base_url('business/account'))->with('success', 'Your password is saved.');
     }
 }

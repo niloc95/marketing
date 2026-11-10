@@ -132,7 +132,7 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
                 <p class="checkout-secure">Secure payment by <?= esc($gateway) ?>. We never see your card details.</p>
 
                 <p class="mt-4 text-center text-sm">
-                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('manage/edit') ?>">Cancel and go back</a>
+                    <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business/badge') ?>">Cancel and go back</a>
                 </p>
             </div>
 

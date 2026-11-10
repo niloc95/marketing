@@ -263,7 +263,7 @@ final class ServiceMenuTest extends CIUnitTestCase
         ]);
 
         foreach ([
-            $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit'),
+            $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/services'),
             $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
         ] as $result) {
             $result->assertOK();
@@ -275,7 +275,13 @@ final class ServiceMenuTest extends CIUnitTestCase
             // Fitness is the saved category, so the salon group's features are off.
             // The space may come out literal or as &#x20;, depending on the escaper path.
             $this->assertMatchesRegularExpression('/data-attr-group="Beauty(?: |&#x20;)&amp;(?: |&#x20;)Wellness"\s+hidden disabled/', $html);
-            $this->assertStringContainsString('data-rich-text-max="' . \App\Libraries\RichText::MAX_PLAIN_LENGTH . '"', $html);
+        }
+        // The description is on the owner's Details page (the form is split into pages).
+        foreach ([
+            $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/details'),
+            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
+        ] as $result) {
+            $this->assertStringContainsString('data-rich-text-max="' . \App\Libraries\RichText::MAX_PLAIN_LENGTH . '"', $result->getBody());
         }
     }
 

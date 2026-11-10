@@ -8,15 +8,25 @@
  *
  * Day: one lane per team member. Week: one column per day, split into a
  * lane per team member when there is more than one.
+ *
+ * On a desktop the grid is scaled to the height it is given (`ctx.fitHeight`),
+ * so the whole working day shows without scrolling; the server's pixels
+ * are multiplied by one factor, and a grid too long to stay readable keeps
+ * scrolling (at least MIN_PPM).
  */
 import { el, eventBlock } from './chip.js';
 import { minutes, nowMinutes, shortDay, timeOf } from './dates.js';
 
+const HEAD_PX = 36;
+const MIN_PPM = 0.7;
+const MAX_PPM = 4;
+
 export function renderTimeGrid(model, view, ctx) {
   const grid = model.grid;
-  const ppm = grid.pixelsPerMinute;
+  const ppm = fitPpm(grid, ctx.fitHeight);
+  const k = ppm / grid.pixelsPerMinute;
   const dayStart = minutes(grid.dayStart);
-  const height = grid.containerHeight;
+  const height = grid.totalMinutes * ppm;
   const resolution = view === 'week' ? model.slotDuration : resolutionOf(grid);
 
   const columns = view === 'week'
@@ -25,6 +35,7 @@ export function renderTimeGrid(model, view, ctx) {
 
   const wrap = el('div', 'cal-scroll');
   const head = el('div', 'cal-head');
+  head.style.height = `${HEAD_PX}px`;
   head.append(el('div', 'w-14 shrink-0'));
   columns.forEach((c) => head.append(el('div', `cal-head-cell${c.isToday ? ' is-today' : ''}`, c.label)));
   wrap.append(head);
@@ -36,7 +47,7 @@ export function renderTimeGrid(model, view, ctx) {
     if (!slot.isHour) return;
     // The top label sits below the line so the grid's edge does not cut it.
     const t = el('span', `cal-time${slot.topPx === 0 ? ' translate-y-0' : ''}`, slot.label);
-    t.style.top = `${slot.topPx}px`;
+    t.style.top = `${slot.topPx * k}px`;
     times.append(t);
   });
   body.append(times);
@@ -46,7 +57,7 @@ export function renderTimeGrid(model, view, ctx) {
     col.style.height = `${height}px`;
     grid.slots.forEach((slot) => {
       const line = el('div', `cal-line${slot.isHour ? ' is-hour' : ''}`);
-      line.style.top = `${slot.topPx}px`;
+      line.style.top = `${slot.topPx * k}px`;
       col.append(line);
     });
 
@@ -70,8 +81,8 @@ export function renderTimeGrid(model, view, ctx) {
 
       lane.grid.slots.forEach((slot) => (slot.appointments || []).forEach((event) => {
         const b = eventBlock(event, ctx.today);
-        b.style.top = `${event._topPx}px`;
-        b.style.height = `${Math.max(event._heightPx - 2, 18)}px`;
+        b.style.top = `${event._topPx * k}px`;
+        b.style.height = `${Math.max(event._heightPx * k - 2, 18)}px`;
         b.style.left = `calc(${left + (event._column_left_pct * laneWidth) / 100}% + 2px)`;
         b.style.width = `calc(${(event._column_width_pct * laneWidth) / 100}% - 4px)`;
         col.append(b);
@@ -98,6 +109,13 @@ export function renderTimeGrid(model, view, ctx) {
   });
 
   return { node: wrap, scrollTo: firstWorkingTop(columns, dayStart, ppm) };
+}
+
+/** Pixels per minute: the server's, or what fills the given height. */
+function fitPpm(grid, fitHeight) {
+  if (!fitHeight || !grid.totalMinutes) return grid.pixelsPerMinute;
+  const fit = (fitHeight - HEAD_PX) / grid.totalMinutes;
+  return Math.min(MAX_PPM, Math.max(MIN_PPM, fit));
 }
 
 /** The time under the pointer on a lane, down to the grid's step. */

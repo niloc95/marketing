@@ -1,6 +1,5 @@
 <?php
 
-use App\Controllers\Manage;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
 use App\Models\DirectoryListingPhotoModel;
@@ -234,7 +233,7 @@ final class ListingQualityTest extends CIUnitTestCase
 
         $withPhoto = $this->quality->recalculate($id);
 
-        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/photo-delete/' . $photoId);
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/photo-delete/' . $photoId);
 
         $this->assertSame(
             $withPhoto - ListingQualityService::PTS_PHOTO,
@@ -244,7 +243,7 @@ final class ListingQualityTest extends CIUnitTestCase
     }
 
     /**
-     * recalculate() writes with a bare builder for this reason: manage_edit.php
+     * recalculate() writes with a bare builder for this reason: business/profile.php
      * keys its unsaved-draft versioning off updated_at, and a rescore is not an
      * edit. Bumping it would make an owner's open tab think it had been saved
      * over from somewhere else.
@@ -273,7 +272,7 @@ final class ListingQualityTest extends CIUnitTestCase
         $this->quality->recalculate($id);
         $earned = (int) $this->listings->find($id)['quality_score'];
 
-        $this->withSession([Manage::SESSION_KEY => $id])->post('manage/edit', [
+        $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/profile/details', [
             'display_name'  => 'Flow Yoga',
             'category_id'   => $this->categoryId,
             'quality_score' => 100,

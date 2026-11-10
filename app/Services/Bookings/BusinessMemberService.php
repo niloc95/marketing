@@ -14,7 +14,8 @@ class BusinessMemberService
 {
     /**
      * Every business an account is an active member of, with what the
-     * business picker needs. Only profiles with bookings switched on count.
+     * business picker needs. Every profile counts, bookings on or not: the
+     * business area is every owner's back office (10 Nov 2026).
      *
      * @return list<array{member_id:int,listing_id:int,role:string,display_name:string,slug:string}>
      */
@@ -25,7 +26,6 @@ class BusinessMemberService
             ->join('xs_directory_listings l', 'l.id = m.listing_id')
             ->where('m.account_id', $accountId)
             ->where('m.status', BusinessMemberModel::STATUS_ACTIVE)
-            ->where('l.bookings_enabled', 1)
             ->where('l.deleted_at', null)
             ->orderBy('l.display_name', 'ASC')
             ->get()->getResultArray();

@@ -44,7 +44,7 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 
 | Where | What lives there |
 |---|---|
-| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (owner magic link, dashboard, badge and Plus checkout), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
+| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (old /manage addresses, manage link redeem, badge and Plus actions), `Business\Profile` + `Business\Owner` (owner area pages), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
 | `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
 | `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `NewsletterService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
 | `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
@@ -81,9 +81,10 @@ writer of its tables; controllers stay thin; anything an owner must not set stay
 | `GET /verified`, `GET /plus` | what the badge (co.za) and Plus (.app) mean |
 | `GET /compare`, `/resources`, `/media`, `/company`, `/faq` | `Contact::*` |
 | `GET/POST /profile-setup`, `/profile-setup/checkout`, `/profile-setup/thanks` | the paid setup service |
-| `GET/POST /manage`, `GET /manage/{token}`, `GET/POST /manage/edit`, `/manage/signout` | owner magic link and dashboard |
-| `POST /manage/verification`, `GET /manage/verification/checkout[?plan=plus]`, `POST …/cancel`, `GET …/done` | badge or Plus: apply, pay, cancel, PayFast return |
-| `/manage/jobs/*`, `/manage/reviews/*`, `POST /manage/photo-delete/{id}`, `/manage/brand-delete/{id}` | owner tools |
+| `/business` (sign in, overview or bookings dashboard), `/business/profile/{details,where,services,photos,team,branches}` (+ `/preview`), `/business/{badge,jobs,reviews,stats}` | the owner area, see "Owner area" below |
+| `GET /manage`, `GET /manage/edit` | redirect into `/business`; `POST manage/edit`, `manage/jobs/*`, `manage/reviews/*` 307 there |
+| `GET /manage/{token}` | emailed manage link: signs in to `/business` (`?to=checkout|move` kept) |
+| `POST /manage/verification`, `GET /manage/verification/checkout[?plan=plus]`, `POST …/cancel`, `GET …/done` | badge or Plus: apply, pay, cancel, PayFast return (page: `/business/badge`) |
 | `/jobs/*` | Jobs board, see that section |
 | `/reviews/*` | customer reviews |
 | `/recommend`, `/partners`, `/p/{code}`, `/careers/*` | referrals, Partner Program, our own hiring (co.za only) |
@@ -741,9 +742,34 @@ through `listing_public_view()` first (hidden addresses).
   service area, map** each have their own `_*.php` partial in `app/Views/directory/`.
 - Public holidays: see below.
 
+## Owner area (`/business`, since 10 Nov 2026, branch `feat/business-area`)
+
+One back office for every owner (owner decision 10 Nov 2026), replacing `/manage/edit`
+and the separate `/bookings` area:
+
+- **One account each.** `OwnerAccess` makes the profile's email an `xs_accounts` row with
+  an admin membership of every profile on that email, at the first emailed sign in link,
+  password sign in, manage link or signup verify. No `manage_listing_id` session any more;
+  `OwnerAccess::listing()` (checked) and `sessionListingId()` (unchecked, "is this the
+  owner?" only).
+- **Gate levels** (`BusinessAuth`): `guest`, `account`, `owner` (profile pages, Free too),
+  none = bookings usable, else `business/locked` (403, why, and the badge, Plus or Turn on).
+  Permissions `profile.edit`, `profile.billing`, `jobs.manage`, `reviews.reply` are admins
+  only. AJAX without a session gets a 401 JSON with `redirect`.
+- **The form in pages.** `Config\ProfileSections` maps each page to its fields and error
+  keys; `_form_fields.php` takes `$section` (every caller passes it, null = whole form;
+  render with `saveData` false or it leaks into the next form).
+  `DirectoryListingMutationService::updateOwnSection()` posts the page's fields over
+  `storedFormInput()` and keeps only the page's errors; the geocoder runs only for `where`.
+  Team and Branches are locked for Free; while bookings are usable Team is `/business/team`
+  and Services is `/business/services` once the catalogue owns them.
+- **Sidebar** (`layouts/business.php`): Your profile, Bookings, Plan; locked items carry
+  a lock. Pages built from public partials set `profileForm` so the layout loads
+  `directory.js` (and the page loads whole, not swapped).
+
 ## Signup form (`/add-profile`) and the owner form
 
-- `directory/form.php` (signup) and `manage_edit.php` (owner) share `_form_fields.php`.
+- `directory/form.php` (signup), `business/profile.php` (owner, one section a page) and `admin/edit.php` share `_form_fields.php`.
   Five numbered colour cards, one list: `listing_form_steps()` (blue, teal, violet,
   amber, pink; class names written out in full so Tailwind keeps them). Each card is a
   `<section id="form-step-N" data-form-step>`. The tracker is `_form_steps_nav.php`: in

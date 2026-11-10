@@ -230,7 +230,7 @@ final class RequiredAddressTest extends CIUnitTestCase
         // signup form's value through CI4's shared view data and starts
         // demanding an address from owners who have never had one.
         foreach ([
-            $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit'),
+            $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/where'),
             $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
         ] as $result) {
             $result->assertOK();
@@ -271,10 +271,10 @@ final class RequiredAddressTest extends CIUnitTestCase
             'geocoding_status'  => \App\Libraries\ListingGeocoder::STATUS_STALE,
         ], true);
 
-        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $failed])->get('manage/edit')->getBody();
+        $html = $this->withSession(\Tests\Support\OwnerSession::for($failed))->get('business/profile/where')->getBody();
         $this->assertStringContainsString('We could not find your address on the map.', $html);
 
-        $html = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $stale])->get('manage/edit')->getBody();
+        $html = $this->withSession(\Tests\Support\OwnerSession::for($stale))->get('business/profile/where')->getBody();
         $this->assertStringContainsString('we could not confirm the new one on the map', $html);
         $this->assertStringNotContainsString('We could not find your address on the map.', $html);
     }

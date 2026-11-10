@@ -162,7 +162,7 @@ if (! is_array($old['hours'] ?? null)) {
                 </details>
             <?php endif; ?>
 
-            <?php // Unsaved-draft backup — see manage_edit.php. ?>
+            <?php // Unsaved-draft backup — see business/profile.php. ?>
             <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
             <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data"
                   data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] ?>"
@@ -187,6 +187,8 @@ if (! is_array($old['hours'] ?? null)) {
                 <?php endif; ?>
 
                 <?= view('directory/_form_fields', [
+                    // The whole form: never one business area page (see business/profile.php).
+                    'section' => null,
                     'v'            => $v,
                     'err'          => $err,
                     'categories'   => $categories,
@@ -209,7 +211,7 @@ if (! is_array($old['hours'] ?? null)) {
                     // Each person's "checked against the register" tick.
                     'adminEdit'    => true,
                     'vLocations'   => is_array($old['locations'] ?? null) ? $old['locations'] : $locations,
-                    // Marker, not the array — see manage_edit.php.
+                    // Marker, not the array — see business/profile.php.
                     'vServices'    => array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services,
                     'servicesFromBookings' => $servicesFromBookings ?? false,
                     'vAttributes'  => array_key_exists('attributes_present', $old) ? (is_array($old['attributes'] ?? null) ? $old['attributes'] : []) : $attributes,

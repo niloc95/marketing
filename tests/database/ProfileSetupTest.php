@@ -195,7 +195,7 @@ final class ProfileSetupTest extends CIUnitTestCase
             'description_text' => 'Braids and natural hair.',
         ], true);
 
-        $res = $this->withSession([\App\Controllers\Manage::SESSION_KEY => $id])->get('manage/edit');
+        $res = $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/badge');
         $res->assertStatus(200);
         $html = (string) $res->response()->getBody();
         $this->assertStringContainsString($offer, $html);

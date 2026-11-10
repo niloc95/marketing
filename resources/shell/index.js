@@ -1,6 +1,6 @@
 /**
  * The app shell (layouts/_shell.php): sidebar and page swaps. Imported by
- * the /bookings entry (resources/business/main.js) and built on its own as
+ * the /business entry (resources/business/main.js) and built on its own as
  * assets/business/shell.js for /admin, whose page behaviour stays in
  * directory.js.
  */

@@ -35,6 +35,7 @@ the dashboard. Bookings' own wording is **rewritten, not carried over**. Code id
 | reminder | follow-up |
 | set up (verb), setup (noun) | set-up |
 | day to day, one off | day-to-day, one-off |
+| person, Add a person; Show on my profile; Takes bookings (T31: one person on the profile and in bookings) | provider, practitioner record, staff member |
 
 ## Statuses (labels)
 
@@ -45,6 +46,8 @@ the dashboard. Bookings' own wording is **rewritten, not carried over**. Code id
 | `completed` | Completed | (no message) |
 | `cancelled` | Cancelled | "Your booking is cancelled." |
 | `no_show` | No show | (no message by default) |
+
+"Customer sees" lives in `AppointmentStatus::customerMessage()`, used by the booking page and by the alert after a customer changes the time: "Done. Your booking has a new time." plus the status line (a pending booking adds ", and we will email you when they do." while the confirmation email is on).
 
 ## Email subjects (customer)
 

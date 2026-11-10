@@ -863,7 +863,7 @@ class DirectoryListingMutationService
      * @param array<string,mixed> $input
      * @return array{ok:bool,errors:array<string,string>,message:string}
      */
-    public function updateOwn(int $id, array $input): array
+    public function updateOwn(int $id, array $input, ?string $section = null): array
     {
         $listing = $this->listings->find($id);
         if (! is_array($listing)) {
@@ -871,17 +871,28 @@ class DirectoryListingMutationService
         }
 
         $prepared = $this->prepareOwnEdit($listing, $input);
-        if ($prepared['errors'] !== []) {
-            return ['ok' => false, 'errors' => $prepared['errors'], 'message' => 'Please correct the highlighted fields.'];
+        $errors   = $prepared['errors'];
+        if ($section !== null) {
+            // One page of the business area: only its own problems stop it.
+            // What another page holds was posted back as stored, and an old
+            // profile that predates a rule must still save its phone number.
+            $sections = config('ProfileSections');
+            $errors   = array_filter($errors, static fn (string $key): bool => $sections->ownsError($section, $key), ARRAY_FILTER_USE_KEY);
+        }
+        if ($errors !== []) {
+            return ['ok' => false, 'errors' => $errors, 'message' => 'Please correct the highlighted fields.'];
         }
         $data = $prepared['data'];
 
         // ListingGeocoder decides whether this save needs a lookup at all — an
         // edit that only touches hours or the description shouldn't spend a
         // Nominatim call on a donation-funded service. It returns null when the
-        // coordinates should be left exactly as they are.
+        // coordinates should be left exactly as they are. A business area page
+        // other than Where and hours never holds the address, so it never asks.
         $geocoder = new ListingGeocoder();
-        $geo      = $geocoder->resolve(array_merge($listing, $data), $listing, $input);
+        $geo      = $section === null || $section === 'where'
+            ? $geocoder->resolve(array_merge($listing, $data), $listing, $input)
+            : null;
         $data     = array_merge($data, $geo ?? []);
 
         // One unit of work — see submitPublic(). It matters more here: an owner
@@ -977,6 +988,62 @@ class DirectoryListingMutationService
         $this->notifyAdmin(is_array($fresh) ? $fresh : $listing, 'edited');
 
         return ['ok' => true, 'errors' => [], 'message' => 'Your profile has been updated.'];
+    }
+
+    /**
+     * Save one page of the business area (Config\ProfileSections). The page
+     * posts only its own fields; every other field goes back in as stored, so
+     * updateOwn() sees a whole form and leaves what the page does not hold
+     * exactly as it was. Child rows (team, branches, services, tags, video)
+     * and the checkbox sections only change when their page posts them, by
+     * updateOwn()'s absent versus present rule.
+     *
+     * @param array<string,mixed> $input
+     * @return array{ok:bool,errors:array<string,string>,message:string}
+     */
+    public function updateOwnSection(int $id, string $section, array $input): array
+    {
+        $sections = config('ProfileSections');
+        $listing  = $this->listings->find($id);
+        if (! $sections->has($section) || ! is_array($listing)) {
+            return ['ok' => false, 'errors' => [], 'message' => 'That profile no longer exists.'];
+        }
+
+        $posted = array_intersect_key($input, array_flip($sections->fields($section)));
+        // The photo rule reads these two, set by the controller from the upload.
+        foreach (['logo_path', '_has_photo'] as $key) {
+            if (array_key_exists($key, $input)) {
+                $posted[$key] = $input[$key];
+            }
+        }
+
+        return $this->updateOwn($id, $posted + $this->storedFormInput($listing), $section);
+    }
+
+    /**
+     * A stored profile as the owner form would post it, for the fields a page
+     * of the business area does not hold. Only scalar columns: nested sections
+     * (hours, team, branches, services) are left out, which updateOwn() reads
+     * as "leave alone".
+     *
+     * @param array<string,mixed> $listing
+     * @return array<string,mixed>
+     */
+    public function storedFormInput(array $listing): array
+    {
+        $input = [];
+        foreach (DirectoryListingModel::OWNER_EDITABLE as $field) {
+            if (in_array($field, ['logo_path', 'trading_hours', 'by_appointment', 'customer_location', 'show_address', 'service_areas'], true)) {
+                continue;
+            }
+            $input[$field] = $listing[$field] ?? '';
+        }
+        foreach (['accepts_card_payments', 'offers_delivery', 'offers_online_booking'] as $flag) {
+            $input[$flag] = ! empty($listing[$flag]) ? '1' : '';
+        }
+        $input['category_id'] = (string) ($listing['category_id'] ?? '');
+
+        return $input;
     }
 
     /**
@@ -1750,6 +1817,12 @@ class DirectoryListingMutationService
             $result  = $team->syncFromForm($id, $input['team'], $regulator, $admin);
             $errors  = array_merge($errors, $result['errors']);
             $orphans = array_merge($orphans, $result['orphans']);
+
+            // One person, one record (T31): Bookings takes each card's new
+            // name, title and bio, and the "Takes bookings" ticks.
+            if ($result['errors'] === [] && config('Bookings')->enabled() && (int) ($listing['bookings_enabled'] ?? 0) === 1) {
+                (new \App\Services\Bookings\TeamService($id))->fromProfileForm($result['ids'], is_array($input['team']) ? $input['team'] : []);
+            }
         }
 
         if (array_key_exists('locations', $input) && $locations->canManage($listing)) {
