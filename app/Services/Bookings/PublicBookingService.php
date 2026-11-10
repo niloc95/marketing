@@ -47,6 +47,12 @@ class PublicBookingService
 
     private BookingSettings $settings;
 
+    /** @var list<array<string,mixed>>|null */
+    private ?array $listed = null;
+
+    /** @var list<array<string,mixed>>|null */
+    private ?array $bookableProviders = null;
+
     /** @param array<string,mixed> $listing a published profile */
     public function __construct(private array $listing, ?DateTimeImmutable $now = null)
     {
@@ -65,15 +71,17 @@ class PublicBookingService
      */
     public static function takesBookings(array $listing): bool
     {
-        if (! config('Bookings')->siteAllowed(site()->key())
-            || site()->forRow($listing) !== site()->key()
-            || ! (int) ($listing['bookings_enabled'] ?? 0)
-            || ($listing['status'] ?? '') !== 'published'
-            || ! (new Plans\BookingPlanService())->allows($listing)) {
-            return false;
-        }
+        return self::allowed($listing) && (new self($listing))->services() !== [];
+    }
 
-        return (new self($listing))->services() !== [];
+    /** takesBookings() without the services: the flag, site, switch, status and plan. */
+    private static function allowed(array $listing): bool
+    {
+        return config('Bookings')->siteAllowed(site()->key())
+            && site()->forRow($listing) === site()->key()
+            && (int) ($listing['bookings_enabled'] ?? 0) === 1
+            && ($listing['status'] ?? '') === 'published'
+            && (new Plans\BookingPlanService())->allows($listing);
     }
 
     /** The link to book a profile, or '' when it takes no bookings. */
@@ -90,16 +98,20 @@ class PublicBookingService
      *
      * @param array<string,mixed> $listing
      *
-     * @return array{services:list<array<string,mixed>>,practitioners:list<array<string,mixed>>}
+     * One object for all of it, so the catalogue and the team are read
+     * once per page view. `book_url` is bookUrl().
+     *
+     * @return array{book_url:string,services:list<array<string,mixed>>,practitioners:list<array<string,mixed>>}
      */
     public static function profileView(array $listing): array
     {
-        if (! self::takesBookings($listing)) {
-            return ['services' => [], 'practitioners' => []];
+        $self = self::allowed($listing) ? new self($listing) : null;
+        if ($self === null || $self->services() === []) {
+            return ['book_url' => '', 'services' => [], 'practitioners' => []];
         }
-        $self = new self($listing);
 
         return [
+            'book_url'      => base_url('directory/' . $listing['slug'] . '/book'),
             'services'      => $self->profileServices(),
             'practitioners' => listing_has_premium($listing) ? $self->practitioners() : [],
         ];
@@ -128,7 +140,7 @@ class PublicBookingService
         $out  = [];
         // Listed, not only bookable: a service still waiting for its length
         // stays on the profile, without a Book link (T29).
-        foreach ((new CatalogueService($this->listingId))->listed() as $s) {
+        foreach ($this->listed() as $s) {
             $cents = $s['price_cents'] !== null ? (int) $s['price_cents'] : null;
             $price = CatalogueService::priceText($cents, (string) $s['currency']);
             $out[] = [
@@ -261,10 +273,21 @@ class PublicBookingService
     /** Bookable, not archived people, in team order. @return list<array<string,mixed>> */
     private function bookableProviders(): array
     {
-        return array_values(array_filter(
+        return $this->bookableProviders ??= array_values(array_filter(
             (new TeamService($this->listingId))->providers(),
             static fn (array $p): bool => (int) $p['bookable'] === 1,
         ));
+    }
+
+    /**
+     * CatalogueService::listed(), read once for this object (a page view
+     * asks for it several times).
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function listed(): array
+    {
+        return $this->listed ??= (new CatalogueService($this->listingId))->listed();
     }
 
     public function timezone(): DateTimeZone
@@ -285,7 +308,8 @@ class PublicBookingService
      */
     public function services(): array
     {
-        return (new CatalogueService($this->listingId))->bookable();
+        // CatalogueService::bookable(), from the listed() read once.
+        return array_values(array_filter($this->listed(), static fn (array $s): bool => (int) $s['length_checked'] === 1));
     }
 
     /** @return array<string,mixed>|null */
@@ -681,7 +705,9 @@ class PublicBookingService
     {
         $today   = $this->today();
         $horizon = $this->horizon();
-        $month   = $month !== null && preg_match('/^\d{4}-\d{2}$/', $month) ? $month : substr($today, 0, 7);
+        // A real month only: "2026-13" sorts between two real ones and would
+        // get past the clamp below.
+        $month   = $month !== null && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) ? $month : substr($today, 0, 7);
         $month   = max(substr($today, 0, 7), min(substr($horizon, 0, 7), $month));
         $start   = new DateTimeImmutable($month . '-01', $this->timezone());
         $from    = max($today, $start->format('Y-m-d'));

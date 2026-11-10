@@ -155,6 +155,8 @@ class TeamService
             'bookable' => array_key_exists('bookable', $input) ? (int) (bool) $input['bookable'] : 1,
         ];
 
+        $catalogue = new CatalogueService($this->listingId, $this->audit);
+        $owned     = $catalogue->ownsList();
         helper('slug');
         $data['slug'] = ensure_unique_slug(BookingProviderModel::forBusiness($this->listingId), 'slug', $name, $id, [], 120);
 
@@ -166,7 +168,7 @@ class TeamService
             $this->audit->record($this->listingId, $accountId, 'provider.updated', 'provider', $id, null, ['name' => $name]);
         }
         // Bookable or not decides which services the profile lists (T28).
-        (new CatalogueService($this->listingId, $this->audit))->mirrorToProfile();
+        $catalogue->mirrorToProfile($owned);
 
         return ['id' => $id, 'errors' => []];
     }
@@ -176,9 +178,11 @@ class TeamService
         if ($this->provider($id) === null) {
             return false;
         }
+        $catalogue = new CatalogueService($this->listingId, $this->audit);
+        $owned     = $catalogue->ownsList();
         BookingProviderModel::forBusiness($this->listingId)->update($id, ['archived_at' => $archive ? gmdate('Y-m-d H:i:s') : null]);
         $this->audit->record($this->listingId, $accountId, $archive ? 'provider.archived' : 'provider.restored', 'provider', $id);
-        (new CatalogueService($this->listingId, $this->audit))->mirrorToProfile();
+        $catalogue->mirrorToProfile($owned);
 
         return true;
     }

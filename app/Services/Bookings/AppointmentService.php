@@ -105,7 +105,8 @@ class AppointmentService
             ? $providerId
             : (int) $row['provider_id'];
 
-        $engine = new AvailabilityService($this->listing, $this->now);
+        // Read only, up to 60 days: hours and place windows asked once.
+        $engine = (new AvailabilityService($this->listing, $this->now))->remember();
         $places = (new TeamService($this->listingId))->locationChoices($this->listing);
         $nowUtc = $this->now->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         $own    = (int) $row['provider_id'] === $providerId ? (string) $row['start_at'] : '';

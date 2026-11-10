@@ -256,6 +256,14 @@ final class BookingProfileTest extends CIUnitTestCase
 
         (new BookingSetupService())->turnOn($this->listings->find($id));
         $this->assertCount(3, (new CatalogueService($id))->services(), 'a second turn on adds nothing');
+
+        // Archiving the last bookable service ends the catalogue's hold on
+        // the list, and still takes that service off the profile.
+        foreach ((new CatalogueService($id))->services() as $s) {
+            (new CatalogueService($id))->archiveService((int) $s['id'], null);
+        }
+        $this->assertFalse(CatalogueService::ownsProfileServices($this->listings->find($id)));
+        $this->assertSame([], (new ServiceMenuService())->servicesFor($id), 'no archived service stays on the profile');
     }
 
     public function testCopiedServicesKeepTheProfilesOrderAndItsLabel(): void
@@ -267,7 +275,7 @@ final class BookingProfileTest extends CIUnitTestCase
         }
         (new BookingSetupService())->turnOn($this->listings->find($id));
         $catalog = new CatalogueService($id);
-        $this->assertSame(['services' => [], 'practitioners' => []], PublicBookingService::profileView($this->listings->find($id)), 'lengths unconfirmed: nothing online yet, the profile is as it was (T29)');
+        $this->assertSame(['book_url' => '', 'services' => [], 'practitioners' => []], PublicBookingService::profileView($this->listings->find($id)), 'lengths unconfirmed: nothing online yet, the profile is as it was (T29)');
 
         // The owner confirms one: all three stay listed, only it can be booked.
         $first = $catalog->services()[0];
@@ -300,6 +308,10 @@ final class BookingProfileTest extends CIUnitTestCase
         $this->assertSame(45000, CatalogueService::plainAmount('R450'));
         $this->assertSame(120050, CatalogueService::plainAmount('R 1 200.50'));
         $this->assertSame(45000, CatalogueService::plainAmount('450.00'));
+        $this->assertSame(45000, CatalogueService::plainAmount('R450,00'), 'a decimal comma');
+        $this->assertSame(120050, CatalogueService::plainAmount('R1 200,50'));
+        $this->assertSame(120000, CatalogueService::plainAmount('R1,200'), 'a thousands comma');
+        $this->assertSame(120050, CatalogueService::plainAmount('R1,200.50'));
         $this->assertNull(CatalogueService::plainAmount('from R150'));
         $this->assertNull(CatalogueService::plainAmount('POA'));
         $this->assertNull(CatalogueService::plainAmount('$25'), 'not the business\'s currency');
