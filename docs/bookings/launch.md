@@ -2,7 +2,14 @@
 
 How online bookings go from the branches to the first businesses. Every production step
 follows the `deploy-production` skill and waits for the owner's OK, one step at a time.
-Nothing here has run on production yet.
+
+**Status, 10 Nov 2026:** steps 1 to 3 done. `main` released dark at `4d26166` after a Lightsail
+snapshot (`before-bookings-20261110`) and a dump (`/home/deploy/backups/db-pre-bookings-20261110-0811.sql.gz`):
+migrations run before the code copy (26 tables), the five booking cron lines installed, both hosts
+checked (every booking path 404, nothing on .app). Restore drill in step 4 passed (80 tables, 24
+booking, 10 s, `scripts/restore-drill.sh`). Still to do: `encryption.key`, the load test (needs a
+test profile switched on, step 5), and everything from step 5 on. The /bookings address,
+profile booking view and customer lookup (`feat/spa-shell`) are not released yet.
 
 ## 1. Merge (owner's go ahead)
 
