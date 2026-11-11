@@ -105,7 +105,7 @@ if ($indexable && ! empty($result['items'])) {
 // table, so this cannot be driven from the raw query string — the same reason
 // the title and canonical above are built from it.
 // A main-category filter on its own gets its group's look the same way.
-$styled        = $category ?? ($group !== null ? ['slug' => '', 'group_name' => $group['name']] : null);
+$styled        = $category ?? ($group !== null ? ['slug' => '', 'group_name' => $group['group_name'] ?? $group['name']] : null);
 $vertical      = $styled !== null ? category_group_style($styled['group_name'] ?? null) : null;
 $verticalPhoto = $styled !== null ? category_photo($styled) : null;
 ?>
@@ -213,6 +213,12 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             <?php endif; ?>
             <span class="near-bar-note" role="status" data-near-me-note></span>
         </div>
+        <?php if (($widenedFrom ?? null) !== null): ?>
+            <div class="search-notice" role="status">
+                <p class="search-notice-title">Nothing within <?= (int) $widenedFrom ?> km of you.</p>
+                <p>Showing the nearest instead, closest first.</p>
+            </div>
+        <?php endif; ?>
 
         <?php // Right under the box it explains, not below the category photo:
               // this is the answer to "what did you search for?". ?>
@@ -243,7 +249,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                       // own categories, which is where the visitor goes next. ?>
                 <?php foreach ($categories as $c): ?>
                     <?php if ($shown >= 18) { break; } ?>
-                    <?php if ($group !== null) { if (($c['group_name'] ?? '') !== $group['name']) { continue; } }
+                    <?php if ($group !== null) { if (isset($group['slugs']) ? ! in_array($c['slug'], $group['slugs'], true) : ($c['group_name'] ?? '') !== $group['name']) { continue; } }
                           elseif (($c['group_name'] ?? '') === $seenGroup) { continue; } ?>
                     <?php $seenGroup = $c['group_name'] ?? ''; $shown++; ?>
                     <?= view('directory/_chip', ['label' => $c['name'], 'href' => base_url('directory/' . $c['slug']), 'tint' => category_group_tint($c['group_name'] ?? null)], ['saveData' => false]) ?>
@@ -343,7 +349,8 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
 
                 $mapCentre = null;
                 if (($filters['lat'] ?? '') !== '' && ($filters['lng'] ?? '') !== '') {
-                    $zoom      = $radiusZoom[(int) ($filters['radius'] ?? 0)] ?? 11;
+                    // Widened past the radius: the nearest may be well outside it.
+                    $zoom      = ($widenedFrom ?? null) !== null ? 9 : ($radiusZoom[(int) ($filters['radius'] ?? 0)] ?? 11);
                     $mapCentre = $filters['lat'] . ',' . $filters['lng'] . ',' . $zoom;
                 } else {
                     foreach ($result['items'] as $l) {

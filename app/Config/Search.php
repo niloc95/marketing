@@ -164,8 +164,8 @@ class Search extends BaseConfig
      * @var array<string,string>
      */
     public array $categorySynonyms = [
-        // Health
-        'doctor'            => 'general-practitioner',
+        // Health. "doctor" alone is not here: it means every kind of doctor,
+        // see $categorySets.
         'gp'                => 'general-practitioner',
         'family doctor'     => 'general-practitioner',
         'paediatric'        => 'paediatrician',
@@ -481,6 +481,49 @@ class Search extends BaseConfig
         'Photographer',
         'Plumber',
     ];
+
+    /**
+     * Main categories that are not a group_name: a word that means several
+     * categories from inside one group. Discovery treats one like a main
+     * category (?group={key}, noindexed, the chips list its categories).
+     *
+     * "doctor" was the GP category alone until 11 Nov 2026, so "doctor near
+     * me" found nobody in Johannesburg, Pretoria or Cape Town: the GPs we list
+     * are elsewhere and the specialists there were never asked for. Doctors
+     * are the categories Config\SchemaTypes publishes as Physician, so a new
+     * kind of doctor joins the set the day its schema type is set.
+     *
+     * key => name (shown as the title and chip), group (its look), schemaType
+     * (members: SchemaTypes::$bySlug entries of that type), phrases (typed).
+     *
+     * @var array<string,array{name:string,group:string,schemaType:string,phrases:list<string>}>
+     */
+    public array $categorySets = [
+        'doctors' => [
+            'name'       => 'Doctors',
+            'group'      => 'Health & Medical',
+            'schemaType' => 'Physician',
+            'phrases'    => ['doctor', 'doctors', 'medical doctor', 'medical doctors'],
+        ],
+    ];
+
+    /**
+     * The category slugs in a $categorySets entry, or [] for an unknown key.
+     *
+     * @return list<string>
+     */
+    public function categorySetSlugs(string $key): array
+    {
+        $set = $this->categorySets[$key] ?? null;
+        if ($set === null) {
+            return [];
+        }
+
+        return array_keys(array_filter(
+            config(SchemaTypes::class)->bySlug,
+            static fn ($type) => $type === $set['schemaType'],
+        ));
+    }
 
     /**
      * This vocabulary as the site the search is on reads it.

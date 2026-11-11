@@ -57,6 +57,18 @@ class MapboxGeocoder implements GeocoderInterface
      */
     private const TYPES = 'address,street,neighborhood,locality,place,postcode';
 
+    /** What placeCentre() looks up: the suburb or city a street must be in. */
+    private const PLACE_TYPES = 'neighborhood,locality,place';
+
+    /**
+     * How far a street match may be from the centre of the suburb asked for,
+     * or of the city when no suburb was given (inAskedPlace()). Parktown to
+     * Malvern East, the wrong match seen on production, is about 7 km.
+     */
+    private const SUBURB_RADIUS_KM = 3.0;
+
+    private const CITY_RADIUS_KM = 15.0;
+
     /**
      * Words that say what kind of road it is, not which one. Two addresses
      * that share only these are not the same street.
@@ -217,6 +229,9 @@ class MapboxGeocoder implements GeocoderInterface
 
             $mapped = $this->mapFeature($feature);
             if ($mapped === null || ! $this->accept($mapped, $feature, $province, $asked)) {
+                continue;
+            }
+            if (! $this->inAskedPlace($mapped, $suburb, $city, $province)) {
                 continue;
             }
 
@@ -387,6 +402,133 @@ class MapboxGeocoder implements GeocoderInterface
         }
 
         return true;
+    }
+
+    /**
+     * Is a street level match in the suburb (or city) the profile gave?
+     *
+     * sharesAName() only asks for one word in common, and imported addresses
+     * start with building names, so it passes streets in the wrong place. Seen
+     * on production, 11 Nov 2026 (doctors import): "4 Parklane Parktown" →
+     * "Parklane, Deelkraal Gold Mine" 80 km away, "Life Bedford Gardens
+     * Hospital, Bedfordview" → "Gardens, Antwerp", "Hospital Suites, Parktown"
+     * → "Hospital Street, Malvern East". All three came back as street
+     * precision, and a confident wrong pin hides the business from near me.
+     *
+     * Same suburb (or city, when no suburb was given) by name: yes. Otherwise
+     * the match must lie within SUBURB_RADIUS_KM of the suburb's centre, or
+     * CITY_RADIUS_KM of the city's. A rejected street falls through to the next
+     * attempt, which ends with the suburb on its own: a shaded circle in the
+     * right place rather than a pin in the wrong one.
+     *
+     * @param array{lat:float,lng:float,suburb:string,city:string,address_line:string} $mapped
+     */
+    private function inAskedPlace(array $mapped, string $suburb, string $city, string $province): bool
+    {
+        if ($mapped['address_line'] === '') {
+            return true; // a suburb or city match is the place itself
+        }
+
+        if ($suburb === '' && $city === '') {
+            return true; // nothing to check against
+        }
+        // A suburb asked for must be the suburb matched. A city alone may be
+        // either, because Mapbox files Midrand or Pinetown as a locality.
+        $named = $suburb !== ''
+            ? self::samePlace($mapped['suburb'], $suburb)
+            : self::samePlace($mapped['city'], $city) || self::samePlace($mapped['suburb'], $city);
+        if ($named) {
+            return true;
+        }
+
+        $centre = $this->placeCentre($suburb, $city, $province);
+        if ($centre === null) {
+            // Without a centre to measure from, only the city's name can vouch.
+            return $city !== '' && self::samePlace($mapped['city'], $city);
+        }
+
+        $limit = $centre['precision'] === 'suburb' ? self::SUBURB_RADIUS_KM : self::CITY_RADIUS_KM;
+
+        return self::distanceKm($mapped['lat'], $mapped['lng'], $centre['lat'], $centre['lng']) <= $limit;
+    }
+
+    /**
+     * The centre of the suburb (or city) asked for, from Mapbox, cached.
+     *
+     * @return array{lat:float,lng:float,precision:string}|null
+     */
+    private function placeCentre(string $suburb, string $city, string $province): ?array
+    {
+        $q = implode(', ', array_filter([$suburb, $city, $province], static fn ($v) => $v !== ''));
+        if ($q === '') {
+            return null;
+        }
+
+        $cacheKey = 'mapbox_centre_' . md5(strtolower($q)) . NominatimGeocoder::keySuffix($this->country);
+        $cached   = cache($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+        if ($cached === 'none') {
+            return null;
+        }
+
+        $failedBefore = $this->failed;
+        $features     = $this->request(self::FORWARD_ENDPOINT, [
+            'q'            => $q,
+            'country'      => strtolower($this->country),
+            'autocomplete' => 'false',
+            'limit'        => 1,
+            'language'     => 'en',
+            'types'        => self::PLACE_TYPES,
+            'permanent'    => 'true',
+        ], 'centre');
+        $callFailed   = $this->failed && ! $failedBefore;
+        // The street lookup's own outcome decides $failed; a failed centre
+        // lookup only means this street cannot be vouched for.
+        $this->failed = $failedBefore;
+
+        $mapped = isset($features[0]) ? $this->mapFeature($features[0]) : null;
+        if ($mapped === null
+            || ! NominatimGeocoder::isPlausible($mapped['lat'], $mapped['lng'], $this->country)
+            || ($province !== '' && $mapped['province'] !== '' && strcasecmp($mapped['province'], $province) !== 0)) {
+            if (! $callFailed) {
+                cache()->save($cacheKey, 'none', HOUR);
+            }
+
+            return null;
+        }
+
+        $centre = [
+            'lat'       => $mapped['lat'],
+            'lng'       => $mapped['lng'],
+            'precision' => $mapped['precision'] === 'suburb' ? 'suburb' : 'city',
+        ];
+        cache()->save($cacheKey, $centre, self::CACHE_TTL);
+
+        return $centre;
+    }
+
+    /** "Parktown" and "Parktown West" are one place; "Bedfordview" and "Antwerp" are not. */
+    private static function samePlace(string $a, string $b): bool
+    {
+        $norm = static fn (string $s): string => preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower($s)) ?? '';
+        $a    = $norm($a);
+        $b    = $norm($b);
+        if ($a === '' || $b === '') {
+            return false;
+        }
+
+        return $a === $b || (min(strlen($a), strlen($b)) >= 4 && (str_contains($a, $b) || str_contains($b, $a)));
+    }
+
+    private static function distanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $h    = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 6371.0 * 2 * asin(min(1.0, sqrt($h)));
     }
 
     /**

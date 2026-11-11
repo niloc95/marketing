@@ -162,7 +162,7 @@ if (MERGE) {
     if (behindMain) warnings.push(`main has ${behindMain} commit(s) this branch does not; /finish merges them, expect conflicts to check.`);
     if (!errors.length) {
         console.log('Running php vendor/bin/phpunit …');
-        const run = spawnSync('php', ['vendor/bin/phpunit'], { stdio: 'inherit' });
+        const run = spawnSync('php', ['vendor/bin/phpunit', '--no-coverage'], { stdio: 'inherit' });
         if (run.status !== 0) errors.push('phpunit failed. Nothing is merged until every test passes.');
     }
 }

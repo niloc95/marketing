@@ -136,6 +136,91 @@ final class SmartSearchTest extends CIUnitTestCase
         $this->assertStringNotContainsString('lat=', $body);
     }
 
+    // ------------------------------------------------------------ doctors
+
+    private function doctorCategories(): void
+    {
+        foreach (['general-practitioner' => 'General Practitioner', 'cardiologist' => 'Cardiologist'] as $slug => $name) {
+            $this->categories[$slug] = (int) (new DirectoryCategoryModel())->insert([
+                'name' => $name, 'slug' => $slug, 'group_name' => 'Health & Medical', 'is_active' => 1,
+            ], true);
+        }
+    }
+
+    public function testDoctorMeansEveryKindOfDoctor(): void
+    {
+        // 11 Nov 2026: "doctor" was the GP category alone, so the specialists
+        // in Johannesburg never answered "doctor near me".
+        $this->doctorCategories();
+        $this->listing('Parktown Family Practice', 'general-practitioner');
+        $this->listing('Parktown Heart Rooms', 'cardiologist');
+        $this->listing('Parktown Smiles', 'dentist');
+
+        foreach (['doctor near me', 'doctors', 'Doctors in Johannesburg'] as $q) {
+            $body = $this->search($q);
+            $this->assertStringContainsString('Parktown Family Practice', $body, $q);
+            $this->assertStringContainsString('Parktown Heart Rooms', $body, $q);
+            $this->assertStringNotContainsString('Parktown Smiles', $body, $q);
+        }
+    }
+
+    public function testDoctorsIsAMainCategoryWithItsOwnChips(): void
+    {
+        $this->doctorCategories();
+        $this->listing('Parktown Heart Rooms', 'cardiologist');
+
+        $result = $this->get('directory?group=doctors');
+        $result->assertOK();
+        $body = $result->getBody();
+
+        $this->assertStringContainsString('Parktown Heart Rooms', $body);
+        $this->assertStringContainsString('<title>Doctors', $body);
+        $this->assertStringContainsString('noindex', $body);
+        // Its chips are its own categories, not every Health & Medical one.
+        // (Chips only: the header's popular categories strip is another list.)
+        $this->assertMatchesRegularExpression('#class="chip[^"]*" href="[^"]*/directory/cardiologist"#', $body);
+        $this->assertDoesNotMatchRegularExpression('#class="chip[^"]*" href="[^"]*/directory/dentist"#', $body);
+    }
+
+    public function testASpecificDoctorStaysSpecific(): void
+    {
+        $this->doctorCategories();
+        $this->listing('Parktown Family Practice', 'general-practitioner');
+        $this->listing('Parktown Heart Rooms', 'cardiologist');
+
+        $body = $this->search('family doctor');
+
+        $this->assertStringContainsString('Parktown Family Practice', $body);
+        $this->assertStringNotContainsString('Parktown Heart Rooms', $body);
+    }
+
+    // ------------------------------------------------------- nothing near
+
+    public function testNothingWithinTheRadiusShowsTheNearestAndSaysSo(): void
+    {
+        // Pretoria visitor, the only dentist in Durban.
+        $this->listing('Durban Smiles', 'dentist', ['city' => 'Durban', 'province' => 'KwaZulu-Natal', 'latitude' => -29.8587, 'longitude' => 31.0218]);
+
+        $body = $this->search('dentist near me', '&lat=-25.7479&lng=28.2293&radius=10');
+
+        $this->assertStringContainsString('Durban Smiles', $body);
+        $this->assertStringContainsString('Nothing within 10 km of you.', $body);
+        // The pager and the chips describe the list shown: no radius on.
+        $this->assertStringNotContainsString('near-chip is-active', $body);
+    }
+
+    public function testSomethingWithinTheRadiusIsNotWidened(): void
+    {
+        $this->listing('Hatfield Smiles', 'dentist', ['city' => 'Pretoria', 'latitude' => -25.7500, 'longitude' => 28.2300]);
+        $this->listing('Durban Smiles', 'dentist', ['city' => 'Durban', 'province' => 'KwaZulu-Natal', 'latitude' => -29.8587, 'longitude' => 31.0218]);
+
+        $body = $this->search('dentist near me', '&lat=-25.7479&lng=28.2293&radius=10');
+
+        $this->assertStringContainsString('Hatfield Smiles', $body);
+        $this->assertStringNotContainsString('Durban Smiles', $body);
+        $this->assertStringNotContainsString('Nothing within', $body);
+    }
+
     // ------------------------------------------------------------ the SQL
 
     public function testTheServiceMenuIsSearchable(): void

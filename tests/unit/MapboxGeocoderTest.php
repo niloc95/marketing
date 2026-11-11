@@ -309,6 +309,140 @@ final class MapboxGeocoderTest extends CIUnitTestCase
         $this->assertNotNull($coords);
     }
 
+    // ------------------------------------------------- in the asked-for place
+
+    /**
+     * A Gauteng feature of any type at a point, filed under $suburb / $city.
+     *
+     * @return array<string,mixed>
+     */
+    private function placed(string $type, string $name, string $suburb, string $city, float $lat, float $lng): array
+    {
+        $context = array_filter([
+            'locality' => $suburb !== '' ? ['name' => $suburb] : null,
+            'place'    => $city !== '' ? ['name' => $city] : null,
+            'region'   => ['name' => 'Gauteng'],
+            'country'  => ['name' => 'South Africa', 'country_code' => 'ZA'],
+        ]);
+
+        return [
+            'type'       => 'Feature',
+            'geometry'   => ['type' => 'Point', 'coordinates' => [$lng, $lat]],
+            'properties' => [
+                'feature_type' => $type,
+                'name'         => $name,
+                'full_address' => implode(', ', array_filter([$name, $suburb, $city, 'Gauteng'])),
+                'coordinates'  => ['latitude' => $lat, 'longitude' => $lng, 'accuracy' => 'street'],
+                'context'      => $context,
+            ],
+        ];
+    }
+
+    /**
+     * Mapbox as seen on production: $street for the street and free-text
+     * lookups, $centre for the suburb centre, $suburbOnly for the last rung.
+     *
+     * @param array<string,mixed>|null $centre
+     */
+    private function answering(array $street, ?array $centre, array $suburbOnly): MapboxGeocoder
+    {
+        return $this->stub(function (string $endpoint, array $query) use ($street, $centre, $suburbOnly) {
+            if (($query['types'] ?? '') === 'neighborhood,locality,place') {
+                return $centre === null ? null : [$centre];
+            }
+            if (isset($query['q']) && ! preg_match('/\d/', (string) $query['q'])) {
+                return [$suburbOnly];
+            }
+
+            return [$street];
+        });
+    }
+
+    /** @return array<string,string> */
+    private function gauteng(string $street, string $suburb, string $city): array
+    {
+        return ['address_line' => $street, 'suburb' => $suburb, 'city' => $city, 'province' => 'Gauteng'];
+    }
+
+    public function testAStreetEightyKilometresFromTheSuburbFallsBackToTheSuburb(): void
+    {
+        $parktown = $this->placed('locality', 'Parktown', '', 'Johannesburg', -26.1806, 28.0377);
+        $coords   = $this->answering(
+            $this->placed('street', 'Parklane', 'Deelkraal', '', -26.4565, 27.3256),
+            $parktown,
+            $parktown,
+        )->geocodeParts($this->gauteng('4 Parklane Parktown Johannesburg 2193', 'Parktown', 'Johannesburg'));
+
+        $this->assertNotNull($coords);
+        $this->assertSame('suburb', $coords['precision']);
+        $this->assertEqualsWithDelta(-26.1806, $coords['lat'], 0.0001);
+    }
+
+    public function testAStreetInTheNextSuburbOverIsRejected(): void
+    {
+        // Production, 11 Nov 2026: Parktown → Hospital Street, Malvern East (~8 km).
+        $parktown = $this->placed('locality', 'Parktown', '', 'Johannesburg', -26.1806, 28.0377);
+        $coords   = $this->answering(
+            $this->placed('street', 'Hospital Street', 'Malvern East', 'Johannesburg', -26.2044, 28.1159),
+            $parktown,
+            $parktown,
+        )->geocodeParts($this->gauteng('Hospital Suites, 1 Jubilee Road', 'Parktown', 'Johannesburg'));
+
+        $this->assertSame('suburb', $coords['precision']);
+        $this->assertStringNotContainsString('Malvern', $coords['label']);
+    }
+
+    public function testAStreetJustOverASuburbBoundaryIsKept(): void
+    {
+        $radiokop = $this->placed('locality', 'Radiokop', '', 'Roodepoort', -26.1050, 27.9150);
+        $coords   = $this->answering(
+            $this->placed('street', 'Amplifier Road', 'Wilgeheuwel', 'Roodepoort', -26.1075, 27.9003),
+            $radiokop,
+            $radiokop,
+        )->geocodeParts($this->gauteng('Amplifier Road', 'Radiokop', 'Roodepoort'));
+
+        $this->assertSame('street', $coords['precision']);
+    }
+
+    public function testTheSameSuburbByNameNeedsNoCentreLookup(): void
+    {
+        $this->answering(
+            $this->placed('street', 'Jan Smuts Avenue', 'Parktown West', 'Johannesburg', -26.1750, 28.0300),
+            null,
+            $this->placed('locality', 'Parktown', '', 'Johannesburg', -26.1806, 28.0377),
+        )->geocodeParts($this->gauteng('12 Jan Smuts Avenue', 'Parktown', 'Johannesburg'));
+
+        $types = array_column(array_column($this->calls, 'query'), 'types');
+        $this->assertNotContains('neighborhood,locality,place', $types);
+    }
+
+    public function testACityGivenAloneMayBeMatchedAsALocality(): void
+    {
+        $coords = $this->answering(
+            $this->placed('street', 'Crompton Street', 'Pinetown', '', -29.8170, 30.8580),
+            null,
+            $this->placed('locality', 'Pinetown', '', '', -29.8150, 30.8600),
+        )->geocodeParts(['address_line' => '102 Crompton Street', 'city' => 'Pinetown', 'province' => 'Gauteng']);
+
+        $this->assertSame('street', $coords['precision']);
+    }
+
+    public function testWithNoCentreOnlyTheCityNameCanVouch(): void
+    {
+        // Bedfordview asked; Mapbox matched "Gardens" in Antwerp, Johannesburg,
+        // and the centre lookup failed. A different city name: refused.
+        $geocoder = $this->answering(
+            $this->placed('street', 'Gardens', 'Antwerp', 'Johannesburg', -26.1074, 28.1569),
+            null,
+            $this->placed('locality', 'Bedford Gardens', '', 'Bedfordview', -26.1780, 28.1350),
+        );
+        $coords = $geocoder->geocodeParts($this->gauteng('Life Bedford Gardens Hospital, 7 Leicester Road', 'Bedford Gardens', 'Bedfordview'));
+
+        $this->assertSame('suburb', $coords['precision']);
+        // The centre lookup failing is not the address lookup failing.
+        $this->assertFalse($geocoder->failed());
+    }
+
     // -------------------------------------------------------------- failure
 
     public function testAFailedCallIsReportedAndNotCachedAsNoMatch(): void
