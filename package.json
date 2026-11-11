@@ -23,7 +23,9 @@
     "mail:dev": "node scripts/mailpit.js",
     "list:build": "npm run list:css && npm run biz:build && node scripts/build-listing-app.js",
     "biz:build": "vite build --config vite.business.config.mjs",
-    "biz:dev": "vite build --config vite.business.config.mjs --watch"
+    "biz:dev": "vite build --config vite.business.config.mjs --watch",
+    "agent:check": "node scripts/agent-check.js",
+    "agent:hooks": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7",

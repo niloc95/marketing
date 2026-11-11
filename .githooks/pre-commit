@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs the same gate the agents run (scripts/agent-check.js) on what is staged.
+# Installed by: git config core.hooksPath .githooks   (npm run agent:hooks)
+exec node scripts/agent-check.js --staged
