@@ -222,3 +222,6 @@ marketing-site/outreach/proposal/build/
 marketing-site/outreach/partner-guide/build/
 marketing-site/outreach/profile-guide/build/
 /profiles-to-improve-*.csv
+
+# Agent hand over notes: working files, never committed (.github/copilot-instructions.md)
+docs/handover/
