@@ -62,7 +62,7 @@ final class SmartSearchTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Sandton Pipes', $body);
         // ...and says how it read the words, with a way back to them.
         $this->assertStringContainsString('class="search-reading-line"', $body);
-        $this->assertStringContainsString('Search the exact words instead', $body);
+        $this->assertStringContainsString('Discover the exact words instead', $body);
     }
 
     public function testExactSkipsTheReading(): void

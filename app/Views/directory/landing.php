@@ -65,11 +65,14 @@ $schema = schema_page(
 ?>
 
 <?= $this->section('head') ?>
+<?php $paged = seo_paged($canonical, $result, (bool) $indexable); ?>
 <?= seo_meta([
-    'title'       => $heading . ' | ' . $siteName,
+    'title'       => $heading . $paged['suffix'] . ' | ' . $siteName,
     'description' => 'Find ' . strtolower($plural) . $where . '. Discover their services, locations and contact details, free.',
-    'canonical'   => $canonical,
-    'robots'      => $indexable,
+    'canonical'   => $paged['canonical'],
+    'prev'        => $paged['prev'],
+    'next'        => $paged['next'],
+    'robots'      => $paged['indexable'],
     'schema'      => $schema,
 ]) ?>
 <?= $this->endSection() ?>

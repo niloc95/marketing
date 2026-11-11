@@ -54,7 +54,13 @@ $faqs = [
     'canonical'   => $canonical,
     // A filtered list is the same page narrowed; only the plain one is indexed.
     'robots'      => ! $filtered,
-    'schema'      => schema_page([schema_faq_page($faqs, $canonical)], $canonical, 'WebPage', 'Careers at ' . $siteName),
+    'schema'      => schema_page(array_filter([
+        schema_faq_page($faqs, $canonical),
+        $roles !== [] ? schema_item_list('Open roles', schema_link_elements(array_map(
+            static fn (array $r): array => ['url' => $svc->url($r), 'name' => (string) $r['title']],
+            $roles
+        )), count($roles), $canonical) : null,
+    ]), $canonical, 'WebPage', 'Careers at ' . $siteName),
 ]) ?>
 <?= $this->endSection() ?>
 

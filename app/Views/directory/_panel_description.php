@@ -15,7 +15,7 @@ if (empty($l['description'])) {
 }
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($v['headings']['description']) ?></h3>
+    <h2 class="panel-title"><?= esc($v['headings']['description']) ?></h2>
     <?php /* The only unescaped listing content on the site. listing_rich_text()
              runs it through RichText::sanitise() first — do not swap this for a
              bare echo, and do not add esc() (it would print the tags). */ ?>

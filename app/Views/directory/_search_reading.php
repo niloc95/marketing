@@ -83,15 +83,15 @@ if ($intent !== null):
     <?php endif; ?>
 
     <?php if ($chips !== []): ?>
-        <ul class="search-reading-chips" aria-label="Parts of your search">
+        <ul class="search-reading-chips" aria-label="Parts of your discovery">
             <?php foreach ($chips as [$label, $url]): ?>
                 <li>
-                    <a class="search-chip" href="<?= esc($url, 'attr') ?>" aria-label="Remove <?= esc($label, 'attr') ?> from your search">
+                    <a class="search-chip" href="<?= esc($url, 'attr') ?>" aria-label="Remove <?= esc($label, 'attr') ?> from your discovery">
                         <?= esc($label) ?><?= lucide('x', 'h-3.5 w-3.5 shrink-0') ?>
                     </a>
                 </li>
             <?php endforeach; ?>
-            <li><a class="search-reading-exact" href="<?= esc($exact, 'attr') ?>">Search the exact words instead</a></li>
+            <li><a class="search-reading-exact" href="<?= esc($exact, 'attr') ?>">Discover the exact words instead</a></li>
         </ul>
     <?php endif; ?>
 

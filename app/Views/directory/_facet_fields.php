@@ -93,7 +93,7 @@ foreach ($stored as $rows) {
                                        min="<?= (int) $facet['min'] ?>" max="<?= (int) $facet['max'] ?>"
                                        placeholder="<?= empty($facet['single']) ? 'From' : 'Amount' ?>">
                                 <?php if (empty($facet['single'])): ?>
-                                    <span aria-hidden="true">–</span>
+                                    <span aria-hidden="true">to</span>
                                     <input type="number" inputmode="numeric"
                                            name="facets[<?= esc($key, 'attr') ?>][high]"
                                            value="<?= esc($bound($key, 'num_high'), 'attr') ?>"

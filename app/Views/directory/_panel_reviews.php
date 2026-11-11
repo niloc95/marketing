@@ -51,7 +51,7 @@ $date   = static function (?string $d): string {
 ?>
 <div class="panel mb-5" id="reviews">
     <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3>Reviews</h3>
+        <h2 class="panel-title">Reviews</h2>
         <?= rating_summary($l) ?>
     </div>
 

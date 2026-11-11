@@ -338,7 +338,9 @@ class CareersService
         ];
 
         if (! empty($role['valid_through'])) {
-            $schema['validThrough'] = date('c', strtotime((string) $role['valid_through'] . ' 23:59:59'));
+            // The closing day ends in Johannesburg, not in UTC.
+            $tz = new \DateTimeZone('Africa/Johannesburg');
+            $schema['validThrough'] = (new \DateTimeImmutable((string) $role['valid_through'] . ' 23:59:59', $tz))->format('c');
         }
 
         $type = config('JobBoard')->employmentTypes[$role['employment_type'] ?? '']['schema'] ?? null;
@@ -350,7 +352,9 @@ class CareersService
             $schema['jobLocationType']               = 'TELECOMMUTE';
             $schema['applicantLocationRequirements'] = ['@type' => 'Country', 'name' => 'South Africa'];
         }
-        if (! empty($role['province']) || ! empty($role['city'])) {
+        if (empty($role['is_remote'])) {
+            // Google requires jobLocation on every role that is not remote; a
+            // role with no city still names the country.
             $schema['jobLocation'] = [
                 '@type'   => 'Place',
                 'address' => array_filter([

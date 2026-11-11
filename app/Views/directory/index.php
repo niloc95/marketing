@@ -13,14 +13,17 @@ $askedProvince = ($filters['province'] ?? '') !== '';
 $unknownFilter = ($askedCategory && $category === null) || ($askedProvince && $province === null);
 
 $group = $group ?? null;
-$title = 'Discover everything';
+$title = site_copy('discoverTitle', 'Discover local businesses in South Africa');
 if ($group !== null) { $title = $group['name']; }
 if ($category !== null) { $title = $category['name'] . ' profiles'; }
 // $place is only ever read out of the words (see Directory::interpretSearch()),
 // and such a page is a ?q= search: noindexed and canonicalised to /directory
 // below, so the place in its title never reaches an index.
 $where = array_filter([$place ?? null, $province], static fn ($v) => $v !== null && $v !== '');
-if ($where !== []) { $title .= ' in ' . implode(', ', $where); }
+if ($where !== []) {
+    if ($group === null && $category === null) { $title = 'Discover everything'; }
+    $title .= ' in ' . implode(', ', $where);
+}
 
 // A filtered browse view duplicates a landing page, and a ?q= result set is
 // endless thin permutations — canonicalise to the landing page where one exists
@@ -40,7 +43,12 @@ $isSorted  = ($filters['sort'] ?? '') !== '';
 $hasGroup  = $group !== null;
 // "Open on public holidays" is a filtered view, and changes with the date.
 $isHolidays = ($filters['holidays'] ?? '') !== '';
-$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && ! $isHolidays && ! $hasGroup && $page === 1 && ! $unknownFilter;
+// A province or city alone (the "Towns and cities" chips on a province page)
+// has no landing page to canonicalise to yet, so it would be indexed under the
+// /directory canonical: a page that tells Google it is another page. Noindex
+// until city landing pages exist.
+$placeOnly = $category === null && ($askedProvince || ($filters['city'] ?? '') !== '');
+$indexable = ! $hasQuery && ! $hasFacets && ! $isSorted && ! $isHolidays && ! $hasGroup && ! $placeOnly && ! $unknownFilter;
 
 // Every link on this page rebuilds the query string from scratch, and facets
 // travel as ?f[key][]=value while the filter array calls them 'facets'. Without
@@ -69,11 +77,17 @@ if ($indexable && ! empty($result['items'])) {
     );
 }
 ?>
+<?php // A plain /directory page N is itself indexable; a filtered one never is,
+      // and a ?category= view canonicalises to its landing page's page N. ?>
+<?php $paged = seo_paged($canonical, $result, $indexable); ?>
 <?= seo_meta([
-    'title'       => $title . ' | ' . $siteName,
+    'title'       => $title . $paged['suffix'] . ' | ' . $siteName,
     'description' => site_copy('discoverDescription', 'Discover South African businesses, services and professionals by category, province and city, on one local discovery platform.'),
-    'canonical'   => $canonical,
-    'robots'      => $indexable,
+    'canonical'   => $paged['canonical'],
+    'alternates'  => $indexable && $category === null && $page === 1 ? 'directory' : null,
+    'prev'        => $paged['prev'],
+    'next'        => $paged['next'],
+    'robots'      => $paged['indexable'],
     'schema'      => $schema,
 ]) ?>
 <?= $this->endSection() ?>

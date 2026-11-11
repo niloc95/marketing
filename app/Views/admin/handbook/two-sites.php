@@ -27,6 +27,7 @@
         <li><code>country_code</code> is derived from <code>country</code> on every write (<code>DerivesCountryCode</code>), never posted.</li>
         <li>Links that leave the request use <code>listing_url()</code> or <code>site_url_for()</code>; caches use <code>site_cache_key()</code>.</li>
         <li>A profile on the wrong host 301s to its own site; signup on the wrong host hands the typed fields over.</li>
+        <li>SEO per site: each host has its own sitemap (venues, profiles and pages it owns only) and robots.txt. hreflang (en-ZA for co.za, en and x-default for .app) is on the pages that exist on both: home, <code>/directory</code>, categories, jobs, pricing, FAQ, company, media, profile setup, contact, add profile and the legal pages. Never on a profile, venue or job, which live on one site. <code>og:locale</code> and <code>html lang</code> are en_ZA / en-ZA on co.za, en on .app.</li>
         <li>Settings: a row <code>{name}@app</code> wins over <code>{name}</code> on .app.</li>
         <li><strong>Rollback:</strong> <code>sites.app.enabled = false</code> in the server <code>.env</code>, reload PHP FPM.</li>
     </ul>

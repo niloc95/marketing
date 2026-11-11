@@ -1255,7 +1255,7 @@ if (! function_exists('facet_range_label')) {
             };
 
             if ($low !== null && $high !== null) {
-                return $part($low) . ' – ' . $part($high);
+                return $part($low) . ' to ' . $part($high);
             }
 
             return $low !== null ? 'From ' . $part($low) : 'Up to ' . $part($high);
@@ -1265,7 +1265,7 @@ if (! function_exists('facet_range_label')) {
         $per   = $unit === 'rand-hour' ? ' an hour' : ' a month';
 
         if ($low !== null && $high !== null) {
-            return $money($low) . ' – ' . $money($high) . $per;
+            return $money($low) . ' to ' . $money($high) . $per;
         }
 
         return $low !== null

@@ -12,7 +12,11 @@ if (! function_exists('seo_meta')) {
      * `image` falls back to the site-wide default OG image when omitted or
      * passed as an empty string (e.g. a listing with no logo).
      *
-     * @param array{title?:string,description?:string,canonical?:string,image?:string,type?:string,schema?:array,robots?:string|bool,alternates?:string} $d
+     * `canonical` may be false: no canonical and no og:url at all, for the 404
+     * page, which is nobody's canonical. `prev` and `next` are the neighbouring
+     * pages of a paginated list.
+     *
+     * @param array{title?:string,description?:string,canonical?:string|false,image?:string,type?:string,schema?:array,robots?:string|bool,alternates?:string,prev?:string,next?:string} $d
      */
     function seo_meta(array $d): string
     {
@@ -44,12 +48,23 @@ if (! function_exists('seo_meta')) {
         $u = static fn ($v) => esc((string) $v);
         $out  = '<title>' . esc($title) . "</title>\n";
         $out .= '<meta name="description" content="' . $e($desc) . "\">\n";
-        $out .= '<link rel="canonical" href="' . $u($url) . "\">\n";
+        if ($url !== false) {
+            $out .= '<link rel="canonical" href="' . $u($url) . "\">\n";
+        }
         $out .= '<meta name="robots" content="' . $robots . "\">\n";
+        foreach (['prev', 'next'] as $rel) {
+            if (! empty($d[$rel])) {
+                $out .= '<link rel="' . $rel . '" href="' . $u($d[$rel]) . "\">\n";
+            }
+        }
         $out .= '<meta property="og:type" content="' . $e($type) . "\">\n";
+        $out .= '<meta property="og:site_name" content="' . $e(config('Directory')->siteName()) . "\">\n";
+        $out .= '<meta property="og:locale" content="' . (service('site')->isApp() ? 'en' : 'en_ZA') . "\">\n";
         $out .= '<meta property="og:title" content="' . $e($title) . "\">\n";
         $out .= '<meta property="og:description" content="' . $e($desc) . "\">\n";
-        $out .= '<meta property="og:url" content="' . $u($url) . "\">\n";
+        if ($url !== false) {
+            $out .= '<meta property="og:url" content="' . $u($url) . "\">\n";
+        }
 
         // A page that exists on both sites (only the home page so far): tell
         // Google which one is for South Africa and which for everyone else, so
@@ -95,6 +110,44 @@ if (! function_exists('seo_meta')) {
         }
 
         return $out;
+    }
+}
+
+if (! function_exists('seo_paged')) {
+    /**
+     * The head data a paginated list needs for page N: its own canonical
+     * (?page=N from page 2), rel prev/next, a " (page N)" title suffix and
+     * whether it may be indexed. Every page of a list that qualifies for the
+     * index is itself indexable with its own canonical (Google's guidance for
+     * pagination); the old "noindex, canonical to page 1" treatment left the
+     * profiles past page 1 reachable only through the sitemap, and a long lived
+     * noindex, follow ends up treated as nofollow.
+     *
+     * $qualifies is page 1's own rule (enough profiles, nothing filtered).
+     * A page past the end is never indexable.
+     *
+     * @param array{page:int|string,totalPages:int|string} $result browse() output
+     * @return array{canonical:string,prev:string,next:string,suffix:string,indexable:bool}
+     */
+    function seo_paged(string $baseUrl, array $result, bool $qualifies): array
+    {
+        $page  = max(1, (int) ($result['page'] ?? 1));
+        $total = max(1, (int) ($result['totalPages'] ?? 1));
+        $url   = static fn (int $n): string => $n > 1 ? $baseUrl . '?page=' . $n : $baseUrl;
+
+        // A filtered or thin list is noindex whatever the page, and
+        // canonicalises to the plain list as it always did.
+        if (! $qualifies) {
+            return ['canonical' => $baseUrl, 'prev' => '', 'next' => '', 'suffix' => $page > 1 ? ' (page ' . $page . ')' : '', 'indexable' => false];
+        }
+
+        return [
+            'canonical' => $url($page),
+            'prev'      => $page > 1 ? $url($page - 1) : '',
+            'next'      => $page < $total ? $url($page + 1) : '',
+            'suffix'    => $page > 1 ? ' (page ' . $page . ')' : '',
+            'indexable' => $page <= $total,
+        ];
     }
 }
 
@@ -160,7 +213,7 @@ if (! function_exists('seo_hours_summary')) {
             $row   = $hours[$key] ?? null;
             $open  = is_array($row) && empty($row['closed']) ? trim((string) ($row['open'] ?? '')) : '';
             $close = is_array($row) && empty($row['closed']) ? trim((string) ($row['close'] ?? '')) : '';
-            $span  = $open !== '' && $close !== '' ? $open . '–' . $close : null;
+            $span  = $open !== '' && $close !== '' ? $open . ' to ' . $close : null;
 
             if ($span !== null && $span === $prev) {
                 $groups[count($groups) - 1]['last'] = substr($label, 0, 3);
@@ -178,7 +231,7 @@ if (! function_exists('seo_hours_summary')) {
         }
 
         return implode(', ', array_map(
-            static fn (array $g) => $g['first'] . ($g['last'] !== null ? '–' . $g['last'] : '') . ' ' . $g['span'],
+            static fn (array $g) => $g['first'] . ($g['last'] !== null ? ' to ' . $g['last'] : '') . ' ' . $g['span'],
             $groups
         ));
     }

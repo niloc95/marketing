@@ -83,6 +83,7 @@ $faqs = [
     'description' => 'Short on time? For ' . $price . ' our team completes your ' . $siteName . ' business profile: '
         . 'description, services, hours, photos and contact details, written for the customers looking for you.',
     'canonical'   => $canonical,
+    'alternates'  => 'profile-setup',
     'schema'      => schema_page([schema_faq_page($faqs, $canonical)], $canonical, 'WebPage', 'We set up your business profile for you'),
 ]) ?>
 <?= $this->endSection() ?>

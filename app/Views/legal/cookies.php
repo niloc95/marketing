@@ -12,6 +12,7 @@ $clarityId   = config('Directory')->clarityId();
     'title'       => 'Cookie policy | ' . $siteName,
     'description' => 'What ' . $siteName . ' stores in your browser, why, and how to change your choice.',
     'canonical'   => $canonical,
+    'alternates'  => 'cookie-policy',
 ]) ?>
 <?= $this->endSection() ?>
 

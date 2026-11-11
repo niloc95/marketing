@@ -22,7 +22,7 @@ if ($facets === []) {
 }
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($v['headings']['ataglance']) ?></h3>
+    <h2 class="panel-title"><?= esc($v['headings']['ataglance']) ?></h2>
     <dl class="facet-list">
         <?php foreach ($facets as $facet): ?>
             <div class="facet-row">

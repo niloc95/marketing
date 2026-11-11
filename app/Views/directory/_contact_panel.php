@@ -90,7 +90,7 @@ if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones =
 }
 ?>
 <div class="panel">
-    <h3><?= esc($heading) ?></h3>
+    <h2 class="panel-title"><?= esc($heading) ?></h2>
 
     <?php if ($bookingUrl !== ''): ?>
         <?php // id="book" keeps any old "#book" link landing on the right spot. ?>

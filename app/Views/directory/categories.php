@@ -38,6 +38,7 @@ $schema = schema_page(
     'title'       => 'All categories | ' . $siteName,
     'description' => 'Every category on ' . $siteName . '. Discover local businesses, services and professionals, or create your free business profile.',
     'canonical'   => $canonical,
+    'alternates'  => 'directory/categories',
     'schema'      => $schema,
 ]) ?>
 <?= $this->endSection() ?>

@@ -35,7 +35,19 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
     'title'       => 'Jobs, opportunities and services needed | ' . $siteName,
     'description' => 'Discover local job vacancies and opportunities ' . site_copy('jobsWhere', 'across South Africa') . ', posted by businesses on ' . $siteName . ', and requests from people who need work done.',
     'canonical'   => $canonical,
+    'alternates'  => 'jobs',
     'robots'      => $indexable,
+    // The live posts as an ItemList, like a category page's profiles, so the
+    // board reads as a curated set rather than a bare page of links.
+    'schema'      => $indexable && $items !== [] ? schema_page(
+        [schema_item_list('Jobs and services needed', schema_link_elements(array_map(
+            static fn (array $p): array => ['url' => $svc->url($p), 'name' => (string) $p['title']],
+            $items
+        )), (int) $total, $canonical)],
+        $canonical,
+        'CollectionPage',
+        'Jobs, opportunities and services needed'
+    ) : null,
 ]) ?>
 <?= $this->endSection() ?>
 

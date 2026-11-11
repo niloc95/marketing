@@ -21,7 +21,7 @@
         </div>
     </div>
     <ul class="preview-rows">
-        <li><?= lucide('calendar-days', 'h-4 w-4 shrink-0') ?>Open today · 08:00 – 17:00</li>
+        <li><?= lucide('calendar-days', 'h-4 w-4 shrink-0') ?>Open today · 08:00 to 17:00</li>
         <li><?= lucide('phone', 'h-4 w-4 shrink-0') ?>Call or WhatsApp</li>
         <li><?= lucide('map-pin', 'h-4 w-4 shrink-0') ?>On the map</li>
     </ul>

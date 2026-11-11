@@ -25,7 +25,7 @@ $venueUrl = base_url('directory/at/' . $l['venue']['slug']);
     } ?>
     <?php $total = (int) $l['inside']['total']; ?>
     <div class="panel mb-5">
-        <h3>Inside <?= esc($l['display_name']) ?></h3>
+        <h2 class="panel-title">Inside <?= esc($l['display_name']) ?></h2>
         <div class="grid gap-3 sm:grid-cols-2">
             <?php foreach ($l['inside']['items'] as $r): ?>
                 <?= view('directory/_card', ['l' => $r, 'hideVenue' => true], ['saveData' => false]) ?>
@@ -43,7 +43,7 @@ $venueUrl = base_url('directory/at/' . $l['venue']['slug']);
     $place  = $l['venue']['place'] ?? null;
     ?>
     <div class="panel mb-5">
-        <h3><?= esc($v['headings']['venue']) ?></h3>
+        <h2 class="panel-title"><?= esc($v['headings']['venue']) ?></h2>
         <p class="text-sm text-slate-700 dark:text-slate-300">
             <?php if (is_array($place)): ?>
                 <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $place['slug'])) ?>"><?= esc($place['display_name']) ?></a>

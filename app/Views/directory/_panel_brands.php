@@ -42,7 +42,7 @@ $list = static function (array $brands, bool $copy): string {
 ?>
 <div class="panel mb-5" id="brands">
     <div class="logo-strip-head">
-        <h3><?= esc($v['headings']['brands'] ?? 'Brands we carry') ?></h3>
+        <h2 class="panel-title"><?= esc($v['headings']['brands'] ?? 'Brands we carry') ?></h2>
         <?php if ($marquee): ?>
             <button type="button" class="logo-strip-toggle" data-logo-toggle hidden aria-label="Pause the brand logos">
                 <span data-icon-pause><?= lucide('pause', 'h-3.5 w-3.5') ?></span>

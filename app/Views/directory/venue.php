@@ -56,11 +56,14 @@ $schema = schema_page(
 ?>
 
 <?= $this->section('head') ?>
+<?php $paged = seo_paged($canonical, $result, (bool) $indexable); ?>
 <?= seo_meta([
-    'title'       => $name . ($place !== '' ? ', ' . $place : '') . ' | ' . $siteName,
+    'title'       => $name . ($place !== '' ? ', ' . $place : '') . $paged['suffix'] . ' | ' . $siteName,
     'description' => 'Every business at ' . $name . ($place !== '' ? ', ' . $place : '') . '. Shops, services and contact details, free to discover.',
-    'canonical'   => $canonical,
-    'robots'      => $indexable,
+    'canonical'   => $paged['canonical'],
+    'prev'        => $paged['prev'],
+    'next'        => $paged['next'],
+    'robots'      => $paged['indexable'],
     'schema'      => $schema,
 ]) ?>
 <?= $this->endSection() ?>

@@ -315,7 +315,7 @@ if (! function_exists('hours_today_summary')) {
             'state'  => $open ? 'open' : 'closed',
             'label'  => $open ? 'Open now' : 'Closed now',
             'detail' => empty($row['closed']) && ($row['open'] ?? '') !== '' && ($row['close'] ?? '') !== ''
-                ? $row['open'] . '–' . $row['close'] . ' today'
+                ? $row['open'] . ' to ' . $row['close'] . ' today'
                 : '',
         ];
     }
@@ -462,14 +462,14 @@ if (! function_exists('hours_holiday_answer')) {
 }
 
 if (! function_exists('hours_holiday_text')) {
-    /** "Closed", "09:00–13:00", "Open" or "Usual hours": one answer in words. */
+    /** "Closed", "09:00 to 13:00", "Open" or "Usual hours": one answer in words. */
     function hours_holiday_text(array $answer): string
     {
         return match ($answer['mode'] ?? $answer['state'] ?? '') {
             'closed' => 'Closed',
             'usual'  => 'Usual hours',
             default  => ($answer['open'] ?? '') !== '' && ($answer['close'] ?? '') !== ''
-                ? $answer['open'] . '–' . $answer['close']
+                ? $answer['open'] . ' to ' . $answer['close']
                 : 'Open',
         };
     }
@@ -534,7 +534,7 @@ if (! function_exists('hours_today_line')) {
         return [
             'state'   => $open ? 'open' : 'closed',
             'label'   => $open ? 'Open now' : 'Closed now',
-            'detail'  => $name . ' hours ' . $answer['open'] . '–' . $answer['close'],
+            'detail'  => $name . ' hours ' . $answer['open'] . ' to ' . $answer['close'],
             'holiday' => $holiday,
         ];
     }

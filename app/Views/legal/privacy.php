@@ -11,6 +11,7 @@ $contact   = config('Directory')->adminEmail();
     'title'       => 'Privacy policy | ' . $siteName,
     'description' => 'How ' . $siteName . ' collects, uses, stores and protects personal information, in line with South Africa\'s POPIA.',
     'canonical'   => $canonical,
+    'alternates'  => 'privacy',
 ]) ?>
 <?= $this->endSection() ?>
 

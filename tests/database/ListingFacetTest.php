@@ -328,7 +328,7 @@ final class ListingFacetTest extends CIUnitTestCase
         );
 
         $this->assertNotEmpty($line);
-        $this->assertContains('Ages 18 months – 6 years', $line);
+        $this->assertContains('Ages 18 months to 6 years', $line);
         $this->assertContains('Montessori', $line);
     }
 

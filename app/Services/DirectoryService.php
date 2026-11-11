@@ -2640,6 +2640,18 @@ class DirectoryService
             $slugs[(int) $c['id']] = (string) $c['slug'];
         }
 
+        // The category page counts branches in other provinces too (browse()),
+        // so a category that reaches the threshold only through them is
+        // indexable and must be listed.
+        $categoryBranches = $this->branchCounts(
+            'l.category_id',
+            "l.category_id IS NOT NULL AND b.province <> '' AND b.province <> l.province"
+        );
+        foreach ($categoryBranches as $cid => $c) {
+            $byCategory[(int) $cid]['count'] = ($byCategory[(int) $cid]['count'] ?? 0) + (int) $c;
+            $byCategory[(int) $cid]['m'] ??= $today;
+        }
+
         foreach ($byCategory as $cid => $info) {
             if (isset($slugs[$cid]) && $info['count'] >= $minListings) {
                 $out[] = [
@@ -2773,6 +2785,11 @@ class DirectoryService
 
         $out = [];
         foreach ($this->venues->active() as $venue) {
+            // A venue belongs to one site, like a profile: a South African mall
+            // in the .app sitemap is a URL that 301s to co.za.
+            if (! site()->ownsCountry($venue['country_code'] ?? null)) {
+                continue;
+            }
             if (($counts[(int) $venue['id']] ?? 0) < $minListings) {
                 continue;
             }

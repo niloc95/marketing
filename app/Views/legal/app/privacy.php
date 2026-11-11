@@ -26,6 +26,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
     'title'       => 'Privacy policy | ' . $siteName,
     'description' => 'How ' . $siteName . ' collects, uses, stores and protects personal information, and the rights you have wherever you live.',
     'canonical'   => $canonical,
+    'alternates'  => 'privacy',
 ]) ?>
 <?= $this->endSection() ?>
 

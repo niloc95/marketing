@@ -124,7 +124,7 @@ final class JobBoardRulesTest extends CIUnitTestCase
 
     public function testSalaryText(): void
     {
-        $this->assertSame('R15 000 – R18 000 per month', $this->svc->salaryText($this->job()));
+        $this->assertSame('R15 000 to R18 000 per month', $this->svc->salaryText($this->job()));
         $this->assertSame('From R200 per hour', $this->svc->salaryText($this->job(['salary_max' => null, 'salary_min' => 200, 'salary_period' => 'hour'])));
         $this->assertSame('', $this->svc->salaryText($this->job(['salary_min' => null, 'salary_max' => null])));
     }

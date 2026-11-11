@@ -157,7 +157,7 @@ final class SeoHelperTest extends CIUnitTestCase
     {
         $this->assertSame(
             'Regal Jewellers: Jewellery at Oriental Plaza, Fordsburg, Johannesburg. '
-            . 'Open Mon–Fri 09:00–16:30, Sat 08:00–13:00. Phone number, address and directions.',
+            . 'Open Mon to Fri 09:00 to 16:30, Sat 08:00 to 13:00. Phone number, address and directions.',
             listing_meta_description($this->regal())
         );
     }
@@ -166,7 +166,7 @@ final class SeoHelperTest extends CIUnitTestCase
     {
         $desc = listing_meta_description($this->regal(['venue' => null, 'address_line' => '']));
 
-        $this->assertStringStartsWith('Regal Jewellers: Jewellery in Fordsburg, Johannesburg, Gauteng. Open Mon–Fri', $desc);
+        $this->assertStringStartsWith('Regal Jewellers: Jewellery in Fordsburg, Johannesburg, Gauteng. Open Mon to Fri', $desc);
         $this->assertStringEndsWith('Phone number.', $desc);
     }
 
@@ -183,7 +183,7 @@ final class SeoHelperTest extends CIUnitTestCase
     public function testEveryDayTheSameReadsAsDaily(): void
     {
         $same = ['08:00', '20:00'];
-        $this->assertSame('daily 08:00–20:00', seo_hours_summary($this->hours([
+        $this->assertSame('daily 08:00 to 20:00', seo_hours_summary($this->hours([
             'mon' => $same, 'tue' => $same, 'wed' => $same, 'thu' => $same, 'fri' => $same, 'sat' => $same, 'sun' => $same,
         ])));
     }
@@ -236,7 +236,7 @@ final class SeoHelperTest extends CIUnitTestCase
     public function testCategorylessListingStillSaysWhere(): void
     {
         $this->assertStringStartsWith(
-            'Regal Jewellers at Oriental Plaza, Fordsburg, Johannesburg. Open Mon–Fri',
+            'Regal Jewellers at Oriental Plaza, Fordsburg, Johannesburg. Open Mon to Fri',
             listing_meta_description($this->regal(['category' => null]))
         );
     }

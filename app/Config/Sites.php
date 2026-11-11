@@ -81,6 +81,7 @@ class Sites extends BaseConfig
         'discoverTitle'   => 'Discover businesses near you.',
         'featuredLine'    => 'Handpicked from across the platform, and open for enquiries.',
         'where'           => ' near you',
+        'discoverTitle'       => 'Discover local businesses near you',
         'discoverDescription' => 'Discover local businesses, services and professionals by category, country and city, on one local discovery platform.',
         'jobsWhere'       => 'near you',
         'companyFor'      => 'for businesses everywhere',

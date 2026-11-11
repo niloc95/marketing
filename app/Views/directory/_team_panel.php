@@ -47,7 +47,7 @@ if ($members === [] && $cardless === []) {
 $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underline';
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($teamHeading) ?></h3>
+    <h2 class="panel-title"><?= esc($teamHeading) ?></h2>
     <div class="team-list">
         <?php foreach ($members as $m): ?>
             <?php // The anchor the typeahead links to and the Person @id in the

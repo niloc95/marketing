@@ -216,6 +216,58 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->assertStringContainsString('/jobs<', $xml);
     }
 
+    public function testTheAppSitemapLeavesOutSouthAfricanVenues(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+
+        $venues  = new \App\Models\DirectoryVenueModel();
+        $venueId = (int) $venues->insert([
+            'name' => 'Oriental Plaza', 'slug' => 'oriental-plaza', 'city' => 'Johannesburg',
+            'province' => 'Gauteng', 'country' => 'South Africa', 'is_active' => 1,
+        ], true);
+        $category = (int) (new DirectoryCategoryModel())->insert([
+            'name' => 'Tailors', 'slug' => 'tailors', 'group_name' => 'Retail', 'is_active' => 1,
+        ], true);
+        $listings = new DirectoryListingModel();
+        foreach (['one', 'two', 'three'] as $n) {
+            $listings->insert([
+                'type' => 'practice', 'display_name' => 'Shop ' . $n, 'slug' => 'plaza-shop-' . $n,
+                'email' => $n . '@plaza.example.test', 'status' => 'published', 'category_id' => $category,
+                'city' => 'Johannesburg', 'province' => 'Gauteng', 'country' => 'South Africa',
+                'venue_id' => $venueId, 'published_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+        cache()->clean();
+
+        // Listed where it belongs, and not on the host where it 301s away.
+        $this->assertStringContainsString('/directory/at/oriental-plaza<', $this->page(self::ZA_HOST, '/sitemap.xml'));
+        $this->assertStringNotContainsString('/directory/at/oriental-plaza<', $this->page(self::APP_HOST, '/sitemap.xml'));
+    }
+
+    public function testTheAppSignupPageHasOneHeading(): void
+    {
+        $this->setEnv('sites.app.enabled', 'true');
+        (new \App\Services\DirectorySettings())->save([
+            'international_price' => '29.99', 'international_enabled' => '1',
+            'plus_price_usd' => '8.99', 'usd_zar_rate' => '18.20',
+        ], 'test');
+
+        $html = $this->page(self::APP_HOST, '/add-profile');
+        $this->assertStringContainsString('Add Plus when you are ready', $html);
+        $this->assertSame(1, substr_count($html, '<h1'), 'the Plus comparison and the form card each drew an h1');
+    }
+
+    public function testAProvinceOrCityQueryAloneIsNotIndexed(): void
+    {
+        $this->setEnv('sites.app.enabled', 'false');
+
+        // The "Towns and cities" chips on a province page: no landing page of
+        // their own yet, so they must not be indexed under /directory's canonical.
+        $html = $this->page(self::ZA_HOST, '/directory?province=Western+Cape&city=Cape+Town');
+        $this->assertStringContainsString('content="noindex, follow"', $html);
+        $this->assertStringContainsString('<link rel="canonical" href="' . base_url('directory') . '">', $html);
+    }
+
     public function testTheHomePagesPointAtEachOther(): void
     {
         $this->setEnv('sites.app.enabled', 'false');

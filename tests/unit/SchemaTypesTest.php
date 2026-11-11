@@ -165,16 +165,29 @@ final class SchemaTypesTest extends CIUnitTestCase
 
     public function testTheTeamCardThatIsThePersonMergesIntoThePerson(): void
     {
-        $business = schema_local_business($this->doctor(['team' => [
-            ['name' => 'Ana  Pillay', 'slug' => 'ana-pillay', 'role' => 'Head of Practice'],
+        $l = $this->doctor(['team' => [
+            ['name' => 'Ana  Pillay', 'slug' => 'ana-pillay', 'role' => 'Head of Practice',
+                'credentials' => 'MBChB (UCT), MMed (Wits)', 'specializations' => 'Diabetes, Thyroid, and Bone Health'],
             ['name' => 'Sam Dube', 'slug' => 'sam-dube', 'role' => 'Practice manager'],
-        ]]), self::CANONICAL);
+        ]]);
+        $business = schema_local_business($l, self::CANONICAL);
 
+        // The card that is the person is a reference only: a second node with
+        // the same @id would merge into the Person with a second jobTitle,
+        // image and description (seen in the validator on 11 Nov 2026).
         [$ana, $sam] = $business['employee'];
-        $this->assertSame(self::CANONICAL . '#person', $ana['@id']);
-        $this->assertSame('Head of Practice', $ana['jobTitle']);
+        $this->assertSame(['@id' => self::CANONICAL . '#person'], $ana);
         $this->assertSame(self::CANONICAL . '#team-sam-dube', $sam['@id']);
         $this->assertCount(2, $business['employee']);
+
+        // What the card knows goes on the one Person node instead: its
+        // credentials (deduplicated against the profile's own) and topics,
+        // with a stray "and" from an Oxford comma stripped.
+        $person = schema_person($l, self::CANONICAL);
+        $this->assertSame(['MBChB (UCT)', 'FCP (SA)', 'MMed (Wits)'], array_column($person['hasCredential'], 'name'));
+        $this->assertContains('Bone Health', $person['knowsAbout']);
+        $this->assertNotContains('and Bone Health', $person['knowsAbout']);
+        $this->assertSame('Endocrinologist', $person['jobTitle']);
     }
 
     public function testTheProfilePageIsAboutThePerson(): void

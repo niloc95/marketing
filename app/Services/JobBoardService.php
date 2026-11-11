@@ -1421,14 +1421,23 @@ class JobBoardService
             }
         }
 
+        // The post's own country: the listing's, else the post's own column
+        // (an unlisted post abroad), else South Africa.
+        $countries   = config('Countries');
+        $countryCode = strtoupper((string) (($post['listing_country_code'] ?? '') ?: ($post['country_code'] ?? '') ?: 'ZA'));
+        $countryName = (string) ($countries->nameForCode($countryCode) ?? 'South Africa');
+        // The closing day ends in the business's own timezone, not the
+        // server's (UTC): "23:59:59+00:00" is 01:59 the next morning in
+        // Johannesburg, and Google reads validThrough to the second.
+        $tz = new \DateTimeZone($countries->timezone($countryCode, (string) ($post['province'] ?? '')));
+
         $schema = [
             '@context'           => 'https://schema.org',
             '@type'              => 'JobPosting',
             'title'              => (string) $post['title'],
             'description'        => PostingSections::descriptionHtml($post, $this->aboutEmployer($post)),
             'datePosted'         => date('c', strtotime((string) ($post['published_at'] ?? 'now'))),
-            // End of the closing day, in the app's own timezone like datePosted.
-            'validThrough'       => date('c', strtotime((string) $post['valid_through'] . ' 23:59:59')),
+            'validThrough'       => (new \DateTimeImmutable((string) $post['valid_through'] . ' 23:59:59', $tz))->format('c'),
             'hiringOrganization' => $org,
             // True when the page's own form takes the application (an apply
             // email, relayed by us); false when it sends people to the
@@ -1449,7 +1458,7 @@ class JobBoardService
 
         if (! empty($post['is_remote'])) {
             $schema['jobLocationType']               = 'TELECOMMUTE';
-            $schema['applicantLocationRequirements'] = ['@type' => 'Country', 'name' => 'South Africa'];
+            $schema['applicantLocationRequirements'] = ['@type' => 'Country', 'name' => $countryName];
         }
         $at = $this->listingAddress($post);
         if ($at !== null) {
@@ -1457,14 +1466,16 @@ class JobBoardService
             $address = schema_postal_address($at) ?? [];
             $address['addressCountry'] = (string) $at['country_code'];
             $schema['jobLocation'] = ['@type' => 'Place', 'address' => $address];
-        } elseif (! empty($post['province']) || ! empty($post['city'])) {
+        } elseif (empty($post['is_remote'])) {
+            // Google requires jobLocation on every post that is not remote:
+            // a post with no town still names its country.
             $schema['jobLocation'] = [
                 '@type'   => 'Place',
                 'address' => array_filter([
                     '@type'           => 'PostalAddress',
                     'addressLocality' => (string) ($post['city'] ?? ''),
                     'addressRegion'   => (string) ($post['province'] ?? ''),
-                    'addressCountry'  => 'ZA',
+                    'addressCountry'  => $countryCode,
                 ]),
             ];
         }
@@ -1478,7 +1489,8 @@ class JobBoardService
             } else {
                 $value['value'] = (int) ($post['salary_min'] ?? $post['salary_max']);
             }
-            $schema['baseSalary'] = ['@type' => 'MonetaryAmount', 'currency' => 'ZAR', 'value' => $value];
+            $currency = (string) ($countries->profile($countryCode)['currency'] ?? 'ZAR');
+            $schema['baseSalary'] = ['@type' => 'MonetaryAmount', 'currency' => $currency, 'value' => $value];
         }
 
         return $schema;
@@ -1515,7 +1527,7 @@ class JobBoardService
         return ['heading' => 'About ' . $this->hiringName($post), 'paragraphs' => $paragraphs];
     }
 
-    /** "R15 000 – R18 000 per month", or '' when no salary was given. */
+    /** "R15 000 to R18 000 per month", or '' when no salary was given. */
     public function salaryText(array $post): string
     {
         $min = $post['salary_min'] ?? null;
@@ -1527,7 +1539,7 @@ class JobBoardService
         $r      = static fn ($v) => money((int) $v, 'ZAR', 0);
         $period = $this->cfg->salaryPeriods[$post['salary_period'] ?? '']['label'] ?? '';
         if ($min !== null && $max !== null && (int) $min !== (int) $max) {
-            $amount = $r($min) . ' – ' . $r($max);
+            $amount = $r($min) . ' to ' . $r($max);
         } elseif ($min !== null && $max === null) {
             $amount = 'From ' . $r($min);
         } elseif ($min === null) {
