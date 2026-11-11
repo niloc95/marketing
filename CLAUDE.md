@@ -61,6 +61,13 @@ they hold the rules that are not obvious from the code.
 - Big changes go on a feature branch, run on local dev only, and are merged or released
   only on the owner's explicit go ahead. Release step by step, confirming before each
   production change.
+- **Git is Copilot's job** (owner, 11 Nov 2026): branches, commits, pushes, merges and
+  cleanup run through `.github/copilot-instructions.md` and its prompts (`/start`,
+  `/commit`, `/finish`, `/check`). Claude leaves finished work uncommitted, with its
+  handbook changelog line written, and says it is ready for `/commit`. Claude commits
+  only when the owner asks it to directly. `npm run agent:check` is the shared gate (the
+  pre-commit hook runs it; `npm run agent:hooks` installs it). Memory notes lag behind
+  Copilot's commits: read `git log` before trusting a note about what is merged.
 - **One checkout, one dev server, one dev DB, one test DB.** Work in this checkout: make
   the feature branch here, switch back to `main` when done. Sessions take turns. No git
   worktrees, no second port, no extra databases.
