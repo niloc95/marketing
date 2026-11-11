@@ -56,7 +56,7 @@ Fixed means the fix is on the branch with tests. Open means not fixed in this ro
 | B8 | L | hreflang only on `/` and `/pricing` | Fixed: on every page both sites share; never on profiles, venues or jobs |
 | B9 | M | City chips go to `/directory?province=…&city=…`: indexable, but canonical to `/directory` | Fixed for now: a place-only query is noindex. Real fix is phase 2 city pages (D1) |
 | B10 | L | Page 2's ItemList was printed under page 1's `@id` | Fixed by B2 |
-| C1 | M (SEO-07) | CSS, JS and uploads cached for 4 hours | Prepared: header rules in both vhost files; the Cloudflare step is in the release notes below |
+| C1 | M (SEO-07) | CSS, JS and uploads cached for 4 hours | Fixed and live 11 Nov 2026: header rules in both vhost files (see below) |
 | C2 | L (SEO-04) | All HTML `no-store`; Cloudflare HTML cache | Open, out of scope |
 | C3 | L (SEO-03, SEO-08) | Cookie banner LCP, five font weights | Open, not re-measured |
 | C4 | L | About 22 KB of inline SVG per profile | Open |
@@ -73,19 +73,19 @@ Fixed means the fix is on the branch with tests. Open means not fixed in this ro
 | F6 | L | "directory" appears in copy only when naming competitors | Leave |
 | F7 | L | WebSite SearchAction is retired by Google | Leave, harmless |
 
-## Release notes for C1 (each step needs the owner's OK)
+## C1 on production (applied 11 Nov 2026)
 
-1. Copy both vhost files to `/etc/apache2/sites-available/`.
-2. Run `sudo apachectl configtest`, then `sudo systemctl reload apache2`.
-3. In Cloudflare, under Caching > Configuration > Browser Cache TTL, choose "Respect
-   existing headers" for both zones. Otherwise Cloudflare overwrites the year with 4 hours.
-4. Check that each of these three answers `max-age=31536000, immutable`:
+1. The live vhosts matched the repo before the change. Backups were kept as
+   `/etc/apache2/sites-available/local.webscheduler.{co.za,app}.conf.bak-20261111-seo`.
+2. Both files were copied from the server clone. `apache2ctl configtest` printed
+   Syntax OK, and Apache was reloaded.
+3. Origin and Cloudflare both now answer `public, max-age=31536000, immutable` for
+   `?v=` assets and uploads, on both hosts. Unversioned assets and HTML are unchanged.
+4. No Cloudflare change was needed. Browser Cache TTL only overrides an origin value
+   that is shorter than its own setting.
 
-   ```
-   curl -sD- -o /dev/null 'https://local.webscheduler.co.za/assets/directory.css?v=1' | grep -i cache-control
-   curl -sD- -o /dev/null 'https://local.webscheduler.co.za/assets/directory.js?v=1' | grep -i cache-control
-   curl -sD- -o /dev/null 'https://local.webscheduler.co.za/assets/listings/<an upload>.webp' | grep -i cache-control
-   ```
+Rollback: copy the `.bak-20261111-seo` files back, run `apache2ctl configtest`, then
+`systemctl reload apache2`.
 
 ## After release (owner, Search Console)
 
