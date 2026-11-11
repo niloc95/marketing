@@ -68,7 +68,7 @@ $label = $label ?? 'Trading hours';
                 <input type="time" name="<?= $n('hours') ?>[<?= $key ?>][open]" value="<?= esc($row['open'] ?? '', 'attr') ?>">
                 <span>&ndash;</span>
                 <input type="time" name="<?= $n('hours') ?>[<?= $key ?>][close]" value="<?= esc($row['close'] ?? '', 'attr') ?>">
-                <input type="text" class="hours-note" name="<?= $n('hours') ?>[<?= $key ?>][note]" value="<?= esc($row['note'] ?? '', 'attr') ?>" maxlength="120" placeholder="Optional note, e.g. Lunch 12:00–13:30">
+                <input type="text" class="hours-note" name="<?= $n('hours') ?>[<?= $key ?>][note]" value="<?= esc($row['note'] ?? '', 'attr') ?>" maxlength="120" placeholder="Optional note, e.g. Lunch 12:00 to 13:30">
             </div>
         <?php endforeach; ?>
     </div>

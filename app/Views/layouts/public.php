@@ -11,7 +11,7 @@ $clarityId = $untracked || str_starts_with(trim(uri_string(), '/'), 'admin') ? '
       // until someone purged. Same ?v=<filemtime> trick as directory.css below.
       $brandUrl = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0); ?>
 <!DOCTYPE html>
-<html lang="<?= esc(site()->isApp() ? (string) site()->profile()['locale'] : 'en', 'attr') ?>">
+<html lang="<?= esc(site()->isApp() ? (string) site()->profile()['locale'] : 'en-ZA', 'attr') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,6 +56,7 @@ $clarityId = $untracked || str_starts_with(trim(uri_string(), '/'), 'admin') ? '
               // blocking fast path. consent.js is deferred, so without this a returning
               // visitor who already accepted would have their first pageview recorded
               // under "denied" and lost. wait_for_update gives it a 500ms window. ?>
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
         <script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc($analyticsId, 'attr') ?>"></script>
         <script {csp-script-nonce}>
           window.dataLayer = window.dataLayer || [];

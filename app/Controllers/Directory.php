@@ -624,6 +624,12 @@ class Directory extends BaseController
      */
     public function segment(string $slug)
     {
+        // /directory/CPT-Dental is the same page as /directory/cpt-dental:
+        // one URL for it, not two that a crawler must reconcile by canonical.
+        if ($slug !== mb_strtolower($slug)) {
+            return redirect()->to(base_url('directory/' . mb_strtolower($slug)), 301);
+        }
+
         $svc = new DirectoryService();
 
         $category = $svc->findCategoryBySlug($slug);
@@ -698,8 +704,10 @@ class Directory extends BaseController
         // Same rule as renderLanding(): the page always renders (the province is
         // real either way) but stays out of the index until it has enough on it
         // to be worth a crawler's time.
+        // Every page of a province that qualifies is indexable with its own
+        // canonical (seo_paged() in the view); $page no longer decides it.
         $min       = (int) config('Directory')->landingMinListings;
-        $indexable = (int) $result['total'] >= $min && $page === 1;
+        $indexable = (int) $result['total'] >= $min;
 
         $this->countShown($result);
 
@@ -736,7 +744,7 @@ class Directory extends BaseController
             'slug'       => (string) config('Countries')->profile($code)['slug'],
             'region'     => $region,
             'result'     => $result,
-            'indexable'  => (int) $result['total'] >= $min && $page === 1,
+            'indexable'  => (int) $result['total'] >= $min,
             'regions'    => $region === null ? $svc->regionCounts($code) : [],
             'cityCounts' => $svc->cityCountsIn($code, $region),
             'categories' => $svc->topCategoriesIn($code, $region),
@@ -784,7 +792,7 @@ class Directory extends BaseController
         // crawler's time. A filtered view is never indexable — that is the thin
         // duplicate of the venue page itself.
         $min       = (int) config('Directory')->landingMinListings;
-        $indexable = (int) $result['total'] >= $min && $page === 1 && $category === '' && $q === '';
+        $indexable = (int) $result['total'] >= $min && $category === '' && $q === '';
 
         $this->countShown($result);
 
@@ -875,7 +883,7 @@ class Directory extends BaseController
         // combinations multiply without limit. A re-sorted view is the same
         // page in a different order — a duplicate by definition.
         $min        = (int) config('Directory')->landingMinListings;
-        $indexable  = (int) $result['total'] >= $min && $page === 1 && $facets === [] && $sort === '';
+        $indexable  = (int) $result['total'] >= $min && $facets === [] && $sort === '';
 
         $this->countShown($result);
 
@@ -996,6 +1004,7 @@ class Directory extends BaseController
             ->setHeader('Content-Disposition', 'inline; filename="' . $listing['slug'] . '-menu.pdf"')
             ->setHeader('X-Content-Type-Options', 'nosniff')
             ->setHeader('X-Robots-Tag', 'noindex')
+            ->removeHeader('Cache-Control')
             ->setHeader('Cache-Control', 'public, max-age=3600')
             ->setBody($contents);
     }
@@ -1279,6 +1288,8 @@ class Directory extends BaseController
                 'partners'             => [['directory/partners']],
                 'careers'              => [['directory/careers'], $roles],
                 'jobs'                 => [['jobs/index'], $jobs],
+                'jobs/post'            => [['jobs/post']],
+                'recommend'            => [['directory/recommend']],
                 'contact'              => [['directory/contact']],
                 'privacy'              => [[$app ? 'legal/app/privacy' : 'legal/privacy']],
                 'terms'                => [[$app ? 'legal/app/terms' : 'legal/terms']],
@@ -1331,7 +1342,10 @@ class Directory extends BaseController
             cache()->save(site_cache_key('directory_sitemap_xml'), $xml, 900);
         }
 
+        // removeHeader first: the framework's no-cache default would otherwise
+        // sit in front of this value in the same header.
         return $this->response
+            ->removeHeader('Cache-Control')
             ->setHeader('Cache-Control', 'public, max-age=900')
             ->setHeader('ETag', md5($xml))
             ->setContentType('application/xml')

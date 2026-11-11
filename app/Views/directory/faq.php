@@ -216,6 +216,7 @@ $schema = schema_page(
     'title'       => 'Frequently asked questions | ' . $siteName,
     'description' => 'Answers about ' . $siteName . ': your free business profile, locations, team members, jobs, ' . (site()->isApp() ? 'what Plus includes' : 'what the Verified Business badge means') . ', and how to get help.',
     'canonical'   => $canonical,
+    'alternates'  => 'faq',
     'schema'      => $schema,
 ]) ?>
 <?= $this->endSection() ?>

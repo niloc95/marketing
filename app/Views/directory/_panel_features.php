@@ -15,7 +15,7 @@ if ($features === []) {
 }
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($v['headings']['features']) ?></h3>
+    <h2 class="panel-title"><?= esc($v['headings']['features']) ?></h2>
     <ul class="feature-list">
         <?php foreach ($features as $label): ?>
             <li><?= lucide('check', 'feature-check') ?><span><?= esc($label) ?></span></li>

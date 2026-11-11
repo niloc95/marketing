@@ -1615,8 +1615,8 @@
      Scoped to .panel h3 deliberately — h2 section headings stay slate, because
      tinting every heading on the page tips this from "its own zone" into "a
      differently coloured site". */
-  .vertical-scope .panel h3 { color: var(--tint-fg, theme(colors.primary.600)); }
-  .dark .vertical-scope .panel h3 { color: var(--tint-fg-dark, theme(colors.primary.300)); }
+  .vertical-scope .panel h3, .vertical-scope .panel .panel-title { color: var(--tint-fg, theme(colors.primary.600)); }
+  .dark .vertical-scope .panel h3, .dark .vertical-scope .panel .panel-title { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
@@ -1980,6 +1980,7 @@
   /* Descendant, not child: the reviews panel sets its h3 in a row beside the
      rating. Each of these panels has exactly one h3. */
   .profile-grid > div:first-child > .panel h3,
+  .profile-grid > div:first-child > .panel .panel-title,
   .profile-grid > div:first-child > .branch-section > .branch-section-title {
     @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em];
   }
@@ -2001,10 +2002,12 @@
   /* .kv is one label/value row; panels stack several of them. */
   .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
   .kv .k { @apply shrink-0 font-medium text-slate-500; }
-  .panel h3 { @apply mb-3 text-base font-semibold text-slate-900; }
+  /* Profile panels head with h2.panel-title (the page's second level, under
+     the business name); other .panel boxes keep their own h2 and h3 styles. */
+  .panel h3, .panel .panel-title { @apply mb-3 text-base font-semibold text-slate-900; }
   .dark .kv    { @apply border-slate-800; }
   .dark .kv .k { @apply text-slate-400; }
-  .dark .panel h3 { @apply text-white; }
+  .dark .panel h3, .dark .panel .panel-title { @apply text-white; }
 
   /* The contact card: value on the left, icon on the right, one row each. Its
      own rows rather than .kv because there is no label column — the icon is
@@ -3276,7 +3279,9 @@
      centre the pause button on heading plus margin. The strip's mt-4 is the
      gap instead. */
   .panel .logo-strip-head h3,
-  .profile-grid > div:first-child > .panel .logo-strip-head h3 { @apply mb-0; }
+  .panel .logo-strip-head .panel-title,
+  .profile-grid > div:first-child > .panel .logo-strip-head h3,
+  .profile-grid > div:first-child > .panel .logo-strip-head .panel-title { @apply mb-0; }
   .logo-strip-toggle {
     @apply grid h-7 w-7 place-items-center rounded-full border border-slate-200 text-slate-500
            hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-400;
@@ -3788,7 +3793,7 @@
   .loc-body > .panel:first-child { @apply border-t-0; }
   .loc-body > .panel:last-child  { @apply pb-0; }
   .dark .loc-body > .panel { @apply border-slate-700 bg-transparent; }
-  .loc-body > .panel h3 { @apply text-base; }
+  .loc-body > .panel h3, .loc-body > .panel .panel-title { @apply text-base; }
 
   /* The header's list of locations, under today's hours. A dot per location
      for open or closed now; the words are there for screen readers. */

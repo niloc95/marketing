@@ -30,6 +30,7 @@ if ($verificationOffered) {
     'title'       => 'Create your free business profile | ' . $siteName,
     'description' => 'Create a free business profile on ' . $siteName . ' so local customers can discover your business, services and location. No monthly fee, no subscription.',
     'canonical'   => base_url('add-profile'),
+    'alternates'  => 'add-profile',
 ]) ?>
 <?= $this->endSection() ?>
 
@@ -77,7 +78,9 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
         <?php endif; ?>
 
         <div class="form-card" id="listing-form">
-            <?php if (! $verificationOffered): ?>
+            <?php // On .app the Plus comparison above already carries the page's <h1>. ?>
+            <?php $headingAbove = $verificationOffered || (! empty($plusUsd) && ! empty($plusRand)); ?>
+            <?php if (! $headingAbove): ?>
                 <?php // No cards above, so the page still needs its own heading. ?>
                 <span class="eyebrow"><?= $eyebrow ?></span>
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white"><?= $headline ?></h1>

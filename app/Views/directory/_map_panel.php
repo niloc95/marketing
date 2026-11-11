@@ -52,7 +52,7 @@ $dirUrl  = map_directions_url($row);
 $wazeUrl = map_waze_url($row);
 ?>
 <div class="panel <?= esc($class, 'attr') ?>">
-    <h3><?= esc($heading) ?></h3>
+    <h2 class="panel-title"><?= esc($heading) ?></h2>
     <?php if ($addr !== ''): ?>
         <p class="map-address"><?= lucide('map-pin', 'h-4 w-4 shrink-0', ['aria-hidden' => 'true']) ?><span><?= esc($addr) ?></span></p>
     <?php endif; ?>

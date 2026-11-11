@@ -43,6 +43,7 @@ $looking = [
     'description' => $siteName . ' is a local business discovery and visibility platform ' . site_copy('companyFor', 'built for South Africa') . '. '
         . 'Discover businesses, services, locations, professionals and opportunities, or create a free business profile.',
     'canonical'   => $canonical,
+    'alternates'  => 'company',
     'schema'      => schema_page([], $canonical, 'AboutPage', 'About ' . $siteName),
 ]) ?>
 <?= $this->endSection() ?>

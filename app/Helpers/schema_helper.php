@@ -705,6 +705,15 @@ if (! function_exists('schema_local_business')) {
             $isSelf     = $isPerson && ! $personSeen && schema_same_person((string) ($member['name'] ?? ''), $l);
             $personSeen = $personSeen || $isSelf;
 
+            // The card that is the person is a reference only: a second node
+            // with the same @id merges into the Person with a second jobTitle,
+            // image and description. schema_person() takes the card's
+            // credentials and registration number instead.
+            if ($isSelf) {
+                $employees[] = ['@id' => $personId];
+                continue;
+            }
+
             $employees[] = array_filter([
                 '@type'         => 'Person',
                 '@id'           => $isSelf ? $personId : ($anchor !== '' ? $canonical . '#' . $anchor : ''),
@@ -1017,10 +1026,31 @@ if (! function_exists('schema_person')) {
         $title   = (string) ($l['title'] ?? '');
         $job     = trim((string) ($l['category']['name'] ?? ($l['category_name'] ?? '')));
 
-        // The registration number is on the team card that is this person
-        // (it shares the #person @id, see schema_local_business()), so it
-        // merges into this node there rather than being repeated here.
+        // The team card that is this person (same name, see
+        // schema_local_business()) is only an @id reference in employee[]; its
+        // credentials, registration number and specialisations come in here,
+        // so the Person is one node with one image and one description.
+        $card = null;
+        foreach ($l['team'] ?? [] as $member) {
+            if (schema_same_person((string) ($member['name'] ?? ''), $l)) {
+                $card = $member;
+                break;
+            }
+        }
+        $reg = null;
+        if ($card !== null) {
+            $regulator = \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null);
+            $reg       = \App\Libraries\ProfessionalRegistration::forPerson($card, $regulator);
+        }
+
         $sameAs = [];
+        if ($reg !== null) {
+            foreach ([(string) $reg['orcid'], (string) $reg['researchgate']] as $link) {
+                if ($link !== '') {
+                    $sameAs[] = $link;
+                }
+            }
+        }
         $linkedin = (string) social_profile_url('social_linkedin', $l['social_linkedin'] ?? '');
         if (schema_is_personal_linkedin($linkedin)) {
             $sameAs[] = $linkedin;
@@ -1029,7 +1059,10 @@ if (! function_exists('schema_person')) {
 
         $topics = array_values(array_unique(array_filter(array_map(
             static fn ($t): string => trim((string) $t),
-            $l['tags'] ?? []
+            array_merge(
+                $l['tags'] ?? [],
+                $card !== null ? \App\Services\TeamMemberService::splitSpecializations($card['specializations'] ?? null) : []
+            )
         ))));
 
         // Where they work: the practice, then each branch by the @id
@@ -1040,7 +1073,15 @@ if (! function_exists('schema_person')) {
         }
 
         $credentials = schema_listing_credentials($l);
-        $image       = listing_image_url($l['logo_path'] ?? null) ?: listing_image_url($l['photos'][0]['path'] ?? null);
+        if ($card !== null) {
+            $named = array_map(static fn (array $c): string => mb_strtolower((string) ($c['name'] ?? '')), $credentials);
+            foreach (schema_member_credentials($card['credentials'] ?? null) as $c) {
+                if (! in_array(mb_strtolower((string) ($c['name'] ?? '')), $named, true)) {
+                    $credentials[] = $c;
+                }
+            }
+        }
+        $image = listing_image_url($l['logo_path'] ?? null) ?: listing_image_url($l['photos'][0]['path'] ?? null);
 
         return array_filter([
             '@type'           => 'Person',
@@ -1056,6 +1097,9 @@ if (! function_exists('schema_person')) {
             'hasOccupation'   => $job !== '' ? ['@type' => 'Occupation', 'name' => $job] : null,
             'knowsAbout'      => count($topics) === 1 ? $topics[0] : $topics,
             'hasCredential'   => $credentials !== [] ? $credentials : null,
+            'identifier'      => $reg !== null && $reg['number'] !== ''
+                ? ['@type' => 'PropertyValue', 'propertyID' => $reg['short'], 'value' => $reg['number']]
+                : null,
             'sameAs'          => $sameAs !== [] ? $sameAs : null,
             'worksFor'        => ['@id' => $canonical . '#business'],
             'workLocation'    => count($workLocation) === 1 ? $workLocation[0] : $workLocation,

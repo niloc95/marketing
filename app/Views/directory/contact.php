@@ -6,6 +6,7 @@
     'title'       => 'Contact us | ' . $siteName,
     'description' => 'Get in touch with ' . $siteName . ': questions about a profile, a correction, a removal request, or anything else.',
     'canonical'   => base_url('contact'),
+    'alternates'  => 'contact',
 ]) ?>
 <?= $this->endSection() ?>
 

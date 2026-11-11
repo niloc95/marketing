@@ -146,7 +146,7 @@ final class HoursOpenNowTest extends CIUnitTestCase
         $hours = $this->hours(['wed' => ['open' => '08:00', 'close' => '17:00']]);
 
         $this->assertSame(
-            ['state' => 'open', 'label' => 'Open now', 'detail' => '08:00–17:00 today'],
+            ['state' => 'open', 'label' => 'Open now', 'detail' => '08:00 to 17:00 today'],
             hours_today_summary($hours, false, '12:00', 'wed'),
         );
     }
@@ -156,7 +156,7 @@ final class HoursOpenNowTest extends CIUnitTestCase
         $hours = $this->hours(['wed' => ['open' => '08:00', 'close' => '17:00']]);
 
         $this->assertSame(
-            ['state' => 'closed', 'label' => 'Closed now', 'detail' => '08:00–17:00 today'],
+            ['state' => 'closed', 'label' => 'Closed now', 'detail' => '08:00 to 17:00 today'],
             hours_today_summary($hours, false, '07:00', 'wed'),
         );
     }

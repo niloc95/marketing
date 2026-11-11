@@ -31,7 +31,7 @@ $list  = count($named) > 1
     : (string) (reset($named) ?: '');
 ?>
 <div class="panel <?= esc($class, 'attr') ?>" id="service-areas">
-    <h3>Service areas</h3>
+    <h2 class="panel-title">Service areas</h2>
     <p class="flex items-start gap-1.5 text-sm font-medium text-slate-900 dark:text-white">
         <?= lucide('car', 'mt-0.5 h-4 w-4 shrink-0') ?>
         <span><?= $location === 'travel' ? 'Mobile service: we travel to you' : 'We also travel to customers' ?></span>

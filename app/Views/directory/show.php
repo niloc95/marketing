@@ -141,7 +141,7 @@ $metaDesc = listing_meta_description($l);
           // a contained fit that shows a wide lockup whole. Without an image the
           // box stays square for the initials. ?>
     <?php $avatar = '<div class="avatar' . ($logoUrl !== '' ? ' avatar-logo' : '') . '">'
-        . ($logoUrl !== '' ? '<img src="' . esc($logoUrl) . '" alt="">' : esc($initials))
+        . ($logoUrl !== '' ? '<img src="' . esc($logoUrl) . '" alt="' . esc($l['display_name'] . ' logo', 'attr') . '">' : esc($initials))
         . '</div>'; ?>
     <div class="container">
         <?php if ($preview !== null): ?>
@@ -236,7 +236,7 @@ $metaDesc = listing_meta_description($l);
                             <?php if ($video['thumb'] !== ''): ?>
                                 <?php // The band's first picture is usually the largest thing on
                                       // screen, so it is fetched first (Largest Contentful Paint). ?>
-                                <img src="<?= esc(base_url($video['thumb'])) ?>" alt="" loading="eager" fetchpriority="high">
+                                <img src="<?= esc(base_url($video['thumb'])) ?>" alt="<?= esc(($video['title'] !== '' ? $video['title'] : $l['display_name'] . ' video'), 'attr') ?>" loading="eager" fetchpriority="high">
                             <?php else: ?>
                                 <span class="gallery-video-blank" aria-hidden="true"><?= esc($video['title'] !== '' ? $video['title'] : 'Watch our video') ?></span>
                             <?php endif; ?>
@@ -397,7 +397,7 @@ $metaDesc = listing_meta_description($l);
                       // hiring notice too. ?>
                 <?php if ($openJobs !== []): ?>
                     <div class="panel mt-5" id="open-positions">
-                        <h3>Open positions (<?= count($openJobs) ?>)</h3>
+                        <h2 class="panel-title">Open positions (<?= count($openJobs) ?>)</h2>
                         <ul class="mt-2 space-y-2 text-sm">
                             <?php foreach ($openJobs as $job): ?>
                                 <li>

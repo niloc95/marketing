@@ -135,7 +135,7 @@ final class PublicHolidaysTest extends CIUnitTestCase
         $this->assertSame('open', hours_today_line($hours, $short, false, '10:00', '2026-09-24', $this->calendar)['state']);
         $after = hours_today_line($hours, $short, false, '14:00', '2026-09-24', $this->calendar);
         $this->assertSame('closed', $after['state']);
-        $this->assertSame('Heritage Day hours 09:00–13:00', $after['detail']);
+        $this->assertSame('Heritage Day hours 09:00 to 13:00', $after['detail']);
     }
 
     public function testOpenDatesListOnlyTheDaysItIsOpen(): void

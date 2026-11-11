@@ -98,8 +98,14 @@ class TeamMemberService
             return [];
         }
 
+        // "Aesthetic Medicine, Dermatology, and Body Contouring": the Oxford
+        // comma leaves "and Body Contouring" as a topic of its own, so a
+        // leading "and" or "&" comes off each part. Semicolons split too.
         return array_values(array_filter(
-            array_map('trim', explode(',', $stored)),
+            array_map(
+                static fn (string $s): string => trim(preg_replace('/^(?:and|&)\s+/iu', '', trim($s)) ?? $s),
+                preg_split('/[,;]/', $stored) ?: []
+            ),
             static fn (string $s) => $s !== ''
         ));
     }

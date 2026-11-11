@@ -306,7 +306,7 @@ final class ServiceMenuTest extends CIUnitTestCase
         $this->assertGreaterThan($h1, $gallery, 'The gallery should come after the business name.');
 
         $this->assertStringContainsString('Business description', $html);
-        $this->assertStringNotContainsString('<h3>About</h3>', $html);
+        $this->assertStringNotContainsString('<h2 class="panel-title">About</h2>', $html);
         $this->assertStringContainsString('Vinyasa flow', $html);
         $this->assertStringContainsString('R130', $html);
         $this->assertStringContainsString('Parking available', $html);
@@ -352,7 +352,7 @@ final class ServiceMenuTest extends CIUnitTestCase
 
         $html = $this->get('directory/flow-yoga')->getBody();
 
-        $this->assertStringNotContainsString('<h3>Services</h3>', $html);
+        $this->assertStringNotContainsString('<h2 class="panel-title">Services</h2>', $html);
         $this->assertStringNotContainsString('Features &amp; amenities', $html);
     }
 

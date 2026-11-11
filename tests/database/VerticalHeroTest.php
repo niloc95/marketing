@@ -72,7 +72,7 @@ final class VerticalHeroTest extends CIUnitTestCase
         $this->assertStringContainsString('vertical-scope cat-tint-red', $html);
         $this->assertStringContainsString('Qualifications &amp; registrations', $html);
         $this->assertStringContainsString('Reception hours', $html);
-        $this->assertStringNotContainsString('<h3>Credentials</h3>', $html, 'the generic wording is gone');
+        $this->assertStringNotContainsString('<h2 class="panel-title">Credentials</h2>', $html, 'the generic wording is gone');
     }
 
     public function testABrowseFilteredToOneCategoryMatchesItsLandingPage(): void
@@ -139,7 +139,7 @@ final class VerticalHeroTest extends CIUnitTestCase
         $html = $this->get('directory/orphaned-business')->getBody();
 
         $this->assertStringContainsString('vertical-scope cat-tint-slate', $html, 'the documented grey fallback');
-        $this->assertStringContainsString('<h3>Credentials</h3>', $html, 'the wording it always had');
+        $this->assertStringContainsString('<h2 class="panel-title">Credentials</h2>', $html, 'the wording it always had');
         $this->assertStringContainsString('Trading hours', $html);
     }
 }

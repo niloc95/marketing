@@ -12,13 +12,14 @@ $link     = 'font-medium text-primary-500 dark:text-primary-300 hover:underline'
 ?>
 
 <?= $this->section('head') ?>
-<?php // An explicit canonical: seo_meta() defaults to current_url(), which here
-      // is whatever a scanner or a spam link asked for. That must not be
-      // reflected into the page. ?>
+<?php // No canonical at all: seo_meta() would default to current_url(), which
+      // here is whatever a scanner or a spam link asked for and must not be
+      // reflected into the page, and the home page is not what this URL is a
+      // copy of. ?>
 <?= seo_meta([
     'title'     => 'Page not found | ' . $siteName,
     'robots'    => 'noindex, follow',
-    'canonical' => base_url('/'),
+    'canonical' => false,
 ]) ?>
 <?= $this->endSection() ?>
 

@@ -19,7 +19,7 @@ if (empty($l['credentials'])) {
 }
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($v['headings']['credentials']) ?></h3>
+    <h2 class="panel-title"><?= esc($v['headings']['credentials']) ?></h2>
     <?php if (! empty($l['credentials'])): ?>
         <p class="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300"><?= esc($l['credentials']) ?></p>
     <?php endif; ?>

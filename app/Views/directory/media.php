@@ -52,6 +52,7 @@ $donts = [
     'description' => 'Download the ' . $siteName . ' logo for your website, with simple rules for using it.'
         . (site()->isApp() ? '' : ' The Verified Business badge is not available for download.'),
     'canonical'   => $canonical,
+    'alternates'  => 'media',
     'schema'      => schema_page([], $canonical, 'WebPage', 'Media resources'),
 ]) ?>
 <?= $this->endSection() ?>

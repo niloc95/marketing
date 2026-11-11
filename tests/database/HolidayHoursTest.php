@@ -132,7 +132,7 @@ final class HolidayHoursTest extends CIUnitTestCase
         $rows = preg_replace('#<(template|noscript)\b.*?</\1>#s', '', $html);
         $this->assertSame(2, substr_count($rows, 'data-holiday-pick'));
         $this->assertMatchesRegularExpression('/<option value="christmas" selected>Christmas Day, /', $rows);
-        $this->assertStringContainsString('09:00–13:00, with exceptions', $html, 'the closed accordion still says what is set');
+        $this->assertStringContainsString('09:00 to 13:00, with exceptions', $html, 'the closed accordion still says what is set');
     }
 
     // ------------------------------------------------------------- search
@@ -180,7 +180,7 @@ final class HolidayHoursTest extends CIUnitTestCase
 
         $text = html_entity_decode(strip_tags((string) $this->get('directory/shop')->response()->getBody()));
         $this->assertStringContainsString('Public holidays', $text);
-        $this->assertStringContainsString('09:00–13:00', $text);
+        $this->assertStringContainsString('09:00 to 13:00', $text);
         $this->assertStringContainsString('Skeleton staff', $text);
         $this->assertStringContainsString('Christmas Day: Closed', $text);
     }

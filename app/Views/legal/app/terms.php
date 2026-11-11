@@ -26,6 +26,7 @@ $zaTerms   = site_url_for(\Config\Sites::ZA, 'terms');
     'title'       => 'Terms of use | ' . $siteName,
     'description' => 'The terms that apply to using ' . $siteName . ' and to creating a business profile on it.',
     'canonical'   => $canonical,
+    'alternates'  => 'terms',
 ]) ?>
 <?= $this->endSection() ?>
 

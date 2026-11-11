@@ -15,7 +15,7 @@ if (empty($l['tags'])) {
 }
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($v['headings']['tags']) ?></h3>
+    <h2 class="panel-title"><?= esc($v['headings']['tags']) ?></h2>
     <div class="taglist">
         <?php foreach ($l['tags'] as $t): ?><span class="tag"><?= esc($t) ?></span><?php endforeach; ?>
     </div>

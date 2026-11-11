@@ -39,7 +39,7 @@ $size  = $bytes <= 0 ? '' : ($bytes >= 1_048_576
     : max(1, (int) round($bytes / 1024)) . ' KB');
 ?>
 <div class="panel mb-5">
-    <h3><?= esc($v['headings']['services']) ?></h3>
+    <h2 class="panel-title"><?= esc($v['headings']['services']) ?></h2>
 
     <?php if ($pdf !== null): ?>
         <?php // A new tab: the PDF opens in the browser's own viewer, and closing

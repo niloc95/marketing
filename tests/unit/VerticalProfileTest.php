@@ -261,7 +261,7 @@ final class VerticalProfileTest extends CIUnitTestCase
             'v' => $v,
         ], ['saveData' => false]);
 
-        $this->assertStringContainsString('<h3>Credentials</h3>', $html, 'the wording it always had');
+        $this->assertStringContainsString('<h2 class="panel-title">Credentials</h2>', $html, 'the wording it always had');
         $this->assertStringContainsString('BSc (Hons)', $html);
     }
 
@@ -295,7 +295,7 @@ final class VerticalProfileTest extends CIUnitTestCase
 
         $team = view('directory/_team_panel', ['members' => [['name' => 'Dr A. Nkosi']]]);
         $this->assertStringContainsString('Our team', $team);
-        $this->assertStringNotContainsString('<h3>Contact</h3>', $team);
+        $this->assertStringNotContainsString('<h2 class="panel-title">Contact</h2>', $team);
     }
 
     public function testAPanelIsNamedByItsVertical(): void
@@ -312,7 +312,7 @@ final class VerticalProfileTest extends CIUnitTestCase
                 'v' => vertical_profile($group, $slug),
             ], ['saveData' => false]);
 
-            $this->assertStringContainsString('<h3>' . $expected . '</h3>', $html, $slug);
+            $this->assertStringContainsString('<h2 class="panel-title">' . $expected . '</h2>', $html, $slug);
         }
 
         // And the one that made this whole thing worth doing: a restaurant's
@@ -321,6 +321,6 @@ final class VerticalProfileTest extends CIUnitTestCase
             'l' => ['services' => [['name' => 'Bunny chow', 'price_label' => 'R85']]],
             'v' => vertical_profile('Restaurants & Food', 'restaurant'),
         ], ['saveData' => false]);
-        $this->assertStringContainsString('<h3>Menu</h3>', $menu);
+        $this->assertStringContainsString('<h2 class="panel-title">Menu</h2>', $menu);
     }
 }
