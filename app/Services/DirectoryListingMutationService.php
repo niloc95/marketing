@@ -326,9 +326,7 @@ class DirectoryListingMutationService
         $name = ListingText::tidyName((string) $input['display_name']);
 
         return [
-            'type'           => DirectoryListingModel::normaliseType($input['type'] ?? ''),
             'display_name'   => $name,
-            'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'title'          => $this->clean($input['title'] ?? ''),
             'position'       => $this->clean($input['position'] ?? '') ?: null,
             'email'          => trim((string) $input['email']),
@@ -347,7 +345,8 @@ class DirectoryListingMutationService
 
     /**
      * The listing columns a signup form submission would write, apart from
-     * identity, slug, status and consent. Pure: no queries, no slug, no
+     * email, title, slug, status and consent. Type, name and contact person
+     * are here because the rubric judges the contact person against them. Pure: no queries, no slug, no
      * geocoding, so the live score on /add-profile can run it on every
      * keystroke pause (ListingQualityService::strengthForDraft()). Being the
      * same code buildListingData() uses is what keeps that live number equal to
@@ -361,6 +360,9 @@ class DirectoryListingMutationService
         $description = $this->ownerDescription($input['description'] ?? '');
 
         return [
+            'type'           => DirectoryListingModel::normaliseType($input['type'] ?? ''),
+            'display_name'   => ListingText::tidyName((string) ($input['display_name'] ?? '')),
+            'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
             'credentials' => $this->clean($input['credentials'] ?? ''),
             'description'      => $description,
@@ -1163,7 +1165,7 @@ class DirectoryListingMutationService
 
         // The two fields in the private "Your details" fieldset. Neither is
         // rendered on the public profile — _contact_panel.php shows neither,
-        // and ListingQualityService scores neither — but every mail this
+        // and ListingQualityService scores only a real contact person — but every mail this
         // directory sends about the listing is addressed from them. A listing nobody at this end can address is one that
         // cannot be verified by anything but its own claims.
         //
@@ -1175,8 +1177,20 @@ class DirectoryListingMutationService
         // exempt — it does not come through validate() (see
         // DirectoryAdminService), so an import or a phone capture can still be
         // entered with neither.
-        if ($this->clean($input['contact_person'] ?? '') === '') {
+        //
+        // And it has to be a person (ListingText::personNameProblem(), since
+        // 11 Nov 2026), judged only when new or changed like the name above,
+        // so the imported "Steve (Stephen) Carter" rows still save untouched.
+        $contact = $this->clean($input['contact_person'] ?? '');
+        if ($contact === '') {
             $errors['contact_person'] = 'Please tell us who we should speak to about this profile.';
+        } elseif ($changed('contact_person', $contact)
+            && ($problem = ListingText::personNameProblem(
+                $contact,
+                $name !== '' ? $name : (string) ($stored['display_name'] ?? ''),
+                DirectoryListingModel::normaliseType($input['type'] ?? '', (string) ($stored['type'] ?? 'person'))
+            )) !== null) {
+            $errors['contact_person'] = $problem;
         }
         // Both from a fixed list now. A title stored before the dropdown
         // (free text, "Sister", "Pastor") stays acceptable while unchanged:

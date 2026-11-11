@@ -90,4 +90,57 @@ final class ListingTextTest extends CIUnitTestCase
     {
         $this->assertSame('<p>We fix cars fast.<br>Call us today</p>', ListingText::tidyDescriptionHtml("WE FIX CARS FAST.\nCALL US TODAY"));
     }
+
+    // ----------------------------------------------------- contact person
+
+    /** @return iterable<string,array{string}> */
+    public static function acceptedPeople(): iterable
+    {
+        yield 'two names'   => ['Thandiwe Nkosi'];
+        yield 'apostrophe'  => ["Sean O'Brien"];
+        yield 'curly one'   => ['Sean O’Brien'];
+        yield 'hyphen'      => ['Mary-Jane Smit'];
+        yield 'initial'     => ['J. Smith'];
+        yield 'accent'      => ['Adré Jansen van Rensburg'];
+        yield 'other script' => ['Ṱhohoyandou Mudau'];
+        yield 'one name'    => ['Sipho'];
+    }
+
+    /** @dataProvider acceptedPeople */
+    public function testAcceptsPeoplesNames(string $name): void
+    {
+        $this->assertNull(ListingText::personNameProblem($name, 'Unlimited Projects & Flooring', 'practice'), $name);
+    }
+
+    /** @return iterable<string,array{string}> */
+    public static function refusedPeople(): iterable
+    {
+        yield 'the production case' => ['Unlimited Carpets & Flooring'];
+        yield 'company suffix'      => ['ABC Pty Ltd'];
+        yield 'trading'             => ['Sipho Trading'];
+        yield 'digits'              => ['Sipho 2'];
+        yield 'email'               => ['sipho@example.co.za'];
+        yield 'brackets'            => ['Steve (Stephen) Carter'];
+        yield 'slash'               => ['Natoo / Krishna'];
+        yield 'one letter'          => ['J'];
+        yield 'business name'       => ['Unlimited Projects and Flooring'];
+    }
+
+    /** @dataProvider refusedPeople */
+    public function testRefusesWhatIsNotAPersonsName(string $name): void
+    {
+        $this->assertNotNull(ListingText::personNameProblem($name, 'Unlimited Projects and Flooring', 'practice'), $name);
+    }
+
+    public function testTheBusinessNameIsFineForAProfileThatIsAPerson(): void
+    {
+        $this->assertNull(ListingText::personNameProblem('Alet Uys', 'Alet Uys', 'person'));
+        $this->assertNotNull(ListingText::personNameProblem('Alet Uys', 'Alet Uys', 'practice'));
+        $this->assertNotNull(ListingText::personNameProblem('Flow Plumbing', 'Flow Plumbing (Pty) Ltd', 'practice'));
+    }
+
+    public function testAPersonTheBusinessIsNamedAfterIsStillAPerson(): void
+    {
+        $this->assertNull(ListingText::personNameProblem('Bertus Mensveld', 'Dr Bertus Mensveld Inc', 'practice'));
+    }
 }

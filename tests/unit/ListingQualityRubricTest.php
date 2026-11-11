@@ -53,6 +53,9 @@ final class ListingQualityRubricTest extends CIUnitTestCase
             'description_text' => '',
             'logo_path'        => '',
             'trading_hours'    => null,
+            'display_name'     => '',
+            'type'             => '',
+            'contact_person'   => '',
         ], $overrides);
     }
 
@@ -72,6 +75,9 @@ final class ListingQualityRubricTest extends CIUnitTestCase
             'description_text' => str_repeat('a', ListingQualityService::DESCRIPTION_FULL_CHARS),
             'logo_path'        => 'listings/logo.png',
             'trading_hours'    => $this->hours(5),
+            'display_name'     => 'Long Street Plumbing',
+            'type'             => 'practice',
+            'contact_person'   => 'Thandiwe Nkosi',
         ]);
     }
 
@@ -137,25 +143,33 @@ final class ListingQualityRubricTest extends CIUnitTestCase
     }
 
     /**
-     * The calibration the homepage floor is set against. A listing that has
-     * only what signup forces out of someone should land at 25, so a floor of
-     * 40 means "a phone number and a paragraph" rather than "an afternoon".
+     * The calibration the bars are set against. A listing that has only what
+     * signup forces out of someone (place, contact person, hours, one service,
+     * one photo) lands at 29 since the 11 Nov 2026 reweight; a phone and a
+     * 120 character paragraph take it to 43.
      */
     public function testAFreshSignupLandsAtTheDocumentedFloor(): void
     {
         $fresh = $this->blank([
-            'category_id'  => 7,
-            'address_line' => '12 Long Street',
-            'city'         => 'Cape Town',
-            'province'     => 'Western Cape',
-            'latitude'     => '-33.9249000',
-            'longitude'    => '18.4241000',
+            'category_id'    => 7,
+            'address_line'   => '12 Long Street',
+            'city'           => 'Cape Town',
+            'province'       => 'Western Cape',
+            'latitude'       => '-33.9249000',
+            'longitude'      => '18.4241000',
+            'display_name'   => 'Long Street Plumbing',
+            'type'           => 'practice',
+            'contact_person' => 'Thandiwe Nkosi',
+            'trading_hours'  => $this->hours(5),
         ]);
 
-        $this->assertSame(25, $this->quality->score($fresh, $this->counts()));
+        $this->assertSame(29, $this->quality->score($fresh, $this->counts(1, 1)));
 
-        $withPhone = $this->quality->score(array_merge($fresh, ['phone' => '021 555 0100']), $this->counts());
-        $this->assertSame(35, $withPhone);
+        $fuller = array_merge($fresh, [
+            'phone'            => '021 555 0100',
+            'description_text' => str_repeat('a', ListingQualityService::DESCRIPTION_SHORT_CHARS),
+        ]);
+        $this->assertSame(43, $this->quality->score($fuller, $this->counts(1, 1)));
     }
 
     // ------------------------------------------------------------ the items
@@ -345,14 +359,15 @@ final class ListingQualityRubricTest extends CIUnitTestCase
 
     public function testBandsFollowTheScore(): void
     {
-        $band = fn (int $photos): string => $this->quality->evaluate(
+        $band = fn (int $photos, int $services = 3, int $attributes = 1, int $tags = 1): string => $this->quality->evaluate(
             $this->perfect(),
-            $this->counts($photos, 0, 0, 0)
+            $this->counts($photos, $services, $attributes, $tags)
         )['band'];
 
-        // perfect() without any child rows is 68; adding photos walks it up.
+        // perfect() with the breadth minimum is 70; photos walk it up.
         $this->assertSame('Good', $band(0));
         $this->assertSame('Excellent', $band(ListingQualityService::CAP_PHOTOS));
+        $this->assertSame('Getting there', $band(0, 0, 0, 0));
 
         $this->assertSame('Needs work', $this->quality->evaluate($this->blank(), $this->counts())['band']);
     }
@@ -450,5 +465,77 @@ final class ListingQualityRubricTest extends CIUnitTestCase
     public function testNoWayOnlineEarnsNothing(): void
     {
         $this->assertSame(0, $this->quality->score($this->blank(['whatsapp' => '   ']), $this->counts()));
+    }
+
+    // ------------------------------------------ the 11 Nov 2026 hardening
+
+    /** #3164 as it was submitted: 86 and Excellent under the old rubric. */
+    private function profile3164(): array
+    {
+        return array_merge($this->perfect(), [
+            'display_name'     => 'Unlimited Projects & Flooring',
+            'contact_person'   => 'Unlimited Carpets & Flooring',
+            'website'          => 'https://www.unlimitedflooring.co.za/',
+            'booking_url'      => 'https://www.unlimitedflooring.co.za/#contact',
+            'description_text' => str_repeat('a', 976),
+        ]);
+    }
+
+    public function testTheProfileThatScored86NowScores62AndIsNotGood(): void
+    {
+        $result = $this->quality->evaluate($this->profile3164(), $this->counts(4, 2));
+
+        $this->assertSame(62, $result['score']);
+        $this->assertSame('Getting there', $result['band']);
+    }
+
+    /** @return iterable<string,array{string,string,bool}> */
+    public static function bookingLinks(): iterable
+    {
+        yield 'own page'              => ['https://example.co.za', 'https://example.co.za/book', true];
+        yield 'another site'          => ['https://example.co.za', 'https://calendly.com/acme', true];
+        yield 'no website at all'     => ['', 'https://calendly.com/acme', true];
+        yield 'the website itself'    => ['https://example.co.za', 'https://example.co.za/', false];
+        yield 'website plus anchor'   => ['https://www.example.co.za/', 'https://www.example.co.za/#contact', false];
+        yield 'www and scheme differ' => ['https://www.example.co.za', 'http://example.co.za/#book', false];
+    }
+
+    /** @dataProvider bookingLinks */
+    public function testOnlyABookingPageOfItsOwnEarnsTheBookingLine(string $website, string $booking, bool $earns): void
+    {
+        $items = $this->quality->evaluate($this->blank(['website' => $website, 'booking_url' => $booking]), $this->counts())['items'];
+
+        $this->assertSame($earns, $this->itemNamed($items, 'booking')['done']);
+    }
+
+    /** @return iterable<string,array{string,string,bool}> */
+    public static function contactPeople(): iterable
+    {
+        yield 'a person'            => ['Thandiwe Nkosi', 'practice', true];
+        yield 'the person, for a sole trader' => ['Long Street Plumbing', 'person', true];
+        yield 'symbols'             => ['Unlimited Carpets & Flooring', 'practice', false];
+        yield 'company words'       => ['Acme Pty Ltd', 'practice', false];
+        yield 'the business itself' => ['Long Street Plumbing', 'practice', false];
+        yield 'nobody'              => ['', 'practice', false];
+    }
+
+    /** @dataProvider contactPeople */
+    public function testTheContactLinePaysOnlyForAPersonsName(string $contact, string $type, bool $earns): void
+    {
+        $listing = $this->blank(['display_name' => 'Long Street Plumbing', 'type' => $type, 'contact_person' => $contact]);
+
+        $this->assertSame($earns ? ListingQualityService::PTS_CONTACT_PERSON : 0, $this->quality->score($listing, $this->counts()));
+    }
+
+    public function testBreadthCapsTheLabelButNeverTheScore(): void
+    {
+        $full = $this->counts(ListingQualityService::CAP_PHOTOS, ListingQualityService::CAP_SERVICES);
+
+        $result = $this->quality->evaluate($this->perfect(), $full);
+        $this->assertSame(80, $result['score']);
+        $this->assertSame('Getting there', $result['band']);
+        $this->assertSame('mid', strength_tone($result['score'], $result['band']));
+
+        $this->assertSame('Good', $this->quality->bandFor(70));
     }
 }

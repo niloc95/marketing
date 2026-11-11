@@ -230,7 +230,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 $sScore  = (int) $strength['score'];
                 $sMax    = (int) $strength['max'];
                 $sToGo   = max(0, (int) $strengthTarget - $sScore);
-                $sTone   = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amber-500'][strength_tone($sScore)];
+                $sTone   = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amber-500'][strength_tone($sScore, (string) $strength['band'])];
                 $sWidth  = (int) (round(max(0, min(100, (int) $strength['percent'])) / 5) * 5);
                 ?>
                 <div class="score-bar" data-score-bar data-score-url="<?= esc(base_url('add-profile/score'), 'attr') ?>">

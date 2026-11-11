@@ -187,7 +187,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
         <input type="text" id="field-contact-person" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" autocomplete="name" <?= $privateDetailsRequired ? 'required' : '' ?> data-standout-trigger>
         <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
     </div>
-    <div class="hint">For our records, and so we know who to address when we contact you about this profile.</div>
+    <div class="hint">Your own name, as you would sign a letter, not the name of the business. For our records, and so we know who to address when we contact you about this profile.</div>
 </fieldset>
 <div class="form-row">
     <div class="field">

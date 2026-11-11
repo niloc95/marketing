@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
+use App\Libraries\ListingText;
 use App\Models\DirectoryPracticeLocationModel;
 
 /**
@@ -126,6 +127,15 @@ class PracticeLocationService
             $email = $this->limited($row['email'] ?? '', 190, $prefix . 'email', 'The email address', $errors);
             if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[$prefix . 'email'] = 'Enter a valid email address for this branch, or leave it blank.';
+            }
+
+            // A person's name, as on the profile itself (ListingText). Only a
+            // new or changed one is judged, so a branch saved before the rule
+            // does not block the rest of the form.
+            $contact = trim((string) ($row['contact_person'] ?? ''));
+            if ($contact !== '' && $contact !== trim((string) ($existing['contact_person'] ?? ''))
+                && ($problem = ListingText::personNameProblem($contact, $name, 'facility')) !== null) {
+                $errors[$prefix . 'contact_person'] = $problem;
             }
 
             $submitted[] = [
