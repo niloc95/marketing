@@ -204,9 +204,7 @@ class DirectoryService
         if (! empty($filters['category'])) {
             $builder->where('p.slug', $filters['category']);
         }
-        if ($groupName !== null) {
-            $builder->where('p.group_name', $groupName);
-        }
+        $this->applyGroup($builder, $groupName);
         // A business with a branch in the province or town is found there
         // too, and the card says which branch (branch_place).
         if (! empty($filters['province'])) {
@@ -889,7 +887,7 @@ class DirectoryService
      */
     public function searchVocabulary(): SearchVocabulary
     {
-        $key = site_cache_key('search_vocabulary_v1');
+        $key = site_cache_key('search_vocabulary_v2');
         try {
             $cached = cache()->get($key);
             if ($cached instanceof SearchVocabulary) {
@@ -924,6 +922,11 @@ class DirectoryService
         $groups = [];
         foreach ($this->groups->ordered() as $g) {
             $groups[$norm((string) $g['name'])] ??= ['slug' => (string) $g['slug'], 'name' => (string) $g['name']];
+        }
+        foreach (config('Search')->categorySets as $key => $set) {
+            foreach ($set['phrases'] as $phrase) {
+                $groups[$norm($phrase)] ??= ['slug' => (string) $key, 'name' => $set['name']];
+            }
         }
 
         // Towns first, so a suburb that shares a town's name stays a town.
@@ -1104,9 +1107,7 @@ class DirectoryService
         if (! empty($filters['category'])) {
             $builder->where('p.slug', $filters['category']);
         }
-        if ($groupName !== null) {
-            $builder->where('p.group_name', $groupName);
-        }
+        $this->applyGroup($builder, $groupName);
         // Own address only, unlike browse(): a pin is the profile's own point,
         // so a branch match would drop a Johannesburg pin on a Cape Town map.
         if (! empty($filters['province'])) {
@@ -2018,19 +2019,52 @@ class DirectoryService
      */
     public function findGroupBySlug(string $slug): ?array
     {
-        return $this->groups->findBySlug($slug);
-    }
-
-    /** The group_name a ?group= filter narrows to, or null for none or an unknown slug. */
-    private function groupNameFor(array $filters): ?string
-    {
-        $slug = (string) ($filters['group'] ?? '');
         if ($slug === '') {
             return null;
         }
-        $group = $this->groups->findBySlug($slug);
+        // A set of categories that is not a group_name ("doctors"). Its
+        // group_name is the real group it sits in, for the page's look.
+        $search = config('Search');
+        if (isset($search->categorySets[$slug])) {
+            $set   = $search->categorySets[$slug];
+            $slugs = $search->categorySetSlugs($slug);
 
-        return $group === null ? null : (string) $group['name'];
+            return $slugs === [] ? null : [
+                'slug'       => $slug,
+                'name'       => $set['name'],
+                'group_name' => $set['group'],
+                'slugs'      => $slugs,
+            ];
+        }
+
+        return $this->groups->findBySlug($slug);
+    }
+
+    /**
+     * What a ?group= filter narrows to: a group_name, the slugs of a
+     * Config\Search::$categorySets entry ("doctors"), or null for none or an
+     * unknown slug.
+     *
+     * @return string|list<string>|null
+     */
+    private function groupNameFor(array $filters): string|array|null
+    {
+        $group = $this->findGroupBySlug((string) ($filters['group'] ?? ''));
+        if ($group === null) {
+            return null;
+        }
+
+        return $group['slugs'] ?? (string) $group['name'];
+    }
+
+    /** @param string|list<string>|null $group from groupNameFor() */
+    private function applyGroup($builder, string|array|null $group): void
+    {
+        if (is_array($group)) {
+            $builder->whereIn('p.slug', $group);
+        } elseif ($group !== null) {
+            $builder->where('p.group_name', $group);
+        }
     }
 
     /** @return array<int,array<string,mixed>> */

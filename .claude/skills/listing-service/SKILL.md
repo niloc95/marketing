@@ -340,6 +340,11 @@ Leaflet/CARTO, and "near me" stays a query against `xs_directory_listing_points`
   (`geocodeParts()`, `permanent=true`) for the pin it posts. `geocodeParts()` and `reverse()`
   are permanent and cached for 30 days. Do not add coordinates back to suggestion rows.
   `MapboxGeocoderTest` pins all of this.
+- **A street match must be in the suburb asked for** (`inAskedPlace()`, since 11 Nov
+  2026): same suburb by name, or within 3 km of the suburb's centre (15 km of the city's
+  when no suburb), the centre looked up once and cached. Imported addresses that start
+  with building names matched same-named streets far away ("Parklane, Deelkraal" for
+  Parktown). A rejected street falls to the suburb circle.
 - **No token means no typeahead.** The public Nominatim server's policy forbids
   autocomplete, so `NominatimGeocoder::suggest()` returns `[]`, and the views leave out
   `data-suggest-url` (`Config\Directory::addressAutocompleteEnabled()`). With no URL,
@@ -404,6 +409,15 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
     only non cache table: removed now and never relearned).
   - Word columns are `utf8mb4_bin`: the default collation made "maré" and "mare" one key
     and rolled the nightly rebuild back.
+- **Category sets** (`Config\Search::$categorySets`, since 11 Nov 2026): a word that
+  means several categories ("doctor(s)" = every category `SchemaTypes::$bySlug` publishes
+  as `Physician`) reads as a virtual main category, `?group=doctors`.
+  `DirectoryService::findGroupBySlug()` returns it with `slugs` and its real
+  `group_name`; browse() and the map filter `p.slug IN (...)`. "gp", "family doctor",
+  "eye doctor" stay single categories.
+- **Near me with nothing in the radius** shows the nearest, distance first, under "Nothing
+  within N km of you" (`widenedFrom`); the radius is dropped from the filters so the
+  pager and chips match the list.
 - **Its own throttle key** (`directory-suggest-`, 30/min). Sharing `directory-index-`
   (60/min) would have a visitor's typing 429 their own results page. Over the limit
   answers an empty list with 200, as `AddressSuggest` does.

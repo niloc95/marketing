@@ -179,6 +179,23 @@ class Directory extends BaseController
             }
         }
 
+        // Nothing within the radius: the nearest instead, said out loud. "doctor
+        // near me" in Pretoria answered an empty page within 10 km (11 Nov
+        // 2026); the closest doctor 15 km away is a better answer than none.
+        // The radius is dropped from the filters too, so the pager, the chips
+        // and the map all describe the list that is shown.
+        $widenedFrom = null;
+        if ((int) $result['total'] === 0 && (int) $effective['radius'] > 0
+            && $effective['lat'] !== '' && $effective['lng'] !== '') {
+            $nearest = $svc->browse(['radius' => ''] + $effective, $page);
+            if ((int) $nearest['total'] > 0) {
+                $widenedFrom        = (int) $effective['radius'];
+                $result             = $nearest;
+                $filters['radius']  = '';
+                $effective['radius'] = '';
+            }
+        }
+
         // Resolved here rather than in the view, because the view turns these
         // into the <title>, the og:title and a rel=canonical, and then asks for
         // `index, follow`. Left unresolved, ?category=Cheap-Loans-Payday is a
@@ -228,6 +245,7 @@ class Directory extends BaseController
             // view names each part, with a link to take it away.
             'intent'      => $intent,
             'relaxed'     => $relaxed,
+            'widenedFrom' => $widenedFrom,
             // "cancer" names no category, but the discovery model knows where
             // the profiles that say it sit. Links, never a filter; only while
             // nothing narrows the list to a category already.
