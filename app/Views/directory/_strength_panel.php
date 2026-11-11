@@ -60,7 +60,7 @@ $you      = $audience === 'admin' ? 'It is' : 'You are';
 // the message — the band label says it in words for anyone who cannot see it.
 // strength_tone() is the one copy of the steps; the class names are written
 // out in full so the Tailwind build keeps them.
-$tone = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amber-500'][strength_tone($score)];
+$tone = ['high' => 'bg-emerald-500', 'mid' => 'bg-primary-500', 'low' => 'bg-amber-500'][strength_tone($score, (string) $strength['band'])];
 ?>
 <div class="panel strength-panel">
     <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">

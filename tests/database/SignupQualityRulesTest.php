@@ -20,6 +20,7 @@ use Tests\Support\FreshDatabase;
  *  - the description is compulsory and tidied;
  *  - the website is upgraded to https and must exist in DNS;
  *  - title and position come from fixed lists;
+ *  - the contact person is a person's name, not the business (since #3164);
  *  - opening hours (or "by appointment only") and one service are compulsory,
  *    and so is a picture when the controller says whether there is one.
  *
@@ -91,6 +92,46 @@ final class SignupQualityRulesTest extends CIUnitTestCase
 
         $renamed = $this->svc->updateOwn($id, $this->edit(['display_name' => 'New [Legacy] Plumbing']));
         $this->assertArrayHasKey('display_name', $renamed['errors'], 'a changed name meets the rules');
+    }
+
+    // ------------------------------------------------- the contact person
+
+    /** Profile #3164, 10 Nov 2026: the contact person was the business. */
+    public function testTheBusinessIsRefusedAsTheContactPerson(): void
+    {
+        $result = $this->svc->submitPublic($this->signup([
+            'display_name'   => 'Unlimited Projects & Flooring',
+            'type'           => 'practice',
+            'contact_person' => 'Unlimited Carpets & Flooring',
+        ]));
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('contact_person', $result['errors']);
+
+        $own = $this->svc->submitPublic($this->signup(['type' => 'practice', 'contact_person' => 'Flow Plumbing']));
+        $this->assertArrayHasKey('contact_person', $own['errors'], 'the business name itself');
+    }
+
+    public function testASoleTraderMayBeTheirOwnContact(): void
+    {
+        $result = $this->svc->submitPublic($this->signup([
+            'display_name'   => 'Thandi Mokoena',
+            'type'           => 'person',
+            'contact_person' => 'Thandi Mokoena',
+        ]));
+
+        $this->assertTrue($result['ok'], json_encode($result['errors']));
+    }
+
+    public function testALegacyContactPersonSurvivesAnEditThatLeavesItAlone(): void
+    {
+        $id = $this->legacyListing(['contact_person' => 'Steve (Stephen) Carter']);
+
+        $result = $this->svc->updateOwn($id, $this->edit(['contact_person' => 'Steve (Stephen) Carter']));
+        $this->assertTrue($result['ok'], json_encode($result['errors']));
+
+        $changed = $this->svc->updateOwn($id, $this->edit(['contact_person' => 'Steve (Stevie) Carter']));
+        $this->assertArrayHasKey('contact_person', $changed['errors'], 'a changed contact meets the rule');
     }
 
     // ------------------------------------------------------ the description

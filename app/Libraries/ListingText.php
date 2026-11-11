@@ -47,6 +47,19 @@ final class ListingText
      */
     private const NAME_ALLOWED = "/^[\\p{L}\\p{M}\\p{Nd} &'\\x{2019}\\x{2013}.,\\-()\\/+!:@]+$/u";
 
+    /** A person's name: letters, spaces, apostrophes, hyphens, full stops. */
+    private const PERSON_ALLOWED = "/^[\\p{L}\\p{M} '\\x{2019}.\\-]+$/u";
+
+    /**
+     * Words that make a contact person a company. Lower case, compared as
+     * whole words. "t/a" splits into "t" and "a", so it is caught by the
+     * slash in PERSON_ALLOWED instead.
+     */
+    private const COMPANY_WORDS = [
+        'pty', 'ltd', 'cc', 'inc', 'npc', 'llc', 'plc', 'trading', 'projects', 'services',
+        'group', 'holdings', 'enterprises', 'solutions', 'company',
+    ];
+
     /**
      * Why $name cannot be a business name, or null when it can.
      *
@@ -75,6 +88,54 @@ final class ListingText
         }
 
         return null;
+    }
+
+    /**
+     * Why $name cannot be the contact person, or null when it can.
+     *
+     * Written against profile #3164 (10 Nov 2026), whose contact person was
+     * "Unlimited Carpets & Flooring": the business, not someone to speak to.
+     * A person's name is letters, spaces, apostrophes, hyphens and full stops
+     * (O'Brien, Mary-Jane, J. Smith) in any script, so everything else is
+     * refused, and so are company words and the business name itself.
+     *
+     * Word overlap with the business name is deliberately NOT a reason:
+     * "Bertus Mensveld" at "Dr Bertus Mensveld Inc" is a real person. Only an
+     * exact match counts, and only when the profile is not a person's own
+     * (type 'person' profiles are named after the person, so they match).
+     */
+    public static function personNameProblem(string $name, string $businessName = '', string $type = ''): ?string
+    {
+        $name = self::collapse(self::nfkc($name));
+        if ($name === '') {
+            return null; // "required" is validate()'s message, not ours
+        }
+
+        if (preg_match(self::PERSON_ALLOWED, $name) !== 1 || preg_match_all('/\p{L}/u', $name) < 2) {
+            return 'Please use only letters in the contact person’s name, no symbols or numbers.';
+        }
+
+        $words = self::personWords($name);
+        if (array_intersect($words, self::COMPANY_WORDS) !== []) {
+            return 'Please enter your own name, the person we should speak to, not the business name.';
+        }
+
+        if ($type !== 'person' && $businessName !== '') {
+            $business = array_values(array_diff(self::personWords(self::nfkc($businessName)), self::COMPANY_WORDS));
+            if ($business !== [] && $business === array_values(array_diff($words, self::COMPANY_WORDS))) {
+                return 'Please enter your own name, the person we should speak to, not the business name.';
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<string> lower case words, punctuation dropped */
+    private static function personWords(string $text): array
+    {
+        $text = (string) preg_replace('/[^\p{L}\p{M}\p{Nd}]+/u', ' ', mb_strtolower($text));
+
+        return array_values(array_filter(explode(' ', $text), static fn (string $w): bool => $w !== ''));
     }
 
     /** Whitespace collapsed, and ALL-CAPS turned into Title Case. */

@@ -1446,13 +1446,17 @@ if (! function_exists('strength_tone')) {
      * the admin list's pill), so they can never disagree about a score.
      *
      * Colour is a hint, never the message; each caller also says the band in
-     * words.
+     * words. Pass the band when evaluate() gave one: a score of 80 without
+     * the breadth ListingQualityService::BREADTH_MIN asks for reads "Getting
+     * there", and must not be drawn green.
      *
      * @return 'high'|'mid'|'low'
      */
-    function strength_tone(int $score): string
+    function strength_tone(int $score, ?string $band = null): string
     {
-        return $score >= 80 ? 'high' : ($score >= 40 ? 'mid' : 'low');
+        $tone = $score >= 80 ? 'high' : ($score >= 40 ? 'mid' : 'low');
+
+        return $tone === 'high' && $band !== null && $band !== 'Excellent' ? 'mid' : $tone;
     }
 }
 
