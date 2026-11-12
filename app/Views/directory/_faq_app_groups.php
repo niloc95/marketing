@@ -56,7 +56,7 @@ return [
             [
                 'id' => 'plus',
                 'q'  => 'What is Plus?',
-                'a'  => 'An optional upgrade for your profile. With Plus you can add up to ' . (int) $locations . ' more branches or offices, each with its own address, map pin, phone and hours; show up to ' . (int) $team . ' team members with a photo and what they do; post job vacancies and reply to requests for your kind of service on the <a href="' . base_url('jobs') . '">Jobs board</a>; and your profile carries a Plus label. Add it from <a href="' . base_url('business') . '">your dashboard</a> once your profile is live.',
+                'a'  => 'An optional upgrade for your profile. With Plus you can ' . (bookings_in_premium() ? 'take online bookings on your profile (' . esc(lcfirst(bookings_pitch())) . '); ' : '') . 'add up to ' . (int) $locations . ' more branches or offices, each with its own address, map pin, phone and hours; show up to ' . (int) $team . ' team members with a photo and what they do; post job vacancies and reply to requests for your kind of service on the <a href="' . base_url('jobs') . '">Jobs board</a>; and your profile carries a Plus label. Add it from <a href="' . base_url('business') . '">your dashboard</a> once your profile is live.',
             ],
             [
                 'q' => 'What does Plus cost, and in which currency?',

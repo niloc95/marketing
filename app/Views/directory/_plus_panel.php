@@ -4,7 +4,8 @@
  *
  * Plus is the International plan once .app is live (VerificationService::
  * plusMode()): optional, sold in US dollars, charged in rand by the gateway, and
- * unlocking branches, team members and the Jobs board (listing_has_premium()).
+ * unlocking branches, team members, online bookings and the Jobs board
+ * (listing_has_premium(); bookings while bookings_in_premium()).
  * Unlike _hosting_panel.php, nothing here can say the profile is down: a
  * profile abroad is published free, and Plus lapsing only takes away the
  * extras.
@@ -45,7 +46,7 @@ $isYearly = \App\Models\DirectoryVerificationModel::cycleOf($row ?? []) === \App
     <?php if ($active): ?>
         <p class="verify-panel-lead">
             You have Plus<?php if (! empty($row['paid_until'])): ?>, renewing on <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?php endif; ?>.
-            Your branches, team and the Jobs board are switched on.
+            Your branches, team<?= bookings_in_premium() ? ', online bookings' : '' ?> and the Jobs board are switched on.
         </p>
         <?php if (! empty($row['cancelled_at'])): ?>
             <div class="alert alert-info">
@@ -84,6 +85,9 @@ $isYearly = \App\Models\DirectoryVerificationModel::cycleOf($row ?? []) === \App
             for <strong><?= esc($price) ?></strong>:
         </p>
         <ul class="plan-rows">
+            <?php if (bookings_in_premium()): ?>
+                <li class="plan-row-yes"><span><strong>Online bookings:</strong> <?= esc(bookings_pitch()) ?></span></li>
+            <?php endif; ?>
             <li class="plan-row-yes"><span><strong>Locations:</strong> add your other branches, each with its own address, hours and map pin.</span></li>
             <li class="plan-row-yes"><span><strong>Team:</strong> show your people by name, with photos and what they do.</span></li>
             <li class="plan-row-yes"><span><strong>Jobs:</strong> post vacancies and reply to requests for your kind of service.</span></li>

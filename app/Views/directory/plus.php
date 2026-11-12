@@ -24,7 +24,8 @@ $faqs = [
     [
         'q' => 'What does the Plus label mean?',
         'a' => 'That the business has ' . esc($siteName) . ' Plus, our optional upgrade. It lets the business show its other '
-            . 'locations, its team and its job vacancies on its profile. That is all it says.',
+            . 'locations, its team and its job vacancies on its profile'
+            . (bookings_in_premium() ? ', and take online bookings' : '') . '. That is all it says.',
     ],
     [
         'q' => 'Has a Plus business been checked?',
@@ -46,7 +47,8 @@ $faqs = [
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'What Plus means | ' . $siteName,
-    'description' => 'Plus on ' . $siteName . ' lets a business show its other locations, its team and its vacancies. '
+    'description' => 'Plus on ' . $siteName . ' lets a business ' . (bookings_in_premium() ? 'take online bookings and ' : '')
+        . 'show its other locations, its team and its vacancies. '
         . 'Here is exactly what it includes, and what it does not mean.',
     'canonical'   => $canonical,
     'schema'      => schema_page([schema_faq_page($faqs, $canonical)], $canonical, 'WebPage', 'What Plus means'),
@@ -72,6 +74,9 @@ $faqs = [
             <div class="panel">
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white">What Plus adds</h2>
                 <ul class="checkout-terms mt-3">
+                    <?php if (bookings_in_premium()): ?>
+                        <li>Online bookings: <?= esc(lcfirst(bookings_pitch())) ?></li>
+                    <?php endif; ?>
                     <li>Up to <?= (int) $locations ?> more locations, each with its own address, hours and map pin.</li>
                     <li>Up to <?= (int) $team ?> team members, with photos and what they do.</li>
                     <li>Job vacancies, and replies to requests on the <a href="<?= base_url('jobs') ?>">Jobs board</a>.</li>

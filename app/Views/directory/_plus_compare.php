@@ -8,7 +8,8 @@ use App\Services\TeamMemberService;
  * job there, where the badge is not sold and Plus is (VerificationService::
  * plusOffered()). Same layout and classes, its own promises, and they must
  * stay true: Plus unlocks what listing_has_premium() unlocks, checks nothing,
- * and is billed in rand (Legal terms section 4 on .app).
+ * and is billed in rand (Legal terms section 4 on .app). Online bookings is
+ * listed while bookings_in_premium() says they come with Plus.
  *
  * @var string|null $usd      Plus's dollar price; null renders nothing
  * @var string|null $rand     what the gateway charges a new subscription
@@ -31,6 +32,7 @@ $free = [
     'Discovered on the platform, on the map and in your category',
 ];
 $benefits = [
+    ...(bookings_in_premium() ? [['icon' => 'calendar-days', 'title' => 'Online bookings', 'text' => bookings_pitch()]] : []),
     ['icon' => 'building-2', 'title' => 'Locations', 'text' => 'Up to ' . (int) $locations . ' more branches, each with its own address, contact details, map pin and opening hours.'],
     ['icon' => 'users', 'title' => 'Your team', 'text' => 'Up to ' . (int) $team . ' team members, each with a photo, their role and what they do.'],
     ['icon' => 'briefcase', 'title' => 'Jobs and requests', 'text' => 'Post vacancies on our Jobs board and reply to customers who ask for your kind of service.'],
@@ -44,8 +46,9 @@ $benefits = [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free business profile. Add Plus when you want to show your other
-                locations, your team and your vacancies.
+                Start with a free business profile. Add Plus when you want
+                <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your other locations,
+                your team and your vacancies.
             </p>
         </div>
 <?php endif; ?>

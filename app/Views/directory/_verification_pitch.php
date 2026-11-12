@@ -54,6 +54,12 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         the badge are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
         business registration document and your ID.
     </li>
+    <?php if (bookings_in_premium()): ?>
+        <li>
+            <?php // BookingSetupService::whyNot(): bookings come with the badge. ?>
+            <strong>Online bookings.</strong> <?= esc(bookings_pitch()) ?>
+        </li>
+    <?php endif; ?>
     <li>
         <strong>All your locations.</strong> Add up to <?= (int) $locations ?> more branches or
         practices, each with its own address, phone number, map pin and opening hours, and each
