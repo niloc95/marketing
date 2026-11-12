@@ -160,7 +160,7 @@ $zaPrivacy = site_url_for(\Config\Sites::ZA, 'privacy');
                 <li><strong>Payments</strong>: if you buy Plus or our profile setup service, <strong>Paystack</strong> processes the payment, in South Africa (<a href="https://paystack.com/za/terms" rel="noopener">terms and privacy notice</a>). A subscription started before we moved to Paystack is processed by <strong>PayFast</strong>, also in South Africa, until you move it (<a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">privacy policy</a>). We give Paystack your email address, the amount and the payment reference so it can charge your card, run your subscription and send your receipt. We never receive or store your card details.</li>
                 <li><strong>Network and security</strong>: Cloudflare, which carries all traffic to the site.</li>
                 <li><strong>Employers, requesters and businesses</strong>, on the Jobs board, as described in section 6.</li>
-                <li><strong>Authorities</strong>, where the law requires it, such as a valid court order.</li>
+                <li><strong>Authorities</strong>, where the law requires it, such as a valid court order; and, on our own initiative, the police or another authority or regulator, when we reasonably believe a profile or post is false or is being used for fraud or another offence. We keep that information for as long as the investigation or any case needs it, even after the profile or post is removed (see our <a href="<?= base_url('terms') ?>#fraud">terms</a>).</li>
             </ul>
 
             <h2>10. Hosting and international transfers</h2>

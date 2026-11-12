@@ -326,6 +326,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Legal requirements</h3>
             <p>We may disclose information where required or permitted by applicable law, including in response to a valid court order, legal process or lawful request from an authorised authority.</p>
+            <p>If we reasonably believe that a profile, job post or request for a service is false or is being used for fraud or another offence, we may also, on our own initiative, give the information connected with it to the South African Police Service or another authority or regulator concerned, as POPIA allows for preventing, detecting and prosecuting offences. We keep that information for as long as the investigation or any case needs it, even after the profile or post is removed (see our <a href="<?= base_url('terms') ?>#fraud">terms</a>).</p>
 
             <h2>16. Cross border transfers</h2>
             <p>Because our application infrastructure is currently hosted in the AWS Asia Pacific (Mumbai) Region, personal information processed through that infrastructure may be transferred to and processed outside South Africa.</p>
