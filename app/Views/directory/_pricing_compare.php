@@ -11,7 +11,8 @@ use App\Services\TeamMemberService;
  * it, beside _verification_pitch.php (prose: /verified and the owner
  * dashboard) and _plan_cards.php (the tick list on the signup form). This one
  * is built for the question "what do I get for the monthly fee?", so it groups
- * the badge's features into four benefits instead of listing every row. The
+ * the badge's features into a few benefits instead of listing every row (online
+ * bookings is one of them while bookings_in_premium() says so). The
  * three are deliberately separate and must be changed together; both other
  * docblocks point here.
  *
@@ -68,6 +69,16 @@ $benefits = [
         'text'  => 'The Verified Business badge beside your name, on your profile and in discovery results. '
             . 'It tells customers we have checked your business registration document and the owner\'s ID.',
     ],
+];
+// BookingSetupService::whyNot(): bookings come with the badge (owner, 12 Nov 2026).
+if (bookings_in_premium()) {
+    $benefits[] = [
+        'icon'  => 'calendar-days',
+        'title' => 'Online bookings',
+        'text'  => bookings_pitch(),
+    ];
+}
+$benefits = array_merge($benefits, [
     [
         'icon'  => 'users',
         'title' => 'People and expertise',
@@ -86,7 +97,7 @@ $benefits = [
         'text'  => 'Post your vacancies on our Jobs board straight from your profile, and reply to customers '
             . 'who ask for your kind of service.',
     ],
-];
+]);
 ?>
 <section class="home-pricing" id="pricing" aria-labelledby="pricing-title">
     <div class="container">
@@ -94,8 +105,9 @@ $benefits = [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free business profile. Upgrade to Verified Business when you want to show
-                your people, your other locations and your vacancies.
+                Start with a free business profile. Upgrade to Verified Business when you want
+                <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your people, your other
+                locations and your vacancies.
             </p>
         </div>
 

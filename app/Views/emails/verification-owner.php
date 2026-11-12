@@ -44,7 +44,8 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
                 Your Verified Business badge is ready to switch on. It costs
                 <strong><?= esc(money($amount)) ?> a month</strong><?php if ($yearlyAmount !== ''): ?>,
                 or <strong><?= esc(money($yearlyAmount)) ?> a year</strong> if you pay yearly<?php endif; ?>, and it appears on your profile and
-                everywhere your business is discovered on the platform.
+                everywhere your business is discovered on the platform.<?php if (bookings_in_premium(Config\Sites::ZA)): ?>
+                With it you can also take online bookings, and add your other branches, your team and your job vacancies.<?php endif; ?>
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'Activate my badge') ?>
@@ -72,7 +73,7 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
         <?php elseif ($event === 'activated' && $product === 'plus'): ?>
             <p style="font-size:15px;line-height:1.6">
                 Your payment came through and <strong>Plus</strong> is now on: you can add your other
-                branches and your team, and post on the Jobs board, from your dashboard.
+                branches and your team, <?= bookings_in_premium(Config\Sites::APP) ? 'turn on online bookings, ' : '' ?>and post on the Jobs board, from your dashboard.
             </p>
             <p style="font-size:15px;line-height:1.6">
                 It renews automatically each <?= $period ?>, billed in South African rand. You can cancel any time
@@ -99,6 +100,12 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
             <p style="font-size:15px;line-height:1.6">
                 Your payment came through and your <strong>Verified Business</strong> badge is now live on your profile.
             </p>
+            <?php if (bookings_in_premium(Config\Sites::ZA)): ?>
+                <p style="font-size:15px;line-height:1.6">
+                    It comes with <strong>online bookings</strong>: <?= esc(lcfirst(bookings_pitch())) ?>
+                    Turn them on from your dashboard, along with your other branches, your team and your job vacancies.
+                </p>
+            <?php endif; ?>
             <p style="font-size:15px;line-height:1.6">
                 It renews automatically each <?= $period ?>. You can cancel any time from your dashboard. The
                 badge stays up until the <?= $period ?> you've paid for runs out.

@@ -215,7 +215,7 @@ class Comparison extends BaseConfig
             'key'   => 'booking',
             'label' => 'Online booking',
             'cells' => [
-                'local'    => ['status' => 'free', 'note' => 'A "Book online" button linking to your own booking page'],
+                'local'    => ['status' => 'free_verified', 'note' => 'Built in online bookings on your profile, with a calendar, reminders and your customer list, come with Verified. Any profile can link a "Book online" button to a booking page it already uses'],
                 'google'   => ['status' => 'yes', 'note' => 'A booking link, or Reserve with Google through booking partners'],
                 'linkedin' => ['status' => 'no', 'note' => ''],
                 'sa'       => ['status' => 'varies', 'note' => 'Medpages takes appointment requests on its paid listing'],

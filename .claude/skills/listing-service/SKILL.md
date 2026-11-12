@@ -544,8 +544,8 @@ the SA directories (one column, with notes naming which directory does what).
   Verified Business table below). `{gallery}`, `{locations}`, `{team}` and `{price}` are
   filled in at render from the service constants, so an edited copy never freezes a cap.
   `ComparisonPageTest` pins the default tiers.
-- Keep the honest rows: booking (a link, nothing built in), and
-  the `/verified` rule that qualifications are not checked.
+- Keep the honest rows: booking (a "Book online" link free; built in bookings with
+  Verified, since 12 Nov 2026), and the `/verified` rule that qualifications are not checked.
 - Chip classes in `compare.php` are written out in full. A concatenated class name is
   purged from the Tailwind build.
 
@@ -1116,6 +1116,7 @@ the profile video stay badge only:
 | Profile video (YouTube or Vimeo, `ListingVideoService`) | — | yes |
 | Posting job vacancies (and renewing them) on the Jobs board | — | yes |
 | Replying to service requests | — | yes |
+| Online bookings (`BookingSetupService::whyNot()`; sold in the copy only while `bookings_in_premium()`, with one shared line, `bookings_pitch()`) | — | yes |
 | Lead alerts for service requests | teaser ("Get verified to reply") | yes, alerted first |
 | Requesting a service (Jobs board) | yes | yes |
 | Customer reviews, and replying to them | yes | yes |

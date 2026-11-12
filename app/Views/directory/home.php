@@ -86,7 +86,7 @@ if ($heroBg !== null) {
 $hasSlides = $slides !== [];
 $hasMedia  = $hasSlides || $heroBg !== null;
 
-// The five things a profile brings together. The last three are Verified
+// The things a profile brings together. Bookings and the last three are Verified
 // Business features (PracticeLocationService / TeamMemberService /
 // JobBoardService::canUseJobsFeatures), so they carry the tag while the badge is
 // on sale: this page must never read as "all of this is free". The pricing
@@ -105,6 +105,18 @@ $moments = [
         'text'     => 'The services you offer, with prices if you want them, so people know you do what they need.',
         'verified' => false,
     ],
+];
+// Online bookings come with Verified (Plus on .app) since 12 Nov 2026, and
+// only show here while bookings_in_premium() says they do.
+if (bookings_in_premium()) {
+    $moments['bookings'] = [
+        'eyebrow'  => 'Your bookings',
+        'title'    => ['Let customers book', 'right on your profile.'],
+        'text'     => bookings_pitch(),
+        'verified' => true,
+    ];
+}
+$moments += [
     'locations' => [
         'eyebrow'  => 'Your locations',
         'title'    => ['One business.', 'Multiple practices.', 'Multiple branches.', 'One local presence.'],
@@ -308,7 +320,7 @@ $moments = [
         </div>
     </section>
 
-    <?php // --------------------------------------------------- five moments ?>
+    <?php // -------------------------------------------------------- moments ?>
     <div class="home-moments">
         <?php $n = 0; ?>
         <?php foreach ($moments as $kind => $m): ?>

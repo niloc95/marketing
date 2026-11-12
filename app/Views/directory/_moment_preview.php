@@ -8,7 +8,7 @@
  * business. The whole thing is aria-hidden — the moment's own heading and text
  * already say what it shows.
  *
- * @var string $kind business|services|locations|people|opportunities
+ * @var string $kind business|services|bookings|locations|people|opportunities
  */
 ?>
 <div class="preview" aria-hidden="true">
@@ -35,6 +35,14 @@
         <li><span>Follow up visit</span><span class="preview-price"><?= site()->isApp() ? '$30' : 'R 300' ?></span></li>
         <li><span>Callout</span><span class="preview-price">On request</span></li>
         <li><span>After hours</span><span class="preview-price">On request</span></li>
+    </ul>
+
+<?php elseif ($kind === 'bookings'): ?>
+    <p class="preview-label">Book a time</p>
+    <ul class="preview-rows preview-rows-stacked">
+        <li><?= lucide('calendar-days', 'h-4 w-4 shrink-0') ?><span><strong>Consultation</strong>Tomorrow · 09:00 · 09:30 · 11:00</span></li>
+        <li><?= lucide('calendar-days', 'h-4 w-4 shrink-0') ?><span><strong>Follow up visit</strong>Thursday · 14:00 · 15:30</span></li>
+        <li><?= lucide('badge-check', 'h-4 w-4 shrink-0') ?><span><strong>Booked</strong>Reminder sent the day before</span></li>
     </ul>
 
 <?php elseif ($kind === 'locations'): ?>

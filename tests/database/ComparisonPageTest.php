@@ -93,13 +93,16 @@ final class ComparisonPageTest extends CIUnitTestCase
             $tiers[$row['key']] = $row['cells']['local']['status'];
         }
 
-        foreach (['free_profile', 'services', 'contact_map', 'photos', 'hours', 'booking', 'reviews'] as $free) {
+        foreach (['free_profile', 'services', 'contact_map', 'photos', 'hours', 'reviews'] as $free) {
             $this->assertSame('free', $tiers[$free], $free);
         }
         foreach (['locations', 'staff_profiles', 'staff_qualifications', 'staff_search', 'vacancies', 'document_verification'] as $paid) {
             $this->assertSame('verified', $tiers[$paid], $paid);
         }
         $this->assertSame('free_verified', $tiers['service_requests']);
+        // A "Book online" link is free; built in bookings come with the badge
+        // (BookingSetupService::whyNot(), since 12 Nov 2026).
+        $this->assertSame('free_verified', $tiers['booking']);
     }
 
     public function testEveryDefaultCellIsValid(): void

@@ -37,11 +37,11 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Is ' . esc($siteName) . ' free to use?',
-                'a' => 'Yes. Discovering businesses is free, and so is a business profile for a business with a South African address: no monthly fee, no subscription, no obligation. Two things are paid, and neither affects a South African profile: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Profile</strong> subscription for a business based outside South Africa. Nothing about a South African profile depends on buying anything. The badge does add features on top: your other locations, your team, and posting job vacancies and replying to requests on the Jobs board.',
+                'a' => 'Yes. Discovering businesses is free, and so is a business profile for a business with a South African address: no monthly fee, no subscription, no obligation. Two things are paid, and neither affects a South African profile: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Profile</strong> subscription for a business based outside South Africa. Nothing about a South African profile depends on buying anything. The badge does add features on top: ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'your other locations, your team, and posting job vacancies and replying to requests on the Jobs board.',
             ],
             [
                 'q' => 'What is ' . esc($siteName) . '?',
-                'a' => 'A local business discovery and visibility platform built for South Africa. People use it to discover businesses, services, locations, professionals and opportunities near them. Businesses use it to build their local online presence: a profile that shows what they do, the services they provide, where they operate, how to reach them and, with a Verified Business profile, their other locations, their people and their job vacancies. It is more than a business listing.',
+                'a' => 'A local business discovery and visibility platform built for South Africa. People use it to discover businesses, services, locations, professionals and opportunities near them. Businesses use it to build their local online presence: a profile that shows what they do, the services they provide, where they operate, how to reach them and, with a Verified Business profile, ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'their other locations, their people and their job vacancies.',
             ],
             [
                 'q' => 'Do I need an account to discover businesses?',
@@ -81,7 +81,7 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Does it cost anything to create a business profile?',
-                'a' => 'Not if your business is in South Africa. Your business profile is free and stays free: no monthly fee, no subscription, no obligation, no commission and no card required. Nothing about your profile is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, which adds a trust mark plus your locations, your people and your job vacancies. See below.',
+                'a' => 'Not if your business is in South Africa. Your business profile is free and stays free: no monthly fee, no subscription, no obligation, no commission and no card required. Nothing about your profile is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, which adds a trust mark plus ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'your locations, your people and your job vacancies. See below.',
             ],
             [
                 'q' => 'What can a free business profile include?',
@@ -103,13 +103,18 @@ $groups = [
                 'q' => 'How do jobs work?',
                 'a' => 'The <a href="' . base_url('jobs') . '">Jobs board</a> brings vacancies and requests for work together. Anyone can post a request for a service, free. A Verified Business can post job vacancies straight from its profile and reply to requests for its kind of service, and is the first we alert when a matching request comes in.',
             ],
+            ...(bookings_in_premium() ? [[
+                'id' => 'bookings',
+                'q'  => 'Can customers book an appointment on my profile?',
+                'a'  => 'Yes, with a <a href="' . base_url('verified') . '">Verified Business</a> profile. ' . esc(bookings_pitch()) . ' Turn bookings on from <a href="' . base_url('business') . '">your dashboard</a> once the badge is live; there is nothing extra to pay. A free profile can still link a "Book online" button to a booking page you already use.',
+            ]] : []),
             [
                 'q' => 'My business is not in South Africa. Can I still create a profile?',
                 'a' => 'Yes, on a paid <strong>International Profile</strong> subscription. ' . esc($siteName) . ' is built for South African businesses. Discovery, the categories and the province pages are all built around South African places, so a South African business profile is free and always will be. A business based anywhere else is welcome, and its profile goes live once the monthly subscription is paid. You fill in the same form, confirm your email the same way, and your profile is saved either way; it publishes when the first payment clears. Cancel any time: the profile stays live until the paid period ends and then comes down, and nothing you entered is deleted, if you subscribe again later it comes back exactly as it was. Payment is taken in South African rand.',
             ],
             [
                 'q' => 'How much is the Verified Business badge, and what do I get?',
-                'a' => esc(price_terms((new App\Services\DirectorySettings())->badgePrice(), badge_yearly_price())) . '. Your profile and every discovery result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
+                'a' => esc(price_terms((new App\Services\DirectorySettings())->badgePrice(), badge_yearly_price())) . '. Your profile and every discovery result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also ' . (bookings_in_premium() ? 'lets customers book with you online on your profile, ' : '') . 'lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',
@@ -181,7 +186,9 @@ $groups = [
             ],
             [
                 'q' => 'Is this the same thing as WebScheduler, the booking software?',
-                'a' => 'Related, but separate, and worth not confusing. <strong>' . esc($siteName) . '</strong> is this local business discovery platform: people discover your business, and your business profile is free. <strong>WebScheduler</strong> is our paid appointment scheduling software, which runs on your own infrastructure. You can read about it at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>. A profile here does not sign you up for it, and you never have to buy anything to keep your profile.',
+                'a' => bookings_in_premium()
+                    ? 'They are now one. Online bookings are built into <strong>' . esc($siteName) . '</strong> and come with the <a href="' . base_url('verified') . '">Verified Business</a> badge: customers book a time right on your profile, with nothing else to install or pay for. Your business profile stays free, and you never have to buy anything to keep it. You can read about everything we make at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>.'
+                    : 'Related, but separate, and worth not confusing. <strong>' . esc($siteName) . '</strong> is this local business discovery platform: people discover your business, and your business profile is free. <strong>WebScheduler</strong> is our paid appointment scheduling software, which runs on your own infrastructure. You can read about it at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>. A profile here does not sign you up for it, and you never have to buy anything to keep your profile.',
             ],
         ],
     ],

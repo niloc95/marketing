@@ -261,6 +261,37 @@ if (! function_exists('listing_has_premium')) {
     }
 }
 
+if (! function_exists('bookings_in_premium')) {
+    /**
+     * Whether the paid plan's sales copy may promise online bookings: the
+     * Verified Business badge on co.za, Plus on .app (owner, 12 Nov 2026,
+     * "Bookings is included in Verified"). True only while bookings are on
+     * for this site and come with the plan, not a separate Bookings plan
+     * (bookings.planRequired): BookingSetupService::whyNot() is the gate this
+     * copy describes. Every pitch, card, FAQ and email line about bookings
+     * checks it, so switching bookings off takes the promise down with it.
+     */
+    function bookings_in_premium(?string $siteKey = null): bool
+    {
+        $config = config('Bookings');
+
+        return $config->siteAllowed($siteKey ?? site()->key()) && ! $config->planRequired();
+    }
+}
+
+if (! function_exists('bookings_pitch')) {
+    /**
+     * The one sentence that sells online bookings, so the cards, pitches, FAQ
+     * and emails say the same thing. Mirrors business/locked.php's own line:
+     * what the code does, nothing more.
+     */
+    function bookings_pitch(): string
+    {
+        return 'Customers book a time with you right on your profile, and you get a calendar for your team, '
+            . 'reminders and a list of your customers.';
+    }
+}
+
 if (! function_exists('plus_badge_pill')) {
     /**
      * The "Plus" label on a profile and its cards. Deliberately not the

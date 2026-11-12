@@ -78,6 +78,13 @@ $rows = [
     // card says what visitors will be told on hover. Keep in step with the
     // first item of _verification_pitch.php.
     ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every discovery result you appear in', 'note' => VERIFIED_BADGE_EXPLAINER . ': your business registration document and your ID', 'free' => false, 'paid' => true],
+];
+// BookingSetupService::whyNot(): online bookings come with the badge, never
+// free (owner, 10 and 12 Nov 2026). Only while bookings_in_premium().
+if (bookings_in_premium()) {
+    $rows[] = ['label' => '<strong>Online bookings</strong>: ' . esc(bookings_pitch()), 'free' => false, 'paid' => true];
+}
+$rows = [...$rows,
     ['label' => '<strong>All your locations</strong>: up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
     ['label' => '<strong>Your people</strong>: up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
     ['label' => '<strong>More people discover you</strong>: someone looking for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
@@ -117,8 +124,8 @@ $row = static function (array $r, string $col): string {
             <p class="pricing-yearly">or <?= esc(money($badgeYearly)) ?> a year, paid yearly</p>
         <?php endif; ?>
         <p class="plan-blurb">
-            Everything in the free profile, plus a checked badge, your other locations,
-            your people and your job vacancies.
+            Everything in the free profile, plus a checked badge,<?= bookings_in_premium() ? ' online bookings,' : '' ?>
+            your other locations, your people and your job vacancies.
         </p>
         <ul class="plan-rows">
             <?php foreach ($rows as $r): ?>
