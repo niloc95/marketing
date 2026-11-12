@@ -17,17 +17,16 @@ $labels = [
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
-<nav class="mb-5 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800" aria-label="Settings">
+<nav class="page-tabs" aria-label="Settings">
     <?php foreach ($tabs as $key => $label): ?>
-        <a href="<?= base_url('business/settings/' . $key) ?>" class="<?= $key === $tab ? 'border-brand-ocean text-brand-ocean dark:border-white dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400' ?> -mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
+        <a href="<?= base_url('business/settings/' . $key) ?>" class="page-tab<?= $key === $tab ? ' is-active' : '' ?>"<?= $key === $tab ? ' aria-current="page"' : '' ?>><?= esc($label) ?></a>
     <?php endforeach ?>
 </nav>
 
 <?php if ($tab === 'general'): ?>
     <div class="max-w-xl space-y-5">
         <div class="panel">
-            <h2 class="font-bold">From your business profile</h2>
+            <h2 class="section-title">From your business profile</h2>
             <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
                 <dt class="text-slate-500 dark:text-slate-400">Name</dt><dd class="col-span-2"><?= esc((string) $listing['display_name']) ?></dd>
                 <dt class="text-slate-500 dark:text-slate-400">Email</dt><dd class="col-span-2"><?= esc((string) $listing['email']) ?></dd>
@@ -38,7 +37,7 @@ $labels = [
         </div>
 
         <div class="panel">
-            <h2 class="font-bold">Turn off online bookings</h2>
+            <h2 class="section-title">Turn off online bookings</h2>
             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Customers can no longer book, and your team can no longer sign in to this business. Nothing is deleted: turn them on again from your business profile.</p>
             <form method="post" action="<?= base_url('business/turn-off') ?>" class="mt-3">
                 <?= csrf_field() ?>
@@ -79,7 +78,7 @@ $labels = [
     ?>
     <form method="post" action="<?= base_url('business/settings/booking') ?>" class="form-card">
         <?= csrf_field() ?>
-        <h2 class="mb-1 font-bold">Changes, cancellations and how far ahead</h2>
+        <h2 class="mb-1 section-title">Changes, cancellations and how far ahead</h2>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">What customers can do online with the link in their booking email. Your team can always change any booking.</p>
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="field">
@@ -107,7 +106,7 @@ $labels = [
             </div>
         </div>
 
-        <h2 class="mb-1 mt-6 font-bold">Times on offer</h2>
+        <h2 class="mb-1 mt-6 section-title">Times on offer</h2>
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="field">
                 <label for="biz-step">Times offered every</label>
@@ -140,7 +139,7 @@ $labels = [
 <?php elseif ($tab === 'questions'): ?>
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>
-        <h2 class="mb-2 font-bold">What customers fill in</h2>
+        <h2 class="mb-2 section-title">What customers fill in</h2>
         <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">First name is always asked. Keep an email or a phone required, so you can reach everyone who books.</p>
         <div class="table-scroll mb-6">
             <table class="table">
@@ -157,11 +156,11 @@ $labels = [
             </table>
         </div>
 
-        <h2 class="mb-2 font-bold">Your questions</h2>
+        <h2 class="mb-2 section-title">Your questions</h2>
         <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">Up to six questions of your own, asked when you or a customer books. Answers stay with the appointment and with the customer for next time.</p>
         <?php for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++): ?>
             <?php $p = 'booking.custom_field_' . $n . '_'; ?>
-            <fieldset class="mb-5 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <fieldset class="mb-5 rounded-surface border border-slate-200 p-4 dark:border-slate-700">
                 <legend class="px-1 text-sm font-semibold">Question <?= $n ?></legend>
                 <div class="grid gap-4 sm:grid-cols-3">
                     <div class="field sm:col-span-2">
@@ -189,7 +188,7 @@ $labels = [
             </fieldset>
         <?php endfor ?>
 
-        <h2 class="mb-2 mt-6 font-bold">Your booking terms</h2>
+        <h2 class="mb-2 mt-6 section-title">Your booking terms</h2>
         <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Shown on your booking terms page. When you add any, customers tick a box to accept them before booking.</p>
         <?php foreach (['terms' => ['legal.terms', 'Terms'], 'cancellation' => ['legal.cancellation_policy', 'Cancelling'], 'rescheduling' => ['legal.rescheduling_policy', 'Changing a booking']] as $field => [$key, $label]): ?>
             <div class="field">
@@ -233,3 +232,5 @@ $labels = [
     </form>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Settings<?= $this->endSection() ?>

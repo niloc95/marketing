@@ -75,7 +75,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
     <div class="field mt-2" data-customer-find hidden>
         <label for="<?= $prefix ?>-find">Find a customer</label>
         <input id="<?= $prefix ?>-find" type="text" autocomplete="off" placeholder="Name, email, phone or reference" data-customer-query>
-        <ul class="mt-1 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800" data-customer-results hidden></ul>
+        <ul class="mt-1 divide-y divide-slate-100 rounded-inner border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800" data-customer-results hidden></ul>
         <p class="mt-1 hidden text-sm" data-customer-chosen></p>
     </div>
     <?= $err('customer_id') ?>

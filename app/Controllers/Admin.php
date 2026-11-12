@@ -156,13 +156,105 @@ class Admin extends BaseController
         return $this->form(null);
     }
 
-    public function edit(int $id)
+    public function edit(int $id, string $tab = 'details')
     {
+        if (! $this->isEditTab($tab)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
         $listing = (new DirectoryAdminService())->find($id);
         if ($listing === null) {
             return redirect()->to(base_url('admin/profiles'))->with('error', 'That profile no longer exists.');
         }
-        return $this->form($listing);
+        return $this->form($listing, $tab);
+    }
+
+    /**
+     * The admin profile editor in tabs (owner, 12 Nov 2026): the owner's
+     * pages (Config\ProfileSections) plus Admin, for the fields only admin
+     * may set and the badge, nudge and stats panels.
+     */
+    public const EDIT_TAB_ADMIN = 'admin';
+
+    /**
+     * Checkboxes and the tab that draws each one. An unticked box posts
+     * nothing, so on its own tab absence means off; on every other tab the
+     * stored value is carried, because upsert() writes all of these whenever
+     * status is in the input.
+     */
+    private const TAB_CHECKBOXES = [
+        'email_public'          => 'details',
+        'accepts_card_payments' => 'services',
+        'offers_delivery'       => 'services',
+        'offers_online_booking' => 'services',
+        'is_featured'           => self::EDIT_TAB_ADMIN,
+        'is_verified'           => self::EDIT_TAB_ADMIN,
+    ];
+
+    private function isEditTab(string $tab): bool
+    {
+        return $tab === self::EDIT_TAB_ADMIN || config('ProfileSections')->has($tab);
+    }
+
+    /**
+     * What one tab may post: the owner page's fields, plus email on Details
+     * and country on Where (admin is the only writer of either), or the
+     * privileged fields on the Admin tab.
+     *
+     * @return list<string>
+     */
+    private function editTabFields(string $tab): array
+    {
+        if ($tab === self::EDIT_TAB_ADMIN) {
+            return ['status', 'slug', 'is_featured', 'is_verified', 'venue_id', 'admin_plan'];
+        }
+        $fields = config('ProfileSections')->fields($tab);
+
+        return match ($tab) {
+            'details' => [...$fields, 'email'],
+            'where'   => [...$fields, 'country'],
+            default   => $fields,
+        };
+    }
+
+    /**
+     * One tab's post made whole for DirectoryAdminService::upsert(): the
+     * tab's own fields, then the stored values upsert() reads on every save
+     * (name, slug, status and the flags it writes alongside status, venue,
+     * category for the facet rules). Everything else is absent, which
+     * upsert() and its child row syncs read as "leave alone".
+     *
+     * @param array<string,mixed> $post
+     * @param array<string,mixed> $listing
+     *
+     * @return array<string,mixed>
+     */
+    private function editTabInput(string $tab, array $post, array $listing): array
+    {
+        $input = array_intersect_key($post, array_flip($this->editTabFields($tab)));
+        foreach (self::TAB_CHECKBOXES as $box => $owner) {
+            if ($owner === $tab) {
+                $input[$box] = empty($post[$box]) ? '' : '1';
+            }
+        }
+        // Server set by save() from the upload, never from the form.
+        foreach (['logo_path', 'team'] as $key) {
+            if (array_key_exists($key, $post)) {
+                $input[$key] = $post[$key];
+            }
+        }
+
+        $stored = [
+            'display_name' => (string) ($listing['display_name'] ?? ''),
+            'slug'         => (string) ($listing['slug'] ?? ''),
+            'status'       => (string) ($listing['status'] ?? 'pending'),
+            'venue_id'     => (string) ($listing['venue_id'] ?? ''),
+            'category_id'  => (string) ($listing['category_id'] ?? ''),
+        ];
+        foreach (array_keys(self::TAB_CHECKBOXES) as $box) {
+            $stored[$box] = empty($listing[$box]) ? '' : '1';
+        }
+
+        return $input + $stored;
     }
 
     /**
@@ -201,13 +293,20 @@ class Admin extends BaseController
         return $this->save(null);
     }
 
-    public function update(int $id)
+    public function update(int $id, ?string $tab = null)
     {
-        return $this->save($id);
+        if ($tab !== null && ! $this->isEditTab($tab)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        return $this->save($id, $tab);
     }
 
-    /** @param array<string,mixed>|null $listing */
-    private function form(?array $listing)
+    /**
+     * @param array<string,mixed>|null $listing
+     * @param string|null              $tab     one tab of an existing profile, null for the whole form (new)
+     */
+    private function form(?array $listing, ?string $tab = null)
     {
         $dir = new DirectoryService();
         $id  = $listing ? (int) $listing['id'] : 0;
@@ -289,10 +388,28 @@ class Admin extends BaseController
             'badge'      => $badge,
             'badgeOffer' => $badgeOffer,
             'adminPlan'  => $adminPlan,
+            'tab'        => $listing === null ? null : $tab,
+            'tabs'       => $listing === null ? [] : $this->editTabs($id, (string) $tab),
         ]);
     }
 
-    private function save(?int $id)
+    /**
+     * The tabs above an existing profile (layouts/_profile_tabs.php).
+     *
+     * @return list<array{key:string,href:string,label:string,active:bool,inline:bool}>
+     */
+    private function editTabs(int $id, string $current): array
+    {
+        $items = [];
+        foreach (config('ProfileSections')->sections as $key => $section) {
+            $items[] = ['key' => $key, 'href' => base_url('admin/edit/' . $id . '/' . $key), 'label' => $section['title'], 'active' => $key === $current, 'inline' => true];
+        }
+        $items[] = ['key' => self::EDIT_TAB_ADMIN, 'href' => base_url('admin/edit/' . $id . '/' . self::EDIT_TAB_ADMIN), 'label' => 'Admin', 'active' => $current === self::EDIT_TAB_ADMIN, 'inline' => true];
+
+        return $items;
+    }
+
+    private function save(?int $id, ?string $tab = null)
     {
         $post = $this->request->getPost();
         $logo = $this->resolveLogo();
@@ -311,6 +428,16 @@ class Admin extends BaseController
             $post['team'] = $headshots['team'];
         }
 
+        // One tab: only its fields, the rest as stored (editTabInput()).
+        $here = $id === null ? base_url('admin/new') : base_url('admin/edit/' . $id . ($tab !== null ? '/' . $tab : ''));
+        if ($tab !== null && $id !== null) {
+            $stored = (new DirectoryAdminService())->find($id);
+            if ($stored === null) {
+                return redirect()->to(base_url('admin/profiles'))->with('error', 'That profile no longer exists.');
+            }
+            $post = $this->editTabInput($tab, $post, $stored);
+        }
+
         $result = (new DirectoryAdminService())->upsert($id, $post);
 
         if (! $result['ok']) {
@@ -318,7 +445,7 @@ class Admin extends BaseController
             $this->discardLogo($logo['path']);
             $this->discardTeamPhotos($headshots['team']);
 
-            $target = $id === null ? base_url('admin/new') : base_url('admin/edit/' . $id);
+            $target = $here;
             return $this->withUploadErrors(
                 redirect()->to($target)
                     ->with('errors', $this->withFilesNote($result['errors']))
@@ -341,7 +468,7 @@ class Admin extends BaseController
         (new ListingQualityService())->recalculate((int) $result['id']);
 
         return $this->withUploadErrors(
-            redirect()->to(base_url('admin/edit/' . $result['id']))->with('success', $result['message']),
+            redirect()->to($id === null ? base_url('admin/edit/' . $result['id']) : $here)->with('success', $result['message']),
             array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $headshots['errors']))
         );
     }
@@ -360,7 +487,7 @@ class Admin extends BaseController
 
         return $ajax
             ? $this->brandDeleteJson(true, 'Brand removed.', 200, $listingId)
-            : redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Brand removed.');
+            : redirect()->to(base_url('admin/edit/' . $listingId . '/photos'))->with('success', 'Brand removed.');
     }
 
     /** Remove one gallery photo. Admin authority is unrestricted by listing. */
@@ -387,7 +514,7 @@ class Admin extends BaseController
 
         return $ajax
             ? $this->photoDeleteJson(true, 'Photo removed.', 200, $listingId)
-            : redirect()->to(base_url('admin/edit/' . $listingId))->with('success', 'Photo removed.');
+            : redirect()->to(base_url('admin/edit/' . $listingId . '/photos'))->with('success', 'Photo removed.');
     }
 
     /**
@@ -401,7 +528,7 @@ class Admin extends BaseController
         }
 
         $result = (new ProfileNudgeService())->sendNow($listing, (int) config('Directory')->qualityTarget);
-        $back   = redirect()->to(base_url('admin/edit/' . $id));
+        $back   = redirect()->to(base_url('admin/edit/' . $id . '/admin'));
 
         return match ($result) {
             'sent'         => $back->with('success', 'Suggestions emailed to ' . $listing['email'] . '.'),
@@ -435,7 +562,7 @@ class Admin extends BaseController
         );
 
         return $this->withUploadErrors(
-            redirect()->to(base_url('admin/edit/' . $id) . '#badge')
+            redirect()->to(base_url('admin/edit/' . $id . '/admin') . '#badge')
                 ->with($result['ok'] ? 'success' : 'error', $result['message']),
             $resolved['errors']
         );
@@ -1100,7 +1227,7 @@ class Admin extends BaseController
     {
         $result = (new DirectoryAdminService())->venueFromPlace($id);
 
-        return $this->backTo('admin/edit/' . $id, $result);
+        return $this->backTo('admin/edit/' . $id . '/admin', $result);
     }
 
     public function storeVenue()

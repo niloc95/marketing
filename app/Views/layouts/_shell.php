@@ -15,6 +15,13 @@
  *   body_attrs  extra attributes on <body>
  *   sidebar     the sidebar (layouts/_sidebar.php)
  *   page_title  the top bar title, also data-page-title on #spa-content
+ *   shell_title a page's own title for the top bar (may hold a count span),
+ *               instead of the sidebar item's name
+ *   shell_actions the page's buttons, at the right of the top bar
+ *
+ * The top bar is the page's header (owner, 12 Nov 2026): its title is the
+ * page's h1, so views never draw one of their own (ShellStyleStandardTest),
+ * except the bare sign in pages, whose card carries it.
  *   main_class  classes for the content region
  *   main_top    notices above the page (flash, plan line)
  *   content     the page
@@ -27,6 +34,14 @@
  */
 $asset = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0);
 $pageTitle = trim(strip_tags($this->renderSection('page_title')));
+// A page's own title wins over the sidebar item's name; the plain text of it
+// is what the browser and spa.js read.
+$ownTitle = trim($this->renderSection('shell_title'));
+if ($ownTitle !== '') {
+    $pageTitle = trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($ownTitle), ENT_QUOTES)));
+}
+$titleHtml = $ownTitle !== '' ? $ownTitle : esc($pageTitle);
+$actions   = trim($this->renderSection('shell_actions'));
 $scripts   = $this->renderSection('scripts');
 // spa.js opens a page with scripts by asking for it again with a plain page
 // load. When it fetched this one (X-Shell), keep the flash messages, old
@@ -80,9 +95,15 @@ foreach (['assets/directory.css', 'assets/directory.js', 'assets/business/busine
             <button type="button" class="shell-icon-btn lg:hidden" data-shell-menu aria-controls="shell-sidebar" aria-expanded="false" aria-label="Menu">
                 <?= lucide('menu', 'h-5 w-5') ?>
             </button>
-            <p class="shell-title" data-shell-title><?= esc($pageTitle) ?></p>
+            <?php // Swapped with the page (spa.js), like the sidebar's items. ?>
+            <div class="shell-head" data-shell-head>
+                <h1 class="shell-title" data-shell-title><?= $titleHtml ?></h1>
+                <?php if ($actions !== ''): ?>
+                    <div class="shell-actions"><?= $actions ?></div>
+                <?php endif ?>
+            </div>
             <span class="shell-progress" aria-hidden="true"></span>
-            <div class="ml-auto flex items-center gap-1">
+            <div class="flex shrink-0 items-center gap-1">
                 <button type="button" class="shell-icon-btn" data-theme-toggle aria-pressed="false" aria-label="Switch light or dark">
                     <?= lucide('moon', 'h-5 w-5 dark:hidden') ?>
                     <?= lucide('sun', 'hidden h-5 w-5 dark:block') ?>

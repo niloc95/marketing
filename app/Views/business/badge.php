@@ -8,7 +8,7 @@
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="mx-auto w-full max-w-3xl space-y-6">
+<div class="shell-page space-y-6">
     <?php // Hosting first: when it is unpaid the profile is not public at all. ?>
     <?php if ($hostingRequired): ?>
         <?= view('directory/_hosting_panel', [
@@ -45,3 +45,6 @@
     <?= view('directory/_profile_setup_offer') ?>
 </div>
 <?= $this->endSection() ?>
+
+<?php // Loads directory.js (layouts/business.php). ?>
+<?= $this->section('profile_form') ?>1<?= $this->endSection() ?>

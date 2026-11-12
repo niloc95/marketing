@@ -11,7 +11,7 @@ $price = $plan['display'];
 ?>
 <div class="max-w-2xl space-y-6">
     <section class="form-card">
-        <h2 class="mb-2 font-bold">Your online bookings plan</h2>
+        <h2 class="mb-2 section-title">Your online bookings plan</h2>
         <p class="text-sm">
             <?= esc(match ($plan['state']) {
                 'trial'       => 'Free trial until ' . $date($plan['trial_ends']) . ($plan['days_left'] !== null ? ' (' . $plan['days_left'] . ($plan['days_left'] === 1 ? ' day' : ' days') . ' left)' : '') . '.',
@@ -64,7 +64,7 @@ $price = $plan['display'];
 
     <?php if ($plan['payments'] !== []): ?>
         <section class="form-card">
-            <h2 class="mb-2 font-bold">Payments</h2>
+            <h2 class="mb-2 section-title">Payments</h2>
             <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
                 <?php foreach ($plan['payments'] as $p): ?>
                     <li class="flex justify-between py-1"><span><?= esc($date((string) $p['paid_at'])) ?> <code class="text-xs text-slate-500"><?= esc((string) $p['reference']) ?></code></span><span><?= $plan['abroad'] ? 'Paid' : esc(money((int) $p['amount_cents'] / 100, 'ZAR')) ?></span></li>

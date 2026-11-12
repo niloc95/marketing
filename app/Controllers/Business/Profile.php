@@ -5,7 +5,6 @@ namespace App\Controllers\Business;
 use App\Controllers\BaseController;
 use App\Controllers\Concerns\HandlesListingUploads;
 use App\Models\DirectoryListingPhotoModel;
-use App\Services\Bookings\BookingSetupService;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\TeamService;
 use App\Services\DirectoryListingMutationService;
@@ -224,14 +223,7 @@ class Profile extends BaseController
      */
     private function movedToBookings(string $section, array $listing): ?string
     {
-        $setup    = new BookingSetupService();
-        $bookable = $setup->isOn($listing) && $setup->whyNot($listing) === null;
-
-        return match (true) {
-            $bookable && $section === 'team'                                            => 'business/team',
-            $bookable && $section === 'services' && CatalogueService::ownsProfileServices($listing) => 'business/services',
-            default                                                                     => null,
-        };
+        return \App\Services\ProfileSectionTabs::moved($section, $listing);
     }
 
     /**
@@ -298,7 +290,25 @@ class Profile extends BaseController
             'team'       => (new TeamMemberService())->forListing($id),
             'locations'  => (new PracticeLocationService())->forListing($id),
             'showExtras' => (new TeamMemberService())->canManage($listing),
+            'tabs'       => $this->tabs($section, $listing),
+            // The side column's meter, the same one the overview shows.
+            'strength'   => (new ListingQualityService())->strength($listing),
         ];
+    }
+
+    /**
+     * The section tabs above the form (layouts/_profile_tabs.php): every page
+     * of the profile, Team and Services pointing at the bookings pages when
+     * movedToBookings() would send them there, and a lock on the Verified or
+     * Plus parts of a Free profile.
+     *
+     * @param array<string,mixed> $listing
+     *
+     * @return list<array{key:string,href:string,label:string,active:bool,locked:bool,inline:bool}>
+     */
+    private function tabs(string $current, array $listing): array
+    {
+        return \App\Services\ProfileSectionTabs::tabs($listing, $current);
     }
 
     /**

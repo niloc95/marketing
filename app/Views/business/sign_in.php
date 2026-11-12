@@ -6,7 +6,7 @@ $old = flash('old') ?: [];
 <?= $this->section('content') ?>
 <div class="mx-auto max-w-md">
     <div class="form-card">
-        <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Sign in to your business</h1>
+        <h1 class="mb-1.5 page-title">Sign in to your business</h1>
         <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Your business profile, and your bookings if you take them online.</p>
         <?php if (! empty($notice)): ?>
             <div class="alert alert-info mb-5" role="status"><?= esc($notice) ?></div>
@@ -27,7 +27,7 @@ $old = flash('old') ?: [];
     </div>
 
     <div class="form-card mt-5">
-        <h2 class="mb-1.5 font-bold text-slate-900 dark:text-white">Or get a sign in link</h2>
+        <h2 class="mb-1.5 section-title">Or get a sign in link</h2>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Use the email on your business profile. We email you a link that signs you in once. No password needed.</p>
         <form method="post" action="<?= base_url('business/sign-in/link') ?>">
             <?= csrf_field() ?>

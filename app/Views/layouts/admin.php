@@ -145,18 +145,18 @@ echo esc($pageTitle);
 <?= $this->endSection() ?>
 <?php endif ?>
 
-<?= $this->section('main_class') ?>pb-12<?= $this->endSection() ?>
+<?= $this->section('main_class') ?>w-full px-4 py-6 lg:px-8<?= $this->endSection() ?>
 
 <?= $this->section('main_top') ?>
 <?php foreach (['success' => 'alert-success', 'error' => 'alert-error', 'info' => 'alert-info'] as $key => $cls): ?>
     <?php if (flash($key)): ?>
-        <div class="container mt-5"><div class="alert <?= $cls ?>" role="<?= $key === 'error' ? 'alert' : 'status' ?>"><?= esc(flash($key)) ?></div></div>
+        <div class="mb-5"><div class="alert <?= $cls ?>" role="<?= $key === 'error' ? 'alert' : 'status' ?>"><?= esc(flash($key)) ?></div></div>
     <?php endif ?>
 <?php endforeach ?>
 <?php // Upload problems are a list, and they accompany rather than replace the
       // success message: a save can succeed while some photos are rejected. ?>
 <?php if ($uploadErrors = flash('upload_errors')): ?>
-    <div class="container mt-5">
+    <div class="mb-5">
         <div class="alert alert-warning">
             <strong><?= count($uploadErrors) === 1 ? 'One image was not added:' : count($uploadErrors) . ' images were not added:' ?></strong>
             <ul class="alert-list">
@@ -171,7 +171,7 @@ echo esc($pageTitle);
       // is stored. The admin "Preview" button is behind Cloudflare Access and
       // is no use to a customer, so this is the one to pass on. ?>
 <?php if (is_string($previewLink = session()->getFlashdata('preview_link')) && $previewLink !== ''): ?>
-    <div class="container mt-5">
+    <div class="mb-5">
         <div class="alert alert-info">
             <p>Customer preview link (also emailed). Share only with the owner:</p>
             <p class="mt-2 break-all"><a href="<?= esc($previewLink, 'attr') ?>" target="_blank" rel="noopener noreferrer"><?= esc($previewLink) ?></a></p>

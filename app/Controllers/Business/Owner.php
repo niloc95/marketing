@@ -69,11 +69,14 @@ class Owner extends BaseController
     public function reviews()
     {
         $listing = service('businessContext')->listing();
+        $model   = new DirectoryReviewModel();
+        $pager   = pager_result((int) $this->request->getGet('page'), 50, $model->countForOwner((int) $listing['id']));
 
         return view('business/reviews', [
             'profileForm' => true,
             'listing' => $listing,
-            'reviews' => (new DirectoryReviewModel())->forOwner((int) $listing['id']),
+            'reviews' => $model->forOwner((int) $listing['id'], 50, ($pager['page'] - 1) * 50),
+            'pager'   => $pager,
         ]);
     }
 

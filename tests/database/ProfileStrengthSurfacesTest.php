@@ -170,7 +170,7 @@ final class ProfileStrengthSurfacesTest extends CIUnitTestCase
     {
         $id = $this->published('thin-studio', 20);
 
-        $page = $this->asAdmin()->get('admin/edit/' . $id);
+        $page = $this->asAdmin()->get('admin/edit/' . $id . '/admin');
         $page->assertSee('Profile strength');
         $page->assertSee('Email suggestions');
     }
@@ -181,7 +181,7 @@ final class ProfileStrengthSurfacesTest extends CIUnitTestCase
         service('email')->archive = [];
 
         $this->asAdmin()->post('admin/edit/' . $id . '/nudge', $this->csrf())
-            ->assertRedirectTo(base_url('admin/edit/' . $id));
+            ->assertRedirectTo(base_url('admin/edit/' . $id . '/admin'));
 
         $body = html_entity_decode((string) (service('email')->archive['body'] ?? ''));
         $this->assertStringContainsString('Finish my profile', $body);

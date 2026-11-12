@@ -8,7 +8,6 @@ $roles = config('BookingPermissions')->roleLabels;
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <div class="mx-auto max-w-lg">
-    <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Choose a business</h1>
     <?php if ($businesses === []): ?>
         <div class="panel">
             <p class="text-sm text-slate-600 dark:text-slate-300">Your account is not part of a business with online bookings turned on.</p>
@@ -37,3 +36,5 @@ $roles = config('BookingPermissions')->roleLabels;
     <?php endif ?>
 </div>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Choose a business<?= $this->endSection() ?>

@@ -24,7 +24,7 @@ $live   = $status === 'published';
         <div class="panel">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= esc((string) $listing['display_name']) ?></h1>
+                    <h2 class="section-title mb-0"><?= esc((string) $listing['display_name']) ?></h2>
                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                         <?php if ($live): ?>
                             Your business profile is live and can be discovered on the platform.
@@ -63,7 +63,7 @@ $live   = $status === 'published';
 
     <div class="space-y-6">
         <div class="panel" id="bookings">
-            <h2 class="font-bold text-slate-900 dark:text-white">Online bookings</h2>
+            <h2 class="section-title">Online bookings</h2>
             <?php if ($bookingsUnavailable !== null): ?>
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"><?= esc($bookingsUnavailable) ?></p>
             <?php elseif ($bookingsWhyNot !== null): ?>

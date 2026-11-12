@@ -21,7 +21,7 @@ $zoom = $c['zoom'];
     <?php endif ?>
 
     <section class="form-card" id="jitsi">
-        <h2 class="mb-2 font-bold">Online meetings by Jitsi</h2>
+        <h2 class="mb-2 section-title">Online meetings by Jitsi</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">Free video calls in the browser, no account needed. A service you give online by Jitsi gets its own private meeting link on each booking, sent with the booking emails.</p>
         <?php if (! empty($c['online']['online_jitsi'])): ?>
             <p class="mt-2 text-sm">Given this way: <?= esc(implode(', ', $c['online']['online_jitsi'])) ?>.</p>
@@ -42,7 +42,7 @@ $zoom = $c['zoom'];
     </section>
 
     <section class="form-card" id="zoom">
-        <h2 class="mb-2 font-bold">Online meetings by Zoom</h2>
+        <h2 class="mb-2 section-title">Online meetings by Zoom</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">Each booking of a service you give online by Zoom gets a Zoom meeting in your own Zoom account. A new time moves the meeting, and a cancellation deletes it.</p>
         <?php if (! empty($c['online']['online_zoom'])): ?>
             <p class="mt-2 text-sm">Given this way: <?= esc(implode(', ', $c['online']['online_zoom'])) ?>.</p>
@@ -86,7 +86,7 @@ $zoom = $c['zoom'];
     </section>
 
     <section class="form-card" id="google">
-        <h2 class="mb-2 font-bold">Google Calendar</h2>
+        <h2 class="mb-2 section-title">Google Calendar</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">Your appointments appear in your Google Calendar and follow every new time and cancellation. It works one way: times you block in Google do not stop online bookings, so add those as time off here.</p>
         <?php if (! $c['googleOffered'] || ! $c['canEncrypt']): ?>
             <p class="mt-3 text-sm">Google Calendar is not available yet.</p>
@@ -122,7 +122,7 @@ $zoom = $c['zoom'];
     </section>
 
     <section class="form-card" id="webhook">
-        <h2 class="mb-2 font-bold">Webhook</h2>
+        <h2 class="mb-2 section-title">Webhook</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">For your own systems: we send a signed JSON message to your address each time something happens to a booking. How to read and check them is on the <a class="underline" href="<?= base_url('developers/bookings#webhooks') ?>">developer page</a>.</p>
         <?php if ($c['canEncrypt']): ?>
             <?php if ($c['webhook']['set']): ?>
@@ -169,7 +169,7 @@ $zoom = $c['zoom'];
 
     <?php if ($c['deliveries'] !== []): ?>
         <section class="form-card" id="deliveries">
-            <h2 class="mb-2 font-bold">Latest webhook messages</h2>
+            <h2 class="mb-2 section-title">Latest webhook messages</h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead>

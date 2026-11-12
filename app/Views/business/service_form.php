@@ -27,7 +27,6 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/services') ?>">Services</a></p>
 <form method="post" action="<?= base_url($service === null ? 'business/services/new' : 'business/services/' . $service['id']) ?>" class="form-card form-card-narrow">
     <?= csrf_field() ?>
-    <h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white"><?= $service === null ? 'Add a service' : 'Edit service' ?></h1>
 
     <div class="field">
         <label for="svc-name">Name</label>
@@ -107,3 +106,5 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
     <button type="submit" class="btn btn-primary">Save service</button>
 </form>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?><?= $service === null ? 'Add a service' : 'Edit service' ?><?= $this->endSection() ?>

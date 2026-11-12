@@ -10,14 +10,14 @@ $when = static fn (?string $utc): string => $utc ? (new DateTimeImmutable($utc, 
 <div class="max-w-2xl space-y-6">
     <?php if ($api['newKey']): ?>
         <section class="form-card" id="new-key">
-            <h2 class="mb-2 font-bold">Your new key</h2>
+            <h2 class="mb-2 section-title">Your new key</h2>
             <p class="text-sm">Copy it now and keep it somewhere safe. We show it only this once.</p>
             <p class="mt-2 break-all rounded bg-slate-100 p-2 font-mono text-sm dark:bg-slate-800"><?= esc((string) $api['newKey']) ?></p>
         </section>
     <?php endif ?>
 
     <section class="form-card">
-        <h2 class="mb-2 font-bold">API keys</h2>
+        <h2 class="mb-2 section-title">API keys</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">A key lets your own programs read and book appointments for this business. It acts as you, so it can never do more than you can. How to use it is on the <a class="underline" href="<?= esc($api['docs'], 'attr') ?>">developer page</a>.</p>
         <?php if ($api['keys'] === []): ?>
             <p class="mt-3 text-sm">No keys yet.</p>
@@ -47,7 +47,7 @@ $when = static fn (?string $utc): string => $utc ? (new DateTimeImmutable($utc, 
     </section>
 
     <section class="form-card">
-        <h2 class="mb-2 font-bold">Make a key</h2>
+        <h2 class="mb-2 section-title">Make a key</h2>
         <form method="post" action="<?= base_url('business/settings/api/keys') ?>">
             <?= csrf_field() ?>
             <div class="field">

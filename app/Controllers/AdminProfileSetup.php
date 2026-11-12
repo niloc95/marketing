@@ -32,10 +32,14 @@ class AdminProfileSetup extends BaseController
             $query->where('status', $status);
         }
 
+        $rows = $query->orderBy('created_at', 'DESC')
+            ->paginate(50, 'default', max(1, (int) $this->request->getGet('page')));
+
         return view('admin/profile_setup', [
             'status' => $status,
             'counts' => $counts,
-            'rows'   => $query->orderBy('created_at', 'DESC')->findAll(200),
+            'rows'   => $rows,
+            'pager'  => $query->pager,
         ]);
     }
 

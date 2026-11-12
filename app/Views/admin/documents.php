@@ -11,57 +11,56 @@
  */
 ?>
 
-<section class="section">
-    <div class="container">
-        <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Documents</h1>
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-            Internal documents. They have no public address: they open only from here, for signed in admins.
-        </p>
+<div class="shell-page">
+    <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
+        Internal documents. They have no public address: they open only from here, for signed in admins.
+    </p>
 
-        <?php if ($docs === []): ?>
-            <div class="empty">No documents yet.</div>
-        <?php else: ?>
-            <div class="tablewrap">
-                <table class="table">
-                    <thead><tr><th>Document</th><th>Updated</th><th>Size</th><th></th></tr></thead>
-                    <tbody>
+    <?php if ($docs === []): ?>
+        <div class="empty">No documents yet.</div>
+    <?php else: ?>
+        <div class="tablewrap">
+            <table class="table">
+                <thead><tr><th>Document</th><th>Updated</th><th>Size</th><th></th></tr></thead>
+                <tbody>
+                <tr>
+                    <td>
+                        <strong>System handbook</strong>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">Everything about Local, Bookings, both sites and the brand site: architecture, design, tech stack, every table with live row counts and ids. Read live each time it opens.</div>
+                    </td>
+                    <td>Live</td>
+                    <td></td>
+                    <td>
+                        <div class="actions">
+                            <a class="btn btn-primary btn-xs" href="<?= base_url('admin/documents/system') ?>">Open</a>
+                        </div>
+                    </td>
+                </tr>
+                <?php foreach ($docs as $d): ?>
                     <tr>
                         <td>
-                            <strong>System handbook</strong>
-                            <div class="text-xs text-slate-500 dark:text-slate-400">Everything about Local, Bookings, both sites and the brand site: architecture, design, tech stack, every table with live row counts and ids. Read live each time it opens.</div>
+                            <strong><?= esc($d['title']) ?></strong>
+                            <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($d['description']) ?></div>
                         </td>
-                        <td>Live</td>
-                        <td></td>
+                        <td><?= $d['modified'] !== null ? esc(date('j M Y', $d['modified'])) : '' ?></td>
+                        <td><?= $d['bytes'] !== null ? esc(number_format($d['bytes'] / 1024) . ' KB') : '' ?></td>
                         <td>
-                            <div class="actions">
-                                <a class="btn btn-primary btn-xs" href="<?= base_url('admin/documents/system') ?>">Open</a>
-                            </div>
+                            <?php if ($d['bytes'] === null): ?>
+                                <span class="text-xs text-brand-crimson">File missing</span>
+                            <?php else: ?>
+                                <div class="actions">
+                                    <a class="btn btn-primary btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>" target="_blank" rel="noopener">Open</a>
+                                    <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>?download=1" download>Download</a>
+                                </div>
+                            <?php endif; ?>
                         </td>
                     </tr>
-                    <?php foreach ($docs as $d): ?>
-                        <tr>
-                            <td>
-                                <strong><?= esc($d['title']) ?></strong>
-                                <div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($d['description']) ?></div>
-                            </td>
-                            <td><?= $d['modified'] !== null ? esc(date('j M Y', $d['modified'])) : '' ?></td>
-                            <td><?= $d['bytes'] !== null ? esc(number_format($d['bytes'] / 1024) . ' KB') : '' ?></td>
-                            <td>
-                                <?php if ($d['bytes'] === null): ?>
-                                    <span class="text-xs text-brand-crimson">File missing</span>
-                                <?php else: ?>
-                                    <div class="actions">
-                                        <a class="btn btn-primary btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>" target="_blank" rel="noopener">Open</a>
-                                        <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/documents/' . $d['key']) ?>?download=1" download>Download</a>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </div>
-</section>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Documents<?= $this->endSection() ?>

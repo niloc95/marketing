@@ -16,6 +16,8 @@ class Services extends BaseController
         $catalog = new CatalogueService($context->listingId());
 
         return view('business/services', [
+            // The profile's section tabs, when this page is one of its sections.
+            'profileTabs' => \App\Services\ProfileSectionTabs::forBookingsPage('services'),
             'services'   => $catalog->services(true),
             'categories' => $catalog->categories(),
             'providers'  => array_column((new TeamService($context->listingId()))->providers(), 'name', 'id'),

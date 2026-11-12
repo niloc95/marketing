@@ -47,6 +47,8 @@ class Team extends BaseController
         }
 
         return view('business/team', [
+            // The profile's section tabs, when this page is one of its sections.
+            'profileTabs' => \App\Services\ProfileSectionTabs::forBookingsPage('team'),
             'providers'     => $providers,
             'hours'         => $hours,
             'hoursChanged'  => $changed,
@@ -72,6 +74,8 @@ class Team extends BaseController
         $listing = $context->listing();
 
         return view('business/provider', [
+            // The profile's section tabs, when this page is one of its sections.
+            'profileTabs' => \App\Services\ProfileSectionTabs::forBookingsPage('team'),
             'provider'     => $provider,
             'card'         => $provider['team_member_id'] !== null ? (new DirectoryListingTeamModel())->findForListing((int) $provider['team_member_id'], $context->listingId()) : null,
             'regulator'    => ProfessionalRegistration::regulatorForCategoryId((int) ($listing['category_id'] ?? 0)),

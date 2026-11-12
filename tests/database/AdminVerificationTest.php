@@ -166,7 +166,7 @@ final class AdminVerificationTest extends CIUnitTestCase
         $refused = $this->svc->grantByAdmin($id, [], 'Documents by email', 'owner_pays', 1, 'admin@test');
         $this->assertFalse($refused['ok']);
         $this->assertNull($this->verifications->forListing($id));
-        $this->asAdmin()->get('admin/edit/' . $id)->assertSee('Waiting for the customer to approve the preview');
+        $this->asAdmin()->get('admin/edit/' . $id . '/admin')->assertSee('Waiting for the customer to approve the preview');
 
         // The customer's preview shows the Verified build.
         $token = $this->sendPreview($id);
@@ -220,13 +220,13 @@ final class AdminVerificationTest extends CIUnitTestCase
     public function testTheAdminEditPageVerifiesWithANote(): void
     {
         $free = $this->listing(['status' => 'published', 'is_verified' => 1, 'slug' => 'free-co', 'email' => 'free@example.test']);
-        $page = $this->asAdmin()->get('admin/edit/' . $free);
+        $page = $this->asAdmin()->get('admin/edit/' . $free . '/admin');
         $page->assertSee('Profile type');
         $page->assertDontSee('Verified Business badge.');
 
         $id = $this->listing(['status' => 'published', 'is_verified' => 1, 'admin_plan' => 'verified']);
 
-        $page = $this->asAdmin()->get('admin/edit/' . $id);
+        $page = $this->asAdmin()->get('admin/edit/' . $id . '/admin');
         $page->assertOK();
         $page->assertSee('Verified Business badge.');
         $page->assertSee('Approve, owner pays');
@@ -236,10 +236,10 @@ final class AdminVerificationTest extends CIUnitTestCase
             'note'       => 'Documents received by email',
             'mode'       => 'activate',
             'months'     => '1',
-        ])->assertRedirectTo(base_url('admin/edit/' . $id) . '#badge');
+        ])->assertRedirectTo(base_url('admin/edit/' . $id . '/admin') . '#badge');
 
         $this->assertSame(DirectoryVerificationModel::STATE_ACTIVE, $this->verifications->forListing($id)['state']);
-        $this->asAdmin()->get('admin/edit/' . $id)->assertSee('Active until');
+        $this->asAdmin()->get('admin/edit/' . $id . '/admin')->assertSee('Active until');
         $this->asAdmin()->get('admin/verifications?state=active')->assertSee('Admin note: Documents received by email');
     }
 

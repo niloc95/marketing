@@ -4439,7 +4439,7 @@
      (.stats-*, .dash-*); these are the pieces it does not have. */
   .biz-tiles  { @apply mb-6 mt-0 grid-cols-2; }
   .biz-alerts { @apply grid gap-2; }
-  .biz-alert  { @apply flex flex-wrap items-center gap-2 rounded-xl border px-4 py-2.5 text-sm; }
+  .biz-alert  { @apply flex flex-wrap items-center gap-2 rounded-surface border px-4 py-2.5 text-sm; }
   .biz-alert.is-warn { @apply border-amber-200 bg-amber-50 text-amber-900; }
   .biz-alert.is-info { @apply border-slate-200 bg-white text-slate-700; }
   .dark .biz-alert.is-warn { @apply border-amber-500/30 bg-amber-500/10 text-amber-100; }
@@ -4505,10 +4505,19 @@
   .shell-foot { @apply shrink-0 space-y-0.5 border-t border-slate-200 px-3 py-3; }
   .dark .shell-foot { @apply border-slate-800; }
 
-  .shell-topbar { @apply sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-slate-200/70 bg-slate-50/85 px-4 backdrop-blur; }
+  /* The page's header (owner, 12 Nov 2026): title (the page's h1) and the
+     page's buttons. One line on a desktop; on a phone the buttons wrap under
+     the title, and resources/shell/tabs.js publishes the height as
+     --shell-top for whatever docks beneath it. */
+  .shell-topbar { @apply sticky top-0 z-20 flex min-h-14 items-center gap-2 border-b border-slate-200/70 bg-slate-50/85 px-4 py-2 backdrop-blur; }
   .dark .shell-topbar { @apply border-slate-800 bg-surface-page/85; }
-  .shell-title { @apply min-w-0 truncate text-base font-semibold text-slate-900; }
+  .shell-head { @apply flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2; }
+  .shell-title { @apply m-0 min-w-0 flex-1 truncate text-lg font-semibold text-slate-900; }
+  .shell-title .page-title-count { @apply text-sm; }
   .dark .shell-title { @apply text-white; }
+  .shell-actions { @apply flex flex-wrap items-center gap-2; }
+  .shell-actions form { @apply m-0; }
+  body[data-shell-bare] .shell-head { @apply invisible; }
   .shell-icon-btn { @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-slate-500 hover:bg-slate-200/60 hover:text-slate-900; }
   .dark .shell-icon-btn { @apply text-slate-400 hover:bg-white/10 hover:text-white; }
 
@@ -4553,8 +4562,147 @@
 
 body[data-shell-bare] .shell-main { padding-left: 0; }
 
+/* ------------------------------------------------------ shell page standard
+   One look for every /admin and /business page (owner, 12 Nov 2026): the page
+   fills the width beside the sidebar (layouts/admin.php and business.php set
+   the padding, no max width), one header (.page-head, h1.page-title), one tab
+   strip (.page-tabs), one box (.panel), two heading sizes (.section-title,
+   .subsection-title), ocean for the main button, rounded-surface for boxes and
+   rounded-control for buttons. ShellStyleStandardTest reads the views for it.
+   Everything is scoped to the shell: public pages and /add-profile share the
+   form partials and must not change. */
+@layer components {
+  .shell-page { @apply min-w-0; }
+
+  .page-head { @apply mb-6 flex flex-wrap items-center justify-between gap-3; }
+  .page-head-text { @apply min-w-0; }
+  .page-title { @apply m-0 text-xl font-bold text-slate-900; }
+  .dark .page-title { @apply text-white; }
+  .page-title-count { @apply text-sm font-normal text-slate-500; }
+  .dark .page-title-count { @apply text-slate-400; }
+  .page-sub { @apply mb-0 mt-1 text-sm text-slate-600; }
+  .dark .page-sub { @apply text-slate-400; }
+  .page-actions { @apply flex flex-wrap items-center gap-2; }
+
+  .section-title { @apply mb-3 mt-0 text-lg font-semibold text-slate-900; }
+  .subsection-title { @apply mb-2 mt-0 text-base font-semibold text-slate-900; }
+  .dark .section-title,
+  .dark .subsection-title { @apply text-white; }
+
+  /* A row of tabs under the page head. Scrolls sideways on a phone; the
+     active tab is scrolled into view by resources/shell/tabs.js. */
+  .page-tabs {
+    @apply relative -mx-4 mb-6 flex gap-1 overflow-x-auto border-b border-slate-200 px-4 sm:mx-0 sm:px-0;
+    scrollbar-width: none;
+  }
+  .page-tabs::-webkit-scrollbar { display: none; }
+  .page-tab {
+    @apply -mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent
+           px-3 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-900;
+  }
+  .page-tab.is-active { @apply border-brand-ocean font-semibold text-brand-ocean; }
+  .page-tab-lock { @apply text-slate-400; }
+  .dark .page-tabs { @apply border-slate-800; }
+  .dark .page-tab { @apply text-slate-400 hover:text-white; }
+  .dark .page-tab.is-active { @apply border-white text-white; }
+
+  /* Tab strips dock under the top bar (--shell-top, resources/shell/tabs.js)
+     and run edge to edge of the content area. */
+  .shell-content .page-tabs {
+    @apply sticky z-10 -mx-4 bg-slate-50/95 px-4 backdrop-blur lg:-mx-8 lg:px-8;
+    top: var(--shell-top, 3.5rem);
+  }
+  .dark .shell-content .page-tabs { @apply bg-surface-page/95; }
+
+  /* The pager docks at the foot of the screen, so it is in the same place on
+     a short page as on a long one (owner, 12 Nov 2026): the content area is
+     at least the window's height and the pager is pushed to its end, and
+     sticky keeps it in view while a long list scrolls. Previous and Next sit
+     at the two ends and never move; the page numbers change between them. */
+  .shell-content { @apply flex flex-col; min-height: calc(100dvh - var(--shell-top, 3.5rem)); }
+  .shell-content > .shell-page:has(.pager) { @apply flex flex-1 flex-col; }
+  /* No padding under it, or a short page leaves it 1.5rem higher than a long one. */
+  .shell-content:has(.pager) { @apply !pb-0; }
+  .shell-content .pager {
+    @apply sticky bottom-0 z-10 -mx-4 mt-auto justify-between gap-y-2 border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur lg:-mx-8 lg:px-8;
+  }
+  .shell-content .pager-controls { @apply grid grid-cols-[auto_1fr_auto] items-center; }
+  .shell-content .pager-pages,
+  .shell-content .pager-status { @apply justify-self-center; }
+  .dark .shell-content .pager { @apply border-slate-800 bg-surface-page/95; }
+
+  /* Dark mode for every control in the shell, not only those inside a
+     .field: a category row on /business/services, a filter bar, a select
+     beside a button. Without it the forms plugin's white fill stayed while
+     the text turned white, so the value could not be read (12 Nov 2026). */
+  .dark .shell-content :is(input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+                           input[type="tel"], input[type="url"], input[type="search"], input[type="date"],
+                           input[type="time"], input[type="datetime-local"], select, textarea) {
+    @apply border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus:border-primary-300 focus:ring-primary-300;
+  }
+
+  /* One box in the shell: a .form-card is a .panel here. */
+  .shell-content .form-card { @apply border-slate-200/80 p-6 sm:p-6; }
+  .dark .shell-content .form-card { @apply border-slate-800 bg-surface-tone; }
+
+  /* Panel titles in the shell are section titles; the gallery's own heading
+     inside a form section is a subsection title. */
+  .shell-content .strength-panel-title { @apply text-lg font-semibold text-slate-900; }
+  .shell-content .photo-manage-head h2 { @apply text-base font-semibold text-slate-900; }
+  .dark .shell-content .strength-panel-title,
+  .dark .shell-content .photo-manage-head h2 { @apply text-white; }
+
+  /* ------------------------------------------------ the profile editor
+     /business/profile/{section} and /admin/edit/{id}/{section}: the form in
+     one panel on the left, Save and profile strength in a sticky column on
+     the right (desktop); on a phone the column drops under the form and a
+     save bar stays at the bottom of the screen. Inside the panel every part
+     is the same: a divider and a heading, never a grey box in a white one. */
+  .profile-editor { @apply grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start; }
+  .profile-editor-main { @apply min-w-0; }
+  .profile-editor-side { @apply space-y-4 xl:sticky; top: calc(var(--shell-top, 3.5rem) + 4.5rem); }
+  .profile-editor-side > .panel { @apply p-5; }
+  .profile-editor-side .strength-panel { @apply mt-0; }
+  .profile-editor-actions { @apply grid gap-2; }
+
+  /* Every part of a section reads the same: a heading over a hairline, then
+     its fields, with space before the next. No borders between parts, so no
+     part needs to know whether it comes first. */
+  .profile-editor-form .form-section-head { @apply mb-4 mt-10 border-0 border-b border-slate-200 pb-3 pt-0; }
+  .profile-editor-form .form-section-head-first { @apply mt-10; }
+  .profile-editor-form > :is(input[type="hidden"], .form-default-submit) + .form-section-head { @apply mt-0; }
+  .profile-editor-form .form-section-head h3 { @apply text-lg font-semibold; }
+  .profile-editor-form .disclosure { @apply mb-8 mt-8 rounded-none border-0 bg-transparent; }
+  .profile-editor-form > :is(input[type="hidden"], .form-default-submit) + .disclosure,
+  .profile-editor-form > :is(input[type="hidden"], .form-default-submit) + div > .disclosure:first-child,
+  .profile-editor-form > :is(input[type="hidden"], .form-default-submit) + div > div:first-child > .disclosure:first-child,
+  .profile-editor-form > :is(input[type="hidden"], .form-default-submit) + div > :is(input[type="hidden"], p:empty) + .disclosure { @apply mt-0; }
+  .profile-editor-form .disclosure-summary {
+    @apply rounded-none border-b border-slate-200 px-0 pb-3 pt-0 text-lg text-slate-900 hover:bg-transparent hover:text-brand-ocean;
+  }
+  .profile-editor-form .disclosure:not([open]) > .disclosure-summary { @apply text-base; }
+  .profile-editor-form .disclosure-body { @apply border-t-0 px-0 pb-0 pt-4; }
+  .profile-editor-form .disclosure .disclosure { @apply mb-4 mt-4; }
+  .profile-editor-form .disclosure .disclosure > .disclosure-summary { @apply text-base; }
+  .profile-editor-form :is(.photo-manage, .brand-manage) { @apply mb-4 rounded-none border-0 bg-transparent p-0; }
+  .dark .profile-editor-form .form-section-head,
+  .dark .profile-editor-form .disclosure-summary { @apply border-slate-800; }
+  .dark .profile-editor-form .disclosure { @apply bg-transparent; }
+  .dark .profile-editor-form .disclosure-summary { @apply text-white hover:bg-transparent hover:text-primary-200; }
+  .dark .profile-editor-form :is(.photo-manage, .brand-manage) { @apply bg-transparent; }
+
+  /* Phone and tablet: Save stays reachable at the foot of a long form. */
+  .form-savebar {
+    @apply sticky bottom-0 z-10 -mx-6 -mb-6 mt-6 flex gap-2 rounded-b-surface border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur xl:hidden;
+  }
+  .form-savebar > .btn { @apply flex-1; }
+  .dark .form-savebar { @apply border-slate-800 bg-surface-tone/95; }
+}
+
 @media print {
-  .shell-sidebar, .shell-topbar, .shell-overlay, .shell-skip { display: none !important; }
+  /* The top bar carries the page's title (its h1), so it prints, without its buttons. */
+  .shell-sidebar, .shell-overlay, .shell-skip, .shell-actions, .shell-topbar .shell-icon-btn, .shell-progress { display: none !important; }
+  .shell-topbar { position: static !important; border: 0 !important; background: none !important; backdrop-filter: none !important; padding-left: 0 !important; }
   .shell-main { padding-left: 0 !important; }
 }
 

@@ -23,20 +23,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white"><?= esc((string) $listing['display_name']) ?></h1>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">You are signed in as <?= esc($roles[$member['role']] ?? (string) $member['role']) ?>.</p>
-    </div>
-    <p class="flex flex-wrap gap-2">
-        <?php if ($canBook): ?>
-            <a class="btn btn-primary btn-sm" href="<?= base_url('business/appointments/new') ?>"><?= lucide('plus', 'h-4 w-4') ?>Book an appointment</a>
-        <?php endif ?>
-        <?php if ($bookUrl !== ''): ?>
-            <a class="btn btn-ghost btn-sm" href="<?= esc($bookUrl, 'attr') ?>">Your booking page</a>
-        <?php endif ?>
-    </p>
-</div>
+<p class="mb-6 text-sm text-slate-500 dark:text-slate-400">You are signed in as <?= esc($roles[$member['role']] ?? (string) $member['role']) ?>.</p>
 
 <?php if ($alerts !== []): ?>
     <h2 class="dash-heading">Needs attention</h2>
@@ -100,7 +87,7 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
             <div class="panel">
                 <div class="flex items-center gap-2">
                     <span class="biz-dot" data-color="<?= esc((string) $p['color'], 'attr') ?>"></span>
-                    <h3 class="min-w-0 flex-1 truncate font-semibold"><?= esc((string) $p['name']) ?></h3>
+                    <h3 class="min-w-0 flex-1 truncate subsection-title"><?= esc((string) $p['name']) ?></h3>
                     <span class="biz-state is-<?= esc((string) $p['state'], 'attr') ?>"><?= esc($states[$p['state']] ?? '') ?></span>
                 </div>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400"><?= esc((string) $p['service']['name']) ?></p>
@@ -128,11 +115,20 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
 <?php endif ?>
 
 <div class="panel">
-    <h2 class="font-bold">Your business profile</h2>
+    <h2 class="section-title">Your business profile</h2>
     <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Your name, address and opening hours come from your business profile.</p>
     <p class="mt-3 flex flex-wrap gap-2">
         <a class="btn btn-ghost btn-xs" href="<?= esc(listing_url($listing), 'attr') ?>">View profile</a>
         <a class="btn btn-ghost btn-xs" href="<?= base_url('business/profile/details') ?>">Edit profile</a>
     </p>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<?php if ($canBook): ?>
+    <a class="btn btn-primary btn-xs" href="<?= base_url('business/appointments/new') ?>"><?= lucide('plus', 'h-4 w-4') ?>Book an appointment</a>
+<?php endif ?>
+<?php if ($bookUrl !== ''): ?>
+    <a class="btn btn-ghost btn-xs" href="<?= esc($bookUrl, 'attr') ?>">Your booking page</a>
+<?php endif ?>
 <?= $this->endSection() ?>

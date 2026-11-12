@@ -113,7 +113,7 @@ $orderStatuses = \App\Models\ProfileSetupOrderModel::STATUSES;
 ?>
 
 <?php if (! empty($health['mailError'])): ?>
-    <div class="container mt-5">
+    <div class="mb-5">
         <div class="alert alert-error">
             <strong>Outbound email is failing.</strong>
             Verification and manage links are not reaching people. Signups will sit in Pending.
@@ -124,7 +124,7 @@ $orderStatuses = \App\Models\ProfileSetupOrderModel::STATUSES;
 <?php endif; ?>
 
 <?php if ($lost > 0): ?>
-    <div class="container mt-5">
+    <div class="mb-5">
         <div class="alert alert-error">
             <strong><?= $lost ?> form submission<?= $lost === 1 ? ' was' : 's were' ?> lost in the last 24 hours.</strong>
             Last one on <?= esc(config('Forms')->label((string) $health['formsLost']['form'])) ?> at <?= esc(date('j M H:i', strtotime((string) $health['formsLost']['last']))) ?> UTC.
@@ -133,205 +133,202 @@ $orderStatuses = \App\Models\ProfileSetupOrderModel::STATUSES;
     </div>
 <?php endif; ?>
 
-<section class="section">
-    <div class="container">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-            <a class="btn btn-ghost btn-xs" href="<?= base_url('admin/profiles') ?>">All profiles <?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
-        </div>
-
-        <ul class="dash-health" aria-label="Health">
-            <?php foreach ($pills as [$label, $ok, $detail, $path]): ?>
-                <li>
-                    <a class="dash-pill <?= $ok ? 'is-ok' : 'is-bad' ?>" href="<?= esc(base_url($path)) ?>" title="<?= esc($detail) ?>">
-                        <?= lucide($ok ? 'check' : 'x', 'h-3.5 w-3.5 shrink-0') ?>
-                        <?= esc($label) ?><span class="sr-only">: <?= esc($ok ? 'ok' : $detail) ?></span>
-                    </a>
-                </li>
-            <?php endforeach; ?>
-            <?php if (($health['stalePending'] ?? 0) > 0): ?>
-                <li><a class="dash-pill is-warn" href="<?= esc(base_url('admin/profiles?status=pending')) ?>"><?= (int) $health['stalePending'] ?> pending with an expired verify link</a></li>
-            <?php endif; ?>
-        </ul>
-
-        <h2 class="dash-heading">Needs action</h2>
-        <?php if ($waiting === []): ?>
-            <p class="stats-empty">Nothing waiting in any queue.</p>
-        <?php else: ?>
-            <div class="dash-queues">
-                <?php foreach ($queueLinks as $key => [$label, $path]): ?>
-                    <?php if (($queues[$key] ?? 0) > 0): ?>
-                        <a class="dash-queue" href="<?= esc(base_url($path)) ?>">
-                            <span class="stats-tile-value"><?= $num($queues[$key]) ?></span>
-                            <span class="stats-tile-label"><?= esc($label) ?></span>
-                        </a>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
+<div class="shell-page">
+    <ul class="dash-health" aria-label="Health">
+        <?php foreach ($pills as [$label, $ok, $detail, $path]): ?>
+            <li>
+                <a class="dash-pill <?= $ok ? 'is-ok' : 'is-bad' ?>" href="<?= esc(base_url($path)) ?>" title="<?= esc($detail) ?>">
+                    <?= lucide($ok ? 'check' : 'x', 'h-3.5 w-3.5 shrink-0') ?>
+                    <?= esc($label) ?><span class="sr-only">: <?= esc($ok ? 'ok' : $detail) ?></span>
+                </a>
+            </li>
+        <?php endforeach; ?>
+        <?php if (($health['stalePending'] ?? 0) > 0): ?>
+            <li><a class="dash-pill is-warn" href="<?= esc(base_url('admin/profiles?status=pending')) ?>"><?= (int) $health['stalePending'] ?> pending with an expired verify link</a></li>
         <?php endif; ?>
+    </ul>
 
-        <div class="tabs mt-8">
-            <a class="<?= $isApp ? '' : 'active' ?>" href="<?= esc($here(array_filter(['days' => $days === 30 ? null : $days]))) ?>">local.webscheduler.co.za</a>
-            <a class="<?= $isApp ? 'active' : '' ?>" href="<?= esc($here(array_filter(['site' => 'app', 'days' => $days === 30 ? null : $days]))) ?>">local.webscheduler.app</a>
-        </div>
-        <p class="mt-3 flex flex-wrap gap-2 text-sm">
-            <?php foreach ($periods as $p): ?>
-                <a class="btn btn-xs <?= $p === $days ? 'btn-primary' : 'btn-ghost' ?>" href="<?= esc($here($siteQuery + ($p === 30 ? [] : ['days' => $p]))) ?>">Last <?= $p ?> days</a>
-            <?php endforeach; ?>
-            <span class="self-center text-slate-500 dark:text-slate-400"><?= esc($date($from)) ?> to <?= esc($date($to)) ?></span>
-        </p>
-
-        <dl class="stats-tiles dash-tiles">
-            <?php foreach ([
-                ['New profiles', $sTotals['total'], $change($sTotals['total'], $signups['previous']['total'])],
-                ['Applied for ' . $planLabel, $sTotals['paid'], $change($sTotals['paid'], $signups['previous']['paid'])],
-                [$planLabel . ' active now', (int) $plan['counts']['active'], (int) $plan['counts']['submitted'] . ' waiting for review'],
-                ['Profile views', $tTotals['views'], $change($tTotals['views'], $traffic['previous']['views'])],
-                ['Taps to get in touch', $tTotals['taps'], $change($tTotals['taps'], $traffic['previous']['taps'])],
-                ['Forms saved', (int) $fTiles['saved'], $fTiles['rate'] === null ? 'nothing arrived' : $fTiles['rate'] . '% of ' . $num((int) $fTiles['arrived']) . ' arrived'],
-            ] as [$label, $value, $note]): ?>
-                <div class="stats-tile">
-                    <dt class="stats-tile-label"><?= esc($label) ?></dt>
-                    <dd class="stats-tile-value"><?= $num((int) $value) ?></dd>
-                    <dd class="stats-tile-change"><?= esc($note) ?></dd>
-                </div>
-            <?php endforeach; ?>
-        </dl>
-
-        <div class="dash-grid">
-            <div class="panel">
-                <div class="dash-panel-head">
-                    <h2 class="strength-panel-title">New profiles per day</h2>
-                    <a class="dash-more" href="<?= esc(base_url('admin/profiles')) ?>">Profiles</a>
-                </div>
-                <?= view('directory/_stacked_bar_chart', [
-                    'name'    => 'New profiles per day',
-                    'series'  => [['key' => 'free', 'label' => 'Free'], ['key' => 'paid', 'label' => 'Applied for ' . $planLabel]],
-                    'bars'    => $signupBars,
-                    'columns' => ['Day', 'New', 'Free', $planLabel, 'Published'],
-                    'rows'    => array_map(static fn (array $d): array => [
-                        date('D j M', strtotime($d['day'])), (string) $d['total'], (string) $d['free'], (string) $d['paid'], (string) $d['published'],
-                    ], array_reverse($signups['daily'])),
-                ]) ?>
-            </div>
-
-            <div class="panel">
-                <div class="dash-panel-head">
-                    <h2 class="strength-panel-title">Profile views per day</h2>
-                    <a class="dash-more" href="<?= esc($withSite('admin/stats', $days === 30 ? [] : ['days' => $days])) ?>">Stats</a>
-                </div>
-                <?php if ($traffic['since'] === null): ?>
-                    <p class="stats-empty">Nothing counted yet.</p>
-                <?php else: ?>
-                    <?= view('directory/_bar_chart', [
-                        'name'    => 'Profile views per day',
-                        'bars'    => $viewBars,
-                        'columns' => ['Day', 'Views', 'Shown', 'Taps'],
-                        'rows'    => array_map(static fn (array $d): array => [
-                            date('D j M', strtotime((string) $d['day'])), $num((int) $d['views']), $num((int) $d['appearances']), $num((int) $d['taps']),
-                        ], array_reverse($traffic['daily'])),
-                    ]) ?>
+    <h2 class="dash-heading">Needs action</h2>
+    <?php if ($waiting === []): ?>
+        <p class="stats-empty">Nothing waiting in any queue.</p>
+    <?php else: ?>
+        <div class="dash-queues">
+            <?php foreach ($queueLinks as $key => [$label, $path]): ?>
+                <?php if (($queues[$key] ?? 0) > 0): ?>
+                    <a class="dash-queue" href="<?= esc(base_url($path)) ?>">
+                        <span class="stats-tile-value"><?= $num($queues[$key]) ?></span>
+                        <span class="stats-tile-label"><?= esc($label) ?></span>
+                    </a>
                 <?php endif; ?>
-            </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 
-            <div class="panel">
-                <div class="dash-panel-head">
-                    <h2 class="strength-panel-title">Form submissions per day</h2>
-                    <a class="dash-more" href="<?= esc($withSite('admin/forms', ['days' => $days])) ?>">Form health</a>
-                </div>
-                <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                    <?= $num((int) $fTiles['lost']) ?> lost, <?= $num((int) $fTiles['never']) ?> pressed but never arrived in this period.
-                </p>
-                <?= view('directory/_stacked_bar_chart', [
-                    'name'    => 'Form submissions per day',
-                    'series'  => [['key' => 'ok', 'label' => 'Saved'], ['key' => 'not', 'label' => 'Not saved (refused, lost, other)']],
-                    'bars'    => $formBars,
-                    'columns' => ['Day', 'Arrived', 'Saved', 'Refused', 'Lost'],
-                    'rows'    => array_map(static fn (array $d): array => [
-                        date('D j M', strtotime($d['day'])), (string) $d['arrived'], (string) $d['ok'], (string) $d['invalid'], (string) $d['lost'],
-                    ], array_reverse($forms['daily'])),
-                ]) ?>
-            </div>
+    <div class="tabs mt-8">
+        <a class="<?= $isApp ? '' : 'active' ?>" href="<?= esc($here(array_filter(['days' => $days === 30 ? null : $days]))) ?>">local.webscheduler.co.za</a>
+        <a class="<?= $isApp ? 'active' : '' ?>" href="<?= esc($here(array_filter(['site' => 'app', 'days' => $days === 30 ? null : $days]))) ?>">local.webscheduler.app</a>
+    </div>
+    <p class="mt-3 flex flex-wrap gap-2 text-sm">
+        <?php foreach ($periods as $p): ?>
+            <a class="btn btn-xs <?= $p === $days ? 'btn-primary' : 'btn-ghost' ?>" href="<?= esc($here($siteQuery + ($p === 30 ? [] : ['days' => $p]))) ?>">Last <?= $p ?> days</a>
+        <?php endforeach; ?>
+        <span class="self-center text-slate-500 dark:text-slate-400"><?= esc($date($from)) ?> to <?= esc($date($to)) ?></span>
+    </p>
 
-            <div class="panel">
-                <div class="dash-panel-head">
-                    <h2 class="strength-panel-title"><?= esc($planLabel) ?> applications</h2>
-                    <a class="dash-more" href="<?= esc(base_url($isApp ? 'admin/plus' : 'admin/verifications')) ?>">Queue</a>
-                </div>
-                <?= view('directory/_meter_rows', [
-                    'name'   => $planLabel . ' applications by state',
-                    'meters' => array_map(static fn (string $state, string $label): array => [
-                        'label' => $label,
-                        'value' => (int) ($plan['counts'][$state] ?? 0),
-                        'href'  => base_url($isApp ? 'admin/plus' : 'admin/verifications') . '?state=' . $state,
-                    ], array_keys($planStates), $planStates),
-                ]) ?>
-
-                <div class="dash-panel-head mt-6">
-                    <h2 class="strength-panel-title">Setup orders (both sites)</h2>
-                    <a class="dash-more" href="<?= esc(base_url('admin/profile-setup')) ?>">Orders</a>
-                </div>
-                <?= view('directory/_meter_rows', [
-                    'name'   => 'Setup orders by status',
-                    'meters' => array_map(static fn (string $status, string $label): array => [
-                        'label' => $label,
-                        'value' => (int) ($setup['counts'][$status] ?? 0),
-                        'href'  => base_url('admin/profile-setup') . '?status=' . $status,
-                    ], array_keys($orderStatuses), $orderStatuses),
-                ]) ?>
+    <dl class="stats-tiles dash-tiles">
+        <?php foreach ([
+            ['New profiles', $sTotals['total'], $change($sTotals['total'], $signups['previous']['total'])],
+            ['Applied for ' . $planLabel, $sTotals['paid'], $change($sTotals['paid'], $signups['previous']['paid'])],
+            [$planLabel . ' active now', (int) $plan['counts']['active'], (int) $plan['counts']['submitted'] . ' waiting for review'],
+            ['Profile views', $tTotals['views'], $change($tTotals['views'], $traffic['previous']['views'])],
+            ['Taps to get in touch', $tTotals['taps'], $change($tTotals['taps'], $traffic['previous']['taps'])],
+            ['Forms saved', (int) $fTiles['saved'], $fTiles['rate'] === null ? 'nothing arrived' : $fTiles['rate'] . '% of ' . $num((int) $fTiles['arrived']) . ' arrived'],
+        ] as [$label, $value, $note]): ?>
+            <div class="stats-tile">
+                <dt class="stats-tile-label"><?= esc($label) ?></dt>
+                <dd class="stats-tile-value"><?= $num((int) $value) ?></dd>
+                <dd class="stats-tile-change"><?= esc($note) ?></dd>
             </div>
+        <?php endforeach; ?>
+    </dl>
+
+    <div class="dash-grid">
+        <div class="panel">
+            <div class="dash-panel-head">
+                <h2 class="strength-panel-title">New profiles per day</h2>
+                <a class="dash-more" href="<?= esc(base_url('admin/profiles')) ?>">Profiles</a>
+            </div>
+            <?= view('directory/_stacked_bar_chart', [
+                'name'    => 'New profiles per day',
+                'series'  => [['key' => 'free', 'label' => 'Free'], ['key' => 'paid', 'label' => 'Applied for ' . $planLabel]],
+                'bars'    => $signupBars,
+                'columns' => ['Day', 'New', 'Free', $planLabel, 'Published'],
+                'rows'    => array_map(static fn (array $d): array => [
+                    date('D j M', strtotime($d['day'])), (string) $d['total'], (string) $d['free'], (string) $d['paid'], (string) $d['published'],
+                ], array_reverse($signups['daily'])),
+            ]) ?>
         </div>
 
-        <div class="dash-grid">
-            <div class="panel">
-                <h2 class="strength-panel-title">Latest profiles</h2>
-                <?php if ($signups['latest'] === []): ?>
-                    <p class="stats-empty">No profiles yet.</p>
-                <?php else: ?>
-                    <ul class="stats-list dash-list mt-3">
-                        <?php foreach ($signups['latest'] as $row): ?>
-                            <li>
-                                <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= esc(base_url('admin/edit/' . $row['id'])) ?>"><?= esc($row['display_name']) ?></a>
-                                <span class="stats-list-n">
-                                    <?= esc(ucfirst($row['status'])) ?><?= $row['paid'] ? ', ' . esc($planLabel) : ', Free' ?><?= $row['source'] !== '' ? ', ' . esc($row['source']) : '' ?>,
-                                    <?= esc(date('j M', strtotime($row['created_at']))) ?>
-                                </span>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
+        <div class="panel">
+            <div class="dash-panel-head">
+                <h2 class="strength-panel-title">Profile views per day</h2>
+                <a class="dash-more" href="<?= esc($withSite('admin/stats', $days === 30 ? [] : ['days' => $days])) ?>">Stats</a>
             </div>
+            <?php if ($traffic['since'] === null): ?>
+                <p class="stats-empty">Nothing counted yet.</p>
+            <?php else: ?>
+                <?= view('directory/_bar_chart', [
+                    'name'    => 'Profile views per day',
+                    'bars'    => $viewBars,
+                    'columns' => ['Day', 'Views', 'Shown', 'Taps'],
+                    'rows'    => array_map(static fn (array $d): array => [
+                        date('D j M', strtotime((string) $d['day'])), $num((int) $d['views']), $num((int) $d['appearances']), $num((int) $d['taps']),
+                    ], array_reverse($traffic['daily'])),
+                ]) ?>
+            <?php endif; ?>
+        </div>
 
-            <div class="panel">
-                <h2 class="strength-panel-title">Latest setup orders</h2>
-                <?php if ($setup['latest'] === []): ?>
-                    <p class="stats-empty">No orders yet.</p>
-                <?php else: ?>
-                    <ul class="stats-list dash-list mt-3">
-                        <?php foreach ($setup['latest'] as $order): ?>
-                            <li>
-                                <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= esc(base_url('admin/profile-setup') . '?status=' . $order['status'] . '#order-' . $order['id']) ?>"><?= esc((string) ($order['business_name'] ?: $order['name'])) ?></a>
-                                <span class="stats-list-n"><?= esc($orderStatuses[$order['status']] ?? $order['status']) ?>, <?= esc(date('j M', strtotime((string) $order['created_at']))) ?></span>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
-
-                <h2 class="strength-panel-title mt-6">Most viewed profiles</h2>
-                <?php if ($traffic['top'] === []): ?>
-                    <p class="stats-empty">Nothing counted in this period.</p>
-                <?php else: ?>
-                    <ul class="stats-list dash-list mt-3">
-                        <?php foreach ($traffic['top'] as $row): ?>
-                            <li>
-                                <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= esc(base_url('admin/edit/' . $row['id']) . '#profile-stats') ?>"><?= esc($row['display_name']) ?></a>
-                                <span class="stats-list-n"><?= $num($row['views']) ?> view<?= $row['views'] === 1 ? '' : 's' ?>, <?= $num($row['taps']) ?> tap<?= $row['taps'] === 1 ? '' : 's' ?></span>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
+        <div class="panel">
+            <div class="dash-panel-head">
+                <h2 class="strength-panel-title">Form submissions per day</h2>
+                <a class="dash-more" href="<?= esc($withSite('admin/forms', ['days' => $days])) ?>">Form health</a>
             </div>
+            <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                <?= $num((int) $fTiles['lost']) ?> lost, <?= $num((int) $fTiles['never']) ?> pressed but never arrived in this period.
+            </p>
+            <?= view('directory/_stacked_bar_chart', [
+                'name'    => 'Form submissions per day',
+                'series'  => [['key' => 'ok', 'label' => 'Saved'], ['key' => 'not', 'label' => 'Not saved (refused, lost, other)']],
+                'bars'    => $formBars,
+                'columns' => ['Day', 'Arrived', 'Saved', 'Refused', 'Lost'],
+                'rows'    => array_map(static fn (array $d): array => [
+                    date('D j M', strtotime($d['day'])), (string) $d['arrived'], (string) $d['ok'], (string) $d['invalid'], (string) $d['lost'],
+                ], array_reverse($forms['daily'])),
+            ]) ?>
+        </div>
+
+        <div class="panel">
+            <div class="dash-panel-head">
+                <h2 class="strength-panel-title"><?= esc($planLabel) ?> applications</h2>
+                <a class="dash-more" href="<?= esc(base_url($isApp ? 'admin/plus' : 'admin/verifications')) ?>">Queue</a>
+            </div>
+            <?= view('directory/_meter_rows', [
+                'name'   => $planLabel . ' applications by state',
+                'meters' => array_map(static fn (string $state, string $label): array => [
+                    'label' => $label,
+                    'value' => (int) ($plan['counts'][$state] ?? 0),
+                    'href'  => base_url($isApp ? 'admin/plus' : 'admin/verifications') . '?state=' . $state,
+                ], array_keys($planStates), $planStates),
+            ]) ?>
+
+            <div class="dash-panel-head mt-6">
+                <h2 class="strength-panel-title">Setup orders (both sites)</h2>
+                <a class="dash-more" href="<?= esc(base_url('admin/profile-setup')) ?>">Orders</a>
+            </div>
+            <?= view('directory/_meter_rows', [
+                'name'   => 'Setup orders by status',
+                'meters' => array_map(static fn (string $status, string $label): array => [
+                    'label' => $label,
+                    'value' => (int) ($setup['counts'][$status] ?? 0),
+                    'href'  => base_url('admin/profile-setup') . '?status=' . $status,
+                ], array_keys($orderStatuses), $orderStatuses),
+            ]) ?>
         </div>
     </div>
-</section>
+
+    <div class="dash-grid">
+        <div class="panel">
+            <h2 class="strength-panel-title">Latest profiles</h2>
+            <?php if ($signups['latest'] === []): ?>
+                <p class="stats-empty">No profiles yet.</p>
+            <?php else: ?>
+                <ul class="stats-list dash-list mt-3">
+                    <?php foreach ($signups['latest'] as $row): ?>
+                        <li>
+                            <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= esc(base_url('admin/edit/' . $row['id'])) ?>"><?= esc($row['display_name']) ?></a>
+                            <span class="stats-list-n">
+                                <?= esc(ucfirst($row['status'])) ?><?= $row['paid'] ? ', ' . esc($planLabel) : ', Free' ?><?= $row['source'] !== '' ? ', ' . esc($row['source']) : '' ?>,
+                                <?= esc(date('j M', strtotime($row['created_at']))) ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+
+        <div class="panel">
+            <h2 class="strength-panel-title">Latest setup orders</h2>
+            <?php if ($setup['latest'] === []): ?>
+                <p class="stats-empty">No orders yet.</p>
+            <?php else: ?>
+                <ul class="stats-list dash-list mt-3">
+                    <?php foreach ($setup['latest'] as $order): ?>
+                        <li>
+                            <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= esc(base_url('admin/profile-setup') . '?status=' . $order['status'] . '#order-' . $order['id']) ?>"><?= esc((string) ($order['business_name'] ?: $order['name'])) ?></a>
+                            <span class="stats-list-n"><?= esc($orderStatuses[$order['status']] ?? $order['status']) ?>, <?= esc(date('j M', strtotime((string) $order['created_at']))) ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+            <h2 class="strength-panel-title mt-6">Most viewed profiles</h2>
+            <?php if ($traffic['top'] === []): ?>
+                <p class="stats-empty">Nothing counted in this period.</p>
+            <?php else: ?>
+                <ul class="stats-list dash-list mt-3">
+                    <?php foreach ($traffic['top'] as $row): ?>
+                        <li>
+                            <a class="min-w-0 truncate text-primary-600 hover:underline dark:text-primary-300" href="<?= esc(base_url('admin/edit/' . $row['id']) . '#profile-stats') ?>"><?= esc($row['display_name']) ?></a>
+                            <span class="stats-list-n"><?= $num($row['views']) ?> view<?= $row['views'] === 1 ? '' : 's' ?>, <?= $num($row['taps']) ?> tap<?= $row['taps'] === 1 ? '' : 's' ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<a class="btn btn-ghost btn-xs" href="<?= base_url('admin/profiles') ?>">All profiles <?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
 <?= $this->endSection() ?>

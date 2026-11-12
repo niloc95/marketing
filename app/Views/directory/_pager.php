@@ -15,6 +15,8 @@
  * @var string $baseUrl the page's own URL, no query string
  * @var array  $query   everything but page that has to survive paging (facets
  *                      nest as f[...][], which http_build_query keeps intact)
+ * @var string $noun    what is counted ("business profiles" by default; the
+ *                      admin and owner lists pass their own, see pager_links())
  */
 $totalPages = (int) $result['totalPages'];
 if ($totalPages <= 1) {
@@ -37,11 +39,12 @@ $href = static function (int $n) use ($baseUrl, $query): string {
 
 $first = ($page - 1) * $perPage + 1;
 $last  = min($page * $perPage, $total);
+$noun  = $noun ?? 'business profiles';
 ?>
 <nav class="pager" aria-label="Pages">
     <p class="pager-summary">
         Showing <b><?= number_format($first) ?></b> to <b><?= number_format($last) ?></b>
-        of <b><?= number_format($total) ?></b> business profiles
+        of <b><?= number_format($total) ?></b> <?= esc($noun) ?>
     </p>
 
     <div class="pager-controls">

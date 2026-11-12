@@ -66,13 +66,24 @@ class DirectoryReviewModel extends Model
      *
      * @return list<array<string,mixed>>
      */
-    public function forOwner(int $listingId): array
+    public function forOwner(int $listingId, int $limit = 50, int $offset = 0): array
+    {
+        return $this->ownerReviews($listingId)
+            ->orderBy('published_at', 'DESC')
+            ->findAll($limit, $offset);
+    }
+
+    /** How many reviews forOwner() pages through, for the pager on /business/reviews. */
+    public function countForOwner(int $listingId): int
+    {
+        return $this->ownerReviews($listingId)->countAllResults();
+    }
+
+    private function ownerReviews(int $listingId): self
     {
         return $this->where('listing_id', $listingId)
             ->whereIn('status', [self::STATUS_PUBLISHED, self::STATUS_PENDING])
-            ->where('published_at IS NOT NULL', null, false)
-            ->orderBy('published_at', 'DESC')
-            ->findAll(50);
+            ->where('published_at IS NOT NULL', null, false);
     }
 
     /**

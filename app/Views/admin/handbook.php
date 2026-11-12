@@ -27,34 +27,33 @@
 $data = compact('tables', 'siteCounts', 'breakdowns', 'migrations', 'routes', 'stack', 'schedule', 'tokens', 'ids');
 ?>
 
-<section class="section">
-    <div class="container handbook">
-        <header class="handbook-head">
-            <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">System handbook</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-                WebScheduler Local (local.webscheduler.co.za and local.webscheduler.app), Bookings inside it,
-                and the brand site webscheduler.co.za. Figures are read live: <?= esc($generated) ?>.
-                Print to PDF from the browser for a copy.
-            </p>
-            <?php if ($failed !== []): ?>
-                <p class="mt-2 text-sm text-brand-crimson">Not available right now: <?= esc(implode(', ', $failed)) ?> (see the log).</p>
-            <?php endif; ?>
-        </header>
+<div class="shell-page handbook">
+    <header class="handbook-head">
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            WebScheduler Local (local.webscheduler.co.za and local.webscheduler.app), Bookings inside it,
+            and the brand site webscheduler.co.za. Figures are read live: <?= esc($generated) ?>.
+            Print to PDF from the browser for a copy.
+        </p>
+        <?php if ($failed !== []): ?>
+            <p class="mt-2 text-sm text-brand-crimson">Not available right now: <?= esc(implode(', ', $failed)) ?> (see the log).</p>
+        <?php endif; ?>
+    </header>
 
-        <nav class="handbook-toc" aria-label="Contents">
-            <ol>
-                <?php foreach ($chapters as $id => $title): ?>
-                    <li><a href="#<?= esc($id, 'attr') ?>"><?= esc($title) ?></a></li>
-                <?php endforeach; ?>
-            </ol>
-        </nav>
+    <nav class="handbook-toc" aria-label="Contents">
+        <ol>
+            <?php foreach ($chapters as $id => $title): ?>
+                <li><a href="#<?= esc($id, 'attr') ?>"><?= esc($title) ?></a></li>
+            <?php endforeach; ?>
+        </ol>
+    </nav>
 
-        <?php foreach ($chapters as $id => $title): ?>
-            <section class="handbook-chapter" id="<?= esc($id, 'attr') ?>">
-                <h2><?= esc($title) ?></h2>
-                <?= view('admin/handbook/' . $id, $data, ['saveData' => false]) ?>
-            </section>
-        <?php endforeach; ?>
-    </div>
-</section>
+    <?php foreach ($chapters as $id => $title): ?>
+        <section class="handbook-chapter" id="<?= esc($id, 'attr') ?>">
+            <h2><?= esc($title) ?></h2>
+            <?= view('admin/handbook/' . $id, $data, ['saveData' => false]) ?>
+        </section>
+    <?php endforeach; ?>
+</div>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>System handbook<?= $this->endSection() ?>

@@ -1765,3 +1765,44 @@ if (! function_exists('flash')) {
         return session_exists() ? session()->getFlashdata($key) : null;
     }
 }
+
+if (! function_exists('pager_links')) {
+    /**
+     * The frontend pager (directory/_pager.php) for a list paged by a CI4
+     * model's paginate(): the admin queues and the Jobs board. Replaces
+     * $pager->links(), the framework's own unstyled list of every page.
+     * Keeps the request's query (tab, filters) on every link.
+     */
+    function pager_links(\CodeIgniter\Pager\Pager $pager, string $noun, string $group = 'default'): string
+    {
+        $query = service('request')->getGet();
+        unset($query['page']);
+
+        return view('directory/_pager', [
+            'result' => [
+                'page'       => $pager->getCurrentPage($group),
+                'totalPages' => $pager->getPageCount($group),
+                'perPage'    => $pager->getPerPage($group),
+                'total'      => (int) $pager->getTotal($group),
+            ],
+            'baseUrl' => current_url(),
+            'query'   => is_array($query) ? $query : [],
+            'noun'    => $noun,
+        ], ['saveData' => false]);
+    }
+}
+
+if (! function_exists('pager_result')) {
+    /**
+     * The shape directory/_pager.php reads, for a list that counts its own
+     * rows (the owner area's customers, activity, sent messages, payments).
+     *
+     * @return array{page:int,totalPages:int,perPage:int,total:int}
+     */
+    function pager_result(int $page, int $perPage, int $total): array
+    {
+        $pages = max(1, (int) ceil($total / max(1, $perPage)));
+
+        return ['page' => min(max(1, $page), $pages), 'totalPages' => $pages, 'perPage' => $perPage, 'total' => $total];
+    }
+}

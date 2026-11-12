@@ -305,7 +305,7 @@ final class ListingCountryTest extends CIUnitTestCase
 
         // The admin form for the German listing: the other way round, decided
         // by the server so it is correct before any JavaScript runs.
-        $admin = $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id);
+        $admin = $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id . '/where');
         $admin->assertOK();
         $html = $admin->getBody();
         $this->assertMatchesRegularExpression('/data-address-province\s+hidden\s*>/', $html);
@@ -378,7 +378,7 @@ final class ListingCountryTest extends CIUnitTestCase
     {
         $id = (int) $this->svc->submitPublic($this->british())['id'];
 
-        $html = $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id)->getBody();
+        $html = $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id . '/where')->getBody();
 
         $this->assertMatchesRegularExpression('/<select[^>]*data-region-select(?![^>]*\bdisabled\b)[^>]*>/', $html);
         $this->assertStringContainsString('<option value="England" selected>England</option>', $html);

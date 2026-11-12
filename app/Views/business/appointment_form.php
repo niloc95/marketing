@@ -19,7 +19,6 @@
 <?php // data-customer-url: customer-picker.js finds existing customers as you type. ?>
 <form method="post" action="<?= base_url('business/appointments/new') ?>" class="form-card form-card-narrow" data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>" data-free-url="<?= esc(base_url('business/api/appointments/free'), 'attr') ?>">
     <?= csrf_field() ?>
-    <h1 class="mb-1 text-xl font-bold text-slate-900 dark:text-white">Book an appointment</h1>
     <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. You can book any free time in working hours.</p>
     <?php if ($services === [] || $providers === []): ?>
         <p class="text-sm">Add a service and a team member who offers it first.</p>
@@ -29,3 +28,5 @@
     <?php endif ?>
 </form>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Book an appointment<?= $this->endSection() ?>

@@ -6,11 +6,7 @@
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="flex flex-wrap items-center gap-3">
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Customers</h1>
-    <a href="<?= base_url('business/customers/new') ?>" class="btn btn-primary btn-xs ml-auto"><?= lucide('plus', 'h-4 w-4') ?> Add a customer</a>
-</div>
-<form method="get" action="<?= base_url('business/customers') ?>" class="mt-4 flex items-start gap-2" role="search">
+<form method="get" action="<?= base_url('business/customers') ?>" class="flex items-start gap-2" role="search">
     <div class="field mb-0 flex-1">
         <label class="sr-only" for="cust-q">Find a customer</label>
         <input id="cust-q" type="text" name="q" value="<?= esc($q, 'attr') ?>" placeholder="Find by name, email, phone or reference">
@@ -36,12 +32,17 @@
             </tbody>
         </table>
     </div>
-    <?php if ($result['pages'] > 1): ?>
-        <nav class="mt-4 flex items-center gap-3 text-sm" aria-label="Pages">
-            <?php if ($result['page'] > 1): ?><a class="underline" href="<?= base_url('business/customers?' . http_build_query(['q' => $q, 'page' => $result['page'] - 1])) ?>">Previous</a><?php endif ?>
-            <span>Page <?= $result['page'] ?> of <?= $result['pages'] ?></span>
-            <?php if ($result['page'] < $result['pages']): ?><a class="underline" href="<?= base_url('business/customers?' . http_build_query(['q' => $q, 'page' => $result['page'] + 1])) ?>">Next</a><?php endif ?>
-        </nav>
-    <?php endif ?>
+    <?= view('directory/_pager', [
+        'result'  => pager_result($result['page'], \App\Services\Bookings\CustomerService::PAGE_SIZE, $result['total']),
+        'baseUrl' => base_url('business/customers'),
+        'query'   => ['q' => $q],
+        'noun'    => 'customers',
+    ], ['saveData' => false]) ?>
 <?php endif ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Customers <span class="page-title-count">(<?= number_format((int) $result['total']) ?>)</span><?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<a href="<?= base_url('business/customers/new') ?>" class="btn btn-primary btn-xs"><?= lucide('plus', 'h-4 w-4') ?> Add a customer</a>
 <?= $this->endSection() ?>

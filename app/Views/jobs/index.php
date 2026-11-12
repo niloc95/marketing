@@ -133,9 +133,7 @@ $kinds = ['' => 'Everything', 'job' => 'Jobs', 'service' => 'Services needed'];
                     <?= view('jobs/_row', ['p' => $p, 'svc' => $svc], ['saveData' => false]) ?>
                 <?php endforeach; ?>
             </ul>
-            <?php if ($pager->getPageCount() > 1): ?>
-                <div class="mt-6"><?= $pager->links() ?></div>
-            <?php endif; ?>
+            <?= pager_links($pager, 'posts') ?>
         <?php endif; ?>
 
         <?php // The one safety message every job board in SA needs, stated where

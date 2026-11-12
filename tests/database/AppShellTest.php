@@ -82,12 +82,23 @@ final class AppShellTest extends CIUnitTestCase
         }
     }
 
-    public function testTheTopBarNamesTheSidebarItem(): void
+    public function testTheTopBarIsThePageHeader(): void
     {
-        $html = (string) $this->withSession(['dir_admin' => true, AdminFilter::SEEN_KEY => time()])->get('admin/documents/system')->response()->getBody();
+        $session = ['dir_admin' => true, AdminFilter::SEEN_KEY => time()];
 
-        $this->assertStringContainsString('data-page-title="Documents"', $html, 'the handbook sits under Documents');
-        $this->assertStringContainsString('data-shell-title>Documents<', $html);
+        // The sidebar item's name when the page has no title of its own.
+        $html = (string) $this->withSession($session)->get('admin/forms')->response()->getBody();
+        $this->assertMatchesRegularExpression('#<h1 class="shell-title" data-shell-title>\s*Form health\s*</h1>#', $html);
+
+        // A page's own title wins, under its sidebar item; one h1 on the page.
+        $html = (string) $this->withSession($session)->get('admin/documents/system')->response()->getBody();
+        $this->assertMatchesRegularExpression('/data-page-title="System(?: |&#x20;)handbook"/', $html);
+        $this->assertMatchesRegularExpression('#class="shell-link is-active" href="[^"]*/admin/documents" title="Documents"#', $html);
+        $this->assertSame(1, substr_count($html, '<h1'));
+
+        // The page's buttons are in the top bar too.
+        $html = (string) $this->withSession($session)->get('admin/profiles')->response()->getBody();
+        $this->assertMatchesRegularExpression('#<div class="shell-actions">\s*<a class="btn btn-primary btn-xs" href="[^"]*/admin/new">#', $html);
     }
 
     public function testTheProfileFormOpensWithAFullPageLoad(): void

@@ -3,7 +3,10 @@
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="mx-auto w-full max-w-3xl">
+<div class="shell-page">
     <?= view('directory/_jobs_panel', ['listing' => $listing, 'posts' => $posts, 'svc' => $svc], ['saveData' => false]) ?>
 </div>
 <?= $this->endSection() ?>
+
+<?php // Loads directory.js (layouts/business.php). ?>
+<?= $this->section('profile_form') ?>1<?= $this->endSection() ?>
