@@ -29,7 +29,6 @@ $tileCols = [3 => 'sm:grid-cols-3', 6 => 'sm:grid-cols-3 lg:grid-cols-6'];
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Analytics</h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400"><?= esc($date($report['from'])) ?> to <?= esc($date($report['to'])) ?>. Bookings count on the day they start. Value is worked out from your prices; it is not money received.</p>
 
 <form method="get" action="<?= base_url('business/analytics') ?>" class="mt-4 flex flex-wrap items-end gap-3">
@@ -208,3 +207,5 @@ $tileCols = [3 => 'sm:grid-cols-3', 6 => 'sm:grid-cols-3 lg:grid-cols-6'];
     </div>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Analytics<?= $this->endSection() ?>

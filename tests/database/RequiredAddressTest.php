@@ -231,7 +231,7 @@ final class RequiredAddressTest extends CIUnitTestCase
         // demanding an address from owners who have never had one.
         foreach ([
             $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/where'),
-            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
+            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id . '/where'),
         ] as $result) {
             $result->assertOK();
             $html = $result->getBody();

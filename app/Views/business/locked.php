@@ -36,7 +36,7 @@ $upgrade = ! $premium && ($feature !== 'bookings' || $setup->unavailable($listin
             <?= $za ? 'Comes with the Verified Business badge' : 'Comes with Plus' ?>
         </p>
     <?php endif ?>
-    <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white"><?= esc($about[0]) ?></h1>
+    <h2 class="mt-2 section-title"><?= esc($about[0]) ?></h2>
     <p class="mt-2 text-sm text-slate-600 dark:text-slate-300"><?= esc($about[1]) ?></p>
     <p class="mt-3 text-sm text-slate-600 dark:text-slate-300"><?= esc($reason) ?></p>
 

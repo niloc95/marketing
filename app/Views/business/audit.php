@@ -1,8 +1,7 @@
 <?php
 /**
  * @var list<array<string,mixed>> $rows
- * @var int $page
- * @var int $pageSize
+ * @var array{page:int,totalPages:int,perPage:int,total:int} $pager  pager_result()
  */
 $actions = [
     'bookings.turned_on'  => 'Turned on online bookings',
@@ -22,7 +21,6 @@ $actions = [
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="mb-4 text-xl font-bold text-slate-900 dark:text-white">Activity</h1>
 <?php if ($rows === []): ?>
     <p class="text-sm text-slate-500 dark:text-slate-400">Nothing yet.</p>
 <?php else: ?>
@@ -45,9 +43,8 @@ $actions = [
             </tbody>
         </table>
     </div>
-    <p class="mt-4 flex gap-3 text-sm">
-        <?php if ($page > 1): ?><a class="underline" href="<?= base_url('business/audit?page=' . ($page - 1)) ?>">Newer</a><?php endif ?>
-        <?php if (count($rows) === $pageSize): ?><a class="underline" href="<?= base_url('business/audit?page=' . ($page + 1)) ?>">Older</a><?php endif ?>
-    </p>
+    <?= view('directory/_pager', ['result' => $pager, 'baseUrl' => base_url('business/audit'), 'query' => [], 'noun' => 'changes'], ['saveData' => false]) ?>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Activity<?= $this->endSection() ?>

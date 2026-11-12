@@ -27,121 +27,120 @@ $link = static fn (array $q) => base_url('admin/careers/applications') . '?' . h
 ));
 ?>
 
-<section class="section">
-    <div class="container">
-        <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="<?= base_url('admin/careers') ?>">Careers</a>
-            <span class="crumbs-sep">/</span>
-            <span>Applications</span>
-        </nav>
-        <h1 class="mb-3 text-xl font-bold text-slate-900 dark:text-white">Applications</h1>
+<div class="shell-page">
+    <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="<?= base_url('admin/careers') ?>">Careers</a>
+        <span class="crumbs-sep">/</span>
+        <span>Applications</span>
+    </nav>
 
-        <div class="tabs">
-            <a class="<?= $status === '' ? 'active' : '' ?>" href="<?= esc($link(['status' => ''])) ?>">All</a>
-            <?php foreach (CareerApplicationModel::STATUSES as $key => $label): ?>
-                <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link(['status' => $key])) ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
-            <?php endforeach; ?>
+    <div class="tabs">
+        <a class="<?= $status === '' ? 'active' : '' ?>" href="<?= esc($link(['status' => ''])) ?>">All</a>
+        <?php foreach (CareerApplicationModel::STATUSES as $key => $label): ?>
+            <a class="<?= $status === $key ? 'active' : '' ?>" href="<?= esc($link(['status' => $key])) ?>"><?= esc($label) ?> (<?= (int) ($counts[$key] ?? 0) ?>)</a>
+        <?php endforeach; ?>
+    </div>
+
+    <form method="get" action="<?= base_url('admin/careers/applications') ?>" class="mb-4 flex flex-wrap items-end gap-2">
+        <?php if ($status !== ''): ?><input type="hidden" name="status" value="<?= esc($status, 'attr') ?>"><?php endif; ?>
+        <div class="field mb-0">
+            <label for="f-role">Role</label>
+            <select id="f-role" name="role">
+                <option value="">All roles</option>
+                <option value="0" <?= $roleId === 0 ? 'selected' : '' ?>>General applications</option>
+                <?php foreach ($roles as $r): ?>
+                    <option value="<?= (int) $r['id'] ?>" <?= $roleId === (int) $r['id'] ? 'selected' : '' ?>><?= esc($r['title']) ?><?= $r['status'] !== 'open' ? ' (' . esc($r['status']) . ')' : '' ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="field mb-0">
+            <label for="f-score">Screening</label>
+            <select id="f-score" name="min_score">
+                <option value="">Any score</option>
+                <?php for ($n = App\Libraries\Screening::COUNT; $n >= 1; $n--): ?>
+                    <option value="<?= $n ?>" <?= $minScore === $n ? 'selected' : '' ?>><?= $n ?> or more right</option>
+                <?php endfor; ?>
+            </select>
+        </div>
+        <button class="btn btn-ghost btn-xs">Filter</button>
+    </form>
+
+    <?php if ($rows === []): ?>
+        <div class="empty">Nothing in this view.</div>
+    <?php else: ?>
+        <div class="tablewrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Applicant</th><th>Message</th><th>Received</th><th>Decision</th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($rows as $a): ?>
+                    <tr id="application-<?= (int) $a['id'] ?>">
+                        <?php if (! empty($a['purged_at'])): ?>
+                            <td colspan="4" class="text-sm text-slate-500 dark:text-slate-400">
+                                Application <?= (int) $a['id'] ?> for <?= esc($a['role_title'] ?? 'a general role') ?>, deleted <?= esc(date('j M Y', strtotime((string) $a['purged_at']))) ?> under the retention rule.
+                            </td>
+                        <?php else: ?>
+                            <?php $link2 = safe_external_url($a['linkedin_url'] ?? ''); ?>
+                            <td>
+                                <strong><?= esc($a['name']) ?></strong>
+                                <div class="text-xs"><?= esc($a['role_title'] ?? 'General application') ?></div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    <a href="mailto:<?= esc($a['email'], 'attr') ?>"><?= esc($a['email']) ?></a><?= ! empty($a['phone']) ? ' · ' . esc($a['phone']) : '' ?>
+                                </div>
+                                <?php if ($link2 !== ''): ?>
+                                    <div class="text-xs"><a href="<?= esc($link2, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc(parse_url($link2, PHP_URL_HOST) ?: $link2) ?></a></div>
+                                <?php endif; ?>
+                                <?php if (! empty($a['cv_path'])): ?>
+                                    <a class="btn btn-ghost btn-xs mt-1" href="<?= base_url('admin/careers/applications/' . (int) $a['id'] . '/cv') ?>" target="_blank" rel="noopener">Open CV</a>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-sm">
+                                <?php $marked = $svc->screeningResult($a); ?>
+                                <?php if ($marked !== null): ?>
+                                    <?php $tone = $marked['score'] === $marked['total'] ? 'pill-published' : ($marked['score'] * 2 >= $marked['total'] ? 'pill-score-mid' : 'pill-pending'); ?>
+                                    <details class="disclosure mb-2">
+                                        <summary class="disclosure-summary"><span class="pill <?= $tone ?>"><?= (int) $marked['score'] ?>/<?= (int) $marked['total'] ?></span> <?= esc(ucfirst($svc->screening()->summary($marked))) ?></summary>
+                                        <ul class="disclosure-body text-sm">
+                                            <?php foreach ($marked['items'] as $item): ?>
+                                                <li class="mb-1">
+                                                    <?php if (! empty($item['passage'])): ?><div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($item['passage']) ?></div><?php endif; ?>
+                                                    <?= $item['correct'] ? '✓' : '✗' ?> <?= esc($item['prompt']) ?>
+                                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                                        Answered: <?= esc($item['given'] !== '' ? $item['given'] : 'nothing') ?><?= $item['correct'] ? '' : '. Correct: ' . esc($item['answer']) ?>
+                                                    </div>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </details>
+                                <?php endif; ?>
+                                <?= nl2br(esc((string) $a['message'])) ?>
+                            </td>
+                            <td><?= esc(date('j M Y', strtotime((string) $a['created_at']))) ?></td>
+                            <td>
+                                <form method="post" action="<?= base_url('admin/careers/applications/' . (int) $a['id']) ?>">
+                                    <?= csrf_field() ?>
+                                    <select name="status" class="input-xs mb-1">
+                                        <?php foreach (CareerApplicationModel::STATUSES as $key => $label): ?>
+                                            <option value="<?= $key ?>" <?= $a['status'] === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <textarea name="admin_notes" rows="2" maxlength="2000" placeholder="Notes for us" class="input-xs mb-1 w-full"><?= esc((string) ($a['admin_notes'] ?? '')) ?></textarea>
+                                    <?php // CareersService::statusEmail(): only a status change sends, never the notes. ?>
+                                    <label class="mb-1 block text-xs"><input type="checkbox" name="notify" value="1" checked> Email the applicant if the status changes</label>
+                                    <button class="btn btn-primary btn-xs">Save</button>
+                                </form>
+                            </td>
+                        <?php endif; ?>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
 
-        <form method="get" action="<?= base_url('admin/careers/applications') ?>" class="mb-4 flex flex-wrap items-end gap-2">
-            <?php if ($status !== ''): ?><input type="hidden" name="status" value="<?= esc($status, 'attr') ?>"><?php endif; ?>
-            <div class="field mb-0">
-                <label for="f-role">Role</label>
-                <select id="f-role" name="role">
-                    <option value="">All roles</option>
-                    <option value="0" <?= $roleId === 0 ? 'selected' : '' ?>>General applications</option>
-                    <?php foreach ($roles as $r): ?>
-                        <option value="<?= (int) $r['id'] ?>" <?= $roleId === (int) $r['id'] ? 'selected' : '' ?>><?= esc($r['title']) ?><?= $r['status'] !== 'open' ? ' (' . esc($r['status']) . ')' : '' ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="field mb-0">
-                <label for="f-score">Screening</label>
-                <select id="f-score" name="min_score">
-                    <option value="">Any score</option>
-                    <?php for ($n = App\Libraries\Screening::COUNT; $n >= 1; $n--): ?>
-                        <option value="<?= $n ?>" <?= $minScore === $n ? 'selected' : '' ?>><?= $n ?> or more right</option>
-                    <?php endfor; ?>
-                </select>
-            </div>
-            <button class="btn btn-ghost btn-xs">Filter</button>
-        </form>
-
-        <?php if ($rows === []): ?>
-            <div class="empty">Nothing in this view.</div>
-        <?php else: ?>
-            <div class="tablewrap">
-                <table class="table">
-                    <thead>
-                        <tr><th>Applicant</th><th>Message</th><th>Received</th><th>Decision</th></tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $a): ?>
-                        <tr id="application-<?= (int) $a['id'] ?>">
-                            <?php if (! empty($a['purged_at'])): ?>
-                                <td colspan="4" class="text-sm text-slate-500 dark:text-slate-400">
-                                    Application <?= (int) $a['id'] ?> for <?= esc($a['role_title'] ?? 'a general role') ?>, deleted <?= esc(date('j M Y', strtotime((string) $a['purged_at']))) ?> under the retention rule.
-                                </td>
-                            <?php else: ?>
-                                <?php $link2 = safe_external_url($a['linkedin_url'] ?? ''); ?>
-                                <td>
-                                    <strong><?= esc($a['name']) ?></strong>
-                                    <div class="text-xs"><?= esc($a['role_title'] ?? 'General application') ?></div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">
-                                        <a href="mailto:<?= esc($a['email'], 'attr') ?>"><?= esc($a['email']) ?></a><?= ! empty($a['phone']) ? ' · ' . esc($a['phone']) : '' ?>
-                                    </div>
-                                    <?php if ($link2 !== ''): ?>
-                                        <div class="text-xs"><a href="<?= esc($link2, 'attr') ?>" target="_blank" rel="noopener nofollow"><?= esc(parse_url($link2, PHP_URL_HOST) ?: $link2) ?></a></div>
-                                    <?php endif; ?>
-                                    <?php if (! empty($a['cv_path'])): ?>
-                                        <a class="btn btn-ghost btn-xs mt-1" href="<?= base_url('admin/careers/applications/' . (int) $a['id'] . '/cv') ?>" target="_blank" rel="noopener">Open CV</a>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-sm">
-                                    <?php $marked = $svc->screeningResult($a); ?>
-                                    <?php if ($marked !== null): ?>
-                                        <?php $tone = $marked['score'] === $marked['total'] ? 'pill-published' : ($marked['score'] * 2 >= $marked['total'] ? 'pill-score-mid' : 'pill-pending'); ?>
-                                        <details class="disclosure mb-2">
-                                            <summary class="disclosure-summary"><span class="pill <?= $tone ?>"><?= (int) $marked['score'] ?>/<?= (int) $marked['total'] ?></span> <?= esc(ucfirst($svc->screening()->summary($marked))) ?></summary>
-                                            <ul class="disclosure-body text-sm">
-                                                <?php foreach ($marked['items'] as $item): ?>
-                                                    <li class="mb-1">
-                                                        <?php if (! empty($item['passage'])): ?><div class="text-xs text-slate-500 dark:text-slate-400"><?= esc($item['passage']) ?></div><?php endif; ?>
-                                                        <?= $item['correct'] ? '✓' : '✗' ?> <?= esc($item['prompt']) ?>
-                                                        <div class="text-xs text-slate-500 dark:text-slate-400">
-                                                            Answered: <?= esc($item['given'] !== '' ? $item['given'] : 'nothing') ?><?= $item['correct'] ? '' : '. Correct: ' . esc($item['answer']) ?>
-                                                        </div>
-                                                    </li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        </details>
-                                    <?php endif; ?>
-                                    <?= nl2br(esc((string) $a['message'])) ?>
-                                </td>
-                                <td><?= esc(date('j M Y', strtotime((string) $a['created_at']))) ?></td>
-                                <td>
-                                    <form method="post" action="<?= base_url('admin/careers/applications/' . (int) $a['id']) ?>">
-                                        <?= csrf_field() ?>
-                                        <select name="status" class="input-xs mb-1">
-                                            <?php foreach (CareerApplicationModel::STATUSES as $key => $label): ?>
-                                                <option value="<?= $key ?>" <?= $a['status'] === $key ? 'selected' : '' ?>><?= esc($label) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <textarea name="admin_notes" rows="2" maxlength="2000" placeholder="Notes for us" class="input-xs mb-1 w-full"><?= esc((string) ($a['admin_notes'] ?? '')) ?></textarea>
-                                        <?php // CareersService::statusEmail(): only a status change sends, never the notes. ?>
-                                        <label class="mb-1 block text-xs"><input type="checkbox" name="notify" value="1" checked> Email the applicant if the status changes</label>
-                                        <button class="btn btn-primary btn-xs">Save</button>
-                                    </form>
-                                </td>
-                            <?php endif; ?>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <?= $pager->links() ?>
-        <?php endif; ?>
-    </div>
-</section>
+        <?= pager_links($pager, 'applications') ?>
+    <?php endif; ?>
+</div>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Applications<?= $this->endSection() ?>

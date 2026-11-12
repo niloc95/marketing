@@ -581,6 +581,45 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertStringContainsString('"Booking request received",Email,a***@example.test,Sent', (string) $csv->response()->getBody());
     }
 
+    public function testNoticesAndSentMessagesPageWithTheSharedPager(): void
+    {
+        $member = BusinessMemberModel::forBusiness($this->listingId)->first();
+        for ($i = 1; $i <= 60; $i++) {
+            BookingInboxModel::forBusiness($this->listingId)->insert([
+                'listing_id' => $this->listingId, 'member_id' => (int) $member['id'], 'event' => 'pending', 'title' => 'Notice ' . $i,
+            ]);
+        }
+        for ($i = 1; $i <= 55; $i++) {
+            BookingDeliveryLogModel::forBusiness($this->listingId)->insert([
+                'listing_id' => $this->listingId, 'event' => 'confirmed', 'channel' => 'email', 'recipient_type' => 'customer',
+                'recipient' => 'a***@example.test', 'outcome' => 'sent', 'attempt' => 1,
+            ]);
+        }
+        $this->signIn();
+
+        $notices = (string) $this->get('business/notifications?page=2')->response()->getBody();
+        $this->assertMatchesRegularExpression('/Showing <b>51<\/b> to <b>60<\/b>\s+of <b>60<\/b> notices/', $notices);
+        $this->assertStringContainsString('Notice 1<', $notices);
+        $this->assertStringNotContainsString('Notice 60<', $notices);
+
+        $sent = (string) $this->get('business/notifications/sent?channel=email&page=2')->response()->getBody();
+        $this->assertMatchesRegularExpression('/Showing <b>51<\/b> to <b>55<\/b>\s+of <b>55<\/b> messages/', $sent);
+        // The filter rides along; page 1 has no page parameter.
+        $this->assertStringContainsString('href="' . base_url('business/notifications/sent') . '?channel=email" rel="prev"', $sent);
+    }
+
+    public function testTheBookingsTeamPageCarriesTheProfileTabs(): void
+    {
+        $this->signIn();
+
+        // Team is the bookings page while bookings are usable: it carries the
+        // profile's section tabs (ProfileSectionTabs), Team open.
+        $html = (string) $this->get('business/team')->response()->getBody();
+        $this->assertStringContainsString('class="page-tabs"', $html);
+        $this->assertMatchesRegularExpression('#class="page-tab is-active" aria-current="page"[^>]*>\s*Team#', $html);
+        $this->assertStringContainsString('href="' . base_url('business/profile/details') . '"', $html);
+    }
+
     // Helpers
 
     private function signIn(): void

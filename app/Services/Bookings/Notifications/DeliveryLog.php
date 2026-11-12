@@ -69,9 +69,26 @@ class DeliveryLog
      */
     public static function latest(int $listingId, array $filters = [], int $limit = 100, int $offset = 0): array
     {
-        $model = BookingDeliveryLogModel::forBusiness($listingId)
+        $model = self::filtered(BookingDeliveryLogModel::forBusiness($listingId)
             ->select('xs_booking_delivery_logs.*, a.reference, a.service_name, a.start_at')
-            ->join('xs_booking_appointments a', 'a.id = xs_booking_delivery_logs.appointment_id AND a.listing_id = xs_booking_delivery_logs.listing_id', 'left');
+            ->join('xs_booking_appointments a', 'a.id = xs_booking_delivery_logs.appointment_id AND a.listing_id = xs_booking_delivery_logs.listing_id', 'left'), $filters);
+
+        return $model->orderBy('xs_booking_delivery_logs.id', 'DESC')->findAll($limit, $offset);
+    }
+
+    /**
+     * How many lines latest() pages through with these filters, for the pager.
+     *
+     * @param array{channel?:string,outcome?:string} $filters
+     */
+    public static function count(int $listingId, array $filters = []): int
+    {
+        return self::filtered(BookingDeliveryLogModel::forBusiness($listingId), $filters)->countAllResults();
+    }
+
+    /** The channel and outcome filters, only for values the log knows. */
+    private static function filtered(BookingDeliveryLogModel $model, array $filters): BookingDeliveryLogModel
+    {
         if (in_array($filters['channel'] ?? '', \Config\BookingNotifications::CHANNELS, true)) {
             $model->where('xs_booking_delivery_logs.channel', $filters['channel']);
         }
@@ -79,7 +96,7 @@ class DeliveryLog
             $model->where('xs_booking_delivery_logs.outcome', $filters['outcome']);
         }
 
-        return $model->orderBy('xs_booking_delivery_logs.id', 'DESC')->findAll($limit, $offset);
+        return $model;
     }
 
     /** Delete lines older than the cut off, for every business. Returns how many. */

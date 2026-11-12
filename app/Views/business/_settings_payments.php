@@ -16,7 +16,7 @@ $input  = static fn (string $provider, string $field, string $label, bool $secre
 ?>
 <div class="max-w-2xl space-y-6">
     <section class="form-card">
-        <h2 class="mb-2 font-bold">Deposits</h2>
+        <h2 class="mb-2 section-title">Deposits</h2>
         <p class="text-sm text-slate-600 dark:text-slate-300">Customers who book online pay the deposit into your own PayFast or Paystack account. The money goes straight to you: WebScheduler Local takes no part of it and never holds it. Refunds are done in your PayFast or Paystack account.</p>
         <?php if ($payments['services'] === []): ?>
             <p class="mt-3 text-sm">None of your services asks for a deposit yet. Set a deposit percentage on a <a class="underline" href="<?= base_url('business/services') ?>">service</a>.</p>
@@ -31,7 +31,7 @@ $input  = static fn (string $provider, string $field, string $label, bool $secre
     </section>
 
     <section class="form-card" id="account">
-        <h2 class="mb-2 font-bold">Your payment account</h2>
+        <h2 class="mb-2 section-title">Your payment account</h2>
         <?php if (! $payments['canEncrypt']): ?>
             <p class="alert alert-info">Connecting a payment account is not available yet. Customers book without a deposit.</p>
         <?php else: ?>

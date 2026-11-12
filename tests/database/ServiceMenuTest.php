@@ -264,7 +264,7 @@ final class ServiceMenuTest extends CIUnitTestCase
 
         foreach ([
             $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/services'),
-            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
+            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id . '/services'),
         ] as $result) {
             $result->assertOK();
             $html = $result->getBody();
@@ -279,10 +279,30 @@ final class ServiceMenuTest extends CIUnitTestCase
         // The description is on the owner's Details page (the form is split into pages).
         foreach ([
             $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/details'),
-            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id),
+            $this->withSession(['dir_admin' => true])->get('admin/edit/' . $id . '/details'),
         ] as $result) {
             $this->assertStringContainsString('data-rich-text-max="' . \App\Libraries\RichText::MAX_PLAIN_LENGTH . '"', $result->getBody());
         }
+    }
+
+    public function testTheOwnerProfileIsOnePageOfSectionPanesWithItsScript(): void
+    {
+        $id   = $this->publishedListing();
+        $html = (string) $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/profile/services')->response()->getBody();
+
+        // directory.js runs the form. It was missing from 10 to 12 Nov 2026:
+        // a view() with saveData false inside the page wiped the layout's flag.
+        $this->assertStringContainsString('assets/directory.js', $html);
+        $this->assertStringContainsString('data-panes', $html);
+        // The free sections are panes, each its own form, the asked one open;
+        // Team and Branches are locked for a Free profile, so links only.
+        foreach (['details', 'where', 'services', 'photos'] as $key) {
+            $this->assertStringContainsString('id="profile-form-' . $key . '"', $html);
+            $this->assertMatchesRegularExpression('#data-pane="' . $key . '"[^>]*' . ($key === 'services' ? '(?<!hidden)>' : 'hidden>') . '#', $html);
+        }
+        $this->assertStringNotContainsString('id="profile-form-team"', $html);
+        $this->assertStringContainsString('form="profile-form-services"', $html);
+        $this->assertMatchesRegularExpression('#<h1 class="shell-title" data-shell-title>\s*Services\s*</h1>#', $html);
     }
 
     // -------------------------------------------------------------- profile

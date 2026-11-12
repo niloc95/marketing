@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 <div class="mx-auto max-w-md">
     <div class="form-card">
-        <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Reset your password</h1>
+        <h1 class="mb-1.5 page-title">Reset your password</h1>
         <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">We email you a link to choose a new one. It works for an hour.</p>
         <form method="post" action="<?= base_url('business/password') ?>">
             <?= csrf_field() ?>

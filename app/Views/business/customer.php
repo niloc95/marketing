@@ -20,11 +20,7 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/customers') ?>">Customers</a></p>
-<div class="flex flex-wrap items-center gap-3">
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white"><?= esc($customer['name']) ?></h1>
-    <a href="<?= base_url('business/appointments/new?customer=' . $customer['hash']) ?>" class="btn btn-primary btn-xs ml-auto"><?= lucide('plus', 'h-4 w-4') ?> Book</a>
-</div>
-<p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+<p class="text-sm text-slate-600 dark:text-slate-300">
     <?= esc(implode(' · ', array_filter([(string) ($customer['email'] ?? ''), (string) ($customer['phone'] ?? '')]))) ?>
 </p>
 <?php if (! empty($optedOut)): ?>
@@ -40,14 +36,14 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 
 <dl class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
     <?php foreach (['total' => 'Appointments', 'upcoming' => 'Upcoming', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'no_show' => 'No show'] as $k => $label): ?>
-        <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+        <div class="rounded-inner border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
             <dt class="text-xs text-slate-500 dark:text-slate-400"><?= $label ?></dt>
             <dd class="text-lg font-bold"><?= (int) $stats[$k] ?></dd>
         </div>
     <?php endforeach ?>
 </dl>
 
-<h2 class="mt-8 mb-3 text-lg font-bold text-slate-900 dark:text-white">Appointments</h2>
+<h2 class="mt-8 mb-3 section-title">Appointments</h2>
 <?php if ($history === []): ?>
     <p class="text-sm text-slate-500 dark:text-slate-400">None yet.</p>
 <?php else: ?>
@@ -70,19 +66,19 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 
 <form method="post" action="<?= base_url('business/customers/' . $customer['hash']) ?>" class="form-card form-card-narrow mt-8" id="edit">
     <?= csrf_field() ?>
-    <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Details</h2>
+    <h2 class="mb-4 section-title">Details</h2>
     <?= view('business/_customer_fields', ['old' => $old, 'errors' => $errors, 'customFields' => $customFields]) ?>
     <button type="submit" class="btn btn-primary">Save</button>
 </form>
 
 <?php if ($impact !== null): ?>
     <section class="form-card form-card-narrow mt-8" id="their-data">
-        <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Their data</h2>
+        <h2 class="mb-2 section-title">Their data</h2>
         <p class="text-sm">If they ask what you hold about them, download it all in one file: their details, answers, appointments, deposits and the messages sent to them. We keep customers for <?= (int) config('Bookings')->retentionMonths ?> months after their last appointment, then remove their personal details.</p>
         <a class="btn btn-ghost mt-4" href="<?= base_url('business/customers/' . $customer['hash'] . '/export') ?>" download>Download their data</a>
     </section>
     <section class="form-card form-card-narrow mt-8" id="delete">
-        <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Delete this customer</h2>
+        <h2 class="mb-2 section-title">Delete this customer</h2>
         <?php if (! $impact['can_delete']): ?>
             <p class="text-sm">They have <?= $impact['upcoming'] ?> upcoming <?= $impact['upcoming'] === 1 ? 'appointment' : 'appointments' ?>. Cancel or move <?= $impact['upcoming'] === 1 ? 'it' : 'them' ?> first.</p>
         <?php else: ?>
@@ -94,4 +90,10 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
         <?php endif ?>
     </section>
 <?php endif ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?><?= esc($customer['name']) ?><?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<a href="<?= base_url('business/appointments/new?customer=' . $customer['hash']) ?>" class="btn btn-primary btn-xs"><?= lucide('plus', 'h-4 w-4') ?> Book</a>
 <?= $this->endSection() ?>

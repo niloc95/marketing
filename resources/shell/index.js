@@ -7,6 +7,7 @@
 import { initSidebar } from './sidebar.js';
 import { initSpa } from './spa.js';
 import { startPages } from './lifecycle.js';
+import './tabs.js';
 
 export { registerPage } from './lifecycle.js';
 

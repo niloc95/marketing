@@ -50,4 +50,10 @@ class BookingAudit
             ->orderBy('xs_booking_audit_logs.id', 'DESC')
             ->findAll(self::PAGE_SIZE, ($page - 1) * self::PAGE_SIZE);
     }
+
+    /** How many lines recent() pages through, for the pager. */
+    public function count(int $listingId): int
+    {
+        return BookingAuditLogModel::forBusiness($listingId)->countAllResults();
+    }
 }

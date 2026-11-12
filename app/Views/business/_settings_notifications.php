@@ -20,7 +20,7 @@ $current   = static function (string $value) use ($reminders): array {
 ?>
 <form method="post" action="<?= base_url('business/settings/notifications') ?>" class="form-card">
     <?= csrf_field() ?>
-    <h2 class="mb-2 font-bold">What customers get</h2>
+    <h2 class="mb-2 section-title">What customers get</h2>
     <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Emails are sent by WebScheduler Local in your name, and replies reach you. WhatsApp needs your own account (below) and is charged by that provider.</p>
     <div class="table-scroll mb-6">
         <table class="table">
@@ -38,7 +38,7 @@ $current   = static function (string $value) use ($reminders): array {
         </table>
     </div>
 
-    <h2 class="mb-2 font-bold">Reminders</h2>
+    <h2 class="mb-2 section-title">Reminders</h2>
     <div class="grid gap-4 sm:grid-cols-2">
         <?php foreach (['reminder_primary' => 'First reminder', 'reminder_secondary' => 'Second reminder'] as $field => $label): ?>
             <div class="field">
@@ -53,7 +53,7 @@ $current   = static function (string $value) use ($reminders): array {
     </div>
     <p class="mb-6 text-xs text-slate-500 dark:text-slate-400">A reminder is not sent when the booking was made after its time, for example a 1 day reminder for a booking made this morning for this afternoon.</p>
 
-    <h2 class="mb-2 font-bold">What your team gets</h2>
+    <h2 class="mb-2 section-title">What your team gets</h2>
     <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">When a customer books, moves or cancels online, the people who work with that team member see it under Notices. Each person chooses there whether to get it by email too.</p>
     <div class="mb-6 flex flex-wrap gap-5 text-sm">
         <?php foreach (Catalog::TEAM_EVENTS as $event): ?>
@@ -61,7 +61,7 @@ $current   = static function (string $value) use ($reminders): array {
         <?php endforeach ?>
     </div>
 
-    <h2 class="mb-2 font-bold">Sender</h2>
+    <h2 class="mb-2 section-title">Sender</h2>
     <div class="grid gap-4 sm:grid-cols-2">
         <div class="field">
             <label for="n-from">Name emails come from</label>
@@ -77,7 +77,7 @@ $current   = static function (string $value) use ($reminders): array {
 </form>
 
 <section class="form-card mt-6" id="wording">
-    <h2 class="mb-2 font-bold">Wording</h2>
+    <h2 class="mb-2 section-title">Wording</h2>
     <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Every email also shows the booking details, a button to change or cancel, and a link to stop emails. Choose a message to change its words.</p>
     <div class="table-scroll mb-4">
         <table class="table">
@@ -96,11 +96,11 @@ $current   = static function (string $value) use ($reminders): array {
     </div>
     <?php if ($edit !== null): ?>
         <?php [$event, $ch] = $edit; $t = $templates[$event][$ch]; ?>
-        <form method="post" action="<?= base_url('business/settings/notifications/template') ?>" class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+        <form method="post" action="<?= base_url('business/settings/notifications/template') ?>" class="rounded-surface border border-slate-200 p-4 dark:border-slate-700">
             <?= csrf_field() ?>
             <input type="hidden" name="event" value="<?= esc($event, 'attr') ?>">
             <input type="hidden" name="channel" value="<?= esc($ch, 'attr') ?>">
-            <h3 class="mb-3 font-semibold"><?= esc(Catalog::EVENTS[$event]) ?>, <?= Catalog::CHANNEL_LABELS[$ch] ?></h3>
+            <h3 class="mb-3 subsection-title"><?= esc(Catalog::EVENTS[$event]) ?>, <?= Catalog::CHANNEL_LABELS[$ch] ?></h3>
             <?php if ($ch === 'email'): ?>
                 <div class="field">
                     <label for="t-subject">Subject</label>
@@ -141,7 +141,7 @@ $current   = static function (string $value) use ($reminders): array {
 <?php foreach (['whatsapp' => 'WhatsApp'] as $channel => $title): ?>
     <?php $acc = $messages[$channel]; ?>
     <section class="form-card mt-6" id="<?= $channel ?>">
-        <h2 class="mb-2 font-bold"><?= $title ?> account</h2>
+        <h2 class="mb-2 section-title"><?= $title ?> account</h2>
         <?php if (! $messages['canEncrypt']): ?>
             <p class="alert alert-info">Saving <?= $title ?> accounts is not available yet. Emails work as they are.</p>
         <?php else: ?>

@@ -14,10 +14,10 @@ $new = $invite !== null && empty($invite['password_hash']);
 <div class="mx-auto max-w-md">
     <div class="form-card">
         <?php if ($invite === null): ?>
-            <h1 class="mb-2 text-xl font-bold text-slate-900 dark:text-white">This invitation has expired</h1>
+            <h1 class="mb-2 page-title">This invitation has expired</h1>
             <p class="text-sm text-slate-600 dark:text-slate-300">Invitations work for 7 days and only once. Ask the business to send a new one.</p>
         <?php else: ?>
-            <h1 class="mb-1.5 text-xl font-bold text-slate-900 dark:text-white">Join <?= esc((string) $invite['display_name']) ?></h1>
+            <h1 class="mb-1.5 page-title">Join <?= esc((string) $invite['display_name']) ?></h1>
             <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">As <?= esc($roleLabel) ?>, signed in with <?= esc((string) $invite['account_email']) ?>.</p>
             <form method="post" action="<?= base_url('business/invite/' . $token) ?>">
                 <?= csrf_field() ?>

@@ -43,7 +43,6 @@ $byDate = array_column($days, null, 'date');
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="text-xl font-bold text-slate-900 dark:text-white">When can customers book?</h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The free times for all your services or one, everyone or one person, on a day, a week, a month or a year. Times are in <?= esc($timezone) ?>.</p>
 
 <?php if ($services === []): ?>
@@ -90,7 +89,7 @@ $byDate = array_column($days, null, 'date');
         <a class="btn btn-ghost btn-xs" href="<?= esc($link(['date' => $shift(-1)]), 'attr') ?>" aria-label="Earlier"><?= lucide('chevron-left', 'h-4 w-4') ?></a>
         <a class="btn btn-ghost btn-xs" href="<?= esc($link(['date' => $today]), 'attr') ?>">Today</a>
         <a class="btn btn-ghost btn-xs" href="<?= esc($link(['date' => $shift(1)]), 'attr') ?>" aria-label="Later"><?= lucide('chevron-right', 'h-4 w-4') ?></a>
-        <h2 class="ml-2 text-lg font-bold text-slate-900 dark:text-white"><?= esc($label) ?></h2>
+        <h2 class="ml-2 section-title"><?= esc($label) ?></h2>
     </div>
     <?php if ($public && $to > $horizon): ?>
         <p class="avail-note">Customers can book up to <?= esc($fmt($horizon, 'l j F Y')) ?> (Settings, Booking rules). Days after that show as "Not open yet"; tick "As the business" to see them.</p>
@@ -104,7 +103,7 @@ $byDate = array_column($days, null, 'date');
                 <p class="mb-3 text-sm text-slate-600 dark:text-slate-300"><?= $day['count'] ?> start <?= $day['count'] === 1 ? 'time' : 'times' ?> free.</p>
                 <?php foreach ($day['services'] as $s): ?>
                     <section class="panel mb-3">
-                        <h3 class="mb-2 font-semibold"><?= esc($s['name']) ?></h3>
+                        <h3 class="mb-2 subsection-title"><?= esc($s['name']) ?></h3>
                         <ul class="flex flex-wrap gap-2">
                             <?php foreach ($s['times'] as $t): ?>
                                 <li class="avail-time" title="<?= esc(implode(', ', $t['people']), 'attr') ?>">
@@ -131,7 +130,7 @@ $byDate = array_column($days, null, 'date');
         <div class="<?= $view === 'year' ? 'avail-year' : 'avail-month-wrap' ?> mt-4">
             <?php for ($m = new DateTimeImmutable($from); $m->format('Y-m-d') <= $to; $m = $m->modify('first day of next month')): ?>
                 <section class="panel avail-month">
-                    <?php if ($view === 'year'): ?><h3 class="mb-2 font-semibold"><a class="hover:underline" href="<?= esc($link(['view' => 'month', 'date' => $m->format('Y-m-d')]), 'attr') ?>"><?= $m->format('F') ?></a></h3><?php endif ?>
+                    <?php if ($view === 'year'): ?><h3 class="mb-2 subsection-title"><a class="hover:underline" href="<?= esc($link(['view' => 'month', 'date' => $m->format('Y-m-d')]), 'attr') ?>"><?= $m->format('F') ?></a></h3><?php endif ?>
                     <div class="avail-grid">
                         <?php foreach (['M', 'T', 'W', 'T', 'F', 'S', 'S'] as $wd): ?><span class="avail-wd"><?= $wd ?></span><?php endforeach ?>
                         <?php for ($i = 1; $i < (int) $m->format('N'); $i++): ?><span></span><?php endfor ?>
@@ -158,3 +157,5 @@ $byDate = array_column($days, null, 'date');
     <?php endif ?>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>When can customers book?<?= $this->endSection() ?>

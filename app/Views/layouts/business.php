@@ -15,6 +15,11 @@
  *
  * @var string|null $title page title, when the sidebar item's name is not it
  */
+// A page built from the public partials (profile, reviews, jobs, badge) runs
+// directory.js. It says so in a section as well as the data: a view() call
+// with saveData false inside the page replaces the data this layout is drawn
+// with, which kept directory.js off the profile pages (fixed 12 Nov 2026).
+$profileForm = ! empty($profileForm) || trim($this->renderSection('profile_form', true)) !== '';
 $context = service('businessContext');
 $listing = $context->isSet() ? $context->listing() : null;
 $groups  = [];
@@ -203,7 +208,7 @@ foreach ($attrs as $name => $value) {
 
 <?= $this->section('page_title') ?><?= esc($pageTitle) ?><?= $this->endSection() ?>
 
-<?= $this->section('main_class') ?><?= 'mx-auto w-full max-w-6xl px-4 py-6' ?><?= $this->endSection() ?>
+<?= $this->section('main_class') ?><?= 'w-full px-4 py-6 lg:px-8' ?><?= $this->endSection() ?>
 
 <?= $this->section('main_top') ?>
 <?php foreach (['success' => 'alert-success', 'info' => 'alert-info', 'error' => 'alert-error'] as $key => $cls): ?>
@@ -236,7 +241,7 @@ if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::req
 <?php if (service('businessContext')->hasAccount()): ?>
     <?php // The inactivity warning (resources/business/inactivity.js), ported from Bookings. ?>
     <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" id="biz-idle-warning" role="alertdialog" aria-modal="true" aria-labelledby="biz-idle-title">
-        <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl dark:bg-slate-800">
+        <div class="w-full max-w-sm rounded-surface bg-white p-6 text-center shadow-2xl dark:bg-slate-800">
             <h2 id="biz-idle-title" class="mb-2 text-lg font-bold">You will be signed out soon</h2>
             <p class="text-sm text-slate-600 dark:text-slate-300">To keep your account safe, we sign you out after two hours without activity. Time left:</p>
             <p class="my-3 font-mono text-3xl font-bold text-amber-600 dark:text-amber-400" data-biz-idle-countdown>5:00</p>

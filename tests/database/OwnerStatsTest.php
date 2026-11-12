@@ -209,7 +209,7 @@ final class OwnerStatsTest extends CIUnitTestCase
     {
         $this->day($this->bakery, 'today', ['views' => 3]);
 
-        $html = $this->admin('admin/edit/' . $this->bakery);
+        $html = $this->admin('admin/edit/' . $this->bakery . '/admin');
 
         $this->assertStringContainsString('id="profile-stats"', $html);
         $this->assertStringContainsString('Full statistics', $html);

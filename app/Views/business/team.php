@@ -15,7 +15,10 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="text-xl font-bold text-slate-900 dark:text-white">Team</h1>
+<?php // This page is one of the profile's sections: the same tabs as /business/profile, docked. ?>
+<?php if (! empty($profileTabs)): ?>
+    <?= view('layouts/_profile_tabs', ['tabs' => $profileTabs, 'label' => 'Profile sections'], ['saveData' => false]) ?>
+<?php endif ?>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The people customers can book, and when they work.</p>
 
 <div class="mt-5 space-y-2">
@@ -41,7 +44,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     <?php // One person, one record (T31): adding someone here adds their profile team card too. ?>
     <form method="post" action="<?= base_url('business/team') ?>" class="form-card mt-4">
         <?= csrf_field() ?>
-        <h2 class="mb-3 font-bold">Add a person</h2>
+        <h2 class="mb-3 section-title">Add a person</h2>
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="field"><label for="prov-name">Name</label><input id="prov-name" type="text" name="name" maxlength="150" required></div>
             <div class="field"><label for="prov-role">Position <span class="font-normal text-slate-500">(optional)</span></label><input id="prov-role" type="text" name="role" maxlength="120" placeholder="e.g. Senior stylist"></div>
@@ -63,7 +66,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     <?php if ($profileTeam !== []): ?>
         <section class="panel mt-4">
-            <h2 class="mb-1 font-bold">On your profile, not in bookings</h2>
+            <h2 class="mb-1 section-title">On your profile, not in bookings</h2>
             <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">People from your profile&rsquo;s team. Add them here to give them hours, services and a calendar.</p>
             <ul class="space-y-2">
                 <?php foreach ($profileTeam as $t): ?>
@@ -84,7 +87,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     <?php endif ?>
 
     <section class="mt-8" id="access">
-        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Who can sign in</h2>
+        <h2 class="section-title">Who can sign in</h2>
         <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Admins manage everything. Team members see their own bookings. Reception books for the people they are assigned to.</p>
         <div class="table-scroll">
             <table class="table">
@@ -124,7 +127,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
         <form method="post" action="<?= base_url('business/team/invite') ?>" class="form-card mt-4">
             <?= csrf_field() ?>
-            <h3 class="mb-3 font-bold">Invite someone</h3>
+            <h3 class="mb-3 subsection-title">Invite someone</h3>
             <div class="grid gap-4 sm:grid-cols-2">
                 <div class="field"><label for="inv-name">Name</label><input id="inv-name" type="text" name="name" maxlength="120" required></div>
                 <div class="field"><label for="inv-email">Email</label><input id="inv-email" type="email" name="email" required></div>
@@ -152,3 +155,5 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     </section>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Team<?= $this->endSection() ?>

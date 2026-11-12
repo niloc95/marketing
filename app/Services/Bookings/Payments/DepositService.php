@@ -535,10 +535,28 @@ class DepositService
         if ($scope === []) {
             return [];
         }
-        $q = db_connect()->table('xs_booking_payments p')
+
+        return $this->paymentsQuery($scope, $status)
             ->select('p.*, a.hash AS appointment_hash, a.start_at, a.service_name, a.provider_name, a.payment_status, c.first_name, c.last_name')
-            ->join('xs_booking_appointments a', 'a.id = p.appointment_id AND a.listing_id = p.listing_id', 'left')
             ->join('xs_booking_customers c', 'c.id = a.customer_id AND c.listing_id = a.listing_id', 'left')
+            ->orderBy('p.id', 'DESC')->limit($limit, $offset)->get()->getResultArray();
+    }
+
+    /**
+     * How many payments payments() pages through, for the pager.
+     *
+     * @param list<int>|null $scope
+     */
+    public function countPayments(?array $scope, string $status): int
+    {
+        return $scope === [] ? 0 : $this->paymentsQuery($scope, $status)->countAllResults();
+    }
+
+    /** @param list<int>|null $scope */
+    private function paymentsQuery(?array $scope, string $status): \CodeIgniter\Database\BaseBuilder
+    {
+        $q = db_connect()->table('xs_booking_payments p')
+            ->join('xs_booking_appointments a', 'a.id = p.appointment_id AND a.listing_id = p.listing_id', 'left')
             ->where('p.listing_id', $this->listingId);
         if ($scope !== null) {
             $q->whereIn('a.provider_id', $scope);
@@ -547,7 +565,7 @@ class DepositService
             $q->where('p.status', $status);
         }
 
-        return $q->orderBy('p.id', 'DESC')->limit($limit, $offset)->get()->getResultArray();
+        return $q;
     }
 
     /**

@@ -9,7 +9,6 @@
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <div class="mx-auto max-w-lg space-y-5">
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Your account</h1>
 
     <?php if ($welcome && ! $hasPassword): ?>
         <div class="alert alert-success" role="status">Online bookings are on. Choose a password so you can sign in to your business from any device.</div>
@@ -28,7 +27,7 @@
     </div>
 
     <div class="form-card" id="password">
-        <h2 class="mb-1.5 font-bold text-slate-900 dark:text-white"><?= $hasPassword ? 'Change your password' : 'Choose a password' ?></h2>
+        <h2 class="mb-1.5 section-title"><?= $hasPassword ? 'Change your password' : 'Choose a password' ?></h2>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">At least <?= $minLength ?> characters.</p>
         <form method="post" action="<?= base_url('business/account/password') ?>">
             <?= csrf_field() ?>
@@ -53,3 +52,5 @@
     <p class="text-sm"><a class="underline" href="<?= base_url('business/choose') ?>">Your businesses</a></p>
 </div>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Your account<?= $this->endSection() ?>

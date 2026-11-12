@@ -28,8 +28,11 @@ $archived   = $provider['archived_at'] !== null;
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
+<?php // This page is one of the profile's sections: the same tabs as /business/profile, docked. ?>
+<?php if (! empty($profileTabs)): ?>
+    <?= view('layouts/_profile_tabs', ['tabs' => $profileTabs, 'label' => 'Profile sections'], ['saveData' => false]) ?>
+<?php endif ?>
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/team') ?>">Team</a></p>
-<h1 class="mb-5 text-xl font-bold text-slate-900 dark:text-white"><?= esc((string) $provider['name']) ?></h1>
 
 <div class="grid gap-6 lg:grid-cols-2">
     <form method="post" action="<?= base_url('business/team/' . $provider['id']) ?>" class="form-card" enctype="multipart/form-data">
@@ -89,7 +92,7 @@ $archived   = $provider['archived_at'] !== null;
 
     <form method="post" action="<?= base_url('business/team/' . $provider['id'] . '/hours') ?>" class="form-card" id="hours">
         <?= csrf_field() ?>
-        <h2 class="mb-1 font-bold">Working hours</h2>
+        <h2 class="mb-1 section-title">Working hours</h2>
         <?php if ($hoursMode === ProviderWeek::PROFILE): ?>
             <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
                 <?= esc((string) $provider['name']) ?> works your opening hours. When you change your opening hours, customers can book the new times at once.
@@ -147,7 +150,7 @@ $archived   = $provider['archived_at'] !== null;
                 $rows = $h['periods'];
                 $rows[] = ['start' => '', 'end' => '', 'location_id' => null, 'service_ids' => null];
                 ?>
-                <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                <div class="rounded-inner border border-slate-200 p-3 dark:border-slate-700">
                     <label class="flex items-center gap-2 font-semibold"><input type="checkbox" name="hours[<?= $day ?>][active]" value="1"<?= $h['active'] ? ' checked' : '' ?>> <?= $label ?></label>
                     <?php foreach ($rows as $i => $r): ?>
                         <?php $name = 'hours[' . $day . '][periods][' . $i . ']'; $blank = $r['start'] === ''; ?>
@@ -201,3 +204,5 @@ $archived   = $provider['archived_at'] !== null;
     </form>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?><?= esc((string) $provider['name']) ?><?= $this->endSection() ?>

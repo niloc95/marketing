@@ -20,16 +20,16 @@ class Payments extends BaseController
         $deposits = new DepositService($context->listing());
         $status   = (string) $this->request->getGet('status');
         $status   = isset(DepositService::PAYMENT_LABELS[$status]) ? $status : '';
-        $page     = max(1, (int) $this->request->getGet('page'));
+        $pager    = pager_result((int) $this->request->getGet('page'), 50, $deposits->countPayments($scope, $status));
 
         return view('business/payments', [
-            'rows'     => $deposits->payments($scope, $status, 51, ($page - 1) * 50),
+            'rows'     => $deposits->payments($scope, $status, 50, ($pager['page'] - 1) * 50),
             'refund'   => $deposits->toRefund($scope),
             'received' => $deposits->receivedThisMonth($scope),
             'ready'    => $deposits->gateway() !== null,
             'canSetUp' => $context->can('settings.manage'),
             'status'   => $status,
-            'page'     => $page,
+            'pager'    => $pager,
             'tz'       => $context->timezone(),
         ]);
     }

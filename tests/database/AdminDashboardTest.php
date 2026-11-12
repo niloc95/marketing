@@ -55,7 +55,7 @@ final class AdminDashboardTest extends CIUnitTestCase
     {
         $html = $this->admin('admin');
 
-        $this->assertStringContainsString('<h1 class="text-xl font-bold text-slate-900 dark:text-white">Dashboard</h1>', $html);
+        $this->assertMatchesRegularExpression('#<h1 class="shell-title" data-shell-title>\s*Dashboard\s*</h1>#', $html);
         $this->assertMatchesRegularExpression('#class="shell-link is-active" href="[^"]*/admin" title="Dashboard" aria-current="page">#', $html);
         $this->assertStringContainsString('Nothing waiting in any queue.', $html);
     }

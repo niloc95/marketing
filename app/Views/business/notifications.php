@@ -14,20 +14,10 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="mb-4 flex flex-wrap items-center gap-3">
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Notices</h1>
-    <?php if ($unread > 0): ?>
-        <form method="post" action="<?= base_url('business/notifications/read') ?>" class="ml-auto">
-            <?= csrf_field() ?>
-            <button type="submit" class="btn btn-ghost btn-xs">Mark all as read</button>
-        </form>
-    <?php endif ?>
-</div>
-
 <?php if ($items === []): ?>
     <p class="text-sm text-slate-600 dark:text-slate-300">Nothing yet. When a customer books, moves or cancels online, you see it here.</p>
 <?php else: ?>
-    <ul class="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+    <ul class="divide-y divide-slate-200 rounded-surface border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
         <?php foreach ($items as $n): ?>
             <li class="flex flex-wrap items-start gap-3 p-3<?= $n['read_at'] === null ? ' bg-primary-50 dark:bg-slate-800' : '' ?>">
                 <div class="min-w-0 flex-1">
@@ -50,15 +40,25 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
             </li>
         <?php endforeach ?>
     </ul>
+    <?= view('directory/_pager', ['result' => $pager, 'baseUrl' => base_url('business/notifications'), 'query' => [], 'noun' => 'notices'], ['saveData' => false]) ?>
 <?php endif ?>
 
 <form method="post" action="<?= base_url('business/notifications/preferences') ?>" class="form-card form-card-narrow mt-8">
     <?= csrf_field() ?>
-    <h2 class="mb-2 font-bold">Email me too</h2>
+    <h2 class="mb-2 section-title">Email me too</h2>
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="notify" value="1"<?= $notify ? ' checked' : '' ?>> Email me when a customer books, moves or cancels online</label>
     <button type="submit" class="btn btn-primary mt-3">Save</button>
 </form>
 <?php if ($canLog): ?>
     <p class="mt-6 text-sm"><a class="underline" href="<?= base_url('business/notifications/sent') ?>">See messages sent to customers and the team</a></p>
+<?php endif ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<?php if ($unread > 0): ?>
+    <form method="post" action="<?= base_url('business/notifications/read') ?>">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn-ghost btn-xs">Mark all as read</button>
+    </form>
 <?php endif ?>
 <?= $this->endSection() ?>

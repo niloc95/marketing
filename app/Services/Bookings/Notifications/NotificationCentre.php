@@ -30,13 +30,19 @@ class NotificationCentre
     }
 
     /** @return list<array<string,mixed>> */
-    public function latest(int $limit = 50): array
+    public function latest(int $limit = 50, int $offset = 0): array
     {
         return BookingInboxModel::forBusiness($this->listingId)
             ->select('xs_booking_inbox.*, a.hash AS appointment_hash, a.start_at')
             ->join('xs_booking_appointments a', 'a.id = xs_booking_inbox.appointment_id AND a.listing_id = xs_booking_inbox.listing_id', 'left')
             ->where('xs_booking_inbox.member_id', $this->memberId)
-            ->orderBy('xs_booking_inbox.id', 'DESC')->findAll($limit);
+            ->orderBy('xs_booking_inbox.id', 'DESC')->findAll($limit, $offset);
+    }
+
+    /** How many notices latest() pages through, for the pager. */
+    public function count(): int
+    {
+        return BookingInboxModel::forBusiness($this->listingId)->where('member_id', $this->memberId)->countAllResults();
     }
 
     public function unread(): int

@@ -3,26 +3,19 @@
  * Sent messages (Business\Notifications::sent): the delivery log, newest
  * first, with addresses masked. Admins only.
  *
- * @var list<array<string,mixed>>                 $rows  up to 51: the 51st means there is a next page
+ * @var list<array<string,mixed>>                 $rows  one page, 50
  * @var array{channel:string,outcome:string}      $filters
- * @var int                                       $page
+ * @var array{page:int,totalPages:int,perPage:int,total:int} $pager  pager_result()
  * @var string                                    $tz
  */
 use App\Services\Bookings\Notifications\DeliveryLog;
 use Config\BookingNotifications as Catalog;
 
 $zone  = new DateTimeZone($tz);
-$more  = count($rows) > 50;
-$rows  = array_slice($rows, 0, 50);
-$query = static fn (array $extra): string => http_build_query(array_filter($extra + $filters));
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/settings/notifications') ?>">Settings, Messages</a></p>
-<div class="mb-4 flex flex-wrap items-center gap-3">
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Sent messages</h1>
-    <a class="btn btn-ghost btn-xs ml-auto" href="<?= base_url('business/notifications/sent.csv') ?>" download>Download</a>
-</div>
 <form method="get" action="<?= base_url('business/notifications/sent') ?>" class="mb-4 flex flex-wrap items-end gap-3">
     <div class="field mb-0">
         <label for="f-channel">Channel</label>
@@ -67,9 +60,12 @@ $query = static fn (array $extra): string => http_build_query(array_filter($extr
             </tbody>
         </table>
     </div>
-    <nav class="mt-4 flex gap-2" aria-label="Pages">
-        <?php if ($page > 1): ?><a class="btn btn-ghost btn-xs" href="?<?= esc($query(['page' => $page - 1]), 'attr') ?>">Newer</a><?php endif ?>
-        <?php if ($more): ?><a class="btn btn-ghost btn-xs" href="?<?= esc($query(['page' => $page + 1]), 'attr') ?>">Older</a><?php endif ?>
-    </nav>
+    <?= view('directory/_pager', ['result' => $pager, 'baseUrl' => base_url('business/notifications/sent'), 'query' => $filters, 'noun' => 'messages'], ['saveData' => false]) ?>
 <?php endif ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Sent messages<?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<a class="btn btn-ghost btn-xs" href="<?= base_url('business/notifications/sent.csv') ?>" download>Download</a>
 <?= $this->endSection() ?>

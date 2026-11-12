@@ -9,11 +9,10 @@ use App\Services\Bookings\CatalogueService;
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Services</h1>
-    <a class="btn btn-primary" href="<?= base_url('business/services/new') ?>"><?= lucide('plus', 'h-4 w-4') ?> Add a service</a>
-</div>
-
+<?php // This page is one of the profile's sections: the same tabs as /business/profile, docked. ?>
+<?php if (! empty($profileTabs)): ?>
+    <?= view('layouts/_profile_tabs', ['tabs' => $profileTabs, 'label' => 'Profile sections'], ['saveData' => false]) ?>
+<?php endif ?>
 <?php if ($services === []): ?>
     <div class="panel mt-5">
         <p class="text-sm text-slate-600 dark:text-slate-300">Add what customers can book, with how long it takes and what it costs.</p>
@@ -49,7 +48,7 @@ use App\Services\Bookings\CatalogueService;
 <?php endif ?>
 
 <section class="mt-8" id="categories">
-    <h2 class="text-lg font-bold text-slate-900 dark:text-white">Categories</h2>
+    <h2 class="section-title">Categories</h2>
     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Optional. They group services when customers choose one.</p>
     <div class="space-y-2">
         <?php foreach ($categories as $c): ?>
@@ -80,4 +79,8 @@ use App\Services\Bookings\CatalogueService;
         </form>
     </div>
 </section>
+<?= $this->endSection() ?>
+
+<?= $this->section('shell_actions') ?>
+<a class="btn btn-primary btn-xs" href="<?= base_url('business/services/new') ?>"><?= lucide('plus', 'h-4 w-4') ?> Add a service</a>
 <?= $this->endSection() ?>

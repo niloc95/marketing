@@ -20,9 +20,11 @@ class Notifications extends BaseController
     {
         $context = service('businessContext');
         $centre  = new NotificationCentre($context->listingId(), (int) $context->member()['id']);
+        $pager   = pager_result((int) $this->request->getGet('page'), 50, $centre->count());
 
         return view('business/notifications', [
-            'items'  => $centre->latest(),
+            'items'  => $centre->latest(50, ($pager['page'] - 1) * 50),
+            'pager'  => $pager,
             'unread' => $centre->unread(),
             'notify' => (int) $context->member()['notify_on_appointments'] === 1,
             'tz'     => $context->timezone(),
@@ -53,12 +55,12 @@ class Notifications extends BaseController
     {
         $context = service('businessContext');
         $filters = ['channel' => (string) $this->request->getGet('channel'), 'outcome' => (string) $this->request->getGet('outcome')];
-        $page    = max(1, (int) $this->request->getGet('page'));
+        $pager   = pager_result((int) $this->request->getGet('page'), 50, DeliveryLog::count($context->listingId(), $filters));
 
         return view('business/notifications_sent', [
-            'rows'    => DeliveryLog::latest($context->listingId(), $filters, 51, ($page - 1) * 50),
+            'rows'    => DeliveryLog::latest($context->listingId(), $filters, 50, ($pager['page'] - 1) * 50),
             'filters' => $filters,
-            'page'    => $page,
+            'pager'   => $pager,
             'tz'      => $context->timezone(),
         ]);
     }

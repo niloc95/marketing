@@ -11,12 +11,12 @@ class Audit extends BaseController
     public function index()
     {
         $context = service('businessContext');
-        $page    = max(1, (int) ($this->request->getGet('page') ?? 1));
+        $audit   = new BookingAudit();
+        $pager   = pager_result((int) ($this->request->getGet('page') ?? 1), BookingAudit::PAGE_SIZE, $audit->count($context->listingId()));
 
         return view('business/audit', [
-            'rows'     => (new BookingAudit())->recent($context->listingId(), $page),
-            'page'     => $page,
-            'pageSize' => BookingAudit::PAGE_SIZE,
+            'rows'  => $audit->recent($context->listingId(), $pager['page']),
+            'pager' => $pager,
         ]);
     }
 }

@@ -31,13 +31,12 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
      data-csrf-header="<?= esc(config('Security')->headerName, 'attr') ?>" data-csrf-hash="<?= esc(csrf_hash(), 'attr') ?>">
 
     <div class="flex flex-wrap items-center gap-2">
-        <h1 class="mr-2 text-xl font-bold text-slate-900 dark:text-white">Calendar</h1>
         <button type="button" class="btn btn-ghost btn-xs" data-cal-today>Today</button>
         <div class="flex items-center">
-            <button type="button" class="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" data-cal-prev aria-label="Earlier"><?= lucide('chevron-left', 'h-5 w-5') ?></button>
-            <button type="button" class="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800" data-cal-next aria-label="Later"><?= lucide('chevron-right', 'h-5 w-5') ?></button>
+            <button type="button" class="rounded-control p-2 hover:bg-slate-100 dark:hover:bg-slate-800" data-cal-prev aria-label="Earlier"><?= lucide('chevron-left', 'h-5 w-5') ?></button>
+            <button type="button" class="rounded-control p-2 hover:bg-slate-100 dark:hover:bg-slate-800" data-cal-next aria-label="Later"><?= lucide('chevron-right', 'h-5 w-5') ?></button>
         </div>
-        <h2 class="text-base font-semibold text-slate-700 dark:text-slate-200" data-cal-label aria-live="polite"></h2>
+        <h2 class="section-title" data-cal-label aria-live="polite"></h2>
         <div class="ml-auto flex flex-wrap items-center gap-2">
             <div class="cal-views" role="group" aria-label="View">
                 <?php foreach ($views as $key => $label): ?>
@@ -117,7 +116,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                 <h2 id="cal-details-title" class="text-lg font-bold text-slate-900 dark:text-white" data-d="title"></h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300"><span data-d="service_name"></span> with <span data-d="provider_name"></span></p>
             </div>
-            <button type="button" class="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-cal-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
+            <button type="button" class="rounded-control p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-cal-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
         </div>
         <dl class="cal-facts mt-4">
             <dt><?= lucide('clock', 'h-4 w-4') ?><span class="sr-only">When</span></dt><dd data-d="when"></dd>
@@ -146,7 +145,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
         </div>
 
         <?php // Deposit (Phase 8): shown when the appointment has one. ?>
-        <div class="mt-4 rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700" data-d-payment hidden>
+        <div class="mt-4 rounded-inner border border-slate-200 p-3 text-sm dark:border-slate-700" data-d-payment hidden>
             <p class="font-semibold" data-d-payment-label></p>
             <ul class="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300" data-d-payment-list></ul>
             <div class="mt-2 flex flex-wrap gap-2">
@@ -213,7 +212,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
             <?= csrf_field() ?>
             <div class="mb-4 flex items-center gap-3">
                 <h2 id="cal-create-title" class="flex-1 text-lg font-bold text-slate-900 dark:text-white">Book an appointment</h2>
-                <button type="button" class="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-cal-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
+                <button type="button" class="rounded-control p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-cal-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
             </div>
             <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => ['date' => $date], 'errors' => [], 'prefix' => 'cal-new']) ?>
             <p class="mt-2 hidden text-sm text-rose-600" data-create-error role="alert"></p>

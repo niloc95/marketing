@@ -4853,9 +4853,12 @@
       }
     } catch (e) { /* sessionStorage unavailable: the version check still catches it */ }
 
-    var form = document.querySelector('form[data-draft]');
-    if (!form) return;
-
+    // One draft per form: the profile editor carries a form per section
+    // (business/profile.php, admin/edit.php), each saved on its own. Leaving
+    // is shared, so saving one section does not warn about the others, whose
+    // drafts are kept and offered again when the page comes back.
+    var leaving = false;
+    document.querySelectorAll('form[data-draft]').forEach(function (form) {
     var KEY     = 'xs-draft:' + form.getAttribute('data-draft');
     var VERSION = form.getAttribute('data-draft-version') || '';
 
@@ -4902,7 +4905,6 @@
       baseRows.push({ list: list, count: repeatItems(list).length });
     });
     var lastJson     = baselineJson;
-    var leaving      = false;
 
     function isDirty() {
       return JSON.stringify(snapshot()) !== baselineJson;
@@ -5093,6 +5095,7 @@
       check();
       e.preventDefault();
       e.returnValue = '';
+    });
     });
   })();
 
@@ -5545,5 +5548,111 @@
       opened.forEach(function (d) { d.open = false; });
       opened = [];
     });
+  })();
+  // ---------------------------------------------------------- profile panes
+  // The profile editor (business/profile.php, admin/edit.php) draws every
+  // section on one page as a pane with its own form. A tab, a sidebar item or
+  // a profile strength step that points at a pane switches to it in place:
+  // no page load, the tab and the sidebar item highlighted, the top bar's
+  // title and the side column's Save and Preview pointed at that section's
+  // form, the address bar updated (owner, 12 Nov 2026). Back and Forward
+  // switch too. Anything else is an ordinary link.
+  (function () {
+    var root = document.querySelector('[data-panes]');
+    if (!root) return;
+    var panes = Array.prototype.slice.call(root.querySelectorAll('[data-pane]'));
+    if (!panes.length) return;
+
+    function pathOf(href) {
+      try { return new URL(href, location.href).pathname.replace(/\/+$/, ''); } catch (e) { return ''; }
+    }
+    function paneFor(href) {
+      var path = pathOf(href);
+      for (var i = 0; i < panes.length; i++) {
+        if (pathOf(panes[i].getAttribute('data-pane-href')) === path) return panes[i];
+      }
+      return null;
+    }
+    function mark(link, on) {
+      link.classList.toggle('is-active', on);
+      if (on) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+
+    function show(pane, push, hash) {
+      var key  = pane.getAttribute('data-pane');
+      var href = pane.getAttribute('data-pane-href');
+      panes.forEach(function (p) { p.hidden = p !== pane; });
+
+      document.querySelectorAll('.page-tabs .page-tab').forEach(function (tab) {
+        mark(tab, pathOf(tab.href) === pathOf(href));
+      });
+      // The sidebar's item for this section, when it has one (the owner area).
+      var nav = document.querySelectorAll('[data-shell-nav] .shell-link[href]');
+      var own = Array.prototype.filter.call(nav, function (a) { return pathOf(a.href) === pathOf(href); });
+      if (own.length) nav.forEach(function (a) { mark(a, own.indexOf(a) !== -1); });
+
+      // The owner's top bar names the section; admin's keeps the profile's name.
+      var title = pane.getAttribute('data-pane-title');
+      var bar   = document.querySelector('[data-shell-title]');
+      if (bar && title !== null) bar.textContent = title;
+
+      var form = pane.querySelector('form[id]');
+      var save = document.querySelector('[data-pane-save-button]');
+      if (save && form) {
+        save.setAttribute('form', form.id);
+        save.textContent = pane.getAttribute('data-pane-save') || 'Save';
+      }
+      var preview = document.querySelector('[data-pane-preview-button]');
+      if (preview && form) {
+        var url = pane.getAttribute('data-pane-preview');
+        preview.hidden = !url;
+        if (url) {
+          preview.setAttribute('form', form.id);
+          preview.setAttribute('formaction', url);
+        }
+      }
+
+      if (push) history.pushState(Object.assign({}, history.state || {}, { pane: key, spa: false }), '', href + (hash || ''));
+      // A map drawn while its pane was hidden has no size until told.
+      window.dispatchEvent(new Event('resize'));
+      var target = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+      if (target) target.scrollIntoView();
+      else if (push) window.scrollTo(0, 0);
+      var strip = document.querySelector('.page-tabs');
+      var tab   = strip && strip.querySelector('.is-active');
+      if (strip && tab) strip.scrollLeft = tab.offsetLeft - (strip.clientWidth - tab.offsetWidth) / 2;
+    }
+
+    var current = panes.filter(function (p) { return !p.hidden; })[0] || panes[0];
+    history.replaceState(Object.assign({}, history.state || {}, { pane: current.getAttribute('data-pane') }), '');
+
+    // Capture: ahead of the app shell's page swaps (resources/shell/spa.js).
+    document.addEventListener('click', function (e) {
+      // Gone when the shell has swapped another page in: leave it to the shell.
+      if (!root.isConnected) return;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (!a || (a.target && a.target !== '_self')) return;
+      if (!a.closest('.page-tabs, [data-shell-nav], .strength-panel')) return;
+      var pane = paneFor(a.href);
+      if (!pane) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var hash = new URL(a.href, location.href).hash;
+      if (pane.hidden || hash) show(pane, pane.hidden, hash);
+      // The phone drawer closes as it would after a page change.
+      var close = document.querySelector('[data-shell-overlay]:not([hidden])');
+      if (close) close.click();
+    }, true);
+
+    window.addEventListener('popstate', function (e) {
+      if (!root.isConnected) return;
+      var key  = e.state && e.state.pane;
+      var pane = key ? root.querySelector('[data-pane="' + key + '"]') : paneFor(location.href);
+      if (!pane) return;
+      e.stopImmediatePropagation();
+      show(pane, false, location.hash);
+    }, true);
   })();
 })();

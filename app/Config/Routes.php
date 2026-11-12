@@ -476,6 +476,10 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // app can only be made to mail an owner by someone already signed in here.
     $routes->post('edit/(:num)/nudge', 'Admin::nudgeOwner/$1');
     $routes->post('edit/(:num)/verify-badge', 'Admin::grantVerification/$1');
+    // One tab of the editor (Admin::EDIT_TAB_ADMIN or a Config\ProfileSections
+    // key). After the literal edit/{id}/... posts above, which it would swallow.
+    $routes->get('edit/(:num)/(:segment)', 'Admin::edit/$1/$2');
+    $routes->post('edit/(:num)/(:segment)', 'Admin::update/$1/$2');
 
     // Moderation
     $routes->post('feature/(:num)', 'Admin::feature/$1');

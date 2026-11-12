@@ -8,8 +8,7 @@
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="text-xl font-bold text-slate-900 dark:text-white">Time off</h1>
-<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Nobody can book these times. Public holidays follow your business profile's holiday hours. Times are in <?= esc($timezone) ?>.</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Nobody can book these times. Public holidays follow your business profile's holiday hours. Times are in <?= esc($timezone) ?>.</p>
 
 <form method="post" action="<?= base_url('business/time-off') ?>" class="form-card mt-5">
     <?= csrf_field() ?>
@@ -39,7 +38,7 @@
     <button type="submit" class="btn btn-primary">Add time off</button>
 </form>
 
-<h2 class="mt-8 mb-3 text-lg font-bold text-slate-900 dark:text-white">Coming up</h2>
+<h2 class="mt-8 mb-3 section-title">Coming up</h2>
 <?php if ($rows === []): ?>
     <p class="text-sm text-slate-500 dark:text-slate-400">No time off planned.</p>
 <?php else: ?>
@@ -68,3 +67,5 @@
     </div>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Time off<?= $this->endSection() ?>

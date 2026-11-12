@@ -3,28 +3,24 @@
  * Payments (Business\Payments::index): deposits to refund, then every try at
  * paying a deposit, newest first.
  *
- * @var list<array<string,mixed>> $rows     up to 51: the 51st means there is a next page
+ * @var list<array<string,mixed>> $rows     one page, 50
  * @var list<array<string,mixed>> $refund   appointments whose deposit to refund
  * @var int                       $received real deposits this month, cents
  * @var bool                      $ready    a payment account is on
  * @var bool                      $canSetUp may open the Payments settings
  * @var string                    $status
- * @var int                       $page
+ * @var array{page:int,totalPages:int,perPage:int,total:int} $pager  pager_result()
  * @var string                    $tz
  */
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\Payments\DepositService;
 
 $zone  = new DateTimeZone($tz);
-$more  = count($rows) > 50;
-$rows  = array_slice($rows, 0, 50);
-$query = static fn (array $extra): string => http_build_query(array_filter($extra + ['status' => $status]));
 $local = static fn (?string $utc, string $format): string => $utc ? (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($zone)->format($format) : '';
 $open  = static fn (string $startUtc, string $hash): string => base_url('business/calendar?view=day&date=' . (new DateTimeImmutable($startUtc, new DateTimeZone('UTC')))->setTimezone($zone)->format('Y-m-d') . '&open=' . $hash);
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Payments</h1>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Deposits customers paid into your own PayFast or Paystack account when they booked. <?= esc(CatalogueService::priceText($received)) ?> received this month.</p>
 <?php if (! $ready): ?>
     <p class="alert alert-info mt-4">No payment account is on, so customers book without a deposit.<?php if ($canSetUp): ?> <a class="underline" href="<?= base_url('business/settings/payments') ?>">Connect PayFast or Paystack</a>.<?php endif ?></p>
@@ -85,9 +81,8 @@ $open  = static fn (string $startUtc, string $hash): string => base_url('busines
             </tbody>
         </table>
     </div>
-    <nav class="mt-4 flex gap-2" aria-label="Pages">
-        <?php if ($page > 1): ?><a class="btn btn-ghost btn-xs" href="?<?= esc($query(['page' => $page - 1]), 'attr') ?>">Newer</a><?php endif ?>
-        <?php if ($more): ?><a class="btn btn-ghost btn-xs" href="?<?= esc($query(['page' => $page + 1]), 'attr') ?>">Older</a><?php endif ?>
-    </nav>
+    <?= view('directory/_pager', ['result' => $pager, 'baseUrl' => base_url('business/payments'), 'query' => ['status' => $status], 'noun' => 'payments'], ['saveData' => false]) ?>
 <?php endif ?>
 <?= $this->endSection() ?>
+
+<?= $this->section('shell_title') ?>Payments<?= $this->endSection() ?>

@@ -77,15 +77,14 @@ function swap(doc, next) {
 
   // The items (current page, counts) and the foot (Sign out's CSRF token,
   // which changes after every POST).
-  ['[data-shell-nav]', '[data-shell-foot]'].forEach((selector) => {
+  // The top bar's head (title and the page's buttons) too: it is the page's header.
+  ['[data-shell-nav]', '[data-shell-foot]', '[data-shell-head]'].forEach((selector) => {
     const mine = document.querySelector(selector);
     const theirs = doc.querySelector(selector);
     if (mine && theirs) mine.replaceWith(document.adoptNode(theirs));
   });
 
   document.title = doc.title;
-  const title = document.querySelector('[data-shell-title]');
-  if (title) title.textContent = incoming.dataset.pageTitle || '';
 
   startPages(incoming);
   return incoming;
