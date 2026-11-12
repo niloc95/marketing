@@ -88,6 +88,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <div class="field">
             <label for="<?= $prefix ?>-last">Surname</label>
             <input id="<?= $prefix ?>-last" type="text" name="last_name" maxlength="80" value="<?= esc($val('last_name'), 'attr') ?>" autocomplete="off">
+            <?= $err('last_name') ?>
         </div>
         <div class="field">
             <label for="<?= $prefix ?>-email">Email</label>

@@ -3,6 +3,7 @@
 namespace App\Services\Bookings;
 
 use App\Models\Bookings\BookingAppointmentModel;
+use App\Libraries\ListingText;
 use App\Models\Bookings\BookingCustomerModel;
 use Config\Bookings;
 use DateTimeImmutable;
@@ -32,6 +33,9 @@ use DateTimeImmutable;
  */
 class CustomerService
 {
+    /** A first name or surname that is not letters (nameProblem()). */
+    public const NAME_PROBLEM = 'Please use only letters in the name, no symbols or numbers.';
+
     public const PAGE_SIZE = 25;
 
     private BookingAudit $audit;
@@ -284,7 +288,7 @@ class CustomerService
     /**
      * The questions this business asks, in order.
      *
-     * @return list<array{key:string,title:string,type:string,required:bool,sensitive:bool,options:list<string>}>
+     * @return list<array{key:string,title:string,type:string,required:bool,sensitive:bool,options:list<string>,min:int,max:int}>
      */
     public function customFields(): array
     {
@@ -297,13 +301,17 @@ class CustomerService
             $options = self::options($settings->get($p . 'options'));
             // A list with nothing to choose is not asked.
             if ($settings->get($p . 'enabled') === '1' && $title !== '' && ($type !== 'select' || $options !== [])) {
+                $sized = in_array($type, Bookings::CUSTOM_FIELD_SIZED, true);
                 $out[] = [
                     'key'       => 'field_' . $n,
                     'title'     => $title,
-                    'type'      => $settings->get($p . 'type'),
+                    'type'      => $type,
                     'required'  => $settings->get($p . 'required') === '1',
-                    'sensitive' => $settings->get($p . 'sensitive') === '1',
+                    // An ID number never goes into a message (POPIA).
+                    'sensitive' => $type === 'za_id' || $settings->get($p . 'sensitive') === '1',
                     'options'   => $type === 'select' ? $options : [],
+                    'min'       => $type === 'za_id' ? 13 : ($sized ? $settings->int($p . 'min') : 0),
+                    'max'       => $type === 'za_id' ? 13 : ($sized ? $settings->int($p . 'max') : 0),
                 ];
             }
         }
@@ -337,6 +345,11 @@ class CustomerService
         if ($data['first_name'] === null) {
             $errors['first_name'] = 'Add a first name.';
         }
+        foreach (['first_name', 'last_name'] as $key) {
+            if ($data[$key] !== null && ($problem = self::nameProblem($data[$key])) !== null) {
+                $errors[$key] = $problem;
+            }
+        }
         $rawEmail = trim((string) ($input['email'] ?? ''));
         if ($rawEmail !== '') {
             $data['email'] = self::normalEmail($rawEmail);
@@ -356,8 +369,9 @@ class CustomerService
         }
 
         // Required questions are checked when booking (AppointmentService),
-        // not on the customer's own record.
+        // not on the customer's own record; an answer given must still fit.
         $data['custom_fields'] = $this->answers($input);
+        $errors += $this->answerFormatErrors($data['custom_fields']);
 
         return [$data, $errors];
     }
@@ -379,6 +393,11 @@ class CustomerService
                 $value = in_array(strtolower($value), ['1', 'yes', 'on', 'true'], true) ? 'Yes' : '';
             } elseif ($field['type'] === 'select' && ! in_array($value, $field['options'], true)) {
                 $value = '';
+            } elseif ($field['type'] === 'number' || $field['type'] === 'za_id') {
+                // Spaces and dashes people type between groups are dropped.
+                $value = (string) preg_replace('/[\s\-]+/u', '', $value);
+            } elseif ($field['type'] === 'code') {
+                $value = mb_strtoupper((string) preg_replace('/[\s\-]+/u', '', $value));
             }
             if ($value !== '') {
                 $out[$field['key']] = mb_substr($value, 0, Bookings::CUSTOM_FIELD_VALUE_MAX);
@@ -416,9 +435,9 @@ class CustomerService
     public function answerErrors(array $input): array
     {
         $answers = $this->answers($input);
-        $errors  = [];
+        $errors  = $this->answerFormatErrors($answers);
         foreach ($this->customFields() as $field) {
-            if ($field['required'] && ! isset($answers[$field['key']])) {
+            if ($field['required'] && ! isset($answers[$field['key']]) && ! isset($errors[$field['key']])) {
                 $errors[$field['key']] = match ($field['type']) {
                     'checkbox' => 'Please tick this.',
                     'select'   => 'Please choose one.',
@@ -428,6 +447,128 @@ class CustomerService
         }
 
         return $errors;
+    }
+
+    /**
+     * Answers given that do not fit their question: a number with letters, an
+     * ID number that is not one, an answer too short or too long.
+     *
+     * @param array<string,string> $answers from answers()
+     *
+     * @return array<string,string>
+     */
+    public function answerFormatErrors(array $answers): array
+    {
+        $errors = [];
+        foreach ($this->customFields() as $field) {
+            $value = $answers[$field['key']] ?? null;
+            if ($value !== null && ($problem = self::answerProblem($field, $value)) !== null) {
+                $errors[$field['key']] = $problem;
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * What is wrong with one answer, or null.
+     *
+     * @param array{type:string,min:int,max:int} $field
+     */
+    public static function answerProblem(array $field, string $value): ?string
+    {
+        switch ($field['type']) {
+            case 'za_id':
+                if (preg_match('/^\d{13}$/', $value) !== 1) {
+                    return 'Please check the ID number: it has 13 digits.';
+                }
+
+                return self::validSouthAfricanId($value) ? null : 'That is not a valid ID number. Please check it.';
+
+            case 'number':
+                if (preg_match('/^\d+$/', $value) !== 1) {
+                    return 'Please use numbers only.';
+                }
+                break;
+
+            case 'code':
+                if (preg_match('/^[\p{L}\d]+$/u', $value) !== 1) {
+                    return 'Please use only letters and numbers.';
+                }
+                break;
+
+            default:
+                return null;
+        }
+        $length = mb_strlen($value);
+        $min    = $field['min'];
+        $max    = $field['max'];
+        if (($min > 0 && $length < $min) || ($max > 0 && $length > $max)) {
+            $unit = $field['type'] === 'number' ? 'digits' : 'characters';
+
+            return 'Please check this: it should be ' . self::lengthWords($min, $max, $unit) . '.';
+        }
+
+        return null;
+    }
+
+    /** "13 digits", "5 to 15 digits", "at least 5 digits", "at most 15 digits", or "" for any length. */
+    public static function lengthWords(int $min, int $max, string $unit): string
+    {
+        return match (true) {
+            $min > 0 && $min === $max => $min . ' ' . $unit,
+            $min > 0 && $max > 0      => $min . ' to ' . $max . ' ' . $unit,
+            $min > 0                  => 'at least ' . $min . ' ' . $unit,
+            $max > 0                  => 'at most ' . $max . ' ' . $unit,
+            default                   => '',
+        };
+    }
+
+    /**
+     * A South African ID number: 13 digits, YYMMDD a real date, citizenship
+     * digit 0, 1 or 2, and the Luhn check digit last.
+     */
+    public static function validSouthAfricanId(string $id): bool
+    {
+        if (preg_match('/^(\d{2})(\d{2})(\d{2})\d{4}([012])\d\d$/', $id, $m) !== 1) {
+            return false;
+        }
+        // The century is not in the number; 29 February needs a leap year in
+        // one of the two it could be.
+        if (! checkdate((int) $m[2], (int) $m[3], 2000 + (int) $m[1]) && ! checkdate((int) $m[2], (int) $m[3], 1900 + (int) $m[1])) {
+            return false;
+        }
+        $sum = 0;
+        foreach (str_split(strrev($id)) as $i => $digit) {
+            $d = (int) $digit;
+            if ($i % 2 === 1) {
+                $d *= 2;
+                if ($d > 9) {
+                    $d -= 9;
+                }
+            }
+            $sum += $d;
+        }
+
+        return $sum % 10 === 0;
+    }
+
+    /**
+     * What is wrong with a customer's first name or surname, or null: letters
+     * in any script, spaces, apostrophes, hyphens and full stops only, at
+     * least two letters (the contact person rule, ListingText::PERSON_ALLOWED).
+     * Written after WSB-BOOK-000001 (12 Nov 2026) was booked as
+     * "dfhgfhfghjfghfghRTYRTYRT#$^%45645645645". Keyboard mashing made of
+     * letters is deliberately not judged: it would refuse real names.
+     * PublicBookingService words it for the customer ("your name").
+     */
+    public static function nameProblem(string $name): ?string
+    {
+        if (preg_match(ListingText::PERSON_ALLOWED, $name) !== 1 || preg_match_all('/\p{L}/u', $name) < 2) {
+            return self::NAME_PROBLEM;
+        }
+
+        return null;
     }
 
     /**

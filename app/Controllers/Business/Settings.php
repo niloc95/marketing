@@ -124,9 +124,9 @@ class Settings extends BaseController
     {
         $context = service('businessContext');
         $values  = [];
-        // The customer fields (first name is always asked).
+        // The customer fields (first name and surname are always asked).
         foreach (array_keys(\Config\Bookings::CUSTOMER_FIELDS) as $stem) {
-            if ($stem === 'first_names') {
+            if ($stem === 'first_names' || $stem === 'surname') {
                 continue;
             }
             $row = (array) ($this->request->getPost('field')[$stem] ?? []);
@@ -147,6 +147,23 @@ class Settings extends BaseController
             $values[$p . 'sensitive'] = ! empty($row['sensitive']) ? '1' : '0';
             if ($values[$p . 'enabled'] === '1' && $values[$p . 'type'] === 'select' && $values[$p . 'options'] === '') {
                 return redirect()->to(base_url('business/settings/questions'))->with('error', 'Question ' . $n . ' is a list: add its choices, one per line.');
+            }
+            // Shortest and longest answer belong to a number or letters and numbers.
+            $sized = in_array($values[$p . 'type'], \Config\Bookings::CUSTOM_FIELD_SIZED, true);
+            $values[$p . 'min'] = $sized ? trim((string) ($row['min'] ?? '')) : '0';
+            $values[$p . 'max'] = $sized ? trim((string) ($row['max'] ?? '')) : '0';
+            foreach (['min', 'max'] as $end) {
+                if ($values[$p . $end] === '') {
+                    $values[$p . $end] = '0';
+                }
+            }
+            if ($sized && ctype_digit($values[$p . 'min']) && ctype_digit($values[$p . 'max'])
+                && (int) $values[$p . 'max'] > 0 && (int) $values[$p . 'min'] > (int) $values[$p . 'max']) {
+                return redirect()->to(base_url('business/settings/questions'))->with('error', 'Question ' . $n . ': the shortest answer cannot be longer than the longest.');
+            }
+            // A South African ID number is asked only by businesses in South Africa.
+            if ($values[$p . 'type'] === 'za_id' && site()->isApp()) {
+                $values[$p . 'type'] = 'text';
             }
         }
         $result = BookingSettings::for($context->listingId())->save($values, $context->accountId());

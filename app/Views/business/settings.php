@@ -140,12 +140,12 @@ $labels = [
     <form method="post" action="<?= base_url('business/settings/questions') ?>" class="form-card">
         <?= csrf_field() ?>
         <h2 class="mb-2 section-title">What customers fill in</h2>
-        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">First name is always asked. Keep an email or a phone required, so you can reach everyone who books.</p>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">First name and surname are always asked online, and must be letters only. Keep an email or a phone required, so you can reach everyone who books.</p>
         <div class="table-scroll mb-6">
             <table class="table">
                 <thead><tr><th>Field</th><th>Ask</th><th>Required</th></tr></thead>
                 <tbody>
-                    <?php foreach (['surname' => 'Surname', 'email' => 'Email', 'phone' => 'Phone', 'address' => 'Address', 'notes' => 'Anything we should know?'] as $stem => $label): ?>
+                    <?php foreach (['email' => 'Email', 'phone' => 'Phone', 'address' => 'Address', 'notes' => 'Anything we should know?'] as $stem => $label): ?>
                         <tr>
                             <td><?= $label ?></td>
                             <td><input type="checkbox" name="field[<?= $stem ?>][display]" value="1" aria-label="Ask for <?= esc($label, 'attr') ?>"<?= $settings['booking.' . $stem . '_display'] === '1' ? ' checked' : '' ?>></td>
@@ -157,7 +157,7 @@ $labels = [
         </div>
 
         <h2 class="mb-2 section-title">Your questions</h2>
-        <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">Up to six questions of your own, asked when you or a customer books. Answers stay with the appointment and with the customer for next time.</p>
+        <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">Up to six questions of your own, asked when you or a customer books. Answers stay with the appointment and with the customer for next time. A number takes digits only and letters and numbers suits a membership number, each with the length you set.<?php if (! site()->isApp()): ?> A South African ID number must be 13 digits with a real date of birth and check digit, and is never sent in an email.<?php endif ?></p>
         <?php for ($n = 1; $n <= \Config\Bookings::CUSTOM_FIELDS; $n++): ?>
             <?php $p = 'booking.custom_field_' . $n . '_'; ?>
             <fieldset class="mb-5 rounded-surface border border-slate-200 p-4 dark:border-slate-700">
@@ -170,7 +170,13 @@ $labels = [
                     <div class="field">
                         <label for="q<?= $n ?>-type">Answer</label>
                         <select id="q<?= $n ?>-type" name="q[<?= $n ?>][type]">
-                            <?php foreach (['text' => 'A line', 'textarea' => 'A paragraph', 'select' => 'One of a list', 'checkbox' => 'A tick box'] as $v => $label): ?>
+                            <?php
+                            $answerTypes = ['text' => 'A line', 'textarea' => 'A paragraph', 'select' => 'One of a list', 'checkbox' => 'A tick box', 'number' => 'A number', 'code' => 'Letters and numbers'];
+                            if (! site()->isApp()) {
+                                $answerTypes['za_id'] = 'South African ID number';
+                            }
+                            ?>
+                            <?php foreach ($answerTypes as $v => $label): ?>
                                 <option value="<?= $v ?>"<?= $settings[$p . 'type'] === $v ? ' selected' : '' ?>><?= $label ?></option>
                             <?php endforeach ?>
                         </select>
@@ -179,6 +185,16 @@ $labels = [
                 <div class="field">
                     <label for="q<?= $n ?>-options">Choices <span class="font-normal text-slate-500">(for "One of a list", one per line)</span></label>
                     <textarea id="q<?= $n ?>-options" name="q[<?= $n ?>][options]" rows="3"><?= esc($settings[$p . 'options']) ?></textarea>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="field">
+                        <label for="q<?= $n ?>-min">Shortest answer <span class="font-normal text-slate-500">(for a number or letters and numbers, 0 for any)</span></label>
+                        <input id="q<?= $n ?>-min" type="number" name="q[<?= $n ?>][min]" min="0" max="<?= \Config\Bookings::CUSTOM_FIELD_LENGTH_MAX ?>" inputmode="numeric" value="<?= esc($settings[$p . 'min'], 'attr') ?>">
+                    </div>
+                    <div class="field">
+                        <label for="q<?= $n ?>-max">Longest answer <span class="font-normal text-slate-500">(0 for any)</span></label>
+                        <input id="q<?= $n ?>-max" type="number" name="q[<?= $n ?>][max]" min="0" max="<?= \Config\Bookings::CUSTOM_FIELD_LENGTH_MAX ?>" inputmode="numeric" value="<?= esc($settings[$p . 'max'], 'attr') ?>">
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-5 text-sm">
                     <label class="flex items-center gap-2"><input type="checkbox" name="q[<?= $n ?>][enabled]" value="1"<?= $settings[$p . 'enabled'] === '1' ? ' checked' : '' ?>> Ask this</label>

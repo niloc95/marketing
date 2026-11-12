@@ -22,6 +22,7 @@ $err = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 tex
     <div class="field">
         <label for="c-last">Surname</label>
         <input id="c-last" type="text" name="last_name" maxlength="80" value="<?= esc($val('last_name'), 'attr') ?>">
+        <?= $err('last_name') ?>
     </div>
     <div class="field">
         <label for="c-email">Email</label>

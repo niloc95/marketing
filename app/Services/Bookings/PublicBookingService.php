@@ -385,7 +385,8 @@ class PublicBookingService
     }
 
     /**
-     * The customer fields of the booking form, in order. With a deposit to
+     * The customer fields of the booking form, in order. First name and
+     * surname are always asked and required. With a deposit to
      * pay the email is always asked for: the receipt goes there, and
      * Paystack will not take a payment without one.
      *
@@ -395,7 +396,10 @@ class PublicBookingService
     {
         $out = [];
         foreach (Bookings::CUSTOMER_FIELDS as $stem => $name) {
-            if ($stem === 'first_names' || ($deposit && $stem === 'email')) {
+            // First name and surname are always asked online (owner, 12 Nov
+            // 2026, after WSB-BOOK-000001); the business side keeps the
+            // surname optional for reception.
+            if ($stem === 'first_names' || $stem === 'surname' || ($deposit && $stem === 'email')) {
                 $out[] = ['stem' => $stem, 'name' => $name, 'required' => true];
             } elseif ($this->settings->get('booking.' . $stem . '_display') === '1') {
                 $out[] = ['stem' => $stem, 'name' => $name, 'required' => $this->settings->get('booking.' . $stem . '_required') === '1'];
@@ -490,6 +494,9 @@ class PublicBookingService
             // keep CustomerService's word only on an address that is wrong.
             if ($key === 'email' && trim((string) ($person['email'] ?? '')) === '') {
                 continue;
+            }
+            if ($message === CustomerService::NAME_PROBLEM) {
+                $message = 'Please use only letters in your name, no symbols or numbers.';
             }
             $errors[$key] ??= $message;
         }

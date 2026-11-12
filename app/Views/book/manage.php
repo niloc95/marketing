@@ -36,9 +36,7 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
     <div class="container">
         <?php if ($new): ?>
             <div class="alert alert-success mb-5" role="status">
-                <p class="font-semibold"><?= $deposit !== null && $deposit['waiting'] ? 'Nearly done: pay the deposit below to keep this time.' : 'Booked.' ?> Your reference is <?= esc((string) $a['reference']) ?>.</p>
-                <p class="mt-1 text-sm">Keep this page's address: it is how you change or cancel your booking. Anyone with the link can, so keep it to yourself.</p>
-            </div>
+                <p class="font-semibold"><?= $deposit !== null && $deposit['waiting'] ? 'Nearly done: pay the deposit below to keep this time.' : 'Booked.' ?> Your reference is <?= esc((string) $a['reference']) ?>.</p>            </div>
         <?php endif ?>
         <p class="mb-2 text-sm"><a class="underline" href="<?= listing_url($listing) ?>"><?= esc($listing['display_name']) ?></a></p>
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white"><?= esc((string) $a['service_name']) ?></h1>
