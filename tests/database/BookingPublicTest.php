@@ -180,10 +180,29 @@ final class BookingPublicTest extends CIUnitTestCase
         $this->assertSame(0, BookingAppointmentModel::forBusiness($this->listingId)->countAllResults());
     }
 
+    public function testTheCustomerGivesAFirstNameAndSurnameInLetters(): void
+    {
+        // WSB-BOOK-000001 on production, 12 Nov 2026; and a business that
+        // switched the surname off still gets it asked online.
+        BookingSettings::for($this->listingId)->save(['booking.surname_display' => '0', 'booking.surname_required' => '0'], null);
+        $slot = $this->firstSlot($this->sarah);
+        $svc  = new PublicBookingService($this->listing());
+        $this->assertSame(['name' => 'last_name', 'required' => true], array_intersect_key($svc->customerFields()[1], ['name' => 1, 'required' => 1]));
+
+        $message = 'Please use only letters in your name, no symbols or numbers.';
+        $bad     = $svc->book($this->form($slot['start'], $this->sarah, ['first_name' => 'dfhgfhfghjfghfghRTYRTYRT#$^%45645645645', 'last_name' => '45645645645645645645']));
+        $this->assertSame(['first_name' => $message, 'last_name' => $message], $bad['errors']);
+        $this->assertSame(['last_name' => 'Please fill this in.'], $svc->book($this->form($slot['start'], $this->sarah, ['last_name' => '']))['errors']);
+        $this->assertSame(['last_name' => $message], $svc->book($this->form($slot['start'], $this->sarah, ['last_name' => 'J']))['errors'], 'At least two letters');
+        $this->assertSame(0, BookingAppointmentModel::forBusiness($this->listingId)->countAllResults());
+
+        $this->assertSame([], $svc->book($this->form($slot['start'], $this->sarah, ['first_name' => 'Mary-Jane', 'last_name' => "O'Brien"]))['errors']);
+    }
+
     public function testTheSameCustomerIsNotRenamedByABooking(): void
     {
         $this->bookOnline(['first_name' => 'Alice', 'last_name' => 'Johnson', 'email' => 'alice@example.test']);
-        $this->bookOnline(['first_name' => 'Mallory', 'last_name' => 'X', 'email' => 'Alice@Example.test'], $this->james);
+        $this->bookOnline(['first_name' => 'Mallory', 'last_name' => 'Xu', 'email' => 'Alice@Example.test'], $this->james);
 
         $customers = BookingCustomerModel::forBusiness($this->listingId)->findAll();
         $this->assertCount(1, $customers);

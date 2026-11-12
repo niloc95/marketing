@@ -48,7 +48,7 @@ final class ListingText
     private const NAME_ALLOWED = "/^[\\p{L}\\p{M}\\p{Nd} &'\\x{2019}\\x{2013}.,\\-()\\/+!:@]+$/u";
 
     /** A person's name: letters, spaces, apostrophes, hyphens, full stops. */
-    private const PERSON_ALLOWED = "/^[\\p{L}\\p{M} '\\x{2019}.\\-]+$/u";
+    public const PERSON_ALLOWED = "/^[\\p{L}\\p{M} '\\x{2019}.\\-]+$/u";
 
     /**
      * Words that make a contact person a company. Lower case, compared as

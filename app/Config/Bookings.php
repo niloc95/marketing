@@ -195,12 +195,12 @@ class Bookings extends BaseConfig
         // Phase 8: minutes an unpaid deposit holds the time before it goes back.
         'payments.hold_minutes'            => '30',
         // The business's own questions (Phase 4), see customFieldKeys().
-        'booking.custom_field_1_enabled' => '0', 'booking.custom_field_1_title' => '', 'booking.custom_field_1_type' => 'text', 'booking.custom_field_1_required' => '0', 'booking.custom_field_1_sensitive' => '0', 'booking.custom_field_1_options' => '',
-        'booking.custom_field_2_enabled' => '0', 'booking.custom_field_2_title' => '', 'booking.custom_field_2_type' => 'text', 'booking.custom_field_2_required' => '0', 'booking.custom_field_2_sensitive' => '0', 'booking.custom_field_2_options' => '',
-        'booking.custom_field_3_enabled' => '0', 'booking.custom_field_3_title' => '', 'booking.custom_field_3_type' => 'text', 'booking.custom_field_3_required' => '0', 'booking.custom_field_3_sensitive' => '0', 'booking.custom_field_3_options' => '',
-        'booking.custom_field_4_enabled' => '0', 'booking.custom_field_4_title' => '', 'booking.custom_field_4_type' => 'text', 'booking.custom_field_4_required' => '0', 'booking.custom_field_4_sensitive' => '0', 'booking.custom_field_4_options' => '',
-        'booking.custom_field_5_enabled' => '0', 'booking.custom_field_5_title' => '', 'booking.custom_field_5_type' => 'text', 'booking.custom_field_5_required' => '0', 'booking.custom_field_5_sensitive' => '0', 'booking.custom_field_5_options' => '',
-        'booking.custom_field_6_enabled' => '0', 'booking.custom_field_6_title' => '', 'booking.custom_field_6_type' => 'text', 'booking.custom_field_6_required' => '0', 'booking.custom_field_6_sensitive' => '0', 'booking.custom_field_6_options' => '',
+        'booking.custom_field_1_enabled' => '0', 'booking.custom_field_1_title' => '', 'booking.custom_field_1_type' => 'text', 'booking.custom_field_1_required' => '0', 'booking.custom_field_1_sensitive' => '0', 'booking.custom_field_1_options' => '', 'booking.custom_field_1_min' => '0', 'booking.custom_field_1_max' => '0',
+        'booking.custom_field_2_enabled' => '0', 'booking.custom_field_2_title' => '', 'booking.custom_field_2_type' => 'text', 'booking.custom_field_2_required' => '0', 'booking.custom_field_2_sensitive' => '0', 'booking.custom_field_2_options' => '', 'booking.custom_field_2_min' => '0', 'booking.custom_field_2_max' => '0',
+        'booking.custom_field_3_enabled' => '0', 'booking.custom_field_3_title' => '', 'booking.custom_field_3_type' => 'text', 'booking.custom_field_3_required' => '0', 'booking.custom_field_3_sensitive' => '0', 'booking.custom_field_3_options' => '', 'booking.custom_field_3_min' => '0', 'booking.custom_field_3_max' => '0',
+        'booking.custom_field_4_enabled' => '0', 'booking.custom_field_4_title' => '', 'booking.custom_field_4_type' => 'text', 'booking.custom_field_4_required' => '0', 'booking.custom_field_4_sensitive' => '0', 'booking.custom_field_4_options' => '', 'booking.custom_field_4_min' => '0', 'booking.custom_field_4_max' => '0',
+        'booking.custom_field_5_enabled' => '0', 'booking.custom_field_5_title' => '', 'booking.custom_field_5_type' => 'text', 'booking.custom_field_5_required' => '0', 'booking.custom_field_5_sensitive' => '0', 'booking.custom_field_5_options' => '', 'booking.custom_field_5_min' => '0', 'booking.custom_field_5_max' => '0',
+        'booking.custom_field_6_enabled' => '0', 'booking.custom_field_6_title' => '', 'booking.custom_field_6_type' => 'text', 'booking.custom_field_6_required' => '0', 'booking.custom_field_6_sensitive' => '0', 'booking.custom_field_6_options' => '', 'booking.custom_field_6_min' => '0', 'booking.custom_field_6_max' => '0',
     ];
 
     /** How many of the business's own questions there can be (Bookings: 6). */
@@ -215,6 +215,20 @@ class Bookings extends BaseConfig
     public const CUSTOM_FIELD_OPTIONS_MAX = 20;
 
     public const CUSTOM_FIELD_OPTION_LENGTH = 80;
+
+    /**
+     * Answer types: a line, a paragraph, one of a list, a tick box, a number
+     * (digits only), letters and numbers (a membership or account number), and
+     * a South African ID number (13 digits, date of birth and check digit; co.za
+     * businesses only). Number and letters and numbers take a shortest and
+     * longest length (`_min`, `_max`, 0 = any), up to this many characters.
+     */
+    public const CUSTOM_FIELD_TYPES = ['text', 'textarea', 'select', 'checkbox', 'number', 'code', 'za_id'];
+
+    /** Types that take a length. */
+    public const CUSTOM_FIELD_SIZED = ['number', 'code'];
+
+    public const CUSTOM_FIELD_LENGTH_MAX = 30;
 
     /**
      * Longest value of a free text setting, by key; anything else free text
@@ -275,12 +289,14 @@ class Bookings extends BaseConfig
         $this->settingMaxLength['legal.privacy_url'] = 500;
         $this->settingMaxLength['notifications.from_name'] = 80;
         $this->settingMaxLength['notifications.reply_to']  = 190;
-        // Questions: a line, a paragraph, one of a list, or a tick box.
+        // Questions: see CUSTOM_FIELD_TYPES.
         for ($n = 1; $n <= self::CUSTOM_FIELDS; $n++) {
             foreach (['enabled', 'required', 'sensitive'] as $flag) {
                 $this->settingChoices['booking.custom_field_' . $n . '_' . $flag] = ['0', '1'];
             }
-            $this->settingChoices['booking.custom_field_' . $n . '_type'] = ['text', 'textarea', 'select', 'checkbox'];
+            $this->settingChoices['booking.custom_field_' . $n . '_type'] = self::CUSTOM_FIELD_TYPES;
+            $this->settingRanges['booking.custom_field_' . $n . '_min']   = [0, self::CUSTOM_FIELD_LENGTH_MAX];
+            $this->settingRanges['booking.custom_field_' . $n . '_max']   = [0, self::CUSTOM_FIELD_LENGTH_MAX];
             $this->settingMaxLength['booking.custom_field_' . $n . '_options'] = self::CUSTOM_FIELD_OPTIONS_MAX * (self::CUSTOM_FIELD_OPTION_LENGTH + 1);
         }
     }

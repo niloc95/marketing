@@ -110,7 +110,7 @@ final class BookingAppointmentsTest extends CIUnitTestCase
     public function testTheSameEmailIsTheSameCustomerAndIsNotRenamed(): void
     {
         $first  = $this->book('09:00', ['first_name' => 'Alice', 'last_name' => 'Johnson', 'email' => 'Alice@Example.test']);
-        $second = $this->book('11:00', ['first_name' => 'Alicia', 'last_name' => 'J', 'email' => 'alice@example.test', 'phone' => '082 555 1234']);
+        $second = $this->book('11:00', ['first_name' => 'Alicia', 'last_name' => 'Jo', 'email' => 'alice@example.test', 'phone' => '082 555 1234']);
 
         $a = $this->appointments()->find($first['id']);
         $b = $this->appointments()->find($second['id']);
@@ -261,6 +261,68 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => ['surname' => ['display' => '1']], 'q' => []]);
         $this->assertSame('1', BookingSettings::for($this->listingId)->get('booking.email_required'));
         $this->assertSame('Colour', array_column((new CustomerService($this->listingId))->customFields(), 'title')[1] ?? null, 'A list without choices is refused and nothing is saved');
+    }
+
+    public function testNamesMustBeNames(): void
+    {
+        // WSB-BOOK-000001 on production, 12 Nov 2026.
+        $bad = $this->book('10:00', ['first_name' => 'dfhgfhfghjfghfghRTYRTYRT#$^%45645645645', 'last_name' => '45645645645645645645', 'email' => 'a@example.test'], false);
+        $this->assertSame(CustomerService::NAME_PROBLEM, $bad['errors']['first_name']);
+        $this->assertSame(CustomerService::NAME_PROBLEM, $bad['errors']['last_name']);
+        $this->assertSame(CustomerService::NAME_PROBLEM, $this->book('10:00', ['first_name' => 'J', 'email' => 'a@example.test'], false)['errors']['first_name'], 'At least two letters');
+
+        foreach (["Mary-Jane", "O'Brien", 'J. Smith', 'Nomvula', 'Zoë', 'Szczepański', 'Jo'] as $name) {
+            $this->assertNull(CustomerService::nameProblem($name), $name);
+        }
+
+        // The surname stays optional here: reception may only have a first name.
+        $this->book('10:00', ['first_name' => 'Thandi', 'email' => 'thandi@example.test']);
+        $this->assertSame([], (new CustomerService($this->listingId))->save(null, ['first_name' => 'Thandi', 'last_name' => 'Mokoena', 'email' => 't@example.test'], null)['errors']);
+        $this->assertArrayHasKey('first_name', (new CustomerService($this->listingId))->save(null, ['first_name' => 'B0b', 'email' => 'b@example.test'], null)['errors']);
+    }
+
+    public function testNumberLettersAndIdNumberQuestions(): void
+    {
+        BookingSettings::for($this->listingId)->save([
+            'booking.custom_field_1_enabled' => '1', 'booking.custom_field_1_title' => 'ID number', 'booking.custom_field_1_type' => 'za_id', 'booking.custom_field_1_required' => '1',
+            'booking.custom_field_2_enabled' => '1', 'booking.custom_field_2_title' => 'Medical aid number', 'booking.custom_field_2_type' => 'code',
+            'booking.custom_field_2_min' => '5', 'booking.custom_field_2_max' => '15',
+            'booking.custom_field_3_enabled' => '1', 'booking.custom_field_3_title' => 'Dependant code', 'booking.custom_field_3_type' => 'number',
+            'booking.custom_field_3_min' => '2', 'booking.custom_field_3_max' => '2',
+        ], null);
+        $fields = (new CustomerService($this->listingId))->customFields();
+        $this->assertTrue($fields[0]['sensitive'], 'An ID number never goes into a message');
+        $this->assertSame([13, 13], [$fields[0]['min'], $fields[0]['max']]);
+
+        $bad = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => '8001015009088', 'field_2' => 'AB#12', 'field_3' => '1'], false);
+        $this->assertSame([
+            'field_1' => 'That is not a valid ID number. Please check it.',
+            'field_2' => 'Please use only letters and numbers.',
+            'field_3' => 'Please check this: it should be 2 digits.',
+        ], $bad['errors']);
+        $this->assertSame('Please check the ID number: it has 13 digits.', $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => '80010150'], false)['errors']['field_1']);
+        $this->assertSame('Please check this: it should be 5 to 15 characters.', $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => '8001015009087', 'field_2' => 'AB1'], false)['errors']['field_2']);
+        $this->assertSame('Please use numbers only.', $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => '8001015009087', 'field_3' => '0a'], false)['errors']['field_3']);
+
+        $ok = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test', 'field_1' => '800101 5009 087', 'field_2' => 'dhs 123-456', 'field_3' => '01']);
+        $this->assertSame(['8001015009087', 'DHS123456', '01'], array_column($this->appointments()->detail($ok['id'])['fields'], 'value'));
+
+        $this->assertFalse(CustomerService::validSouthAfricanId('8002305009084'), '30 February');
+        $this->assertTrue(CustomerService::validSouthAfricanId('0002290000088'), '29 February 2000');
+    }
+
+    public function testQuestionLengthsInTheSettingsTab(): void
+    {
+        $post = fn (array $q) => $this->signedIn()->post('business/settings/questions', [csrf_token() => csrf_hash(), 'field' => self::FORM_FIELDS, 'q' => [1 => $q]]);
+        $post(['title' => 'Medical aid number', 'type' => 'code', 'min' => '5', 'max' => '15', 'enabled' => '1']);
+        $field = (new CustomerService($this->listingId))->customFields()[0];
+        $this->assertSame(['code', 5, 15], [$field['type'], $field['min'], $field['max']]);
+
+        $post(['title' => 'Medical aid number', 'type' => 'code', 'min' => '16', 'max' => '15', 'enabled' => '1']);
+        $this->assertSame(15, (new CustomerService($this->listingId))->customFields()[0]['max'], 'Shortest longer than longest is refused');
+
+        $post(['title' => 'Allergies', 'type' => 'text', 'min' => '5', 'max' => '15', 'enabled' => '1']);
+        $this->assertSame('0', BookingSettings::for($this->listingId)->get('booking.custom_field_1_max'), 'Only a number or letters and numbers keeps a length');
     }
 
     // Reschedule and status
