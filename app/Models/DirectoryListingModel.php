@@ -28,6 +28,8 @@ class DirectoryListingModel extends Model
         'verify_token', 'verify_expires', 'manage_token', 'manage_expires',
         'published_at', 'is_featured', 'verified_until', 'hosting_paid_until', 'source', 'source_url', 'claim_token',
         'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        // "Show my email address on my profile". Messages are relayed either way (ListingMessageService).
+        'email_public',
         // The profile video. Written by ListingVideoService only, behind the
         // badge gate, never OWNER_EDITABLE: the form posts video_url, which no
         // column is called.
@@ -138,6 +140,8 @@ class DirectoryListingModel extends Model
         'location_name', 'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',
         'trading_hours', 'by_appointment', 'accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'booking_url',
+        // "Show my email address on my profile". Messages are relayed either way (ListingMessageService).
+        'email_public',
         'customer_location', 'show_address', 'service_areas',
     ];
 

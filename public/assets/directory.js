@@ -306,6 +306,29 @@
       });
   });
 
+  // ------------------------------------------- message attachments (limits)
+  // "Email this business" (directory/message.php): stop a file that is too
+  // big, or too many, before the upload starts, rather than after a long
+  // wait. The server checks the same limits (ListingMessageService).
+  document.addEventListener('change', function (e) {
+    var input = e.target;
+    if (!input || !input.matches || !input.matches('input[type=file][data-max-file-bytes]')) return;
+    var maxFiles = parseInt(input.getAttribute('data-max-files'), 10) || 0;
+    var maxFile = parseInt(input.getAttribute('data-max-file-bytes'), 10) || 0;
+    var maxTotal = parseInt(input.getAttribute('data-max-total-bytes'), 10) || 0;
+    var files = Array.prototype.slice.call(input.files || []);
+    var total = 0;
+    var problem = '';
+    if (maxFiles && files.length > maxFiles) problem = 'Please attach at most ' + maxFiles + ' files.';
+    files.forEach(function (f) {
+      total += f.size;
+      if (!problem && maxFile && f.size > maxFile) problem = '"' + f.name + '" is over ' + Math.round(maxFile / 1048576) + ' MB.';
+    });
+    if (!problem && maxTotal && total > maxTotal) problem = 'Your files come to more than ' + Math.round(maxTotal / 1048576) + ' MB together.';
+    input.setCustomValidity(problem);
+    if (problem) input.reportValidity();
+  });
+
   // ------------------------------------------------------- gallery lightbox
   // ------------------------------------------------- profile video players
   // The profile video's players run with their own controls switched off

@@ -257,8 +257,11 @@ $contact   = config('Directory')->adminEmail();
             <p>When you use Discover, we keep the words you typed, how many results they found and, if you open a result, which profile you opened and its place in the list. We do not keep your IP address, a cookie or anything else with it that says who typed the words.</p>
             <p>We use this to improve discovery, for example to learn which kinds of business people mean by a word and which searches find nothing. We delete it after 180 days.</p>
 
+            <h3>Messages to a business</h3>
+            <p>When you use "Email this business" on a profile, we pass your name, email address, phone number (if you give one), message and any files you attach to that business by email, with your consent, and send you a confirmation. The business replies to you directly. We do not keep a copy of your message, your files or your details. To stop abuse of the form we keep a record that a message was sent, with your email address and IP address in a scrambled (hashed) form that cannot be read back, and delete it after 90 days. The business's own email address is not shown to you unless the business chooses to show it.</p>
+
             <h3>Profile statistics</h3>
-            <p>For each business profile we count, per day, how often it was opened, how often it was shown in discovery results and on category and area pages, and how often visitors tapped to call, chat on WhatsApp, visit the website, get directions, book or show the email address. These are totals only. We do not keep your IP address, a cookie or anything else with them that says who you are.</p>
+            <p>For each business profile we count, per day, how often it was opened, how often it was shown in discovery results and on category and area pages, and how often visitors tapped to call, chat on WhatsApp, visit the website, get directions, book, send a message or show the email address. These are totals only. We do not keep your IP address, a cookie or anything else with them that says who you are.</p>
             <p>We also receive from Google Search Console how often each profile appeared and was clicked in Google search results, and the search words that led to it. Google provides these as totals and leaves out rare searches; nothing in them says who searched.</p>
             <p>We use the totals to show business owners how their profile is doing and to improve the platform. We delete them after 25 months.</p>
 
@@ -274,6 +277,7 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Creating and publishing a business profile</td><td>Consent provided when you submit and verify the profile</td></tr>
                     <tr><td>Sending verification and profile management links</td><td>Necessary to provide the service you requested</td></tr>
                     <tr><td>Responding to enquiries submitted through the contact form</td><td>Necessary to respond to your request</td></tr>
+                    <tr><td>Passing your message to a business you write to from its profile</td><td>Consent provided on the form</td></tr>
                     <tr><td>Reviewing documents for a Verified Business badge</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
                     <tr><td>Processing payment for the Verified Business badge</td><td>Necessary to perform the agreement for the service</td></tr>
                     <tr><td>Confirming, reviewing and publishing a Jobs board post, and emailing the poster about it</td><td>Consent provided when you submit the post, and processing necessary to provide the service you requested</td></tr>

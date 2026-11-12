@@ -692,6 +692,9 @@ $routes->post('book/(:segment)/pay', 'Book::pay/$1');
 // "Show email" on a profile fetches the address from here, as JSON. Same
 // ordering rule as menu above; no province is called "email" either.
 $routes->get('directory/(:segment)/email', 'Directory::email/$1');
+// "Email this business": the visitor writes, we relay (ListingMessageService).
+$routes->get('directory/(:segment)/message', 'Directory::messageForm/$1');
+$routes->post('directory/(:segment)/message', 'Directory::message/$1');
 // {category}/{province} landing page.
 $routes->get('directory/(:segment)/(:segment)', 'Directory::place/$1/$2');
 // One category in one region, on local.webscheduler.app: /directory/plumbers/united-kingdom/scotland

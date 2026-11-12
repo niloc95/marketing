@@ -369,6 +369,7 @@ class DirectoryAdminService
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;
             $data['offers_delivery']       = empty($input['offers_delivery']) ? 0 : 1;
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
+            $data['email_public']          = empty($input['email_public']) ? 0 : 1;
             // The complex this business sits in. Privileged for the reason
             // DirectoryListingModel::OWNER_EDITABLE gives: it is a claim about
             // a shared building, so an owner who could set it could move their

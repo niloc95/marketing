@@ -394,6 +394,8 @@ class DirectoryListingMutationService
             ),
             'by_appointment'         => empty($input['by_appointment']) ? 0 : 1,
             'accepts_card_payments'  => empty($input['accepts_card_payments']) ? 0 : 1,
+            // Private unless the owner ticks it: visitors email through us either way.
+            'email_public'           => empty($input['email_public']) ? 0 : 1,
             'offers_delivery'        => empty($input['offers_delivery']) ? 0 : 1,
             // A booking link implies the flag, so the profile can never show a
             // Book online button beside a listing that says it books offline.
@@ -833,6 +835,7 @@ class DirectoryListingMutationService
             $data['accepts_card_payments'] = empty($input['accepts_card_payments']) ? 0 : 1;
             $data['offers_delivery']       = empty($input['offers_delivery']) ? 0 : 1;
             $data['offers_online_booking'] = empty($input['offers_online_booking']) ? 0 : 1;
+            $data['email_public']          = empty($input['email_public']) ? 0 : 1;
         }
         // Posted beside the hours grid, so it is only meaningful when the grid was.
         if (array_key_exists('hours', $input)) {
@@ -1040,7 +1043,7 @@ class DirectoryListingMutationService
             }
             $input[$field] = $listing[$field] ?? '';
         }
-        foreach (['accepts_card_payments', 'offers_delivery', 'offers_online_booking'] as $flag) {
+        foreach (['accepts_card_payments', 'offers_delivery', 'offers_online_booking', 'email_public'] as $flag) {
             $input[$flag] = ! empty($listing[$flag]) ? '1' : '';
         }
         $input['category_id'] = (string) ($listing['category_id'] ?? '');

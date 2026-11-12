@@ -48,6 +48,7 @@ class Forms extends BaseConfig
         'owner_job'        => ['label' => 'Owner job post', 'posts' => ['business/jobs' => 'business/jobs/new', 'business/jobs/(:num)/edit' => 'business/jobs/$1/edit']],
         'owner_job_action' => ['label' => 'Owner job close, renew, alerts', 'posts' => ['business/jobs/alerts' => 'business/jobs', 'business/jobs/(:num)/close' => 'business/jobs', 'business/jobs/(:num)/renew' => 'business/jobs']],
         'review'           => ['label' => 'Write a review', 'posts' => ['reviews/(:segment)' => 'directory/$1#reviews'], 'old' => 'review_old', 'pages' => []],
+        'listing_message'  => ['label' => 'Email a business', 'posts' => ['directory/(:segment)/message' => 'directory/$1/message']],
         'review_report'    => ['label' => 'Report a review', 'posts' => ['reviews/(:num)/report' => 'directory'], 'pages' => []],
         'owner_reviews'    => ['label' => 'Owner reviews', 'posts' => ['business/reviews/switch' => 'business/reviews', 'business/reviews/(:num)/reply' => 'business/reviews', 'business/reviews/(:num)/report' => 'business/reviews']],
         'manage_link'      => ['label' => 'Manage sign in link', 'posts' => ['manage' => 'business/sign-in']],

@@ -14,8 +14,10 @@ use Tests\Support\FreshDatabase;
  * What a scraper can lift without opening a profile, after the Oct 2026
  * hardening:
  *
- * 1. **Email is not in the page.** "Show email" fetches it from
- *    /directory/{slug}/email, and a branch's only on a premium profile.
+ * 1. **Email is not in the page.** Visitors use "Email this business"
+ *    (relayed, ListingMessageTest). Only when the owner switched
+ *    email_public on does "Show email" fetch it from /directory/{slug}/email,
+ *    and a branch's only on a premium profile.
  * 2. **Map pins carry no phone and no row id.**
  * 3. **robots.txt shuts out AI training crawlers** but not the answer bots.
  *
@@ -64,6 +66,7 @@ final class ScrapeExposureTest extends CIUnitTestCase
             'latitude'       => -26.14,
             'longitude'      => 28.04,
             'verified_until' => date('Y-m-d', strtotime('+1 month')),
+            'email_public'   => 1,
         ], true);
         (new ListingGeocoder())->syncPoint($this->listingId, ['latitude' => -26.14, 'longitude' => 28.04]);
     }
@@ -95,6 +98,20 @@ final class ScrapeExposureTest extends CIUnitTestCase
         $this->assertSame('noindex', $result->response()->getHeaderLine('X-Robots-Tag'));
 
         $this->get('directory/no-such-place/email')->assertStatus(404);
+    }
+
+    public function testAPrivateAddressIsNeitherOfferedNorGivenOut(): void
+    {
+        (new DirectoryListingModel())->update($this->listingId, ['email_public' => 0]);
+
+        $html = html_entity_decode((string) $this->get('directory/smile-co')->response()->getBody(), ENT_QUOTES | ENT_HTML5);
+        $this->assertStringNotContainsString('Show email', $html);
+        $this->assertStringNotContainsString('/directory/smile-co/email', $html);
+        $this->assertStringContainsString('Email this business', $html);
+        $this->assertStringContainsString('/directory/smile-co/message', $html);
+        $this->assertStringNotContainsString('owner@smile.example.test', $html);
+
+        $this->get('directory/smile-co/email')->assertStatus(404);
     }
 
     public function testABranchEmailNeedsAPremiumProfileAndItsOwnBranch(): void

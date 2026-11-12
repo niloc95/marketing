@@ -56,6 +56,15 @@ class VerificationDocumentProcessor
      */
     public const CV_EXT = ['pdf', 'doc', 'docx'];
 
+    /**
+     * What a visitor may attach to a message for a business
+     * (ListingMessageService): PDF, photos and Word. Not the legacy .doc,
+     * which can carry macros, because these are emailed from our domain to
+     * a business that never asked for them. Never stored: checked here with
+     * check() and attached to the email from the upload's temp file.
+     */
+    public const MESSAGE_EXT = ['pdf', 'jpg', 'jpeg', 'png', 'docx'];
+
     /** Same ceiling as listing images — a scanned certificate fits easily. */
     public const MAX_UPLOAD_BYTES = 10_485_760; // 10 MiB
 
@@ -109,22 +118,18 @@ class VerificationDocumentProcessor
     }
 
     /**
-     * Validate and store one document.
-     *
-     * @param string $destDir absolute path, must be under the private storage root
-     *
-     * @return array{ok:bool,name:string,mime:string,bytes:int,sha256:string,error:string}
-     *   `name` is the generated filename only; the caller composes the stored
-     *   path, because only it knows the listing subdirectory. Never throws.
+     * Is this upload one of the allowed formats, under the size limit, with a
+     * MIME type and leading bytes that match its extension? Returns why not,
+     * or null when it is fine. Touches nothing.
      */
-    public function process(UploadedFile $file, string $destDir): array
+    public function check(UploadedFile $file, int $maxBytes = self::MAX_UPLOAD_BYTES): ?string
     {
         if (! $file->isValid() || $file->hasMoved()) {
-            return $this->fail(sprintf(
+            return sprintf(
                 '“%s” did not upload correctly (%s).',
                 $file->getClientName(),
                 strtolower($file->getErrorString() ?: 'unknown error')
-            ));
+            );
         }
 
         $name = $file->getClientName();
@@ -136,39 +141,65 @@ class VerificationDocumentProcessor
         $ext = strtolower($file->getClientExtension() ?: '');
 
         if (! in_array($ext, $this->allowedExt, true)) {
-            return $this->fail(sprintf(
+            return sprintf(
                 '“%s” is not a supported document. Use %s.',
                 $name,
-                $this->allowedExt === self::CV_EXT ? 'a PDF or Word document' : 'PDF, JPEG or PNG'
-            ));
+                match ($this->allowedExt) {
+                    self::CV_EXT      => 'a PDF or Word document',
+                    self::MESSAGE_EXT => 'PDF, JPEG, PNG or Word (.docx)',
+                    default           => 'PDF, JPEG or PNG',
+                }
+            );
         }
 
-        if ($file->getSize() > self::MAX_UPLOAD_BYTES) {
-            return $this->fail(sprintf(
+        if ($file->getSize() > $maxBytes) {
+            return sprintf(
                 '“%s” is %s. The limit is %s per document.',
                 $name,
                 $this->humanBytes((int) $file->getSize()),
-                $this->humanBytes(self::MAX_UPLOAD_BYTES)
-            ));
+                $this->humanBytes($maxBytes)
+            );
         }
 
         $mime = strtolower(trim(explode(';', (string) $file->getMimeType())[0]));
         if (! in_array($mime, self::ALLOWED_MIME[$ext], true)) {
-            return $this->fail(sprintf(
+            return sprintf(
                 '“%s” does not look like a real %s file (it is %s).',
                 $name,
                 strtoupper($ext),
                 $mime !== '' ? $mime : 'unrecognised'
-            ));
+            );
         }
 
         if (! $this->hasMagicFor($file->getTempName(), $ext)) {
-            return $this->fail(sprintf(
+            return sprintf(
                 '“%s” is named like a %s but its contents are something else.',
                 $name,
                 strtoupper($ext)
-            ));
+            );
         }
+
+        return null;
+    }
+
+    /**
+     * Validate and store one document.
+     *
+     * @param string $destDir absolute path, must be under the private storage root
+     *
+     * @return array{ok:bool,name:string,mime:string,bytes:int,sha256:string,error:string}
+     *   `name` is the generated filename only; the caller composes the stored
+     *   path, because only it knows the listing subdirectory. Never throws.
+     */
+    public function process(UploadedFile $file, string $destDir): array
+    {
+        $problem = $this->check($file);
+        if ($problem !== null) {
+            return $this->fail($problem);
+        }
+        $name = $file->getClientName();
+        $ext  = strtolower($file->getClientExtension() ?: '');
+        $mime = strtolower(trim(explode(';', (string) $file->getMimeType())[0]));
 
         // 0700, not the 0755 used for public assets. Nothing but PHP should be
         // able to list this directory, and on shared hosting "nothing but PHP"

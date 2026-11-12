@@ -43,6 +43,7 @@
         <li>Enforcing Content Security Policy: no inline styles, scripts or handlers anywhere.</li>
         <li><code>/admin*</code>: Cloudflare Access plus a JWT check in the app, then the admin password.</li>
         <li><code>listing_public_view()</code> before anything renders a profile (hidden addresses).</li>
+        <li>A profile's email address is never in the page. Visitors write through <code>/directory/{slug}/message</code> and <code>ListingMessageService</code> relays it (Reply-To the visitor, fixed wording receipt, throttles per IP, sender and profile). The address is revealed by <code>Directory::email</code> only when the owner turned <code>email_public</code> on (off by default).</li>
         <li>Uploads (verification documents, CVs) outside the web root, streamed by a controller with a locked CSP.</li>
         <li>Payment never changes the order of discovery results.</li>
     </ul>

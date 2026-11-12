@@ -100,8 +100,11 @@ foreach ($locations as $loc) {
                         'heading'  => 'Contact',
                         // Website and socials belong to the business, not the branch.
                         'showWeb'  => false,
-                        'emailUrl' => ! empty($primary['slug'])
+                        'emailUrl' => ! empty($primary['slug']) && ! empty($primary['email_public'])
                             ? base_url('directory/' . $primary['slug'] . '/email') . '?branch=' . (int) $row['id']
+                            : '',
+                        'messageUrl' => ! empty($primary['slug'])
+                            ? base_url('directory/' . $primary['slug'] . '/message') . '?branch=' . (int) $row['id']
                             : '',
                     ]) ?>
                 <?php endif; ?>

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\Concerns\LocksDownDocumentCsp;
 use App\Controllers\Concerns\RedirectsToOwningSite;
+use App\Libraries\Input;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingMenuFileModel;
 use App\Models\DirectoryListingModel;
@@ -16,6 +17,7 @@ use App\Services\DirectoryService;
 use App\Services\DirectorySettings;
 use App\Services\JobBoardService;
 use App\Services\HeroImageService;
+use App\Services\ListingMessageService;
 use App\Services\ListingStatsService;
 use App\Services\Search\DiscoveryEventService;
 use App\Services\Search\SearchIntent;
@@ -1050,7 +1052,9 @@ class Directory extends BaseController
 
         $listing = (new DirectoryListingModel())->findPublishedBySlug($slug);
         $email   = '';
-        if ($listing !== null) {
+        // Private unless the owner switched it on (email_public, since 12 Nov
+        // 2026); the profile then offers only "Email this business".
+        if ($listing !== null && ! empty($listing['email_public'])) {
             $branch = (string) $this->request->getGet('branch');
             if ($branch === '') {
                 $email = (string) ($listing['email'] ?? '');
@@ -1068,6 +1072,180 @@ class Directory extends BaseController
             ->setHeader('X-Robots-Tag', 'noindex')
             ->setHeader('Cache-Control', 'private, no-store')
             ->setJSON(['email' => $email]);
+    }
+
+    // ---------------------------------------------------- email this business
+
+    /** A form posted faster than this was not typed by a person. */
+    private const MESSAGE_MIN_SECONDS = 3;
+
+    /** A form older than this is resubmitted from a stale tab; ask again. */
+    private const MESSAGE_MAX_SECONDS = DAY;
+
+    /**
+     * The signed timestamp the message form carries, as the review form does
+     * (Reviews::formStamp()): a session stamp would give every crawler that
+     * follows the link a cookie.
+     */
+    public static function messageStamp(int $listingId, ?int $now = null): string
+    {
+        $now ??= time();
+
+        return $now . '.' . hash_hmac('sha256', 'message|' . $now . '|' . $listingId, (string) config('Encryption')->key);
+    }
+
+    /**
+     * GET /directory/{slug}/message[?branch={id}]: write to a business without
+     * seeing its address (ListingMessageService). Its own page, so it works
+     * without JavaScript and under the CSP.
+     */
+    public function messageForm(string $slug)
+    {
+        [$listing, $branch] = $this->messageTarget($slug, (string) $this->request->getGet('branch'));
+        if (($moved = $this->redirectToOwningSite($listing)) !== null) {
+            return $moved;
+        }
+
+        $this->response->setHeader('X-Robots-Tag', 'noindex');
+
+        return view('directory/message', [
+            'listing'     => $listing,
+            'branch'      => $branch,
+            'branchLabel' => $branch === null ? '' : (new ListingMessageService())->branchLabel($branch),
+            'stamp'       => self::messageStamp((int) $listing['id']),
+            // flash() reads only a session that already exists: a crawler
+            // following the link gets no cookie.
+            'old'         => (array) (flash('old') ?? []),
+            'errors'      => (array) (flash('errors') ?? []),
+            'sent'        => (string) (flash('message_sent') ?? ''),
+        ]);
+    }
+
+    /** POST /directory/{slug}/message: check and relay one message. */
+    public function message(string $slug)
+    {
+        $branchId = (string) $this->request->getPost('branch');
+        [$listing, $branch] = $this->messageTarget($slug, $branchId);
+        // Posted to the other site's host: the form page would have 301'd.
+        $site = service('site');
+        if ($site->scoping() && ! $site->ownsCountry($listing['country_code'] ?? null)) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+        $back = base_url('directory/' . $listing['slug'] . '/message') . ($branch !== null ? '?branch=' . (int) $branch['id'] : '');
+        $sent = 'Thank you, your message is on its way to ' . $listing['display_name']
+            . '. We have emailed you a confirmation, and the business will reply to you directly.';
+
+        $check = $this->messageFormCheck((int) $listing['id']);
+        if ($check === 'bot') {
+            form_outcome('bot');
+
+            return redirect()->to($back)->with('message_sent', $sent);
+        }
+
+        $in = [
+            'name'    => Input::line($this->request->getPost('name'), 120),
+            'email'   => strtolower(Input::line($this->request->getPost('email'), 190)),
+            'phone'   => Input::line($this->request->getPost('phone'), 40),
+            'message' => Input::text($this->request->getPost('message'), ListingMessageService::MAX_MESSAGE + 500),
+            'consent' => ! empty($this->request->getPost('consent')),
+        ];
+        $typed = form_typed_fields($this->request->getPost());
+
+        if ($check === 'stale') {
+            form_outcome('expired');
+
+            return redirect()->to($back)->with('old', $typed)
+                ->with('error', 'This page was open for a long time. Please check your message and send it again.');
+        }
+
+        $svc    = new ListingMessageService();
+        $errors = $svc->validate($in);
+        // Files cannot be flashed back, so a form that comes back for any
+        // reason says to attach them again (message.php).
+        $uploads  = $this->request->getFileMultiple('attachments') ?? [];
+        $attached = $svc->checkAttachments(is_array($uploads) ? $uploads : []);
+        if ($attached['error'] !== '') {
+            $errors['attachments'] = $attached['error'];
+        }
+        if ($errors !== []) {
+            return redirect()->to($back)->with('old', $typed)->with('errors', $errors)
+                ->with('error', 'Please correct the highlighted fields.');
+        }
+
+        $status = $svc->send($listing, $branch, $in, (string) $this->request->getIPAddress(), $attached['files']);
+        if ($status === ListingMessageService::THROTTLED) {
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('old', $typed)
+                ->with('error', 'Too many messages. Please wait a little while and try again.');
+        }
+        if ($status === ListingMessageService::STATUS_FAILED) {
+            form_outcome('send_failed');
+
+            return redirect()->to($back)->with('old', $typed)
+                ->with('error', 'Sorry, we could not send your message just now. Please try again in a few minutes.');
+        }
+        if ($status === ListingMessageService::STATUS_BLOCKED) {
+            form_outcome('bot');
+        } else {
+            // The owner's "email" count: a message sent, counted here as the
+            // reveal is in email(), never by the browser beacon.
+            (new ListingStatsService())->countTap($this->request, (int) $listing['id'], 'email');
+        }
+
+        return redirect()->to($back)->with('message_sent', $sent);
+    }
+
+    /**
+     * The published profile and, for ?branch=, its branch, when there is an
+     * address to send to; otherwise a 404.
+     *
+     * @return array{0:array<string,mixed>,1:array<string,mixed>|null}
+     */
+    private function messageTarget(string $slug, string $branchId): array
+    {
+        $listing = (new DirectoryListingModel())->findPublishedBySlug($slug);
+        if ($listing === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+        $branch = null;
+        if ($branchId !== '') {
+            $branch = ctype_digit($branchId)
+                ? (new DirectoryPracticeLocationModel())->findForListing((int) $branchId, (int) $listing['id'])
+                : null;
+            if ($branch === null) {
+                throw PageNotFoundException::forPageNotFound();
+            }
+        }
+        if ((new ListingMessageService())->recipient($listing, $branch) === '') {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        return [$listing, $branch];
+    }
+
+    /**
+     * 'bot' for a filled honeypot, a missing or forged stamp, or a form sent
+     * faster than anyone could read it; 'stale' for an old but genuine form.
+     *
+     * @return 'ok'|'bot'|'stale'
+     */
+    private function messageFormCheck(int $listingId): string
+    {
+        if (honeypot_tripped('listing_message')) {
+            return 'bot';
+        }
+        $stamp = (string) $this->request->getPost('message_form');
+        if (preg_match('/^(\d{1,12})\.[a-f0-9]{64}$/', $stamp, $m) !== 1
+            || ! hash_equals(self::messageStamp($listingId, (int) $m[1]), $stamp)) {
+            return 'bot';
+        }
+        $age = time() - (int) $m[1];
+        if ($age < self::MESSAGE_MIN_SECONDS) {
+            return 'bot';
+        }
+
+        return $age > self::MESSAGE_MAX_SECONDS ? 'stale' : 'ok';
     }
 
     /**
