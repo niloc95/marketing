@@ -348,13 +348,20 @@ $metaDesc = listing_meta_description($l);
 
             <div>
                 <?php // The listing's own address, rendered by the same three panels
-                      // each branch above gets. One definition per panel, used twice. ?>
-                <?= view('directory/_contact_panel', [
-                    'row'      => $l,
-                    'heading'  => 'Contact',
-                    'showWeb'  => true,
-                    'emailUrl' => base_url('directory/' . $l['slug'] . '/email'),
-                ]) ?>
+                      // each branch above gets. One definition per panel, used twice.
+                      // .profile-contact: on a phone or tablet the CSS lifts this card
+                      // above the description (owner, 12 Nov 2026), so Book, WhatsApp
+                      // and Email are the first thing under the header. Moved by CSS,
+                      // not rendered twice, so ids and tap counts stay single. ?>
+                <div class="profile-contact">
+                    <?= view('directory/_contact_panel', [
+                        'row'        => $l,
+                        'heading'    => 'Contact',
+                        'showWeb'    => true,
+                        'emailUrl'   => ! empty($l['email_public']) ? base_url('directory/' . $l['slug'] . '/email') : '',
+                        'messageUrl' => base_url('directory/' . $l['slug'] . '/message'),
+                    ]) ?>
+                </div>
 
                 <?php // For the owner, not the visitor: a quiet line under the contact
                       // panel, on profiles without the badge while it is on sale. It

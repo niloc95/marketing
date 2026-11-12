@@ -47,7 +47,7 @@ $kindLabels = [
     'website'    => 'Website',
     'directions' => 'Directions',
     'booking'    => 'Booking',
-    'email'      => 'Email shown',
+    'email'      => 'Emails sent or shown',
 ];
 $date = static fn (string $d): string => date('j M Y', strtotime($d));
 ?>

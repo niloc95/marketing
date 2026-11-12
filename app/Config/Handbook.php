@@ -106,6 +106,7 @@ class Handbook extends BaseConfig
         'xs_directory_discovery_vocab' => ['purpose' => 'Vocabulary for spelling suggestions (nightly)', 'owner' => 'DiscoveryModelService', 'product' => 'local', 'personal' => null],
         'xs_directory_discovery_events' => ['purpose' => 'Discover words and opened results (no IP, cookie or session)', 'owner' => 'DiscoveryEventService', 'product' => 'local', 'personal' => null],
         'xs_directory_discovery_blocks' => ['purpose' => 'Learned links an admin blocked (never relearned)', 'owner' => 'DiscoveryModelService', 'product' => 'local', 'personal' => null],
+        'xs_directory_listing_messages' => ['purpose' => '"Email this business": one row per message relayed, failed or blocked (no text, no files); abuse review, 90 days, purged by directory:stats', 'owner' => 'ListingMessageService', 'product' => 'local', 'personal' => 'Sender email and IP as sha256 hashes only; 90 days'],
         'xs_directory_listing_stats' => ['purpose' => 'Daily views, appearances and taps per profile', 'owner' => 'ListingStatsService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_search' => ['purpose' => 'Search Console figures per profile per day', 'owner' => 'GoogleDataService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_search_queries' => ['purpose' => 'Search Console queries per profile per month', 'owner' => 'GoogleDataService', 'product' => 'local', 'personal' => null],

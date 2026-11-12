@@ -160,6 +160,7 @@ final class ProfileStatsTest extends CIUnitTestCase
 
     public function testShowingTheEmailCountsAsATap(): void
     {
+        (new \App\Models\DirectoryListingModel())->update($this->bakery, ['email_public' => 1]);
         $this->browse('directory/cape-crumb-bakery/email')->assertOK();
 
         $this->assertSame(1, $this->total($this->bakery, 'taps_email'));

@@ -273,6 +273,11 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
             <input type="email" name="email" value="<?= esc($v('email'), 'attr') ?>" required>
             <?php if ($err('email')): ?><div class="err"><?= esc($err('email')) ?></div><?php endif; ?>
         <?php endif; ?>
+        <?php // Off by default (owner, 12 Nov 2026): visitors email the business
+              // through ListingMessageService whatever this says, so the address
+              // only needs to be public if the owner wants it to be. ?>
+        <label class="mt-2 flex items-start gap-2 font-normal"><input type="checkbox" name="email_public" value="1" <?= $v('email_public') ? 'checked' : '' ?>> <span>Show my email address on my profile</span></label>
+        <div class="hint">Customers can always email you from your profile. We pass their message on, so your address stays private unless you tick this.</div>
     </div>
 </div>
 

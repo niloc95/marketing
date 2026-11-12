@@ -26,13 +26,19 @@
  *                       per-branch copy would only go stale against the
  *                       listing's own, and one edit link per profile is enough.
  * @var string $emailUrl where "Show email" fetches the address (Directory::email);
- *                       '' hides the row. Every caller passes it: CI4 keeps view
- *                       data between renders, so a default here could inherit a
- *                       branch's URL.
+ *                       '' hides the row. Callers pass '' unless the owner
+ *                       switched email_public on (owner, 12 Nov 2026).
+ * @var string $messageUrl the "Email this business" page (Directory::messageForm);
+ *                       '' hides the row. Shown whenever the row has an email,
+ *                       whatever email_public says: the message is relayed and
+ *                       the address stays private.
+ * Every caller passes both: CI4 keeps view data between renders, so a default
+ * here could inherit a branch's URL.
  */
 $heading  = $heading ?? 'Contact';
 $showWeb  = $showWeb ?? true;
 $emailUrl = $emailUrl ?? '';
+$messageUrl = $messageUrl ?? '';
 
 // A mobile business that hides its address gets the "we travel to you" row
 // instead; the location panel renders nothing for it.
@@ -83,9 +89,10 @@ $suggestUrl = $showWeb && ! empty($row['slug'])
 
 // A branch with no phone or email of its own has nothing left to show here now
 // the address lives in the location panel, so it gets no empty card.
-$hasEmail = ! empty($row['email']) && $emailUrl !== '';
+$hasEmail   = ! empty($row['email']) && $emailUrl !== '';
+$hasMessage = ! empty($row['email']) && $messageUrl !== '';
 if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones === []
-    && ! $hasEmail && $addressPublic && $socials === [] && $suggestUrl === '') {
+    && ! $hasEmail && ! $hasMessage && $addressPublic && $socials === [] && $suggestUrl === '') {
     return;
 }
 ?>
@@ -99,6 +106,13 @@ if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones =
 
     <?php if ($whatsappUrl !== ''): ?>
         <a class="btn btn-whatsapp btn-block contact-book" href="<?= esc($whatsappUrl) ?>" data-stat="whatsapp" target="_blank" rel="noopener nofollow"><?= brand_icon('whatsapp', 'h-5 w-5 shrink-0') ?>Chat on WhatsApp</a>
+    <?php endif; ?>
+
+    <?php // Email goes through us: the visitor writes on our page and we relay it,
+          // so the address is never in the HTML (spam, scraping, abuse). A button
+          // beside Book online and WhatsApp, in brand blue so the three differ. ?>
+    <?php if ($hasMessage): ?>
+        <a class="btn btn-primary btn-block contact-book" href="<?= esc($messageUrl, 'attr') ?>" rel="nofollow"><?= lucide('mail', 'h-5 w-5 shrink-0') ?><?= $showWeb ? 'Email this business' : 'Email this branch' ?></a>
     <?php endif; ?>
 
     <?php if ($websiteUrl !== ''): ?>
@@ -115,10 +129,10 @@ if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones =
         </div>
     <?php endforeach; ?>
 
-    <?php // Email alone stays behind the reveal: it is the one an address-harvesting
-          // scraper is actually after, and nobody needs it in one tap. The address
-          // is not in the HTML at all; the click handler in directory.js fetches
-          // it from $emailUrl (throttled per IP) and turns it into a mailto: link. ?>
+    <?php // Only when the owner chose to show the address: still behind the reveal,
+          // since it is what an address harvesting scraper is after. The click
+          // handler in directory.js fetches it from $emailUrl (throttled per IP)
+          // and turns it into a mailto: link. ?>
     <?php if ($hasEmail): ?>
         <div class="contact-row">
             <span><button type="button" class="reveal-btn" data-reveal data-reveal-url="<?= esc($emailUrl, 'attr') ?>">Show email</button></span>

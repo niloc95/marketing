@@ -38,13 +38,16 @@ class Mailer
      *                        address in From fails SPF/DMARC at the recipient.
      *                        Empty falls back to Config\Email::$replyTo.
      *
-     * @param array{fromName?:string,headers?:array<string,string>} $options
+     * @param array{fromName?:string,headers?:array<string,string>,attachments?:list<array{content:string,name:string,mime:string}>} $options
      *                        `fromName` changes the sender's name only (online
      *                        bookings sign as the business; the address stays
      *                        ours for SPF and DMARC). `headers` adds headers such
      *                        as List-Unsubscribe. Both last for this one email:
      *                        CI4's clear() after each send drops them, and the
      *                        next send takes the From from Config\Email again.
+     *                        `attachments` are files held in memory (content, the
+     *                        name the recipient sees, MIME type), as the visitor
+     *                        message relay sends them; also cleared after the send.
      *
      * @return bool Whether it went out. Callers that must not block on mail
      *              (signup, owner edit) can ignore it; the contact form uses it
@@ -69,6 +72,11 @@ class Mailer
             $email->setSubject($subject);
             $email->setMessage($body);
             $email->setMailType('html');
+            foreach ($options['attachments'] ?? [] as $file) {
+                // A non-empty MIME makes CI4 treat the first argument as the
+                // file's bytes rather than a path.
+                $email->attach($file['content'], 'attachment', self::oneLine($file['name']), $file['mime']);
+            }
 
             if ($email->send()) {
                 MailHealth::recordSuccess();
@@ -93,6 +101,17 @@ class Mailer
                 MailHealth::recordFailure($e->getMessage());
             } catch (\Throwable) {
                 // Nothing left to do — the log line above is the last resort.
+            }
+        } finally {
+            // CI4's clear() keeps attachments unless asked, success or not, and
+            // service('email') is shared: without this the next email (the
+            // visitor's receipt, say) would carry the files. After the
+            // printDebugger() read above, which clear() would empty.
+            if (($options['attachments'] ?? []) !== []) {
+                try {
+                    service('email')->clear(true);
+                } catch (\Throwable) {
+                }
             }
         }
 

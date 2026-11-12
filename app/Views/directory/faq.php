@@ -65,6 +65,11 @@ $groups = [
                 'a'  => 'Anyone who has used a business can review it on its profile: a star rating from one to five and a few words about how it went. You confirm your email address first, and a person here reads every review before it is published. We publish honest reviews whether they are good or bad, and we do not publish reviews that are fake, from someone who was not a customer, abusive, or that share someone\'s private details. Your email address is never shown; the review appears under your first name and surname initial. The business can reply publicly, and anyone can report a review they think breaks our <a href="' . base_url('terms') . '#reviews">terms</a>. Businesses cannot pay to remove a review, and the star rating does not change where a business appears in discovery results.',
             ],
             [
+                'id' => 'email-a-business',
+                'q'  => 'Why can I not see a business\'s email address?',
+                'a'  => 'To protect businesses from spam and from people who copy addresses off websites. Use <strong>Email this business</strong> on the profile instead: we pass your message, and up to three documents you attach, on by email and send you a confirmation, and the business replies to you directly. We do not keep a copy of your message. A business can choose to show its address on its profile as well. If you own a profile, you will find that switch under Details in <a href="' . base_url('business') . '">your profile dashboard</a>.',
+            ],
+            [
                 'id' => 'verified',
                 'q'  => 'What does the Verified Business badge actually mean?',
                 'a'  => 'That we asked the business for two documents and a person looked at them: a company registration document, and an ID document for the owner. We checked that the business is really registered and that the person running the profile is really its owner. It is a check on <em>identity</em>, not on quality. It is not a rating, a recommendation, or any statement about the work. Businesses without the badge are not suspect; most simply have not applied. <a href="' . base_url('verified') . '">Full details of what we check</a>.',

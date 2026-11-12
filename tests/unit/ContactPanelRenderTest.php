@@ -13,7 +13,7 @@ use CodeIgniter\Test\CIUnitTestCase;
  */
 final class ContactPanelRenderTest extends CIUnitTestCase
 {
-    private function render(array $row, bool $showWeb = true): string
+    private function render(array $row, bool $showWeb = true, bool $emailPublic = true): string
     {
         helper(['directory_ui', 'map']);
 
@@ -28,8 +28,9 @@ final class ContactPanelRenderTest extends CIUnitTestCase
             ],
             'heading'  => 'Contact',
             'showWeb'  => $showWeb,
-            'emailUrl' => 'https://example.test/directory/hana-nail/email',
-        ]), ENT_QUOTES | ENT_HTML5);
+            'emailUrl'   => $emailPublic ? 'https://example.test/directory/hana-nail/email' : '',
+            'messageUrl' => 'https://example.test/directory/hana-nail/message',
+        ], ['saveData' => false]), ENT_QUOTES | ENT_HTML5);
     }
 
     public function testTitleAndContactPersonAreNeverRendered(): void
@@ -66,6 +67,22 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringNotContainsString(strrev('owner@example.test'), $html);
         $this->assertStringContainsString('Show email', $html);
         $this->assertStringContainsString('data-reveal-url="https://example.test/directory/hana-nail/email"', $html);
+    }
+
+    public function testEmailThisBusinessIsAlwaysOfferedAndShowEmailOnlyWhenPublic(): void
+    {
+        $private = $this->render(['email' => 'owner@example.test'], true, false);
+        $this->assertStringContainsString('Email this business', $private);
+        $this->assertStringContainsString('href="https://example.test/directory/hana-nail/message"', $private);
+        $this->assertStringNotContainsString('Show email', $private);
+        $this->assertStringNotContainsString('owner@example.test', $private);
+
+        $public = $this->render(['email' => 'owner@example.test']);
+        $this->assertStringContainsString('Email this business', $public);
+        $this->assertStringContainsString('Show email', $public);
+
+        $this->assertStringContainsString('Email this branch', $this->render(['email' => 'b@example.test'], false, false));
+        $this->assertStringNotContainsString('Email this', $this->render(['phone' => '021 555 0100']));
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Commands;
 
 use App\Services\GoogleDataService;
+use App\Services\ListingMessageService;
 use App\Services\ListingStatsService;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
@@ -14,6 +15,8 @@ use CodeIgniter\CLI\CLI;
  *
  * 1. Deletes our own daily totals and Google's older than 25 months, which
  *    the Privacy policy promises ("Profile statistics").
+ *    Also deletes the "Email this business" log rows older than 90 days
+ *    (ListingMessageService::purgeOld(), Privacy policy).
  * 2. Pulls Search Console and GA4 for every day not pulled yet
  *    (GoogleDataService::catchUp()), back Config\Google::$catchUpDays days,
  *    or --backfill days on the first run (Search Console keeps 16 months,
@@ -43,6 +46,10 @@ class DirectoryStats extends BaseCommand
         $pruned = (new ListingStatsService())->prune() + $google->prune();
         if (! $quiet) {
             CLI::write('Deleted ' . $pruned . ' row(s) of statistics older than ' . ListingStatsService::KEEP_MONTHS . ' months.', 'green');
+        }
+        $messages = (new ListingMessageService())->purgeOld();
+        if (! $quiet) {
+            CLI::write('Deleted ' . $messages . ' message log row(s) older than ' . ListingMessageService::RETENTION_DAYS . ' days.', 'green');
         }
 
         if (array_key_exists('no-google', $params) || CLI::getOption('no-google') !== null) {

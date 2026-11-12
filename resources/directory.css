@@ -1967,6 +1967,14 @@
     text-wrap: balance;
   }
   .profile-grid { @apply mt-10 grid gap-10 lg:grid-cols-[2fr_1fr] lg:gap-14; }
+  /* Below lg the page is one column, and the contact card (Book, WhatsApp,
+     Email, phone) comes first, above the description (owner, 12 Nov 2026).
+     Both columns become display: contents, so their panels are items of one
+     flex column and the card can take order: -1; nothing is rendered twice.
+     The gap goes to 0 because every panel brings its own spacing. */
+  .profile-grid { @apply max-lg:flex max-lg:flex-col max-lg:gap-0; }
+  .profile-grid > div { @apply max-lg:contents; }
+  .profile-grid > div > .profile-contact { @apply max-lg:order-first max-lg:mb-8; }
 
   /* The left column is the profile's story, so its panels are sections on the
      canvas, not boxes: a hairline above, generous space, and the heading as a
@@ -1997,8 +2005,10 @@
      with each panel a quiet section of it. */
   .profile-related { @apply mt-16 border-t border-slate-200 pt-12 sm:mt-20; }
   .dark .profile-related { @apply border-slate-800; }
-  .profile-grid > div:last-child > .panel { @apply border-transparent bg-slate-50; }
-  .dark .profile-grid > div:last-child > .panel { @apply border-transparent bg-surface-tone; }
+  .profile-grid > div:last-child > .panel,
+  .profile-grid > div:last-child > .profile-contact > .panel { @apply border-transparent bg-slate-50; }
+  .dark .profile-grid > div:last-child > .panel,
+  .dark .profile-grid > div:last-child > .profile-contact > .panel { @apply border-transparent bg-surface-tone; }
   /* .kv is one label/value row; panels stack several of them. */
   .kv    { @apply flex justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0; }
   .kv .k { @apply shrink-0 font-medium text-slate-500; }

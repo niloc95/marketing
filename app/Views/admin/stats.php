@@ -54,7 +54,7 @@ for ($t = strtotime($from); $t <= strtotime($to); $t += DAY) {
         'title' => date('D j M', $t) . ': ' . number_format($views) . ' views, ' . number_format((int) ($byDay[$day]['taps'] ?? 0)) . ' taps',
     ];
 }
-$kinds = ['taps_call' => 'Call', 'taps_whatsapp' => 'WhatsApp', 'taps_website' => 'Website', 'taps_directions' => 'Directions', 'taps_booking' => 'Booking', 'taps_email' => 'Email shown'];
+$kinds = ['taps_call' => 'Call', 'taps_whatsapp' => 'WhatsApp', 'taps_website' => 'Website', 'taps_directions' => 'Directions', 'taps_booking' => 'Booking', 'taps_email' => 'Emails sent or shown'];
 ?>
 
 <section class="section">
