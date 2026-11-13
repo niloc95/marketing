@@ -76,6 +76,7 @@ $whoParam = $who === '' ? null : $who;
 <?= $this->section('content') ?>
 <section class="section">
     <div class="container">
+        <?= view('directory/_demo_banner', ['listing' => $listing, 'where' => 'booking'], ['saveData' => false]) ?>
         <p class="mb-2 text-sm"><a class="underline" href="<?= base_url('directory/' . $listing['slug']) ?>"><?= esc($listing['display_name']) ?></a></p>
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white">Book online</h1>
         <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>.</p>

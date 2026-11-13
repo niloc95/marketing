@@ -54,7 +54,9 @@ class DirectoryService
     {
         $scope = service('site')->scopeSql($prefix . 'country_code');
 
-        return $prefix . "status = 'published'" . ($scope !== '' ? ' AND ' . $scope : '');
+        // A demo profile (is_demo, `spark demo:fernwood`) opens by its own link
+        // only: never in a list, count, map, strip, typeahead or sitemap.
+        return $prefix . "status = 'published' AND " . $prefix . 'is_demo = 0' . ($scope !== '' ? ' AND ' . $scope : '');
     }
 
     /**

@@ -261,6 +261,21 @@ if (! function_exists('listing_has_premium')) {
     }
 }
 
+if (! function_exists('listing_is_demo')) {
+    /**
+     * A demo profile (is_demo, set only by `spark demo:fernwood`): a made up
+     * business that shows what a profile and online booking look like. Left
+     * out of discovery by DirectoryService::published(), noindex with no
+     * structured data, a banner on its pages, and no booking is ever taken.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_is_demo(array $listing): bool
+    {
+        return (int) ($listing['is_demo'] ?? 0) === 1;
+    }
+}
+
 if (! function_exists('bookings_in_premium')) {
     /**
      * Whether the paid plan's sales copy may promise online bookings: the
@@ -800,6 +815,11 @@ if (! function_exists('listing_is_indexable')) {
      */
     function listing_is_indexable(array $listing): bool
     {
+        // A made up business is never offered to search engines.
+        if (listing_is_demo($listing)) {
+            return false;
+        }
+
         $config  = config('Directory');
         $minText = (int) $config->indexMinDescription;
 
