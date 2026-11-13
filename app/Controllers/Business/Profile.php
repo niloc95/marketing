@@ -104,6 +104,10 @@ class Profile extends BaseController
             $extra = array_merge($gallery['errors'], $this->applyMenuUpload((int) $listing['id']), $this->resolveBrands((int) $listing['id']));
         }
 
+        if ($section === 'details') {
+            (new \App\Services\Search\CategoryMatchService())->record((int) $listing['id'], $post);
+        }
+
         // After the gallery: photos are appended outside the save's
         // transaction and score too.
         (new ListingQualityService())->recalculate((int) $listing['id']);

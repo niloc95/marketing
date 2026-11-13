@@ -201,9 +201,7 @@ class DirectoryService
             // that group and quietly widen the search instead of narrowing it.
             $this->applySearch($builder, $q, $expand);
         }
-        if (! empty($filters['category'])) {
-            $builder->where('p.slug', $filters['category']);
-        }
+        $softFirst = $this->applyCategory($builder, $filters);
         $this->applyGroup($builder, $groupName);
         // A business with a branch in the province or town is found there
         // too, and the card says which branch (branch_place).
@@ -295,6 +293,9 @@ class DirectoryService
             // that has one. With no radius set nothing filters them out, and
             // MySQL sorts a NULL distance first, which put the unmapped ones
             // at the top of a "near me" list looking like the closest.
+            if ($softFirst !== null) {
+                $builder->orderBy($softFirst, 'DESC', false);
+            }
             $builder->orderBy('distance_m IS NULL', 'ASC', false)
                 ->orderBy('distance_m', 'ASC', false)
                 ->orderBy('xs_directory_listings.quality_score', 'DESC');
@@ -303,6 +304,9 @@ class DirectoryService
             // asked for near me asked a different question. is_featured is not
             // a key here — pinning an old listing above the new ones would make
             // the sort lie about what it is sorting by.
+            if ($softFirst !== null) {
+                $builder->orderBy($softFirst, 'DESC', false);
+            }
             $builder->orderBy('xs_directory_listings.published_at', 'DESC')
                 ->orderBy('xs_directory_listings.quality_score', 'DESC');
         } else {
@@ -313,6 +317,11 @@ class DirectoryService
             // profiles that mentioned the word once. relevanceSelect() is built
             // from what a listing says about itself, never from the badge or
             // its reviews — see the note there.
+            // The category the words named comes first, then the profiles
+            // outside it that use those words (see applyCategory()).
+            if ($softFirst !== null) {
+                $builder->orderBy($softFirst, 'DESC', false);
+            }
             if ($byRelevance) {
                 $builder->orderBy('relevance', 'DESC', false);
             }
@@ -440,18 +449,46 @@ class DirectoryService
         if ($intent->hasFilters() && $intent->keywords() !== '') {
             $q = $intent->keywords();
         }
+
+        // "solar installation": the category was understood, and the
+        // businesses that use every word come next, before anything matched
+        // on the leftover word alone. Until 13 Nov 2026 only "installation"
+        // was looked up, so the list offered Pacific Installations and a CCTV
+        // installer and no solar business at all.
+        $matched = [];
+        if (($intent->categorySlug !== null || $intent->groupSlug !== null) && $intent->keywords() !== '') {
+            $all = $this->likeTerms($this->searchTerms($typed));
+            if (count($all) >= 2) {
+                $matched = $this->descriptionSuggestions($all, $out, 3, true);
+                $out     = array_merge($out, $matched);
+            }
+            // Fewer than three: the category's own profiles fill up, best
+            // profile first (never is_featured). Leo Green Solar never says
+            // "install", and it is still the answer to "solar installation".
+            if ($intent->categorySlug !== null && count($matched) < 3) {
+                $out = array_merge($out, $this->categoryProfileSuggestions($intent->categorySlug, $out, 3 - count($matched)));
+            }
+        }
+
         if (mb_strlen($q) < 3) {
-            return array_slice($out, 0, max(1, $limit));
+            return $this->finishSuggestions($out, $matched, $typed, $limit);
         }
 
         $db      = db_connect();
         $escaped = $db->escape($q);
 
+        // An understood search with words left over ("solar installation"):
+        // businesses are looked up by everything typed, never the leftover
+        // word alone, which offered Pacific Installations (CCTV) for solar.
+        // The rows above already matched every word.
+        $leftoverOnly = ($intent->categorySlug !== null || $intent->groupSlug !== null) && $intent->keywords() !== '';
+        $nameQ        = $leftoverOnly ? $typed : $q;
+
         $listings = $this->listings
             ->select('display_name, slug, city, province, quality_score', false)
             ->where($this->published(), null, false)
-            ->like('display_name', $q)
-            ->orderBy('LOCATE(' . $escaped . ', display_name) = 1', 'DESC', false)
+            ->like('display_name', $nameQ)
+            ->orderBy('LOCATE(' . $db->escape($nameQ) . ', display_name) = 1', 'DESC', false)
             ->orderBy('is_featured', 'DESC')
             // Five slots out of an unbounded LIKE '%q%' set, and before this
             // the leftovers were handed out alphabetically — so an empty "AAA
@@ -474,8 +511,9 @@ class DirectoryService
         // name never says it, from its programmes, services or tags. Same
         // tables applySearch() reads, so the row leads to a profile the
         // results page also finds. Word starts only ("cerv", not "rvic").
+        // Not for the leftover words of an understood search (see above).
         $left = 5 - count($listings);
-        if ($left > 0) {
+        if ($left > 0 && ! $leftoverOnly) {
             $out = array_merge($out, $this->topicSuggestions($q, array_column($listings, 'slug'), $left));
         }
 
@@ -484,9 +522,14 @@ class DirectoryService
         // The same FULLTEXT the results page runs, so every row here is a
         // profile pressing Enter also finds. Four letters, not three: "plu*"
         // in a description is every "plus", where in a name it is plumbers.
+        // Every word must match once anything was understood: "dentist in
+        // sandton" offered every Sandton attorney whose description names the
+        // suburb. The related categories below still read any word.
         $terms   = mb_strlen($q) >= 4 ? $this->searchTerms($q) : [];
-        $matched = $terms === [] ? [] : $this->descriptionSuggestions($terms, $out, 5 - count(array_filter($out, static fn ($r) => $r['type'] === 'listing')));
-        $out     = array_merge($out, $matched);
+        $strict  = $intent->hasFilters() && count($this->likeTerms($terms)) >= 2;
+        $found   = $terms === [] || $leftoverOnly ? [] : $this->descriptionSuggestions($strict ? $this->likeTerms($terms) : $terms, $out, 5 - count(array_filter($out, static fn ($r) => $r['type'] === 'listing')), $strict);
+        $matched = array_merge($matched, $found);
+        $out     = array_merge($out, $found);
 
         // The people inside a business, so typing the name of the dentist
         // you were referred to offers the practice. Same gate as the team
@@ -594,15 +637,41 @@ class DirectoryService
             }
         }
 
-        // Rows found in descriptions are a sample of a longer list, so end
-        // with the way to all of it. It keeps its place inside the limit.
+        return $this->finishSuggestions($out, $matched, $typed, $limit);
+    }
+
+    /**
+     * The end of suggest(): one row per link, and when rows came from
+     * descriptions (a sample of a longer list) the way to all of it, for
+     * everything typed. It used to be the leftover words only ("Discover
+     * every match for installation" under "solar installation"). The row
+     * keeps its place inside the limit.
+     *
+     * @param list<array{type:string,label:string,sub:string,url:string}> $out
+     * @param list<array{type:string,label:string,sub:string,url:string}> $matched
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function finishSuggestions(array $out, array $matched, string $typed, int $limit): array
+    {
+        $seen = [];
+        $out  = array_values(array_filter($out, static function (array $row) use (&$seen): bool {
+            if (isset($seen[$row['url']])) {
+                return false;
+            }
+            $seen[$row['url']] = true;
+
+            return true;
+        }));
+
         if ($matched !== []) {
+            $every = base_url('directory') . '?q=' . rawurlencode($typed);
+            $out   = array_values(array_filter($out, static fn (array $r): bool => $r['url'] !== $every));
             $out   = array_slice($out, 0, max(1, $limit - 1));
             $out[] = [
                 'type'  => 'search',
-                'label' => 'Discover every match for "' . $q . '"',
+                'label' => 'Discover every match for "' . $typed . '"',
                 'sub'   => '',
-                'url'   => base_url('directory') . '?q=' . rawurlencode($q),
+                'url'   => $every,
             ];
         }
 
@@ -617,15 +686,16 @@ class DirectoryService
      *
      * @param list<string> $terms from searchTerms()
      * @param list<array{type:string,label:string,sub:string,url:string}> $offered rows already in the list
+     * @param bool $all every word must match ("solar installation"), else any one
      * @return list<array{type:string,label:string,sub:string,url:string}>
      */
-    private function descriptionSuggestions(array $terms, array $offered, int $limit): array
+    private function descriptionSuggestions(array $terms, array $offered, int $limit, bool $all = false): array
     {
         if ($limit <= 0) {
             return [];
         }
 
-        $match = $this->fulltextMatch($terms);
+        $match = $this->fulltextMatch($terms, $all);
         $taken = array_flip(array_column($offered, 'url'));
 
         // A few spare rows, because the ones already offered by name or
@@ -872,7 +942,99 @@ class DirectoryService
             ];
         }
 
+        // No place offered: the category the words named, first, and then
+        // the words themselves as a discovery. Before 13 Nov 2026 "solar
+        // installation" offered neither: only a place could make a row here.
+        if ($labels === []) {
+            $row = $this->intentCategoryRow($intent);
+            if ($row !== null) {
+                array_unshift($out, $row);
+            }
+            if ($intent->keywords() !== '') {
+                $out[] = [
+                    'type'  => 'search',
+                    'label' => trim($intent->raw),
+                    'sub'   => '',
+                    'url'   => base_url('directory') . '?q=' . rawurlencode(trim($intent->raw)),
+                ];
+            }
+        }
+
         return $out;
+    }
+
+    /**
+     * Published profiles in one category for suggest(), by quality score
+     * then name, skipping rows already offered.
+     *
+     * @param list<array{type:string,label:string,sub:string,url:string}> $offered
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function categoryProfileSuggestions(string $slug, array $offered, int $limit): array
+    {
+        if ($limit <= 0) {
+            return [];
+        }
+        $taken = array_flip(array_column($offered, 'url'));
+        $rows  = $this->listings
+            ->select('xs_directory_listings.display_name, xs_directory_listings.slug, xs_directory_listings.city, xs_directory_listings.province, c.name AS category', false)
+            ->join('xs_directory_categories c', 'c.id = xs_directory_listings.category_id')
+            ->where($this->published('xs_directory_listings.'), null, false)
+            ->where('c.slug', $slug)
+            ->orderBy('xs_directory_listings.quality_score', 'DESC')
+            ->orderBy('xs_directory_listings.display_name', 'ASC')
+            ->limit($limit + count($taken))
+            ->findAll();
+
+        $out = [];
+        foreach ($rows as $row) {
+            $url = base_url('directory/' . $row['slug']);
+            if (isset($taken[$url])) {
+                continue;
+            }
+            $where = trim(implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['province'] ?? '')])));
+            $out[] = [
+                'type'  => 'listing',
+                'label' => (string) $row['display_name'],
+                'sub'   => trim(implode(' · ', array_filter([(string) $row['category'], $where]))),
+                'url'   => $url,
+            ];
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The category (or main category) a search was read as, as a dropdown
+     * row linking to its page, or null when it is gone.
+     *
+     * @return array{type:string,label:string,sub:string,url:string}|null
+     */
+    private function intentCategoryRow(\App\Services\Search\SearchIntent $intent): ?array
+    {
+        if ($intent->categorySlug !== null) {
+            $row = $this->categories->where('is_active', 1)->where('slug', $intent->categorySlug)->first();
+
+            return $row === null ? null : [
+                'type'  => 'category',
+                'label' => (string) $row['name'],
+                'sub'   => (string) ($row['group_name'] ?? ''),
+                'url'   => base_url('directory/' . $row['slug']),
+            ];
+        }
+        if ($intent->groupSlug !== null && $intent->groupName !== null) {
+            return [
+                'type'  => 'category',
+                'label' => $intent->groupName,
+                'sub'   => 'Main category',
+                'url'   => base_url('directory') . '?group=' . rawurlencode($intent->groupSlug),
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -1104,9 +1266,7 @@ class DirectoryService
         if ($q !== '') {
             $this->applySearch($builder, $q);
         }
-        if (! empty($filters['category'])) {
-            $builder->where('p.slug', $filters['category']);
-        }
+        $this->applyCategory($builder, $filters);
         $this->applyGroup($builder, $groupName);
         // Own address only, unlike browse(): a pin is the profile's own point,
         // so a branch match would drop a Johannesburg pin on a Cape Town map.
@@ -1406,6 +1566,47 @@ class DirectoryService
     }
 
     /**
+     * The category filter, and the order key that goes with a soft one.
+     *
+     * A category picked from a link, a select or a landing page is strict:
+     * only its profiles. A category read from the visitor's words
+     * ($filters['soft'], the phrase that named it, set by
+     * Directory::interpretSearch()) also takes profiles outside it whose name,
+     * description, services or tags use those words: "solar" found only the
+     * Solar & Renewable Energy category, never the electrician whose profile
+     * says "solar installations" (owner, 13 Nov 2026). The category's own
+     * profiles still come first, through the returned key.
+     *
+     * A plain where(), like every filter after applySearch().
+     *
+     * @param \CodeIgniter\Database\BaseBuilder|\CodeIgniter\Model $builder
+     * @return string|null an ORDER BY expression (1 inside the category), or
+     *                     null when there is no soft category
+     */
+    private function applyCategory($builder, array $filters): ?string
+    {
+        if (empty($filters['category'])) {
+            return null;
+        }
+
+        $inCategory = 'p.slug = ' . $this->listings->db->escape((string) $filters['category']);
+        $phrase     = trim((string) ($filters['soft'] ?? ''));
+        $terms      = $phrase === '' ? [] : $this->likeTerms($this->searchTerms($phrase));
+        if ($terms === []) {
+            $builder->where('p.slug', $filters['category']);
+
+            return null;
+        }
+
+        $builder->where('(' . $inCategory
+            . ' OR ' . $this->fulltextMatch($terms, true)
+            . ' OR ' . $this->tagExists($phrase, [])
+            . ' OR ' . $this->serviceExists($phrase, []) . ')', null, false);
+
+        return 'COALESCE(' . $inCategory . ', 0)';
+    }
+
+    /**
      * Free-text search across everything a visitor would reasonably type.
      *
      * People search by service ("hair salon") far more than by business name, so
@@ -1687,12 +1888,26 @@ class DirectoryService
         return array_slice($out, 0, 6);
     }
 
-    /** @param list<string> $terms */
-    private function fulltextMatch(array $terms): string
+    /**
+     * @param list<string> $terms
+     * @param bool         $all   every term must match (the dropdown's "all the
+     *                            words" rows), else any one is enough
+     */
+    private function fulltextMatch(array $terms, bool $all = false): string
     {
         // Prefix-match every term; MySQL ignores tokens below
         // innodb_ft_min_token_size (3 by default), which is fine here.
-        $expr = implode(' ', array_map(static fn ($t) => $t . '*', $terms));
+        //
+        // Each word also matches its stem (DiscoveryModelService::stem()):
+        // a prefix alone never took "installation" to a profile that says
+        // "installer" (13 Nov 2026, "solar installation"). The two sit in one
+        // group, so with $all either form satisfies the word.
+        $expr = implode(' ', array_map(static function ($t) use ($all) {
+            $stem = DiscoveryModelService::stem((string) $t);
+            $one  = $stem !== mb_strtolower((string) $t) ? '(' . $t . '* ' . $stem . '*)' : $t . '*';
+
+            return ($all ? '+' : '') . $one;
+        }, $terms));
 
         return 'MATCH(xs_directory_listings.display_name, xs_directory_listings.description_text, xs_directory_listings.credentials) '
             . 'AGAINST (' . $this->listings->db->escape($expr) . ' IN BOOLEAN MODE)';

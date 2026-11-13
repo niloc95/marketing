@@ -76,7 +76,7 @@ final class RuleBasedInterpreter implements QueryInterpreter
             return SearchIntent::none($raw);
         }
 
-        $category = $group = $province = $place = null;
+        $category = $group = $province = $place = $categoryPhrase = null;
         $nearMe   = false;
         $inService = false;
         $terms = $serviceTerms = [];
@@ -101,8 +101,9 @@ final class RuleBasedInterpreter implements QueryInterpreter
                     $province = $found;
                     $matched  = $n;
                 } elseif ($category === null && $group === null && ($found = $this->category($phrase)) !== null) {
-                    $category = $found;
-                    $matched  = $n;
+                    $category       = $found;
+                    $categoryPhrase = $phrase;
+                    $matched        = $n;
                 } elseif ($category === null && $group === null && isset($this->vocabulary->groups[$phrase])) {
                     $group   = $this->vocabulary->groups[$phrase];
                     $matched = $n;
@@ -141,6 +142,7 @@ final class RuleBasedInterpreter implements QueryInterpreter
             province: $province,
             place: $place,
             nearMe: $nearMe,
+            categoryPhrase: $categoryPhrase,
         );
     }
 

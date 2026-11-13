@@ -33,6 +33,10 @@ final class SearchIntent
         public readonly ?string $province = null,
         public readonly ?string $place = null,
         public readonly bool $nearMe = false,
+        // The words that named the category ("solar" for Solar & Renewable
+        // Energy). Discovery also finds profiles outside the category that
+        // use them (DirectoryService::browse(), 'soft').
+        public readonly ?string $categoryPhrase = null,
     ) {
     }
 

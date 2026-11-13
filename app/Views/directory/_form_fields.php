@@ -189,6 +189,20 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
     </div>
     <div class="hint">Your own name, as you would sign a letter, not the name of the business. For our records, and so we know who to address when we contact you about this profile.</div>
 </fieldset>
+<?php // "What does your business do?": directory.js asks
+      // add-profile/categories (CategoryMatchService) as the business types,
+      // and a tap on a suggestion fills both category selects through the
+      // picker's category:pick event. Hidden until the script shows it, so
+      // without it the selects below are the whole picker. The words are not
+      // a profile field: they are kept with the chosen category for
+      // /admin/discovery (CategoryMatchService::record()). ?>
+<div class="field category-match" data-category-match data-url="<?= esc(base_url('add-profile/categories'), 'attr') ?>" hidden>
+    <label for="field-business-kind">What does your business do?</label>
+    <input type="text" id="field-business-kind" name="business_kind" value="<?= esc($v('business_kind'), 'attr') ?>" maxlength="120" autocomplete="off" placeholder="For example solar installation, dental practice, hair salon" aria-describedby="field-business-kind-hint" aria-controls="field-business-kind-matches" data-category-match-input>
+    <input type="hidden" name="business_kind_offered" value="" data-category-match-offered>
+    <div id="field-business-kind-matches" class="category-match-list" aria-live="polite" data-category-match-list hidden></div>
+    <div class="hint" id="field-business-kind-hint">Describe it in your own words and we suggest the best category. You can also choose it yourself below.</div>
+</div>
 <div class="form-row">
     <div class="field">
         <label>Profile type</label>

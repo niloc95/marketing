@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Services\Search\CategoryMatchService;
 use App\Services\Search\DiscoveryEventService;
 use App\Services\Search\DiscoveryModelService;
 use App\Services\SiteContext;
@@ -14,7 +15,8 @@ use Config\Sites;
  * Rebuild the discovery model (word → categories, related words, the
  * vocabulary for spelling, and what opened results taught it) from the day's
  * published profiles and the last 180 days of searches, one site at a time.
- * Purges searches and opened results older than that first.
+ * Purges searches and opened results older than that first, and what
+ * businesses typed under "What does your business do?" (CategoryMatchService).
  *
  *   php spark discovery:learn                 # every live site
  *   php spark discovery:learn --show cancer   # then print what a word points at
@@ -48,6 +50,12 @@ class DiscoveryLearn extends BaseCommand
         $purged = (new DiscoveryEventService())->purge();
         if (! $quiet && $purged > 0) {
             CLI::write(sprintf('Purged %d discovery events older than %d days.', $purged, DiscoveryEventService::KEEP_DAYS));
+        }
+
+        // What businesses typed under "What does your business do?".
+        $typed = (new CategoryMatchService())->purge();
+        if (! $quiet && $typed > 0) {
+            CLI::write(sprintf('Purged %d typed business types older than %d days.', $typed, CategoryMatchService::KEEP_DAYS));
         }
 
         foreach ([Sites::ZA, Sites::APP] as $key) {
