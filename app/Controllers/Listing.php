@@ -10,6 +10,7 @@ use App\Services\DirectoryService;
 use App\Services\ListingQualityService;
 use App\Services\PartnerService;
 use App\Services\ReferralService;
+use App\Services\Search\CategoryMatchService;
 use App\Services\VerificationService;
 
 class Listing extends BaseController
@@ -260,6 +261,24 @@ class Listing extends BaseController
     }
 
     /**
+     * GET add-profile/categories?q=: the categories that best fit what a
+     * business typed under "What does your business do?" (signup, owner and
+     * admin forms). Read only, JSON, from our own data
+     * (CategoryMatchService). Over the limit it answers an empty list with
+     * 200, as the Discover dropdown does, so the form simply shows nothing.
+     */
+    public function categories()
+    {
+        $q = mb_substr(trim((string) $this->request->getGet('q')), 0, 120);
+        if (mb_strlen($q) < 3
+            || service('throttler')->check('category-match-' . md5((string) $this->request->getIPAddress()), 60, MINUTE) === false) {
+            return $this->response->setJSON(['items' => []]);
+        }
+
+        return $this->response->setJSON(['items' => (new CategoryMatchService())->match($q, 3)]);
+    }
+
+    /**
      * Restarts the two hour clocks while someone is typing on /add-profile.
      *
      * The CSRF cookie and the session both last two hours from the page load,
@@ -407,6 +426,10 @@ class Listing extends BaseController
         if (is_string($partnerCode) && $partnerCode !== '') {
             (new PartnerService())->attribute((int) $result['id'], $partnerCode);
         }
+
+        // What the business typed under "What does your business do?", for
+        // /admin/discovery. After the save; it swallows its own errors.
+        (new CategoryMatchService())->record((int) $result['id'], $post);
 
         // Score the profile now that everything that counts towards it exists.
         // This has to be here rather than inside submitPublic(): the gallery is

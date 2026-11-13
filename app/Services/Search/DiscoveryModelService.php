@@ -475,6 +475,34 @@ class DiscoveryModelService
     }
 
     /**
+     * A light stem for matching, never for learning: "installation",
+     * "installer", "installers" and "installing" all give "install";
+     * "plumbing" gives "plumb", "cleaners" "clean". Only these endings, and
+     * only when four letters or more are left, so "water", "power" and
+     * "tiler" stay as they are. fold() and the learned tables do not use it.
+     * DirectoryService::fulltextMatch() searches the stem beside the word,
+     * and CategoryMatchService compares stems.
+     */
+    public static function stem(string $word): string
+    {
+        $word = mb_strtolower($word);
+        foreach (['ations', 'ation', 'ings', 'ing', 'ers', 'er', 'ed'] as $end) {
+            if (! str_ends_with($word, $end) || mb_strlen($word) - mb_strlen($end) < 4) {
+                continue;
+            }
+            $root = mb_substr($word, 0, -mb_strlen($end));
+            // "planning" → "plann" → "plan"; "fitter" → "fitt" → "fit" is too short and stays "fitt".
+            if (mb_strlen($root) > 4 && preg_match('/([bdgmnprt])\1$/u', $root)) {
+                $root = mb_substr($root, 0, -1);
+            }
+
+            return $root;
+        }
+
+        return $word;
+    }
+
+    /**
      * Words as written, lower case, letters only, 3 to 64 letters.
      *
      * @return array<string,true>

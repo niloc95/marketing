@@ -1265,6 +1265,25 @@
     filter: brightness(0.97);
   }
   .chip-count { @apply ml-1 opacity-60; }
+
+  /* "What does your business do?" on the profile forms (directory.js,
+     [data-category-match]): up to three suggested categories as buttons. */
+  .category-match[hidden], .category-match-list[hidden] { display: none; }
+  .category-match-list { @apply mt-2 flex flex-wrap items-center gap-2; }
+  .category-match-head { @apply m-0 w-full text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .dark .category-match-head { @apply text-slate-400; }
+  .category-match-pick {
+    @apply inline-flex flex-col items-start rounded-control border border-slate-200 bg-white px-3 py-2
+           text-left transition-colors hover:border-primary-300 hover:bg-primary-50
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500;
+  }
+  .category-match-pick[aria-pressed="true"] { @apply border-primary-500 bg-primary-50; }
+  .dark .category-match-pick { @apply border-slate-700 bg-slate-900 hover:border-primary-400 hover:bg-slate-800; }
+  .dark .category-match-pick[aria-pressed="true"] { @apply border-primary-400 bg-slate-800; }
+  .category-match-name { @apply text-sm font-semibold text-slate-800; }
+  .dark .category-match-name { @apply text-slate-100; }
+  .category-match-group { @apply text-xs text-slate-500; }
+  .dark .category-match-group { @apply text-slate-400; }
   .dark .chip {
     background-color: var(--tint-bg-dark, theme(colors.slate.800));
     color: var(--tint-fg-dark, theme(colors.slate.300));
