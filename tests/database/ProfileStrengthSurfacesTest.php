@@ -141,6 +141,49 @@ final class ProfileStrengthSurfacesTest extends CIUnitTestCase
         $this->assertSame($before, $this->listings->withDeleted()->countAllResults());
     }
 
+    /**
+     * Typing keeps the form sendable: each live score call re-sends the CSRF
+     * cookie with the same token and a fresh two hour expiry, so the token in
+     * the form never runs out while someone is working on it.
+     */
+    public function testTheScoreCallRenewsTheCsrfCookieWithTheSameToken(): void
+    {
+        $config = config('Security');
+        $name   = config('Cookie')->prefix . $config->cookieName;
+        $hash   = bin2hex(random_bytes(16)); // the framework's own token length
+        service('superglobals')->setCookie($name, $hash);
+
+        try {
+            $result = $this->post('add-profile/score', ['category_id' => (string) $this->categoryId]);
+        } finally {
+            // The request, response and security services are shared: drop
+            // them so the cookie cannot reach the next test.
+            service('superglobals')->unsetCookie($name);
+            Services::resetSingle('security');
+            Services::resetSingle('response');
+            Services::resetSingle('request');
+        }
+
+        $result->assertStatus(200);
+        $cookie = $result->response()->getCookie($config->cookieName);
+        $this->assertNotNull($cookie, 'the CSRF cookie is sent again');
+        $this->assertSame($hash, $cookie->getValue());
+        $this->assertEqualsWithDelta(time() + $config->expires, $cookie->getExpiresTimestamp(), 5);
+    }
+
+    public function testTheScoreCallHandsOutNoTokenToABrowserWithoutOne(): void
+    {
+        // Shared services keep cookies from an earlier test's request.
+        Services::resetSingle('security');
+        Services::resetSingle('response');
+        Services::resetSingle('request');
+
+        $result = $this->post('add-profile/score', ['category_id' => (string) $this->categoryId]);
+
+        $result->assertStatus(200);
+        $this->assertNull($result->response()->getCookie(config('Security')->cookieName));
+    }
+
     public function testTheSignupFormRendersTheScoreBar(): void
     {
         $page = $this->get('add-profile');

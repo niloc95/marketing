@@ -181,6 +181,11 @@ class Book extends BaseController
         if (honeypot_tripped('book')) {
             return redirect()->to($back)->with('error', 'We could not take this booking. Please try again.');
         }
+        // A demo profile shows the steps and never books, emails or stores anything.
+        if (listing_is_demo($listing)) {
+            return redirect()->to($back)->with('book_old', form_typed_fields($post))
+                ->with('error', 'This is a demo business profile, so nothing was booked and nobody was contacted.');
+        }
         $email     = strtolower(trim((string) ($post['email'] ?? '')));
         $throttler = service('throttler');
         if ($throttler->check('book-ip-' . md5((string) $this->request->getIPAddress()), 10, HOUR) === false

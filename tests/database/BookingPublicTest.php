@@ -89,6 +89,31 @@ final class BookingPublicTest extends CIUnitTestCase
         parent::tearDown();
     }
 
+    // A demo profile (is_demo, `spark demo:fernwood`, owner 12 Nov 2026)
+
+    public function testADemoProfileShowsTheStepsButNeverBooksAndIsNotDiscovered(): void
+    {
+        $this->db->table('directory_listings')->where('id', $this->listingId)->update(['is_demo' => 1]);
+        $slot = $this->firstSlot($this->sarah);
+
+        $res = $this->post('directory/salon-lumi/book', $this->form($slot['start'], $this->sarah));
+        $res->assertRedirect();
+        $this->assertSame('This is a demo business profile, so nothing was booked and nobody was contacted.', $_SESSION['error'] ?? null);
+        $this->assertSame(0, BookingAppointmentModel::forBusiness($this->listingId)->countAllResults());
+        $this->assertSame(0, BookingCustomerModel::forBusiness($this->listingId)->countAllResults());
+        $this->assertSame([], $this->sent, 'Nobody is emailed');
+
+        $profile = (string) $this->get('directory/salon-lumi')->response()->getBody();
+        $this->assertStringContainsString('data-demo-banner', $profile);
+        $this->assertStringContainsString('noindex', $profile);
+        $this->assertStringNotContainsString('application/ld+json', $profile, 'No structured data for a made up business');
+        $this->assertStringContainsString('data-demo-banner', (string) $this->get('directory/salon-lumi/book')->response()->getBody());
+
+        $this->assertStringNotContainsString('salon-lumi', (string) $this->get('directory?q=Salon+Lumi')->response()->getBody(), 'Not in discovery results');
+        $this->assertStringNotContainsString('salon-lumi', (string) $this->get('directory/suggest?q=Salon+Lumi')->response()->getBody(), 'Not in the typeahead');
+        $this->assertStringNotContainsString('salon-lumi', (string) $this->get('sitemap.xml')->response()->getBody(), 'Not in the sitemap');
+    }
+
     // Bookings' cases
 
     public function testBookLookUpAndRescheduleWithANewLink(): void

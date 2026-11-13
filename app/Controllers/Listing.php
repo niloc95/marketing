@@ -241,6 +241,8 @@ class Listing extends BaseController
         $files = is_array($post['files'] ?? null) ? $post['files'] : [];
         unset($post['files']);
 
+        $this->keepFormAlive();
+
         $strength = (new ListingQualityService())->strengthForDraft($post, $files);
         $target   = (int) config('Directory')->qualityTarget;
 
@@ -274,6 +276,43 @@ class Listing extends BaseController
         }
 
         return $this->response->setJSON(['items' => (new CategoryMatchService())->match($q, 3)]);
+    }
+
+    /**
+     * Restarts the two hour clocks while someone is typing on /add-profile.
+     *
+     * The CSRF cookie and the session both last two hours from the page load,
+     * so the owner who spent longest on their profile was the one sent back
+     * (CsrfGuard) to attach their files again. Worse, a session that ran out
+     * under a still valid token lost `listing_form_rendered_at`, and store()
+     * took them for a bot and faked a success. The live score is posted after
+     * every pause in typing, so it doubles as the heartbeat.
+     *
+     * The CSRF cookie is sent again with the SAME hash and a fresh expiry, so
+     * the token already in the form (and in any other tab) stays good and no
+     * script has to change. Nothing is renewed for a browser that has no token
+     * or no session yet: this never starts a session or hands out a token.
+     */
+    private function keepFormAlive(): void
+    {
+        $securityConfig = config('Security');
+        if ($securityConfig->csrfProtection === 'cookie') {
+            $hash = $this->request->getCookie(config('Cookie')->prefix . $securityConfig->cookieName);
+            if (is_string($hash) && preg_match('/\A[0-9a-f]{32}\z/i', $hash) === 1) {
+                service('security'); // applies the Cookie config defaults (prefix, secure, samesite)
+                $this->response->setCookie(new \CodeIgniter\Cookie\Cookie(
+                    $securityConfig->cookieName,
+                    $hash,
+                    ['expires' => $securityConfig->expires === 0 ? 0 : time() + $securityConfig->expires]
+                ));
+            }
+        }
+
+        // Starting an existing session from an AJAX call re-sends its cookie
+        // with a fresh expiry and touches the session file (CI4 Session::start).
+        if (session_exists()) {
+            session();
+        }
     }
 
     public function store()

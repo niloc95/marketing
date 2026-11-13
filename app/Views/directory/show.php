@@ -36,10 +36,11 @@ $initials = strtoupper(substr($parts[0] ?? 'W', 0, 1) . (count($parts) > 1 ? sub
 // The business node, its type mapping and its deliberate omission (no owner
 // email) all live in schema_helper.php. aggregateRating and review appear only
 // when published reviews do, built from the same $l['reviews'] the panel shows.
-$business = schema_local_business($l, $canonical);
+// A demo profile describes no real business, so it publishes no structured data.
+$business = listing_is_demo($l) ? [] : schema_local_business($l, $canonical);
 // An individual's profile is about the person: a Person node, linked to the
 // practice above by worksFor, becomes the page's mainEntity. [] otherwise.
-$person = schema_person($l, $canonical);
+$person = listing_is_demo($l) ? [] : schema_person($l, $canonical);
 
 $catSlug  = $l['category']['slug'] ?? ($l['category_slug'] ?? '');
 $province = (string) ($l['province'] ?? '');
@@ -80,6 +81,9 @@ $schema = schema_page(
         'dateModified' => schema_datetime($l['updated_at'] ?? null),
     ])
 );
+if (listing_is_demo($l)) {
+    $schema = [];
+}
 // Name, category, venue/place, then trading hours and which contact details the
 // page has: what people add to a business name when they search for it.
 $metaDesc = listing_meta_description($l);
@@ -117,6 +121,7 @@ $metaDesc = listing_meta_description($l);
           // On a wrapper rather than the .container: the photo band runs the full
           // width of the screen, outside any container, and sits inside it too. ?>
     <div class="vertical-scope <?= $style['tint'] ?>">
+    <?= view('directory/_demo_banner', ['listing' => $l, 'where' => 'profile'], ['saveData' => false]) ?>
     <?php $video = $l['video'] ?? null; ?>
     <?php $photoCount = count($l['photos'] ?? []); ?>
     <?php $hasBand = $photoCount > 0 || $video !== null; ?>
