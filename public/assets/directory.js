@@ -3066,6 +3066,23 @@
       sub.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
+    // "What does your business do?" (below) picks a category by id: open its
+    // own main category (never the type's shortlist) and select it, then tell
+    // the features, menu and facets blocks as a person's pick would.
+    sub.addEventListener('category:pick', function (e) {
+      var id = String((e.detail && e.detail.id) || '');
+      for (var i = 0; i < groups.length; i++) {
+        if (groups[i].hasAttribute('data-suggested')) continue;
+        if (groups[i].querySelector('option[value="' + id + '"]')) {
+          main.selectedIndex = i + 1;
+          show(i);
+          sub.value = id;
+          sub.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+      }
+    });
+
     // The profile type's shortlist. Each type option may carry data-suggest,
     // the category ids TYPE_SUGGESTIONS picks for it. That becomes a
     // "Suggested for {type}" entry at the top of the main list, holding CLONES
@@ -3100,6 +3117,7 @@
         var label = 'Suggested for ' + opt.textContent.trim();
         suggestGroup = document.createElement('optgroup');
         suggestGroup.label = label;
+        suggestGroup.setAttribute('data-suggested', '');
         ids.split(',').forEach(function (id) {
           var original = null;
           groups.forEach(function (g) {
@@ -3159,6 +3177,120 @@
         }
       });
     }
+  });
+
+  // ------------------------------------- "What does your business do?" matcher
+  // [data-category-match] on the profile forms. As the business types, ask
+  // add-profile/categories for the best categories (our own data, see
+  // CategoryMatchService) and offer up to three as buttons; a tap sends
+  // category:pick to the category select above, which opens the right main
+  // category and selects it. Same habits as the Discover dropdown: three
+  // letters, a debounce, a sequence number against late answers, and
+  // textContent for every label. The ids offered ride along in
+  // business_kind_offered, so /admin/discovery can tell a match from a miss.
+
+  document.querySelectorAll('[data-category-match]').forEach(function (box) {
+    var form  = box.closest('form');
+    var sub   = form ? form.querySelector('select[data-category-picker]') : null;
+    var input = box.querySelector('[data-category-match-input]');
+    var list  = box.querySelector('[data-category-match-list]');
+    var held  = box.querySelector('[data-category-match-offered]');
+    var url   = box.getAttribute('data-url');
+    if (!sub || !input || !list || !url || !window.fetch) return;
+    box.hidden = false;
+
+    var seq = 0;
+    var timer = null;
+
+    function clear() {
+      list.textContent = '';
+      list.hidden = true;
+    }
+
+    function render(items) {
+      list.textContent = '';
+      held.value = items.map(function (it) { return it.id; }).join(',');
+      var head = document.createElement('p');
+      head.className = 'category-match-head';
+      if (!items.length) {
+        head.textContent = 'Nothing fits yet? Choose your main category and subcategory below.';
+        list.appendChild(head);
+        list.hidden = false;
+        return;
+      }
+      head.textContent = items.length === 1 ? 'Best match' : 'Best matches';
+      list.appendChild(head);
+      items.forEach(function (it) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'category-match-pick';
+        b.setAttribute('data-id', String(it.id));
+        b.setAttribute('aria-pressed', String(sub.value) === String(it.id) ? 'true' : 'false');
+        var name = document.createElement('span');
+        name.className = 'category-match-name';
+        name.textContent = it.name;
+        var group = document.createElement('span');
+        group.className = 'category-match-group';
+        group.textContent = it.group;
+        b.appendChild(name);
+        b.appendChild(group);
+        list.appendChild(b);
+      });
+      list.hidden = false;
+    }
+
+    function ask() {
+      var q = input.value.trim();
+      if (q.length < 3) {
+        seq++;
+        held.value = '';
+        clear();
+        return;
+      }
+      var mine = ++seq;
+      fetch(url + '?q=' + encodeURIComponent(q), {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin'
+      })
+        .then(function (r) { return r.ok ? r.json() : { items: [] }; })
+        .then(function (data) {
+          if (mine !== seq) return;
+          render((data && data.items) || []);
+        })
+        .catch(function () { if (mine === seq) clear(); });
+    }
+
+    function pick(button) {
+      sub.dispatchEvent(new CustomEvent('category:pick', { detail: { id: button.getAttribute('data-id') } }));
+      list.querySelectorAll('.category-match-pick').forEach(function (b) {
+        b.setAttribute('aria-pressed', b === button ? 'true' : 'false');
+      });
+    }
+
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(ask, 350);
+    });
+    // Enter takes the best match rather than submitting the whole form.
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var first = list.querySelector('.category-match-pick');
+      if (first) pick(first);
+    });
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.category-match-pick');
+      if (b) pick(b);
+    });
+    // A pick made in the selects themselves lights up its suggestion, if any.
+    sub.addEventListener('change', function () {
+      list.querySelectorAll('.category-match-pick').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.getAttribute('data-id') === String(sub.value) ? 'true' : 'false');
+      });
+    });
+
+    // A form shown again after an error keeps the words: offer again.
+    if (input.value.trim().length >= 3) ask();
   });
 
   // ------------------------------------------------------- features by category

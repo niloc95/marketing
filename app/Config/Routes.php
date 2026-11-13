@@ -16,6 +16,8 @@ $routes->get('add-profile/verified', 'Listing::createVerified');
 // Live profile strength for the unsaved signup form. Before the plain
 // add-profile POST only for readability; literal segments do not collide.
 $routes->post('add-profile/score', 'Listing::score');
+// "What does your business do?": category suggestions for the profile forms.
+$routes->get('add-profile/categories', 'Listing::categories');
 $routes->post('add-profile', 'Listing::store');
 // Renamed from /add-listing on 6 Oct 2026 ("business profile", never "listing").
 // The old address is on referral emails already sent (?invite=), outreach mail,
@@ -573,6 +575,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('discovery', 'AdminDiscovery::index');
     $routes->get('stats', 'AdminStats::index');
     $routes->post('discovery/block', 'AdminDiscovery::block');
+    // Business wording from "What does your business do?" linked to a category.
+    $routes->post('discovery/category-link', 'AdminDiscovery::linkCategory');
+    $routes->post('discovery/category-unlink', 'AdminDiscovery::unlinkCategory');
     $routes->get('profile-setup', 'AdminProfileSetup::index');
     $routes->post('profile-setup/(:num)', 'AdminProfileSetup::update/$1');
     $routes->get('careers', 'AdminCareers::index');

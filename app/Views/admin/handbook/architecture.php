@@ -24,6 +24,21 @@
         <li><strong>Commands</strong> (<code>app/Commands/</code>): spark jobs run by cron (Operations chapter).</li>
     </ul>
 
+    <h3>Discovery and the category matcher</h3>
+    <ul>
+        <li>Discover has no AI and no outside service: <code>Search\RuleBasedInterpreter</code> reads the words with
+            <code>Config\Search</code>, and <code>Search\DiscoveryModelService</code> learns word to category links, related words
+            and spelling from our own profiles every night (<code>discovery:learn</code>).</li>
+        <li>A category read from a visitor's words is a preference, not a filter: "solar" lists the Solar &amp; Renewable Energy
+            profiles first, then any other profile whose name, description, services or tags use the word
+            (<code>DirectoryService::applyCategory()</code>). A category chosen from a link, a select or a category page stays strict.</li>
+        <li>Words match their stem too (<code>DiscoveryModelService::stem()</code>): "installation" finds "installer".</li>
+        <li>"What does your business do?" on the profile forms: <code>Search\CategoryMatchService</code> scores every category from
+            admin linked wording, the interpreter, <code>Config\CategoryMatch</code>, the category's own name and the learned links,
+            and offers up to three (<code>GET add-profile/categories</code>). It only suggests. It keeps what was typed with the category
+            chosen; the misses are on <code>/admin/discovery</code>, where Link sends that wording to a category.</li>
+    </ul>
+
     <h3>A request, in order</h3>
     <ol class="mb-4 list-decimal space-y-2 pl-5 text-slate-600 dark:text-slate-400">
         <li>Cloudflare (TLS, scanner block rule, AI crawl control) → Apache vhost → PHP 8.3 FPM → <code>public/index.php</code>.</li>

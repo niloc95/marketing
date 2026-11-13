@@ -489,6 +489,10 @@ class Directory extends BaseController
             // Never read from the URL. Only interpretSearch() sets it, from
             // the words; the pager carries the words.
             'place'    => '',
+            // Never read from the URL either: the words that named a category
+            // read from the search, so browse() also finds profiles outside it
+            // that use them (DirectoryService::applyCategory()).
+            'soft'     => '',
         ];
     }
 
@@ -527,6 +531,7 @@ class Directory extends BaseController
         if ($filters['category'] === '' && $filters['group'] === '') {
             $effective['category'] = $intent->categorySlug ?? '';
             $effective['group']    = $intent->groupSlug ?? '';
+            $effective['soft']     = $intent->categorySlug !== null ? (string) $intent->categoryPhrase : '';
         } else {
             $overridden[] = $intent->categoryName ?? $intent->groupName ?? '';
         }
