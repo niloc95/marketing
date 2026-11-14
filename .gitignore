@@ -219,6 +219,7 @@ marketing-site/outreach/playbook/build/
 marketing-site/outreach/playbook/.venv/
 marketing-site/outreach/playbook/assets/*.webp
 marketing-site/outreach/proposal/build/
+marketing-site/outreach/verified-brochure/build/
 marketing-site/outreach/partner-guide/build/
 marketing-site/outreach/profile-guide/build/
 /profiles-to-improve-*.csv

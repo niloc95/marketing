@@ -13,9 +13,10 @@ $canonical = base_url('compare');
  *
  * The table comes from ComparisonService (defaults in Config\Comparison, edits
  * from /admin/comparison) and every string in it is plain text, so everything
- * is escaped here. It is written to survive a skeptical reader: the rows where
- * we are behind (built-in booking) stay in on purpose, and the
- * checked-on date sits under the table.
+ * is escaped here. It is written to survive a skeptical reader: rows where
+ * we are behind stay in on purpose (built in booking was one until online
+ * bookings came with Verified in Nov 2026), and the checked on date sits
+ * under the table.
  *
  * The Local column says Free or Verified on every row, so nobody has to guess
  * which features need the paid badge. Nothing here may suggest that paying

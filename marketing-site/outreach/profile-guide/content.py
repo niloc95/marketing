@@ -45,14 +45,15 @@ ADD_URL = f"https://{HOST}/add-profile"
 VERTICALS = {"general": {"audience": None}}
 
 # Caps and settings, as the code has them today.
-PRICE = "R29.99"            # Config\Directory::$verifiedMonthlyAmount (live on /verified)
-SETUP_PRICE = "R250"        # the profile setup service, once off
+PRICE = "R60"               # live price, /pricing.json za.verified.display (14 Nov 2026)
+YEARLY_PRICE = "R625"       # /pricing.json za.verified.displayYearly
+SETUP_PRICE = "R2 000"      # the profile setup service, once off (/pricing.json za.profileSetup)
 SETUP_DAYS = 3              # Config\Directory::$profileSetupDays
 GALLERY = 8                 # Listing::GALLERY_MAX
 UPLOAD_MB = 10              # ListingImageProcessor::MAX_UPLOAD_BYTES
 GIF_MB = 2                  # ListingImageProcessor::MAX_PASSTHROUGH_BYTES
 STORED_PX = 1600            # every photo is stored as a 1600px WebP
-DESCRIPTION_MAX = 3000      # RichText::MAX_PLAIN_LENGTH
+DESCRIPTION_MAX = 5000      # RichText::MAX_PLAIN_LENGTH
 DESC_SHORT, DESC_FULL = 120, 300   # ListingQualityService DESCRIPTION_*_CHARS
 SERVICES = 30               # ServiceMenuService::MAX_SERVICES
 SERVICE_NAME = 120
@@ -428,7 +429,8 @@ _PAGES = [
              "rows": [
                  ["Facilities", "Tick what you offer: card payments, delivery, online booking, "
                                 "parking and the options for your category. Tick online booking and "
-                                "add the link to your booking page."],
+                                "add the link to your booking page, or take bookings on your "
+                                "profile itself with Verified (page 12)."],
                  ["Areas of focus", f"What you specialise in, separated with commas, up to {FOCUS}. "
                                     "“Sports injuries, back pain” for a physio."],
                  ["Credentials", "Your qualifications and registrations, as you state them."],
@@ -521,7 +523,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "09 · Verified Business"},
             {"kind": "h1", "text": "Show who you are.<br/>[[Then show everything else.]]"},
             {"kind": "para",
-             "text": f"Verified Business is {PRICE} a month, billed monthly, cancel any time. It puts a "
+             "text": f"Verified Business is {PRICE} a month or {YEARLY_PRICE} a year, cancel any time. It puts a "
                      "checked badge beside your name on your profile and in every discovery result you "
                      "appear in, and opens the features on the next four pages. Your free profile stays "
                      "free either way."},
@@ -530,6 +532,9 @@ _PAGES = [
              "rows": [
                  ["<b>The badge</b>", "Tells someone choosing between you and an unbadged business that "
                                       "we have checked who you are."],
+                 ["<b>Online bookings</b>", "Customers book a time with you right on your profile, and you "
+                                            "get a calendar for your team, reminders and a list of your "
+                                            "customers. Included, at no extra cost."],
                  ["<b>Other locations</b>", f"Up to {LOCATIONS} more branches, each with its own address, "
                                             "phone, pin and hours. Page 13."],
                  ["<b>Team members</b>", f"Up to {TEAM} people, with photos, positions and qualifications. "
