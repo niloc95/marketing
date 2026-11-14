@@ -257,8 +257,9 @@ class DemoFernwood extends BaseCommand
     }
 
     /**
-     * Fictional customers and appointments across this week and next, for
-     * screenshots of the calendar and dashboard. Never in production.
+     * Fictional customers and appointments from five weeks ago to the end of
+     * next week, for screenshots of the calendar, dashboard and analytics.
+     * Never in production.
      *
      * @param array<int,int> $svc
      * @param array<int,int> $prov
@@ -273,7 +274,8 @@ class DemoFernwood extends BaseCommand
             $db->table('booking_customers')->insert([
                 'listing_id' => $id, 'hash' => bin2hex(random_bytes(32)), 'first_name' => $first, 'last_name' => $last,
                 'email' => strtolower(str_replace(' ', '', $first . '.' . $last)) . '@customer.example',
-                'phone' => sprintf('08255501%02d', $i + 10), 'custom_fields' => '[]', 'created_at' => $now, 'updated_at' => $now,
+                'phone' => sprintf('08255501%02d', $i + 10), 'custom_fields' => '[]',
+                'created_at' => gmdate('Y-m-d H:i:s', strtotime('-' . (40 - $i * 2) . ' days')), 'updated_at' => $now,
             ]);
             $customers[] = (int) $db->insertID();
         }
@@ -284,7 +286,8 @@ class DemoFernwood extends BaseCommand
         $nowTz = new DateTimeImmutable('now', $tz);
         mt_srand(20261112);
         $c = 0;
-        for ($d = 0; $d < 12; $d++) {
+        // Five weeks back (for analytics) to the end of next week (for the calendar).
+        for ($d = -35; $d < 12; $d++) {
             $day = $mon->modify("+{$d} days");
             $dow = (int) $day->format('N');
             if ($dow === 7) {
@@ -305,7 +308,7 @@ class DemoFernwood extends BaseCommand
                         'provider_id' => $providerId, 'service_id' => $svc[$s], 'customer_id' => $customers[$c++ % count($customers)],
                         'start_at' => $start->setTimezone($utc)->format('Y-m-d H:i:s'), 'end_at' => $end->setTimezone($utc)->format('Y-m-d H:i:s'),
                         'hold_before_min' => 0, 'hold_after_min' => 0, 'stored_timezone' => 'Africa/Johannesburg',
-                        'status' => $past ? 'completed' : ($d >= 7 && mt_rand(0, 9) === 0 ? 'pending' : 'confirmed'),
+                        'status' => $past ? ['cancelled', 'no_show'][mt_rand(0, 19)] ?? 'completed' : ($d >= 7 && mt_rand(0, 9) === 0 ? 'pending' : 'confirmed'),
                         'source' => mt_rand(0, 2) ? 'public' : 'business', 'delivery_mode' => 'onsite', 'service_name' => $name,
                         'service_duration_min' => $min, 'price_cents' => $cents, 'currency' => 'ZAR', 'provider_name' => self::PEOPLE[$p][0],
                         'location_name' => 'Parkhurst', 'location_address' => '12 Fernwood Avenue, Parkhurst, Johannesburg, Gauteng, 2193',

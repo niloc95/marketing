@@ -56,7 +56,25 @@ class Book extends BaseController
         }
         $serviceId = (int) $this->request->getGet('service');
         $service   = $svc->service($serviceId) ?? (count($services) === 1 ? $services[0] : null);
-        $providers = $service !== null ? $svc->providersFor((int) $service['id']) : [];
+        // Where: the places that service is given at (with the named person,
+        // when "Book with" chose one). One place is chosen for them.
+        $placeOptions = $service !== null ? $svc->placesFor((int) $service['id'], $withId > 0 ? $withId : null) : [];
+        $placeParam   = (string) ($this->request->getGet('place') ?? '');
+        $place        = null;
+        foreach ($placeOptions as $pl) {
+            if (count($placeOptions) === 1 || ($placeParam !== '' && ctype_digit($placeParam) && $pl['id'] === (int) $placeParam)) {
+                $place = $pl;
+            }
+        }
+        $placeId   = $place !== null ? $place['id'] : null;
+        $providers = $service !== null && $place !== null ? $svc->providersFor((int) $service['id'], $placeId) : [];
+        // Who works at each place, for the Where cards.
+        $placePeople = [];
+        if ($service !== null && $place === null) {
+            foreach ($placeOptions as $pl) {
+                $placePeople[$pl['id']] = array_column($svc->providersFor((int) $service['id'], $pl['id']), 'name');
+            }
+        }
         // A person's headshot from their team card, which only a Verified or
         // Plus profile shows publicly.
         if ($providers !== [] && listing_has_premium($listing)) {
@@ -80,13 +98,13 @@ class Book extends BaseController
         $providerId = $provider !== null ? (int) $provider['id'] : null;
 
         $today = $svc->today();
-        $from  = $this->date($this->request->getGet('from')) ?? $today;
-        $from  = max($from, $today);
         $date  = $this->date($this->request->getGet('date'));
         $start = (string) ($this->request->getGet('start') ?? '');
+        $ready = $service !== null && $whoChosen;
 
-        $days  = $service !== null && $whoChosen ? $svc->days((int) $service['id'], $providerId, $from, 14) : [];
-        $times = $service !== null && $whoChosen && $date !== null ? $svc->times((int) $service['id'], $providerId, $date) : [];
+        // The month calendar of free days, as on the change page.
+        $calendar = $ready ? $svc->month((int) $service['id'], $providerId, $placeId, (string) ($this->request->getGet('month') ?? ($date !== null ? substr($date, 0, 7) : ''))) : null;
+        $times    = $ready && $date !== null ? $svc->times((int) $service['id'], $providerId, $date, $placeId) : [];
         $slot  = null;
         foreach ($times as $t) {
             if ($t['start'] === $start) {
@@ -110,17 +128,18 @@ class Book extends BaseController
             'services'  => $services,
             'service'   => $service,
             'withId'    => $withId,
-            'places'    => (new \App\Services\Bookings\TeamService((int) $listing['id']))->locationChoices($listing),
+            'placeOptions' => $placeOptions,
+            'place'     => $place,
+            'placePeople' => $placePeople,
             'providers' => $providers,
             'provider'  => $provider,
             'who'       => $whoChosen ? ($provider !== null ? (string) $provider['id'] : 'any') : '',
-            'from'      => $from,
             'today'     => $today,
-            'days'      => $days,
+            'calendar'  => $calendar,
             'date'      => $date,
             'times'     => $times,
             'slot'      => $slot,
-            'next'      => $service !== null && $whoChosen && $days === [] ? $svc->nextAvailable((int) $service['id'], $providerId) : null,
+            'next'      => $ready && $slot === null ? $svc->nextAvailable((int) $service['id'], $providerId, $placeId) : null,
             'modes'     => $service !== null ? \App\Services\Bookings\Integrations\DeliveryModes::offered((int) $listing['id'], $service) : [],
             'fields'    => $svc->customerFields($deposit !== null),
             'questions' => (new \App\Services\Bookings\CustomerService((int) $listing['id']))->customFields(),
@@ -147,6 +166,7 @@ class Book extends BaseController
             $provider > 0 ? $provider : null,
             $this->date($this->request->getGet('from')) ?? $svc->today(),
             14,
+            $this->place(),
         ), 'meta' => ['timezone' => $svc->timezone()->getName()]]);
     }
 
@@ -161,10 +181,18 @@ class Book extends BaseController
         $date     = $this->date($this->request->getGet('date'));
         $data     = $date === null ? [] : array_map(
             static fn (array $s): array => array_intersect_key($s, array_flip(['start', 'end', 'time', 'provider_id', 'provider_ids'])),
-            $svc->times((int) $this->request->getGet('service'), $provider > 0 ? $provider : null, $date),
+            $svc->times((int) $this->request->getGet('service'), $provider > 0 ? $provider : null, $date, $this->place()),
         );
 
         return $this->response->setHeader('Cache-Control', 'no-store')->setJSON(['data' => $data, 'meta' => ['date' => $date, 'timezone' => $svc->timezone()->getName()]]);
+    }
+
+    /** ?place as a location id (0 = the main address), or null when not given. */
+    private function place(): ?int
+    {
+        $place = (string) ($this->request->getGet('place') ?? '');
+
+        return ctype_digit($place) ? (int) $place : null;
     }
 
     public function store(string $slug)
@@ -173,6 +201,7 @@ class Book extends BaseController
         $post = (array) $this->request->getPost();
         $back = base_url('directory/' . $listing['slug'] . '/book') . '?' . http_build_query(array_filter([
             'service'  => (string) ($post['service_id'] ?? ''),
+            'place'    => ctype_digit((string) ($post['place'] ?? '')) ? (string) $post['place'] : '',
             'provider' => ((int) ($post['provider_id'] ?? 0)) > 0 ? (string) $post['provider_id'] : 'any',
             'date'     => $this->localDate((string) ($post['start'] ?? ''), $svc->timezone()),
             'start'    => (string) ($post['start'] ?? ''),

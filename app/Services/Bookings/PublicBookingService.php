@@ -53,6 +53,12 @@ class PublicBookingService
     /** @var list<array<string,mixed>>|null */
     private ?array $bookableProviders = null;
 
+    /** @var array<int,array{id:int,name:string,address:string}>|null */
+    private ?array $places = null;
+
+    /** @var array<int,array<int,list<array<string,mixed>>>> usual week per person, read once */
+    private array $weeks = [];
+
     /** @param array<string,mixed> $listing a published profile */
     public function __construct(private array $listing, ?DateTimeImmutable $now = null)
     {
@@ -329,11 +335,13 @@ class PublicBookingService
     }
 
     /**
-     * Bookable people who offer a service, in team order.
+     * Bookable people who offer a service, in team order. With $place (a
+     * location id, 0 = the profile's own address) only those who give it
+     * there in their usual week.
      *
      * @return list<array<string,mixed>>
      */
-    public function providersFor(int $serviceId): array
+    public function providersFor(int $serviceId, ?int $place = null): array
     {
         $service = $this->service($serviceId);
         if ($service === null) {
@@ -342,8 +350,85 @@ class PublicBookingService
 
         return array_values(array_filter(
             (new TeamService($this->listingId))->providers(),
-            static fn (array $p): bool => (int) $p['bookable'] === 1 && in_array((int) $p['id'], $service['provider_ids'], true),
+            fn (array $p): bool => (int) $p['bookable'] === 1 && in_array((int) $p['id'], $service['provider_ids'], true)
+                && ($place === null || in_array($place, $this->placeIdsOf((int) $p['id'], $serviceId), true)),
         ));
+    }
+
+    /**
+     * Every place of the business (0 = the profile's own address, then its
+     * branches), with the address the public may see.
+     *
+     * @return array<int,array{id:int,name:string,address:string}>
+     */
+    public function places(): array
+    {
+        if ($this->places !== null) {
+            return $this->places;
+        }
+        helper(['map', 'directory_ui']);
+        $names = (new TeamService($this->listingId))->locationChoices($this->listing);
+        $rows  = [0 => listing_public_view($this->listing)];
+        foreach ((new \App\Models\DirectoryPracticeLocationModel())->forListing($this->listingId) as $loc) {
+            $rows[(int) $loc['id']] = $loc;
+        }
+        $out = [];
+        foreach ($names as $id => $name) {
+            $out[$id] = ['id' => $id, 'name' => (string) $name, 'address' => isset($rows[$id]) ? map_address_text($rows[$id]) : ''];
+        }
+
+        return $this->places = $out;
+    }
+
+    /**
+     * The places a service can be booked at: where someone who offers it
+     * works a period that includes it (T29), in the places' own order. With
+     * a person, only their places.
+     *
+     * @return list<array{id:int,name:string,address:string}>
+     */
+    public function placesFor(int $serviceId, ?int $providerId = null): array
+    {
+        $ids = [];
+        foreach ($this->providersFor($serviceId) as $p) {
+            if ($providerId === null || (int) $p['id'] === $providerId) {
+                $ids = array_merge($ids, $this->placeIdsOf((int) $p['id'], $serviceId));
+            }
+        }
+
+        return array_values(array_filter($this->places(), static fn (array $pl): bool => in_array($pl['id'], $ids, true)));
+    }
+
+    /**
+     * One month of the booking calendar: the days with a free time for the
+     * service (with the person and at the place, when chosen), from today to
+     * the future booking limit, and the months either side still in range.
+     *
+     * @return array{month:string,free:list<string>,prev:?string,next:?string,first:string,last:string}
+     */
+    public function month(int $serviceId, ?int $providerId, ?int $place, ?string $month, ?int $moving = null): array
+    {
+        $today   = $this->today();
+        $horizon = $this->horizon();
+        // A real month only: "2026-13" sorts between two real ones and would
+        // get past the clamp below.
+        $month   = $month !== null && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) ? $month : substr($today, 0, 7);
+        $month   = max(substr($today, 0, 7), min(substr($horizon, 0, 7), $month));
+        $start   = new DateTimeImmutable($month . '-01', $this->timezone());
+        $from    = max($today, $start->format('Y-m-d'));
+        $to      = min($horizon, $start->format('Y-m-t'));
+        $free    = $from <= $to && ($moving !== null || $this->offered($serviceId, $providerId))
+            ? $this->engine->availableDates($serviceId, $providerId, $from, $to, $moving, $place)
+            : [];
+
+        return [
+            'month' => $month,
+            'free'  => $free,
+            'prev'  => $month > substr($today, 0, 7) ? $start->modify('-1 month')->format('Y-m') : null,
+            'next'  => $month < substr($horizon, 0, 7) ? $start->modify('+1 month')->format('Y-m') : null,
+            'first' => $today,
+            'last'  => $horizon,
+        ];
     }
 
     /**
@@ -351,7 +436,7 @@ class PublicBookingService
      *
      * @return list<string>
      */
-    public function days(int $serviceId, ?int $providerId, string $from, int $count = 14): array
+    public function days(int $serviceId, ?int $providerId, string $from, int $count = 14, ?int $place = null): array
     {
         if (! $this->offered($serviceId, $providerId)) {
             return [];
@@ -359,29 +444,51 @@ class PublicBookingService
         $from = max($from, $this->today());
         $to   = (new DateTimeImmutable($from, $this->timezone()))->modify('+' . (max(1, min(31, $count)) - 1) . ' days')->format('Y-m-d');
 
-        return $this->engine->availableDates($serviceId, $providerId, $from, $to);
+        return $this->engine->availableDates($serviceId, $providerId, $from, $to, null, $place);
     }
 
     /**
      * Free times on a date. With nobody chosen, each time names who is free.
+     * With $place, only the times at that place.
      *
      * @return list<array<string,mixed>>
      */
-    public function times(int $serviceId, ?int $providerId, string $date): array
+    public function times(int $serviceId, ?int $providerId, string $date, ?int $place = null): array
     {
         if (! $this->offered($serviceId, $providerId) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return [];
         }
 
         return $providerId !== null
-            ? $this->engine->slots($providerId, $serviceId, $date, true)
-            : $this->engine->slotsForAnyone($serviceId, $date, true);
+            ? $this->engine->slots($providerId, $serviceId, $date, true, null, $place)
+            : $this->engine->slotsForAnyone($serviceId, $date, true, $place);
     }
 
     /** The first free time from today, for "Next free time". */
-    public function nextAvailable(int $serviceId, ?int $providerId): ?array
+    public function nextAvailable(int $serviceId, ?int $providerId, ?int $place = null): ?array
     {
-        return $this->offered($serviceId, $providerId) ? $this->engine->nextAvailable($serviceId, $providerId) : null;
+        return $this->offered($serviceId, $providerId) ? $this->engine->nextAvailable($serviceId, $providerId, null, 60, null, $place) : null;
+    }
+
+    /**
+     * The places a person gives a service at in their usual week (0 = the
+     * profile's own address).
+     *
+     * @return list<int>
+     */
+    private function placeIdsOf(int $providerId, int $serviceId): array
+    {
+        helper('directory_hours');
+        $ids = [];
+        foreach ($this->weeks[$providerId] ??= $this->engine->weekPeriods($providerId) as $periods) {
+            foreach ($periods as $p) {
+                if ($p['service_ids'] === null || in_array($serviceId, $p['service_ids'], true)) {
+                    $ids[(int) ($p['location_id'] ?? 0)] = true;
+                }
+            }
+        }
+
+        return array_keys($ids);
     }
 
     /**
@@ -449,6 +556,8 @@ class PublicBookingService
         $serviceId  = (int) ($input['service_id'] ?? 0);
         $providerId = (int) ($input['provider_id'] ?? 0);
         $start      = (string) ($input['start'] ?? '');
+        // The place the customer chose, when they chose one (0 = the main address).
+        $place      = isset($input['place']) && ctype_digit((string) $input['place']) ? (int) $input['place'] : null;
         $errors     = [];
 
         $service = $this->service($serviceId);
@@ -462,7 +571,7 @@ class PublicBookingService
         }
         if ($providerId === 0) {
             $date = (new DateTimeImmutable($start, new DateTimeZone('UTC')))->setTimezone($this->timezone())->format('Y-m-d');
-            foreach ($this->times($serviceId, null, $date) as $slot) {
+            foreach ($this->times($serviceId, null, $date, $place) as $slot) {
                 if ($slot['start'] === $start) {
                     $providerId = (int) $slot['provider_ids'][0];
 
@@ -474,6 +583,9 @@ class PublicBookingService
             }
         } elseif (! in_array($providerId, array_map('intval', array_column($this->providersFor($serviceId), 'id')), true)) {
             return ['token' => null, 'reference' => null, 'errors' => ['provider_id' => AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::NOT_OFFERED]]];
+        } elseif ($place !== null && ! in_array($start, array_column($this->times($serviceId, $providerId, (new DateTimeImmutable($start, new DateTimeZone('UTC')))->setTimezone($this->timezone())->format('Y-m-d'), $place), 'start'), true)) {
+            // The time is not at the place they chose (the person works elsewhere then).
+            return ['token' => null, 'reference' => null, 'errors' => ['start' => AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::NOT_ON_THE_GRID]]];
         }
 
         // The customer as the business's form asks for them.
@@ -714,24 +826,7 @@ class PublicBookingService
      */
     public function rescheduleMonth(array $appointment, ?string $month): array
     {
-        $today   = $this->today();
-        $horizon = $this->horizon();
-        // A real month only: "2026-13" sorts between two real ones and would
-        // get past the clamp below.
-        $month   = $month !== null && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) ? $month : substr($today, 0, 7);
-        $month   = max(substr($today, 0, 7), min(substr($horizon, 0, 7), $month));
-        $start   = new DateTimeImmutable($month . '-01', $this->timezone());
-        $from    = max($today, $start->format('Y-m-d'));
-        $to      = min($horizon, $start->format('Y-m-t'));
-
-        return [
-            'month' => $month,
-            'free'  => $from <= $to ? $this->engine->availableDates((int) $appointment['service_id'], (int) $appointment['provider_id'], $from, $to, (int) $appointment['id']) : [],
-            'prev'  => $month > substr($today, 0, 7) ? $start->modify('-1 month')->format('Y-m') : null,
-            'next'  => $month < substr($horizon, 0, 7) ? $start->modify('+1 month')->format('Y-m') : null,
-            'first' => $today,
-            'last'  => $horizon,
-        ];
+        return $this->month((int) $appointment['service_id'], (int) $appointment['provider_id'], null, $month, (int) $appointment['id']);
     }
 
     /**
