@@ -11,10 +11,11 @@
  * @var array<string,mixed>|null       $provider
  * @var string                         $who       '' not chosen, 'any', or a provider id
  * @var int                            $withId    the person a "Book with" link named, 0 for none
- * @var array<int,string>              $places    location id (0 = main address) => name
- * @var string                         $from
+ * @var list<array{id:int,name:string,address:string}> $placeOptions where the chosen service is given (PublicBookingService::placesFor())
+ * @var array{id:int,name:string,address:string}|null  $place        the chosen place (0 = the main address)
+ * @var array<int,list<string>>        $placePeople who gives the service at each place, while choosing
  * @var string                         $today
- * @var list<string>                   $days
+ * @var array<string,mixed>|null       $calendar  PublicBookingService::month()
  * @var string|null                    $date
  * @var list<array<string,mixed>>      $times
  * @var array<string,mixed>|null       $slot
@@ -61,6 +62,10 @@ $types = ['email' => 'email', 'phone' => 'tel'];
 $val   = static fn (string $k): string => (string) ($old[$k] ?? '');
 $err   = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 text-sm text-rose-600">' . esc($errors[$k]) . '</p>' : '';
 $whoParam = $who === '' ? null : $who;
+$placeParam = $place !== null && count($placeOptions) > 1 ? $place['id'] : null;
+// Everything chosen so far, for the links of the later steps.
+$chosen = $service !== null ? ['service' => $service['id'], 'place' => $placeParam, 'provider' => $whoParam] : [];
+$step   = 1;
 ?>
 <?= $this->extend('layouts/public') ?>
 
@@ -107,18 +112,47 @@ $whoParam = $who === '' ? null : $who;
             <?php endif ?>
         </div>
 
-        <?php // 2. Who ?>
-        <?php if ($service !== null && count($providers) > 1): ?>
-            <div class="panel mb-4">
-                <h2 class="mb-3 font-bold">2. With</h2>
+        <?php // 2. Where (T29: a person may work at two practices) ?>
+        <?php if ($service !== null): ?>
+            <div class="panel mb-4" id="where">
+                <h2 class="mb-3 font-bold"><?= ++$step ?>. Where</h2>
+                <?php if ($placeOptions === []): ?>
+                    <p class="text-sm">This service has no times online at the moment. Please contact <?= esc($listing['display_name']) ?> to book it.</p>
+                <?php elseif ($place !== null): ?>
+                    <p class="flex flex-wrap items-start gap-3">
+                        <span class="flex items-start gap-2"><?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0 text-slate-400') ?>
+                            <span><strong><?= esc($place['name']) ?></strong><?php if ($place['address'] !== ''): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($place['address']) ?></span><?php endif ?></span></span>
+                        <?php if (count($placeOptions) > 1): ?><a class="text-sm underline" href="<?= $link(['service' => $service['id']] + ($withId > 0 ? ['provider' => $withId] : [])) ?>#where">Change</a><?php endif ?>
+                    </p>
+                <?php else: ?>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <?php foreach ($placeOptions as $pl): ?>
+                            <a class="book-place" href="<?= $link(['service' => $service['id'], 'place' => $pl['id']] + ($withId > 0 ? ['provider' => $withId] : [])) ?>#<?= $withId > 0 ? 'time' : 'with' ?>">
+                                <?= lucide('map-pin', 'mt-0.5 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-300') ?>
+                                <span class="min-w-0">
+                                    <span class="block font-semibold"><?= esc($pl['name']) ?></span>
+                                    <?php if ($pl['address'] !== ''): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($pl['address']) ?></span><?php endif ?>
+                                    <?php if (($placePeople[$pl['id']] ?? []) !== [] && $withId === 0): ?><span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">With <?= esc(implode(', ', $placePeople[$pl['id']])) ?></span><?php endif ?>
+                                </span>
+                            </a>
+                        <?php endforeach ?>
+                    </div>
+                <?php endif ?>
+            </div>
+        <?php endif ?>
+
+        <?php // 3. Who ?>
+        <?php if ($service !== null && $place !== null && count($providers) > 1): ?>
+            <div class="panel mb-4" id="with">
+                <h2 class="mb-3 font-bold"><?= ++$step ?>. With</h2>
                 <?php if ($who !== ''): ?>
                     <p class="flex flex-wrap items-center gap-3"><strong><?= $provider !== null ? esc((string) $provider['name']) : 'Anyone available' ?></strong>
-                        <a class="text-sm underline" href="<?= $link(['service' => $service['id']]) ?>">Change</a></p>
+                        <a class="text-sm underline" href="<?= $link(['service' => $service['id'], 'place' => $placeParam]) ?>#with">Change</a></p>
                 <?php else: ?>
                     <div class="flex flex-wrap gap-2">
-                        <a class="btn btn-ghost" href="<?= $link(['service' => $service['id'], 'provider' => 'any']) ?>">Anyone available</a>
+                        <a class="btn btn-ghost" href="<?= $link(['service' => $service['id'], 'place' => $placeParam, 'provider' => 'any']) ?>#time">Anyone available</a>
                         <?php foreach ($providers as $p): ?>
-                            <a class="btn btn-ghost book-who" href="<?= $link(['service' => $service['id'], 'provider' => $p['id']]) ?>">
+                            <a class="btn btn-ghost book-who" href="<?= $link(['service' => $service['id'], 'place' => $placeParam, 'provider' => $p['id']]) ?>#time">
                                 <?php if (! empty($p['photo_path'])): ?><img src="<?= esc(base_url($p['photo_path'])) ?>" alt="" width="32" height="32" class="book-who-photo" loading="lazy"><?php endif ?>
                                 <span class="text-left"><?= esc((string) $p['name']) ?><?php if (trim((string) ($p['title'] ?? '')) !== ''): ?><span class="block text-xs font-normal text-slate-500 dark:text-slate-400"><?= esc((string) $p['title']) ?></span><?php endif ?></span>
                             </a>
@@ -128,54 +162,46 @@ $whoParam = $who === '' ? null : $who;
             </div>
         <?php endif ?>
 
-        <?php // 3. Day and time ?>
-        <?php if ($service !== null && $who !== ''): ?>
+        <?php // 4. Day and time: the month on the left, that day's times on the right ?>
+        <?php if ($calendar !== null): ?>
             <div class="panel mb-4" id="time">
-                <h2 class="mb-3 font-bold"><?= count($providers) > 1 ? '3' : '2' ?>. Choose a time</h2>
+                <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
                 <?php if ($slot !== null): ?>
-                    <p class="flex flex-wrap items-center gap-3"><strong><?= esc($longDay((string) $date)) ?>, <?= esc($clock($slot['time'])) ?><?php if (count($places) > 1 && array_key_exists('location_id', $slot)): ?> at <?= esc($places[(int) ($slot['location_id'] ?? 0)] ?? '') ?><?php endif ?></strong>
-                        <a class="text-sm underline" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'date' => $date]) ?>#time">Change</a></p>
+                    <p class="flex flex-wrap items-center gap-3"><strong><?= esc($longDay((string) $date)) ?>, <?= esc($clock($slot['time'])) ?><?= $place !== null ? ' at ' . esc($place['name']) : '' ?></strong>
+                        <a class="text-sm underline" href="<?= $link($chosen + ['date' => $date]) ?>#time">Change</a></p>
                 <?php else: ?>
-                    <div class="mb-3 flex items-center gap-2 text-sm">
-                        <?php $prev = max($today, (new DateTimeImmutable($from, $tz))->modify('-14 days')->format('Y-m-d')); ?>
-                        <?php if ($from > $today): ?><a class="underline" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => $prev]) ?>#time">Earlier</a><?php endif ?>
-                        <span class="text-slate-500"><?= esc($dayName($from)) ?> to <?= esc($dayName((new DateTimeImmutable($from, $tz))->modify('+13 days')->format('Y-m-d'))) ?></span>
-                        <a class="underline" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => (new DateTimeImmutable($from, $tz))->modify('+14 days')->format('Y-m-d')]) ?>#time">Later</a>
-                    </div>
-                    <?php if ($days === []): ?>
-                        <p class="text-sm">No free times in these days.
-                            <?php if ($next !== null): ?>The next free time is <a class="underline" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => $next['date'], 'date' => $next['date']]) ?>#time"><?= esc($longDay($next['date'])) ?> at <?= esc($clock($next['time'])) ?></a>.<?php endif ?>
-                        </p>
-                    <?php else: ?>
-                        <div class="flex flex-wrap gap-2">
-                            <?php foreach ($days as $d): ?>
-                                <a class="<?= $d === $date ? 'btn btn-primary' : 'btn btn-ghost' ?> btn-xs" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => $from, 'date' => $d]) ?>#time"<?= $d === $date ? ' aria-current="date"' : '' ?>><?= esc($dayName($d)) ?></a>
-                            <?php endforeach ?>
+                    <div class="book-when">
+                        <?= view('book/_month', [
+                            'calendar' => $calendar,
+                            'date'     => $date,
+                            'timezone' => $tz,
+                            'dayUrl'   => static fn (string $d): string => $link($chosen + ['date' => $d]) . '#time',
+                            'monthUrl' => static fn (string $m): string => $link($chosen + ['month' => $m]) . '#time',
+                        ], ['saveData' => false]) ?>
+                        <div class="book-when-times">
+                            <?php if ($date === null): ?>
+                                <p class="text-sm text-slate-600 dark:text-slate-300">Choose a green day in the calendar to see its times.</p>
+                                <?php if ($next !== null): ?>
+                                    <p class="mt-3 text-sm">Next free time:
+                                        <a class="font-semibold underline" href="<?= $link($chosen + ['date' => $next['date']]) ?>#time"><?= esc($longDay($next['date'])) ?> at <?= esc($clock($next['time'])) ?></a></p>
+                                <?php elseif ($calendar['free'] === []): ?>
+                                    <p class="mt-3 text-sm">No free times in the next while. Please contact <?= esc($listing['display_name']) ?>.</p>
+                                <?php endif ?>
+                            <?php else: ?>
+                                <h3 class="mb-3 font-semibold"><?= esc($longDay($date)) ?></h3>
+                                <?php if ($times === []): ?>
+                                    <p class="text-sm">No times left on this day. Try another day.</p>
+                                <?php else: ?>
+                                    <div class="book-times">
+                                        <?php foreach ($times as $t): ?>
+                                            <a class="btn btn-ghost btn-xs tabular-nums" href="<?= $link($chosen + ['date' => $date, 'start' => $t['start']]) ?>#details"><?= esc($clock($t['time'])) ?></a>
+                                        <?php endforeach ?>
+                                    </div>
+                                <?php endif ?>
+                                <?php if ($place !== null): ?><p class="mt-4 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><?= lucide('map-pin', 'h-3.5 w-3.5') ?> At <?= esc($place['name']) ?></p><?php endif ?>
+                            <?php endif ?>
                         </div>
-                    <?php endif ?>
-                    <?php if ($date !== null): ?>
-                        <h3 class="mt-5 mb-2 text-sm font-semibold"><?= esc($longDay($date)) ?></h3>
-                        <?php if ($times === []): ?>
-                            <p class="text-sm">No times left on this day. Try another day.</p>
-                        <?php else: ?>
-                            <?php
-                            // A person working at two places that day (T29):
-                            // the times under each place's name.
-                            $byPlace = [];
-                            foreach ($times as $t) {
-                                $byPlace[array_key_exists('location_id', $t) ? (int) ($t['location_id'] ?? 0) : -1][] = $t;
-                            }
-                            ?>
-                            <?php foreach ($byPlace as $placeId => $group): ?>
-                                <?php if (count($byPlace) > 1 && $placeId >= 0): ?><p class="mt-3 mb-1 text-sm font-semibold">At <?= esc($places[$placeId] ?? '') ?></p><?php endif ?>
-                                <div class="flex flex-wrap gap-2">
-                                    <?php foreach ($group as $t): ?>
-                                        <a class="btn btn-ghost btn-xs tabular-nums" href="<?= $link(['service' => $service['id'], 'provider' => $whoParam, 'from' => $from, 'date' => $date, 'start' => $t['start']]) ?>#details"><?= esc($clock($t['time'])) ?></a>
-                                    <?php endforeach ?>
-                                </div>
-                            <?php endforeach ?>
-                        <?php endif ?>
-                    <?php endif ?>
+                    </div>
                 <?php endif ?>
             </div>
         <?php endif ?>
@@ -187,8 +213,9 @@ $whoParam = $who === '' ? null : $who;
                 <?= honeypot_field() ?>
                 <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
                 <input type="hidden" name="provider_id" value="<?= $provider !== null ? (int) $provider['id'] : 0 ?>">
+                <?php if ($place !== null): ?><input type="hidden" name="place" value="<?= (int) $place['id'] ?>"><?php endif ?>
                 <input type="hidden" name="start" value="<?= esc($slot['start'], 'attr') ?>">
-                <h2 class="mb-4 font-bold"><?= count($providers) > 1 ? '4' : '3' ?>. Your details</h2>
+                <h2 class="mb-4 font-bold"><?= ++$step ?>. Your details</h2>
                 <?php if (count($modes) > 1): ?>
                     <fieldset class="field">
                         <legend class="mb-1 text-sm font-semibold">How would you like it?</legend>

@@ -3705,6 +3705,16 @@
   /* The booking page's "With" choices, with a headshot when there is one. */
   .book-who       { @apply gap-2; }
   .book-who-photo { @apply h-8 w-8 shrink-0 rounded-full object-cover; }
+  /* Booking: Where cards, and the two column calendar (month left, times right) */
+  .book-place      { @apply flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 no-underline transition hover:border-primary-400 hover:bg-primary-50/40; }
+  .dark .book-place { @apply border-slate-700 bg-slate-900 hover:border-primary-400 hover:bg-primary-500/10; }
+  .book-when       { @apply grid gap-6 md:grid-cols-2 md:gap-8; }
+  .book-when-times { @apply md:border-l md:border-slate-200 md:pl-8; }
+  .dark .book-when-times { @apply md:border-slate-700; }
+  .book-times      { @apply grid grid-cols-3 gap-2 sm:grid-cols-4; }
+  .book-times .btn { @apply justify-center; }
+  .book-cal .avail-grid { @apply gap-1.5 text-sm; }
+  .book-cal .avail-day  { @apply min-h-11 rounded-lg; }
 
   /* Free times in the calendar's move form: when, and where under it. */
   .free-times         { @apply mt-3; }

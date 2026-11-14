@@ -78,8 +78,6 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
                     <?php
                     // The rules in plain words: how late it can change, and how far ahead.
                     $hours = (int) $policies['reschedule_hours'];
-                    $month = new DateTimeImmutable($calendar['month'] . '-01', $timezone);
-                    $free  = array_flip($calendar['free']);
                     $monthLink = static fn (string $m): string => base_url($path) . '?month=' . $m . '#change';
                     ?>
                     <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">
@@ -90,45 +88,38 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
                             <a class="font-semibold underline" href="<?= base_url($path) . '?month=' . substr($nextFree['date'], 0, 7) . '&date=' . $nextFree['date'] ?>#change"><?= esc($tzDay($nextFree['date'])) ?>, <?= esc($twelveHour ? (new DateTimeImmutable($nextFree['start'], new DateTimeZone('UTC')))->setTimezone($timezone)->format('g:ia') : $nextFree['time']) ?></a>
                         </p>
                     <?php endif ?>
-                    <div class="mb-2 flex items-center gap-2">
-                        <?php if ($calendar['prev'] !== null): ?><a class="btn btn-ghost btn-xs" href="<?= $monthLink($calendar['prev']) ?>" aria-label="Earlier month"><?= lucide('chevron-left', 'h-4 w-4') ?></a><?php endif ?>
-                        <h3 class="font-semibold"><?= $month->format('F Y') ?></h3>
-                        <?php if ($calendar['next'] !== null): ?><a class="btn btn-ghost btn-xs" href="<?= $monthLink($calendar['next']) ?>" aria-label="Later month"><?= lucide('chevron-right', 'h-4 w-4') ?></a><?php endif ?>
-                    </div>
-                    <?php // Free days are links; the rest are plain numbers. ?>
-                    <div class="avail-grid max-w-md">
-                        <?php foreach (['M', 'T', 'W', 'T', 'F', 'S', 'S'] as $wd): ?><span class="avail-wd"><?= $wd ?></span><?php endforeach ?>
-                        <?php for ($i = 1; $i < (int) $month->format('N'); $i++): ?><span></span><?php endfor ?>
-                        <?php for ($d = $month; $d->format('m') === $month->format('m'); $d = $d->modify('+1 day')): ?>
-                            <?php $iso = $d->format('Y-m-d'); ?>
-                            <?php if (isset($free[$iso])): ?>
-                                <a class="avail-day avail-free<?= $iso === $date ? ' avail-today' : '' ?>" href="<?= base_url($path) . '?month=' . $calendar['month'] . '&date=' . $iso ?>#change"<?= $iso === $date ? ' aria-current="date"' : '' ?>><span class="avail-day-num"><?= $d->format('j') ?></span></a>
+                    <div class="book-when">
+                        <?= view('book/_month', [
+                            'calendar' => $calendar,
+                            'date'     => $date,
+                            'timezone' => $timezone,
+                            'dayUrl'   => static fn (string $d): string => base_url($path) . '?month=' . $calendar['month'] . '&date=' . $d . '#change',
+                            'monthUrl' => $monthLink,
+                        ], ['saveData' => false]) ?>
+                        <div class="book-when-times">
+                            <?php if ($date === null): ?>
+                                <p class="text-sm text-slate-600 dark:text-slate-300">Choose a green day in the calendar to see its times.</p>
+                            <?php elseif ($times === []): ?>
+                                <h3 class="mb-3 font-semibold"><?= esc((new DateTimeImmutable($date, $timezone))->format('l j F Y')) ?></h3>
+                                <p class="text-sm">No times left on this day. Try another day.</p>
                             <?php else: ?>
-                                <span class="avail-day avail-off" aria-disabled="true"><span class="avail-day-num"><?= $d->format('j') ?></span></span>
+                                <form method="post" action="<?= base_url($path . '/reschedule') ?>">
+                                    <?= csrf_field() ?>
+                                    <fieldset>
+                                        <legend class="mb-3 font-semibold"><?= esc((new DateTimeImmutable($date, $timezone))->format('l j F Y')) ?></legend>
+                                        <div class="book-times">
+                                            <?php foreach ($times as $t): ?>
+                                                <label class="btn btn-ghost btn-xs cursor-pointer tabular-nums has-[:checked]:bg-primary-500 has-[:checked]:text-white">
+                                                    <input type="radio" name="start" value="<?= esc($t['start'], 'attr') ?>" class="sr-only" required><?= esc($twelveHour ? (new DateTimeImmutable($t['start'], new DateTimeZone('UTC')))->setTimezone($timezone)->format('g:ia') : $t['time']) ?>
+                                                </label>
+                                            <?php endforeach ?>
+                                        </div>
+                                    </fieldset>
+                                    <button type="submit" class="btn btn-accent mt-4">Move my booking</button>
+                                </form>
                             <?php endif ?>
-                        <?php endfor ?>
+                        </div>
                     </div>
-                    <?php if ($calendar['free'] === []): ?>
-                        <p class="mt-2 text-sm">No free times this month.<?= $calendar['next'] !== null ? ' Try the next month.' : '' ?></p>
-                    <?php endif ?>
-                    <?php if ($date !== null): ?>
-                        <?php if ($times === []): ?>
-                            <p class="mt-3 text-sm">No times left on this day. Try another day.</p>
-                        <?php else: ?>
-                            <form method="post" action="<?= base_url($path . '/reschedule') ?>" class="mt-4">
-                                <?= csrf_field() ?>
-                                <fieldset class="flex flex-wrap gap-2">
-                                    <legend class="mb-2 text-sm font-semibold"><?= esc((new DateTimeImmutable($date, $timezone))->format('l j F Y')) ?></legend>
-                                    <?php foreach ($times as $t): ?>
-                                        <label class="btn btn-ghost btn-xs cursor-pointer has-[:checked]:bg-primary-500 has-[:checked]:text-white">
-                                            <input type="radio" name="start" value="<?= esc($t['start'], 'attr') ?>" class="sr-only" required><?= esc($twelveHour ? (new DateTimeImmutable($t['start'], new DateTimeZone('UTC')))->setTimezone($timezone)->format('g:ia') : $t['time']) ?>
-                                        </label>
-                                    <?php endforeach ?>
-                                </fieldset>
-                                <button type="submit" class="btn btn-accent mt-4">Move my booking</button>
-                            </form>
-                        <?php endif ?>
-                    <?php endif ?>
                     <?php if ($policies['rescheduling'] !== ''): ?><p class="mt-4 whitespace-pre-line text-xs text-slate-500"><?= esc($policies['rescheduling']) ?></p><?php endif ?>
                 <?php endif ?>
             </div>

@@ -294,6 +294,34 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $this->assertSame([], (new AvailabilityService($this->listings->find($this->practiceId), $now))->slots($this->doctor, $this->consult, '2030-01-15'), 'no new booking online');
     }
 
+    public function testTheCustomerChoosesWhereAndOnlySeesThatPlacesTimes(): void
+    {
+        $now = new DateTimeImmutable('2030-01-07 06:00', new DateTimeZone('Africa/Johannesburg'));
+        $svc = new PublicBookingService($this->listings->find($this->practiceId), $now);
+
+        $this->assertSame(['Practice A', 'Practice B'], array_column($svc->placesFor($this->consult), 'name'), 'consultations at both');
+        $this->assertSame([0], array_column($svc->placesFor($this->diabetes), 'id'), 'diabetes reviews only at practice A');
+        $this->assertSame('Johannesburg', $svc->placesFor($this->consult)[1]['address'], 'each place with its address');
+        $this->assertSame([$this->doctor], array_map('intval', array_column($svc->providersFor($this->consult, $this->practiceB), 'id')));
+        $this->assertSame([], $svc->providersFor($this->diabetes, $this->practiceB), 'nobody gives it there');
+
+        $atB = $svc->times($this->consult, $this->doctor, self::MONDAY, $this->practiceB);
+        $this->assertSame(['14:30', '15:00', '15:30'], array_column($atB, 'time'));
+        $this->assertSame(['09:00', '09:30'], array_slice(array_column($svc->times($this->consult, null, self::MONDAY, 0), 'time'), 0, 2), 'anyone, at practice A');
+        $this->assertSame(['2030-01-07', '2030-01-08', '2030-01-14'], array_slice($svc->month($this->consult, null, $this->practiceB, '2030-01')['free'], 0, 3), 'Mondays and Tuesdays');
+        $this->assertSame('14:30', $svc->nextAvailable($this->consult, null, $this->practiceB)['time']);
+
+        // A morning time sent with practice B is refused, an afternoon one is booked there.
+        $morning = $svc->times($this->consult, $this->doctor, self::MONDAY, 0)[0]['start'];
+        $person  = ['first_name' => 'Thandi', 'last_name' => 'Mokoena', 'email' => 'thandi@example.test', 'phone' => '0821234567', 'accept' => 1];
+        $refused = $svc->book(['service_id' => $this->consult, 'provider_id' => 0, 'place' => (string) $this->practiceB, 'start' => $morning] + $person);
+        $this->assertArrayHasKey('start', $refused['errors']);
+        $booked = $svc->book(['service_id' => $this->consult, 'provider_id' => $this->doctor, 'place' => (string) $this->practiceB, 'start' => $atB[0]['start']] + $person);
+        $this->assertSame([], $booked['errors']);
+        $row = BookingAppointmentModel::forBusiness($this->practiceId)->where('start_at', $atB[0]['start'])->first();
+        $this->assertSame($this->practiceB, (int) $row['location_id']);
+    }
+
     /** Monday and Tuesday: practice A 09:00 to 13:00, practice B 14:30 to 16:00 for consultations only. */
     private function ownersWeek(): array
     {

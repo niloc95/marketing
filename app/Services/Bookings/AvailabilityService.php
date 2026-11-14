@@ -111,10 +111,13 @@ class AvailabilityService
     /**
      * Free start times for one provider, service and local date.
      *
+     * With $place (a location id, 0 = the profile's own address) only the
+     * times at that place.
+     *
      * @return list<array{start:string,end:string,time:string,location_id:?int,provider_id:int}>
      *         start and end in UTC (Y-m-d H:i:s), time the local HH:MM
      */
-    public function slots(int $providerId, int $serviceId, string $date, bool $public = true, ?int $excludeAppointmentId = null): array
+    public function slots(int $providerId, int $serviceId, string $date, bool $public = true, ?int $excludeAppointmentId = null, ?int $place = null): array
     {
         $service = $this->bookable($providerId, $serviceId, $public, $excludeAppointmentId !== null);
         if ($service === null || ! $this->validDate($date) || ($public && $this->dateProblem($date) !== null)) {
@@ -129,6 +132,9 @@ class AvailabilityService
         $out      = [];
 
         foreach ($this->windows($providerId, $date, $serviceId) as $w) {
+            if ($place !== null && (int) ($w['location_id'] ?? 0) !== $place) {
+                continue;
+            }
             // The gaps must fit inside working time too: setting up before the
             // first booking and clearing up after the last are work.
             for ($t = $w['start'] + $before; $t + $duration + $after <= $w['end']; $t += $step) {
@@ -145,15 +151,17 @@ class AvailabilityService
     /**
      * Free start times for a service with anyone who offers it ("anyone
      * available"). Each time lists every provider free then, in team order.
+     * With $place, only times at that place (and the place on each time).
      *
      * @return list<array{start:string,end:string,time:string,provider_ids:list<int>}>
      */
-    public function slotsForAnyone(int $serviceId, string $date, bool $public = true): array
+    public function slotsForAnyone(int $serviceId, string $date, bool $public = true, ?int $place = null): array
     {
         $byStart = [];
         foreach ($this->providersFor($serviceId, $public) as $providerId) {
-            foreach ($this->slots($providerId, $serviceId, $date, $public) as $slot) {
-                $byStart[$slot['start']] ??= ['start' => $slot['start'], 'end' => $slot['end'], 'time' => $slot['time'], 'provider_ids' => []];
+            foreach ($this->slots($providerId, $serviceId, $date, $public, null, $place) as $slot) {
+                $byStart[$slot['start']] ??= ['start' => $slot['start'], 'end' => $slot['end'], 'time' => $slot['time'], 'provider_ids' => []]
+                    + ($place !== null ? ['location_id' => $slot['location_id']] : []);
                 $byStart[$slot['start']]['provider_ids'][] = $providerId;
             }
         }
@@ -202,7 +210,7 @@ class AvailabilityService
      *
      * @return array{date:string,start:string,end:string,time:string,provider_id:int}|null
      */
-    public function nextAvailable(int $serviceId, ?int $providerId, ?string $fromDate = null, int $days = 60, ?int $moving = null): ?array
+    public function nextAvailable(int $serviceId, ?int $providerId, ?string $fromDate = null, int $days = 60, ?int $moving = null, ?int $place = null): ?array
     {
         $date = $fromDate ?? $this->now->format('Y-m-d');
         for ($i = 0; $i < $days; $i++) {
@@ -211,8 +219,8 @@ class AvailabilityService
                 return null;
             }
             $slots = $providerId !== null
-                ? $this->slots($providerId, $serviceId, $day, true, $moving)
-                : array_map(static fn (array $s): array => $s + ['provider_id' => $s['provider_ids'][0]], $this->slotsForAnyone($serviceId, $day));
+                ? $this->slots($providerId, $serviceId, $day, true, $moving, $place)
+                : array_map(static fn (array $s): array => $s + ['provider_id' => $s['provider_ids'][0]], $this->slotsForAnyone($serviceId, $day, true, $place));
             if ($slots !== []) {
                 return ['date' => $day, 'start' => $slots[0]['start'], 'end' => $slots[0]['end'], 'time' => $slots[0]['time'], 'provider_id' => (int) $slots[0]['provider_id']];
             }
@@ -227,14 +235,14 @@ class AvailabilityService
      *
      * @return list<string>
      */
-    public function availableDates(int $serviceId, ?int $providerId, string $from, string $to, ?int $moving = null): array
+    public function availableDates(int $serviceId, ?int $providerId, string $from, string $to, ?int $moving = null, ?int $place = null): array
     {
         $out  = [];
         $day  = new DateTimeImmutable($from, $this->tz);
         $last = new DateTimeImmutable($to, $this->tz);
         for ($i = 0; $day <= $last && $i < 62; $i++, $day = $day->modify('+1 day')) {
             $d     = $day->format('Y-m-d');
-            $slots = $providerId !== null ? $this->slots($providerId, $serviceId, $d, true, $moving) : $this->slotsForAnyone($serviceId, $d);
+            $slots = $providerId !== null ? $this->slots($providerId, $serviceId, $d, true, $moving, $place) : $this->slotsForAnyone($serviceId, $d, true, $place);
             if ($slots !== []) {
                 $out[] = $d;
             }
