@@ -5,15 +5,15 @@ CSP, copy rules, tests, the system handbook). They are not repeated here, so the
 drift. Before working in an area, read the skill `CLAUDE.md` names for it in
 `.claude/skills/<name>/SKILL.md`.
 
-This file only says what Copilot owns: **git, and basic tasks.**
+This file says how Copilot works here: **basic tasks, and git for its own work.**
 
 ## Who does what
 
 | Who | Does |
 |---|---|
 | Owner | Decides what merges into `main` and what is released. |
-| Claude | Features, reviews, migrations, releases (`deploy-production` skill). Leaves its work uncommitted for Copilot. |
-| Copilot | Branches, commits, pushes, merges, cleanup (`/start`, `/commit`, `/finish`, `/check`), and basic tasks. |
+| Claude | Features, reviews, migrations, releases (`deploy-production` skill). Since 15 Nov 2026 also branches, commits and pushes its own work; merges and releases only on the owner's OK. |
+| Copilot | Basic tasks, reviews, cleanup, and git for its own work (`/start`, `/commit`, `/finish`, `/check`). Does not commit Claude's uncommitted work: Claude commits its own. |
 
 ## Basic tasks Copilot may take
 
