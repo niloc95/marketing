@@ -73,7 +73,7 @@ class BookingSetupService
     public static function premiumNeeded(string $siteKey): string
     {
         return $siteKey === Sites::ZA
-            ? 'Online bookings come with the Verified Business badge.'
+            ? 'Online bookings come with Verified.'
             : 'Online bookings come with Plus.';
     }
 

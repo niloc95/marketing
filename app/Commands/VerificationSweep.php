@@ -37,7 +37,7 @@ class VerificationSweep extends BaseCommand
 {
     protected $group       = 'Directory';
     protected $name        = 'directory:verifications:sweep';
-    protected $description = 'Lapse expired Verified Business subscriptions and send renewal reminders.';
+    protected $description = 'Lapse expired Verified subscriptions and send renewal reminders.';
     protected $usage       = 'directory:verifications:sweep [--quiet]';
     protected $options     = ['--quiet' => 'Only report problems (for cron).'];
 

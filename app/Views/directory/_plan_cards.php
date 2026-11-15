@@ -77,7 +77,7 @@ $rows = [
     // The note is the badge's own explainer (VERIFIED_BADGE_EXPLAINER), so the
     // card says what visitors will be told on hover. Keep in step with the
     // first item of _verification_pitch.php.
-    ['label' => 'A green <strong>Verified Business</strong> badge on your profile and beside your name in every discovery result you appear in', 'note' => VERIFIED_BADGE_EXPLAINER . ': your business registration document and your ID', 'free' => false, 'paid' => true],
+    ['label' => '<strong>Verified</strong> on your profile and beside your name in every discovery result you appear in', 'note' => VERIFIED_BADGE_EXPLAINER . ': your business registration document and your ID', 'free' => false, 'paid' => true],
 ];
 // BookingSetupService::whyNot(): online bookings come with the badge, never
 // free (owner, 10 and 12 Nov 2026). Only while bookings_in_premium().
@@ -118,13 +118,13 @@ $row = static function (array $r, string $col): string {
               // what arrives; the pill under it stays because it is what the buyer
               // will actually see on their own listing. ?>
         <?= verified_seal('verified-seal mx-auto mb-2 w-14') ?>
-        <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
+        <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified</span></p>
         <p class="plan-price"><?= esc(money($amount)) ?><span class="plan-price-unit">per month</span></p>
         <?php if (($badgeYearly = badge_yearly_price()) !== null): ?>
             <p class="pricing-yearly">or <?= esc(money($badgeYearly)) ?> a year, paid yearly</p>
         <?php endif; ?>
         <p class="plan-blurb">
-            Everything in the free profile, plus a checked badge,<?= bookings_in_premium() ? ' online bookings,' : '' ?>
+            Everything in the free profile, plus documents checked,<?= bookings_in_premium() ? ' online bookings,' : '' ?>
             your other locations, your people and your job vacancies.
         </p>
         <ul class="plan-rows">

@@ -422,7 +422,7 @@ class VerificationService
             return $cached;
         }
 
-        $name = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile', 'bookings' => 'WebScheduler Local online bookings'][$product] ?? 'Verified Business badge';
+        $name = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile', 'bookings' => 'WebScheduler Local online bookings'][$product] ?? 'WebScheduler Local Verified';
         $code = $this->paystack->createPlan(
             $name . ($cycle === DirectoryVerificationModel::CYCLE_YEARLY ? ', yearly' : ', monthly'),
             $cycle === DirectoryVerificationModel::CYCLE_YEARLY ? Paystack::INTERVAL_ANNUALLY : Paystack::INTERVAL_MONTHLY,
@@ -809,10 +809,10 @@ class VerificationService
             return $refuse('That profile no longer exists.');
         }
         if (! $this->isEnabled()) {
-            return $refuse('The Verified Business badge is switched off.');
+            return $refuse('Verified is switched off.');
         }
         if (! config('Countries')->isLocal((string) ($listing['country'] ?? ''))) {
-            return $refuse('The badge is for South African profiles only.');
+            return $refuse('Verified is for South African profiles only.');
         }
         if (empty($listing['is_verified'])) {
             return $refuse('The customer has not approved the preview yet. Send it, and verify once they approve.');
@@ -993,7 +993,7 @@ class VerificationService
                 'ok'      => true,
                 'message' => $isInternational
                     ? 'Your subscription is already cancelled. Your profile stays live until it expires.'
-                    : 'Your badge is already cancelled. It stays up until it expires.',
+                    : 'Verified is already cancelled. It stays on your profile until it expires.',
             ];
         }
 
@@ -1012,7 +1012,7 @@ class VerificationService
                 'message' => $isInternational
                     ? 'Your subscription will not renew. Your profile stays live until '
                         . $this->prettyDate($row['paid_until']) . ', then comes down.'
-                    : 'Your badge will not renew. It stays on your profile until '
+                    : 'Verified will not renew. It stays on your profile until '
                         . $this->prettyDate($row['paid_until']) . '.',
             ];
         }
@@ -1035,7 +1035,7 @@ class VerificationService
             'message' => $isInternational
                 ? 'Cancelled. You will not be charged again. Your profile stays live until '
                     . $this->prettyDate($row['paid_until']) . ', then comes down.'
-                : 'Cancelled. You will not be charged again. Your badge stays on your profile until '
+                : 'Cancelled. You will not be charged again. Verified stays on your profile until '
                     . $this->prettyDate($row['paid_until']) . '.',
         ];
     }
@@ -1909,9 +1909,9 @@ class VerificationService
             return;
         }
 
-        $what     = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile'][$extra['product'] ?? ''] ?? 'Verified Business badge';
+        $what     = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile'][$extra['product'] ?? ''] ?? 'Verified subscription';
         $subjects = [
-            'approved'  => 'Your documents are approved: activate your Verified Business badge',
+            'approved'  => 'Your documents are approved: activate Verified',
             'rejected'  => 'We could not verify your business yet',
             'activated'      => 'Your ' . $what . ' is live',
             'renewing'       => 'Your ' . $what . ' renews soon',

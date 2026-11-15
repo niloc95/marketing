@@ -162,7 +162,7 @@ $looking = [
                     <span class="company-step-num">04</span>
                     <div>
                         <h3>Get Verified, if you want to</h3>
-                        <p>A <a href="<?= base_url('verified') ?>">Verified Business</a> profile shows customers we have checked your registration and ID. It also lets you add your other locations, your team with their qualifications and areas of expertise, and your job vacancies.</p>
+                        <p>A <a href="<?= base_url('verified') ?>">Verified</a> profile shows customers we have checked your registration and ID. It also lets you add your other locations, your team with their qualifications and areas of expertise, and your job vacancies.</p>
                     </div>
                 </li>
             <?php elseif (! empty($plusOffered)): ?>

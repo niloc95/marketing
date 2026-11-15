@@ -195,7 +195,7 @@ if (! function_exists('verified_badge_pill')) {
      * Pure CSS (.verified-tip), so there is no script and nothing the CSP has
      * to allow.
      */
-    function verified_badge_pill(string $label = 'Verified Business'): string
+    function verified_badge_pill(string $label = 'Verified'): string
     {
         return '<a class="badge badge-verified verified-tip gap-1" href="' . esc(base_url('verified'), 'attr') . '"'
             . ' aria-label="' . esc($label . ': ' . VERIFIED_BADGE_EXPLAINER, 'attr') . '">'

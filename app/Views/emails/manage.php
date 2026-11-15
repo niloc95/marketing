@@ -13,8 +13,8 @@
         <?php if ($offerBadge ?? false): ?>
             <hr style="border:0;border-top:1px solid #e2e8f0;margin:22px 0">
             <p style="font-size:13px;color:#64748b">
-                While you're there: you can apply for a <strong style="color:#0f172a">Verified Business</strong>
-                badge from your dashboard. We check your company registration document and the owner's ID, and
+                While you're there: you can apply for a <strong style="color:#0f172a">Verified</strong>
+                from your dashboard. We check your company registration document and the owner's ID, and
                 you only pay (<?= esc(price_terms((string) ($badgePrice ?? ''), badge_yearly_price())) ?>) if they're approved.
                 <a href="<?= esc(base_url('verified')) ?>" style="color:#003049">What we check &rarr;</a>
             </p>

@@ -25,6 +25,6 @@ $za      = site()->forRow($listing) === Config\Sites::ZA;
     <?php if ($on || $premium): ?>
         <a class="btn btn-ghost mt-3" href="<?= base_url($on ? 'business' : 'business/calendar') ?>"><?= $on ? 'Open your bookings' : 'Set up online bookings' ?></a>
     <?php else: ?>
-        <a class="btn btn-ghost mt-3" href="<?= base_url($za ? 'verified' : 'plus') ?>"><?= $za ? 'See the Verified Business badge' : 'See Plus' ?></a>
+        <a class="btn btn-ghost mt-3" href="<?= base_url($za ? 'verified' : 'plus') ?>"><?= $za ? 'See Verified' : 'See Plus' ?></a>
     <?php endif ?>
 </div>

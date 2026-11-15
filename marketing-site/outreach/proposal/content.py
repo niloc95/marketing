@@ -89,7 +89,7 @@ _PAGES = [
             {"kind": "label", "text": "In this proposal"},
             {"kind": "small",
              "text": "Why local search matters · your business · your services · your locations · "
-                     "Verified Business · your people · your opportunities: hiring, and work coming "
+                     "Verified · your people · your opportunities: hiring, and work coming "
                      "to you · who it suits · how it compares · what it costs · getting started"},
         ],
     },
@@ -177,11 +177,11 @@ _PAGES = [
                                   ("Randburg", "Until 17:00"),
                                   ("Fourways", "Sat 08:00–12:00")]},
              "after_mm": 14},
-            {"kind": "eyebrow", "text": f"Verified Business · {PRICE_VERIFIED} a month"},
+            {"kind": "eyebrow", "text": f"Verified · {PRICE_VERIFIED} a month"},
             {"kind": "h1", "text": "People want to know<br/>[[who they are dealing with.]]"},
             {"kind": "para",
-             "text": "A green Verified Business badge on your profile, and beside your name in every "
-                     "search result, means a person here has checked your company registration "
+             "text": "Verified on your profile, and beside your name in every "
+                     "discovery result, means a person here has checked your company registration "
                      "document and the owner's ID. It also adds online bookings on your profile, your "
                      "other locations, your people, your job vacancies and replies to requests for work."},
             {"kind": "numbered", "items": [
@@ -190,10 +190,10 @@ _PAGES = [
                 ("02", "WE REVIEW THEM",
                  "Usually within two working days. <b>Nothing to pay until you are approved.</b>"),
                 ("03", "CANCEL ANY TIME",
-                 "One button. The badge stays for the month you paid for; your profile stays as it is."),
+                 "One button. Verified stays for the month you paid for; your profile stays as it is."),
             ]},
             {"kind": "small",
-             "text": "The badge checks identity, not quality, not qualifications, licences, insurance "
+             "text": "Verified checks identity, not quality, not qualifications, licences, insurance "
                      "or the standard of anyone's work, and it does not move a business up the "
                      "results. We sell the check, not the ranking."},
         ],
@@ -224,7 +224,7 @@ _PAGES = [
             {"kind": "para",
              "text": "For a practice, a firm or a salon, customers often remember the person before "
                      "the business. Showing your team turns every one of them into another way in. "
-                     "Qualifications appear as you enter them; the badge checks the business, not "
+                     "Qualifications appear as you enter them; Verified checks the business, not "
                      "each qualification."},
             {"kind": "label", "text": "Especially useful for"},
             {"kind": "small",
@@ -310,7 +310,7 @@ _PAGES = [
             ]},
             {"kind": "eyebrow", "text": "The difference"},
             {"kind": "statement",
-             "text": "No pay per lead. No bidding. Replying is part of Verified Business, at "
+             "text": "No pay per lead. No bidding. Replying is part of Verified, at "
                      f"{PRICE_VERIFIED} a month."},
         ],
     },
@@ -331,21 +331,21 @@ _PAGES = [
                  ["<b>A professional practice</b><br/>doctors, dentists, attorneys, accountants, "
                   "tax practitioners",
                   "A complete, factual profile. The kind of presence professional codes are most "
-                  "comfortable with. With Verified Business: each practitioner shown with their role "
+                  "comfortable with. With Verified: each practitioner shown with their role "
                   "and qualifications, found by name, and booked online."],
                  ["<b>A service business</b><br/>salons, spas, studios, clinics, tutors",
                   "Services with prices, photographs of your work and reviews you can reply to. "
-                  "With Verified Business: customers book a time on your profile."],
+                  "With Verified: customers book a time on your profile."],
                  ["<b>A mobile or home based business</b><br/>plumbers, electricians, mobile "
                   "hairdressers, cleaners",
                   "Choose “I travel to customers”: your profile shows your town and the suburbs you "
                   "serve, and keeps your street address private. A WhatsApp button, and, with "
-                  "Verified Business, requests for work from people nearby."],
+                  "Verified, requests for work from people nearby."],
                  ["<b>A business with branches</b><br/>practices, franchises, multisite clinics",
-                  "With Verified Business: up to 6 more locations on one profile, each with its own "
+                  "With Verified: up to 6 more locations on one profile, each with its own "
                   "address, phone, map pin and hours."],
                  ["<b>An employer</b><br/>any business that is hiring",
-                  "With Verified Business: vacancies on the Jobs board, set up for Google's job "
+                  "With Verified: vacancies on the Jobs board, set up for Google's job "
                   "search, posted straight from your profile."],
                  ["<b>A sole trader or freelancer</b>",
                   "A free profile as an individual, with your services, your area and every way to "
@@ -365,7 +365,7 @@ _PAGES = [
             {"kind": "h1", "text": "Where we stand out,<br/>[[and where we fit.]]"},
             {"kind": "para",
              "text": "Next to Google Business Profile and the South African directories. Free means "
-                     f"on every free profile; Verified means it needs Verified Business, {PRICE_VERIFIED} "
+                     f"on every free profile; Verified means it needs the Verified upgrade, {PRICE_VERIFIED} "
                      "a month."},
             {"kind": "table", "widths": [0.25, 0.27, 0.24, 0.24],
              "header": ["FEATURE", "WEBSCHEDULER LOCAL", "GOOGLE BUSINESS PROFILE", "SA DIRECTORIES"],
@@ -407,7 +407,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "What it costs"},
             {"kind": "h1", "text": "Start free.<br/>[[Add only what earns its place.]]"},
             {"kind": "table", "widths": [0.52, 0.22, 0.26],
-             "header": ["", "FREE PROFILE", "VERIFIED BUSINESS"],
+             "header": ["", "FREE PROFILE", "VERIFIED"],
              "rows": [
                  ["Found in search, on the map and in your category", "Included", "Included"],
                  ["Your own profile page, structured for Google", "Included", "Included"],
@@ -417,7 +417,7 @@ _PAGES = [
                  ["A logo and up to 8 photos", "Included", "Included"],
                  ["Customer reviews, with your replies", "Included", "Included"],
                  ["Monthly report: views and where your leads came from", "Included", "Included"],
-                 ["Verified Business badge, documents checked", "Not included", "Included"],
+                 ["Verified, documents checked", "Not included", "Included"],
                  ["Online bookings on your profile, with a calendar and reminders", "Not included", "Included"],
                  ["Up to 6 more branches or practices", "Not included", "Included"],
                  ["Up to 12 team members, found by name", "Not included", "Included"],
@@ -428,7 +428,7 @@ _PAGES = [
             {"kind": "para",
              "text": "<b>Free:</b> any business with a South African address. No monthly fee. No "
                      "subscription. No obligation. No commission, and no card required. "
-                     "<b>Verified Business:</b> optional; you pay only after your documents are "
+                     "<b>Verified:</b> optional; you pay only after your documents are "
                      "approved, monthly or yearly, and you can cancel any time. "
                      "<b>Plus:</b> for a business based outside South Africa, on "
                      "local.webscheduler.app, billed in rand, with the price shown before you pay."},

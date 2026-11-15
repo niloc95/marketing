@@ -245,7 +245,7 @@ class Profile extends BaseController
             return null;
         }
         $reason = site()->forRow($listing) === \Config\Sites::ZA
-            ? 'This part of your profile comes with the Verified Business badge. Anything you added before is kept.'
+            ? 'This part of your profile comes with Verified. Anything you added before is kept.'
             : 'This part of your profile comes with Plus. Anything you added before is kept.';
 
         return $this->response->setStatusCode(403)->setBody(view('business/locked', [

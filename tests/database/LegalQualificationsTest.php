@@ -32,7 +32,7 @@ final class LegalQualificationsTest extends CIUnitTestCase
         $terms = $this->text('terms');
 
         $this->assertStringContainsString('<h2 id="qualifications">21. Qualifications you display</h2>', $terms);
-        $this->assertStringContainsString('We do not check them, and the Verified Business badge does not cover them', $terms);
+        $this->assertStringContainsString('We do not check them, and Verified does not cover them', $terms);
         $this->assertStringContainsString('<h2>22. Contact</h2>', $terms);
         // Section 20 keeps its number; /media links to it by name.
         $this->assertStringContainsString('<h2 id="brand">20.', $terms);
@@ -42,7 +42,7 @@ final class LegalQualificationsTest extends CIUnitTestCase
     {
         $privacy = $this->text('privacy');
 
-        $this->assertStringContainsString('Team members (Verified Business profiles)', $privacy);
+        $this->assertStringContainsString('Team members (Verified profiles)', $privacy);
         $this->assertStringContainsString('We will remove them without needing the business to agree', $privacy);
         $this->assertStringContainsString('We do not ask for certificates and do not check qualifications', $privacy);
         $this->assertStringContainsString('there is no setting that hides one field while showing the rest', $privacy);

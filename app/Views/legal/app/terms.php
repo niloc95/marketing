@@ -114,7 +114,7 @@ $zaTerms   = site_url_for(\Config\Sites::ZA, 'terms');
                 <li>Use any content from the site, including business profiles, to build a competing database or to train artificial intelligence models.</li>
                 <li>Harvest the contact details published here in order to send unsolicited marketing, which anti spam and data protection laws also forbid.</li>
                 <li>Attempt to gain unauthorised access to any part of the service, or interfere with its operation.</li>
-                <li>Copy, recreate or display the Verified Business badge, or anything made to look like it (section 14).</li>
+                <li>Copy, recreate or display the Verified mark, or anything made to look like it (section 14).</li>
             </ul>
 
             <h2>8. Moderation</h2>
@@ -139,9 +139,9 @@ $zaTerms   = site_url_for(\Config\Sites::ZA, 'terms');
             <p>You agree to indemnify us against claims arising from content you submit or from your breach of these terms.</p>
             <p><strong>Nothing in these terms takes away rights you have as a consumer under the law of the country where you live</strong>, or excludes liability that cannot lawfully be excluded, such as liability for death or personal injury caused by negligence, or for fraud.</p>
 
-            <h2 id="brand">14. Our name, logo and the Verified Business badge</h2>
+            <h2 id="brand">14. Our name, logo and the Verified mark</h2>
             <p><strong>Our name and logo.</strong> The WebScheduler Local name and logo belong to us. You may show our logo, exactly as supplied on our <a href="<?= base_url('media') ?>">Media resources</a> page and following the rules there, to link to this site or to your business profile on it. That permission gives you no other rights in our name or logo, does not mean we endorse, sponsor or have checked your business, and may be withdrawn by us at any time. If we ask you to remove our logo, you must do so promptly.</p>
-            <p><strong>The Verified Business badge.</strong> The badge is a statement by us that we have checked a particular business's documents. It is shown only by us, on our sites, on a profile whose badge is live. Nobody may download, copy, recreate, alter or display the badge, or anything made to look like it, anywhere else. Showing it without our authority tells customers that we have checked a business when we have not, which may also be misleading or deceptive conduct under consumer law, and we may take legal action against anyone who does, and unpublish any profile connected with the misuse. To report misuse, please <a href="<?= base_url('contact') ?>">contact us</a>.</p>
+            <p><strong>The Verified mark.</strong> The mark is a statement by us that we have checked a particular business's documents. It is shown only by us, on our sites, on a profile that is Verified. Nobody may download, copy, recreate, alter or display the mark, or anything made to look like it, anywhere else. Showing it without our authority tells customers that we have checked a business when we have not, which may also be misleading or deceptive conduct under consumer law, and we may take legal action against anyone who does, and unpublish any profile connected with the misuse. To report misuse, please <a href="<?= base_url('contact') ?>">contact us</a>.</p>
 
             <h2 id="qualifications">15. Qualifications you display</h2>
             <p><strong>Your statement, not ours.</strong> Qualifications, credentials, licences, professional registrations and areas of focus shown on a profile, including on team member cards, are statements made by the business. We do not check them.</p>

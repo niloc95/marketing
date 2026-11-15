@@ -50,21 +50,21 @@ $prettyDate = static function (?string $date): string {
         <?= verified_seal('verified-seal mb-3 w-16') ?>
     <?php endif; ?>
     <h2 class="verify-panel-title">
-        <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span>
+        <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified</span>
     </h2>
 
     <?php if ($state === DirectoryVerificationModel::STATE_ACTIVE): ?>
 
         <?php if ($cancelled): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Your badge is <strong>cancelled and will not renew</strong>. It stays on your profile
+                Verified is <strong>cancelled and will not renew</strong>. It stays on your profile
                 until <strong><?= esc($prettyDate($row['paid_until'])) ?></strong>: you have
                 paid for that time and you keep it.
             </p>
             <p class="hint">Changed your mind? Get in touch and we will start it up again.</p>
         <?php else: ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Your badge is live on your profile and in discovery results.
+                Verified is live on your profile and in discovery results.
                 Paid through <strong><?= esc($prettyDate($row['paid_until'])) ?></strong><?= ! DirectoryVerificationModel::hasMandate($row) ? '.' : ', and it renews automatically ' . ($isYearly ? 'each year' : 'each month') . ' at ' . esc(money($row['amount'])) . '.' ?>
             </p>
             <?= view('directory/_move_payment', ['row' => $row, 'payable' => $payable]) ?>
@@ -81,7 +81,7 @@ $prettyDate = static function (?string $date): string {
                 <?php // Only offered when there is a real recurring subscription to stop.
                       // A badge activated by hand has nothing to cancel — it simply runs out. ?>
                 <form method="post" action="<?= base_url('manage/verification/cancel') ?>" class="mt-4"
-                      data-confirm="Cancel your Verified Business badge? It stays up until <?= esc($prettyDate($row['paid_until']), 'attr') ?>, then comes down.">
+                      data-confirm="Cancel Verified? It stays on your profile until <?= esc($prettyDate($row['paid_until']), 'attr') ?>, then comes off.">
                     <?= csrf_field() ?>
                     <?php // Which subscription this cancels. A listing outside
                           // South Africa can hold both this and an International
@@ -89,10 +89,10 @@ $prettyDate = static function (?string $date): string {
                           // guess — cancelling the wrong one would take their
                           // whole profile down instead of a badge. ?>
                     <input type="hidden" name="plan" value="<?= esc(DirectoryVerificationModel::PLAN_BADGE, 'attr') ?>">
-                    <button class="btn btn-ghost btn-xs text-brand-crimson">Cancel my badge</button>
+                    <button class="btn btn-ghost btn-xs text-brand-crimson">Cancel Verified</button>
                 </form>
             <?php else: ?>
-                <p class="hint">This badge was activated manually and does not renew on its own.</p>
+                <p class="hint">Verified was activated manually here and does not renew on its own.</p>
             <?php endif; ?>
         <?php endif; ?>
 
@@ -123,19 +123,19 @@ $prettyDate = static function (?string $date): string {
                 <strong>Thanks, we have your payment.</strong> We are confirming it now.
             </p>
             <p class="hint">
-                Your badge goes live on your profile as soon as that clears, usually within a few
+                Verified goes live on your profile as soon as that clears, usually within a few
                 minutes. Refresh this page to check. There is nothing else for you to do, and
                 you will not be charged twice.
             </p>
 
         <?php elseif ($payable): ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Your documents check out. Switch the badge on for
+                Your documents check out. Switch Verified on for
                 <strong><?= esc($priceLine) ?></strong>: it appears on your profile and
                 everywhere your business is discovered on the platform.
             </p>
             <p class="mt-4">
-                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Activate my badge</a>
+                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Activate Verified</a>
             </p>
         <?php else: ?>
             <?php // Card payments are not switched on for this deployment. Show the
@@ -147,14 +147,14 @@ $prettyDate = static function (?string $date): string {
             </p>
             <p class="hint">
                 We will email you about payment (<strong><?= esc(money($amount)) ?> a month</strong>) and
-                switch your badge on as soon as it clears. Nothing has been charged.
+                switch Verified on as soon as it clears. Nothing has been charged.
             </p>
         <?php endif; ?>
 
     <?php elseif ($state === DirectoryVerificationModel::STATE_LAPSED): ?>
 
         <p class="text-sm text-slate-600 dark:text-slate-300">
-            Your badge is paused. We stopped receiving payments
+            Verified is paused. We stopped receiving payments
             <?php if (! empty($row['paid_until'])): ?>
                 after <strong><?= esc($prettyDate($row['paid_until'])) ?></strong>
             <?php endif; ?>.
@@ -169,7 +169,7 @@ $prettyDate = static function (?string $date): string {
                 <strong>Thanks, we have your payment.</strong> We are confirming it now.
             </p>
             <p class="hint">
-                Your badge goes back up as soon as that clears, usually within a few minutes.
+                Verified comes back on as soon as that clears, usually within a few minutes.
                 Refresh this page to check. You will not be charged twice.
             </p>
 
@@ -184,12 +184,12 @@ $prettyDate = static function (?string $date): string {
                 We still have your approved documents, so starting again really is one step.
             </p>
             <p class="mt-4">
-                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate my badge, <?= esc($priceLine) ?></a>
+                <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Reactivate Verified, <?= esc($priceLine) ?></a>
             </p>
         <?php else: ?>
             <p class="hint">
                 We still have your approved documents. We will email you about payment
-                (<strong><?= esc(money($amount)) ?> a month</strong>) and put your badge back up as soon
+                (<strong><?= esc(money($amount)) ?> a month</strong>) and put Verified back on your profile as soon
                 as it clears.
             </p>
         <?php endif; ?>
@@ -202,7 +202,7 @@ $prettyDate = static function (?string $date): string {
             <summary class="hint">Our company details have changed</summary>
             <form method="post" action="<?= base_url('manage/verification') ?>" enctype="multipart/form-data" class="verify-form">
                 <?= csrf_field() ?>
-                <p class="hint">Send fresh documents and we will review them again before your badge goes back up.</p>
+                <p class="hint">Send fresh documents and we will review them again before Verified goes back on your profile.</p>
                 <?= view('directory/_verification_fields', ['amount' => $amount]) ?>
                 <button type="submit" class="btn btn-primary">Submit for review</button>
             </form>
@@ -235,7 +235,7 @@ $prettyDate = static function (?string $date): string {
             <a class="verify-cta-link inline-flex items-center gap-1" href="<?= base_url('verified') ?>">What we check<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
         </p>
         <details class="verify-cta-details">
-            <summary class="btn btn-accent">Apply for the badge</summary>
+            <summary class="btn btn-accent">Apply for Verified</summary>
             <form method="post" action="<?= base_url('manage/verification') ?>" enctype="multipart/form-data" class="verify-form">
                 <?= csrf_field() ?>
                 <?= view('directory/_verification_fields', ['amount' => $amount]) ?>

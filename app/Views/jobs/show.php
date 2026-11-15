@@ -223,7 +223,7 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
                     <?php // Signed in, listed, but free: replying is a Verified Business
                           // feature (JobBoardService::canUseJobsFeatures()). ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                        Replying to requests is part of the <strong>Verified Business</strong> badge.
+                        Replying to requests is part of <strong>Verified</strong>.
                         Get verified from your dashboard and you can reply to work like this, and be among
                         the first we alert when new requests come in.
                     </p>
@@ -243,7 +243,7 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
                     </form>
                 <?php else: ?>
                     <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                        <?= signup_cta()['verified'] ? 'Verified Businesses' : 'Businesses with a profile' ?> on <?= esc($siteName) ?> can reply to this request.
+                        <?= signup_cta()['verified'] ? 'Verified businesses' : 'Businesses with a profile' ?> on <?= esc($siteName) ?> can reply to this request.
                     </p>
                     <div class="flex flex-wrap gap-2">
                         <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>

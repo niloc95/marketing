@@ -95,7 +95,7 @@ $otherCell = static function (string $status): string {
     <div class="container page-flow">
         <div class="compare-legend" aria-label="What the labels mean">
             <span><span class="compare-chip compare-chip-free"><?= lucide('check', 'h-3.5 w-3.5 shrink-0') ?>Free</span> on every free business profile</span>
-            <span><?= $verifiedPill() ?> needs Verified Business<?= $offered ? ', ' . esc(price_terms($amount, badge_yearly_price())) : '' ?></span>
+            <span><?= $verifiedPill() ?> needs Verified<?= $offered ? ', ' . esc(price_terms($amount, badge_yearly_price())) : '' ?></span>
             <span><span class="compare-chip compare-chip-partial">Partly</span> available with limits, explained in the cell</span>
         </div>
 
@@ -141,9 +141,9 @@ $otherCell = static function (string $status): string {
             <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('contact') ?>">Tell us</a> and we will correct it.
         </p>
         <p class="hint">
-            Verified Business checks a company registration document and the owner's ID. It does not check
+            Verified checks a company registration document and the owner's ID. It does not check
             qualifications or the quality of anyone's work, and it does not move a business up the results.
-            <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('verified') ?>">What the badge means</a>.
+            <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('verified') ?>">What Verified means</a>.
         </p>
 
         <div class="panel mt-8 text-center">
@@ -154,7 +154,7 @@ $otherCell = static function (string $status): string {
             <div class="flex flex-wrap justify-center gap-3">
                 <a class="btn btn-accent" href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Create your free profile' ?></a>
                 <?php if ($offered): ?>
-                    <a class="btn btn-ghost" href="<?= base_url('verified') ?>">About Verified Business</a>
+                    <a class="btn btn-ghost" href="<?= base_url('verified') ?>">About Verified</a>
                 <?php endif; ?>
             </div>
         </div>

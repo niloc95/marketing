@@ -4,7 +4,7 @@
 // 'badge', 'international' (the co.za plan before local.webscheduler.app) or
 // 'plus' (that plan on .app). Manage::checkout() decides; the wording follows.
 $product = $product ?? 'badge';
-$what    = ['badge' => 'Verified Business badge', 'international' => 'International Profile', 'plus' => 'WebScheduler Local Plus'][$product] ?? 'Verified Business badge';
+$what    = ['badge' => 'Verified', 'international' => 'International Profile', 'plus' => 'WebScheduler Local Plus'][$product] ?? 'Verified';
 // Monthly or yearly (Manage::renderCheckout()). $choices is empty when there
 // is nothing to pick: yearly not on sale, or a switch, which is to yearly.
 $cycle     = $cycle ?? 'monthly';
@@ -24,7 +24,7 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'  => 'Activate your ' . $what . ' | ' . config('Directory')->siteName(),
+    'title'  => 'Activate ' . $what . ' | ' . config('Directory')->siteName(),
     'robots' => 'noindex, nofollow',
 ]) ?>
 <?= $this->endSection() ?>
@@ -39,7 +39,7 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
         <div class="checkout-layout">
             <div class="checkout-main">
                 <span class="eyebrow">Checkout</span>
-                <h1 class="checkout-title"><?= $product === 'badge' ? 'Activate your badge' : 'Activate ' . esc($what) ?></h1>
+                <h1 class="checkout-title"><?= 'Activate ' . esc($what) ?></h1>
                 <p class="checkout-lead">Here is exactly what you are agreeing to. Nothing has been charged yet.</p>
 
                 <?php if ($sandbox): ?>
@@ -103,7 +103,7 @@ $quoteOf   = static fn (?string $v): string => $v === null ? '' : ($product === 
                     <?php elseif ($product === 'international'): ?>
                         <li>Cancel any time from your dashboard: your profile stays live until the <?= $period ?> you have paid for ends.</li>
                     <?php else: ?>
-                        <li>Cancel any time from your dashboard: your badge stays up until the <?= $period ?> you have paid for ends.</li>
+                        <li>Cancel any time from your dashboard: Verified stays on your profile until the <?= $period ?> you have paid for ends.</li>
                         <li>Your business profile is free and stays free whether or not you buy this.</li>
                     <?php endif; ?>
                 </ul>

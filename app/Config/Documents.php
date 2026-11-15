@@ -39,7 +39,7 @@ class Documents extends BaseConfig
     public array $published = [
         'profile-guide' => [
             'title'   => 'Profile guide',
-            'summary' => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then online bookings, locations, team members, jobs and reviews with Verified Business.',
+            'summary' => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then online bookings, locations, team members, jobs and reviews with Verified.',
             'file'    => 'webscheduler-local-profile-guide.pdf',
             'pages'   => 19,
             'tag'     => 'Guide',
@@ -51,7 +51,7 @@ class Documents extends BaseConfig
                 'services',
                 'hours and map',
                 'brands we carry',
-                'Verified Business',
+                'Verified',
                 'locations',
                 'team members',
                 'jobs',
@@ -83,7 +83,7 @@ class Documents extends BaseConfig
             'builder' => 'marketing-site/outreach/playbook/build_playbook.py --only pdf --profile web --publish',
         ],
         'verified-business' => [
-            'title'   => 'Verified Business brochure',
+            'title'   => 'Verified brochure',
             'summary' => 'Paying for visibility, or building a presence people can find? What a Verified profile adds, what we check, and every source behind the numbers.',
             'file'    => 'webscheduler-local-verified-business.pdf',
             'pages'   => 9,

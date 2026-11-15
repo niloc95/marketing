@@ -571,7 +571,7 @@ class Manage extends BaseController
             session()->remove(self::PAYMENT_PENDING_KEY);
 
             return redirect()->to(base_url('directory/' . $listing['slug']))
-                ->with('success', 'Payment confirmed. Your Verified Business badge is live.');
+                ->with('success', 'Payment confirmed. You are now Verified.');
         }
 
         session()->set(self::PAYMENT_PENDING_KEY, time());

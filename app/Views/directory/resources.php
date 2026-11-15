@@ -23,7 +23,7 @@ $canonical = base_url('resources');
 <?= seo_meta([
     'title'       => 'Guides and reports | ' . $siteName,
     'description' => 'Free guides and reports from ' . $siteName . ' for South African businesses: '
-        . 'a profile guide, the local visibility playbook, the Verified Business brochure, the 2027 local visibility outlook and a hiring guide.',
+        . 'a profile guide, the local visibility playbook, the Verified brochure, the 2027 local visibility outlook and a hiring guide.',
     'canonical'   => $canonical,
     'schema'      => schema_page([], $canonical, 'CollectionPage', 'Guides and reports'),
 ]) ?>

@@ -16,9 +16,9 @@
               // defaulted so any caller that has not been updated says nothing. ?>
         <?php if ($offerBadge ?? false): ?>
             <div style="margin-top:22px;border:1px solid #6ee7b7;border-radius:12px;padding:16px 18px;background:#ecfdf5">
-                <p style="font-size:15px;font-weight:700;color:#065f46;margin:0 0 8px">Next: get the Verified Business badge</p>
+                <p style="font-size:15px;font-weight:700;color:#065f46;margin:0 0 8px">Next: get Verified</p>
                 <ul style="font-size:14px;line-height:1.6;color:#0f172a;margin:0 0 10px;padding-left:18px">
-                    <li>A green <strong>Verified Business</strong> badge on your profile and beside your name in discovery results</li>
+                    <li><strong>Verified</strong> on your profile and beside your name in discovery results</li>
                     <?php if (bookings_in_premium(Config\Sites::ZA)): ?>
                         <li>Online bookings: <?= esc(lcfirst(bookings_pitch())) ?></li>
                     <?php endif; ?>

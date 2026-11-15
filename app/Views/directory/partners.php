@@ -29,7 +29,7 @@ $faqs = [
     ],
     [
         'q' => 'What do I earn?',
-        'a' => esc($rate) . ' of every payment a business you referred makes for Verified Business or an International Profile, '
+        'a' => esc($rate) . ' of every payment a business you referred makes for Verified or an International Profile, '
             . 'for its first ' . (int) $config->commissionMonths . ' months. A free profile earns nothing, because nobody pays for it.',
     ],
     [
@@ -97,7 +97,7 @@ $faqs = [
             <div class="panel mb-8">
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white">What it adds up to</h2>
                 <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    Verified Business is <?= esc($svc->rand($price)) ?> a month. Each business you bring in that stays Verified earns you
+                    Verified is <?= esc($svc->rand($price)) ?> a month. Each business you bring in that stays Verified earns you
                     <strong><?= esc($svc->rand($perMonth)) ?> a month</strong>, or <strong><?= esc($svc->rand($perMonth * $config->commissionMonths)) ?></strong>
                     over its first <?= (int) $config->commissionMonths ?> months. Twenty such businesses come to
                     <?= esc($svc->rand($perMonth * 20)) ?> a month.

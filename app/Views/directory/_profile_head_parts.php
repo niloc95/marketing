@@ -38,7 +38,7 @@
         <?php if (listing_is_verified_business($l)): ?>
             <a class="profile-seal float-right ml-3 block" href="<?= base_url('verified') ?>"
                title="<?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"
-               aria-label="Verified Business, <?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
+               aria-label="Verified, <?= esc(VERIFIED_BADGE_EXPLAINER, 'attr') ?>: the business's registration document and the owner's ID"><?= verified_seal('verified-seal w-16 sm:w-20') ?></a>
         <?php endif; ?>
     <?php elseif ($piece === 'category'): ?>
         <?php // Category and province link to their landing pages: this is what

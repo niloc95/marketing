@@ -26,7 +26,7 @@
 $siteName  = config('Directory')->siteName();
 $canonical = base_url('pricing');
 $paid      = $app ? $plusUsd !== null : $badgeOffered;
-$product   = $app ? 'Plus' : 'Verified Business';
+$product   = $app ? 'Plus' : 'Verified';
 $hasYearly = $app ? $plusYearlyUsd !== null : $badgeYearly !== null;
 $priceLine = $app
     ? ($plusUsd !== null ? price_terms($plusUsd, $plusYearlyUsd, 'USD') : '')
@@ -38,7 +38,7 @@ $faqs = [
         'q' => 'Is a business profile really free?',
         'a' => $app
             ? 'Yes. A business profile is free, with no monthly fee, no subscription and no obligation. Plus is an optional upgrade.'
-            : 'Yes, for any business with a South African address. No monthly fee, no subscription and no obligation. The Verified Business badge is an optional upgrade.',
+            : 'Yes, for any business with a South African address. No monthly fee, no subscription and no obligation. Verified is an optional upgrade.',
     ],
     [
         'q' => 'Does paying move my business up the discovery results?',
@@ -76,7 +76,7 @@ if ($paid) {
     'title'       => 'Pricing | ' . $siteName,
     'description' => $app
         ? 'A business profile on ' . $siteName . ' is free. Plus adds your other locations, your team and the Jobs board' . ($priceLine !== '' ? ', for ' . $priceLine : '') . '.'
-        : 'A business profile on ' . $siteName . ' is free. The Verified Business badge' . ($badgeOffered ? ' is ' . $priceLine : ' is an optional upgrade') . ', and we can set up your profile for you.',
+        : 'A business profile on ' . $siteName . ' is free. Verified' . ($badgeOffered ? ' is ' . $priceLine : ' is an optional upgrade') . ', and we can set up your profile for you.',
     'canonical'   => $canonical,
     // The same page on both sites, in each one's own currency.
     'alternates'  => 'pricing',
@@ -152,7 +152,7 @@ if ($paid) {
                 </details>
             <?php endforeach; ?>
             <p class="hint mt-4">
-                More answers in our <a href="<?= base_url('faq') ?>">FAQ</a><?php if (! $app): ?>, and what the badge means on <a href="<?= base_url('verified') ?>">Verified businesses</a><?php else: ?>, and what Plus means on <a href="<?= base_url('plus') ?>">Plus businesses</a><?php endif; ?>.
+                More answers in our <a href="<?= base_url('faq') ?>">FAQ</a><?php if (! $app): ?>, and what Verified means on <a href="<?= base_url('verified') ?>">Verified businesses</a><?php else: ?>, and what Plus means on <a href="<?= base_url('plus') ?>">Plus businesses</a><?php endif; ?>.
             </p>
         </div>
     </div>
