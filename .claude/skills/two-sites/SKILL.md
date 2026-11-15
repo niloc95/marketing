@@ -78,7 +78,8 @@ country on the .app signup form.
 ## Countries (`Config\Countries`)
 
 - `$codes`: country name → ISO code for every country in the signup list.
-- `$profiles`: the nine with full support (ZA, GB, US, AU, NZ, NA, BW, KE, NG): `slug`
+- `$profiles`: the fourteen with full support (ZA, GB, US, AU, NZ, NA, BW, MZ, SZ, LS, ZW, ZM, KE, NG; the five
+  neighbours added 15 Nov 2026 because Mozambique, with 274 imported profiles, had no landing pages): `slug`
   (`united-kingdom`), `regions` (ZA = the nine provinces, exactly as stored; GB = the four
   nations; US states; AU states), `timezone` + `regionTimezones`, `dialCode`,
   `postalPattern`, `bbox`, `mapView`, `currency`, `locale`, `holidays`.
@@ -103,8 +104,8 @@ country on the .app signup form.
 - **Geocoders take a country code.** `MapboxGeocoder` sends `country=` from the form;
   `NominatimGeocoder::isPlausible($lat, $lng, $country)` uses the registry `bbox`; the SA
   province ladder runs for ZA only. ZA cache keys are unchanged (`keySuffix()`).
-  `/address-suggest?country=` scopes suggestions. Autocomplete is on for the nine
-  supported countries only.
+  `/address-suggest?country=` scopes suggestions. Autocomplete is on for the supported
+  countries only.
 - The address form (`_address_inputs.php` + `directory.js`): a region select for
   supported countries, free text otherwise; `data-site-map-view` on `<body>` and
   `data-country-views` centre maps. Don't name a body attribute `data-map-view`: profile

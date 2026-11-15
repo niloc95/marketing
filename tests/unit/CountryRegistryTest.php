@@ -84,7 +84,7 @@ final class CountryRegistryTest extends CIUnitTestCase
         }
 
         $this->assertSame(count($slugs), count(array_unique($slugs)));
-        $this->assertSame(['ZA', 'GB', 'US', 'AU', 'NZ', 'NA', 'BW', 'KE', 'NG'], array_keys($this->countries->profiles));
+        $this->assertSame(['ZA', 'GB', 'US', 'AU', 'NZ', 'NA', 'BW', 'MZ', 'SZ', 'LS', 'ZW', 'ZM', 'KE', 'NG'], array_keys($this->countries->profiles));
     }
 
     public function testRegionTimezones(): void
