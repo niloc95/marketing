@@ -458,7 +458,7 @@ class Listing extends BaseController
             // not blocked — for the same reason the whole block sits after the
             // commit. Missing documents cost you the badge, never the listing.
             $verified['errors'][] = 'Your profile is saved, but we did not receive both documents, '
-                . 'so no badge application was started. You can send them at any time from '
+                . 'so no Verified application was started. You can send them at any time from '
                 . 'manage your profile.';
         }
 

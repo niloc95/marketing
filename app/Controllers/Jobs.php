@@ -273,7 +273,7 @@ class Jobs extends BaseController
         if ($this->request->getGet('kind') === JobPostModel::KIND_JOB
             && ! (new JobBoardService())->canUseJobsFeatures($listing)) {
             return redirect()->to(base_url('business/badge'))
-                ->with('info', 'Posting job vacancies is part of the Verified Business badge. '
+                ->with('info', 'Posting job vacancies is part of Verified. '
                     . 'Apply below. There is nothing to pay until we have checked your documents.');
         }
 
@@ -360,7 +360,7 @@ class Jobs extends BaseController
         if ($listing !== null && is_array($post) && $post['kind'] === JobPostModel::KIND_JOB
             && ! (new JobBoardService())->canUseJobsFeatures($listing)) {
             return redirect()->to(base_url('business/badge'))
-                ->with('info', 'Renewing a job vacancy is part of the Verified Business badge.');
+                ->with('info', 'Renewing a job vacancy is part of Verified.');
         }
 
         return $this->ownerAction(
@@ -570,7 +570,7 @@ class Jobs extends BaseController
         $listing = $this->ownerListing();
         if ($listing === null) {
             return redirect()->to(base_url('business/sign-in'))
-                ->with('info', 'Only Verified Businesses on ' . config('Directory')->siteName() . ' can reply to requests. Sign in to your profile to get verified.');
+                ->with('info', 'Only Verified businesses on ' . config('Directory')->siteName() . ' can reply to requests. Sign in to your profile to get verified.');
         }
 
         $throttler = service('throttler');
@@ -586,7 +586,7 @@ class Jobs extends BaseController
             'closed'      => ['error', 'This request is no longer open.'],
             'not_service' => ['error', 'Only service requests take replies.'],
             'unpublished' => ['error', 'Your profile must be published before you can reply.'],
-            'not_verified' => ['info', 'Replying to requests is part of the Verified Business badge. Get verified from your dashboard, then reply.'],
+            'not_verified' => ['info', 'Replying to requests is part of Verified. Get verified from your dashboard, then reply.'],
             'own'         => ['error', 'This is your own request.'],
             'duplicate'   => ['info', 'You have already replied to this request.'],
             'full'        => ['info', 'This request already has the maximum number of replies.'],

@@ -66,7 +66,7 @@ $benefits = [
     [
         'icon'  => 'badge-check',
         'title' => 'Trust and credibility',
-        'text'  => 'The Verified Business badge beside your name, on your profile and in discovery results. '
+        'text'  => 'Verified beside your name, on your profile and in discovery results. '
             . 'It tells customers we have checked your business registration document and the owner\'s ID.',
     ],
 ];
@@ -105,7 +105,7 @@ $benefits = array_merge($benefits, [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free business profile. Upgrade to Verified Business when you want
+                Start with a free business profile. Upgrade to Verified when you want
                 <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your people, your other
                 locations and your vacancies.
             </p>
@@ -132,7 +132,7 @@ $benefits = array_merge($benefits, [
             <div class="plan-card plan-card-featured pricing-card">
                 <div class="pricing-card-top">
                     <div>
-                        <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span></p>
+                        <p class="plan-name"><span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified</span></p>
                         <p class="plan-price"><?= esc(money($amount)) ?><span class="plan-price-unit">per month</span></p>
                         <?php if ($yearly !== null): ?>
                             <p class="pricing-yearly">or <?= esc(money($yearly)) ?> a year, paid yearly<?= $saving > 0 ? ' (save ' . esc(money(number_format($saving, 2, '.', ''))) . ')' : '' ?></p>
@@ -182,7 +182,7 @@ $benefits = array_merge($benefits, [
         </a>
 
         <p class="pricing-foot">
-            <a class="home-link" href="<?= base_url('verified') ?>">What the badge checks, and what it doesn't<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+            <a class="home-link" href="<?= base_url('verified') ?>">What Verified checks, and what it doesn't<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
             <a class="home-link" href="<?= base_url('compare') ?>">How we compare<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
         </p>
     </div>

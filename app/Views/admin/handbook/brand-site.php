@@ -38,7 +38,8 @@ foreach ($breakdowns['Newsletter by source'] ?? [] as $b) {
     <h3>How it talks to Local</h3>
     <ul>
         <li><strong>Prices:</strong> read from Local's <code>/pricing.json</code> on every build (and refreshed in the browser on
-            <code>[data-price]</code>). Change prices on <code>/admin/settings</code>, never in the brand repo.</li>
+            <code>[data-price]</code>). Change prices on <code>/admin/settings</code>, never in the brand repo. Since 14 Nov 2026 the
+            site sells no standalone Bookings plans: online bookings are the ones built into Local, included with Verified and Plus.</li>
         <li><strong>Newsletter:</strong> its form posts to Local's <code>POST /newsletter</code> with <code>source=brand</code>.
             Brand site subscribers in Local's list now: <strong><?= number_format($brand) ?></strong>.</li>
         <li><strong>Signups:</strong> links into Local carry <code>?via=marketing-site</code>, which the admin funnel counts.</li>

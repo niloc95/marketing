@@ -61,10 +61,10 @@ $faqs = [
     ],
     [
         // local.webscheduler.app sells Plus, not the badge (VerificationService::plusMode()).
-        'q' => $usd !== null ? 'Does this include Plus?' : 'Does this include the Verified Business badge?',
+        'q' => $usd !== null ? 'Does this include Plus?' : 'Does this include Verified?',
         'a' => $usd !== null
             ? 'No. Plus is a separate monthly upgrade that adds your other locations, your team and the Jobs board. You can add it from <a href="' . base_url('business') . '">your dashboard</a> at any time.'
-            : 'No. The badge needs your business registration document and your ID, which only you can send. You can <a href="' . base_url('verified') . '">apply for it</a> at any time.',
+            : 'No. Verified needs your business registration document and your ID, which only you can send. You can <a href="' . base_url('verified') . '">apply for it</a> at any time.',
     ],
     [
         'q' => 'Who owns the profile afterwards?',
@@ -264,7 +264,7 @@ $faqs = [
             <li>We complete your profile within <?= (int) $days ?> business days of receiving your details, logo and photos.</li>
             <li>You may cancel for a full refund until we start work on your profile. Once we have started, the fee is not refundable.</li>
             <li>You confirm that the logo, photos and information you send us are yours to use, and accurate.</li>
-            <li>Paying for setup does not change where your profile appears in discovery results, and does not include <?= $usd !== null ? 'Plus' : 'the Verified Business badge' ?>, branches, team members or job posts.</li>
+            <li>Paying for setup does not change where your profile appears in discovery results, and does not include <?= $usd !== null ? 'Plus' : 'Verified' ?>, branches, team members or job posts.</li>
             <li>Your profile stays free, belongs to you, and you can change or remove it at any time. Our <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('terms') ?>">terms</a> and <a class="text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('privacy') ?>">privacy policy</a> apply.</li>
         </ul>
     </div>

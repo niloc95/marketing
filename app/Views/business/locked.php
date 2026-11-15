@@ -33,7 +33,7 @@ $upgrade = ! $premium && ($feature !== 'bookings' || $setup->unavailable($listin
     <?php if ($upgrade): ?>
         <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <?= lucide('lock', 'h-3.5 w-3.5') ?>
-            <?= $za ? 'Comes with the Verified Business badge' : 'Comes with Plus' ?>
+            <?= $za ? 'Comes with Verified' : 'Comes with Plus' ?>
         </p>
     <?php endif ?>
     <h2 class="mt-2 section-title"><?= esc($about[0]) ?></h2>
@@ -46,7 +46,7 @@ $upgrade = ! $premium && ($feature !== 'bookings' || $setup->unavailable($listin
             <button type="submit" class="btn btn-primary">Turn on online bookings</button>
         </form>
     <?php elseif ($upgrade && $context->can('profile.billing')): ?>
-        <a class="btn btn-primary mt-4" href="<?= base_url('business/badge') ?>"><?= $za ? 'Get the Verified Business badge' : 'Get Plus' ?></a>
+        <a class="btn btn-primary mt-4" href="<?= base_url('business/badge') ?>"><?= $za ? 'Get Verified' : 'Get Plus' ?></a>
         <a class="btn btn-ghost mt-4" href="<?= base_url($za ? 'verified' : 'plus') ?>">What you get</a>
     <?php else: ?>
         <a class="btn btn-ghost mt-4" href="<?= base_url('business') ?>">Back</a>

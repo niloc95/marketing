@@ -41,7 +41,7 @@ $donts = [
     'Use it as your own logo, app icon, profile picture or domain name.',
     site()->isApp()
         ? 'Suggest that we endorse, sponsor or have checked your business.'
-        : 'Suggest that we endorse, sponsor or have checked your business. Only the Verified Business badge says that, and only we show it.',
+        : 'Suggest that we endorse, sponsor or have checked your business. Only Verified says that, and only we show it.',
     'Use it on anything misleading, unlawful or offensive.',
 ];
 ?>
@@ -50,7 +50,7 @@ $donts = [
 <?= seo_meta([
     'title'       => 'Media resources | ' . $siteName,
     'description' => 'Download the ' . $siteName . ' logo for your website, with simple rules for using it.'
-        . (site()->isApp() ? '' : ' The Verified Business badge is not available for download.'),
+        . (site()->isApp() ? '' : ' The Verified mark is not available for download.'),
     'canonical'   => $canonical,
     'alternates'  => 'media',
     'schema'      => schema_page([], $canonical, 'WebPage', 'Media resources'),
@@ -165,21 +165,21 @@ $donts = [
             </div>
             <div>
                 <span class="eyebrow">Not available for download</span>
-                <h2 class="mt-3">The Verified Business badge</h2>
-                <p>The badge means a person at <?= esc($siteName) ?> has checked a business's registration document and
-                    its owner's identity (<a href="<?= base_url('verified') ?>">what the badge means</a>). It is a claim
+                <h2 class="mt-3">The Verified mark</h2>
+                <p>The Verified mark means a person at <?= esc($siteName) ?> has checked a business's registration document and
+                    its owner's identity (<a href="<?= base_url('verified') ?>">what Verified means</a>). It is a claim
                     we make, so only we may show it: on business profiles, discovery results and job posts on this
-                    platform, where every badge links back to that explanation and ends the day the subscription does.</p>
-                <p>Nobody may download, copy, recreate, alter or display the Verified Business badge, or anything made to
+                    platform, where every Verified mark links back to that explanation and ends the day the subscription does.</p>
+                <p>Nobody may download, copy, recreate, alter or display the Verified mark, or anything made to
                     look like it, on a website, social media, advert, vehicle, sign or any other material. This includes
-                    Verified Businesses. If you hold the badge, link to your business profile, where customers see it
+                    Verified businesses. If you are Verified, link to your business profile, where customers see it
                     for themselves.</p>
                 <div class="media-legal" role="note">
-                    <h3>Unlawful use of the badge</h3>
-                    <p>Should the Verified Business badge be found used unlawfully, <?= esc($siteName) ?> will take
+                    <h3>Unlawful use of the Verified mark</h3>
+                    <p>Should the Verified mark be found used unlawfully, <?= esc($siteName) ?> will take
                         immediate legal action against the person or business responsible.</p>
                     <p>Our <a href="<?= base_url('terms#brand') ?>">Terms, section 20</a>, set this out in full.
-                        Seen the badge somewhere it shouldn't be? <a href="<?= base_url('contact') ?>">Tell us</a>.</p>
+                        Seen the Verified mark somewhere it shouldn't be? <a href="<?= base_url('contact') ?>">Tell us</a>.</p>
                 </div>
             </div>
         </div>

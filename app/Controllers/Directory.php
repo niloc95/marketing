@@ -1404,7 +1404,7 @@ class Directory extends BaseController
             if ($verification->isEnabled() && ($badge['verification']['state'] ?? '') === DirectoryVerificationModel::STATE_APPROVED) {
                 return redirect()->to(base_url('business/badge'))
                     ->with('success', 'Your business profile is live and your documents are approved. '
-                        . 'Activate your Verified Business badge below.');
+                        . 'Activate Verified below.');
             }
 
             if ($verification->isEnabled() && $badge === null) {
@@ -1417,7 +1417,7 @@ class Directory extends BaseController
             return redirect()->to(base_url('directory/' . $listing['slug']))
                 ->with('success', 'Your profile is verified and now live. You are signed in. '
                     . ($verification->isEnabled()
-                        ? 'Use Manage your profile to edit it or apply for the Verified Business badge.'
+                        ? 'Use Manage your profile to edit it or get Verified.'
                         : 'Use Manage your profile to edit it.'));
         }
         return redirect()->to(base_url('/'))

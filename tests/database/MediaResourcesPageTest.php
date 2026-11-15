@@ -53,8 +53,8 @@ final class MediaResourcesPageTest extends CIUnitTestCase
         $html = $this->html('media');
 
         // Shown, inlined, so visitors know which mark the warning is about...
-        $this->assertStringContainsString('The Verified Business badge', $html);
-        $this->assertStringContainsString('<title>WebScheduler Local Verified Business</title>', $html);
+        $this->assertStringContainsString('The Verified mark', $html);
+        $this->assertStringContainsString('<title>WebScheduler Local Verified</title>', $html);
         // ...but never linked, embedded as an image or offered as a download.
         $this->assertStringNotContainsString('verified-seal.svg', $html);
         $this->assertSame(4, substr_count($html, ' download="'));
@@ -65,7 +65,7 @@ final class MediaResourcesPageTest extends CIUnitTestCase
         $text = preg_replace('/\s+/', ' ', html_entity_decode($this->html('media')));
 
         $this->assertStringContainsString(
-            'Should the Verified Business badge be found used unlawfully, WebScheduler Local will take immediate legal action',
+            'Should the Verified mark be found used unlawfully, WebScheduler Local will take immediate legal action',
             $text
         );
     }
@@ -74,10 +74,10 @@ final class MediaResourcesPageTest extends CIUnitTestCase
     {
         $terms = preg_replace('/\s+/', ' ', html_entity_decode($this->html('terms')));
 
-        $this->assertStringContainsString('<h2 id="brand">20. Our name, logo and the Verified Business badge</h2>', $terms);
+        $this->assertStringContainsString('<h2 id="brand">20. Our name, logo and the Verified mark</h2>', $terms);
         $this->assertStringContainsString('It is not available for download', $terms);
         $this->assertStringContainsString(
-            'Should the Verified Business badge be found used unlawfully, WebScheduler Local will take immediate legal action',
+            'Should the Verified mark be found used unlawfully, WebScheduler Local will take immediate legal action',
             $terms
         );
         $this->assertStringContainsString('href="' . base_url('media') . '"', $terms);

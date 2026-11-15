@@ -48,10 +48,10 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 ?>
 <ul class="verify-benefits">
     <li>
-        <strong>A checked badge</strong> on your profile and beside your name in every
+        <strong>Verified, documents checked,</strong> on your profile and beside your name in every
         discovery result you appear in, so someone deciding between you and a business
-        with no badge can see we have checked who you are. Visitors who hover over or tap
-        the badge are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
+        that is not Verified can see we have checked who you are. Visitors who hover over or tap
+        Verified are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
         business registration document and your ID.
     </li>
     <?php if (bookings_in_premium()): ?>

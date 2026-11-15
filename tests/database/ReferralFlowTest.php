@@ -169,14 +169,14 @@ final class ReferralFlowTest extends CIUnitTestCase
         $this->assertTrue($this->svc->invite($this->referral())['ok']);
         $body = html_entity_decode((string) $this->sent[0]['body']);
 
-        foreach (['Verified badge:', 'Locations:', 'Staff:', 'New work first:', 'Jobs:'] as $keyword) {
+        foreach (['Verified:', 'Locations:', 'Staff:', 'New work first:', 'Jobs:'] as $keyword) {
             $this->assertMatchesRegularExpression('#<strong>[^<]*' . preg_quote($keyword, '#') . '</strong>#u', $body, $keyword . ' leads in bold');
         }
 
         // Jobs is a Verified Business feature now (JobBoardService::
         // canUseJobsFeatures()), so it sits in the badge list.
         $this->assertStringNotContainsString('Included with every listing', $body);
-        $this->assertGreaterThan(strpos($body, 'With a Verified Business profile you get:'), strpos($body, 'Jobs:'));
+        $this->assertGreaterThan(strpos($body, 'With a Verified profile you get:'), strpos($body, 'Jobs:'));
         $this->assertStringContainsString('Your business profile stays free either way.', $body);
         $this->assertStringContainsString('add-profile/verified?invite=', $body);
         $this->assertDoesNotMatchRegularExpression('/rank|higher position|top of/i', strip_tags($body), 'no ranking promise');

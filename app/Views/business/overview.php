@@ -72,7 +72,7 @@ $live   = $status === 'published';
                     <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Your calendar, customers and settings are kept and come back when you renew.</p>
                 <?php endif ?>
                 <?php if ($owner): ?>
-                    <a class="btn btn-primary mt-3" href="<?= base_url('business/badge') ?>"><?= $za ? 'Get the Verified Business badge' : 'Get Plus' ?></a>
+                    <a class="btn btn-primary mt-3" href="<?= base_url('business/badge') ?>"><?= $za ? 'Get Verified' : 'Get Plus' ?></a>
                 <?php endif ?>
             <?php elseif ($owner): ?>
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Let customers book a time with you, with a calendar for your team and reminders.<?php if (App\Services\Bookings\Plans\BookingPlanService::required()): ?> Free for <?= (int) config('Bookings')->trialDays ?> days to try.<?php endif ?></p>

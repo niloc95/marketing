@@ -42,7 +42,7 @@ final class VerifiedBadgeExplainerTest extends CIUnitTestCase
 
         $this->assertStringContainsString('class="badge badge-verified verified-tip', $body);
         $this->assertStringContainsString('Documents checked by WebScheduler Local', $body);
-        $this->assertStringContainsString('aria-label="Verified Business: Documents checked by WebScheduler Local"', $body);
+        $this->assertStringContainsString('aria-label="Verified: Documents checked by WebScheduler Local"', $body);
         $this->assertMatchesRegularExpression('#<a class="badge badge-verified verified-tip[^"]*" href="[^"]*/verified"#', $body);
     }
 

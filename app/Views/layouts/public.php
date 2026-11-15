@@ -419,7 +419,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <?php // Same terms as _verification_pitch.php and _plan_cards.php. ?>
                     <p class="site-footer-tagline">
                         Show customers you're a real, checked business, with your team and your
-                        other branches on your profile. The Verified Business badge is
+                        other branches on your profile. Verified is
                         <?= esc(price_terms((new App\Services\VerificationService())->monthlyAmount(), badge_yearly_price())) ?>, and there is
                         nothing to pay until we've checked your documents.
                     </p>

@@ -18,7 +18,7 @@ $canonical = base_url('verified');
  */
 $faqs = [
     [
-        'q' => 'What does the Verified Business badge mean?',
+        'q' => 'What does Verified mean?',
         'a' => 'That a person at ' . esc($siteName) . ' has seen two documents from the business: a company '
             . 'registration document, and an identity document for the owner. We checked that the business is '
             . 'really registered, and that whoever runs the profile is really its owner.',
@@ -26,34 +26,34 @@ $faqs = [
     [
         'q' => 'What does it not mean?',
         'a' => 'It is not a rating, a recommendation or a quality check. We do not verify qualifications, '
-            . 'licences, insurance, or the standard of anyone\'s work, and a badge is not a reason to skip the '
+            . 'licences, insurance, or the standard of anyone\'s work, and Verified is not a reason to skip the '
             . 'checks you would normally make. It answers one question (is this business who it says it is?) '
             . 'and nothing else.',
     ],
     [
-        'q' => 'Are businesses without the badge suspicious?',
+        'q' => 'Are businesses that are not Verified suspicious?',
         'a' => 'No. Most simply have not applied. Every business profile on ' . esc($siteName) . ' has a confirmed email '
-            . 'address behind it; the badge is an extra step a business can choose to take.',
+            . 'address behind it; Verified is an extra step a business can choose to take.',
     ],
     [
-        'q' => 'Can a business pay to get the badge without being checked?',
+        'q' => 'Can a business pay to be Verified without being checked?',
         'a' => 'No. The documents are reviewed first, and we only ask for payment once they have passed. '
-            . 'If we cannot verify a business, nothing is charged. There is no way to buy the badge outright.',
+            . 'If we cannot verify a business, nothing is charged. There is no way to buy Verified outright.',
     ],
 ];
 ?>
 
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'What the Verified Business badge means | ' . $siteName,
-    'description' => 'The Verified Business badge on ' . $siteName . ' means we have checked a company registration '
+    'title'       => 'What Verified means | ' . $siteName,
+    'description' => 'Verified on ' . $siteName . ' means we have checked a company registration '
         . 'document and the owner\'s ID. Here is exactly what we check, and what we do not.',
     'canonical'   => $canonical,
     'schema'      => schema_page(
         [schema_faq_page($faqs, $canonical)],
         $canonical,
         'WebPage',
-        'What the Verified Business badge means'
+        'What Verified means'
     ),
 ]) ?>
 <?= $this->endSection() ?>
@@ -65,9 +65,9 @@ $faqs = [
               // the mark itself opens it. The <h1> beneath already names it, which
               // is why the pill that used to sit here would have said it twice. ?>
         <?= verified_seal('verified-seal w-24 sm:w-28') ?>
-        <h1 class="mt-4 text-2xl sm:text-3xl">What the Verified Business badge means</h1>
+        <h1 class="mt-4 text-2xl sm:text-3xl">What Verified means</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
-            When you see this badge on a profile, someone here has checked that the business is
+            When you see Verified on a profile, someone here has checked that the business is
             registered and that the person running the profile owns it.
         </p>
     </div>
@@ -118,7 +118,7 @@ $faqs = [
                 <?php // The same pitch the signup form and the owner dashboard show, so a
                       // business reading this page before applying is told exactly what it
                       // will be told inside. ?>
-                <p class="mt-4 text-sm font-semibold text-slate-900 dark:text-white">What the badge adds</p>
+                <p class="mt-4 text-sm font-semibold text-slate-900 dark:text-white">What Verified adds</p>
                 <?= view('directory/_verification_pitch', ['amount' => $amount]) ?>
                 <p class="hint mt-3">
                     Your documents are stored privately, never appear on your profile, and are only seen by
@@ -126,18 +126,18 @@ $faqs = [
                     <a href="<?= base_url('privacy') ?>">privacy policy</a> for how long we keep them.
                 </p>
                 <p class="mt-5">
-                    <a class="btn btn-accent" href="<?= base_url('business/badge') ?>">Apply for the badge</a>
+                    <a class="btn btn-accent" href="<?= base_url('business/badge') ?>">Apply for Verified</a>
                 </p>
                 <p class="hint mt-3">
-                    <a href="<?= base_url('compare') ?>">See which features are free and which need the badge, next to Google, LinkedIn and South African directories</a>.
+                    <a href="<?= base_url('compare') ?>">See which features are free and which need Verified, next to Google, LinkedIn and South African directories</a>.
                 </p>
             </div>
         <?php endif; ?>
 
         <div class="panel mt-6 text-center">
-            <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Think a badge is wrong?</h2>
+            <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Think a business should not be Verified?</h2>
             <p class="mb-5 text-sm text-slate-600 dark:text-slate-400">
-                Tell us and we will look into it. We would rather remove a badge than leave a bad one up.
+                Tell us and we will look into it. We would rather take Verified off a profile than leave it on the wrong business.
             </p>
             <a class="btn btn-ghost" href="<?= base_url('contact') ?>">Report a problem</a>
         </div>

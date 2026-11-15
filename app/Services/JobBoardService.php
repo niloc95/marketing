@@ -307,7 +307,7 @@ class JobBoardService
             return $screen;
         }
         if (! $mayAdd && $screen['level'] !== $stored) {
-            return ['level' => $stored, 'error' => 'Screening questions are part of the Verified Business badge.'];
+            return ['level' => $stored, 'error' => 'Screening questions are part of Verified.'];
         }
         if ($applyUrl !== null) {
             return ['level' => $screen['level'], 'error' => 'Screening questions only work when people apply here. '
@@ -568,7 +568,7 @@ class JobBoardService
             $owner = (new DirectoryListingModel())->findActiveByEmail((string) $d['poster_email']);
             if ($owner !== null && ! $this->canUseJobsFeatures($owner)) {
                 $errors['poster_email'] = 'This email belongs to a business with a profile on '
-                    . $this->site->siteName() . '. Posting job vacancies is part of the Verified Business badge: '
+                    . $this->site->siteName() . '. Posting job vacancies is part of Verified: '
                     . 'get verified, then post from your dashboard.';
             }
         }
@@ -622,7 +622,7 @@ class JobBoardService
         if (($listing['status'] ?? '') !== 'published') {
             $errors['listing'] = 'Your profile must be published before you can post.';
         } elseif (($d['kind'] ?? null) === JobPostModel::KIND_JOB && ! $this->canUseJobsFeatures($listing)) {
-            $errors['listing'] = 'Posting job vacancies is part of the Verified Business badge. '
+            $errors['listing'] = 'Posting job vacancies is part of Verified. '
                 . 'You can still request a service.';
         }
         if ($d['kind'] === JobPostModel::KIND_JOB) {
@@ -1371,7 +1371,7 @@ class JobBoardService
             $this->cfg->maxResponses
         );
         if (! $canReply) {
-            $paragraphs[] = 'Replying to requests is part of the Verified Business badge: '
+            $paragraphs[] = 'Replying to requests is part of Verified: '
                 . price_terms((new DirectorySettings())->badgePrice(), badge_yearly_price()) . ', and nothing to pay until we have '
                 . 'checked your company registration and the owner\'s ID.';
             $paragraphs[] = 'See the request: ' . $this->url($post);

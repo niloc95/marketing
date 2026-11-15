@@ -37,11 +37,11 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Is ' . esc($siteName) . ' free to use?',
-                'a' => 'Yes. Discovering businesses is free, and so is a business profile for a business with a South African address: no monthly fee, no subscription, no obligation. Two things are paid, and neither affects a South African profile: the optional <strong>Verified Business</strong> badge, described further down, and an <strong>International Profile</strong> subscription for a business based outside South Africa. Nothing about a South African profile depends on buying anything. The badge does add features on top: ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'your other locations, your team, and posting job vacancies and replying to requests on the Jobs board.',
+                'a' => 'Yes. Discovering businesses is free, and so is a business profile for a business with a South African address: no monthly fee, no subscription, no obligation. Two things are paid, and neither affects a South African profile: the optional <strong>Verified</strong> upgrade, described further down, and an <strong>International Profile</strong> subscription for a business based outside South Africa. Nothing about a South African profile depends on buying anything. Verified does add features on top: ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'your other locations, your team, and posting job vacancies and replying to requests on the Jobs board.',
             ],
             [
                 'q' => 'What is ' . esc($siteName) . '?',
-                'a' => 'A local business discovery and visibility platform built for South Africa. People use it to discover businesses, services, locations, professionals and opportunities near them. Businesses use it to build their local online presence: a profile that shows what they do, the services they provide, where they operate, how to reach them and, with a Verified Business profile, ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'their other locations, their people and their job vacancies.',
+                'a' => 'A local business discovery and visibility platform built for South Africa. People use it to discover businesses, services, locations, professionals and opportunities near them. Businesses use it to build their local online presence: a profile that shows what they do, the services they provide, where they operate, how to reach them and, with a Verified profile, ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'their other locations, their people and their job vacancies.',
             ],
             [
                 'q' => 'Do I need an account to discover businesses?',
@@ -53,11 +53,11 @@ $groups = [
             ],
             [
                 'q' => 'How is the order of discovery results decided?',
-                'a' => 'If you have shared your location, by distance, nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website or another way to reach you online (WhatsApp or a social page, no website needed), a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it. The <strong>Verified Business</strong> badge, the team panel and the extra branch locations are all worth exactly zero. So are reviews and star ratings: they are there for you to read, not to sort by. We worked out how the order should work before we worked out what to sell, and we are not going to sell it. Every profile goes live as soon as you confirm your email, however much is filled in; a profile with very little on it is simply not offered to search engines like Google until it has a bit more, and it is picked up automatically once it does.',
+                'a' => 'If you have shared your location, by distance, nearest first. Otherwise it is a small number of businesses we have picked out by hand, then the most complete profiles, then the most recent. &ldquo;Complete&rdquo; means the things you would actually want to know: a category, an address and a map pin, a phone number, a website or another way to reach you online (WhatsApp or a social page, no website needed), a description, photos, a list of services and opening hours. Every one of those is free to fill in on any profile, and nothing that costs money counts towards it. <strong>Verified</strong>, the team panel and the extra branch locations are all worth exactly zero. So are reviews and star ratings: they are there for you to read, not to sort by. We worked out how the order should work before we worked out what to sell, and we are not going to sell it. Every profile goes live as soon as you confirm your email, however much is filled in; a profile with very little on it is simply not offered to search engines like Google until it has a bit more, and it is picked up automatically once it does.',
             ],
             [
                 'q' => 'Are the businesses here checked?',
-                'a' => 'Some more than others, and it is worth being precise. Before <em>any</em> profile appears we confirm that whoever submitted it can receive email at the address they gave. That is all, and it says nothing about the business itself. A profile carrying a green <strong>Verified Business</strong> badge has been through more: we have seen its company registration document and the owner\'s ID. Even then we do not check qualifications, licences or insurance. Please satisfy yourself as you would with any supplier, and <a href="' . base_url('contact') . '">tell us</a> if a profile looks wrong.',
+                'a' => 'Some more than others, and it is worth being precise. Before <em>any</em> profile appears we confirm that whoever submitted it can receive email at the address they gave. That is all, and it says nothing about the business itself. A profile marked <strong>Verified</strong> has been through more: we have seen its company registration document and the owner\'s ID. Even then we do not check qualifications, licences or insurance. Please satisfy yourself as you would with any supplier, and <a href="' . base_url('contact') . '">tell us</a> if a profile looks wrong.',
             ],
             [
                 'id' => 'reviews',
@@ -71,8 +71,8 @@ $groups = [
             ],
             [
                 'id' => 'verified',
-                'q'  => 'What does the Verified Business badge actually mean?',
-                'a'  => 'That we asked the business for two documents and a person looked at them: a company registration document, and an ID document for the owner. We checked that the business is really registered and that the person running the profile is really its owner. It is a check on <em>identity</em>, not on quality. It is not a rating, a recommendation, or any statement about the work. Businesses without the badge are not suspect; most simply have not applied. <a href="' . base_url('verified') . '">Full details of what we check</a>.',
+                'q'  => 'What does Verified actually mean?',
+                'a'  => 'That we asked the business for two documents and a person looked at them: a company registration document, and an ID document for the owner. We checked that the business is really registered and that the person running the profile is really its owner. It is a check on <em>identity</em>, not on quality. It is not a rating, a recommendation, or any statement about the work. Businesses that are not Verified are not suspect; most simply have not applied. <a href="' . base_url('verified') . '">Full details of what we check</a>.',
             ],
         ],
     ],
@@ -81,7 +81,7 @@ $groups = [
         'faqs'    => [
             [
                 'q' => 'Does it cost anything to create a business profile?',
-                'a' => 'Not if your business is in South Africa. Your business profile is free and stays free: no monthly fee, no subscription, no obligation, no commission and no card required. Nothing about your profile is held back or downgraded if you never pay us anything. There is one optional paid extra, the <strong>Verified Business</strong> badge, which adds a trust mark plus ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'your locations, your people and your job vacancies. See below.',
+                'a' => 'Not if your business is in South Africa. Your business profile is free and stays free: no monthly fee, no subscription, no obligation, no commission and no card required. Nothing about your profile is held back or downgraded if you never pay us anything. There is one optional paid extra, <strong>Verified</strong>, which adds a trust mark plus ' . (bookings_in_premium() ? 'online bookings, ' : '') . 'your locations, your people and your job vacancies. See below.',
             ],
             [
                 'q' => 'What can a free business profile include?',
@@ -93,28 +93,28 @@ $groups = [
             ],
             [
                 'q' => 'Can I add more than one location?',
-                'a' => 'Yes, with a <a href="' . base_url('verified') . '">Verified Business</a> profile. You can add up to ' . (int) $locations . ' more branches, practices or offices, each with its own address, map pin, phone number and opening hours, so customers find the right business in the right location. A free profile shows your main address.',
+                'a' => 'Yes, with a <a href="' . base_url('verified') . '">Verified</a> profile. You can add up to ' . (int) $locations . ' more branches, practices or offices, each with its own address, map pin, phone number and opening hours, so customers find the right business in the right location. A free profile shows your main address.',
             ],
             [
                 'q' => 'Can I show my team and their qualifications?',
-                'a' => 'Yes, with a <a href="' . base_url('verified') . '">Verified Business</a> profile. People want to know who they are dealing with, so you can show up to ' . (int) $team . ' team members with a photo, their role, their qualifications and their areas of expertise. Someone looking for one of your people by name, or for something only one of them does, then brings up your business too. Qualifications are as the business states them; we do not check them.',
+                'a' => 'Yes, with a <a href="' . base_url('verified') . '">Verified</a> profile. People want to know who they are dealing with, so you can show up to ' . (int) $team . ' team members with a photo, their role, their qualifications and their areas of expertise. Someone looking for one of your people by name, or for something only one of them does, then brings up your business too. Qualifications are as the business states them; we do not check them.',
             ],
             [
                 'q' => 'How do jobs work?',
-                'a' => 'The <a href="' . base_url('jobs') . '">Jobs board</a> brings vacancies and requests for work together. Anyone can post a request for a service, free. A Verified Business can post job vacancies straight from its profile and reply to requests for its kind of service, and is the first we alert when a matching request comes in.',
+                'a' => 'The <a href="' . base_url('jobs') . '">Jobs board</a> brings vacancies and requests for work together. Anyone can post a request for a service, free. A Verified business can post job vacancies straight from its profile and reply to requests for its kind of service, and is the first we alert when a matching request comes in.',
             ],
             ...(bookings_in_premium() ? [[
                 'id' => 'bookings',
                 'q'  => 'Can customers book an appointment on my profile?',
-                'a'  => 'Yes, with a <a href="' . base_url('verified') . '">Verified Business</a> profile. ' . esc(bookings_pitch()) . ' Turn bookings on from <a href="' . base_url('business') . '">your dashboard</a> once the badge is live; there is nothing extra to pay. A free profile can still link a "Book online" button to a booking page you already use.',
+                'a'  => 'Yes, with a <a href="' . base_url('verified') . '">Verified</a> profile. ' . esc(bookings_pitch()) . ' Turn bookings on from <a href="' . base_url('business') . '">your dashboard</a> once Verified is live; there is nothing extra to pay. A free profile can still link a "Book online" button to a booking page you already use.',
             ]] : []),
             [
                 'q' => 'My business is not in South Africa. Can I still create a profile?',
                 'a' => 'Yes, on a paid <strong>International Profile</strong> subscription. ' . esc($siteName) . ' is built for South African businesses. Discovery, the categories and the province pages are all built around South African places, so a South African business profile is free and always will be. A business based anywhere else is welcome, and its profile goes live once the monthly subscription is paid. You fill in the same form, confirm your email the same way, and your profile is saved either way; it publishes when the first payment clears. Cancel any time: the profile stays live until the paid period ends and then comes down, and nothing you entered is deleted, if you subscribe again later it comes back exactly as it was. Payment is taken in South African rand.',
             ],
             [
-                'q' => 'How much is the Verified Business badge, and what do I get?',
-                'a' => esc(price_terms((new App\Services\DirectorySettings())->badgePrice(), badge_yearly_price())) . '. Your profile and every discovery result you appear in carry a green “Verified Business” badge, and the badge links to an explanation of what we checked. It also ' . (bookings_in_premium() ? 'lets customers book with you online on your profile, ' : '') . 'lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
+                'q' => 'How much is Verified, and what do I get?',
+                'a' => esc(price_terms((new App\Services\DirectorySettings())->badgePrice(), badge_yearly_price())) . '. Your profile and every discovery result you appear in carry a green “Verified” mark, which links to an explanation of what we checked. It also ' . (bookings_in_premium() ? 'lets customers book with you online on your profile, ' : '') . 'lets you add your other locations, show your team by name with their qualifications and expertise, and post job vacancies and reply to requests on the Jobs board. Once your team is on your profile someone looking for one of your people, or for something only one of them does, brings up your business too. What it does <em>not</em> do is move you up the discovery results: the order is the same whether you pay us or not. We sell the check, not the ranking.',
             ],
             [
                 'q' => 'How do I get verified, and when do I pay?',
@@ -122,11 +122,11 @@ $groups = [
             ],
             [
                 'q' => 'What happens to my registration document and ID?',
-                'a' => 'They are stored privately on our server, outside anything the web can reach, and are never shown on your profile or given to anyone else. Only our review team opens them. We keep them while your badge is active so we do not have to ask again if you renew, and we delete them when you tell us to, <a href="' . base_url('contact') . '">just ask</a>. Sending a new set replaces the old one immediately. Our <a href="' . base_url('privacy') . '">privacy policy</a> covers this in full.',
+                'a' => 'They are stored privately on our server, outside anything the web can reach, and are never shown on your profile or given to anyone else. Only our review team opens them. We keep them while Verified is active so we do not have to ask again if you renew, and we delete them when you tell us to, <a href="' . base_url('contact') . '">just ask</a>. Sending a new set replaces the old one immediately. Our <a href="' . base_url('privacy') . '">privacy policy</a> covers this in full.',
             ],
             [
-                'q' => 'Can I cancel the badge?',
-                'a' => 'Any time, with one button on <a href="' . base_url('business') . '">your dashboard</a>: no email, no waiting for us. The badge stays up for the month you have already paid for and then quietly comes down. Your business profile is completely unaffected: it stays published exactly as it is.',
+                'q' => 'Can I cancel Verified?',
+                'a' => 'Any time, with one button on <a href="' . base_url('business') . '">your dashboard</a>: no email, no waiting for us. Verified stays on your profile for the month you have already paid for and then quietly comes down. Your business profile is completely unaffected: it stays published exactly as it is.',
             ],
             [
                 'q' => 'How do I add my business?',
@@ -182,12 +182,12 @@ $groups = [
             ],
             [
                 'q' => 'What emails will you send me?',
-                'a' => 'The ones your profile needs (verification, edit links and, if you buy the Verified Business badge, billing notices) plus a monthly report on your own profile: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('business') . '">Manage your profile</a>, or use the unsubscribe link in any report. Doing so is free and changes nothing about your profile. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
+                'a' => 'The ones your profile needs (verification, edit links and, if you buy Verified, billing notices) plus a monthly report on your own profile: how many views it got and where your leads came from. That report is ticked on by default when you sign up, and you can untick it there, switch it off in <a href="' . base_url('business') . '">Manage your profile</a>, or use the unsubscribe link in any report. Doing so is free and changes nothing about your profile. We do not send you news, tips or offers about other products, and we never sell or share your address for advertising.',
             ],
             [
                 'q' => 'Is this the same thing as WebScheduler, the booking software?',
                 'a' => bookings_in_premium()
-                    ? 'They are now one. Online bookings are built into <strong>' . esc($siteName) . '</strong> and come with the <a href="' . base_url('verified') . '">Verified Business</a> badge: customers book a time right on your profile, with nothing else to install or pay for. Your business profile stays free, and you never have to buy anything to keep it. You can read about everything we make at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>.'
+                    ? 'They are now one. Online bookings are built into <strong>' . esc($siteName) . '</strong> and come with <a href="' . base_url('verified') . '">Verified</a>: customers book a time right on your profile, with nothing else to install or pay for. Your business profile stays free, and you never have to buy anything to keep it. You can read about everything we make at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>.'
                     : 'Related, but separate, and worth not confusing. <strong>' . esc($siteName) . '</strong> is this local business discovery platform: people discover your business, and your business profile is free. <strong>WebScheduler</strong> is our paid appointment scheduling software, which runs on your own infrastructure. You can read about it at <a href="https://webscheduler.co.za/">webscheduler.co.za</a>. A profile here does not sign you up for it, and you never have to buy anything to keep your profile.',
             ],
         ],
@@ -226,7 +226,7 @@ $schema = schema_page(
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Frequently asked questions | ' . $siteName,
-    'description' => 'Answers about ' . $siteName . ': your free business profile, locations, team members, jobs, ' . (site()->isApp() ? 'what Plus includes' : 'what the Verified Business badge means') . ', and how to get help.',
+    'description' => 'Answers about ' . $siteName . ': your free business profile, locations, team members, jobs, ' . (site()->isApp() ? 'what Plus includes' : 'what Verified means') . ', and how to get help.',
     'canonical'   => $canonical,
     'alternates'  => 'faq',
     'schema'      => $schema,

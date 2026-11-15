@@ -81,7 +81,7 @@ class Comparison extends BaseConfig
 
     /** @var array<string,array{label:string,sub:string}> */
     public array $columns = [
-        'local'    => ['label' => 'WebScheduler Local', 'sub' => 'Free profile, Verified Business R{price} a month or R{yearly} a year'],
+        'local'    => ['label' => 'WebScheduler Local', 'sub' => 'Free profile, Verified R{price} a month or R{yearly} a year'],
         'google'   => ['label' => 'Google Business Profile', 'sub' => 'Free'],
         'linkedin' => ['label' => 'LinkedIn', 'sub' => 'Company Pages and member profiles'],
         'sa'       => ['label' => 'SA directories', 'sub' => 'Brabys, Snupit, Cylex, Medpages'],
@@ -195,7 +195,7 @@ class Comparison extends BaseConfig
             'key'   => 'service_requests',
             'label' => 'Service requests from the public',
             'cells' => [
-                'local'    => ['status' => 'free_verified', 'note' => 'Anyone can post a request free; replying needs Verified Business'],
+                'local'    => ['status' => 'free_verified', 'note' => 'Anyone can post a request free; replying needs Verified'],
                 'google'   => ['status' => 'no', 'note' => 'Local Services Ads take paid leads in some countries, not in South Africa'],
                 'linkedin' => ['status' => 'partial', 'note' => 'Members can request proposals through a person\'s or a company\'s Service Page'],
                 'sa'       => ['status' => 'varies', 'note' => 'Snupit: customers post a request and get quotes from pros'],

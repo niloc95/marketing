@@ -403,7 +403,7 @@ final class JobBoardFlowTest extends CIUnitTestCase
 
         $job = $this->svc->submitForListing($free, $this->jobInput());
         $this->assertFalse($job['ok']);
-        $this->assertStringContainsString('Verified Business', $job['errors']['listing'] ?? '');
+        $this->assertStringContainsString('part of Verified', $job['errors']['listing'] ?? '');
 
         $request = $this->svc->submitForListing($free, $this->serviceInput());
         $this->assertTrue($request['ok'], 'requesting a service stays open to every listing');

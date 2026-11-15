@@ -88,7 +88,7 @@ if ($listing !== null) {
 
     $more = [];
     if ($context->can('profile.billing')) {
-        $more[] = ['business/badge', site()->forRow($listing) === Config\Sites::ZA ? 'Verified badge' : 'Plus', 'badge-check'];
+        $more[] = ['business/badge', site()->forRow($listing) === Config\Sites::ZA ? 'Verified' : 'Plus', 'badge-check'];
     }
     if ($context->can('audit.view') && $bookable) {
         $more[] = ['business/audit', 'Activity', 'history'];

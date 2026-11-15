@@ -170,7 +170,7 @@ final class AdminVerificationTest extends CIUnitTestCase
 
         // The customer's preview shows the Verified build.
         $token = $this->sendPreview($id);
-        $this->get('preview/' . $token)->assertSee('This is your Verified Business profile');
+        $this->get('preview/' . $token)->assertSee('This is your Verified profile');
 
         $this->post('preview/' . $token . '/approve', [csrf_token() => csrf_hash()])->assertRedirect();
         $this->assertSame('published', $this->listings->find($id)['status']);

@@ -128,12 +128,12 @@ final class OwnerAreaTest extends CIUnitTestCase
         $home = $this->withSession($session)->get('business');
         $home->assertOK();
         $home->assertSee('Salon Lumi');
-        $home->assertSee('Online bookings come with the Verified Business badge.');
+        $home->assertSee('Online bookings come with Verified.');
         $home->assertDontSee('Turn on online bookings');
 
         $locked = $this->withSession($session)->get('business/calendar');
         $locked->assertStatus(403);
-        $locked->assertSee('Get the Verified Business badge');
+        $locked->assertSee('Get Verified');
 
         $this->withSession($session)->post('business/bookings/turn-on', [csrf_token() => csrf_hash()])->assertRedirectTo(base_url('business/calendar'));
         $this->assertSame(0, (int) $this->listings->find($id)['bookings_enabled']);
@@ -254,7 +254,7 @@ final class OwnerAreaTest extends CIUnitTestCase
         foreach (['team', 'branches'] as $section) {
             $page = $this->withSession($session)->get('business/profile/' . $section);
             $page->assertStatus(403);
-            $page->assertSee('Get the Verified Business badge');
+            $page->assertSee('Get Verified');
             $this->withSession($session)->post('business/profile/' . $section, [csrf_token() => csrf_hash(), 'team' => [['name' => 'Someone']]])->assertStatus(403);
         }
         $this->assertSame(0, (new \App\Models\DirectoryListingTeamModel())->where('listing_id', $id)->countAllResults());

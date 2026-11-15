@@ -29,7 +29,7 @@ $reason    = $reason ?? '';
 $paidUntil = $paid_until ?? ($paidUntil ?? '');
 $gateway   = $gateway ?? 'PayFast';
 $cardLink  = $cardLink ?? null;
-$what      = ['plus' => 'Plus', 'international' => 'International Profile'][$product] ?? 'Verified Business badge';
+$what      = ['plus' => 'Plus', 'international' => 'International Profile'][$product] ?? 'Verified subscription';
 ?>
 <?= $this->extend('emails/_layout') ?>
 <?= $this->section('content') ?>
@@ -41,14 +41,14 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
                 Good news. We've checked your company registration document and owner ID, and both are in order.
             </p>
             <p style="font-size:15px;line-height:1.6">
-                Your Verified Business badge is ready to switch on. It costs
+                Verified is ready to switch on. It costs
                 <strong><?= esc(money($amount)) ?> a month</strong><?php if ($yearlyAmount !== ''): ?>,
                 or <strong><?= esc(money($yearlyAmount)) ?> a year</strong> if you pay yearly<?php endif; ?>, and it appears on your profile and
                 everywhere your business is discovered on the platform.<?php if (bookings_in_premium(Config\Sites::ZA)): ?>
                 With it you can also take online bookings, and add your other branches, your team and your job vacancies.<?php endif; ?>
             </p>
             <p style="margin:22px 0">
-                <?= email_button($manageLink, 'Activate my badge') ?>
+                <?= email_button($manageLink, 'Activate Verified') ?>
             </p>
             <p style="font-size:13px;color:#64748b">
                 That button takes you straight to the payment page: no password, nothing else to fill in.
@@ -98,7 +98,7 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
 
         <?php elseif ($event === 'activated'): ?>
             <p style="font-size:15px;line-height:1.6">
-                Your payment came through and your <strong>Verified Business</strong> badge is now live on your profile.
+                Your payment came through and <strong>Verified</strong> is now live on your profile.
             </p>
             <?php if (bookings_in_premium(Config\Sites::ZA)): ?>
                 <p style="font-size:15px;line-height:1.6">
@@ -108,7 +108,7 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
             <?php endif; ?>
             <p style="font-size:15px;line-height:1.6">
                 It renews automatically each <?= $period ?>. You can cancel any time from your dashboard. The
-                badge stays up until the <?= $period ?> you've paid for runs out.
+                Verified stays on your profile until the <?= $period ?> you've paid for runs out.
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'View my profile') ?>
@@ -159,13 +159,13 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
 
         <?php else: /* renewing */ ?>
             <p style="font-size:15px;line-height:1.6">
-                Just so there are no surprises: your <?= $yearly ? 'yearly ' : '' ?>Verified Business badge renews on
+                Just so there are no surprises: your <?= $yearly ? 'yearly ' : '' ?>Verified renews on
                 <strong><?= esc($paidUntil) ?></strong>, and <?= esc($gateway) ?> will charge
                 <strong><?= esc(money($amount)) ?></strong> as usual.
             </p>
             <p style="font-size:15px;line-height:1.6">
                 Nothing to do if that's all fine. If you'd rather stop, cancel from your dashboard
-                before that date and the badge will simply come down when the <?= $period ?> ends.
+                before that date and Verified will simply come off your profile when the <?= $period ?> ends.
             </p>
         <?php endif; ?>
 

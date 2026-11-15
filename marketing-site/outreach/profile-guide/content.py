@@ -33,9 +33,9 @@ EDITION = "October 2026"
 DOC_TITLE = "WebScheduler Local: How to Build a Business Profile Customers Choose"
 DOC_AUTHOR = "WebScheduler (Pty) Ltd"
 DOC_SUBJECT = ("Creating and completing a business profile on WebScheduler Local: photos, a "
-               "description written with ChatGPT, services, brands, and the Verified Business "
+               "description written with ChatGPT, services, brands, and the Verified "
                "features: locations, team members, jobs and reviews")
-DOC_KEYWORDS = ("WebScheduler Local, business profile, Verified Business, local business discovery, "
+DOC_KEYWORDS = ("WebScheduler Local, business profile, Verified, local business discovery, "
                 "South Africa, profile photos, ChatGPT, team members, jobs board, reviews")
 
 RUNNING_FOOTER = "WEBSCHEDULER LOCAL · HOW TO BUILD YOUR BUSINESS PROFILE"
@@ -98,7 +98,7 @@ _PAGES = [
             {"kind": "cover_sub",
              "text": "A step by step guide to your WebScheduler Local business profile: the photos "
                      "that work, a description written with ChatGPT, your services and brands, and "
-                     "everything Verified Business adds."},
+                     "everything Verified adds."},
             {"kind": "gap", "mm": 2},
             {"kind": "banner", "height_mm": 56},
             {"kind": "gap", "mm": 7},
@@ -106,7 +106,7 @@ _PAGES = [
             {"kind": "small",
              "text": "Before you start · profile strength · what you do and how to reach you · "
                      "photos that work · your description with ChatGPT · services · hours and map · "
-                     "brands we carry · Verified Business · locations · team members · jobs · "
+                     "brands we carry · Verified · locations · team members · jobs · "
                      "reviews · your launch checklist"},
             {"kind": "gap", "mm": 3},
             {"kind": "small", "text": f"WebScheduler (Pty) Ltd · South Africa · {EDITION}"},
@@ -148,7 +148,7 @@ _PAGES = [
                 "password needed.",
                 f"<b>Rather we did it?</b> Our profile setup service completes your profile for "
                 f"{SETUP_PRICE} once off, within {SETUP_DAYS} business days. It buys our time, "
-                "nothing else: no badge and no higher place.",
+                "nothing else: no Verified mark and no higher place.",
             ]},
         ],
     },
@@ -310,7 +310,7 @@ _PAGES = [
                 "(page 11).",
             ]},
             {"kind": "small",
-             "text": "Verified Business adds one YouTube or Vimeo video, shown first in your photos and "
+             "text": "Verified adds one YouTube or Vimeo video, shown first in your photos and "
                      "playing right on your profile. Thirty to sixty seconds of your work is plenty."},
         ],
     },
@@ -516,21 +516,21 @@ _PAGES = [
         ],
     },
 
-    # --- 12. Verified Business ----------------------------------------------------------------
+    # --- 12. Verified ----------------------------------------------------------------
     {
         "id": "verified",
         "blocks": [
-            {"kind": "eyebrow", "text": "09 · Verified Business"},
+            {"kind": "eyebrow", "text": "09 · Verified"},
             {"kind": "h1", "text": "Show who you are.<br/>[[Then show everything else.]]"},
             {"kind": "para",
-             "text": f"Verified Business is {PRICE} a month or {YEARLY_PRICE} a year, cancel any time. It puts a "
-                     "checked badge beside your name on your profile and in every discovery result you "
+             "text": f"Verified is {PRICE} a month or {YEARLY_PRICE} a year, cancel any time. It puts a "
+                     "checked mark beside your name on your profile and in every discovery result you "
                      "appear in, and opens the features on the next four pages. Your free profile stays "
                      "free either way."},
             {"kind": "table", "widths": [0.3, 0.7],
              "header": ["VERIFIED ADDS", "WHAT IT DOES FOR YOU"],
              "rows": [
-                 ["<b>The badge</b>", "Tells someone choosing between you and an unbadged business that "
+                 ["<b>Documents checked</b>", "Tells someone choosing between you and a business that is not Verified that "
                                       "we have checked who you are."],
                  ["<b>Online bookings</b>", "Customers book a time with you right on your profile, and you "
                                             "get a calendar for your team, reminders and a list of your "
@@ -550,11 +550,11 @@ _PAGES = [
                                              "up to 10 MB. The whole document must be readable in frame."),
                 ("02", "WE CHECK THEM FIRST", "There is nothing to pay until they check out. Your documents "
                                               "are stored privately and never shown on your profile."),
-                ("03", "PAY, AND THE BADGE GOES UP", "By Paystack, monthly or yearly. Apply when you sign up, or later "
+                ("03", "PAY, AND VERIFIED GOES UP", "By Paystack, monthly or yearly. Apply when you sign up, or later "
                                                       "from your Manage page."),
             ]},
             {"kind": "small",
-             "text": "<b>What the badge does not mean.</b> We check a registration document and the owner’s "
+             "text": "<b>What Verified does not mean.</b> We check a registration document and the owner’s "
                      "ID. We do not check qualifications, rate your work, or move you up the results: "
                      "Verified profiles are ordered exactly like everyone else’s."},
         ],
@@ -675,7 +675,7 @@ _PAGES = [
             {"kind": "h1", "text": "Reviews you can trust,<br/>[[and how to earn them.]]"},
             {"kind": "para",
              "text": "Every profile can receive reviews, and every owner can reply. Neither needs "
-                     "Verified Business, and a rating never changes where you appear."},
+                     "Verified, and a rating never changes where you appear."},
             {"kind": "table", "widths": [0.3, 0.7],
              "header": ["HOW A REVIEW GOES UP", ""],
              "rows": [
@@ -730,7 +730,7 @@ _PAGES = [
                  ["Brands you genuinely carry, if it applies", "11"],
              ]},
             {"kind": "table", "widths": [0.82, 0.18],
-             "header": ["WITH VERIFIED BUSINESS", "PAGE"],
+             "header": ["WITH VERIFIED", "PAGE"],
              "rows": [
                  ["Registration document and owner ID sent", "12"],
                  ["Every branch added, each pinned with its own hours", "13"],
@@ -787,7 +787,7 @@ _PAGES = [
             {"kind": "para",
              "text": "A free business profile takes about twenty minutes. Real photos, an honest "
                      "description, your services and your hours are what customers choose by. "
-                     "Verified Business adds your people, your branches and your vacancies."},
+                     "Verified adds your people, your branches and your vacancies."},
             {"kind": "gap", "mm": 6},
             {"kind": "qr", "size_mm": 44, "caption": "Scan to create your free profile"},
             {"kind": "gap", "mm": 4},

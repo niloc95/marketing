@@ -476,9 +476,9 @@ class ReferralService
                     $site . ' is a local business discovery and visibility platform for South Africa.' . $by,
                     'Get Verified and show customers your locations, your people and your opportunities, as well as your business.',
                 ],
-                'bulletsHeading' => 'With a Verified Business profile you get:',
+                'bulletsHeading' => 'With a Verified profile you get:',
                 'bullets'        => [
-                    '✓ Verified badge: a green badge on your profile and beside your name in every discovery result, so customers can see we have confirmed your business.',
+                    '✓ Verified: shown on your profile and beside your name in every discovery result, so customers can see we have confirmed your business.',
                     '📍 Locations: add up to ' . PracticeLocationService::MAX_LOCATIONS . ' more branches, practices or consulting rooms, each with its own address, phone number, map pin and opening hours, and each presented to Google as a business location in its own right.',
                     '👥 Staff: list up to ' . TeamMemberService::MAX_MEMBERS . ' people by name, with photos, qualifications and areas of expertise. When someone looks on ' . $site . ' for one of your people, or for a service only they offer, they find your business.',
                     '💼 Jobs: post your vacancies on our Jobs board, set up so eligible vacancies can appear in Google\'s job search, and reply to customers who need your kind of service.',

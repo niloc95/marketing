@@ -132,7 +132,7 @@ $panes = array_values(array_filter($tabs, static fn (array $t): bool => $t['inli
                         <label>Email preferences</label>
                         <input type="hidden" name="marketing_present" value="1">
                         <label><input type="checkbox" name="marketing_opt_in" value="1" <?= $vMarketing ? 'checked' : '' ?>> We use your email to send you monthly analytics for your profile: how many views it got and where your leads came from.</label>
-                        <div class="hint">Optional. Emails about your profile itself (sign in links and any badge billing) still arrive either way.</div>
+                        <div class="hint">Optional. Emails about your profile itself (sign in links and any Verified billing) still arrive either way.</div>
                     </div>
                 <?php endif ?>
 

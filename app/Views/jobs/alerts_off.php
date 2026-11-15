@@ -31,7 +31,7 @@
                 <?php else: ?>
                     discover requests on the
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('jobs?kind=service') ?>">Jobs board</a>.
-                    Replying to them is part of the <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('verified') ?>">Verified Business</a> badge.
+                    Replying to them is part of <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('verified') ?>">Verified</a>.
                 <?php endif; ?>
             </p>
             <form method="post" action="<?= base_url('jobs/alerts/off/' . $token) ?>">

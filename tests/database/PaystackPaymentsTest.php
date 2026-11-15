@@ -361,7 +361,7 @@ final class PaystackPaymentsTest extends CIUnitTestCase
         $this->billing()->paystackCheckout($listing, $this->verifications->find((int) $row['id']), false);
 
         $this->assertCount(1, $this->paystack->plans, 'the second checkout reuses the cached plan');
-        $this->assertSame('Verified Business badge, monthly', $this->paystack->plans[0]['name']);
+        $this->assertSame('WebScheduler Local Verified, monthly', $this->paystack->plans[0]['name']);
         $this->assertSame(3000, $this->paystack->plans[0]['cents']);
 
         [$first, $second] = array_map(static fn (array $c) => $c[1], $this->paystack->callsOf('initialize'));

@@ -35,7 +35,7 @@ $base     = $mode === 'listed' ? base_url('business/jobs/new') : base_url('jobs/
             <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white"><?= $isJob ? 'Post a job' : 'Request a service' ?></h1>
             <?php if ($isJob && $mode === 'unlisted' && signup_cta()['verified']): ?>
                 <p class="hint mb-2">
-                    Have a business profile on <?= esc($siteName) ?>? Posting vacancies is part of the Verified Business badge.
+                    Have a business profile on <?= esc($siteName) ?>? Posting vacancies is part of Verified.
                     <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= base_url('business') ?>">Sign in to your dashboard</a> to post from your profile.
                 </p>
             <?php endif; ?>

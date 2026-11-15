@@ -37,7 +37,7 @@ class Careers extends BaseConfig
         'WebScheduler Local is a local business discovery and visibility platform built for South Africa. '
             . 'We help people find the businesses, professionals and services around them, and help those businesses be found.',
         'Every South African business can create a profile for free, and stays free. Businesses that want to show they are '
-            . 'real and checked can add the Verified Business badge. We never sell a higher place in the results.',
+            . 'real and checked can add Verified. We never sell a higher place in the results.',
         'We are a small team, so the work you do here reaches real shops, practices and trades in towns across the country, '
             . 'and you will help decide how the platform grows.',
     ];

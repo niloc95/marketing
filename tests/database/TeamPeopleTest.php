@@ -61,7 +61,7 @@ final class TeamPeopleTest extends CIUnitTestCase
         $id      = $this->listing('free-salon', ['verified_until' => null]);
         $listing = $this->listings->find($id);
 
-        $this->assertSame('Online bookings come with the Verified Business badge.', (new BookingSetupService())->whyNot($listing));
+        $this->assertSame('Online bookings come with Verified.', (new BookingSetupService())->whyNot($listing));
         $this->expectException(DomainException::class);
         (new BookingSetupService())->turnOn($listing);
     }

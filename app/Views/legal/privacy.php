@@ -59,7 +59,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Booking links</li>
                 <li>Business logo and photographs</li>
                 <li>Information about delivery, card payments and online bookings</li>
-                <li>On Verified Business profiles, team members' names, positions, qualifications, areas of focus, short bios and photos</li>
+                <li>On Verified profiles, team members' names, positions, qualifications, areas of focus, short bios and photos</li>
             </ul>
             <p>Businesses and service providers are responsible for ensuring that information they submit to the service is accurate and that they have the necessary authority to provide any personal information included in their profile.</p>
             <p>Because the purpose of <?= esc($siteName) ?> is to provide a public business discovery platform, information included in a published profile may be visible to anyone and may be indexed by search engines.</p>
@@ -116,7 +116,7 @@ $contact   = config('Directory')->adminEmail();
                 <li>Gallery photographs</li>
             </ul>
 
-            <h3>Team members (Verified Business profiles)</h3>
+            <h3>Team members (Verified profiles)</h3>
             <ul>
                 <li>Name and position</li>
                 <li>Qualifications and areas of focus</li>
@@ -128,8 +128,8 @@ $contact   = config('Directory')->adminEmail();
 
             <p>Most of this information forms part of the public business profile and is therefore intended for publication.</p>
 
-            <h2>6. Verified Business badge</h2>
-            <p>Applying for a <strong>Verified Business</strong> badge is optional. A business profile can operate without verification.</p>
+            <h2>6. Verified</h2>
+            <p>Applying for <strong>Verified</strong> is optional. A business profile can operate without verification.</p>
             <p>If you choose to apply, we may request:</p>
             <ul>
                 <li>A company registration document for the business; and</li>
@@ -139,8 +139,8 @@ $contact   = config('Directory')->adminEmail();
             <p>Verification documents are stored separately from publicly accessible profile information and are protected against direct public access. Access is restricted to authorised personnel through the administrative system, with access activity recorded.</p>
             <p>We seek to collect only the information reasonably necessary to perform the verification process. We do not intentionally reproduce or publish information contained in the submitted documents as part of the public profile.</p>
             <p>The verification process records the outcome of the review, together with relevant administrative information such as who performed the review and when.</p>
-            <p>The Verified Business badge itself is the only verification information displayed publicly.</p>
-            <p>We do not ask for certificates and do not check qualifications. Any qualification shown on a profile, including on a team member card, is the business's own statement, and the badge does not cover it. Our <a href="<?= base_url('terms#qualifications') ?>">Terms, section 21</a>, set out what a business confirms when it shows one.</p>
+            <p>The Verified mark itself is the only verification information displayed publicly.</p>
+            <p>We do not ask for certificates and do not check qualifications. Any qualification shown on a profile, including on a team member card, is the business's own statement, and Verified does not cover it. Our <a href="<?= base_url('terms#qualifications') ?>">Terms, section 21</a>, set out what a business confirms when it shows one.</p>
 
             <h2>7. Information you provide when contacting us</h2>
             <p>If you contact us through a <a href="<?= base_url('contact') ?>">contact form</a>, we may receive:</p>
@@ -175,7 +175,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>If you apply for a job</h3>
             <p>The name, email address, phone number, optional CV link and message you enter are sent by email to the address the employer gave for applications, with your email address set as the reply address. <strong>We do not store the application.</strong> You are asked to agree to this before it is sent. Once the employer receives it, the employer decides how it is used and is responsible for it under POPIA.</p>
-            <p>Some vacancies posted by Verified Businesses ask three short timed questions before you apply. Your answers, whether each is right, how long you took and how often you left the page while the clock ran are sent to the employer with your application. Until you send it, they are held only in your session on our server, for about two hours. We do not store them with the application.</p>
+            <p>Some vacancies posted by Verified businesses ask three short timed questions before you apply. Your answers, whether each is right, how long you took and how often you left the page while the clock ran are sent to the employer with your application. Until you send it, they are held only in your session on our server, for about two hours. We do not store them with the application.</p>
             <p>So that each person applies only once for a vacancy, we keep a scrambled fingerprint of your email address and phone number with that vacancy. It cannot be turned back into your details, and it is deleted 30 days after the vacancy closes.</p>
 
             <h3>If your business replies to a request</h3>
@@ -278,8 +278,8 @@ $contact   = config('Directory')->adminEmail();
                     <tr><td>Sending verification and profile management links</td><td>Necessary to provide the service you requested</td></tr>
                     <tr><td>Responding to enquiries submitted through the contact form</td><td>Necessary to respond to your request</td></tr>
                     <tr><td>Passing your message to a business you write to from its profile</td><td>Consent provided on the form</td></tr>
-                    <tr><td>Reviewing documents for a Verified Business badge</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
-                    <tr><td>Processing payment for the Verified Business badge</td><td>Necessary to perform the agreement for the service</td></tr>
+                    <tr><td>Reviewing documents for Verified</td><td>Consent provided when you submit the documents and processing necessary to provide the requested verification service</td></tr>
+                    <tr><td>Processing payment for Verified</td><td>Necessary to perform the agreement for the service</td></tr>
                     <tr><td>Confirming, reviewing and publishing a Jobs board post, and emailing the poster about it</td><td>Consent provided when you submit the post, and processing necessary to provide the service you requested</td></tr>
                     <tr><td>Passing a job application to the employer</td><td>Your consent, given on the application form before it is sent</td></tr>
                     <tr><td>Passing a reply from a business with a profile to the person who asked for a service</td><td>Necessary to provide the service both of you requested</td></tr>
@@ -299,7 +299,7 @@ $contact   = config('Directory')->adminEmail();
 
             <h3>Public business profiles</h3>
             <p>Information that you choose to publish as part of a business profile is publicly accessible and may be indexed by search engines.</p>
-            <p>This includes qualifications and, on Verified Business profiles, team member cards. Anyone can see a published profile without an account, and there is no setting that hides one field while showing the rest, so the way to keep something private is to leave it out. Qualifications, areas of focus and team members are also published in a structured form that search engines and AI tools read, and they may show excerpts on their own services. After you remove information, copies may remain in those services for a while; we do not control them.</p>
+            <p>This includes qualifications and, on Verified profiles, team member cards. Anyone can see a published profile without an account, and there is no setting that hides one field while showing the rest, so the way to keep something private is to leave it out. Qualifications, areas of focus and team members are also published in a structured form that search engines and AI tools read, and they may show excerpts on their own services. After you remove information, copies may remain in those services for a while; we do not control them.</p>
 
             <h3>Customer reviews</h3>
             <p>A published review, with the reviewer's first name and surname initial, is publicly accessible and may be indexed by search engines. The reviewer's full name and email address are not shared with the business or anyone else.</p>
@@ -320,7 +320,7 @@ $contact   = config('Directory')->adminEmail();
             <p>On the Jobs board, a job application is sent to the employer it is addressed to, and a business's reply is sent to the person who asked for the service, as described in section 8. A request for a service, as published, may be emailed to businesses with a profile; the requester's contact details are not included.</p>
 
             <h3>Payment processing</h3>
-            <p>If you purchase a Verified Business badge or our profile setup service, payment processing is handled by <strong>Paystack</strong>. See <a href="https://paystack.com/za/terms" rel="noopener">Paystack's terms and privacy notice</a>. A subscription started before we moved to Paystack is processed by <strong>PayFast</strong> until you move it; see <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
+            <p>If you purchase Verified or our profile setup service, payment processing is handled by <strong>Paystack</strong>. See <a href="https://paystack.com/za/terms" rel="noopener">Paystack's terms and privacy notice</a>. A subscription started before we moved to Paystack is processed by <strong>PayFast</strong> until you move it; see <a href="https://www.payfast.co.za/privacy-policy/" rel="noopener">PayFast's privacy policy</a>.</p>
             <p>To take a payment we give Paystack your email address, the amount and the payment reference, so it can charge your card, run a monthly or yearly subscription and send your receipt. Payment information is processed in Paystack's (or PayFast's) payment environment. We do not store your full card details on our servers.</p>
             <p>Verification documents, including identity and company registration documents, are not provided to Paystack or PayFast for payment processing.</p>
 
@@ -382,9 +382,9 @@ $contact   = config('Directory')->adminEmail();
             <h3>Job applications to us</h3>
             <p>An application made through our careers page, with its CV, is deleted <strong>12 months</strong> after we receive it. You may ask us to delete it sooner by <a href="<?= base_url('contact') ?>">contacting us</a>.</p>
 
-            <h3>Verified Business documents</h3>
-            <p>Verification documents are retained while the Verified Business badge remains active or paused, where reasonably necessary to support the verification status.</p>
-            <p>Where a Verified Business subscription lapses or an application is rejected, the associated verification documents are retained for up to <strong>12 months</strong> from that point and are then deleted automatically. This period allows us to answer a billing or verification query raised after the fact.</p>
+            <h3>Verified documents</h3>
+            <p>Verification documents are retained while Verified remains active or paused, where reasonably necessary to support the verification status.</p>
+            <p>Where a Verified subscription lapses or an application is rejected, the associated verification documents are retained for up to <strong>12 months</strong> from that point and are then deleted automatically. This period allows us to answer a billing or verification query raised after the fact.</p>
             <p>If you submit replacement verification documents, the documents they replace are retained for up to <strong>90 days</strong> and are then deleted automatically.</p>
             <p>Verification documents are deleted in full when the associated business profile is deleted.</p>
             <p>You may <a href="<?= base_url('contact') ?>">request deletion</a> of verification documents. Where appropriate, we will process the request while considering any applicable legal, contractual or operational requirements.</p>

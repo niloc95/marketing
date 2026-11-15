@@ -92,7 +92,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
                     Attach your two documents just below, then tell us about your business.
                     We'll email you a link to verify and publish your profile, and your
-                    profile goes live either way, whatever the badge review decides.
+                    profile goes live either way, whatever the Verified review decides.
                 </p>
             <?php else: ?>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile. It's free.</p>
@@ -150,7 +150,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                   // been verified. The badge appears in the open state below,
                                   // where it honestly means "you have asked for this". ?>
                             <summary>
-                                <span class="verify-cta-heading">Want the Verified Business badge?</span>
+                                <span class="verify-cta-heading">Want Verified?</span>
                                 <span class="hint">
                                     <?= esc(price_terms($verificationAmount, badge_yearly_price())) ?>. We review your documents first and
                                     only ask for payment if they check out. Nothing to pay now. Cancel any
@@ -158,11 +158,11 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                 </span>
                                 <?php // A span, not a <button>: the <summary> is already the control,
                                       // and nesting a button inside it swallows the click. ?>
-                                <span class="btn btn-accent">Add Verified Business</span>
+                                <span class="btn btn-accent">Add Verified</span>
                             </summary>
                             <div>
                                 <p class="verify-chosen">
-                                    <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified Business</span>
+                                    <span class="badge badge-verified gap-1"><?= lucide('badge-check', 'h-3.5 w-3.5 shrink-0') ?>Verified</span>
                                     added, <?= esc(price_terms($verificationAmount, badge_yearly_price())) ?> once we have approved you
                                 </p>
                                 <p class="hint verify-offer-docs">
