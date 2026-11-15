@@ -39,7 +39,7 @@ class Documents extends BaseConfig
     public array $published = [
         'profile-guide' => [
             'title'   => 'Profile guide',
-            'summary' => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then locations, team members, jobs and reviews with Verified Business.',
+            'summary' => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then online bookings, locations, team members, jobs and reviews with Verified Business.',
             'file'    => 'webscheduler-local-profile-guide.pdf',
             'pages'   => 19,
             'tag'     => 'Guide',
@@ -92,13 +92,13 @@ class Documents extends BaseConfig
                 'when the advert budget runs out',
                 'impressions are not sales',
                 'start free, get verified',
-                'everything Verified adds',
+                'everything Verified adds, online bookings included',
                 'built for search, maps and AI',
                 'fast, by Google\'s own measure',
                 'every source behind the numbers',
             ],
             'listed'  => true,
-            'builder' => null,
+            'builder' => 'marketing-site/outreach/verified-brochure/build_brochure.py --publish',
         ],
         '2027-outlook' => [
             'title'   => '2027 local visibility outlook',

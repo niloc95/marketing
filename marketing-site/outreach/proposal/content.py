@@ -37,7 +37,8 @@ PLAYBOOK_URL = "https://local.webscheduler.co.za/assets/documents/webscheduler-l
 # The renderer has one edition; the playbook's per-trade editions do not apply.
 VERTICALS = {"general": {"audience": None}}
 
-PRICE_VERIFIED = "R29.99"
+PRICE_VERIFIED = "R60"          # live price, /pricing.json za.verified (14 Nov 2026)
+PRICE_VERIFIED_YEAR = "R625"     # za.verified.displayYearly
 ORANGE = "#F77F00"
 
 
@@ -181,8 +182,8 @@ _PAGES = [
             {"kind": "para",
              "text": "A green Verified Business badge on your profile, and beside your name in every "
                      "search result, means a person here has checked your company registration "
-                     "document and the owner's ID. It also adds your other locations, your people, "
-                     "your job vacancies and replies to requests for work."},
+                     "document and the owner's ID. It also adds online bookings on your profile, your "
+                     "other locations, your people, your job vacancies and replies to requests for work."},
             {"kind": "numbered", "items": [
                 ("01", "SEND TWO DOCUMENTS",
                  "When you sign up or any time after. Stored privately, never shown on your profile."),
@@ -331,10 +332,10 @@ _PAGES = [
                   "tax practitioners",
                   "A complete, factual profile. The kind of presence professional codes are most "
                   "comfortable with. With Verified Business: each practitioner shown with their role "
-                  "and qualifications, and found by name."],
+                  "and qualifications, found by name, and booked online."],
                  ["<b>A service business</b><br/>salons, spas, studios, clinics, tutors",
-                  "Services with prices, a <i>Book online</i> button, photographs of your work and "
-                  "reviews you can reply to."],
+                  "Services with prices, photographs of your work and reviews you can reply to. "
+                  "With Verified Business: customers book a time on your profile."],
                  ["<b>A mobile or home based business</b><br/>plumbers, electricians, mobile "
                   "hairdressers, cleaners",
                   "Choose “I travel to customers”: your profile shows your town and the suburbs you "
@@ -374,7 +375,8 @@ _PAGES = [
                  ["Services, with prices", "Free", "Yes", "Varies"],
                  ["Customer reviews", "Free; checked before they go up, and you can reply", "Yes",
                   "Varies"],
-                 ["Online booking", "Free <i>Book online</i> button to your own booking page",
+                 ["Online booking", "Verified: customers book on your profile, with a calendar and "
+                  "reminders. Free: a <i>Book online</i> button to your own booking page",
                   "Booking link, or Reserve with Google", "Varies"],
                  ["Multiple locations", "Verified: up to 6 more on one profile",
                   "A separate profile for each location", "Usually a separate listing each"],
@@ -416,19 +418,20 @@ _PAGES = [
                  ["Customer reviews, with your replies", "Included", "Included"],
                  ["Monthly report: views and where your leads came from", "Included", "Included"],
                  ["Verified Business badge, documents checked", "Not included", "Included"],
+                 ["Online bookings on your profile, with a calendar and reminders", "Not included", "Included"],
                  ["Up to 6 more branches or practices", "Not included", "Included"],
                  ["Up to 12 team members, found by name", "Not included", "Included"],
                  ["Post job vacancies, set up for Google's job search", "Not included", "Included"],
                  ["Reply to requests for work, alerted first", "Not included", "Included"],
-                 ["<b>Price</b>", "<b>R0, always</b>", f"<b>{PRICE_VERIFIED} a month</b>"],
+                 ["<b>Price</b>", "<b>R0, always</b>", f"<b>{PRICE_VERIFIED} a month or {PRICE_VERIFIED_YEAR} a year</b>"],
              ]},
             {"kind": "para",
              "text": "<b>Free:</b> any business with a South African address. No monthly fee. No "
                      "subscription. No obligation. No commission, and no card required. "
                      "<b>Verified Business:</b> optional; you pay only after your documents are "
-                     "approved, monthly, and you can cancel any time. "
-                     "<b>International Profile:</b> for a business based outside South Africa, "
-                     "monthly in rand, with the price shown before you pay."},
+                     "approved, monthly or yearly, and you can cancel any time. "
+                     "<b>Plus:</b> for a business based outside South Africa, on "
+                     "local.webscheduler.app, billed in rand, with the price shown before you pay."},
             {"kind": "small",
              "text": "Results are ordered by distance when a customer shares their location, and "
                      "otherwise by how complete a profile is, and everything that counts towards "
