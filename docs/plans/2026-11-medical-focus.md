@@ -1,8 +1,34 @@
 # Plan: Medical first positioning and "practice" wording
 
 **Prepared:** 16 Nov 2026  
+**Revised:** 16 Nov 2026  
 **Branch:** `plan/medical-focus`  
-**Status:** Draft for owner and Claude review. Nothing is implemented here.
+**Status:** Owner decisions recorded 16 Nov 2026. Ready for Claude to implement phase by phase.
+
+---
+
+## Owner decisions (16 Nov 2026)
+
+1. **CTAs and nav button:** "Add your practice or business" on both sites (the brand
+   site follows). Mobile short form: "Add practice" (see Section 6b and B6 investigation).
+
+2. **Medical first means real entry points**, not only wording: a home section such as
+   "Find a doctor, dentist or vet", "patients" on medical profiles (via
+   `listing_audience()`), and medical aid and after hours shown more prominently.
+
+3. **Reviews off by default for Health and Medical and Pets and Animals** until the
+   owner has had legal advice. Data is kept, only hidden. Implemented via
+   `Config\Reviews::$offForGroups`. Details in Phase 3b and the investigation (B3).
+
+4. **New phase: claim your practice profile.** Run an outreach campaign to get the
+   roughly 2,100 imported medical profiles claimed by their owners. Details in Phase 3c
+   and the investigation (B5).
+
+5. **Why, from production Search Console data (Oct to mid Nov 2026):** Health and
+   Medical has 81,339 of 98,228 impressions (83%) and 1,294 of 1,545 clicks (84%),
+   but only 3 of roughly 2,120 medical profiles were signed up by their owners. The
+   roughly 300 self signups are shops, handmade items and services. The patient
+   discovery side is medical; the paying side is still mostly small businesses.
 
 ---
 
@@ -10,86 +36,76 @@
 
 ### Context
 
-The database holds about 2,700 imported doctor profiles (1,496 from the doctors
-import, 1,225 from Lenmed) alongside general businesses such as the Oriental Plaza
-imports. Health and medical is already the dominant real use case. The owner wants the
-platform to lead with that audience and for copy to say "practice" instead of
-"business" where it makes sense.
-
-The word "business" appears approximately 447 times in `app/Views/directory/`, 47
-times in `app/Views/emails/`, and roughly 20 times in customer-visible parts of
-`app/Views/business/`. The vast majority of these are in customer-facing copy, not code
-identifiers.
+Production data (16 Nov 2026): 2,720 imported medical profiles (1,495 import-doctors,
+1,225 import-lenmed), making Health and Medical 2,466 of 2,750 published profiles
+(90%). Search Console shows 83% of impressions and 84% of clicks go to Health and
+Medical. Health and medical is the dominant real use case. The word "business" appears
+roughly 447 times in `app/Views/directory/`, 47 times in `app/Views/emails/`, and
+roughly 20 times in customer-visible parts of `app/Views/business/`.
 
 ### Recommended option: B
 
 **Choose the word per context**: "practice" in general and marketing copy, and per
-profile wording on profile pages, the owner area and emails, based on the profile's
-category group.
+profile wording on profile pages, the owner area and emails, via `listing_noun()` and
+`listing_audience()` which read `Config\Verticals` (already the source of noun, cta and
+panel headings per group).
 
-**Why not A (swap everywhere):**  
+**Why not A (swap everywhere):**
 "Create your free practice profile" is odd for a clothing shop in the Oriental Plaza,
 a plumber or a hair salon. A blind swap would alienate non-medical owners.
 
-**Why not C (neutral wording everywhere):**  
-"Practice or business" is wordy and hedging. The platform already has a clear
-majority audience. "Practice" in the main marketing voice is accurate for most
-profiles and signals the medical-first positioning without excluding general profiles.
+**Why not C (neutral wording everywhere):**
+"Practice or business" is wordy and hedging. The platform already has a clear majority
+audience. "Practice" in the main marketing voice is accurate and signals the
+positioning without excluding general profiles.
 
-**What B means in practice:**
+**What B means:**
 
 | Surface | Approach |
 |---|---|
-| General marketing, home hero, /add-profile headline | "practice" or "your practice" as the primary noun; "or business" where needed for clarity |
-| Profile page, owner area, emails where listing is in context | `profile_noun($listing)` helper: returns the right word per category group |
-| General fallback (no listing in context, or non-medical) | "business" |
-| Code identifiers, routes, CSS classes, config keys | Unchanged — copy rules still apply |
+| General marketing, home hero, /add-profile headline | "practice or business" as the shared CTA; "practice" in leading copy |
+| Profile page, owner area, emails with a listing in context | `listing_noun($listing)` reads `Config\Verticals` |
+| Audience word ("customers", "patients") with listing in context | `listing_audience($listing)` reads new `audience` key in `Config\Verticals` |
+| Code identifiers, routes, CSS classes, config keys | Unchanged |
 
 ---
 
-## 2. The `profile_noun()` helper
+## 2. The `listing_noun()` and `listing_audience()` helpers
 
-One function in `app/Helpers/directory_ui_helper.php`. Every view and email that shows
-the word in a per-profile context calls it. No wording logic spreads into views.
+`Config\Verticals` already holds `noun` and `nounPlural` per group, with per-slug
+overrides for pharmacy, hospital, veterinarian, attorney and others. It is read by
+`vertical_profile()` in `app/Helpers/directory_ui_helper.php`, and `show.php` and
+`landing.php` already call it. The plan is to add two thin wrappers and a new
+`audience` key; no new mapping config is needed.
 
-### Proposed signature
+### `listing_noun(array $listing, bool $plural = false): string`
 
-```php
-/**
- * The noun for a profile's kind of entity, for customer-facing copy.
- *
- * Returns 'practice' for Health & Medical, Pets & Animals and Legal & Financial
- * (vets, law firms and accounting practices all use the word), 'organisation' for
- * nonprofits and community profiles (which already carry a type badge), and
- * 'business' for everything else.
- *
- * @param array  $listing  A listing row that includes group_name.
- * @param string $form     'singular' (default) or 'plural'.
- */
-function profile_noun(array $listing, string $form = 'singular'): string
-```
+Reads `noun` or `nounPlural` from `vertical_profile()` using the aliased keys
+`category_group` and `category_slug` that `DirectoryService` selects
+(`p.group_name AS category_group`, `p.slug AS category_slug`). On a bare model row
+where those aliases are absent, the category is looked up once by `category_id`
+(cached per request) rather than falling back blindly to "business".
 
-### Group-to-noun mapping (proposed defaults)
+### `listing_audience(array $listing, bool $plural = false): string`
 
-| `group_name` | Singular | Plural |
-|---|---|---|
-| Health & Medical | practice | practices |
-| Pets & Animals | practice | practices (see open question 1) |
-| Legal & Financial | practice | practices |
-| Community & Nonprofit | organisation | organisations |
-| All other groups | business | businesses |
+Reads a new `audience` key from `Config\Verticals`. Proposed defaults:
 
-Profile types `ngo`, `community`, `foundation`, `project` override to "organisation"
-regardless of group. Profile type `place` overrides to "place".
+| Group | `audience` (singular / plural) |
+|---|---|
+| Health and Medical | patient / patients |
+| Pets and Animals | client / clients (see open question 1) |
+| All other groups | customer / customers |
 
-The mapping lives inside the helper so every caller picks it up without touching a
-config file or running a migration.
+The key is added to the `$defaults` array in `Config\Verticals` as
+`'audience' => 'customer'` and overridden per group in the same style as `noun`.
+"Organisation" for Community and Nonprofit already comes from the existing
+`noun` / `nounPlural` entries in Verticals, so no special case in code is needed.
 
-### Where `group_name` is not available
+### Tests
 
-The helper receives a listing row. `DirectoryService::getProfile()` already returns
-`group_name` on every profile row. If a caller does not have the full row, the
-fallback is "business".
+Extend `tests/unit/VerticalProfileTest.php` to cover the new `audience` key.
+Add `tests/unit/ListingNounTest.php` to cover `listing_noun()` and
+`listing_audience()` on rows with and without the aliased keys.
 
 ---
 
@@ -102,11 +118,11 @@ identifiers, CSS classes and config keys are excluded per the copy rules.
 
 | Current text | Proposed text | Action |
 |---|---|---|
-| `Add business` (mobile, nav button) | `Add practice` | **depends** — see open question 5 |
-| `Add your business` (desktop, nav button) | `Add your practice` | **depends** — see open question 5 |
+| `Add business` (mobile, nav button) | `Add practice` | change (owner decision) |
+| `Add your business` (desktop, nav button) | `Add your practice or business` | change (owner decision) |
 | `Manage your profile` (nav link) | unchanged | keep |
 | `Discover local businesses` (footer nav) | `Discover local practices and businesses` | change |
-| `Verified businesses` / `Plus businesses` (footer) | `Verified practices` / `Plus practices` | change |
+| `Verified businesses` / `Plus businesses` (footer) | `Verified profiles` / `Plus profiles` | change |
 | `Recommend a business` (footer) | `Recommend a practice or business` | change |
 | footer tagline co.za: `A discovery platform for South African businesses, services, locations, professionals and opportunities. Create your free business profile.` | `A discovery platform for South African practices, businesses, services, professionals and opportunities. Create your free practice profile.` | change |
 | footer tagline .app: same without "South African" | Same change, without "South African" | change |
@@ -124,23 +140,25 @@ No new per-site branching needed for the footer.
 | `discoverTitle`: `Discover businesses across South Africa.` | `Discover practices and businesses across South Africa.` | change |
 | hero search `ariaLabel`: `Discover local businesses` | `Discover local practices and businesses` | change |
 | hero search `placeholder` fallback: `A business, service, person or place` | `A practice, business, person or place` | change |
-| `A business isn't just a name in a list.` (statement strip) | `A practice isn't just a name in a list.` | **depends** — see open question 10 |
+| `A business isn't just a name in a list.` (statement strip) | `A practice isn't just a name in a list.` | **depends**; see open question 10 |
 | Featured strip: `aria-label="Featured businesses"` (not visible) | `aria-label="Featured practices and businesses"` | change |
 | `Discover every business` (link) | `Discover every practice and business` | change |
 | CTA: `Your business should be easy to find.` | `Your practice should be easy to find.` | change |
 | CTA: `A free business profile covers your business information …` | `A free practice profile covers your practice information …` | change |
 | `Add your business` CTA button (goes to /add-profile) | depends on open question 5 | **depends** |
 | JSON-LD `schema_item_list('Featured businesses')` (not visible) | `'Featured practices and businesses'` | change |
-| Home page JSON-LD `slogan` from `Config\Directory::$slogan` | unchanged — "Discover local. Be discovered." stays | keep |
+| Home page JSON-LD `slogan` from `Config\Directory::$slogan` | unchanged. "Discover local. Be discovered." stays | keep |
 
 The home page also shows rotating words including "business" in the hero statement strip
 (`['business', 'services', 'locations', 'people', 'opportunities']`). "practice" is
 not in the same linguistic category as these rotating words; leave this strip as is or
 add "practice" as the first item (see open question 11).
 
-The hero example placeholders (`$examples`) are built from live category+city pairs by
-`DirectoryService`. They rotate randomly. Favour health examples by updating the
-category tile order (Phase 3), which indirectly influences what appears first.
+The hero example placeholders (`$examples`) come from live data (`DirectoryService`).
+No code change can update this list; it reflects what is actually in the database.
+The examples will naturally shift toward medical as the category grows. Any Phase 3
+work that "updates the placeholder list" is therefore not applicable; instead, leave
+this to the data.
 
 ### 3c. Signup form (`app/Views/directory/form.php`)
 
@@ -165,7 +183,7 @@ category tile order (Phase 3), which indirectly influences what appears first.
 |---|---|---|
 | Free card header: `A free business profile` (computed) | `A free practice profile` | change |
 | Free card footer: `A South African business profile is free either way, and stays free` | `A South African practice profile is free either way, and stays free` | change |
-| Verified row note: `your business registration document and your ID` | unchanged — this describes a document check, not a type | keep |
+| Verified row note: `your business registration document and your ID` | unchanged. This describes a document check, not a type | keep |
 | `All your locations: up to N more branches or practices, each … described to Google as a business location in its own right` | `… described to Google as a practice or business location in its own right` | change |
 | `More people discover you: … brings up your business too` | `… brings up your practice too` | change |
 | `First to hear about new work: when someone … asks for your kind of service, verified businesses are the first we alert` | `… verified practices are the first we alert` | change |
@@ -176,7 +194,7 @@ category tile order (Phase 3), which indirectly influences what appears first.
 
 | Current text | Proposed text | Action |
 |---|---|---|
-| `Why a business would want the Verified Business badge.` (comment, not visible) | — | keep (comment) |
+| `Why a business would want the Verified Business badge.` (comment, not visible) | (none) | keep (comment) |
 | `… someone deciding between you and a business without it` | `… someone deciding between you and a practice without it` | change |
 | `your business registration document and your ID.` | unchanged (describes a document) | keep |
 | `described to Google as a business location in its own right` | `described to Google as a practice or business location in its own right` | change |
@@ -199,8 +217,8 @@ category tile order (Phase 3), which indirectly influences what appears first.
 | Free profile card heading: `A free business profile` | `A free practice profile` | change |
 | CTA: `Add your business` button on pricing page | depends on open question 5 | **depends** |
 | Profile setup card: `a complete business profile` | `a complete practice profile` | change |
-| Footer link: `More answers … and what Verified means on Verified businesses` | `… on Verified practices` | change |
-| .app: `Plus businesses` → `Plus practices` in footer link | change |
+| Footer link: `More answers … and what Verified means on Verified businesses` | `… on Verified profiles` | change |
+| .app: `Plus businesses` in footer link | `Plus profiles` | change |
 
 ### 3g. Compare page (`app/Views/directory/compare.php`)
 
@@ -228,14 +246,14 @@ These pages always have the owner's listing in context. Use `profile_noun($listi
 | `settings.php` | `edit your business profile` | change via helper |
 | `settings.php` | `Customers can no longer book … from your business profile.` | change via helper |
 | `stats.php` | `Your stats start once your business profile is live.` | change via helper |
-| `profile.php` (comment, not visible) | — | keep |
-| `analytics.php` | `By the business` chart series label | keep — this is a data label, not copy |
+| `profile.php` (comment, not visible) |. | keep |
+| `analytics.php` | `By the business` chart series label | keep (data label, not copy |
 
 ### 3i. Emails (`app/Views/emails/`)
 
 Emails that have a listing in context use `profile_noun($listing)`.  
 Some emails use `$business` as a variable for the listing's display name, not the word
-"business" — these are kept as is (the name, not the noun).
+"business". these are kept as is (the name, not the noun).
 
 | File | Current text | Action |
 |---|---|---|
@@ -246,7 +264,7 @@ Some emails use `$business` as a variable for the listing's display name, not th
 | `holiday-hours.php` | `Customers check whether a business is open before they travel` | change → `a practice or business` |
 | `holiday-hours.php` | `when people look for businesses open on the holiday.` | change → `practices and businesses open on the holiday.` |
 | `holiday-hours.php` | `your business has a profile on` | change via helper |
-| `profile-strength.php` | `email signature and business cards.` | keep — refers to business cards (physical item) |
+| `profile-strength.php` | `email signature and business cards.` | keep (refers to business cards, physical item) |
 | `profile-strength.php` | `your business has a profile on` | change via helper |
 | `verification-owner.php` | `everywhere your business is discovered on the platform.` | change via helper |
 | `verification-owner.php` | `your business is approved.` | change via helper |
@@ -254,8 +272,8 @@ Some emails use `$business` as a variable for the listing's display name, not th
 | `verification-owner.php` | `your business has a profile on` | change via helper |
 | `preview.php` | `We've set up the business profile for` | change → `the practice profile for` |
 | `preview.php` | `Preview my business profile` | change → `Preview my practice profile` |
-| `booking-plan.php` | `your calendar and customers stay in your business area` | keep — refers to the /business area URL |
-| `booking-plan.php` | `Every admin of the business gets this email.` | keep — "the business" here means the account |
+| `booking-plan.php` | `your calendar and customers stay in your business area` | keep (refers to the /business area URL) |
+| `booking-plan.php` | `Every admin of the business gets this email.` | keep ("the business" here means the account) |
 | `booking-password-reset.php` | `your WebScheduler Local business account.` | change → `your WebScheduler Local account.` |
 | `booking-payment-account.php` | `Every admin of the business gets this email.` | keep (same as above) |
 
@@ -263,7 +281,7 @@ Some emails use `$business` as a variable for the listing's display name, not th
 
 | File | Current text | Action |
 |---|---|---|
-| `_profile_head_parts.php` | `the business's registration document and the owner's ID` | keep — describes an actual document check |
+| `_profile_head_parts.php` | `the business's registration document and the owner's ID` | keep (describes an actual document check) |
 | `_verification_panel.php` | `everywhere your business is discovered on the platform.` | change via `profile_noun($listing)` |
 | `_verification_panel.php` | `your business is approved.` | change via helper |
 | `_verification_panel.php` | `Your business profile itself is unaffected.` | change via helper |
@@ -280,10 +298,10 @@ which is correct at the schema.org level regardless of our copy word.
 
 | Current text | Proposed text | Action |
 |---|---|---|
-| co.za: `a local business discovery and visibility platform for South African businesses, services and professionals` | `a local practice and business discovery and visibility platform for South African practices, businesses, services and professionals` | change |
+| co.za: `a local business discovery and visibility platform for South African businesses, services and professionals` | `a local discovery and visibility platform for practices and businesses in South Africa` | change |
 | co.za: `before engaging it.` after `any business` | change to `any practice or business` | change |
-| .app: same description without "South African" | Same change | change |
-| Both: `We are not a party to any dealing between you and a business on the site.` | `… between you and a practice or business on the site.` | change |
+| .app: same description without "South African" | `a local discovery and visibility platform for practices and businesses` | change |
+| Both: `We are not a party to any dealing between you and a business on the site.` | `We are not a party to any dealing between you and a practice or business on the site.` | change |
 
 The terms must be updated under `Legal::LAST_UPDATED` with their current date.
 
@@ -319,7 +337,7 @@ The `data-track` and `data-track-label` attributes in the pricing CTAs (`_pricin
 `_plus_compare.php`) send events on click. These are internal analytics, but the label
 strings "Create Your FREE Business Profile" and "Get Your Business Verified" should
 change to match the new copy (they appear as event labels in GA4 reports). The event
-names (`pricing_cta`, `checkout_cycle`) stay unchanged — they are identifiers.
+names (`pricing_cta`, `checkout_cycle`) stay unchanged. they are identifiers.
 
 ---
 
@@ -328,21 +346,17 @@ names (`pricing_cta`, `checkout_cycle`) stay unchanged — they are identifiers.
 | Name | Current | Recommended | Rationale |
 |---|---|---|---|
 | Free tier | "Free Business Profile", "a free business profile" | "Free Practice Profile" | Aligns with medical-first positioning |
-| Paid upgrade (co.za) | "Verified Business" / "Verified" | **"Verified"** only | Per CLAUDE.md the upgrade is already called "Verified"; "Verified Business" is what the badge still says in many places and what tests assert. Plan to complete the rename to "Verified" everywhere in Phase 1 |
+| Paid upgrade (co.za) | "Verified Business" / "Verified" | **"Verified"** only | "Verified Business" is already renamed to "Verified" in customer copy. Remaining occurrences are admin text and code comments; these stay. No customer-visible work needed here. |
 | Paid upgrade (.app) | "Plus" | unchanged | Copy rules already say "Plus"; keep |
 | Profile setup service | "We set up your business profile for you" | "We set up your practice profile for you" | change |
-| "Add your business" button | "Add your business" | see open question 5 | CLAUDE.md currently says the header button reads "Add your business" — the owner must decide before this changes |
-| Platform description | "a local business discovery and visibility platform" | "a local practice and business discovery platform" | Medical-first framing; still accurate for general businesses |
-| Tagline | "Discover local. Be discovered." | unchanged | The tagline is clean and category-neutral; leave it |
-| "Verified Business badge" (the full name in legal and billing copy) | "Verified Business badge" | "Verified badge" | Drop "Business" from the badge's formal name, since the badge is now for practices as much as businesses. Needs PayFast/Paystack item name update (see warning below) |
+| "Add your business" button | "Add your business" | "Add your practice or business" (desktop); "Add practice" (mobile) | Owner decision 16 Nov 2026. Update CLAUDE.md at the same time. |
+| Platform description | "a local business discovery and visibility platform" | "a local discovery and visibility platform for practices and businesses" | Removes "business discovery" framing; accurate for all profile types |
+| Tagline | "Discover local. Be discovered." | unchanged | Clean and category-neutral; leave it |
+| "Verified Business badge" (formal name in billing) | "Verified Business badge" | "Verified badge" | Drop "Business". Payments run through Paystack only. Renaming the item name on future charges is harmless (Paystack does not match renewal on item name). Existing rows keep the old name on their statements until they re-subscribe. Owner to confirm before Claude changes it. |
 
-**Warning on the PayFast/Paystack item name:** `directory_verifications.payment_reference`
-and existing subscription rows contain "Verified Business badge" in the payment
-metadata. Renaming the item name in future charges is harmless (Paystack/PayFast do not
-match renewal on item name), but billing statements for existing subscribers will show
-the old name until they re-subscribe. The owner should decide whether to leave the
-item name unchanged for billing stability or accept the mismatch. This touches
-payments — hand to Claude.
+**Note on Paystack:** All new payments and renewals go through Paystack. The PayFast
+integration handles existing subscriptions that were activated before the switch only.
+No PayFast code or config needs to change as part of this plan.
 
 ---
 
@@ -352,30 +366,33 @@ payments — hand to Claude.
 
 **Hero lede:** Currently `The local discovery platform for businesses, services,
 professionals and locations across South Africa.` Proposed: `The local discovery
-platform for practices, businesses, services, professionals and locations across South Africa.`
+platform for practices, businesses, professionals and locations across South Africa.`
+
+**Medical aid and after hours:** `medical_aid_accepted` already exists in
+`Config\ListingAttributes` for the Health and Medical group. After hours is handled by
+the existing public holiday hours feature. What the owner wants is these shown more
+prominently on medical profiles, for example near the contact panel or in a dedicated
+"For patients" section. This is a Phase 3 layout change, not a data change.
 
 **Category tiles:** `header_quick_categories()` shows the eight most-listed categories.
-The order is query-driven (most profiles). Health & Medical is already the largest
-group by profile count. If it does not appear first, the tile query can be explicitly
-ordered to put it first without changing the ranking of discovery results (tiles are
-editorial, not part of `browse()`).
+Health and Medical is already the largest group by profile count. If it does not appear
+first, the tile query can be explicitly ordered to put it first without changing
+discovery results (tiles are editorial, not part of `browse()`).
 
-**Hero example placeholders:** Driven by live data. No code change needed; the medical
-categories will naturally appear as examples once Health & Medical is the leading
-category.
+**Hero example placeholders:** Come from live data (`DirectoryService`). No code change
+can update this list. The examples shift toward medical as the category grows.
 
-**Featured strip:** The `is_featured` flag is admin-only and already independent of
-payment. No change needed. Admin can prioritise medical profiles in the featured strip
-without any code change.
+**Featured strip:** The `is_featured` flag is admin-only and independent of payment.
+Admin can prioritise medical profiles in the featured strip without any code change.
 
 **Pricing section:** Moving from "business" to "practice" framing is the Phase 1 work.
-The pricing section of the home page shares `_pricing_compare.php` and `_plus_compare.php`
-with `/pricing`, so changes there cover both.
+The pricing section shares `_pricing_compare.php` and `_plus_compare.php` with
+`/pricing`, so changes there cover both.
 
 ### 5b. Discover dropdown (search suggest)
 
-`/directory/suggest` returns categories via the discovery model. Category labels (e.g.
-"General Practitioner", "Dentist") are already correct and show in the dropdown.
+`/directory/suggest` returns categories via the discovery model. Category labels (for
+example "General Practitioner", "Dentist") are already correct and show in the dropdown.
 
 The discovery model learns from actual searches over time. No code change is needed to
 make it suggest more medical categories; the data will weight them naturally once
@@ -387,13 +404,15 @@ category currently: "Veterinarian").
 
 ### 5c. Category ordering (`DirectoryCategoriesSeeder`, `Config\ListingFacets`)
 
-The seeder enumerates all groups. The first group in the array is "Health & Medical".
+The seeder enumerates all groups. The first group in the array is "Health and Medical".
 This controls sort order in the category picker and in `/directory/categories`. It is
-already first. No change needed here unless the owner wants a different group second.
+already first. No change needed unless the owner wants a different group second.
 
 ### 5d. Province and country pages
 
-These pages show businesses in a region. They use the same `browse()` query and show
+Category and province landing pages already exist (`app/Views/directory/landing.php`).
+They show practices in a region using the same `browse()` query and `_card.php`
+partial. These pages show
 the same `_card.php` partial. The word "business" in page titles and headings will
 change via the same layout strings as the home and results page.
 
@@ -420,7 +439,7 @@ positioning; the copy changes in Phase 1 are enough.
 ### 5g. Description templates (`Config\DescriptionTemplates`)
 
 The description template families are:
-- `business` (used by `person`, `practice`, `facility`) — generic but workable for health
+- `business` (used by `person`, `practice`, `facility`). generic but workable for health
 - `place` (venues)
 - `cause` (NGO types)
 
@@ -465,7 +484,13 @@ entries here.
 Veterinarians registered under SAVC are entirely absent. The form shows no registration
 box for a vet, and the profile shows no registration link.
 
-Adding SAVC requires:
+**SAVC is co.za only.** `Config\Registrations` and `ProfessionalRegistration::regulatorFor()`
+do not currently accept a site parameter. The SAVC field must only show on co.za; on
+.app a veterinarian profile gets no registration field until a multi-jurisdiction
+approach is designed. `regulatorFor()` needs a site parameter (or a check inside the
+function) so it returns null for the `veterinarian` slug when the site is .app.
+
+Adding SAVC on co.za requires:
 1. Add `savc` to `Config\Registrations::$regulators` with its pattern, example, register
    URL (`https://www.savc.org.za/`) and research flag.
 2. Add `'veterinarian' => 'savc'` to `$bySlug`.
@@ -493,7 +518,7 @@ advertise. The platform is not the practitioner, but it is the medium.
 
 | Feature | Potential issue | Risk level | Question for the owner |
 |---|---|---|---|
-| **Customer reviews** | The HPCSA restricts testimonials from patients in advertising material if they are used to attract clients. Third-party reviews on a platform are a grey area: the platform does not solicit them for the practitioner, but displaying them on a profile page could be construed as the practitioner using them. | Medium | Should medical practitioner profiles carry a note that reviews reflect individual patient experiences and do not constitute an endorsement of clinical quality? Should practitioners be able to opt their profiles out of reviews? |
+| **Customer reviews** | The HPCSA restricts testimonials from patients in advertising material if they are used to attract clients. Third-party reviews on a platform are a grey area: the platform does not solicit them for the practitioner, but displaying them on a profile page could be construed as the practitioner using them. | **High** | Should medical practitioner profiles carry a note that reviews reflect individual patient experiences and do not constitute an endorsement of clinical quality? Should practitioners be able to opt their profiles out of reviews? |
 | **"Verified" badge** | The HPCSA registers practitioners; a "Verified" badge that checks business registration documents and ID could be confused with HPCSA registration or accreditation. The badge tooltip already says "Documents checked by WebScheduler Local" but this may not be prominent enough for a patient who assumes it means clinical verification. | Medium | Should medical profiles carry a disclaimer that "Verified" refers to business registration, not HPCSA registration, and that HPCSA registration is a separate matter? |
 | **"Featured" placement** | A featured label or strip implies a practitioner is highlighted. If a patient interprets "featured" as "the best GP", this may conflict with Section 25's prohibition on implying superiority. The admin controls featured placement and it is currently independent of payment. | Low | Is a "featured" label appropriate on health practitioner profiles, or should it be replaced with a neutral "sponsored" label for medical profiles? |
 | **Compare page (`/compare`)** | The compare page compares WebScheduler Local against other platforms (Google, LinkedIn), not practitioners against each other. No practitioner-to-practitioner comparison exists. | Low | No action required unless a future "compare profiles" feature is considered. |
@@ -528,7 +553,7 @@ automatically cover both sites. The .app copy already omits "South African" thro
 
 | String | co.za | .app |
 |---|---|---|
-| `homeLede` | `The local discovery platform for practices, businesses, services, professionals and locations across South Africa.` | .app `$appCopy` already overrides this to drop "South Africa" — update the .app override too |
+| `homeLede` | `The local discovery platform for practices, businesses, services, professionals and locations across South Africa.` | .app `$appCopy` already overrides this to drop "South Africa"; update the .app override too |
 | `discoverTitle` | `Discover practices and businesses across South Africa.` | .app override: `Discover practices and businesses near you.` |
 | Footer tagline | "Create your free practice profile." | .app: same, no "South African" in front |
 | `homeDescription` default (meta) | Add "practices" before "businesses" | Same on .app |
@@ -553,7 +578,8 @@ Before releasing Phase 1, render the home page on both `localhost:8095` (co.za) 
 | H1s | Usually match titles | Will change similarly | Low |
 | Meta descriptions | Mention "business profile" | Will say "practice profile" | Low-medium: some existing query traffic for "free business profile" may be affected |
 | JSON-LD schema | Physician, Dentist, etc. already set | No change | None |
-| Sitemap `lastmod` | Auto-generated from `updated_at` | No change to mechanism | None |
+| Sitemap `lastmod` for profiles | Auto-generated from listing `updated_at` | No change to mechanism | None |
+| Sitemap `lastmod` for fixed pages (home, /pricing, /compare, etc.) | Read from `view-lastmod.json` (each file's last commit date, built at deploy time) | These dates will update automatically when their view files change in Phase 1 | None |
 
 ### Key queries at risk
 
@@ -561,7 +587,7 @@ Queries that currently drive traffic to co.za for "business profile" or "free bu
 profile south africa" could be affected. The recommendation is:
 
 1. Keep "business" alongside "practice" in meta descriptions during Phase 1 (e.g.,
-   "Create a free practice profile — South Africa's local discovery platform for
+   "Create a free practice profile. South Africa's local discovery platform for
    businesses and professionals") rather than a hard swap.
 2. Do not change any URL or slug.
 3. After Phase 1 release, monitor Search Console for 7 to 14 days for impressions
@@ -573,7 +599,7 @@ profile south africa" could be affected. The recommendation is:
 
 ## 10. Brand site (`niloc95/webscheduler-site`) and docs
 
-### Brand site changes (not in this repo — list only)
+### Brand site changes (not in this repo. list only)
 
 The brand site at `webscheduler.co.za` reads `/pricing.json` from the Local app. The
 JSON payload does not contain the word "business"; it contains prices and display
@@ -604,7 +630,7 @@ This is a list only. Changes to `niloc95/webscheduler-site` are out of scope for
 | `app/Config/Handbook.php` and `$tables` | No table changes in this plan |
 | `app/Views/admin/handbook/changelog.php` | One dated line per phase |
 | `docs/bookings/copy.md` | Add "practice profile" and "practice" as the medical-first framing |
-| PDFs in `Config\Documents` | Playbook, proposal, profile guide, partner guide — all use "business profile". Update when PDFs are rebuilt in Phase 4 |
+| PDFs in `Config\Documents` | Playbook, proposal, profile guide, partner guide. all use "business profile". Update when PDFs are rebuilt in Phase 4. |
 
 ---
 
@@ -649,17 +675,19 @@ commit as the view or config it tests.
 
 ## 12. Phased plan
 
-### Phase 1: Wording mechanism and main public pages
+### Phase 1: Wording and main public pages
 
 **Branch:** `feat/practice-wording-p1`  
 **Estimated size:** Medium (2 to 3 days)  
-**What changes:** One new helper function, then copy in public views and emails.
+**What changes:** New helpers, SAVC for co.za, copy in public views and emails.
 
 Changes:
-- Add `profile_noun(array $listing, string $form): string` to
-  `app/Helpers/directory_ui_helper.php`.
-- Add SAVC to `app/Config/Registrations.php` (small, safe, no migration).
-- Update `app/Views/layouts/public.php`: header nav, footer copy.
+- Add `listing_noun()` and `listing_audience()` to `app/Helpers/directory_ui_helper.php`.
+- Add `audience` key to `Config\Verticals` defaults and group overrides.
+- Add SAVC to `app/Config/Registrations.php` (small, safe, no migration, co.za only).
+  Add a site parameter check to `regulatorFor()` to suppress the field on .app.
+- Update `app/Views/layouts/public.php`: header nav (mobile "Add practice", desktop
+  "Add your practice or business"), footer copy, Verified profiles, Plus profiles.
 - Update `app/Views/directory/home.php`: lede, title, aria labels.
 - Update `app/Views/directory/form.php` and `_form_fields.php`: signup headings, labels.
 - Update `app/Views/directory/_plan_cards.php` and `_pricing_compare.php`:
@@ -668,7 +696,8 @@ Changes:
 - Update `app/Views/directory/pricing.php`.
 - Update `app/Views/directory/compare.php`.
 - Update `app/Config/Directory.php`: `$siteDescription`.
-- Update all impacted tests.
+- Update CLAUDE.md copy rules (button string and "business profile" preference).
+- Update all impacted tests. Add `ListingNounTest`. Extend `VerticalProfileTest`.
 - Handbook changelog line.
 
 **Check both sites before releasing.** The .app `$appCopy` overrides for `homeLede`,
@@ -676,16 +705,13 @@ Changes:
 
 **Risk:** Very low. No routes change. No migration. Rollback is reverting the view files.
 
-**Open question 5 blocks:** The "Add your business" button in the nav and many CTAs.
-Plan Phase 1 without changing that button until the owner decides (see open question 5).
-
 ---
 
-### Phase 2: Owner area, emails and Bookings
+### Phase 2: Owner area, emails, Bookings plus listing helpers
 
 **Branch:** `feat/practice-wording-p2`  
 **Estimated size:** Small to medium (1 to 2 days)  
-**What changes:** Per-profile views use `profile_noun($listing)`.
+**What changes:** Per-profile views use `listing_noun()` and `listing_audience()`.
 
 Changes:
 - Update `app/Views/business/sign_in.php`, `overview.php`, `home.php`, `settings.php`,
@@ -693,13 +719,15 @@ Changes:
 - Update `app/Views/emails/verify.php`, `manage.php`, `holiday-hours.php`,
   `profile-strength.php`, `verification-owner.php`, `preview.php`,
   `booking-password-reset.php`.
-- Update any Bookings email templates that say "business" where the practice word applies.
+- Update Bookings email templates that say "business" where the practice word applies,
+  using `listing_noun()` and `listing_audience()` with the listing in context.
+- Update `docs/bookings/copy.md` to reflect audience word.
 - Update profile page partials: `_verification_panel.php`, `_plus_panel.php`.
 - Update impacted tests.
 - Handbook changelog line.
 
-**Risk:** Low. Owner area pages always have the listing in context. If `group_name` is
-absent for any reason, the helper falls back to "business".
+**Risk:** Low. Owner area pages always have the listing in context. If `category_group`
+is absent, the helper looks up the category by id before falling back to "business".
 
 ---
 
@@ -707,28 +735,78 @@ absent for any reason, the helper falls back to "business".
 
 **Branch:** `feat/medical-first-home`  
 **Estimated size:** Medium (2 to 3 days)  
-**What changes:** Visual and structural changes on the home page and discovery.
+**What changes:** Structural and visual changes on the home page and discovery.
 
 Changes:
-- Explicitly order the category tiles to put Health & Medical tiles first (admin can do
-  this via `sort_order` on the category groups, or the query in
-  `header_quick_categories()` can be changed to put the medical group first).
+- Add a "Find a doctor, dentist or vet" section or equivalent to the home page.
+- Surface medical aid acceptance and after hours more prominently on medical profiles
+  (a "For patients" subsection near the contact panel).
+- Explicitly order the category tiles to put Health and Medical first in
+  `header_quick_categories()`.
 - Add a `vets` category set to `Config\Search::$categorySets` mapping to `VeterinaryCare`.
-- Review and update `Config\DescriptionTemplates` to add a `health` or `medical` family
-  with more natural phrasing for practitioners (requires the owner's input on the phrasing).
-- Update the home page hero example placeholders list (the array of category+city pairs
-  passed to the view) to include at least two medical examples first.
-- If the owner wants medical shown first in the category browser (`/directory/categories`),
-  update the sort order.
-- **Ask before ranking:** Any change that makes medical profiles appear higher in
-  discovery results (not just what tiles are shown) requires the owner's explicit sign
-  off (the payment and ranking rule, confirmed in the brief). Category tile ordering
-  is editorial UI, not ranking. This plan does not change ranking.
+- Review and update `Config\DescriptionTemplates` to add a `health` template family
+  with more natural phrasing for practitioners (owner to approve the phrasing).
 - Update impacted tests.
 - Handbook changelog line.
 
-**Risk:** Low for tile reordering. Medium for description templates (copy must be tested
-across many category combinations before release).
+**Ask before ranking:** Any change that moves medical profiles higher in discovery
+results (not just editorial tile order) needs the owner's explicit sign off. Category
+tile ordering is editorial UI, not ranking. Payment never affects ranking.
+
+**Risk:** Low for tile reordering. Medium for description templates.
+
+---
+
+### Phase 3b: Reviews off for Health and Medical and Pets and Animals
+
+**Branch:** `feat/medical-reviews-off`  
+**Estimated size:** Small (less than 1 day)  
+**What changes:** New `$offForGroups` in `Config\Reviews`, checked in `acceptsReviews()`.
+
+Changes:
+- Add `Config\Reviews::$offForGroups = ['Health & Medical', 'Pets & Animals']`.
+- Update `ReviewService::acceptsReviews()` to check the group before the per-profile
+  `reviews_enabled` flag. The group check is a default; the per-profile flag can still
+  turn reviews on for an individual practice once the owner has legal clearance.
+- Update `_reviews_panel.php` to show a neutral holding line when reviews are off at
+  the group level (not the same message as the per-profile switch, to avoid implying
+  the practice switched it off).
+- Confirm JSON-LD: `aggregateRating` is only emitted when `$l['reviews']` has items.
+  With zero published reviews on medical profiles (confirmed from production: 0 of 2466
+  medical profiles have reviews), nothing changes in the JSON-LD today.
+- Update impacted tests.
+- Handbook changelog line.
+
+**Production data:** 2466 Health and Medical profiles published. 1 has reviews\_enabled = 0
+(already off). 0 have any published reviews. Only 1 published review exists in the
+whole DB, on a Beauty and Wellness profile. Impact is minimal.
+
+**Risk:** Very low. No data is deleted. The flag can be removed if legal advice says
+reviews are fine.
+
+---
+
+### Phase 3c: Claim your practice profile
+
+**Branch:** `feat/claim-practice-profile`  
+**Estimated size:** Medium to large (3 to 5 days, includes outreach tooling)  
+**What changes:** Outreach email, improved no-email sign-in flow for imports.
+
+See the investigation (`docs/plans/2026-11-medical-focus-investigation.md`, B5) for the
+full analysis. High level:
+- Build an admin-triggered bulk outreach for the 1,461 imported medical profiles that
+  have an email address.
+- The outreach email body includes: how many times their profile was found this month
+  (from `xs_directory_listing_search`), a link to claim it (the existing manage link
+  flow), and an unsubscribe link.
+- For the 1,259 profiles with no email: a separate admin flow (phone OTP or manual HPCSA
+  verification) scoped to co.za only.
+- **Any bulk send needs the owner's explicit OK** including the POPIA basis review, the
+  SES limit check, and the sending domain sign-off.
+- Handbook changelog line and a dated POPIA basis note in `legal/privacy.php`.
+
+**Risk:** Medium. Bulk email to imported profiles who did not opt in. Needs POPIA review
+before sending. Rollback: do not send the next batch.
 
 ---
 
@@ -740,20 +818,19 @@ across many category combinations before release).
 
 Changes:
 - Update `app/Views/legal/terms.php` and `legal/app/terms.php` (bump `LAST_UPDATED`
-  dates).
+  dates; use "a local discovery and visibility platform for practices and businesses").
 - Update `app/Views/legal/privacy.php` if any "business profile" references exist.
 - Rebuild and republish PDFs that use "business" in customer-facing copy (playbook,
   profile guide, proposal). The rebuild commands are in `Config\Documents::$published`
   entries under `builder`.
-- Update CLAUDE.md copy rules.
 - Update the skill files.
 - Update `app/Views/admin/handbook/changelog.php`.
 - Write the changes needed in `niloc95/webscheduler-site` as a note for the owner
-  (not implementing, only documenting what the brand site maintainer needs to do).
-- Hand the PayFast/Paystack item name decision to the owner (see Section 4 warning).
+  (not implementing here).
+- Owner to confirm the Paystack item name decision (Section 4).
 
 **Risk:** Low for legal copy (descriptive changes, no structural change to rules).
-Medium for PDFs (require manual rebuild, file replacement and registry update).
+Medium for PDFs (require manual rebuild and file replacement).
 
 ---
 
@@ -773,79 +850,65 @@ Medium for PDFs (require manual rebuild, file replacement and registry update).
 ## 14. Open questions for the owner
 
 These need an answer before the corresponding phase can start. They are numbered for
-easy reference.
+easy reference. Questions 1 to 4 from the first draft (vets noun, pharmacies, legal,
+hospitals) are answered: `Config\Verticals` already has per-slug overrides for
+pharmacy (noun: "pharmacy"), hospital (noun: "hospital"), veterinarian, and attorney.
+The plan reads those; no new mapping is needed.
 
-1. **Vets: "practice" or "clinic"?** Most vets operate a veterinary practice, but many
-   call it a "veterinary clinic". Which word is right for `profile_noun()` on a
-   veterinarian profile? The plan currently uses "practice" for Pets & Animals.
+1. **Vets: "patients" or "clients"?** `listing_audience()` proposes "clients" for Pets
+   and Animals. Some vets say "patients" for the animals. Which audience word do you
+   want for veterinarian profiles?
 
-2. **Pharmacies: include in "practice"?** A pharmacy is in the Health & Medical group
-   but is not typically called a "practice". Should `profile_noun()` return "pharmacy"
-   for the `pharmacy` slug, or use the group default of "practice"?
+2. **Reviews off group list: Pets and Animals only?** The plan turns reviews off for
+   both Health and Medical and Pets and Animals pending legal advice. Should Pets and
+   Animals be on the initial list, or treated separately?
 
-3. **Legal & Financial: include in "practice"?** Law firms and accounting firms do say
-   "practice" (legal practice, accounting practice). Should this group return "practice"
-   from the helper, or stay "business"?
+3. **Reviews: when does the hold end?** Once legal advice arrives, reviews may be turned
+   back on. Should this be a per-profile owner switch (the existing `reviews_enabled`
+   column already supports this) or a group-level switch that an admin can flip?
 
-4. **Is "practice" right for hospitals?** The `hospital` slug is in Health & Medical.
-   A hospital is not usually called a "practice". Should the helper return "hospital" or
-   "facility" for `hospital`, `medical-clinic` and similar facility-type categories?
+4. **"Verified" badge clarity for patients.** Should medical profiles carry additional
+   copy clarifying that "Verified" refers to business registration, not HPCSA
+   registration? A line such as "Verified means we checked their business registration
+   documents, not their HPCSA registration" on the profile page or tooltip.
 
-5. **Does "Add your business" change?** CLAUDE.md currently says the header button reads
-   "Add your business". If it becomes "Add your practice", every test that asserts it
-   must change, and the brand site must change too. The recommendation is to decide this
-   before Phase 1 begins. Options: (a) keep it as "Add your business" everywhere,
-   (b) change to "Add your practice or business", (c) change to "Add your practice" and
-   update CLAUDE.md, the brand site and all tests.
+5. **Jobs board service request alerts for medical profiles.** The alerts send lead
+   notifications to practitioners when a service request matches their category and
+   province. Is this appropriate for health practitioners, or should the Health and
+   Medical group be excluded from service request alerts?
 
-6. **Should the tagline change?** "Discover local. Be discovered." is clean and works
-   for both practices and businesses. A medical-specific alternative could be "Find your
-   practice. Be found." — but this excludes the general business audience. The plan
-   recommends keeping the tagline. If the owner disagrees, propose a new tagline.
+6. **Home hero rotating words.** The strip cycles through "business", "services",
+   "locations", "people", "opportunities". Should "practice" replace "business", be
+   added before it, or should the strip stay as is?
 
-7. **Reviews on health practitioner profiles: disclaimer?** The HPCSA question (Section 7)
-   about patient reviews. Should medical practitioner profiles carry a disclaimer that
-   reviews are patient experiences, not an endorsement of clinical quality? Should
-   practitioners be able to opt out of reviews?
+7. **"A business isn't just a name in a list."** The home page statement. Should it
+   become "A practice isn't just a name in a list."?
 
-8. **"Verified" badge clarity for patients:** Should medical profiles carry additional
-   copy that clarifies "Verified" refers to business registration, not HPCSA registration?
-   A line like "Verified means we checked their business registration documents, not their
-   HPCSA registration" on the profile page or tooltip.
+8. **Description template family for health professionals.** Phase 3 proposes a new
+   `health` template family in `Config\DescriptionTemplates` with more natural phrasing
+   for practitioners. Should Claude draft strings for review, or will the owner provide
+   them?
 
-9. **Jobs board for health practitioners:** The service request alerts send lead
-   notifications to practitioners. Is this appropriate, or should health practitioners
-   be excluded from service request alerts?
+9. **Category tiles: data-driven or pinned?** Currently the most-listed categories
+   appear first. Should Health and Medical tiles be explicitly pinned first, or is the
+   data-driven order acceptable now that it already leads?
 
-10. **"A business isn't just a name in a list."** The home page statement strip includes
-    this phrase. Should it become "A practice isn't just a name in a list."? Or a
-    more medical-first version? The strip rotates through words including "business",
-    "services", "locations", etc.
+10. **Claim outreach: POPIA basis.** The outreach plan sends email to 1,461 imported
+    profiles. Have you confirmed the POPIA legitimate interest basis for this email
+    (imported from a public register, purpose is to notify practitioners about their
+    existing public profile)? This is required before any bulk send.
 
-11. **Home hero rotating words:** The hero strips cycles through
-    `['business', 'services', 'locations', 'people', 'opportunities']`. Should "practice"
-    be added or replace "business" here?
+11. **Claim outreach: profiles with no email.** 1,259 of the 2,720 imported profiles
+    have no email address. What is the preferred path for these: (a) phone OTP to the
+    practice number on the profile, (b) manual HPCSA number plus ID check by admin, (c)
+    leave unclaimed until a practitioner finds their profile naturally, (d) a combination?
 
-12. **SAVC on `.app` for vets outside South Africa:** The SAVC field would show for all
-    vets globally (UK, US, Australia, etc.) since `Config\Registrations::$bySlug` does
-    not scope by site. Options: (a) show it globally with a generic label
-    "Veterinary Council registration", (b) only show SAVC on co.za and suppress it on
-    .app, (c) leave the field off until a multi-jurisdiction approach is designed.
-
-13. **Description template family for health professionals:** Phase 3 proposes a new
-    `health` template family in `Config\DescriptionTemplates`. Does the owner want to
-    write the template strings, or should Claude draft them for review?
-
-14. **Category tiles: sort order change.** Should Health & Medical tiles appear first
-    on the home page category strip, or is the current data-driven order (most-listed
-    categories) acceptable?
-
-15. **"Platform" description:** The platform is currently described as "a local business
-    discovery and visibility platform". Would the owner prefer "a local practice and
-    business discovery platform" or a different formulation for the medical-first
-    positioning?
+12. **Paystack item name for the Verified badge.** The formal payment item name is
+    currently "Verified Business badge". Should it become "Verified badge" to match the
+    renamed product? Existing subscribers will keep the old name on their statements
+    until they re-subscribe. Confirm before Claude changes it.
 
 ---
 
-*End of plan. No code has been changed. This document is for review by the owner and
-Claude. Once approved and open questions resolved, Claude will implement phase by phase.*
+*End of plan. Owner decisions recorded 16 Nov 2026. Claude implements phase by phase
+on the owner's go ahead for each phase.*
