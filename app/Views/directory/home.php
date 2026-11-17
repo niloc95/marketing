@@ -305,15 +305,17 @@ $moments += [
     <section class="home-backbone">
         <div class="container">
             <h2 class="home-stack">
-                <?php foreach (['business', 'services', 'locations', 'people', 'opportunities'] as $word): ?>
+                <?php foreach (['practice', 'services', 'locations', 'people', 'opportunities'] as $word): ?>
                     <span class="home-stack-line" data-scroll-reveal><span class="home-stack-your">Your</span> <?= $word ?>.</span>
                 <?php endforeach; ?>
             </h2>
             <div class="home-essay" data-scroll-reveal>
-                <p class="home-statement">A business isn't just a name in a list.</p>
+                <?php // Medical first (owner, 17 Nov 2026), replacing "A business isn't
+                      // just a name in a list." ?>
+                <p class="home-statement">Behind every medical practice is a commitment to patient care.</p>
                 <p class="home-essay-body">
-                    It's the people behind it. The services it provides. The places it operates.
-                    And the opportunities it creates. A <?= esc($siteName) ?> profile is your local
+                    It's the people who give that care. The services they provide. The places they work.
+                    And the opportunities they create. A <?= esc($siteName) ?> profile is your local
                     presence online.
                 </p>
             </div>
