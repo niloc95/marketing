@@ -39,7 +39,7 @@ class Documents extends BaseConfig
     public array $published = [
         'profile-guide' => [
             'title'   => 'Profile guide',
-            'summary' => 'Build a business profile customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then online bookings, locations, team members, jobs and reviews with Verified.',
+            'summary' => 'Build a practice or business profile patients and customers choose: photos that work, a description drafted with ChatGPT, your services and brands, then online bookings, locations, team members, jobs and reviews with Verified.',
             'file'    => 'webscheduler-local-profile-guide.pdf',
             'pages'   => 19,
             'tag'     => 'Guide',

@@ -7,7 +7,7 @@ Every figure keeps its source on the evidence page; feature claims are the
 live site's (/verified, /pricing, _verification_pitch.php). When a price, a
 limit or a feature changes there, change it here and rebuild.
 
-Copy rules: never call the product a directory; "business profile", not
+Copy rules: never call the product a directory; "practice or business profile", not
 "listing"; the plan is "Verified" (owner, 14 Nov 2026), not "the badge";
 paying never moves anyone up the results; no dashes and no hyphenated words.
 The example profile is invented and labelled as such. South Africa only:
@@ -18,8 +18,8 @@ EDITION = "November 2026"
 
 DOC_TITLE = "WebScheduler Local: Verified"
 DOC_AUTHOR = "WebScheduler (Pty) Ltd"
-DOC_SUBJECT = "What Verified adds to a WebScheduler Local business profile, and the evidence behind it"
-DOC_KEYWORDS = ("WebScheduler Local, Verified, business profile, online bookings, local visibility, "
+DOC_SUBJECT = "What Verified adds to a WebScheduler Local profile, and the evidence behind it"
+DOC_KEYWORDS = ("WebScheduler Local, Verified, practice or business profile, online bookings, local visibility, "
                 "South Africa, advertising, search, maps, AI")
 
 RUNNING_FOOTER = "WEBSCHEDULER LOCAL · VERIFIED"
@@ -167,7 +167,7 @@ _PAGES = [
              "header": ["", "FREE PROFILE", "VERIFIED"],
              "rows": [
                  ["Found in discovery results, on the map and in your category", "Included", "Included"],
-                 ["Your own business profile page, with your address on the map", "Included", "Included"],
+                 ["Your own practice or business profile page, with your address on the map", "Included", "Included"],
                  ["Phone, email, address, opening hours and a website link", "Included", "Included"],
                  ["Your services, with prices if you want to show them", "Included", "Included"],
                  [f"A logo and a photo gallery, up to {GALLERY} photos", "Included", "Included"],

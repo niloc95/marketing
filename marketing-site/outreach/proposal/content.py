@@ -13,7 +13,7 @@ the Jobs board is the part no other local platform here does both ways.
 Every claim is one the live site makes: /add-profile, /verified, /faq,
 /compare, /jobs and /jobs/post, and the terms. It is a snapshot, not a feed —
 when a price, a limit or a feature changes there, change it here. Copy rules:
-never call the product a directory; "business profile", not "listing";
+never call the product a directory; "practice or business profile", not "listing";
 locations, team and jobs are Verified Business features and never presented
 as free; the badge does not move anyone up the results. The profile previews
 are invented examples and are labelled as such.
@@ -23,8 +23,8 @@ EDITION = "October 2026"
 
 DOC_TITLE = "WebScheduler Local: Business Proposal"
 DOC_AUTHOR = "WebScheduler (Pty) Ltd"
-DOC_SUBJECT = "A local business discovery and visibility platform for South African businesses"
-DOC_KEYWORDS = ("WebScheduler Local, business profile, local visibility, Verified Business, "
+DOC_SUBJECT = "A local discovery and visibility platform for South African practices and businesses"
+DOC_KEYWORDS = ("WebScheduler Local, practice or business profile, local visibility, Verified Business, "
                 "jobs board, South Africa, small business, professionals, mobile businesses")
 
 RUNNING_FOOTER = "WEBSCHEDULER LOCAL · BUSINESS PROPOSAL"
@@ -61,8 +61,8 @@ _PAGES = [
             {"kind": "eyebrow", "text": "Business proposal"},
             {"kind": "cover_title", "text": "A local presence<br/>[[that keeps working.]]"},
             {"kind": "cover_sub",
-             "text": "WebScheduler Local is a local business discovery and visibility platform built "
-                     "for South Africa, for businesses, professionals, service businesses, mobile "
+             "text": "WebScheduler Local is a local discovery and visibility platform built "
+                     "for South Africa, for practices, businesses, professionals, service businesses, mobile "
                      "businesses, and the people they hire."},
             {"kind": "gap", "mm": 4},
             {"kind": "banner", "height_mm": 66},
@@ -83,7 +83,7 @@ _PAGES = [
             {"kind": "statement", "text": "A business isn't just a name in a list."},
             {"kind": "para",
              "text": "It's the people behind it. The services it provides. The places it operates. "
-                     "And the opportunities it creates. A WebScheduler Local business profile is your "
+                     "And the opportunities it creates. A WebScheduler Local profile is your "
                      "local presence online: one place where customers discover what you do, "
                      "understand whether you are right for them, and contact you."},
             {"kind": "label", "text": "In this proposal"},
@@ -122,7 +122,7 @@ _PAGES = [
                      "phone number and services, stated the same way in more than one independent "
                      "place."},
             {"kind": "para",
-             "text": "Claim your Google Business Profile first. A WebScheduler Local business profile "
+             "text": "Claim your Google Business Profile first. A WebScheduler Local profile "
                      "then gives South African customers another route to you, and gives search "
                      "engines one more consistent, well structured source that agrees with it."},
         ],
@@ -242,7 +242,7 @@ _PAGES = [
             {"kind": "cover_title", "text": "Jobs. Requests.<br/>[[Services needed.]]"},
             {"kind": "para",
              "text": "The " + _link(JOBS_URL, "Jobs board") + " brings two kinds of opportunity "
-                     "together: vacancies posted straight from local business profiles, and people "
+                     "together: vacancies posted straight from local practice and business profiles, and people "
                      "looking for someone to do a job. It turns your profile from something customers "
                      "read into something that brings people and work to you."},
             {"kind": "gap", "mm": 3},
@@ -262,7 +262,7 @@ _PAGES = [
              "rows": [
                  ["Seen on Google", "Set up so eligible vacancies can appear in Google's job search. "
                                     "Posts that show pay get more applicants."],
-                 ["Live straight away", "Posts from a business profile normally go live immediately."],
+                 ["Live straight away", "Posts from a practice or business profile normally go live immediately."],
                  ["Applications, privately", "Applicants apply through a form and we pass it on by "
                                              "email. Your address is never shown. Or send them to "
                                              "your own careers page. We keep no CVs."],
@@ -370,7 +370,7 @@ _PAGES = [
             {"kind": "table", "widths": [0.25, 0.27, 0.24, 0.24],
              "header": ["FEATURE", "WEBSCHEDULER LOCAL", "GOOGLE BUSINESS PROFILE", "SA DIRECTORIES"],
              "rows": [
-                 ["Free business profile", "Free, for a South African business", "Yes",
+                 ["Free practice profile", "Free, for a South African business", "Yes",
                   "A basic listing is free; better placement is paid"],
                  ["Services, with prices", "Free", "Yes", "Varies"],
                  ["Customer reviews", "Free; checked before they go up, and you can reply", "Yes",
@@ -448,7 +448,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "Get started"},
             {"kind": "cover_title", "text": "Your business should be<br/>[[easy to find.]]"},
             {"kind": "para",
-             "text": "A free business profile covers your business information, services, contact "
+             "text": "A free practice profile covers your business information, services, contact "
                      "details, address and map location, photos and opening hours. No monthly fee. "
                      "No subscription. No obligation."},
             {"kind": "numbered", "items": [
@@ -461,7 +461,7 @@ _PAGES = [
                                                     "or new work are part of how you grow."),
             ]},
             {"kind": "gap", "mm": 3},
-            {"kind": "qr", "size_mm": 30, "caption": "Scan to create your free business profile"},
+            {"kind": "qr", "size_mm": 30, "caption": "Scan to create your free practice profile"},
             {"kind": "gap", "mm": 3},
             {"kind": "h3", "text": _link(cta_url("pdf", "proposal"), CTA_BARE)},
             {"kind": "small", "text": "{{CONTACT}}"},
