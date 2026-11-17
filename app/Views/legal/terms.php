@@ -9,7 +9,7 @@ $contact   = config('Directory')->adminEmail();
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Terms of use | ' . $siteName,
-    'description' => 'The terms that apply to using ' . $siteName . ' and to creating a business profile on it.',
+    'description' => 'The terms that apply to using ' . $siteName . ' and to creating a practice or business profile on it.',
     'canonical'   => $canonical,
     'alternates'  => 'terms',
 ]) ?>
@@ -30,7 +30,7 @@ $contact   = config('Directory')->adminEmail();
             <p>By using <?= esc($siteName) ?> ("the site"), whether to search for someone local or to add a business, you agree to these terms. If you do not agree, please do not use the site.</p>
 
             <h2>2. What this site is</h2>
-            <p>The site is a local business discovery and visibility platform for South African businesses, services and professionals. We publish information that businesses themselves submit. <strong>We are not a party to any dealing between you and a business on the site.</strong> We do not vet qualifications, inspect premises, endorse anyone, or guarantee that a profile is accurate, current or complete. Satisfy yourself about any business before engaging it.</p>
+            <p>The site is a local discovery and visibility platform for practices and businesses in South Africa, and the services and professionals behind them. We publish information that businesses themselves submit. <strong>We are not a party to any dealing between you and a practice or business on the site.</strong> We do not vet qualifications, inspect premises, endorse anyone, or guarantee that a profile is accurate, current or complete. Satisfy yourself about any practice or business before engaging it.</p>
 
             <h2>3. Adding a business</h2>
             <p>Adding a business with a South African address is free, and stays free. A business based outside South Africa may also have a profile, on the paid International Profile subscription described in section 5. By submitting a profile you confirm that:</p>
@@ -108,7 +108,7 @@ $contact   = config('Directory')->adminEmail();
             <p><strong>We are not a party to any job or work.</strong> We do not employ, recruit for, vet or recommend anyone who posts, applies or replies, and we do not guarantee that a vacancy is filled, a reply received, or work done well. Any agreement is between you and the other party. Agree the price and terms of any work before it starts, and never pay in advance to be considered for a job.</p>
 
             <h2 id="reviews">7. Customer reviews</h2>
-            <p>Anyone who has been a customer of a business may review its profile: a star rating from one to five and a written review. Every profile can receive reviews, free, and every profile owner can reply.</p>
+            <p>Anyone who has been a customer or patient of a practice or business may review its profile: a star rating from one to five and a written review. Profiles receive reviews free, and every profile owner can reply. <strong>Reviews are switched off for now on medical and veterinary profiles:</strong> nobody can write one there, and none are shown.</p>
             <p><strong>By posting a review you confirm that:</strong></p>
             <ul>
                 <li>it describes your own, genuine experience as a customer of that business;</li>

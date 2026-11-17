@@ -859,6 +859,25 @@ before sending. Rollback: do not send the next batch.
 
 ### Phase 4: Legal pages, PDFs, brand site notes and handbook
 
+> **Built 17 Nov 2026 by Claude on `feat/medical-legal-docs`.**
+> - Terms on both sites (dated 17 Nov 2026): the platform line, "practice or business"
+>   in the "not a party" sentence, and section "Customer reviews" now says reviews are
+>   off on medical and veterinary profiles (phase 3b made the old "every profile can
+>   receive reviews" untrue). Privacy needed nothing. The .app terms were reviewed by
+>   the lawyer on 24 Oct; send them this change.
+> - PDFs rebuilt and published: profile guide (its reviews page says the same), playbook,
+>   Verified brochure, proposal. Page counts unchanged. The outlook and hiring guide
+>   (no builder) and the two staff PDFs were left.
+> - Paystack: nothing to rename. Paystack plans are already "WebScheduler Local
+>   Verified"; "Verified Business badge" is only PayFast's item name for subscriptions
+>   from before the switch, which this plan leaves alone.
+> - Brand site (`niloc95/webscheduler-site`, checked at 5667efb): the strings to change
+>   are listed below under "Brand site changes", plus `index.html` (eyebrow "Local
+>   business discovery and online bookings", "Businesses get a free business profile",
+>   "Free business profiles", three "Add your business" buttons, the two site cards)
+>   and `profile-setup.html` ("We set up your business profile for you"). Released with
+>   that repo's own `npm run site:release`.
+
 **Branch:** `feat/practice-wording-p4`  
 **Estimated size:** Small (1 day)  
 **What changes:** Legal and documentation alignment.

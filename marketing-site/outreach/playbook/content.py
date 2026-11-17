@@ -29,7 +29,7 @@ EDITION_FOOTER = "WebScheduler Local · South Africa · October 2026"
 DOC_TITLE = "The Local Visibility Playbook for Small Businesses"
 DOC_AUTHOR = "WebScheduler Local"
 DOC_SUBJECT = "Local search visibility for South African small businesses"
-DOC_KEYWORDS = "local SEO, local business discovery, business profile, South Africa, local search, small business"
+DOC_KEYWORDS = "local SEO, local business discovery, practice or business profile, South Africa, local search, small business"
 
 RUNNING_FOOTER = "WEBSCHEDULER LOCAL · LOCAL VISIBILITY PLAYBOOK"
 
@@ -78,7 +78,7 @@ _PAGES = [
             # is skimmed in twenty seconds by people you did not choose.
             {"kind": "cover_sub",
              "text": "Why local search deserves a place in your budget before paid social, and "
-                     "how to build a business profile that keeps answering the question long after a "
+                     "how to build a practice or business profile that keeps answering the question long after a "
                      "campaign would have stopped."},
             {"kind": "gap", "mm": 4},
             {"kind": "banner", "height_mm": 66},
@@ -215,7 +215,7 @@ _PAGES = [
              ]},
             {"kind": "eyebrow", "text": "WHERE WEBSCHEDULER LOCAL FITS"},
             {"kind": "statement",
-             "text": "We are the third row, not the first. A business profile here corroborates "
+             "text": "We are the third row, not the first. A practice or business profile here corroborates "
                      "the business you already run. Your services, locations, people and "
                      "opportunities, and gives South African customers another route to find it. Claim your Google Business Profile first, then make every source "
                      "agree with it."},
@@ -255,7 +255,7 @@ _PAGES = [
             {"kind": "table", "widths": [0.32, 0.68],
              "header": ["PART", "PURPOSE"],
              "rows": [
-                 ["BUSINESS PROFILE", "Your local presence, and the facts customers need."],
+                 ["PRACTICE OR BUSINESS PROFILE", "Your local presence, and the facts customers need."],
                  ["SERVICE VISIBILITY", "Each service named, not buried in one paragraph."],
                  ["LOCATION VISIBILITY", "The areas you actually serve, stated plainly."],
                  ["SEO FOUNDATION",
@@ -269,9 +269,9 @@ _PAGES = [
         "id": "step-1-profile",
         "blocks": [
             {"kind": "eyebrow", "text": "STEP 1"},
-            {"kind": "h1", "text": "Build a complete local business profile"},
+            {"kind": "h1", "text": "Build a complete local practice or business profile"},
             {"kind": "para",
-             "text": "A business profile is not a digital business card. Every field you complete is one "
+             "text": "A practice or business profile is not a digital business card. Every field you complete is one "
                      "more question a customer does not have to ask, and one more fact a search "
                      "engine can corroborate."},
             {"kind": "label", "text": "THE CORE PROFILE"},
@@ -390,7 +390,7 @@ _PAGES = [
             ]},
             {"kind": "eyebrow", "text": "The profile is the bridge"},
             {"kind": "statement",
-             "text": "A business profile is not a place to store business information. It is a discovery "
+             "text": "A practice or business profile is not a place to store business information. It is a discovery "
                      "point where the facts a customer needs are presented clearly and connected "
                      "to a structure search engines can follow."},
         ],
@@ -414,7 +414,7 @@ _PAGES = [
              "rows": [
                  ["WEEK 1", "Claim what is already yours",
                   "Claim and complete your Google Business Profile, then claim and complete your "
-                  "WebScheduler Local business profile."],
+                  "WebScheduler Local profile."],
                  ["WEEK 2", "Make every source agree",
                   "One business name, one address, one phone number. Correct the contradictions "
                   "you find before adding anything new."],
@@ -433,10 +433,10 @@ _PAGES = [
              "text": "“How easy is it for someone looking for my service in my area to "
                      "discover, understand and contact my business?”"},
             {"kind": "h3",
-             "text": "Create your free business profile on WebScheduler Local: "
+             "text": "Create your free practice profile on WebScheduler Local: "
                      f'<link href="{CTA_URL}{CTA_UTM_PDF}" color="#F77F00">{CTA_BARE}</link>'},
             {"kind": "para",
-             "text": "A free business profile is a starting point, not the whole answer. The "
+             "text": "A free practice profile is a starting point, not the whole answer. The "
                      "objective is a useful, searchable and locally relevant business presence."},
             {"kind": "gap", "mm": 6},
             {"kind": "small", "text": EDITION_FOOTER},
@@ -457,7 +457,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "WEBSCHEDULER LOCAL"},
             {"kind": "h1", "text": "Be found by the<br/>people already<br/>looking for you."},
             {"kind": "para",
-             "text": "A free business profile takes a few minutes. Create it, complete it, and make "
+             "text": "A free practice profile takes a few minutes. Create it, complete it, and make "
                      "sure it agrees with everywhere else your business appears."},
             {"kind": "gap", "mm": 6},
             # URL is filled in by the renderer so each build carries its own UTM.
@@ -845,7 +845,7 @@ def social_slides(variant: str = "linkedin"):
         # 9 — the CTA. Image carousels have no clickable links, so the URL is
         #     set large and a QR code is drawn beside it.
         {"kind": "cta",
-         "eyebrow": "FREE BUSINESS PROFILE",
+         "eyebrow": "FREE PRACTICE PROFILE",
          "title": "More than a\nbusiness listing.",
          "url_display": CTA_BARE,
          "url_target": cta_url("linkedin" if not meta else "meta", "social-deck"),

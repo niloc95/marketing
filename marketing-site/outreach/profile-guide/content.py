@@ -1,5 +1,5 @@
 """
-WebScheduler Local: how to build a business profile. The copy, in one place.
+WebScheduler Local: how to build a practice or business profile. The copy, in one place.
 
 Rendered by ../playbook/build_playbook.py's build_pdf (see build_profile_guide.py),
 so it shares the playbook's type, palette, badge and page guards.
@@ -23,22 +23,22 @@ below, so a change is made once.
 
 Copy rules (CLAUDE.md): "discover", "discovery results", "discovered on the
 platform" for our own feature, "search" only for Google and other people's
-search; "business profile", never "listing"; no long dashes and no hyphenated
+search; "practice profile" or "practice or business profile", never "listing"; no long dashes and no hyphenated
 words. Two promises the app makes and this guide must keep: paying never moves
 a business up, and the badge checks identity, not qualifications or quality.
 """
 
 EDITION = "October 2026"
 
-DOC_TITLE = "WebScheduler Local: How to Build a Business Profile Customers Choose"
+DOC_TITLE = "WebScheduler Local: How to Build a Profile Patients and Customers Choose"
 DOC_AUTHOR = "WebScheduler (Pty) Ltd"
-DOC_SUBJECT = ("Creating and completing a business profile on WebScheduler Local: photos, a "
+DOC_SUBJECT = ("Creating and completing a practice or business profile on WebScheduler Local: photos, a "
                "description written with ChatGPT, services, brands, and the Verified "
                "features: locations, team members, jobs and reviews")
-DOC_KEYWORDS = ("WebScheduler Local, business profile, Verified, local business discovery, "
+DOC_KEYWORDS = ("WebScheduler Local, practice or business profile, Verified, local business discovery, "
                 "South Africa, profile photos, ChatGPT, team members, jobs board, reviews")
 
-RUNNING_FOOTER = "WEBSCHEDULER LOCAL · HOW TO BUILD YOUR BUSINESS PROFILE"
+RUNNING_FOOTER = "WEBSCHEDULER LOCAL · HOW TO BUILD YOUR PROFILE"
 
 HOST = "local.webscheduler.co.za"
 ADD_URL = f"https://{HOST}/add-profile"
@@ -96,7 +96,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "Profile guide"},
             {"kind": "cover_title", "text": "Build a profile<br/>[[customers choose.]]"},
             {"kind": "cover_sub",
-             "text": "A step by step guide to your WebScheduler Local business profile: the photos "
+             "text": "A step by step guide to your WebScheduler Local profile: the photos "
                      "that work, a description written with ChatGPT, your services and brands, and "
                      "everything Verified adds."},
             {"kind": "gap", "mm": 2},
@@ -120,7 +120,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "01 · Before you start"},
             {"kind": "h1", "text": "Twenty minutes,<br/>[[and these things to hand.]]"},
             {"kind": "para",
-             "text": "Your business profile is free, and it stays free. It is one address with your "
+             "text": "Your practice or business profile is free, and it stays free. It is one address with your "
                      "services, hours, photos, map and reviews that you can share anywhere. If you "
                      "have no website, a complete profile does the job a website would. Gather these "
                      "first and the form takes about twenty minutes."},
@@ -671,11 +671,13 @@ _PAGES = [
     {
         "id": "reviews",
         "blocks": [
-            {"kind": "eyebrow", "text": "13 · Reviews · every profile"},
+            {"kind": "eyebrow", "text": "13 · Reviews"},
             {"kind": "h1", "text": "Reviews you can trust,<br/>[[and how to earn them.]]"},
             {"kind": "para",
-             "text": "Every profile can receive reviews, and every owner can reply. Neither needs "
-                     "Verified, and a rating never changes where you appear."},
+             "text": "Profiles can receive reviews, and every owner can reply. Neither needs "
+                     "Verified, and a rating never changes where you appear. Reviews are switched "
+                     "off for now on medical and veterinary profiles: nobody can write one there, "
+                     "and none are shown."},
             {"kind": "table", "widths": [0.3, 0.7],
              "header": ["HOW A REVIEW GOES UP", ""],
              "rows": [
@@ -785,7 +787,7 @@ _PAGES = [
             {"kind": "eyebrow", "text": "WEBSCHEDULER LOCAL"},
             {"kind": "h1", "text": "Discover local.<br/>[[Be discovered.]]"},
             {"kind": "para",
-             "text": "A free business profile takes about twenty minutes. Real photos, an honest "
+             "text": "A free practice profile takes about twenty minutes. Real photos, an honest "
                      "description, your services and your hours are what customers choose by. "
                      "Verified adds your people, your branches and your vacancies."},
             {"kind": "gap", "mm": 6},

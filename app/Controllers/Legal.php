@@ -26,7 +26,7 @@ class Legal extends BaseController
      */
     public const LAST_UPDATED = [
         'privacy' => '2026-11-14',
-        'terms'   => '2026-11-14',
+        'terms'   => '2026-11-17',
         'cookies' => '2026-10-22',
     ];
 
@@ -37,7 +37,7 @@ class Legal extends BaseController
      */
     public const APP_LAST_UPDATED = [
         'privacy' => '2026-11-12',
-        'terms'   => '2026-11-14',
+        'terms'   => '2026-11-17',
     ];
 
     /**

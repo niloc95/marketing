@@ -355,7 +355,7 @@ final class SiteScopeTest extends CIUnitTestCase
         $this->setEnv('sites.app.enabled', 'true');
 
         $appTerms = $this->page(self::APP_HOST, '/terms');
-        $this->assertStringContainsString('businesses, services and professionals outside South Africa', $appTerms);
+        $this->assertStringContainsString('services and professionals behind them, outside South Africa', $appTerms);
         $this->assertStringNotContainsString('International Profile', $appTerms);
         $this->assertStringContainsString('governed by the law of the Republic of South Africa', $appTerms);
 

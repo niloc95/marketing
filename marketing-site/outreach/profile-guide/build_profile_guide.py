@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-How to build your business profile. The generator.
+How to build your practice or business profile. The generator.
 
     ../playbook/.venv/bin/python build_profile_guide.py [--publish]
 
@@ -33,7 +33,7 @@ _spec.loader.exec_module(G)
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Build the business profile guide PDF.")
+    ap = argparse.ArgumentParser(description="Build the practice or business profile guide PDF.")
     ap.add_argument("--out", default=str(HERE / "build"))
     ap.add_argument("--publish", action="store_true",
                     help="copy it to public/assets/documents/ for /resources")
