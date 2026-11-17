@@ -192,16 +192,11 @@ $metaDesc = listing_meta_description($l);
               // focus) and the round buttons are the home carousel's controller
               // (directory.js, "showcase"): hidden while every photo fits, a page at
               // a time otherwise. ?>
-        <?php // One photo and no video: the photo keeps its own shape, centred,
-              // over a blurred copy of itself, rather than being stretched across
-              // the whole screen and cropped to the band. The copy sits outside
-              // the strip, so the lightbox (every [data-gallery-open] img) never
-              // counts it. ?>
+        <?php // One photo and no video: the band takes the home media band's
+              // frame (content width, rounded, its height) instead of stretching
+              // one photo across the whole screen (directory.css). ?>
         <?php $singlePhoto = $photoCount === 1 && $video === null; ?>
         <div class="profile-band<?= $singlePhoto ? ' profile-band-single' : '' ?>" data-showcase data-showcase-step="page">
-            <?php if ($singlePhoto): ?>
-                <img class="profile-band-backdrop" src="<?= esc(base_url($l['photos'][0]['path'])) ?>" alt="" aria-hidden="true">
-            <?php endif; ?>
             <div class="profile-band-head">
                 <div class="container">
                     <div class="profile-band-id">
