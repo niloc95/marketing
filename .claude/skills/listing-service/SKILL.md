@@ -566,6 +566,13 @@ of `directory_reviews`, `directory_review_reports` and the listing's `review_cou
 - **Two gates:** the email confirm link (`unverified → pending`) and then admin approval
   (`→ published`). A review is never public before both.
 - **Free for every profile**, including owner replies. Not a Verified Business feature.
+- **Off and hidden on medical and vet profiles** (owner, 16 Nov 2026, until legal advice):
+  `Config\Reviews::$offForGroups` (Health & Medical, Pets & Animals). `ReviewService::
+  offForGroup()` is the one check: `acceptsReviews()` refuses new ones, `forProfile()`
+  returns nothing (so the panel and JSON-LD show none), `rating_summary()` draws no stars
+  on cards or the header, the owner panel shows one line and no switch. Rows stay; take a
+  group off the list to bring its reviews back. Any new surface that shows a rating must
+  go through one of these.
 - **Ratings never affect ordering.** They are not a key in `browse()` and are not in
   `ListingQualityService`. Same rule as the badge row below.
 - **One review per person per business:** unique (`listing_id`, `email_hash`). A duplicate,

@@ -34,6 +34,18 @@ class Reviews extends BaseConfig
     public int $decidedRetentionDays = 30;
 
     /**
+     * Main categories where reviews are off and hidden (owner, 16 Nov 2026,
+     * until legal advice on the HPCSA and SAVC rules on testimonials):
+     * nobody can write one, and the profile, result cards, header stars and
+     * JSON-LD show none, even ones already published. The rows stay in the
+     * database, so taking a group out of this list brings them back.
+     * ReviewService::offForGroup() is the one check.
+     *
+     * @var list<string>
+     */
+    public array $offForGroups = ['Health & Medical', 'Pets & Animals'];
+
+    /**
      * Phrases in an owner's reply that email the admin. The reply is live at
      * once either way (the owner has proved their email and is on the public
      * record); a match only means a person reads it and can remove it from
