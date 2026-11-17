@@ -232,39 +232,7 @@ final class NewsletterTest extends CIUnitTestCase
         $this->assertStringContainsString(site_url_for(Sites::APP, 'newsletter/confirm/'), html_entity_decode((string) $this->sent[0]['body']));
     }
 
-    // ---------------------------------------------------------- import
-
-    public function testTheMauticImportTakesConfirmedPeopleAndDoNotContact(): void
-    {
-        $this->subscribed('both@example.test');
-        $csv = tempnam(sys_get_temp_dir(), 'nl');
-        file_put_contents($csv, implode("\n", [
-            'kind,email,segment_or_reason,date_added,comments',
-            'segment,confirmed@example.test,newsletter-webscheduler,2026-09-20 10:00:00,',
-            'segment,waiting@example.test,newsletter-webscheduler-awaiting,2026-09-21 10:00:00,',
-            'segment,owner@example.test,listing-owners-opted-in,2026-09-21 10:00:00,',
-            'segment,both@example.test,newsletter-webscheduler-local,2026-09-22 10:00:00,',
-            'dnc,both@example.test,1,2026-10-01 10:00:00,',
-            'dnc,gone@example.test,1,2026-10-02 10:00:00,',
-        ]) . "\n");
-
-        command('newsletter:import-mautic ' . $csv);
-        unlink($csv);
-
-        $confirmed = $this->subscribers->where('email', 'confirmed@example.test')->first();
-        $this->assertSame(NewsletterSubscriberModel::STATUS_SUBSCRIBED, $confirmed['status']);
-        $this->assertSame(NewsletterSubscriberModel::SOURCE_BRAND, $confirmed['source']);
-        $this->assertSame('2026-09-20 10:00:00', $confirmed['consent_at']);
-        $this->assertSame(NewsletterService::CONSENT_IMPORT, $confirmed['consent_source']);
-
-        $this->assertNull($this->subscribers->where('email', 'waiting@example.test')->first(), 'never confirmed');
-        $this->assertNull($this->subscribers->where('email', 'owner@example.test')->first(), 'owners are not newsletter readers');
-        $this->assertSame(NewsletterSubscriberModel::STATUS_UNSUBSCRIBED, $this->subscribers->where('email', 'both@example.test')->first()['status'], 'do not contact wins');
-        $this->assertSame(NewsletterSubscriberModel::STATUS_UNSUBSCRIBED, $this->subscribers->where('email', 'gone@example.test')->first()['status']);
-        $this->assertSame([], $this->sent, 'an import emails nobody');
-    }
-
-    // ---------------------------------------------------------- helpers
+        // ---------------------------------------------------------- helpers
 
     private function confirmToken(): string
     {

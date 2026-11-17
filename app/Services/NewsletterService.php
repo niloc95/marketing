@@ -190,49 +190,6 @@ class NewsletterService
         return site_url_for(self::siteFor((string) $row['source']), 'newsletter/unsubscribe/' . $row['unsubscribe_token']);
     }
 
-    /**
-     * Bring one Mautic contact across. A confirmed subscriber keeps the date
-     * Mautic holds; a do not contact entry becomes an unsubscribed row and
-     * beats everything, so nobody who left the Mautic list is ever back on
-     * this one without confirming again.
-     *
-     * @return string added | unsubscribed | skipped
-     */
-    public function importFromMautic(string $email, string $source, bool $doNotContact, string $since): string
-    {
-        $email = self::normaliseEmail($email);
-        if (! self::isValidEmail($email) || ! in_array($source, NewsletterSubscriberModel::SOURCES, true)) {
-            return 'skipped';
-        }
-        $since = strtotime($since) !== false ? date('Y-m-d H:i:s', strtotime($since)) : date('Y-m-d H:i:s');
-        $row   = $this->subscribers->where('email', $email)->first();
-
-        if ($doNotContact) {
-            $columns = [
-                'status' => NewsletterSubscriberModel::STATUS_UNSUBSCRIBED, 'unsubscribed_at' => $since,
-                'confirm_token_hash' => null, 'confirm_expires' => null,
-            ];
-            if (is_array($row)) {
-                $this->subscribers->update((int) $row['id'], $columns);
-            } else {
-                $this->subscribers->insert($columns + ['email' => $email, 'source' => $source, 'unsubscribe_token' => TokenHash::mint()]);
-            }
-
-            return 'unsubscribed';
-        }
-
-        if (is_array($row)) {
-            return 'skipped';
-        }
-
-        $this->subscribers->insert([
-            'email' => $email, 'source' => $source, 'status' => NewsletterSubscriberModel::STATUS_SUBSCRIBED,
-            'consent_at' => $since, 'consent_source' => self::CONSENT_IMPORT, 'unsubscribe_token' => TokenHash::mint(),
-        ]);
-
-        return 'added';
-    }
-
     /** Pending rows nobody confirmed in time. Run on every signup; cheap. */
     public function pruneUnconfirmed(): int
     {
