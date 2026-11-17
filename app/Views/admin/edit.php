@@ -232,7 +232,9 @@ if (! is_array($old['hours'] ?? null)) {
                 </div>
                 <?php // Read only: the owner's switch. Published reviews stay up
                       // either way; take one down at /admin/reviews. ?>
-                <?php if (! $isNew && ! \App\Services\ReviewService::acceptsReviews($listing)): ?>
+                <?php if (! $isNew && \App\Services\ReviewService::offForGroup($listing)): ?>
+                    <p class="hint">Reviews: off and hidden for this main category (Config\Reviews::$offForGroups). Any published reviews stay in the database and come back if the category is taken off that list.</p>
+                <?php elseif (! $isNew && ! \App\Services\ReviewService::acceptsReviews($listing)): ?>
                     <p class="hint">New reviews: off (switched off by the owner). Reviews already published stay on the profile.</p>
                 <?php endif; ?>
                 <?php // Admin-only, deliberately: a venue is a claim about a

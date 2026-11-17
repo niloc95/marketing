@@ -161,6 +161,10 @@ if (! function_exists('rating_summary')) {
      */
     function rating_summary(array $l): string
     {
+        // Reviews off and hidden for medical and vet profiles (Config\Reviews::$offForGroups).
+        if (\App\Services\ReviewService::offForGroup($l)) {
+            return '';
+        }
         $count = (int) ($l['review_count'] ?? 0);
         if ($count < 1 || ! isset($l['rating_avg'])) {
             return '';
@@ -744,6 +748,22 @@ if (! function_exists('listing_vertical')) {
      */
     function listing_vertical(?array $listing): array
     {
+        ['group' => $group, 'slug' => $slug] = listing_category_ref($listing);
+
+        return vertical_profile($group, $slug);
+    }
+}
+
+if (! function_exists('listing_category_ref')) {
+    /**
+     * A listing's main category (group_name) and category slug, whatever
+     * shape the row arrives in (see listing_vertical()); null for none.
+     *
+     * @param array<string,mixed>|null $listing
+     * @return array{group:?string,slug:?string}
+     */
+    function listing_category_ref(?array $listing): array
+    {
         static $byId = [];
 
         $group = $listing['category_group'] ?? $listing['category']['group_name'] ?? $listing['group_name'] ?? null;
@@ -759,7 +779,10 @@ if (! function_exists('listing_vertical')) {
             $slug  = $byId[$id]['slug'] ?? $slug;
         }
 
-        return vertical_profile($group !== '' ? $group : null, $slug !== '' ? $slug : null);
+        return [
+            'group' => $group !== null && $group !== '' ? (string) $group : null,
+            'slug'  => $slug !== null && $slug !== '' ? (string) $slug : null,
+        ];
     }
 }
 

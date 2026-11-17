@@ -131,6 +131,55 @@ final class ReviewFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('Second try', $rows[0]['body']);
     }
 
+    // ------------------------------------------- medical and vets: off and hidden
+
+    public function testMedicalAndVetProfilesHideReviewsAndTakeNone(): void
+    {
+        $dentist = (int) (new DirectoryCategoryModel())->insert([
+            'name' => 'Dentist', 'slug' => 'dentist', 'group_name' => 'Health & Medical', 'is_active' => 1,
+        ], true);
+        $listing = $this->listing(['category_id' => $dentist]);
+        $this->publishedReview($listing, ['body' => 'Painless filling, the whole team was kind and on time.', 'rating' => 5]);
+        db_connect()->table('xs_directory_listings')->where('id', (int) $listing['id'])->update(['review_count' => 1, 'rating_avg' => 5]);
+        $listing = (new DirectoryListingModel())->find((int) $listing['id']);
+        cache()->clean();
+
+        $this->assertTrue(ReviewService::offForGroup($listing));
+        $this->assertFalse(ReviewService::acceptsReviews($listing), 'off whatever reviews_enabled says');
+
+        $html = $this->profileHtml($listing);
+        $this->assertStringNotContainsString('Painless filling', $html, 'a published review is hidden');
+        $this->assertStringNotContainsString('rating-line', $html, 'no header stars');
+        $this->assertStringNotContainsString('aggregateRating', $html, 'no rating in the JSON-LD');
+        $this->assertStringNotContainsString('write-review', $html, 'no form');
+
+        $landing = (string) $this->get('directory/dentist')->response()->getBody();
+        $this->assertStringNotContainsString('rating-line', $landing, 'no stars on the result card');
+
+        $refused = $this->svc->submit($listing, $this->input(), '10.0.0.1');
+        $this->assertArrayHasKey('listing', $refused['errors']);
+
+        $owner = view('directory/_reviews_panel', ['listing' => $listing, 'reviews' => []], ['saveData' => false]);
+        $this->assertStringContainsString('Reviews are off for medical and veterinary profiles', $owner);
+        $this->assertStringNotContainsString('reviews_enabled', $owner, 'no switch');
+
+        $vet = $this->listing(['category_id' => (int) (new DirectoryCategoryModel())->insert([
+            'name' => 'Veterinarian', 'slug' => 'veterinarian', 'group_name' => 'Pets & Animals', 'is_active' => 1,
+        ], true)]);
+        $this->assertTrue(ReviewService::offForGroup($vet));
+        $this->assertFalse(ReviewService::offForGroup($this->listing()), 'a plumber keeps reviews');
+
+        // Hidden, not deleted: taking the group off the list brings them back.
+        $cfg   = config('Reviews');
+        $saved = $cfg->offForGroups;
+        $cfg->offForGroups = [];
+        try {
+            $this->assertSame(1, $this->svc->forProfile($listing)['count']);
+        } finally {
+            $cfg->offForGroups = $saved;
+        }
+    }
+
     // ------------------------------------------------------------- totals
 
     public function testTotalsCountPublishedReviewsOnly(): void

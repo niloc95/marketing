@@ -67,6 +67,10 @@ class ReviewService
      */
     public function forProfile(array $listing): array
     {
+        // Hidden, not deleted: the page and its JSON-LD get nothing to show.
+        if (self::offForGroup($listing)) {
+            return ['count' => 0, 'avg' => 0.0, 'items' => []];
+        }
         $count = (int) ($listing['review_count'] ?? 0);
         $items = $count > 0 ? $this->reviews->publishedFor((int) $listing['id'], $this->cfg->perPage) : [];
 
@@ -95,7 +99,23 @@ class ReviewService
      */
     public static function acceptsReviews(array $listing): bool
     {
-        return (int) ($listing['reviews_enabled'] ?? 1) === 1;
+        return ! self::offForGroup($listing) && (int) ($listing['reviews_enabled'] ?? 1) === 1;
+    }
+
+    /**
+     * Whether the listing's main category has reviews off and hidden
+     * (Config\Reviews::$offForGroups: medical and vets, until legal advice).
+     * Every surface asks this: the profile panel (through forProfile() and
+     * acceptsReviews()), rating_summary() for cards and the header, the
+     * JSON-LD (which reads forProfile()), the owner panel and admin.
+     *
+     * @param array<string,mixed> $listing any shape listing_category_ref() reads
+     */
+    public static function offForGroup(array $listing): bool
+    {
+        $group = listing_category_ref($listing)['group'];
+
+        return $group !== null && in_array($group, config('Reviews')->offForGroups, true);
     }
 
     /**

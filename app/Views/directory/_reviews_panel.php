@@ -21,6 +21,15 @@
 use App\Models\DirectoryReviewModel;
 use App\Services\ReviewService;
 
+// Medical and vet profiles (Config\Reviews::$offForGroups): one line, no
+// switch. Nothing is shown to visitors either.
+if (ReviewService::offForGroup($listing)): ?>
+<div class="panel mt-6" id="reviews">
+    <h2 class="text-lg font-bold text-slate-900 dark:text-white">Reviews</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Reviews are off for medical and veterinary profiles for now, while we take advice on the rules for health professionals. Nothing about reviews shows on your profile.</p>
+</div>
+<?php return; endif;
+
 $enabled  = ReviewService::acceptsReviews($listing);
 $replyMax = (int) config('Reviews')->replyMax;
 $date     = static function (?string $d): string {

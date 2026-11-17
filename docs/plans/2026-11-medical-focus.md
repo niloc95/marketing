@@ -795,6 +795,10 @@ tile ordering is editorial UI, not ranking. Payment never affects ranking.
 
 ### Phase 3b: Reviews off for Health and Medical and Pets and Animals
 
+> **Built 17 Nov 2026 by Claude on `feat/medical-reviews-off`** as described below. The
+> one check is `ReviewService::offForGroup()`; the helper that reads the group from any
+> row shape is `listing_category_ref()`.
+
 **Branch:** `feat/medical-reviews-off`  
 **Estimated size:** Small (less than 1 day)  
 **What changes:** New `$offForGroups` in `Config\Reviews`, checked in `acceptsReviews()`.
