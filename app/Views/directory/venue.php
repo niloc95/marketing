@@ -149,6 +149,7 @@ $schema = schema_page(
         <?= view('directory/_map_panel', [
             'row'     => $venue,
             'name'    => $name,
+            'mapPlace' => '',
             'heading' => 'Where it is',
             'class'   => 'mt-8',
         ]) ?>

@@ -49,11 +49,11 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringNotContainsString('Book online', $this->render(['booking_url' => 'javascript:alert(1)']));
     }
 
-    public function testWebsiteIsLabelledByItsDomain(): void
+    public function testWebsiteIsAButtonTitledByItsDomain(): void
     {
         $html = $this->render(['website' => 'https://www.hana-nail.example/']);
 
-        $this->assertStringContainsString('>hana-nail.example</a>', $html);
+        $this->assertMatchesRegularExpression('#<a class="btn btn-ghost btn-block contact-book" href="https://www\.hana-nail\.example/"[^>]*title="hana-nail\.example"[^>]*>.*Visit website</a>#s', $html);
     }
 
     public function testPhoneIsShownOpenlyAsATelLinkWhileEmailStaysBehindTheReveal(): void

@@ -390,10 +390,13 @@ $metaDesc = listing_meta_description($l);
                         <?= view('directory/_panel_locations', ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
                     </div>
                 <?php else: ?>
+                    <?php // One location: its "Branch or practice name" has no location
+                          // card to sit on, so the map panel shows it above the address. ?>
                     <?= view('directory/_map_panel', [
-                        'row'     => $l,
-                        'name'    => $name,
-                        'heading' => 'Location',
+                        'row'      => $l,
+                        'name'     => $name,
+                        'mapPlace' => (string) ($l['location_name'] ?? ''),
+                        'heading'  => 'Location',
                         'class'   => 'mt-5',
                     ]) ?>
 
