@@ -39,6 +39,7 @@
             'yearly'       => $verificationYearly ?? null,
             'payable'      => $verificationPayable,
             'pending'      => $verificationPending,
+            'listing'      => $listing,
         ]) ?>
     <?php endif ?>
 

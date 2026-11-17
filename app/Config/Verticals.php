@@ -54,6 +54,17 @@ class Verticals extends BaseConfig
     public array $defaults = [
         'noun'       => 'business',
         'nounPlural' => 'businesses',
+        // How the owner's copy names their own place ("Your practice profile
+        // is live", "Sign in to your practice"), read by listing_noun().
+        // Separate from 'noun' because that names the trade ("tradesperson",
+        // "maker", "service"), which reads wrong after "your". Medical first
+        // (owner, 16 Nov 2026): practice for health and vets, else business.
+        'ownerNoun'       => 'business',
+        'ownerNounPlural' => 'businesses',
+        // Who visits: "patients" on a medical profile, read by
+        // listing_audience(). Never a promise, only the word.
+        'audience'         => 'customers',
+        'audienceSingular' => 'customer',
         'headings'   => [
             'description' => 'Business description',
             'brands'      => 'Brands we carry',
@@ -83,6 +94,10 @@ class Verticals extends BaseConfig
         'Health & Medical' => [
             'noun'       => 'practice',
             'nounPlural' => 'practices',
+            'ownerNoun'       => 'practice',
+            'ownerNounPlural' => 'practices',
+            'audience'         => 'patients',
+            'audienceSingular' => 'patient',
             'headings'   => [
                 'credentials' => 'Qualifications & registrations',
                 'services'    => 'Treatments & fees',
@@ -228,6 +243,12 @@ class Verticals extends BaseConfig
         'Pets & Animals' => [
             'noun'       => 'practice',
             'nounPlural' => 'practices',
+            // The animals are the patients; the people who bring them are
+            // clients (plan open question 1, to confirm with the owner).
+            'ownerNoun'       => 'practice',
+            'ownerNounPlural' => 'practices',
+            'audience'         => 'clients',
+            'audienceSingular' => 'client',
             'headings'   => [
                 'services'    => 'Services & fees',
                 'credentials' => 'Qualifications & registrations',
@@ -243,6 +264,8 @@ class Verticals extends BaseConfig
         'Community & Nonprofit' => [
             'noun'       => 'organisation',
             'nounPlural' => 'organisations',
+            'ownerNoun'       => 'organisation',
+            'ownerNounPlural' => 'organisations',
             'headings'   => [
                 'services'    => 'Programmes & projects',
                 'credentials' => 'Registrations',
@@ -258,6 +281,10 @@ class Verticals extends BaseConfig
         'Faith & Worship' => [
             'noun'       => 'place of worship',
             'nounPlural' => 'places of worship',
+            'ownerNoun'       => 'organisation',
+            'ownerNounPlural' => 'organisations',
+            'audience'         => 'visitors',
+            'audienceSingular' => 'visitor',
             'headings'   => [
                 'services'    => 'Services & ministries',
                 'credentials' => 'Registrations',
@@ -328,6 +355,10 @@ class Verticals extends BaseConfig
         'Alternative & Traditional Medicine' => [
             'noun'       => 'practitioner',
             'nounPlural' => 'practitioners',
+            'ownerNoun'       => 'practice',
+            'ownerNounPlural' => 'practices',
+            'audience'         => 'clients',
+            'audienceSingular' => 'client',
             'headings'   => [
                 'credentials' => 'Training & registrations',
                 'services'    => 'Treatments & fees',
@@ -428,6 +459,10 @@ class Verticals extends BaseConfig
         'pharmacy' => [
             'noun'       => 'pharmacy',
             'nounPlural' => 'pharmacies',
+            'ownerNoun'       => 'pharmacy',
+            'ownerNounPlural' => 'pharmacies',
+            'audience'         => 'customers',
+            'audienceSingular' => 'customer',
             'headings'   => ['hours' => 'Opening hours', 'services' => 'Services offered'],
             'cta'        => 'Contact the pharmacy',
         ],
@@ -437,6 +472,8 @@ class Verticals extends BaseConfig
         'hospital' => [
             'noun'       => 'hospital',
             'nounPlural' => 'hospitals',
+            'ownerNoun'       => 'hospital',
+            'ownerNounPlural' => 'hospitals',
             'headings'   => ['hours' => 'Opening hours', 'services' => 'Departments & services'],
             'cta'        => 'Contact the hospital',
         ],

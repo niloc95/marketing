@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px"><?= esc($site) ?></h1>
         <p style="font-size:15px;line-height:1.6">Hi <?= esc($name) ?>,</p>
-        <p style="font-size:15px;line-height:1.6">Thanks for creating your business profile. Click below to see it before anyone else does, then approve it to verify your email and publish it:</p>
+        <p style="font-size:15px;line-height:1.6">Thanks for creating your <?= esc($noun ?? 'business') ?> profile. Click below to see it before anyone else does, then approve it to verify your email and publish it:</p>
         <p style="margin:22px 0">
             <?= email_button($link, 'Preview and publish my profile') ?>
         </p>
@@ -24,13 +24,13 @@
                     <?php endif; ?>
                     <li>All your locations: your other branches or practices, each with its own address, phone, map pin and hours, and described to Google as a location in its own right</li>
                     <li>Your people by name, with photos, qualifications and areas of expertise, so people who look for your team discover you</li>
-                    <li>Post jobs on our Jobs board, and reply to customers who need your kind of service</li>
-                    <li>First to hear about new work: verified businesses are the first we alert when a customer in your province asks for your kind of service</li>
+                    <li>Post jobs on our Jobs board, and reply to people who need your kind of service</li>
+                    <li>First to hear about new work: verified profiles are the first we alert when someone in your province asks for your kind of service</li>
                 </ul>
                 <p style="font-size:13px;line-height:1.6;color:#334155;margin:0">
                     <?= esc(price_terms((string) ($badgePrice ?? ''), badge_yearly_price())) ?>, and nothing to pay until we've checked your company
                     registration and the owner's ID. If you haven't sent them yet, approving your profile takes you
-                    straight there. Your business profile stays free either way.
+                    straight there. Your <?= esc($noun ?? 'business') ?> profile stays free either way.
                     <a href="<?= esc(base_url('verified')) ?>" style="color:#065f46">What we check &rarr;</a>
                 </p>
             </div>

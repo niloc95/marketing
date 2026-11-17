@@ -19,11 +19,11 @@ $gateway = BookingIntegrations::PROVIDER_LABELS[$account['provider']] ?? '';
         <p style="font-size:15px;line-height:1.6">
             <?= esc($by !== '' ? $by : 'Someone on your team') ?> changed where deposits for <?= esc($listing['display_name']) ?> are paid.
             <?php if ($gateway === ''): ?>
-                The account was removed, so customers no longer pay a deposit when they book.
+                The account was removed, so <?= esc(listing_audience($listing)) ?> no longer pay a deposit when they book.
             <?php else: ?>
                 Deposits now go to the <?= esc($gateway) ?> account saved in your settings<?= $account['active'] ? '' : ', which is switched off for now' ?>.
             <?php endif ?>
         </p>
         <p style="margin:18px 0"><a href="<?= esc($url) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">See the payment settings</a></p>
-        <p style="font-size:13px;color:#64748b">If you did not expect this, check the account at once and change your password. Every admin of the business gets this email.</p>
+        <p style="font-size:13px;color:#64748b">If you did not expect this, check the account at once and change your password. Every admin of the <?= esc(listing_noun($listing)) ?> gets this email.</p>
 <?= $this->endSection() ?>

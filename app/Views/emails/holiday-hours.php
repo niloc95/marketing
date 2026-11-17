@@ -25,13 +25,13 @@ $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
 
         <p style="font-size:15px;line-height:1.6">
             <strong><?= esc($holiday) ?></strong> is on <strong><?= esc($holidayDate) ?></strong>.
-            Customers check whether a business is open before they travel, and your profile at
+            <?= esc(ucfirst($audience ?? 'customers')) ?> check whether a <?= esc($noun ?? 'business') ?> is open before they travel, and your profile at
             <a href="<?= esc($profileUrl) ?>" style="color:#003049;font-weight:600"><?= esc($profileLabel) ?></a>
             does not say yet what you do on public holidays.
         </p>
         <p style="font-size:15px;line-height:1.6">
             Until you do, on the day it tells visitors your hours may differ and to call ahead,
-            and you will not appear when people look for businesses open on the holiday.
+            and you will not appear when people look for places open on the holiday.
         </p>
 
         <?php if ($upcoming !== []): ?>
@@ -51,7 +51,7 @@ $profileLabel = preg_replace('#^https?://#i', '', $profileUrl);
         </p>
 
         <p style="font-size:13px;color:#64748b">
-            You're getting this because your business has a profile on <?= esc($site) ?>.
+            You're getting this because your <?= esc($noun ?? 'business') ?> has a profile on <?= esc($site) ?>.
             We stop asking once you have answered.
             <a href="<?= esc($unsubscribe) ?>" style="color:#64748b">Stop emails about my profile</a>.
         </p>

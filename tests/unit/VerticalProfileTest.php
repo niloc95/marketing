@@ -108,7 +108,7 @@ final class VerticalProfileTest extends CIUnitTestCase
 
             $this->assertSame($expected, array_keys($v), "{$label}: key set differs");
             $this->assertSame($headings, array_keys($v['headings']), "{$label}: heading set differs");
-            foreach (['noun', 'nounPlural', 'cta'] as $key) {
+            foreach (['noun', 'nounPlural', 'ownerNoun', 'ownerNounPlural', 'audience', 'audienceSingular', 'cta'] as $key) {
                 $this->assertNotSame('', trim((string) $v[$key]), "{$label}: {$key} is empty");
             }
         }

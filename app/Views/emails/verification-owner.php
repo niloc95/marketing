@@ -44,7 +44,7 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
                 Verified is ready to switch on. It costs
                 <strong><?= esc(money($amount)) ?> a month</strong><?php if ($yearlyAmount !== ''): ?>,
                 or <strong><?= esc(money($yearlyAmount)) ?> a year</strong> if you pay yearly<?php endif; ?>, and it appears on your profile and
-                everywhere your business is discovered on the platform.<?php if (bookings_in_premium(Config\Sites::ZA)): ?>
+                everywhere your <?= esc($noun ?? 'business') ?> is discovered on the platform.<?php if (bookings_in_premium(Config\Sites::ZA)): ?>
                 With it you can also take online bookings, and add your other branches, your team and your job vacancies.<?php endif; ?>
             </p>
             <p style="margin:22px 0">
@@ -57,14 +57,14 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
 
         <?php elseif ($event === 'rejected'): ?>
             <p style="font-size:15px;line-height:1.6">
-                We weren't able to verify your business from the documents you sent. Here's why:
+                We weren't able to verify your <?= esc($noun ?? 'business') ?> from the documents you sent. Here's why:
             </p>
             <p style="font-size:15px;line-height:1.6;background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:6px">
                 <?= nl2br(esc($reason)) ?>
             </p>
             <p style="font-size:15px;line-height:1.6">
                 You're welcome to send new documents whenever you're ready. Nothing has been charged,
-                and your business profile itself is unaffected.
+                and your <?= esc($noun ?? 'business') ?> profile itself is unaffected.
             </p>
             <p style="margin:22px 0">
                 <?= email_button($manageLink, 'Send new documents') ?>
@@ -170,6 +170,6 @@ $what      = ['plus' => 'Plus', 'international' => 'International Profile'][$pro
         <?php endif; ?>
 
         <p style="font-size:13px;color:#64748b">
-            You're getting this because your business has a profile on <?= esc($site) ?>.
+            You're getting this because your <?= esc($noun ?? 'business') ?> has a profile on <?= esc($site) ?>.
         </p>
 <?= $this->endSection() ?>

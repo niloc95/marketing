@@ -73,6 +73,8 @@ class SchemaTypes extends BaseConfig
         // MedicalBusiness they lost medicalSpecialty and read as a shop.
         'general-practitioner'            => 'Physician',
         'specialist-physician'            => 'Physician',
+        // Specialty unknown: Physician, and deliberately no $medicalSpecialty entry.
+        'medical-doctor'                  => 'Physician',
         'paediatrician'                   => 'Physician',
         'cardiologist'                    => 'Physician',
         'dermatologist'                   => 'Physician',

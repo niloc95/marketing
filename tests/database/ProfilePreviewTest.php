@@ -46,7 +46,7 @@ final class ProfilePreviewTest extends CIUnitTestCase
         $page = $this->get('preview/' . $token);
         $page->assertOK();
         $page->assertSee('Smile Studio');
-        $page->assertSee('This is a private preview of your business profile');
+        $page->assertSee('This is a private preview of your practice profile'); // a dentist: listing_noun()
         $page->assertSee('Approve and publish');
         // A profile we built: the owner asks us for changes.
         $page->assertSee('Ask for changes');
@@ -364,7 +364,7 @@ final class ProfilePreviewTest extends CIUnitTestCase
         $this->asAdmin()->post('admin/send-preview/' . $id, [csrf_token() => csrf_hash()])->assertRedirect();
 
         $body = html_entity_decode((string) (service('email')->archive['body'] ?? ''));
-        $this->assertStringContainsString('Preview my business profile', $body);
+        $this->assertStringContainsString('Preview my practice profile', $body, 'a dentist is a practice (listing_noun())');
         $this->assertMatchesRegularExpression('#/preview/([A-Za-z0-9_-]{20,})#', $body);
         preg_match('#/preview/([A-Za-z0-9_-]{20,})#', $body, $m);
 

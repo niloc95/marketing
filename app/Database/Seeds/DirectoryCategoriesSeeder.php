@@ -45,6 +45,12 @@ class DirectoryCategoriesSeeder extends Seeder
                 'Neonatologist', 'Paediatric Neurologist', 'Geriatrician', 'Intensivist',
                 'Emergency Medicine Doctor', 'Nuclear Medicine Physician', 'Pain Specialist',
                 'Pathologist',
+                // A doctor whose specialty is not known (owner, 16 Nov 2026):
+                // 236 imported doctors had none in the source. It claims no
+                // specialty, so it publishes Physician with no
+                // medicalSpecialty, never "Specialist Physician", which is a
+                // real specialty (internal medicine).
+                'Medical Doctor',
                 'Dentist', 'Orthodontist', 'Oral Hygienist',
                 'Optometrist', 'Audiologist',
                 'Physiotherapist', 'Chiropractor', 'Biokineticist',

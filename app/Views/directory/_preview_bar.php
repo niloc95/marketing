@@ -45,7 +45,7 @@ $mode = $preview['mode'] ?? 'approve';
 <?php else: ?>
     <?php $base = base_url('preview/' . rawurlencode($preview['token'])); ?>
     <div class="alert alert-info mb-6" role="region" aria-label="Preview">
-        <p class="font-semibold">This is a private preview of your business profile. It is not live yet.</p>
+        <p class="font-semibold">This is a private preview of your <?= esc(listing_noun($listing ?? null)) ?> profile. It is not live yet.</p>
         <p class="mt-1 text-sm">Check that everything is right. When you approve it, your profile goes live straight away and you can still edit it later.</p>
         <?php if (! empty($preview['verified'])): ?>
             <p class="mt-1 text-sm">This is your Verified profile. Verified, your team, branches and video show publicly once Verified is active.</p>

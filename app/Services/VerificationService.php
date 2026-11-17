@@ -1912,7 +1912,7 @@ class VerificationService
         $what     = ['plus' => 'WebScheduler Local Plus', 'international' => 'International Profile'][$extra['product'] ?? ''] ?? 'Verified subscription';
         $subjects = [
             'approved'  => 'Your documents are approved: activate Verified',
-            'rejected'  => 'We could not verify your business yet',
+            'rejected'  => 'We could not verify your ' . listing_noun($listing) . ' yet',
             'activated'      => 'Your ' . $what . ' is live',
             'renewing'       => 'Your ' . $what . ' renews soon',
             'payment_failed' => 'We could not take your ' . $what . ' payment',
@@ -1922,6 +1922,8 @@ class VerificationService
         $body = view('emails/verification-owner', array_merge([
             'site'       => $this->config->siteName(),
             'name'       => (string) ($listing['display_name'] ?? ''),
+            'noun'       => listing_noun($listing),
+            'audience'   => listing_audience($listing),
             'event'      => $event,
             'manageLink' => $this->ownerLink($listingId, $event),
         ], $extra));

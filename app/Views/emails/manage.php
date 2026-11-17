@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
         <h1 style="color:#003049;font-size:20px;margin:0 0 12px"><?= esc($site) ?></h1>
         <p style="font-size:15px;line-height:1.6">Hi <?= esc($name) ?>,</p>
-        <p style="font-size:15px;line-height:1.6">Use the button below to edit your business profile. No password needed. This link signs you in.</p>
+        <p style="font-size:15px;line-height:1.6">Use the button below to edit your <?= esc($noun ?? 'business') ?> profile. No password needed. This link signs you in.</p>
         <p style="margin:22px 0">
             <?= email_button($link, 'Edit my profile') ?>
         </p>

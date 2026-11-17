@@ -730,6 +730,67 @@ if (! function_exists('vertical_profile')) {
     }
 }
 
+if (! function_exists('listing_vertical')) {
+    /**
+     * vertical_profile() for a listing row, whatever shape it arrives in:
+     * DirectoryService rows carry category_group / category_slug (the alias
+     * of p.group_name, so 'group_name' is empty on them), getProfile() nests
+     * them under 'category', and a bare model row (owner area, emails, cron)
+     * has only category_id, looked up once per request. Never falls back to
+     * the generic wording while a category is there to read.
+     *
+     * @param array<string,mixed>|null $listing
+     * @return array<string,mixed>
+     */
+    function listing_vertical(?array $listing): array
+    {
+        static $byId = [];
+
+        $group = $listing['category_group'] ?? $listing['category']['group_name'] ?? $listing['group_name'] ?? null;
+        $slug  = $listing['category_slug'] ?? $listing['category']['slug'] ?? null;
+
+        $id = (int) ($listing['category_id'] ?? 0);
+        if (($group === null || $group === '') && $id > 0) {
+            if (! array_key_exists($id, $byId)) {
+                $row       = (new \App\Models\DirectoryCategoryModel())->select('slug, group_name')->find($id);
+                $byId[$id] = is_array($row) ? $row : null;
+            }
+            $group = $byId[$id]['group_name'] ?? null;
+            $slug  = $byId[$id]['slug'] ?? $slug;
+        }
+
+        return vertical_profile($group !== '' ? $group : null, $slug !== '' ? $slug : null);
+    }
+}
+
+if (! function_exists('listing_noun')) {
+    /**
+     * What owner copy calls the listing's own place: "practice" for health
+     * and vets, "pharmacy", "hospital", "organisation" for nonprofits and
+     * worship, else "business" (Config\Verticals ownerNoun). Medical first
+     * wording, phase 2 (owner, 16 Nov 2026).
+     *
+     * @param array<string,mixed>|null $listing
+     */
+    function listing_noun(?array $listing, bool $plural = false): string
+    {
+        return (string) listing_vertical($listing)[$plural ? 'ownerNounPlural' : 'ownerNoun'];
+    }
+}
+
+if (! function_exists('listing_audience')) {
+    /**
+     * Who visits the listing: "patients" on a medical profile, "clients" for
+     * vets, else "customers" (Config\Verticals audience).
+     *
+     * @param array<string,mixed>|null $listing
+     */
+    function listing_audience(?array $listing, bool $singular = false): string
+    {
+        return (string) listing_vertical($listing)[$singular ? 'audienceSingular' : 'audience'];
+    }
+}
+
 if (! function_exists('safe_external_url')) {
     /**
      * A stored URL that is safe to put in an href, or '' if it isn't.

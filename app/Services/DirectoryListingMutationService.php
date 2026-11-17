@@ -202,7 +202,7 @@ class DirectoryListingMutationService
 
         // After the commit, never inside it — a verification link for a listing
         // that got rolled back would be a dead link in someone's inbox.
-        $this->sendVerificationEmail($data['email'], (string) $data['display_name'], $token);
+        $this->sendVerificationEmail($data['email'], (string) $data['display_name'], $token, $data);
 
         return [
             'ok'      => true,
@@ -281,7 +281,7 @@ class DirectoryListingMutationService
         }
 
         // After the commit, for the reason submitPublic() gives.
-        $this->sendVerificationEmail((string) $data['email'], (string) $data['display_name'], $token);
+        $this->sendVerificationEmail((string) $data['email'], (string) $data['display_name'], $token, $data);
 
         return [
             'ok'      => true,
@@ -471,7 +471,8 @@ class DirectoryListingMutationService
         $this->sendVerificationEmail(
             (string) $listing['email'],
             (string) $listing['display_name'],
-            $this->mintVerifyToken($listingId)
+            $this->mintVerifyToken($listingId),
+            $listing
         );
 
         return true;
@@ -505,11 +506,12 @@ class DirectoryListingMutationService
         $body  = view('emails/preview', [
             'name' => (string) (($listing['contact_person'] ?? '') ?: $listing['display_name']),
             'business' => (string) $listing['display_name'],
+            'noun' => listing_noun($listing),
             'link' => $link,
             'site' => $this->config->siteName(),
             'days' => (int) round($this->config->previewTtl / 86400),
         ]);
-        $this->send((string) $listing['email'], 'Your business profile is ready for you to approve', $body);
+        $this->send((string) $listing['email'], 'Your ' . listing_noun($listing) . ' profile is ready for you to approve', $body);
 
         return $link;
     }
@@ -641,6 +643,7 @@ class DirectoryListingMutationService
 
         $body = view('emails/manage', [
             'name' => (string) ($listing['display_name'] ?? ''),
+            'noun' => listing_noun($listing),
             'link' => listing_site_url($listing, 'manage/' . $token),
             'site' => $this->config->siteName(),
             'ttl'  => (int) round($this->config->manageTtl / 60),
@@ -1742,11 +1745,14 @@ class DirectoryListingMutationService
      * click. Same token, so directory/verify/{token} in emails sent before
      * this change still publishes.
      */
-    private function sendVerificationEmail(string $to, string $name, string $token): void
+    /** @param array<string,mixed>|null $listing for the wording (practice or business), see listing_noun() */
+    private function sendVerificationEmail(string $to, string $name, string $token, ?array $listing = null): void
     {
         $link = base_url('preview/' . $token);
         $body = view('emails/verify', [
             'name'       => $name,
+            'noun'       => listing_noun($listing),
+            'audience'   => listing_audience($listing),
             'link'       => $link,
             'site'       => $this->config->siteName(),
             'offerBadge' => $this->settings->badgeEnabled(),

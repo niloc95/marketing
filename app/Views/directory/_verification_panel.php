@@ -15,6 +15,7 @@
  * @var string $amount
  * @var string|null $yearly  today's yearly price, null when yearly is not on sale
  * @var bool   $payable  whether card payments work — see VerificationService::canTakePayment()
+ * @var array|null $listing the owner's profile, for listing_noun() and listing_audience()
  * @var bool   $pending  owner is back from checkout, payment not confirmed yet — see Manage::paymentPending()
  */
 
@@ -132,7 +133,7 @@ $prettyDate = static function (?string $date): string {
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Your documents check out. Switch Verified on for
                 <strong><?= esc($priceLine) ?></strong>: it appears on your profile and
-                everywhere your business is discovered on the platform.
+                everywhere your <?= esc(listing_noun($listing ?? null)) ?> is discovered on the platform.
             </p>
             <p class="mt-4">
                 <a class="btn btn-accent" href="<?= base_url('manage/verification/checkout') ?>">Activate Verified</a>
@@ -143,7 +144,7 @@ $prettyDate = static function (?string $date): string {
                   // that leads nowhere — an approved application must never look
                   // like it stalled. ?>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Good news. Your documents check out and your business is approved.
+                Good news. Your documents check out and your <?= esc(listing_noun($listing ?? null)) ?> is approved.
             </p>
             <p class="hint">
                 We will email you about payment (<strong><?= esc(money($amount)) ?> a month</strong>) and
@@ -158,7 +159,7 @@ $prettyDate = static function (?string $date): string {
             <?php if (! empty($row['paid_until'])): ?>
                 after <strong><?= esc($prettyDate($row['paid_until'])) ?></strong>
             <?php endif; ?>.
-            Your business profile itself is unaffected.
+            Your <?= esc(listing_noun($listing ?? null)) ?> profile itself is unaffected.
         </p>
 
         <?php if ($payable && $pending): ?>
@@ -211,7 +212,7 @@ $prettyDate = static function (?string $date): string {
     <?php elseif ($state === DirectoryVerificationModel::STATE_REJECTED): ?>
 
         <p class="text-sm text-slate-600 dark:text-slate-300">
-            We could not verify your business from the documents you sent:
+            We could not verify your <?= esc(listing_noun($listing ?? null)) ?> from the documents you sent:
         </p>
         <p class="alert alert-warning verify-reason"><?= nl2br(esc($row['rejection_reason'] ?? '')) ?></p>
         <p class="hint">Nothing was charged, and your profile is unaffected. Send new documents whenever you are ready.</p>
@@ -227,7 +228,7 @@ $prettyDate = static function (?string $date): string {
               // from, so it does the selling. The upload fields stay folded away
               // behind the button: two file inputs are a wall, and the decision to
               // make first is "do I want this", not "where is my ID". ?>
-        <h3 class="verify-cta-heading">Get verified: show customers your business is real</h3>
+        <h3 class="verify-cta-heading">Get verified: show <?= esc(listing_audience($listing ?? null)) ?> your <?= esc(listing_noun($listing ?? null)) ?> is real</h3>
         <?= view('directory/_verification_pitch', ['amount' => $amount]) ?>
         <p class="hint mt-2">
             To apply, send your company registration document and the owner's ID. We review them,
