@@ -35,14 +35,14 @@ $setupLine = $setupPrice !== null ? money($setupPrice, $setupCurrency) . ' once 
 
 $faqs = [
     [
-        'q' => 'Is a business profile really free?',
+        'q' => 'Is a practice profile really free?',
         'a' => $app
-            ? 'Yes. A business profile is free, with no monthly fee, no subscription and no obligation. Plus is an optional upgrade.'
-            : 'Yes, for any business with a South African address. No monthly fee, no subscription and no obligation. Verified is an optional upgrade.',
+            ? 'Yes. A practice profile is free, with no monthly fee, no subscription and no obligation. Plus is an optional upgrade.'
+            : 'Yes, for any practice or business with a South African address. No monthly fee, no subscription and no obligation. Verified is an optional upgrade.',
     ],
     [
-        'q' => 'Does paying move my business up the discovery results?',
-        'a' => 'No. The order is the same whether a business pays us or not. ' . esc($product) . ' gives a business more to show, not a better place in the list.',
+        'q' => 'Does paying move my practice up the discovery results?',
+        'a' => 'No. The order is the same whether a practice or business pays us or not. ' . esc($product) . ' gives a profile more to show, not a better place in the list.',
     ],
 ];
 if ($paid) {
@@ -62,7 +62,7 @@ if ($paid) {
     }
     $faqs[] = [
         'q' => 'Can I cancel?',
-        'a' => 'Any time, from your dashboard. ' . esc($product) . ' stays on until the month or year you have paid for ends, and your business profile stays published either way.',
+        'a' => 'Any time, from your dashboard. ' . esc($product) . ' stays on until the month or year you have paid for ends, and your practice profile stays published either way.',
     ];
     $faqs[] = [
         'q' => 'If the price changes, do I pay more?',
@@ -75,8 +75,8 @@ if ($paid) {
 <?= seo_meta([
     'title'       => 'Pricing | ' . $siteName,
     'description' => $app
-        ? 'A business profile on ' . $siteName . ' is free. Plus adds your other locations, your team and the Jobs board' . ($priceLine !== '' ? ', for ' . $priceLine : '') . '.'
-        : 'A business profile on ' . $siteName . ' is free. Verified' . ($badgeOffered ? ' is ' . $priceLine : ' is an optional upgrade') . ', and we can set up your profile for you.',
+        ? 'A practice profile on ' . $siteName . ' is free. Plus adds your other locations, your team and the Jobs board' . ($priceLine !== '' ? ', for ' . $priceLine : '') . '.'
+        : 'A practice profile on ' . $siteName . ' is free. Verified' . ($badgeOffered ? ' is ' . $priceLine : ' is an optional upgrade') . ', and we can set up your profile for you.',
     'canonical'   => $canonical,
     // The same page on both sites, in each one's own currency.
     'alternates'  => 'pricing',
@@ -90,7 +90,7 @@ if ($paid) {
         <span class="eyebrow">Pricing</span>
         <h1 class="mt-2 text-2xl sm:text-3xl">Free to be discovered. Pay only for the extras.</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
-            Every business gets a free profile. <?= esc($product) ?> is the one optional upgrade<?= $hasYearly ? ', paid monthly or yearly' : '' ?>.
+            Every practice and business gets a free profile. <?= esc($product) ?> is the one optional upgrade<?= $hasYearly ? ', paid monthly or yearly' : '' ?>.
             Paying never changes where you appear in discovery results.
         </p>
     </div>
@@ -107,12 +107,12 @@ if ($paid) {
 
         <?php if (! $paid): ?>
             <div class="panel">
-                <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">A free business profile</h2>
+                <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">A free practice profile</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
-                    Your business information, photos, services, hours and contact details, discovered on
+                    Your practice information, photos, services, hours and contact details, discovered on
                     the platform, on the map and in your category. No monthly fee, no subscription and no obligation.
                 </p>
-                <p class="mt-4"><a class="btn btn-accent" href="<?= base_url('add-profile') ?>">Add your business</a></p>
+                <p class="mt-4"><a class="btn btn-accent" href="<?= base_url('add-profile') ?>">Add your practice or business</a></p>
             </div>
         <?php endif; ?>
 
@@ -136,7 +136,7 @@ if ($paid) {
         <div class="panel mt-6">
             <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">We set up your profile for you</h2>
             <p class="text-sm text-slate-600 dark:text-slate-300">
-                Short on time? Send us your details and we build a complete business profile for you
+                Short on time? Send us your details and we build a complete practice profile for you
                 within <?= (int) $setupDays ?> business days<?= $setupLine !== '' ? ', for <strong>' . esc($setupLine) . '</strong>' : '' ?>.
                 The profile itself stays free.
             </p>
@@ -152,7 +152,7 @@ if ($paid) {
                 </details>
             <?php endforeach; ?>
             <p class="hint mt-4">
-                More answers in our <a href="<?= base_url('faq') ?>">FAQ</a><?php if (! $app): ?>, and what Verified means on <a href="<?= base_url('verified') ?>">Verified businesses</a><?php else: ?>, and what Plus means on <a href="<?= base_url('plus') ?>">Plus businesses</a><?php endif; ?>.
+                More answers in our <a href="<?= base_url('faq') ?>">FAQ</a><?php if (! $app): ?>, and what Verified means on <a href="<?= base_url('verified') ?>">Verified profiles</a><?php else: ?>, and what Plus means on <a href="<?= base_url('plus') ?>">Plus profiles</a><?php endif; ?>.
             </p>
         </div>
     </div>

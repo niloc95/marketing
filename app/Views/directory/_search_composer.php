@@ -24,7 +24,7 @@
  *                                searches something else (the jobs board)
  */
 $value       = $value       ?? '';
-$placeholder = $placeholder ?? 'A business, service, person or place';
+$placeholder = $placeholder ?? 'A practice, business, person or place';
 $ariaLabel   = $ariaLabel   ?? 'Discover local businesses';
 $size        = $size        ?? '';
 $type        = $type        ?? 'text';

@@ -1829,7 +1829,8 @@ class DirectoryListingMutationService
         if (array_key_exists('team', $input) && $team->canManage($listing)) {
             // The regulator of the category this save leaves the listing in.
             $regulator = ProfessionalRegistration::regulatorForCategoryId(
-                $this->submittedCategoryId($input) ?? (int) ($listing['category_id'] ?? 0)
+                $this->submittedCategoryId($input) ?? (int) ($listing['category_id'] ?? 0),
+                ProfessionalRegistration::countryOf($listing)
             );
             $result  = $team->syncFromForm($id, $input['team'], $regulator, $admin);
             $errors  = array_merge($errors, $result['errors']);

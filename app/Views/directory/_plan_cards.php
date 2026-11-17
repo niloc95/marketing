@@ -68,7 +68,7 @@ $gallery   = Listing::GALLERY_MAX;
 
 $rows = [
     ['label' => 'Discovered on the platform, on the map and in your category', 'free' => true, 'paid' => true],
-    ['label' => 'Your own business profile page, with your address on the map', 'free' => true, 'paid' => true],
+    ['label' => 'Your own profile page, with your address on the map', 'free' => true, 'paid' => true],
     ['label' => 'Phone, email, address, opening hours and a website link', 'free' => true, 'paid' => true],
     // ServiceMenuService: services, prices and features are free for every listing.
     ['label' => 'Your services, with prices if you want to show them', 'free' => true, 'paid' => true],
@@ -85,9 +85,9 @@ if (bookings_in_premium()) {
     $rows[] = ['label' => '<strong>Online bookings</strong>: ' . esc(bookings_pitch()), 'free' => false, 'paid' => true];
 }
 $rows = [...$rows,
-    ['label' => '<strong>All your locations</strong>: up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a business location in its own right', 'free' => false, 'paid' => true],
+    ['label' => '<strong>All your locations</strong>: up to ' . (int) $locations . ' more branches or practices, each with its own address, phone number, map pin and hours, and each described to Google as a location in its own right', 'free' => false, 'paid' => true],
     ['label' => '<strong>Your people</strong>: up to ' . (int) $team . ' team members, each with a photo, their role, their qualifications and their areas of expertise', 'free' => false, 'paid' => true],
-    ['label' => '<strong>More people discover you</strong>: someone looking for one of your people by name, or for something only one of them does, brings up your business too', 'free' => false, 'paid' => true],
+    ['label' => '<strong>More people discover you</strong>: someone looking for one of your people by name, or for something only one of them does, brings up your practice or business too', 'free' => false, 'paid' => true],
     // ListingVideoService::canManage(). Keep in step with _verification_pitch.php.
     ['label' => '<strong>A video</strong>: one YouTube or Vimeo video, first in your photos and playing right on your profile', 'free' => false, 'paid' => true],
     // A Verified Business feature: JobBoardService::canUseJobsFeatures() gates
@@ -95,7 +95,7 @@ $rows = [...$rows,
     // to everyone, which is why this row says vacancies, not "the Jobs board".
     ['label' => '<strong>Post jobs</strong>: advertise your vacancies on our Jobs board, set up so eligible vacancies can appear in Google&rsquo;s job search, and reply to customers who post a request for your kind of service', 'free' => false, 'paid' => true],
     // JobBoardService::alertMatchingBusinesses() orders badge holders first.
-    ['label' => '<strong>First to hear about new work</strong>: when someone in your province asks for your kind of service, verified businesses are the first we alert', 'free' => false, 'paid' => true],
+    ['label' => '<strong>First to hear about new work</strong>: when someone in your province asks for your kind of service, verified practices and businesses are the first we alert', 'free' => false, 'paid' => true],
 ];
 
 /** One row, rendered for whichever column is asking. */
@@ -135,7 +135,7 @@ $row = static function (array $r, string $col): string {
         <?php // Same terms as _verification_pitch.php, and they must stay the same. ?>
         <p class="hint plan-terms">
             <strong>Nothing to pay now.</strong> We review your documents first and only ask
-            for payment if they check out. Cancel any time. A South African business profile
+            for payment if they check out. Cancel any time. A South African practice profile
             is free either way, and stays free.
         </p>
         <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
@@ -143,7 +143,7 @@ $row = static function (array $r, string $col): string {
     </div>
 
     <div class="plan-card<?= $selected === 'free' ? ' plan-card-picked' : '' ?>" data-plan-card="free">
-        <p class="plan-name">Free Business Profile</p>
+        <p class="plan-name">Free Practice Profile</p>
         <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
         <p class="plan-blurb">
             No monthly fee. No subscription. No obligation. A full profile that customers
@@ -157,8 +157,8 @@ $row = static function (array $r, string $col): string {
               // axis entirely, which is why this sits on the Free card and not in
               // the ✓/✗ matrix below. ?>
         <p class="hint plan-terms">
-            Free for any business with a <strong>South African address</strong>, with
-            <a href="<?= base_url('verified') ?>">Verified</a> as an optional upgrade. A
+            Free for any practice or business with a <strong>South African address</strong>, with
+            <a href="<?= base_url('verified') ?>">Verified</a> as an optional upgrade. A practice or
             business based outside South Africa needs an
             <a href="<?= base_url('faq') ?>">International Profile</a> instead.
         </p>

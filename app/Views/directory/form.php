@@ -14,10 +14,10 @@ $formMode     = $formMode ?? \App\Controllers\Listing::MODE_BOTH;
 // above the comparison cards normally, or on the form card itself when the badge
 // is switched off and there are no cards.
 if ($verificationOffered) {
-    $eyebrow  = 'Your business profile';
+    $eyebrow  = 'Your practice profile';
     $headline = 'Be discovered by local customers';
 } else {
-    $eyebrow  = 'Create your FREE business profile';
+    $eyebrow  = 'Create your FREE practice profile';
     $headline = 'Be discovered by local customers';
 }
 
@@ -27,8 +27,8 @@ if ($verificationOffered) {
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Create your free business profile | ' . $siteName,
-    'description' => 'Create a free business profile on ' . $siteName . ' so local customers can discover your business, services and location. No monthly fee, no subscription.',
+    'title'       => 'Create your free practice profile | ' . $siteName,
+    'description' => 'Create a free practice or business profile on ' . $siteName . ' so local patients and customers can discover you, your services and your location. No monthly fee, no subscription.',
     'canonical'   => base_url('add-profile'),
     'alternates'  => 'add-profile',
 ]) ?>
@@ -48,7 +48,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
         <?php // Arrived from the other site's form: see Listing::handOver(). ?>
         <?php if (! empty($handedOver)): ?>
             <div class="alert alert-info mb-6">
-                Businesses in <?= esc($handedOver) ?> are listed here, on <?= esc(site()->host()) ?>.
+                Practices and businesses in <?= esc($handedOver) ?> are listed here, on <?= esc(site()->host()) ?>.
                 We have kept what you typed. Please add your logo and photos again, check your details and submit.
             </div>
         <?php endif; ?>
@@ -57,7 +57,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
               // dashboard once the profile is live; the cards say so. ?>
         <?php if (! empty($plusUsd) && ! empty($plusRand)): ?>
             <div class="plan-choose">
-                <span class="eyebrow">Your business profile</span>
+                <span class="eyebrow">Your practice profile</span>
                 <h1 class="plan-choose-title">Start free. Add Plus when you are ready.</h1>
                 <?= view('directory/_plus_compare', ['usd' => $plusUsd, 'rand' => $plusRand, 'onSignup' => true], ['saveData' => false]) ?>
             </div>
@@ -86,16 +86,16 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white"><?= $headline ?></h1>
             <?php else: ?>
                 <?php // The <h1> is up with the cards in this case, so this is an <h2>. ?>
-                <h2 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Your business details</h2>
+                <h2 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Your practice or business details</h2>
             <?php endif; ?>
             <?php if ($isVerified): ?>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
-                    Attach your two documents just below, then tell us about your business.
+                    Attach your two documents just below, then tell us about your practice or business.
                     We'll email you a link to verify and publish your profile, and your
                     profile goes live either way, whatever the Verified review decides.
                 </p>
             <?php else: ?>
-                <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your business. We'll email you a link to verify and publish your profile. It's free.</p>
+                <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your practice or business. We'll email you a link to verify and publish your profile. It's free.</p>
             <?php endif; ?>
 
             <?= view('directory/_profile_setup_offer') ?>
@@ -154,7 +154,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                 <span class="hint">
                                     <?= esc(price_terms($verificationAmount, badge_yearly_price())) ?>. We review your documents first and
                                     only ask for payment if they check out. Nothing to pay now. Cancel any
-                                    time, and your business profile is free either way.
+                                    time, and your practice profile is free either way.
                                 </span>
                                 <?php // A span, not a <button>: the <summary> is already the control,
                                       // and nesting a button inside it swallows the click. ?>

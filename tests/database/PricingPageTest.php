@@ -44,7 +44,7 @@ final class PricingPageTest extends CIUnitTestCase
     {
         $html = $this->text($this->page('pricing'));
 
-        $this->assertStringContainsString('Free Business Profile', $html);
+        $this->assertStringContainsString('Free Practice Profile', $html);
         $this->assertStringContainsString('R30.00 a month or R300.00 a year', $html);
         $this->assertStringContainsString('Monthly or yearly', $html);
         $this->assertStringContainsString('R250.00 once off', $html, 'the setup service');
@@ -83,7 +83,7 @@ final class PricingPageTest extends CIUnitTestCase
 
         $html = $this->text($this->page('pricing'));
 
-        $this->assertStringContainsString('A free business profile', $html);
+        $this->assertStringContainsString('A free practice profile', $html);
         $this->assertStringNotContainsString('R30.00', $html);
     }
 

@@ -38,29 +38,61 @@ final class ProfessionalRegistration
     /**
      * The regulator for a category, or null when it is not a regulated one.
      *
-     * @return array{key:string,short:string,name:string,pattern:?string,example:string,register:string,research:bool}|null
+     * $country is the profile's ISO country code. Every register in
+     * Config\Registrations belongs to one country, and a profile anywhere
+     * else gets null: no box on the form, nothing on the team card, nothing
+     * in the JSON-LD. Before 17 Nov 2026 a doctor in Botswana on .app was
+     * asked for an HPCSA number. Null $country means "not known here" and
+     * skips the check; every caller that renders or saves for a profile
+     * passes countryOf().
+     *
+     * @return array{key:string,short:string,name:string,pattern:?string,example:string,register:string,research:bool,country:string}|null
      */
-    public static function regulatorFor(?string $slug, ?string $group): ?array
+    public static function regulatorFor(?string $slug, ?string $group, ?string $country = null): ?array
     {
         $config = config('Registrations');
         $key    = $slug !== null && array_key_exists($slug, $config->bySlug)
             ? $config->bySlug[$slug]
             : ($config->byGroup[(string) $group] ?? null);
 
-        return $key !== null && isset($config->regulators[$key])
-            ? ['key' => $key] + $config->regulators[$key]
-            : null;
+        if ($key === null || ! isset($config->regulators[$key])) {
+            return null;
+        }
+        $regulator = ['key' => $key] + $config->regulators[$key];
+
+        return $country === null || $country === $regulator['country'] ? $regulator : null;
     }
 
     /** As regulatorFor(), for a submitted category id. One query. */
-    public static function regulatorForCategoryId(?int $id): ?array
+    public static function regulatorForCategoryId(?int $id, ?string $country = null): ?array
     {
         if ($id === null || $id < 1) {
             return null;
         }
         $row = (new DirectoryCategoryModel())->select('slug, group_name')->find($id);
 
-        return is_array($row) ? self::regulatorFor($row['slug'] ?? null, $row['group_name'] ?? null) : null;
+        return is_array($row) ? self::regulatorFor($row['slug'] ?? null, $row['group_name'] ?? null, $country) : null;
+    }
+
+    /**
+     * The ISO country code regulatorFor() should judge a profile by: its
+     * country_code, else its country name, else the site's own country
+     * (a signup form before anything is typed: South Africa on co.za, and
+     * '' on .app, which serves no South African profile and so matches no
+     * register).
+     */
+    public static function countryOf(?array $listing): string
+    {
+        $code = strtoupper(trim((string) ($listing['country_code'] ?? '')));
+        if ($code !== '') {
+            return $code;
+        }
+        $name = trim((string) ($listing['country'] ?? ''));
+        if ($name !== '') {
+            return config('Countries')->codeForName($name) ?? '';
+        }
+
+        return site()->isApp() ? '' : 'ZA';
     }
 
     /** Upper cased and single spaced, '' when empty. Format is judged by problems(). */

@@ -49,7 +49,7 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
 <ul class="verify-benefits">
     <li>
         <strong>Verified, documents checked,</strong> on your profile and beside your name in every
-        discovery result you appear in, so someone deciding between you and a business
+        discovery result you appear in, so someone deciding between you and a practice
         that is not Verified can see we have checked who you are. Visitors who hover over or tap
         Verified are told exactly that: <em><?= esc(VERIFIED_BADGE_EXPLAINER) ?></em>, your
         business registration document and your ID.
@@ -63,14 +63,14 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
     <li>
         <strong>All your locations.</strong> Add up to <?= (int) $locations ?> more branches or
         practices, each with its own address, phone number, map pin and opening hours, and each
-        described to Google as a business location in its own right, so customers find
-        the right business in the right place, instead of one address for a business that has
+        described to Google as a location in its own right, so patients and customers find
+        the right practice in the right place, instead of one address for a practice that has
         several.
     </li>
     <li>
         <strong>Your people.</strong> People want to know who they are dealing with. Show up to
         <?= (int) $team ?> team members with a photo, their role, their qualifications and their
-        areas of expertise, so a customer who was referred to a person, not a business,
+        areas of expertise, so a patient who was referred to a person, not a practice,
         lands in the right place.
     </li>
     <li>
@@ -78,7 +78,7 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
               // See the docblock — the badge has no effect on ordering. ?>
         <strong>More people discover you.</strong> Once your team is listed, someone looking for one
         of your people by name, or for something only one of them does, brings
-        up your business too.
+        up your practice too.
     </li>
     <li>
         <?php // ListingVideoService::canManage(). ?>
@@ -96,12 +96,12 @@ $locations = PracticeLocationService::MAX_LOCATIONS;
         <?php // True because JobBoardService::alertMatchingBusinesses() orders badge
               // holders first. Alerts, not search position: ordering is unchanged. ?>
         <strong>First to hear about new work.</strong> When someone in your province asks
-        for your kind of service on our Jobs board, verified businesses are the first we
+        for your kind of service on our Jobs board, verified practices and businesses are the first we
         alert.
     </li>
 </ul>
 <p class="hint verify-benefits-terms">
     <strong><?= esc(price_terms($amount, badge_yearly_price())) ?>, and nothing to pay now.</strong>
     We review your documents first and only ask for payment if they check out.
-    Cancel any time. A South African business profile is free either way, and stays free.
+    Cancel any time. A South African practice profile is free either way, and stays free.
 </p>

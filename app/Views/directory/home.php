@@ -15,11 +15,11 @@ $siteName = config('Directory')->siteName();
 // mentions), since schema_item_list()'s default #list would collide.
 // All three come from data the controller already loaded, so no extra queries.
 $canonical   = base_url('/');
-$description = site_copy('homeDescription', 'Discover South African businesses, services, locations, professionals and opportunities. Create your free business profile: no monthly fee, no subscription.');
+$description = site_copy('homeDescription', 'Discover South African practices, businesses, services, locations, professionals and opportunities. Create your free practice profile: no monthly fee, no subscription.');
 
 $homeLists = [];
 if ($featured !== []) {
-    $homeLists['featured'] = schema_item_list('Featured businesses', schema_listing_elements($featured));
+    $homeLists['featured'] = schema_item_list('Featured practices and businesses', schema_listing_elements($featured));
 }
 if ($topCategories !== []) {
     $homeLists['categories'] = schema_item_list('Popular categories', schema_link_elements(array_map(
@@ -28,7 +28,7 @@ if ($topCategories !== []) {
     )));
 }
 if ($provinceCounts !== []) {
-    $homeLists['provinces'] = schema_item_list('Businesses by province', schema_link_elements(array_map(
+    $homeLists['provinces'] = schema_item_list('Practices and businesses by province', schema_link_elements(array_map(
         static fn (string $p) => ['url' => base_url('directory/province/' . slugify($p)), 'name' => $p],
         array_map('strval', array_keys($provinceCounts)),
     )));
@@ -56,7 +56,7 @@ $schema = schema_page(array_values($homeLists), $canonical, 'WebPage', $siteName
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => $siteName . ' | Discover local businesses, services and professionals',
+    'title'       => $siteName . ' | Discover local practices, businesses and professionals',
     'description' => $description,
     'canonical'   => $canonical,
     'schema'      => $schema,
@@ -144,7 +144,7 @@ $moments += [
         <div class="container">
             <p class="home-eyebrow"><?= esc($siteName) ?></p>
             <h1 class="home-display">Discover local.</h1>
-            <p class="home-lede"><?= esc(site_copy('homeLede', 'The local discovery platform for businesses, services, professionals and locations across South Africa.')) ?></p>
+            <p class="home-lede"><?= esc(site_copy('homeLede', 'The local discovery platform for practices, businesses, professionals and locations across South Africa.')) ?></p>
 
             <?php // One box. The words are read into category and place on the
                   // results page (Directory::interpretSearch()), so the category
@@ -158,8 +158,8 @@ $moments += [
             <form class="search-form home-search" method="get" action="<?= base_url('directory') ?>">
                 <?= view('directory/_search_composer', [
                     'listId'      => 'search-suggest-hero',
-                    'placeholder' => $examples !== [] ? 'Try “' . $examples[0] . '”' : 'A business, service, person or place',
-                    'ariaLabel'   => 'Discover local businesses',
+                    'placeholder' => $examples !== [] ? 'Try “' . $examples[0] . '”' : 'A practice, business, person or place',
+                    'ariaLabel'   => 'Discover local practices and businesses',
                     'size'        => 'lg',
                     'rotate'      => array_map(static fn (string $e) => 'Try “' . $e . '”', $examples),
                 ], ['saveData' => false]) ?>
@@ -177,7 +177,7 @@ $moments += [
                 <?php // The free profile is the offer this page leads with, so it goes
                       // to the Free card (?plan=free) rather than through signup_cta(),
                       // which leads with the badge. ?>
-                <a class="home-link home-link-accent" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Business Profile<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+                <a class="home-link home-link-accent" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Practice Profile<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
                 <?php if ($stats['listings'] > 0): ?>
                     <p class="home-stats">
                         <span><strong><?= number_format($stats['listings']) ?></strong> profiles</span>
@@ -305,15 +305,17 @@ $moments += [
     <section class="home-backbone">
         <div class="container">
             <h2 class="home-stack">
-                <?php foreach (['business', 'services', 'locations', 'people', 'opportunities'] as $word): ?>
+                <?php foreach (['practice', 'services', 'locations', 'people', 'opportunities'] as $word): ?>
                     <span class="home-stack-line" data-scroll-reveal><span class="home-stack-your">Your</span> <?= $word ?>.</span>
                 <?php endforeach; ?>
             </h2>
             <div class="home-essay" data-scroll-reveal>
-                <p class="home-statement">A business isn't just a name in a list.</p>
+                <?php // Medical first (owner, 17 Nov 2026), replacing "A business isn't
+                      // just a name in a list." ?>
+                <p class="home-statement">Behind every medical practice is a commitment to patient care.</p>
                 <p class="home-essay-body">
-                    It's the people behind it. The services it provides. The places it operates.
-                    And the opportunities it creates. A <?= esc($siteName) ?> profile is your local
+                    It's the people who give that care. The services they provide. The places they work.
+                    And the opportunities they create. A <?= esc($siteName) ?> profile is your local
                     presence online.
                 </p>
             </div>
@@ -369,7 +371,7 @@ $moments += [
     <section class="home-discover">
         <div class="container">
             <hr class="home-rule">
-            <h2 class="home-statement home-discover-title" data-scroll-reveal><?= esc(site_copy('discoverTitle', 'Discover businesses across South Africa.')) ?></h2>
+            <h2 class="home-statement home-discover-title" data-scroll-reveal><?= esc(site_copy('homeDiscoverTitle', 'Discover practices and businesses across South Africa.')) ?></h2>
         </div>
 
         <?php // Only renders when an admin has actually flagged something. featured()
@@ -389,15 +391,15 @@ $moments += [
                       // so one or two featured businesses never look like a broken
                       // carousel. The strip takes focus, so arrow keys scroll it too. ?>
                 <div class="showcase" data-showcase>
-                    <ul class="showcase-track" id="featured-track" data-showcase-track tabindex="0" aria-label="Featured businesses">
+                    <ul class="showcase-track" id="featured-track" data-showcase-track tabindex="0" aria-label="Featured practices and businesses">
                         <?php foreach ($featured as $l): ?>
                             <li><?= view('directory/_featured_strip_card', ['l' => $l]) ?></li>
                         <?php endforeach; ?>
                     </ul>
                     <div class="container">
                         <div class="showcase-controls" data-showcase-controls hidden>
-                            <button type="button" class="showcase-btn" data-showcase-prev aria-controls="featured-track" aria-label="Previous businesses"><?= lucide('chevron-left', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
-                            <button type="button" class="showcase-btn" data-showcase-next aria-controls="featured-track" aria-label="Next businesses"><?= lucide('chevron-right', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
+                            <button type="button" class="showcase-btn" data-showcase-prev aria-controls="featured-track" aria-label="Previous profiles"><?= lucide('chevron-left', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
+                            <button type="button" class="showcase-btn" data-showcase-next aria-controls="featured-track" aria-label="Next profiles"><?= lucide('chevron-right', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
                         </div>
                     </div>
                 </div>
@@ -431,7 +433,7 @@ $moments += [
                             </li>
                         <?php endforeach; ?>
                     </ul>
-                    <a class="home-link" href="<?= base_url('directory') ?>">Discover every business<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
+                    <a class="home-link" href="<?= base_url('directory') ?>">Discover every practice and business<?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?></a>
                 </div>
             <?php endif; ?>
         </div>
@@ -447,11 +449,11 @@ $moments += [
                     <h2 class="home-display home-close-title">Nothing here yet. Be the first.</h2>
                     <a class="btn btn-accent home-cta" href="<?= esc(signup_cta()['url']) ?>"><?= esc(signup_cta()['label']) ?></a>
                 <?php else: ?>
-                    <h2 class="home-display home-close-title">Your business should be easy to find.</h2>
-                    <a class="btn btn-accent home-cta" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Business Profile</a>
+                    <h2 class="home-display home-close-title">Your practice should be easy to find.</h2>
+                    <a class="btn btn-accent home-cta" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Practice Profile</a>
                 <?php endif; ?>
                 <p class="home-fine">
-                    A free business profile covers your business information, services, contact details, address
+                    A free practice profile covers your practice information, services, contact details, address
                     and map location, photos and opening hours. No monthly fee. No subscription. No obligation.
                 </p>
                 <?php // The pages the footer alone linked to, so the home page passes

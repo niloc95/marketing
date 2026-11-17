@@ -397,14 +397,38 @@ final class SiteScopeTest extends CIUnitTestCase
         $plus = $this->page(self::APP_HOST, '/plus');
         $this->assertStringContainsString('What Plus means', $plus);
         $this->assertStringContainsString('That we have checked the business', $plus, 'what it is not, as prominent as what it is');
-        $this->assertStringContainsString('Plus businesses', $plus, 'linked from the footer');
+        $this->assertStringContainsString('Plus profiles', $plus, 'linked from the footer');
         $this->assertStringContainsString('/plus<', $this->page(self::APP_HOST, '/sitemap.xml'));
 
         Services::resetSingle('site');
         $moved = $this->withHeaders(['Host' => self::ZA_HOST])->get('/plus');
         $moved->assertStatus(301);
         $this->assertSame(self::APP_HOST, parse_url((string) $moved->getRedirectUrl(), PHP_URL_HOST));
-        $this->assertStringContainsString('Verified businesses', $this->page(self::ZA_HOST, '/'));
+        $this->assertStringContainsString('Verified profiles', $this->page(self::ZA_HOST, '/'));
+    }
+
+    /**
+     * Medical first wording (owner, 16 Nov 2026): the button says "Add your
+     * practice or business" ("Add profile" below 1280px) on both sites, and
+     * the footer offers a free practice profile, with South Africa named on
+     * co.za only.
+     */
+    public function testBothHomesSayPracticeAndOnlyCoZaSaysSouthAfrica(): void
+    {
+        $za = $this->page(self::ZA_HOST, '/');
+        $this->setEnv('sites.app.enabled', 'true');
+        Services::resetSingle('site');
+        $app = $this->page(self::APP_HOST, '/');
+
+        foreach (['za' => $za, 'app' => $app] as $site => $html) {
+            $this->assertStringContainsString('<strong class="xl:hidden">Add profile</strong>', $html, $site);
+            $this->assertStringContainsString('<strong class="hidden xl:inline">Add your practice or business</strong>', $html, $site);
+            $this->assertStringContainsString('Create your free practice profile.', $html, $site . ' footer');
+            $this->assertStringNotContainsString('Create your free business profile', $html, $site);
+        }
+        $this->assertStringContainsString('A discovery platform for South African practices, businesses', $za);
+        $this->assertStringContainsString('A discovery platform for local practices, businesses', $app);
+        $this->assertStringContainsString('Discover practices and businesses near you.', $app, 'the home heading has its own .app wording');
     }
 
     public function testEachSiteCarriesOnlyItsOwnOwnershipTags(): void

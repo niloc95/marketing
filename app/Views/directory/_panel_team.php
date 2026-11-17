@@ -24,5 +24,5 @@ if (empty($l['team']) && empty($l['_practitioners'])) {
     'teamHeading'   => $v['headings']['team'],
     'business'      => (string) ($l['display_name'] ?? ''),
     // Each person's registration is read against the listing's regulator.
-    'regulator'     => \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null),
+    'regulator'     => \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null, \App\Libraries\ProfessionalRegistration::countryOf($l)),
 ], ['saveData' => false]) ?>

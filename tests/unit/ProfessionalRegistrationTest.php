@@ -23,6 +23,35 @@ final class ProfessionalRegistrationTest extends CIUnitTestCase
         $this->assertSame('ecsa', Reg::regulatorFor('engineer', 'Professional Services')['key']);
     }
 
+    public function testVetsAreOnTheSavcRegister(): void
+    {
+        $savc = Reg::regulatorFor('veterinarian', 'Pets & Animals', 'ZA');
+        $this->assertSame('savc', $savc['key']);
+        $this->assertNull($savc['pattern'], 'the SAVC publishes no number format, so the generic check applies');
+        $this->assertNull(Reg::regulatorFor('pet-grooming', 'Pets & Animals', 'ZA'), 'the group itself is not regulated');
+    }
+
+    public function testEveryRegisterBelongsToSouthAfricaAndNowhereElse(): void
+    {
+        foreach (config('Registrations')->regulators as $key => $regulator) {
+            $this->assertSame('ZA', $regulator['country'] ?? null, $key . ' names its country');
+        }
+        $this->assertSame('hpcsa', Reg::regulatorFor('orthopaedic-surgeon', 'Health & Medical', 'ZA')['key']);
+        $this->assertNull(Reg::regulatorFor('orthopaedic-surgeon', 'Health & Medical', 'BW'), 'a doctor in Botswana is not asked for an HPCSA number');
+        $this->assertNull(Reg::regulatorFor('veterinarian', 'Pets & Animals', 'GB'));
+        $this->assertNull(Reg::regulatorFor('attorney', 'Legal & Financial', ''), '.app before a country is known');
+        $this->assertSame('hpcsa', Reg::regulatorFor('orthopaedic-surgeon', 'Health & Medical')['key'], 'no country given: not judged');
+    }
+
+    public function testCountryOfReadsTheCodeThenTheNameThenTheSite(): void
+    {
+        $this->assertSame('MZ', Reg::countryOf(['country_code' => 'mz', 'country' => 'South Africa']));
+        $this->assertSame('BW', Reg::countryOf(['country' => 'Botswana']));
+        $this->assertSame('ZA', Reg::countryOf(['country' => 'South Africa']));
+        $this->assertSame('', Reg::countryOf(['country' => 'Atlantis']), 'an unknown country matches no register');
+        $this->assertSame('ZA', Reg::countryOf(null), 'co.za before anything is typed');
+    }
+
     public function testFacilitiesAndUnregulatedCategoriesGetNothing(): void
     {
         $this->assertNull(Reg::regulatorFor('hospital', 'Health & Medical'), 'a slug mapped to null opts out of its group');

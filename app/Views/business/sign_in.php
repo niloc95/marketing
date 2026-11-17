@@ -6,8 +6,8 @@ $old = flash('old') ?: [];
 <?= $this->section('content') ?>
 <div class="mx-auto max-w-md">
     <div class="form-card">
-        <h1 class="mb-1.5 page-title">Sign in to your business</h1>
-        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Your business profile, and your bookings if you take them online.</p>
+        <h1 class="mb-1.5 page-title">Sign in to your profile</h1>
+        <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Your practice or business profile, and your bookings if you take them online.</p>
         <?php if (! empty($notice)): ?>
             <div class="alert alert-info mb-5" role="status"><?= esc($notice) ?></div>
         <?php endif ?>
@@ -28,7 +28,7 @@ $old = flash('old') ?: [];
 
     <div class="form-card mt-5">
         <h2 class="mb-1.5 section-title">Or get a sign in link</h2>
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Use the email on your business profile. We email you a link that signs you in once. No password needed.</p>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Use the email on your profile. We email you a link that signs you in once. No password needed.</p>
         <form method="post" action="<?= base_url('business/sign-in/link') ?>">
             <?= csrf_field() ?>
             <div class="field">
@@ -40,7 +40,7 @@ $old = flash('old') ?: [];
     </div>
 
     <p class="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-        Not on WebScheduler Local yet? <a class="underline" href="<?= base_url('add-profile') ?>">Add your business</a>, free.
+        Not on WebScheduler Local yet? <a class="underline" href="<?= base_url('add-profile') ?>">Add your practice or business</a>, free.
     </p>
 </div>
 <?= $this->endSection() ?>

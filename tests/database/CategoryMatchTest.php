@@ -135,7 +135,7 @@ final class CategoryMatchTest extends CIUnitTestCase
 
         $this->assertStringContainsString('data-category-match', $body);
         $this->assertStringContainsString('name="business_kind"', $body);
-        $this->assertStringContainsString('What does your business do?', $body);
+        $this->assertStringContainsString('What does your practice or business do?', $body);
     }
 
     // ---------------------------------------------------- what is kept of it

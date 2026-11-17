@@ -187,7 +187,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
         <input type="text" id="field-contact-person" name="contact_person" value="<?= esc($v('contact_person'), 'attr') ?>" maxlength="150" autocomplete="name" <?= $privateDetailsRequired ? 'required' : '' ?> data-standout-trigger>
         <?php if ($err('contact_person')): ?><div class="err"><?= esc($err('contact_person')) ?></div><?php endif; ?>
     </div>
-    <div class="hint">Your own name, as you would sign a letter, not the name of the business. For our records, and so we know who to address when we contact you about this profile.</div>
+    <div class="hint">Your own name, as you would sign a letter, not the name of the practice or business. For our records, and so we know who to address when we contact you about this profile.</div>
 </fieldset>
 <?php // "What does your business do?": directory.js asks
       // add-profile/categories (CategoryMatchService) as the business types,
@@ -197,7 +197,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
       // a profile field: they are kept with the chosen category for
       // /admin/discovery (CategoryMatchService::record()). ?>
 <div class="field category-match" data-category-match data-url="<?= esc(base_url('add-profile/categories'), 'attr') ?>" hidden>
-    <label for="field-business-kind">What does your business do?</label>
+    <label for="field-business-kind">What does your practice or business do?</label>
     <input type="text" id="field-business-kind" name="business_kind" value="<?= esc($v('business_kind'), 'attr') ?>" maxlength="120" autocomplete="off" placeholder="For example solar installation, dental practice, hair salon" aria-describedby="field-business-kind-hint" aria-controls="field-business-kind-matches" data-category-match-input>
     <input type="hidden" name="business_kind_offered" value="" data-category-match-offered>
     <div id="field-business-kind-matches" class="category-match-list" aria-live="polite" data-category-match-list hidden></div>
@@ -225,7 +225,10 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
         <label for="field-category">Category *</label>
         <?php // data-category-picker: directory.js splits this into "Main
               // category" then "Subcategory". Without it, this one grouped list
-              // is the whole picker, and still the only field that submits. ?>
+              // is the whole picker, and still the only field that submits.
+              // data-regulator is judged against the profile's country: a
+              // South African register never shows for a profile abroad. ?>
+        <?php $regCountry = \App\Libraries\ProfessionalRegistration::countryOf(['country' => $v('country')]); ?>
         <select id="field-category" name="category_id" data-category-picker>
             <option value="">Choose…</option>
             <?php $cur = null; foreach ($categories as $p): ?>
@@ -238,7 +241,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
                       // ages/curriculum one. The second cannot be derived from the
                       // first: a preschool and a driving school share a group and
                       // are asked completely different questions. ?>
-                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" data-menu="<?= \App\Services\ListingMenuService::offersMenu($p['group_name'] ?? null, $p['slug'] ?? null) ? '1' : '' ?>" data-regulator="<?= esc(\App\Libraries\ProfessionalRegistration::regulatorFor($p['slug'] ?? null, $p['group_name'] ?? null)['key'] ?? '', 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                <option value="<?= (int) $p['id'] ?>" data-group="<?= esc((string) ($p['group_name'] ?? ''), 'attr') ?>" data-facet-set="<?= esc(facet_set_for($p['group_name'] ?? null, $p['slug'] ?? null), 'attr') ?>" data-menu="<?= \App\Services\ListingMenuService::offersMenu($p['group_name'] ?? null, $p['slug'] ?? null) ? '1' : '' ?>" data-regulator="<?= esc(\App\Libraries\ProfessionalRegistration::regulatorFor($p['slug'] ?? null, $p['group_name'] ?? null, $regCountry)['key'] ?? '', 'attr') ?>" <?= (string) $v('category_id') === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
             <?php endforeach; ?>
             <?= $cur !== null ? '</optgroup>' : '' ?>
         </select>
@@ -274,7 +277,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
 </div>
 <div class="form-row">
     <div class="field">
-        <label>Business or trading name *</label>
+        <label>Practice or business name *</label>
         <input type="text" name="display_name" value="<?= esc($v('display_name'), 'attr') ?>" maxlength="200" required>
         <?php if ($err('display_name')): ?><div class="err"><?= esc($err('display_name')) ?></div><?php endif; ?>
     </div>
@@ -525,7 +528,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
             </p>
         <?php else: ?>
             <p class="map-picker-help">
-                Drag the marker to where your business actually is. Worth doing if the map looks
+                Drag the marker to where your practice or business actually is. Worth doing if the map looks
                 wrong. We can&rsquo;t always find smaller suburbs automatically.
             </p>
         <?php endif; ?>

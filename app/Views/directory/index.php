@@ -13,7 +13,7 @@ $askedProvince = ($filters['province'] ?? '') !== '';
 $unknownFilter = ($askedCategory && $category === null) || ($askedProvince && $province === null);
 
 $group = $group ?? null;
-$title = site_copy('discoverTitle', 'Discover local businesses in South Africa');
+$title = site_copy('discoverTitle', 'Discover local practices and businesses in South Africa');
 if ($group !== null) { $title = $group['name']; }
 if ($category !== null) { $title = $category['name'] . ' profiles'; }
 // $place is only ever read out of the words (see Directory::interpretSearch()),
@@ -82,7 +82,7 @@ if ($indexable && ! empty($result['items'])) {
 <?php $paged = seo_paged($canonical, $result, $indexable); ?>
 <?= seo_meta([
     'title'       => $title . $paged['suffix'] . ' | ' . $siteName,
-    'description' => site_copy('discoverDescription', 'Discover South African businesses, services and professionals by category, province and city, on one local discovery platform.'),
+    'description' => site_copy('discoverDescription', 'Discover South African practices, businesses, services and professionals by category, province and city, on one local discovery platform.'),
     'canonical'   => $paged['canonical'],
     'alternates'  => $indexable && $category === null && $page === 1 ? 'directory' : null,
     'prev'        => $paged['prev'],
@@ -139,7 +139,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
             <?= view('directory/_search_composer', [
                 'listId'      => 'search-suggest-hero',
                 'value'       => (string) $filters['q'],
-                'placeholder' => 'A business, service, person or place',
+                'placeholder' => 'A practice, business, person or place',
             ], ['saveData' => false]) ?>
             <div class="search-refine">
                 <?php // See home.php. data-selected-group re-selects a ?group= search
@@ -389,14 +389,14 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                          data-cluster-css="<?= base_url('assets/vendor/leaflet/markercluster.css') ?>"
                          data-cluster-default-css="<?= base_url('assets/vendor/leaflet/markercluster.default.css') ?>">
                         <div class="results-map-canvas" data-results-map-canvas role="application"
-                             aria-label="Map of the businesses you discovered"></div>
+                             aria-label="Map of the profiles you discovered"></div>
                         <p class="results-map-status" role="status" data-results-map-status></p>
                     </div>
                 <?php endif; ?>
 
                 <?php if (empty($result['items'])): ?>
                     <div class="empty">
-                        <p class="mb-4"><?= ($vacancies ?? []) !== [] || ($roles ?? []) !== [] ? 'No business profiles match that yet.' : 'Nothing to discover for that yet.' ?></p>
+                        <p class="mb-4"><?= ($vacancies ?? []) !== [] || ($roles ?? []) !== [] ? 'No profiles match that yet.' : 'Nothing to discover for that yet.' ?></p>
                         <a class="btn btn-ghost" href="<?= base_url('directory') ?>">Clear filters</a>
                         <?php // The moment someone knows a business we are missing. Carries
                               // the category and province over, but only as the controller
@@ -408,7 +408,7 @@ $verticalPhoto = $styled !== null ? category_photo($styled) : null;
                             'province' => (string) ($province ?? ''),
                         ], static fn ($v) => $v !== ''); ?>
                         <p class="mt-4 text-sm">
-                            Know a business that should be here?
+                            Know a practice or business that should be here?
                             <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('recommend') . ($recommend === [] ? '' : '?' . http_build_query($recommend))) ?>">Recommend it</a>
                         </p>
                     </div>

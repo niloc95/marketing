@@ -36,6 +36,11 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 - Code identifiers stay: `_search_composer`, `/directory/suggest`, `Config\Search`, CSS
   classes, `name="q"`.
 - No dashes or hyphenated words in this copy either (see the no dashes rule).
+- **Medical first** (since 17 Nov 2026, phase 1): "practices and businesses" in discovery
+  copy, the **practice profile** as the free product, "Add your practice or business"
+  ("Add profile" below 1280px) as the owner call to action, "Verified profiles" / "Plus
+  profiles" in the footer. Per profile nouns come from `Config\Verticals` via
+  `vertical_profile()`. Plan and phases: `docs/plans/2026-11-medical-focus.md`.
 - Tagline (footer, /company, `Config\Directory::$slogan` in the home JSON-LD):
   **Discover local. Be discovered.** Never write "More than a business listing."
 - On .app: never "built for South Africa", and no rand figures (see `two-sites`).
@@ -912,6 +917,16 @@ checkout → `GET profile-setup/paystack` (verify) and the Paystack webhook, bot
 `PaystackPayments`. `POST /payfast/setup-notify` stays only for a PayFast checkout opened
 before the switch. Queue at `/admin/profile-setup`. If a paid order never shows as paid,
 look at the rejection table and `Paystack:` / `Paystack return:` log lines first.
+
+## Professional registers are South African only (since 17 Nov 2026)
+
+Every regulator in `Config\Registrations` names its `country` ('ZA'), and
+`ProfessionalRegistration::regulatorFor($slug, $group, $country)` returns null for a
+profile anywhere else: no box on the form, no line on the team card, no JSON-LD. Pass
+`ProfessionalRegistration::countryOf($listing)` from every caller that renders or saves
+for a profile (the signup form falls back to the site's country: ZA on co.za, '' on .app).
+Vets are on the SAVC (no published number format, so the generic check). Tests:
+`ProfessionalRegistrationTest`, `ProfessionalRegistrationFlowTest`.
 
 ## Content pages and analytics
 
