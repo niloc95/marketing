@@ -2176,6 +2176,12 @@
   }
   .profile-band-single .gallery-item { @apply w-full min-w-0; }
   .profile-band-single .gallery-item img { @apply w-full min-w-0 max-w-none; }
+  /* A portrait, whole and centred on a plain ground (show.php): cover would
+     blow it up and keep only its middle, cutting off the person's head. */
+  .profile-band.profile-band-portrait { @apply bg-slate-100; }
+  .dark .profile-band.profile-band-portrait { @apply bg-surface-tone; }
+  .profile-band-portrait .gallery-item { @apply bg-transparent; }
+  .profile-band-portrait .gallery-item img { @apply object-contain; }
 
   /* Previous / next, one each side of the strip, hidden on a phone (a swipe
      does it there) and by directory.js while every photo fits. At an end the

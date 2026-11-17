@@ -196,7 +196,12 @@ $metaDesc = listing_meta_description($l);
               // frame (content width, rounded, its height) instead of stretching
               // one photo across the whole screen (directory.css). ?>
         <?php $singlePhoto = $photoCount === 1 && $video === null; ?>
-        <div class="profile-band<?= $singlePhoto ? ' profile-band-single' : '' ?>" data-showcase data-showcase-step="page">
+        <?php // A portrait (a doctor's head and shoulders, mostly) filling that wide
+              // frame was blown up and cut to its middle, losing the head: it is
+              // shown whole, centred, instead. ?>
+        <?php $singlePortrait = $singlePhoto
+            && (int) ($l['photos'][0]['height'] ?? 0) > (int) ($l['photos'][0]['width'] ?? 0); ?>
+        <div class="profile-band<?= $singlePhoto ? ' profile-band-single' : '' ?><?= $singlePortrait ? ' profile-band-portrait' : '' ?>" data-showcase data-showcase-step="page">
             <div class="profile-band-head">
                 <div class="container">
                     <div class="profile-band-id">
