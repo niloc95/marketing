@@ -163,8 +163,10 @@ $metaDesc = listing_meta_description($l);
             <?php endforeach; ?>
         </nav>
 
-        <?php if (! $hasBand): ?>
-            <?php // No photos and no video: the light header, as it always was. ?>
+        <?php // The name, logo, hours and address on the page itself, above the
+              // photos rather than over them: owners mostly upload logos, flyers
+              // and cut out portraits, and white type over those needed a dark
+              // scrim that hid half of each picture. ?>
             <div class="profile-head">
                 <?= $avatar ?>
                 <div class="min-w-0 flex-1">
@@ -174,42 +176,35 @@ $metaDesc = listing_meta_description($l);
                 </div>
                 <?= $share ?>
             </div>
-        <?php endif; ?>
     </div>
 
     <?php if ($hasBand): ?>
-        <?php // The photo band, after Yelp's business page: the photos side by side
-              // in one tall strip across the whole screen, and the business's name
-              // laid over the bottom of it on a dark scrim. The photos are the first
-              // thing a visitor sees and the page below moves up by a header's height.
+        <?php // The gallery, after Airbnb's listing page: a rounded grid the width
+              // of the content, sized by how many pictures there are (one, two,
+              // three, four, or five and more), the first one large. Every box is
+              // close to square, so the logos, flyers and square photos owners
+              // upload are barely cropped, and nothing is stretched across the
+              // screen. Past five, the rest stay in the page for the lightbox
+              // (which lists every [data-gallery-open] img) and "See all N photos"
+              // opens it. On a phone the same tiles are a sideways swipe strip.
               //
-              // The overlay comes first in the source, so the name is still read
-              // before the photos; CSS stacks both in one grid cell. It ignores the
-              // pointer except on its own links, so a tap on bare photo behind the
-              // type still opens the lightbox.
-              //
-              // The strip scrolls sideways (swipe, trackpad, arrow keys once it has
-              // focus) and the round buttons are the home carousel's controller
-              // (directory.js, "showcase"): hidden while every photo fits, a page at
-              // a time otherwise. ?>
-        <div class="profile-band" data-showcase data-showcase-step="page">
-            <div class="profile-band-head">
-                <div class="container">
-                    <div class="profile-band-id">
-                        <?= $avatar ?>
-                        <div class="min-w-0">
-                            <?= view('directory/_profile_head_parts', $headVars + [
-                                'pieces' => ['category', 'name', 'rating', 'hours', 'locations'],
-                            ], ['saveData' => false]) ?>
-                        </div>
-                        <?= view('directory/_profile_head_parts', $headVars + [
-                            'pieces' => ['seal'],
-                        ], ['saveData' => false]) ?>
-                    </div>
-                </div>
-            </div>
-
-            <?php // The profile video, a Verified Business perk, leads the strip.
+              // The ground is light, not dark: a cut out portrait with a
+              // transparent background stands on it as on the page. A single
+              // photo that is not clearly wide (a portrait, a square logo or
+              // headshot) is shown whole, centred: the frame is about 2.6 times
+              // as wide as it is tall, and filling it cut such a photo to a
+              // strip across its middle, losing the person's head. A video on
+              // its own gets a 16:9 frame, its own shape. ?>
+        <?php $tileCount = $photoCount + ($video !== null ? 1 : 0); ?>
+        <?php $onlyPhoto = $tileCount === 1 && $photoCount === 1 ? $l['photos'][0] : null; ?>
+        <?php $wholePhoto = $onlyPhoto !== null && (int) ($onlyPhoto['height'] ?? 0) > 0
+            && (int) ($onlyPhoto['width'] ?? 0) < 1.4 * (int) $onlyPhoto['height']; ?>
+        <?php $galleryClass = 'gallery gallery-n' . min($tileCount, 5)
+            . ($wholePhoto ? ' gallery-whole' : '')
+            . ($tileCount === 1 && $video !== null ? ' gallery-video-only' : ''); ?>
+        <div class="container">
+            <div class="gallery-frame">
+            <?php // The profile video, a Verified Business perk, leads the grid, as its large tile.
                   // DirectoryService::getProfile() already applied the badge gate.
                   // It is a link to the video's own page, upgraded by directory.js
                   // to play in the lightbox, and it carries no data-gallery-open:
@@ -222,7 +217,7 @@ $metaDesc = listing_meta_description($l);
                   //
                   // data-gallery stays the last attribute: a test finds the strip
                   // by "data-gallery>". ?>
-            <div class="gallery" id="profile-photos" data-showcase-track tabindex="0"
+            <div class="<?= $galleryClass ?>" id="profile-photos" tabindex="0"
                  aria-label="<?= esc('Photos of ' . $name, 'attr') ?>" data-gallery>
                 <?php if ($video !== null): ?>
                     <?php $videoLabel = 'Play video' . ($video['title'] !== '' ? ': ' . $video['title'] : ', ' . $name); ?>
@@ -239,7 +234,7 @@ $metaDesc = listing_meta_description($l);
                            data-video-title="<?= esc($video['title'] !== '' ? $video['title'] : $name, 'attr') ?>"
                            aria-label="<?= esc($videoLabel, 'attr') ?>">
                             <?php if ($video['thumb'] !== ''): ?>
-                                <?php // The band's first picture is usually the largest thing on
+                                <?php // The grid's first picture is usually the largest thing on
                                       // screen, so it is fetched first (Largest Contentful Paint). ?>
                                 <img src="<?= esc(base_url($video['thumb'])) ?>" alt="<?= esc(($video['title'] !== '' ? $video['title'] : $l['display_name'] . ' video'), 'attr') ?>" loading="eager" fetchpriority="high">
                             <?php else: ?>
@@ -264,35 +259,17 @@ $metaDesc = listing_meta_description($l);
                              <?php if (! empty($p['width'])): ?>width="<?= (int) $p['width'] ?>"<?php endif; ?>
                              <?php if (! empty($p['height'])): ?>height="<?= (int) $p['height'] ?>"<?php endif; ?>
                              alt="<?= esc(listing_image_alt($l, $i, $photoCount), 'attr') ?>"
-                             loading="<?= $i < 3 ? 'eager' : 'lazy' ?>"<?= $i === 0 && $video === null ? ' fetchpriority="high"' : '' ?>>
+                             loading="<?= $i < 5 ? 'eager' : 'lazy' ?>"<?= $i === 0 && $video === null ? ' fetchpriority="high"' : '' ?>>
                     </button>
                 <?php endforeach; ?>
             </div>
-
-            <div class="profile-band-controls" data-showcase-controls hidden>
-                <button type="button" class="profile-band-btn profile-band-prev" data-showcase-prev aria-controls="profile-photos" aria-label="Previous photos"><?= lucide('chevron-left', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
-                <button type="button" class="profile-band-btn profile-band-next" data-showcase-next aria-controls="profile-photos" aria-label="Next photos"><?= lucide('chevron-right', 'h-5 w-5', ['aria-hidden' => 'true']) ?></button>
-            </div>
-
             <?php // Opens the lightbox on the first photo. No <img> inside: the
                   // lightbox builds its list from every [data-gallery-open] img. ?>
             <?php if ($photoCount > 1): ?>
-                <button type="button" class="profile-band-all" data-gallery-open data-index="0">
+                <button type="button" class="gallery-all" data-gallery-open data-index="0">
                     <?= lucide('images', 'h-4 w-4 shrink-0', ['aria-hidden' => 'true']) ?>See all <?= $photoCount ?> photos
                 </button>
             <?php endif; ?>
-        </div>
-
-        <?php // What the overlay leaves out, so the type over the photos stays
-              // short: where the business is, the badges in words, and sharing. ?>
-        <div class="container">
-            <div class="profile-head-meta">
-                <div class="min-w-0">
-                    <?= view('directory/_profile_head_parts', $headVars + [
-                        'pieces' => ['address', 'pills'],
-                    ], ['saveData' => false]) ?>
-                </div>
-                <?= $share ?>
             </div>
         </div>
     <?php endif; ?>
@@ -390,10 +367,13 @@ $metaDesc = listing_meta_description($l);
                         <?= view('directory/_panel_locations', ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
                     </div>
                 <?php else: ?>
+                    <?php // One location: its "Branch or practice name" has no location
+                          // card to sit on, so the map panel shows it above the address. ?>
                     <?= view('directory/_map_panel', [
-                        'row'     => $l,
-                        'name'    => $name,
-                        'heading' => 'Location',
+                        'row'      => $l,
+                        'name'     => $name,
+                        'mapPlace' => (string) ($l['location_name'] ?? ''),
+                        'heading'  => 'Location',
                         'class'   => 'mt-5',
                     ]) ?>
 

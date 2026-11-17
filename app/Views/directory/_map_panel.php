@@ -32,6 +32,10 @@
  * @var string $name    what the marker and the aria-label call this place
  * @var string $heading panel heading
  * @var string $class   extra classes for the panel wrapper
+ * @var string $mapPlace optional name of the place, shown above the address: the
+ *                      "Branch or practice name" of a profile with one location.
+ *                      Every caller passes it (even ''), because CI4 view data
+ *                      outlives a render and a branch card must not inherit it.
  */
 // A hidden address has no coordinates in its public copy already; the guard
 // is here so a caller that forgets listing_public_view() still draws no pin,
@@ -48,11 +52,15 @@ if ($map === null && $addr === '') {
 
 $heading = $heading ?? 'Location';
 $class   = $class ?? '';
+$mapPlace = trim((string) ($mapPlace ?? ''));
 $dirUrl  = map_directions_url($row);
 $wazeUrl = map_waze_url($row);
 ?>
 <div class="panel <?= esc($class, 'attr') ?>">
     <h2 class="panel-title"><?= esc($heading) ?></h2>
+    <?php if ($mapPlace !== ''): ?>
+        <p class="map-place"><?= esc($mapPlace) ?></p>
+    <?php endif; ?>
     <?php if ($addr !== ''): ?>
         <p class="map-address"><?= lucide('map-pin', 'h-4 w-4 shrink-0', ['aria-hidden' => 'true']) ?><span><?= esc($addr) ?></span></p>
     <?php endif; ?>

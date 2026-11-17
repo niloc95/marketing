@@ -72,7 +72,7 @@ if ($ownBooking) {
 }
 
 // "https://www.example.co.za/" reads as "example.co.za" — what a person would
-// say out loud, and what fits beside the icon on a phone.
+// say out loud; the website button carries it as its title.
 $websiteLabel = preg_replace(['#^https?://#i', '#^www\.#i', '#/$#'], '', $websiteUrl);
 
 // Phones are shown openly — a customer should not have to tap twice to call.
@@ -115,11 +115,10 @@ if ($bookingUrl === '' && $whatsappUrl === '' && $websiteUrl === '' && $phones =
         <a class="btn btn-primary btn-block contact-book" href="<?= esc($messageUrl, 'attr') ?>" rel="nofollow"><?= lucide('mail', 'h-5 w-5 shrink-0') ?><?= $showWeb ? 'Email this business' : 'Email this branch' ?></a>
     <?php endif; ?>
 
+    <?php // A button like the three above, not the bare address: a long URL reads
+          // untidy. The domain stays in the title so a visitor can see where it goes. ?>
     <?php if ($websiteUrl !== ''): ?>
-        <div class="contact-row">
-            <a href="<?= esc($websiteUrl) ?>" data-stat="website" target="_blank" rel="noopener nofollow"><?= esc($websiteLabel) ?></a>
-            <?= lucide('external-link') ?>
-        </div>
+        <a class="btn btn-ghost btn-block contact-book" href="<?= esc($websiteUrl) ?>" data-stat="website" target="_blank" rel="noopener nofollow" title="<?= esc($websiteLabel, 'attr') ?>"><?= lucide('globe', 'h-5 w-5 shrink-0') ?>Visit website</a>
     <?php endif; ?>
 
     <?php foreach ($phones as $phone): ?>
