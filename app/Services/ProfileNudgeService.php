@@ -177,6 +177,7 @@ class ProfileNudgeService
         $body    = view('emails/profile-strength', [
             'site'       => $config->siteName(),
             'name'       => (string) ($listing['display_name'] ?? ''),
+            'noun'       => listing_noun($listing),
             'score'      => (int) $strength['score'],
             'max'        => (int) $strength['max'],
             'target'     => $target,

@@ -150,7 +150,7 @@ $metaDesc = listing_meta_description($l);
         . '</div>'; ?>
     <div class="container">
         <?php if ($preview !== null): ?>
-            <?= view('directory/_preview_bar', ['preview' => $preview], ['saveData' => false]) ?>
+            <?= view('directory/_preview_bar', ['preview' => $preview, 'listing' => $l], ['saveData' => false]) ?>
         <?php endif; ?>
         <nav class="crumbs" aria-label="Breadcrumb">
             <?php foreach ($crumbs as $i => $crumb): ?>

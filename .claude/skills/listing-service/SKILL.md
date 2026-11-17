@@ -39,8 +39,10 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 - **Medical first** (since 17 Nov 2026, phase 1): "practices and businesses" in discovery
   copy, the **practice profile** as the free product, "Add your practice or business"
   ("Add profile" below 1280px) as the owner call to action, "Verified profiles" / "Plus
-  profiles" in the footer. Per profile nouns come from `Config\Verticals` via
-  `vertical_profile()`. Plan and phases: `docs/plans/2026-11-medical-focus.md`.
+  profiles" in the footer. Per profile wording (phase 2) comes from `Config\Verticals`:
+  `listing_noun($listing)` (`ownerNoun`: practice, pharmacy, hospital, organisation,
+  else business) and `listing_audience($listing)` (`audience`: patients, clients, else
+  customers). Never `noun` after "your": it names the trade ("tradesperson"). Plan and phases: `docs/plans/2026-11-medical-focus.md`.
 - Tagline (footer, /company, `Config\Directory::$slogan` in the home JSON-LD):
   **Discover local. Be discovered.** Never write "More than a business listing."
 - On .app: never "built for South Africa", and no rand figures (see `two-sites`).
@@ -1328,6 +1330,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `directory:geocode [--status failed,stale] [--limit 100]` | pin profiles (billed lookups) | Sun 04:10 |
 | `directory:countries:backfill` | fill `country_code` from `country` | once per release that needs it |
 | `directory:audit-text [--all]` | report names and descriptions that break the rules | |
+| `directory:recategorise-imports [--report csv] [--apply]` | file uncategorised imported doctors (Dr, Prof) under Medical Doctor; dry run unless `--apply`; the rest listed for admin | |
 | `directory:venue-assign` | put shops into a venue | |
 | `newsletter:import-mautic <csv>` | one off import of the Mautic newsletter export | |
 | `directory:adminhash` | hash for `directory.adminPasswordHash` | |

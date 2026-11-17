@@ -8,7 +8,13 @@ the dashboard. Bookings' own wording is **rewritten, not carried over**. Code id
 ## Hard rules
 
 - No "—" and no hyphenated words. Proper names such as KwaZulu-Natal are fine.
-- "Business profile", never "listing" or "directory".
+- "Business profile", never "listing" or "directory". Since 17 Nov 2026 (medical first,
+  `docs/plans/2026-11-medical-focus.md`) owner copy names the profile with `listing_noun()`
+  ("practice" for health and vets, else "business") and its visitors with
+  `listing_audience()` ("patients" on medical profiles, "clients" for vets, else
+  "customers"). In Bookings code and internal names the booker stays "customer"
+  (`BookingCustomerModel`, routes, the Customers page) until a later phase decides
+  the visible labels.
 - Our discovery feature is **Discover**, never "Search". Inside the dashboard, finding
   your own customers or appointments is "Find" ("Find a customer").
 - On .app: no rand figures, and nothing that says "built for South Africa".

@@ -130,6 +130,8 @@ class HolidayHoursService
         $body = view('emails/holiday-hours', [
             'site'        => $site,
             'name'        => (string) $listing['display_name'],
+            'noun'        => listing_noun($listing),
+            'audience'    => listing_audience($listing),
             'holiday'     => PublicHolidays::label($holiday),
             'holidayDate' => date('l j F', strtotime($holiday['date'])),
             'upcoming'    => array_map(static fn (array $d): string => PublicHolidays::label($d) . ', ' . date('l j F', strtotime($d['date'])), array_values($soon)),

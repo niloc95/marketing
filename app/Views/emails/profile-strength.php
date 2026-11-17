@@ -81,9 +81,9 @@ $isLive       = ! isset($isLive) || $isLive;
 
         <p style="font-size:13px;color:#64748b">
             <?php if ($fromTeam): ?>
-                You're getting this because your business has a profile on <?= esc($site) ?> and our team thought these would help.
+                You're getting this because your <?= esc($noun ?? 'business') ?> has a profile on <?= esc($site) ?> and our team thought these would help.
             <?php else: ?>
-                You're getting this once, because your business has a profile on <?= esc($site) ?>.
+                You're getting this once, because your <?= esc($noun ?? 'business') ?> has a profile on <?= esc($site) ?>.
             <?php endif; ?>
             <a href="<?= esc($unsubscribe) ?>" style="color:#64748b">Stop emails about my profile</a>.
         </p>

@@ -31,12 +31,12 @@ $date     = static function (?string $d): string {
 ?>
 <div class="panel mt-6" id="reviews" data-switch-scope>
     <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Customer reviews</h2>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Reviews</h2>
         <?= rating_summary($listing) ?>
     </div>
     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Customers can review your business on your public profile. We read every review before it goes up.
-        Your reply appears under the review straight away. A short, polite reply helps the next customer, whatever the rating.
+        <?= esc(ucfirst(listing_audience($listing))) ?> can review your <?= esc(listing_noun($listing)) ?> on your public profile. We read every review before it goes up.
+        Your reply appears under the review straight away. A short, polite reply helps the next <?= esc(listing_audience($listing, true)) ?>, whatever the rating.
     </p>
 
     <form method="post" action="<?= base_url('business/reviews/switch') ?>" class="mt-4" data-autosubmit>
@@ -45,18 +45,18 @@ $date     = static function (?string $d): string {
         <div class="flex flex-wrap items-center gap-3">
             <label class="switch">
                 <input type="checkbox" role="switch" name="reviews_enabled" value="1" <?= $enabled ? 'checked' : '' ?>>
-                <span>Let customers review my business</span>
+                <span>Let <?= esc(listing_audience($listing)) ?> review my <?= esc(listing_noun($listing)) ?></span>
             </label>
             <button type="submit" class="btn btn-ghost btn-xs switch-save">Save</button>
         </div>
         <p class="hint" data-switch-status role="status" aria-live="polite" hidden></p>
-        <div class="hint">If you switch reviews off, customers can no longer write new ones. Reviews already on your profile stay up, and you can still reply to them. Only we can take a review down, and only if it breaks our terms.</div>
+        <div class="hint">If you switch reviews off, <?= esc(listing_audience($listing)) ?> can no longer write new ones. Reviews already on your profile stay up, and you can still reply to them. Only we can take a review down, and only if it breaks our terms.</div>
     </form>
 
     <?php if ($reviews === []): ?>
         <p class="mt-3 text-sm text-slate-500 dark:text-slate-400" data-switch-show="off" <?= $enabled ? 'hidden' : '' ?>>Reviews are switched off.</p>
         <p class="mt-3 text-sm text-slate-500 dark:text-slate-400" data-switch-show="on" <?= $enabled ? '' : 'hidden' ?>>
-            No reviews yet. Share your profile link with happy customers:
+            No reviews yet. Share your profile link with happy <?= esc(listing_audience($listing)) ?>:
             <a class="font-medium text-primary-500 dark:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $listing['slug']) . '#write-review') ?>"><?= esc(base_url('directory/' . $listing['slug'])) ?></a>
         </p>
     <?php else: ?>
@@ -78,7 +78,7 @@ $date     = static function (?string $d): string {
                             <?= csrf_field() ?>
                             <label class="text-sm font-medium" for="reply-<?= (int) $rev['id'] ?>"><?= empty($rev['owner_reply']) ? 'Reply publicly' : 'Your public reply' ?></label>
                             <textarea id="reply-<?= (int) $rev['id'] ?>" name="reply" rows="3" maxlength="<?= $replyMax ?>" class="mt-1 w-full"><?= esc($rev['owner_reply'] ?? '') ?></textarea>
-                            <div class="hint">Plain text, up to <?= number_format($replyMax) ?> characters. Please don't include the customer's private details. Clear the box and save to remove your reply.</div>
+                            <div class="hint">Plain text, up to <?= number_format($replyMax) ?> characters. Please don't include the <?= esc(listing_audience($listing, true)) ?>'s private details. Clear the box and save to remove your reply.</div>
                             <button type="submit" class="btn btn-ghost btn-xs mt-2"><?= empty($rev['owner_reply']) ? 'Post reply' : 'Update reply' ?></button>
                         </form>
 
@@ -86,7 +86,7 @@ $date     = static function (?string $d): string {
                             <summary>This review breaks the terms</summary>
                             <form method="post" action="<?= base_url('business/reviews/' . (int) $rev['id'] . '/report') ?>" class="block">
                                 <?= csrf_field() ?>
-                                <p class="hint">We take down reviews that are fake, from someone who was never a customer, abusive, or that share private details. A review is not taken down just for being negative.</p>
+                                <p class="hint">We take down reviews that are fake, from someone who was never a <?= esc(listing_audience($listing, true)) ?>, abusive, or that share private details. A review is not taken down just for being negative.</p>
                                 <label class="sr-only" for="oreport-<?= (int) $rev['id'] ?>">Which term does it break?</label>
                                 <input id="oreport-<?= (int) $rev['id'] ?>" type="text" name="reason" maxlength="500" required placeholder="Which term does it break, and how?" class="mt-1 w-full text-sm">
                                 <button type="submit" class="btn btn-ghost btn-xs mt-2">Report to <?= esc(config('Directory')->siteName()) ?></button>
