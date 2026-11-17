@@ -1,16 +1,16 @@
 # Plan: Medical first positioning and "practice" wording
 
 **Prepared:** 16 Nov 2026  
-**Revised:** 16 Nov 2026  
+**Revised:** 17 Nov 2026 (round 2 review by Claude, owner decisions 6 to 9)  
 **Branch:** `plan/medical-focus`  
-**Status:** Owner decisions recorded 16 Nov 2026. Ready for Claude to implement phase by phase.
+**Status:** Owner decisions recorded 16 and 17 Nov 2026. Claude implements phase by phase (owner, 17 Nov 2026).
 
 ---
 
 ## Owner decisions (16 Nov 2026)
 
 1. **CTAs and nav button:** "Add your practice or business" on both sites (the brand
-   site follows). Mobile short form: "Add practice" (see Section 6b and B6 investigation).
+   site follows). Mobile short form: "Add profile" (decision 6; see B6 investigation).
 
 2. **Medical first means real entry points**, not only wording: a home section such as
    "Find a doctor, dentist or vet", "patients" on medical profiles (via
@@ -29,6 +29,27 @@
    but only 3 of roughly 2,120 medical profiles were signed up by their owners. The
    roughly 300 self signups are shops, handmade items and services. The patient
    discovery side is medical; the paying side is still mostly small businesses.
+
+### Round 2 (16 and 17 Nov 2026, after Claude's review of b4fb718)
+
+6. **Mobile header button: "Add profile".** "Add practice" would turn away the shops
+   that make up most self signups. Desktop stays "Add your practice or business".
+
+7. **Uncategorised doctor imports get a new generic category, "Medical Doctor"**
+   (slug `medical-doctor`, group Health and Medical, schema `Physician` with no
+   `medicalSpecialty`). Never "Specialist Physician", which is a real specialty
+   (internal medicine) and would mislabel GPs on the page and in Google. The source
+   CSVs on the server confirm the specialty is blank for these rows (investigation B2).
+
+8. **Reviews on the off groups are hidden, not only closed.** New reviews are refused
+   and existing ones are not shown anywhere public (panel, card stars, header stars,
+   JSON-LD). Data is kept. Visitors see nothing; the owner panel says why.
+
+9. **Claim outreach: email first, in small batches.** After the lawyer agrees, email the
+   1,462 imported medical profiles that have an email (all unique, none shared) at
+   about 100 to 200 a day. Build the no email path alongside it, not before it.
+
+10. **Claude builds every phase** (owner, 17 Nov 2026). Copilot did the investigation.
 
 ---
 
@@ -118,7 +139,7 @@ identifiers, CSS classes and config keys are excluded per the copy rules.
 
 | Current text | Proposed text | Action |
 |---|---|---|
-| `Add business` (mobile, nav button) | `Add practice` | change (owner decision) |
+| `Add business` (mobile, nav button) | `Add profile` | change (owner decision 6) |
 | `Add your business` (desktop, nav button) | `Add your practice or business` | change (owner decision) |
 | `Manage your profile` (nav link) | unchanged | keep |
 | `Discover local businesses` (footer nav) | `Discover local practices and businesses` | change |
@@ -231,7 +252,7 @@ this to the data.
 
 ### 3h. Owner area (`app/Views/business/`)
 
-These pages always have the owner's listing in context. Use `profile_noun($listing)`.
+These pages always have the owner's listing in context. Use `listing_noun($listing)`.
 
 | File | Current text | Action |
 |---|---|---|
@@ -251,7 +272,7 @@ These pages always have the owner's listing in context. Use `profile_noun($listi
 
 ### 3i. Emails (`app/Views/emails/`)
 
-Emails that have a listing in context use `profile_noun($listing)`.  
+Emails that have a listing in context use `listing_noun($listing)`.  
 Some emails use `$business` as a variable for the listing's display name, not the word
 "business". these are kept as is (the name, not the noun).
 
@@ -282,7 +303,7 @@ Some emails use `$business` as a variable for the listing's display name, not th
 | File | Current text | Action |
 |---|---|---|
 | `_profile_head_parts.php` | `the business's registration document and the owner's ID` | keep (describes an actual document check) |
-| `_verification_panel.php` | `everywhere your business is discovered on the platform.` | change via `profile_noun($listing)` |
+| `_verification_panel.php` | `everywhere your business is discovered on the platform.` | change via `listing_noun($listing)` |
 | `_verification_panel.php` | `your business is approved.` | change via helper |
 | `_verification_panel.php` | `Your business profile itself is unaffected.` | change via helper |
 | `_plus_panel.php` | `your business.` | change via helper |
@@ -349,7 +370,7 @@ names (`pricing_cta`, `checkout_cycle`) stay unchanged. they are identifiers.
 | Paid upgrade (co.za) | "Verified Business" / "Verified" | **"Verified"** only | "Verified Business" is already renamed to "Verified" in customer copy. Remaining occurrences are admin text and code comments; these stay. No customer-visible work needed here. |
 | Paid upgrade (.app) | "Plus" | unchanged | Copy rules already say "Plus"; keep |
 | Profile setup service | "We set up your business profile for you" | "We set up your practice profile for you" | change |
-| "Add your business" button | "Add your business" | "Add your practice or business" (desktop); "Add practice" (mobile) | Owner decision 16 Nov 2026. Update CLAUDE.md at the same time. |
+| "Add your business" button | "Add your business" | "Add your practice or business" (desktop); "Add profile" (mobile) | Owner decision 16 Nov 2026. Update CLAUDE.md at the same time. |
 | Platform description | "a local business discovery and visibility platform" | "a local discovery and visibility platform for practices and businesses" | Removes "business discovery" framing; accurate for all profile types |
 | Tagline | "Discover local. Be discovered." | unchanged | Clean and category-neutral; leave it |
 | "Verified Business badge" (formal name in billing) | "Verified Business badge" | "Verified badge" | Drop "Business". Payments run through Paystack only. Renaming the item name on future charges is harmless (Paystack does not match renewal on item name). Existing rows keep the old name on their statements until they re-subscribe. Owner to confirm before Claude changes it. |
@@ -513,14 +534,14 @@ registration number" generically, or only on co.za. See open question 1 below.
 ### HPCSA Ethical Rules (South Africa, co.za)
 
 The Health Professions Act 56 of 1974 and the HPCSA's Ethical Rules of Conduct
-(Section 25 and related sections) restrict how registered health practitioners may
+(the rules on advertising, canvassing and touting; exact rule numbers to confirm from the booklet) restrict how registered health practitioners may
 advertise. The platform is not the practitioner, but it is the medium.
 
 | Feature | Potential issue | Risk level | Question for the owner |
 |---|---|---|---|
 | **Customer reviews** | The HPCSA restricts testimonials from patients in advertising material if they are used to attract clients. Third-party reviews on a platform are a grey area: the platform does not solicit them for the practitioner, but displaying them on a profile page could be construed as the practitioner using them. | **High** | Should medical practitioner profiles carry a note that reviews reflect individual patient experiences and do not constitute an endorsement of clinical quality? Should practitioners be able to opt their profiles out of reviews? |
 | **"Verified" badge** | The HPCSA registers practitioners; a "Verified" badge that checks business registration documents and ID could be confused with HPCSA registration or accreditation. The badge tooltip already says "Documents checked by WebScheduler Local" but this may not be prominent enough for a patient who assumes it means clinical verification. | Medium | Should medical profiles carry a disclaimer that "Verified" refers to business registration, not HPCSA registration, and that HPCSA registration is a separate matter? |
-| **"Featured" placement** | A featured label or strip implies a practitioner is highlighted. If a patient interprets "featured" as "the best GP", this may conflict with Section 25's prohibition on implying superiority. The admin controls featured placement and it is currently independent of payment. | Low | Is a "featured" label appropriate on health practitioner profiles, or should it be replaced with a neutral "sponsored" label for medical profiles? |
+| **"Featured" placement** | A featured label or strip implies a practitioner is highlighted. If a patient interprets "featured" as "the best GP", this may conflict with the rule against claiming superiority. The admin controls featured placement and it is currently independent of payment. | Low | Is a "featured" label appropriate on health practitioner profiles, or should it be replaced with a neutral "sponsored" label for medical profiles? |
 | **Compare page (`/compare`)** | The compare page compares WebScheduler Local against other platforms (Google, LinkedIn), not practitioners against each other. No practitioner-to-practitioner comparison exists. | Low | No action required unless a future "compare profiles" feature is considered. |
 | **Profile copy about specialties** | Schema.org `medicalSpecialty` is emitted for each doctor's category (e.g., `Neurology`, `Cardiology`). This is a factual statement about the category, not a clinical claim. | Low | No action required. |
 | **"First to hear about new work" (Jobs alerts)** | Lead alerts for service requests are sent to businesses in the same category and province. Sending "new patient request" alerts to GPs resembles solicitation referral services that some professional bodies restrict. | Low-Medium | Is the Jobs board appropriate for health practitioners? The Jobs board is for service requests, not patient referrals. Should medical categories be excluded from service request alerts, or is there a distinction that keeps it clean (e.g., "equipment" or "admin" requests, not "patient" requests)? |
@@ -664,9 +685,10 @@ commit as the view or config it tests.
 | Test | Phase |
 |---|---|
 | `PricingPageTest`: main public pages say "practice profile", not "business profile" | 1 |
-| `ProfileNounHelperTest`: `profile_noun(['group_name' => 'Health & Medical'])` returns 'practice' | 1 |
-| `ProfileNounHelperTest`: `profile_noun(['group_name' => 'Home & Trades'])` returns 'business' | 1 |
-| `ProfileNounHelperTest`: `profile_noun(['type' => 'ngo', …])` returns 'organisation' | 1 |
+| `ListingNounTest`: a row with `category_group` 'Health & Medical' gives 'practice' and audience 'patients' | 2 |
+| `ListingNounTest`: a bare row with only `category_id` (medical) still gives 'practice' | 2 |
+| `ListingNounTest`: `category_slug` 'pharmacy' gives 'pharmacy'; no category gives 'business' | 2 |
+| `VerticalProfileTest`: every seeded group returns an `audience` | 2 |
 | `SiteScopeTest`: no raw "business profile" on the home page of either site (only in medical context) | 1 |
 | `ProfessionalRegistrationTest`: `regulatorFor('veterinarian', 'Pets & Animals')` returns SAVC | 1 |
 | `DescriptionDraftServiceTest`: medical template family produces different text from generic business | 3 |
@@ -686,7 +708,7 @@ Changes:
 - Add `audience` key to `Config\Verticals` defaults and group overrides.
 - Add SAVC to `app/Config/Registrations.php` (small, safe, no migration, co.za only).
   Add a site parameter check to `regulatorFor()` to suppress the field on .app.
-- Update `app/Views/layouts/public.php`: header nav (mobile "Add practice", desktop
+- Update `app/Views/layouts/public.php`: header nav (mobile "Add profile", desktop
   "Add your practice or business"), footer copy, Verified profiles, Plus profiles.
 - Update `app/Views/directory/home.php`: lede, title, aria labels.
 - Update `app/Views/directory/form.php` and `_form_fields.php`: signup headings, labels.
@@ -722,6 +744,14 @@ Changes:
 - Update Bookings email templates that say "business" where the practice word applies,
   using `listing_noun()` and `listing_audience()` with the listing in context.
 - Update `docs/bookings/copy.md` to reflect audience word.
+- Add the generic category "Medical Doctor" (`medical-doctor`, Health and Medical,
+  schema `Physician` without `medicalSpecialty`) in `DirectoryCategoriesSeeder`,
+  `Config\SchemaTypes` and anything a category test needs (decision 7).
+- A one off command, `directory:recategorise-imports`, with `--dry-run` and a CSV
+  report: "Dr" persons with no category go to `medical-doctor`; Lenmed allied
+  disciplines go to an existing category where one fits, else admin review; units
+  ("Dialysis Unit" and similar) go to admin review. Writes `category_id` only, and
+  runs on production only with the owner's OK.
 - Update profile page partials: `_verification_panel.php`, `_plus_panel.php`.
 - Update impacted tests.
 - Handbook changelog line.
@@ -765,15 +795,15 @@ tile ordering is editorial UI, not ranking. Payment never affects ranking.
 
 Changes:
 - Add `Config\Reviews::$offForGroups = ['Health & Medical', 'Pets & Animals']`.
-- Update `ReviewService::acceptsReviews()` to check the group before the per-profile
-  `reviews_enabled` flag. The group check is a default; the per-profile flag can still
-  turn reviews on for an individual practice once the owner has legal clearance.
-- Update `_reviews_panel.php` to show a neutral holding line when reviews are off at
-  the group level (not the same message as the per-profile switch, to avoid implying
-  the practice switched it off).
-- Confirm JSON-LD: `aggregateRating` is only emitted when `$l['reviews']` has items.
-  With zero published reviews on medical profiles (confirmed from production: 0 of 2466
-  medical profiles have reviews), nothing changes in the JSON-LD today.
+- Update `ReviewService::acceptsReviews()` to check the group first: an off group
+  refuses new reviews whatever `reviews_enabled` says. Turning a group back on is a
+  config change after legal advice, not a per practice switch.
+- **Hide, not only close** (decision 8): for an off group the profile panel, result
+  card stars, header stars and JSON-LD (`aggregateRating`, `review`) show nothing,
+  even if published reviews exist. Data stays in the database. One helper decides
+  this (for example `reviews_visible($listing)`) so no surface is missed.
+- Visitors see no reviews section and no "not available" line. The owner panel shows
+  one line: reviews are off for medical profiles for now, and has no switch.
 - Update impacted tests.
 - Handbook changelog line.
 
@@ -796,11 +826,18 @@ See the investigation (`docs/plans/2026-11-medical-focus-investigation.md`, B5) 
 full analysis. High level:
 - Build an admin-triggered bulk outreach for the 1,461 imported medical profiles that
   have an email address.
-- The outreach email body includes: how many times their profile was found this month
-  (from `xs_directory_listing_search`), a link to claim it (the existing manage link
-  flow), and an unsubscribe link.
+- The outreach email body includes: how many times their profile appeared in Google
+  results this month (impressions from `xs_directory_listing_search`; never "patients
+  found you"), where the details came from (public practice and hospital listings,
+  such as lenmed.co.za for the Lenmed group), a link to claim it (the existing manage
+  link flow), and an unsubscribe link.
+- **Email first** (decision 9): send in batches of 100 to 200 a day from the `mail.`
+  subdomain, whatever the SES quota allows. The owner confirms the quota
+  (`aws ses get-send-quota`) before the first batch.
+- A send log so no one is emailed twice: a migration (a column or a small log table),
+  handbook update and changelog line.
 - For the 1,259 profiles with no email: a separate admin flow (phone OTP or manual HPCSA
-  verification) scoped to co.za only.
+  verification) scoped to co.za only, built alongside the email batches.
 - **Any bulk send needs the owner's explicit OK** including the POPIA basis review, the
   SES limit check, and the sending domain sign-off.
 - Handbook changelog line and a dated POPIA basis note in `legal/privacy.php`.
@@ -838,7 +875,7 @@ Medium for PDFs (require manual rebuild and file replacement).
 
 | Risk | Phase | Mitigation | Rollback |
 |---|---|---|---|
-| "practice" reads wrong for a hardware shop | 1 | `profile_noun()` returns "business" for non-medical groups; general copy says "practice or business" | Revert view files; no migration, no data change |
+| "practice" reads wrong for a hardware shop | 1 | `listing_noun()` returns "business" for non-medical groups; general copy says "practice or business" | Revert view files; no migration, no data change |
 | SEO drop on "business profile" queries | 1 | Keep "business" alongside "practice" in meta descriptions; monitor Search Console for 2 weeks | Add "business profile" back to meta description copy |
 | .app shows "South African" copy by accident | 1 | Test on `app.localhost` before release; diff `site_copy()` calls | Revert; fix the `$appCopy` override |
 | "Verified" rename breaks existing payment item references | 1 | Leave PayFast/Paystack item name unchanged until owner decides | Do not change payment item names in Phase 1 |
@@ -895,18 +932,23 @@ The plan reads those; no new mapping is needed.
 
 10. **Claim outreach: POPIA basis.** The outreach plan sends email to 1,461 imported
     profiles. Have you confirmed the POPIA legitimate interest basis for this email
-    (imported from a public register, purpose is to notify practitioners about their
-    existing public profile)? This is required before any bulk send.
+    (imported from public practice and hospital listings, purpose is to notify
+    practitioners about their existing public profile)? This is required before any bulk send.
 
 11. **Claim outreach: profiles with no email.** 1,259 of the 2,720 imported profiles
     have no email address. What is the preferred path for these: (a) phone OTP to the
     practice number on the profile, (b) manual HPCSA number plus ID check by admin, (c)
     leave unclaimed until a practitioner finds their profile naturally, (d) a combination?
+    The email batches go first either way (decision 9).
 
 12. **Paystack item name for the Verified badge.** The formal payment item name is
     currently "Verified Business badge". Should it become "Verified badge" to match the
     renamed product? Existing subscribers will keep the old name on their statements
     until they re-subscribe. Confirm before Claude changes it.
+
+13. **Lenmed units.** 8 uncategorised Lenmed rows are units such as "Dialysis Unit",
+    not practitioners. Should they stay on the platform, become a facility category,
+    or be unpublished? Admin decides.
 
 ---
 

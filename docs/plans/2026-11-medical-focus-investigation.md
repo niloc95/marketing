@@ -130,27 +130,30 @@ All 256 descriptions follow the template used by the import command:
 `Dr [Name] is a healthcare practitioner consulting at [Hospital] in [Province],
 offering professional, patient centred care.`
 
-The word "specialist" appears in all 256 descriptions. The import assigned a generic
-"healthcare practitioner" description rather than mapping a specialty, so the
+The descriptions say "healthcare practitioner", with no specialty. The source rows
+had a blank specialty (see the CSV row below), so the
 description alone does not distinguish a cardiologist from a GP.
 
 ### What could pick a category
 
 | Signal | Available on uncategorised rows | Reliability |
 |---|---|---|
-| Title "Dr" | 226/256 | Maps to Health and Medical but not to a specific specialty. Suggests Specialist Physician as a safe catch-all. |
+| Title "Dr" | 226/256 | Maps to Health and Medical but not to a specific specialty. Goes to the new generic "Medical Doctor" category (owner decision 7). |
 | Credentials field | 1/256 | Not useful at scale. |
 | Description text (specialty words) | 1/256 contain specialty terms beyond "healthcare practitioner" | Very low. All are "healthcare practitioner". |
 | Team registration number | 0 (no team rows on these profiles) | Not available. |
-| Original import CSV | 215 from import-doctors, 41 from import-lenmed | May have specialty data; files are not in `/home/deploy` or `/var/www/listing/seed/`. |
+| Original import CSV | 212 from import-doctors, 41 from import-lenmed (prod, 17 Nov) | The files **are** on the server in `/home/deploy/imports` (root only): `doctors.csv`, `prod-doctors.csv`, `lenmed-import-preview.csv`, `lenmed-plan-prod.csv`. Checked by Claude: 231 rows of `doctors.csv` have a blank specialty. Of the 41 Lenmed rows, 24 have no discipline, 17 are allied health (Orthotist 8, Orthotist & Prosthetist 4, Cardiac Technologist 2, Paediatric Geneticist, Radiographer (Theatre), Neurophysiologist), and 8 are units such as "Dialysis Unit". No specialty can be recovered. |
 
 ### Proposed mapping rule
 
 For a dry-run command (`directory:recategorise-imports --dry-run`):
 
 1. `title = 'Dr'` and `signup_source IN ('import-doctors','import-lenmed')` and
-   `category_id IS NULL`: assign `Specialist Physician` (the safest catch-all for a
-   doctor whose specialty is unknown). **225 rows** would be categorised.
+   `category_id IS NULL`: assign the new generic category `medical-doctor` ("Medical
+   Doctor", schema `Physician` with no `medicalSpecialty`). Not "Specialist Physician",
+   which is a real specialty and would mislabel GPs (owner decision 7). About **225
+   rows**. Lenmed allied disciplines go to an existing category where one fits, else
+   admin review; units go to admin review.
 
 2. Rows with no title or a non-Dr title (10 Mr/Mrs/Ms/Prof + 11 NULL): leave
    uncategorised; flag for admin review. **31 rows** remain.
@@ -273,14 +276,8 @@ already has reviews off is harmless; the new group rule simply agrees with it.
 
 ### What a visitor sees when reviews are off at the group level
 
-Do not reuse the per-profile "reviews off" message (which implies the owner made a
-choice). Show a neutral holding line:
-
-```
-Reviews are not available for this practice at this time.
-```
-
-This line hides the review form, the existing review list (there are none), and the
+**Revised by owner decision 8: visitors see nothing.** No reviews section and no
+holding line. This hides the review form, the existing review list (there are none), and the
 star rating summary. The owner panel shows the same line and no "turn off" switch
 (the group rule is not a per-owner setting).
 
@@ -300,11 +297,11 @@ profiles, neither key is emitted in JSON-LD today and nothing changes when revie
 turned off at the group level.
 
 If reviews were previously enabled and then turned off, published reviews stay in the DB
-(the owner switch says so explicitly). The group-level off should also keep published
-reviews visible (data not deleted) but stop new ones. The proposed implementation above
-only gates new submissions; existing published reviews continue to render and appear in
-JSON-LD until the owner hides them individually. This is consistent with the existing
-per-profile behaviour.
+(the owner switch says so explicitly). **Revised by owner decision 8:** the group level off
+**hides** published reviews everywhere public (panel, card stars, header stars,
+`aggregateRating` and `review` in JSON-LD) as well as refusing new ones. Data is kept.
+One helper (for example `reviews_visible($listing)`) decides it, so every surface and
+the JSON-LD agree.
 
 ---
 
@@ -320,7 +317,7 @@ Professions Act, 1974", available at
 `https://ipasa.co.za/Downloads/Ethics%20and%20Professional%20Practice/Health%20Professions%20Council/booklet_2_generic_ethical_rules_with_anexures.pdf`
 and `https://www.saflii.org/za/legis/consol_reg/erocfpruthpa1974803.pdf`
 
-**Section 25: Advertising and canvassing.** Key points from the rules:
+**Advertising, canvassing and touting** (rule numbers to confirm from the booklet; an earlier draft cited "Section 25", which could not be verified). Key points from the rules:
 
 - Advertising is allowed when it is honest, factual and not misleading.
 - Canvassing is prohibited. Canvassing includes conduct (verbal, printed or electronic)
@@ -335,7 +332,7 @@ and `https://www.saflii.org/za/legis/consol_reg/erocfpruthpa1974803.pdf`
 
 | Feature | HPCSA risk | Risk level | Question for owner and lawyer |
 |---|---|---|---|
-| **Patient reviews (star ratings, text)** | Publishing patient testimonials that highlight a practitioner's personal qualities or outcomes. The platform does not solicit reviews for the practitioner, but displaying them on the profile could be construed as the practitioner using them in advertising. | **High** | Is a third-party review platform that the practitioner did not set up still bound by Section 25? Should medical profiles carry a disclaimer: "These reviews are patient experiences and are not an assessment of clinical quality"? |
+| **Patient reviews (star ratings, text)** | Publishing patient testimonials that highlight a practitioner's personal qualities or outcomes. The platform does not solicit reviews for the practitioner, but displaying them on the profile could be construed as the practitioner using them in advertising. | **High** | Is a third-party review platform that the practitioner did not set up still bound by the advertising and canvassing rules? Should medical profiles carry a disclaimer: "These reviews are patient experiences and are not an assessment of clinical quality"? |
 | **"Verified" badge (Documents checked by WebScheduler Local)** | The HPCSA registers practitioners; a badge that checks business registration documents and ID could be confused with HPCSA registration or clinical accreditation. | **Medium** | Should the Verified tooltip on medical profiles carry an additional line: "This is not an HPCSA registration or clinical accreditation check"? |
 | **"Featured" placement on the home page** | A "featured" label could imply the practitioner is superior or preferred. The admin controls this independently of payment. | **Low** | Is a "featured" label appropriate on health practitioner profiles? Should it be replaced with a neutral label such as "sponsored" for medical profiles? |
 | **`/compare` page (platform comparison)** | The compare page compares WebScheduler Local against other platforms (Google, LinkedIn), not practitioners against each other. No practitioner-to-practitioner comparison exists. | **None** | No action required unless a future "compare profiles" feature is built. |
@@ -377,14 +374,14 @@ Each country has its own professional advertising codes:
 
 The overarching risk on .app is reputational: if patients in any country see star
 ratings and interpret them as a clinical quality endorsement, the platform could face
-complaints or media coverage. The "Verified" badge on .app is Plus, which explicitly
-does not check the business; the risk of confusion with professional accreditation is
-lower than on co.za.
+complaints or media coverage. On .app the paid option is Plus, which is not a badge
+and makes no check of the business; there is no Verified mark there to confuse with
+professional accreditation.
 
 **Questions for the owner and their lawyer (numbered for easy reference):**
 
 A. Is a third-party review platform that the practitioner did not create still subject
-   to Section 25 of the HPCSA Ethical Rules when the reviews are displayed on the
+   to the HPCSA rules on advertising and canvassing when the reviews are displayed on the
    practitioner's profile page?
 
 B. What disclaimer language on a medical profile would adequately distinguish patient
@@ -394,10 +391,11 @@ C. Is the "Verified" badge tooltip ("Documents checked by WebScheduler Local")
    sufficient to prevent confusion with HPCSA registration on co.za?
 
 D. Does sending an outreach email to an imported practitioner with their impression
-   count constitute canvassing under Section 25?
+   count constitute canvassing under the HPCSA rules?
 
-E. For .app: does displaying patient or client reviews on a veterinarian's profile in
-   Australia violate AHPRA's explicit prohibition on patient testimonials?
+E. For .app: does displaying patient reviews on a doctor's profile in Australia
+   conflict with AHPRA's prohibition on testimonials? (AHPRA regulates health
+   practitioners, not vets.)
 
 ---
 
@@ -496,12 +494,12 @@ but their practitioners have not claimed them.
 ```
 Hi Dr [Name],
 
-Your practice, [Display Name], is live on WebScheduler Local. This month, 
-patients searched and found it [N] times.
+Your practice, [Display Name], is live on WebScheduler Local. This month 
+your profile appeared in Google results [N] times.
 
-We imported your profile from public health records to make it easier for 
-patients to find you. The profile shows your practice name, address and 
-contact details.
+We set up your profile from public practice and hospital listings [for the 
+Lenmed group: from lenmed.co.za] so patients can find you. It shows your 
+practice name, address and contact details.
 
 Claim it to add your hours, services, photos and team.
 
@@ -525,7 +523,7 @@ email:
 
 - Tells a practitioner that a public profile about them exists and gives them control
   over it.
-- Uses the email address published on the HPCSA register (a public source).
+- Uses the email address from the public practice or hospital listing the profile was built from (not the HPCSA register; confirm the source per import).
 - Provides an unsubscribe mechanism.
 - Does not market a service to the practitioner; it notifies them about their own
   existing public data.
@@ -538,14 +536,15 @@ update if a new processing activity is introduced.
 
 Production sends through the `mail.` subdomain, never the apex. SES daily sending
 limits for a new account start at 200/day; a production account in good standing
-typically has 50 000/day. With 1461 emails to send, a 50 000/day limit poses no
-problem in one batch. If the limit is lower, a spark command with a `--limit` flag
-allows batching over multiple days.
+may have a much higher quota, but the real figure must be read (`aws ses
+get-send-quota`) by the owner. **Whatever the quota, send 100 to 200 a day** to protect
+the `mail.` domain's reputation (owner decision 9), with a `--limit` flag on the command.
 
 The command should:
 1. Accept `--dry-run`, `--limit N`, `--source import-doctors|import-lenmed|both`.
 2. Skip profiles that already have an account or confirmed email.
-3. Record each send in a new column `claim_email_sent_at` on the listing row (or a
+3. Record each send (this needs a migration, a handbook update and a changelog line)
+   in a new column `claim_email_sent_at` on the listing row (or a
    separate log table) so duplicates are avoided on re-runs.
 4. Respect the standard `Mailer` path and not bypass it.
 5. **Never run without the owner's explicit "go" in the same session.**
@@ -591,8 +590,8 @@ At 360px (`sm` breakpoint is 640px):
 - Header has: logo (about 110px), search bar (expands to fill most of the remaining
   width, compressed when focused), nav CTA button, and menu toggle (40px).
 - The search bar is `flex-1` in the header flex container. The CTA button uses
-  `px-3 py-2 text-xs` on mobile. At `text-xs` (12px), "Add practice" (12 chars) is
-  approximately 68px wide, the same as "Add business" (12 chars). Both fit.
+  `px-3 py-2 text-xs` on mobile. At `text-xs` (12px), "Add profile" (11 chars) is
+  slightly narrower than "Add business" (12 chars). Both fit.
 - At 390px the same logic applies.
 
 At 640px and above (`sm:` prefix):
@@ -606,11 +605,11 @@ At 640px and above (`sm:` prefix):
 
 | Context | Current | Proposed |
 |---|---|---|
-| Mobile (below 640px, `sm:hidden`) | `Add business` | `Add practice` |
+| Mobile (below 640px, `sm:hidden`) | `Add business` | `Add profile` (owner decision 6) |
 | Desktop (640px and above, `hidden sm:inline`) | `Add your business` | `Add your practice or business` |
 
-The mobile form "Add practice" (12 chars) is the same character count as "Add business"
-and fits at 360px without layout changes. "Add yours" (9 chars) is shorter and also
+**Owner decision 6: "Add profile".** It is neutral, so the shops that make up most self
+signups still see themselves in it, and it fits at 360px without layout changes. "Add yours" (9 chars) is shorter and also
 fits but is less informative. "Add profile" (11 chars) is neutral but loses the
 "practice" framing the owner wants.
 
@@ -626,7 +625,7 @@ The current CLAUDE.md says:
 > The header button reads "Add your business".
 
 This line must be updated in Phase 1 to:
-> The header button reads "Add your practice or business" (desktop) and "Add practice"
+> The header button reads "Add your practice or business" (desktop) and "Add profile"
 > (mobile, below 640px).
 
 ---
@@ -636,25 +635,25 @@ This line must be updated in Phase 1 to:
 1. (B1) Is "patients" (medical) or "clients" (vet, Pets and Animals) the right audience
    word for `listing_audience()`, or should vets say "patients" too? See plan Q1.
 
-2. (B2) Can the original import CSV files for the 256 uncategorised rows be located?
-   They would contain the specialty that the import command had but did not map. If they
-   are on the Lightsail server, the dry-run command could use the specialty column
-   directly instead of the title-based fallback.
+2. (B2) Answered: the CSVs are in `/home/deploy/imports` and the specialty is blank
+   for these rows. New question: should the 8 Lenmed units ("Dialysis Unit" and
+   similar) stay on the platform? Admin decides.
 
 3. (B3) Are reviews on Beauty and Wellness profiles affected by any aesthetic
    association restrictions (not HPCSA, but possibly cosmetic industry codes)?
    The plan only addresses Health and Medical and Pets and Animals; the one existing
    published review is on a Beauty and Wellness profile and is not in scope.
 
-4. (B4) Legal question A: Is a third-party review platform subject to Section 25 of
-   the HPCSA Ethical Rules when it displays reviews on a practitioner's profile page
+4. (B4) Legal question A: Is a third-party review platform subject to the HPCSA rules
+   on advertising and canvassing when it displays reviews on a practitioner's profile page
    without the practitioner's solicitation? This is the most consequential question
    before reviews can be turned back on for Health and Medical.
 
 5. (B5) Should the outreach email be sent before or after claim improvements (Phase 3c)
    are released? Sending before the sign-in flow is improved means practitioners with
-   no email address cannot respond. The recommended order is: improve the no-email path
-   first, then send.
+   no email address cannot respond. Answered by owner decision 9: email first, in batches,
+   and build the no email path alongside. (Earlier draft: improve the no-email path
+   first, then send.)
 
 6. (B5) Has the SES sending limit been confirmed for the production account? The batch
    of 1461 emails is well within a 50 000/day limit but requires confirmation from
