@@ -2116,7 +2116,10 @@
      far edge of the column where it hung in the middle of a photo. */
   /* A wide logo lockup gets a little less room on a phone, where the name
      needs the width. */
-  .profile-band-head .avatar-logo   { @apply max-w-16 sm:max-w-24; }
+  /* Larger than the 48px avatar elsewhere: over a photo the logo is the
+     business's mark, not a list thumbnail. */
+  .profile-band-head .avatar        { @apply h-16 w-16 text-lg sm:h-24 sm:w-24 sm:text-2xl; }
+  .profile-band-head .avatar-logo   { @apply w-auto min-w-16 max-w-28 p-1.5 sm:min-w-24 sm:max-w-44 sm:p-2; }
   .profile-band-head .profile-seal  { @apply float-none ml-0 shrink-0; }
   .profile-band-head .verified-seal { @apply w-12 sm:w-20; }
   .profile-band-head h1 {
@@ -2178,8 +2181,8 @@
   .profile-band-single .gallery-item img { @apply w-full min-w-0 max-w-none; }
   /* A portrait, whole and centred on a plain ground (show.php): cover would
      blow it up and keep only its middle, cutting off the person's head. */
-  .profile-band.profile-band-portrait { @apply bg-slate-100; }
-  .dark .profile-band.profile-band-portrait { @apply bg-surface-tone; }
+  .profile-band.profile-band-portrait { @apply bg-white; }
+  .dark .profile-band.profile-band-portrait { @apply bg-surface-page; }
   .profile-band-portrait .gallery-item { @apply bg-transparent; }
   .profile-band-portrait .gallery-item img { @apply object-contain; }
 
