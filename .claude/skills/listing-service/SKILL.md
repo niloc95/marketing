@@ -471,8 +471,8 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
 - `POST /newsletter` and `newsletter/unsubscribe/*` are CSRF exempt (brand site cross
   origin; RFC 8058 one click). Confirm keeps CSRF. Throttles `newsletter-ip-` 5/h,
   `newsletter-to-` 3/day. Unsubscribed rows are the do not contact list: never delete.
-- `php spark newsletter:import-mautic <csv> [--dry-run]` was the one off import of the
-  Mautic export (confirmed segments 10/11 and DNC only).
+- The one off Mautic import (4 Nov 2026) is done and its command removed (17 Nov 2026);
+  imported rows keep consent source `import`.
 - Tests: `tests/database/NewsletterTest.php`.
 
 ## Jobs board (`/jobs`)
@@ -1339,7 +1339,6 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `directory:audit-text [--all]` | report names and descriptions that break the rules | |
 | `directory:recategorise-imports [--report csv] [--apply]` | file uncategorised imported doctors (Dr, Prof) under Medical Doctor; dry run unless `--apply`; the rest listed for admin | |
 | `directory:venue-assign` | put shops into a venue | |
-| `newsletter:import-mautic <csv>` | one off import of the Mautic newsletter export | |
 | `directory:adminhash` | hash for `directory.adminPasswordHash` | |
 
 The cron template is `deploy/cron/webscheduler`; the live copy is
