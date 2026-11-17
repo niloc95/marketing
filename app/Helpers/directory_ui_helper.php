@@ -1329,6 +1329,59 @@ if (! function_exists('listing_feature_labels')) {
     }
 }
 
+if (! function_exists('listing_care_facts')) {
+    /**
+     * The "For patients" box (medical first, owner 17 Nov 2026): the ticked
+     * features its vertical names in 'careFacts' (medical aid, new patients,
+     * emergency appointments...), then two facts read from the hours a
+     * patient asks first: open in the evening (a day closing after 18:00) and
+     * open at the weekend. A vertical with no careFacts gets nothing, so a
+     * salon's page is unchanged. _panel_features.php leaves out what this
+     * box shows.
+     *
+     * @param array<string,mixed> $l a profile row ('attributes' keyed by feature key)
+     * @param array<string,mixed> $v its vertical_profile()
+     * @return list<string>
+     */
+    function listing_care_facts(array $l, array $v): array
+    {
+        $keys = $v['careFacts'] ?? [];
+        if ($keys === []) {
+            return [];
+        }
+
+        $attributes = is_array($l['attributes'] ?? null) ? $l['attributes'] : [];
+        $facts      = [];
+        foreach ($keys as $key) {
+            if (isset($attributes[$key])) {
+                $facts[] = (string) $attributes[$key];
+            }
+        }
+
+        $hours = $l['trading_hours'] ?? null;
+        $hours = is_string($hours) ? hours_decode($hours) : $hours;
+        if (is_array($hours)) {
+            $evening = false;
+            $weekend = false;
+            foreach ($hours as $day => $h) {
+                if (! is_array($h) || ! empty($h['closed']) || ($h['open'] ?? '') === '' || ($h['close'] ?? '') === '') {
+                    continue;
+                }
+                $evening = $evening || strcmp((string) $h['close'], '18:00') > 0;
+                $weekend = $weekend || in_array($day, ['sat', 'sun'], true);
+            }
+            if ($evening) {
+                $facts[] = 'Open in the evening';
+            }
+            if ($weekend) {
+                $facts[] = 'Open on weekends';
+            }
+        }
+
+        return $facts;
+    }
+}
+
 if (! function_exists('facet_range_label')) {
     /**
      * A stored range rendered the way a person says it.

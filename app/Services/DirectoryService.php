@@ -2368,6 +2368,52 @@ class DirectoryService
     }
 
     /**
+     * The home page's way in for patients (medical first, owner 17 Nov 2026):
+     * doctors, dentists and vets, each with how many are published on this
+     * site. One that has nobody yet is left out, so the row never links to
+     * an empty page (no vet has joined yet).
+     *
+     * Doctors are the Config\Search "doctors" set (every category published
+     * as Physician, ?group=doctors); dentists and vets are their category
+     * pages. Counts come from categoryListingCounts(), already cached per site.
+     *
+     * @return list<array{noun:string,label:string,path:string,count:int}>
+     */
+    public function careEntryPoints(): array
+    {
+        $counts = $this->categoryListingCounts();
+        $ids    = [];
+        foreach ($this->categories() as $c) {
+            $ids[(string) $c['slug']] = (int) $c['id'];
+        }
+        $count = static function (array $slugs) use ($counts, $ids): int {
+            $n = 0;
+            foreach ($slugs as $slug) {
+                $n += $counts[$ids[$slug] ?? 0] ?? 0;
+            }
+
+            return $n;
+        };
+
+        $points = [
+            ['noun' => 'doctor', 'label' => 'Doctors', 'path' => 'directory?group=doctors', 'slugs' => config('Search')->categorySetSlugs('doctors')],
+            ['noun' => 'dentist', 'label' => 'Dentists', 'path' => 'directory/dentist', 'slugs' => ['dentist']],
+            ['noun' => 'vet', 'label' => 'Vets', 'path' => 'directory/veterinarian', 'slugs' => ['veterinarian']],
+        ];
+
+        $out = [];
+        foreach ($points as $p) {
+            $n = $count($p['slugs']);
+            if ($n > 0) {
+                unset($p['slugs']);
+                $out[] = $p + ['count' => $n];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Published listings per province, countrywide. The global sibling of
      * provinceCountsForCategory() — powers the homepage location cards and
      * decides which province landing pages are worth linking to.

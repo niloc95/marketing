@@ -377,6 +377,8 @@ $metaDesc = listing_meta_description($l);
                     <a class="contact-suggest" href="<?= base_url('verified') ?>"><?= lucide('badge-check') ?>Is this your business? Get Verified</a>
                 <?php endif; ?>
 
+                <?= view('directory/_care_panel', ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
+
                 <?= view('directory/_service_area_panel', ['l' => $l, 'class' => 'mt-5'], ['saveData' => false]) ?>
 
                 <?php if (! empty($l['locations'])): ?>

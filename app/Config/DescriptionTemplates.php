@@ -46,6 +46,18 @@ class DescriptionTemplates extends BaseConfig
         'project'    => 'cause',
     ];
 
+    /**
+     * A main category whose profiles write in their own family rather than
+     * "business" (medical first, owner 17 Nov 2026): a practice sees
+     * patients, it does not "help with" them. Only replaces the business
+     * family; a health NGO still writes like a cause.
+     *
+     * @var array<string,string> group_name => family
+     */
+    public array $groupFamily = [
+        'Health & Medical' => 'health',
+    ];
+
     /** @var array<string,string> type => {a_kind}, for the cause family */
     public array $kinds = [
         'ngo'        => 'a nonprofit organisation',
@@ -92,6 +104,37 @@ class DescriptionTemplates extends BaseConfig
                 'Get in touch to book or to ask us a question.',
                 'Contact us today to find out more.',
                 'Send us a message and we will get back to you.',
+            ],
+        ],
+        'health' => [
+            'intro' => [
+                '{name} is {a_category} in {place}.',
+                '{name} is {a_category} seeing patients in {place}.',
+                '{name} is {a_category}.',
+            ],
+            'offer' => [
+                'We offer {list}.',
+                'Our services include {list}.',
+                'Patients see us for {list}.',
+            ],
+            'focus' => [
+                'Our areas of focus include {focus}.',
+                'We have a special interest in {focus}.',
+            ],
+            'reach' => [
+                'We visit patients at home in {areas}.',
+                'We see patients at home in {areas}.',
+            ],
+            'reach_both' => [
+                'See us at the practice, or we visit patients at home in {areas}.',
+            ],
+            'features' => [
+                'Good to know: {features}.',
+                'For patients: {features}.',
+            ],
+            'closing' => [
+                'Contact the practice to make an appointment.',
+                'Get in touch to book an appointment or to ask a question.',
             ],
         ],
         'place' => [
@@ -212,7 +255,7 @@ class DescriptionTemplates extends BaseConfig
     ];
 
     /** @var array<string,string> family => what follows a category that is not a noun */
-    public array $nounSuffix = ['business' => 'business', 'place' => 'place', 'cause' => ''];
+    public array $nounSuffix = ['business' => 'business', 'health' => 'practice', 'place' => 'place', 'cause' => ''];
 
     /** How many owner items go into one sentence, and the longest one used. */
     public int $maxListItems = 5;

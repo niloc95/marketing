@@ -79,6 +79,7 @@ class Directory extends BaseController
         return view('directory/home', [
             'featured'       => $svc->featured(8),
             'topCategories'  => $svc->topCategories(8),
+            'careEntries'    => $svc->careEntryPoints(),
             'provinceCounts' => $provinceCounts,
             'provinceCities' => $provinceCities,
             'stats'          => $svc->stats(),
