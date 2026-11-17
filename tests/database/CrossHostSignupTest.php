@@ -64,7 +64,7 @@ final class CrossHostSignupTest extends CIUnitTestCase
         $form = $this->withHeaders(['Host' => 'example.com'])->get('add-profile?handover=' . $q['handover']);
         $form->assertOK();
         $this->assertStringContainsString('value="Handover Bakery"', (string) $form->getBody());
-        $this->assertStringContainsString('Businesses in South Africa are listed here', (string) $form->getBody());
+        $this->assertStringContainsString('Practices and businesses in South Africa are listed here', (string) $form->getBody());
 
         Services::resetSingle('site');
         $again = $this->withHeaders(['Host' => 'example.com'])->get('add-profile?handover=' . $q['handover']);

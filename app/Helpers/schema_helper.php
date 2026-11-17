@@ -697,7 +697,7 @@ if (! function_exists('schema_local_business')) {
         // so the page and the markup never disagree. The number is a
         // PropertyValue named by its regulator, not a credential: it
         // identifies the professional, it does not certify them.
-        $regulator = \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null);
+        $regulator = \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null, \App\Libraries\ProfessionalRegistration::countryOf($l));
         foreach ($l['team'] ?? [] as $member) {
             $knowsAbout = \App\Services\TeamMemberService::splitSpecializations($member['specializations'] ?? null);
             $reg        = \App\Libraries\ProfessionalRegistration::forPerson($member, $regulator);
@@ -1039,7 +1039,7 @@ if (! function_exists('schema_person')) {
         }
         $reg = null;
         if ($card !== null) {
-            $regulator = \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null);
+            $regulator = \App\Libraries\ProfessionalRegistration::regulatorFor($l['category']['slug'] ?? null, $l['category']['group_name'] ?? null, \App\Libraries\ProfessionalRegistration::countryOf($l));
             $reg       = \App\Libraries\ProfessionalRegistration::forPerson($card, $regulator);
         }
 

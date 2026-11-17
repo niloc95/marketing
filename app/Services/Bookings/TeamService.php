@@ -370,7 +370,7 @@ class TeamService
     {
         $listing = (new DirectoryListingModel())->find($this->listingId);
 
-        return \App\Libraries\ProfessionalRegistration::regulatorForCategoryId((int) ($listing['category_id'] ?? 0));
+        return \App\Libraries\ProfessionalRegistration::regulatorForCategoryId((int) ($listing['category_id'] ?? 0), \App\Libraries\ProfessionalRegistration::countryOf($listing));
     }
 
     public function archiveProvider(int $id, ?int $accountId, bool $archive = true): bool

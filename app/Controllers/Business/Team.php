@@ -78,7 +78,7 @@ class Team extends BaseController
             'profileTabs' => \App\Services\ProfileSectionTabs::forBookingsPage('team'),
             'provider'     => $provider,
             'card'         => $provider['team_member_id'] !== null ? (new DirectoryListingTeamModel())->findForListing((int) $provider['team_member_id'], $context->listingId()) : null,
-            'regulator'    => ProfessionalRegistration::regulatorForCategoryId((int) ($listing['category_id'] ?? 0)),
+            'regulator'    => ProfessionalRegistration::regulatorForCategoryId((int) ($listing['category_id'] ?? 0), ProfessionalRegistration::countryOf($listing)),
             'hours'        => $team->hoursForForm($id),
             'hourWarnings' => $team->hoursWarnings($id, $context->listing()),
             'hoursMode'    => $team->hoursMode($id),

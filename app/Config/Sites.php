@@ -71,18 +71,20 @@ class Sites extends BaseConfig
      * @var array<string,string>
      */
     public array $appCopy = [
-        'title'           => 'Discover local businesses near you',
-        'footer'          => 'Discover local. Be discovered. A discovery platform for local businesses, services, locations, professionals and opportunities. Create your free business profile.',
-        'siteDescription' => 'A local business discovery and visibility platform for the United Kingdom, the United States, Australia, New Zealand, Namibia, Botswana, Kenya and Nigeria. '
-            . 'Discover businesses, services, locations, professionals and opportunities near you, '
-            . 'or create a free business profile: no monthly fee, no subscription, no obligation.',
-        'homeDescription' => 'Discover local businesses, services, locations, professionals and opportunities near you. Create your free business profile: no monthly fee, no subscription.',
-        'homeLede'        => 'The local discovery platform for businesses, services, professionals and locations near you.',
-        'discoverTitle'   => 'Discover businesses near you.',
+        'title'           => 'Discover local practices and businesses near you',
+        'footer'          => 'Discover local. Be discovered. A discovery platform for local practices, businesses, services, locations, professionals and opportunities. Create your free practice profile.',
+        'siteDescription' => 'A local discovery and visibility platform for practices and businesses in the United Kingdom, the United States, Australia, New Zealand, Namibia, Botswana, Kenya and Nigeria. '
+            . 'Discover practices, businesses, services, locations, professionals and opportunities near you, '
+            . 'or create a free practice profile: no monthly fee, no subscription, no obligation.',
+        'homeDescription' => 'Discover local practices, businesses, services, locations, professionals and opportunities near you. Create your free practice profile: no monthly fee, no subscription.',
+        'homeLede'        => 'The local discovery platform for practices, businesses, professionals and locations near you.',
+        // The home page's heading. It shared the key 'discoverTitle' with the
+        // results page title until 17 Nov 2026, so .app showed that one here.
+        'homeDiscoverTitle' => 'Discover practices and businesses near you.',
         'featuredLine'    => 'Handpicked from across the platform, and open for enquiries.',
         'where'           => ' near you',
-        'discoverTitle'       => 'Discover local businesses near you',
-        'discoverDescription' => 'Discover local businesses, services and professionals by category, country and city, on one local discovery platform.',
+        'discoverTitle'       => 'Discover local practices and businesses near you',
+        'discoverDescription' => 'Discover local practices, businesses, services and professionals by category, country and city, on one local discovery platform.',
         'jobsWhere'       => 'near you',
         'companyFor'      => 'for businesses everywhere',
         'companyOffer'    => 'your area has',

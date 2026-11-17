@@ -28,10 +28,15 @@ use CodeIgniter\Config\BaseConfig;
  *               on 28 Oct 2026 except SANC, whose site refuses scripted
  *               requests, so it links the home page.
  *   research    whether ORCID and ResearchGate are offered beside the number
+ *   country     the ISO code of the country whose register it is. A profile in
+ *               any other country gets no box and shows nothing for it, so a
+ *               doctor in Botswana on local.webscheduler.app is never asked for
+ *               an HPCSA number (owner, 17 Nov 2026: .app shows nothing South
+ *               African). See ProfessionalRegistration::regulatorFor().
  */
 class Registrations extends BaseConfig
 {
-    /** @var array<string,array{short:string,name:string,pattern:?string,example:string,register:string,research:bool}> */
+    /** @var array<string,array{short:string,name:string,pattern:?string,example:string,register:string,research:bool,country:string}> */
     public array $regulators = [
         'hpcsa' => [
             'short'    => 'HPCSA',
@@ -41,6 +46,7 @@ class Registrations extends BaseConfig
             'example'  => 'MP0123456',
             'register' => 'https://hpcsaonline.custhelp.com/app/i_reg_form',
             'research' => true,
+            'country'  => 'ZA',
         ],
         'sanc' => [
             'short'    => 'SANC',
@@ -49,6 +55,7 @@ class Registrations extends BaseConfig
             'example'  => '12345678',
             'register' => 'https://www.sanc.co.za/',
             'research' => true,
+            'country'  => 'ZA',
         ],
         'sapc' => [
             'short'    => 'SAPC',
@@ -57,6 +64,7 @@ class Registrations extends BaseConfig
             'example'  => 'P12345678',
             'register' => 'https://www.sapc.za.org/registered-persons',
             'research' => true,
+            'country'  => 'ZA',
         ],
         'ahpcsa' => [
             'short'    => 'AHPCSA',
@@ -65,6 +73,7 @@ class Registrations extends BaseConfig
             'example'  => 'A12345',
             'register' => 'https://ahpcsa.co.za/practitioners/',
             'research' => true,
+            'country'  => 'ZA',
         ],
         'sacssp' => [
             'short'    => 'SACSSP',
@@ -73,6 +82,7 @@ class Registrations extends BaseConfig
             'example'  => '10-12345',
             'register' => 'https://www.sacssp.co.za/directory/find-professional',
             'research' => false,
+            'country'  => 'ZA',
         ],
         'lpc' => [
             'short'    => 'LPC',
@@ -81,6 +91,7 @@ class Registrations extends BaseConfig
             'example'  => '12345',
             'register' => 'https://lpc.org.za/members-of-the-public/list-of-legal-practitioners/',
             'research' => false,
+            'country'  => 'ZA',
         ],
         'sacap' => [
             'short'    => 'SACAP',
@@ -89,6 +100,7 @@ class Registrations extends BaseConfig
             'example'  => '12345678',
             'register' => 'https://search.mymembership.co.za/Search/?Id=4f3f0fde-d5dc-4af0-97cd-0a192a56830e',
             'research' => false,
+            'country'  => 'ZA',
         ],
         'ecsa' => [
             'short'    => 'ECSA',
@@ -97,6 +109,19 @@ class Registrations extends BaseConfig
             'example'  => '20123456',
             'register' => 'https://findregisteredpersonprod.powerappsportals.com/Who-is-Registered/',
             'research' => true,
+            'country'  => 'ZA',
+        ],
+        // Vets (owner, 17 Nov 2026). The SAVC publishes no number format and
+        // no lookup by number, only a list of practising professionals, so the
+        // generic check applies and the link goes to that list.
+        'savc' => [
+            'short'    => 'SAVC',
+            'name'     => 'South African Veterinary Council',
+            'pattern'  => null,
+            'example'  => 'SAVC registration number',
+            'register' => 'https://savc.org.za/public-infomation/list-of-all-practising-professionals-and-registered-facilities/',
+            'research' => false,
+            'country'  => 'ZA',
         ],
     ];
 
@@ -125,6 +150,8 @@ class Registrations extends BaseConfig
 
         'architect' => 'sacap',
         'engineer'  => 'ecsa',
+
+        'veterinarian' => 'savc',
 
         // Phase 2, on the owner's go ahead: each needs its regulator above.
         // 'accountant'        => 'saica',

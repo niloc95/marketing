@@ -18,9 +18,9 @@ class Directory extends BaseConfig
      * which is the text search engines read about the brand itself. Positioning
      * copy: never "directory", and nothing that presents a Verified feature as free.
      */
-    public string $siteDescription = 'A local business discovery and visibility platform built for South Africa. '
-        . 'Discover businesses, services, locations, professionals and opportunities near you, '
-        . 'or create a free business profile: no monthly fee, no subscription, no obligation.';
+    public string $siteDescription = 'A local discovery and visibility platform for practices and businesses, built for South Africa. '
+        . 'Discover practices, businesses, services, locations, professionals and opportunities near you, '
+        . 'or create a free practice profile: no monthly fee, no subscription, no obligation.';
 
     public string $slogan = 'Discover local. Be discovered.';
 

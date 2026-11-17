@@ -83,7 +83,7 @@ $benefits = array_merge($benefits, [
         'icon'  => 'users',
         'title' => 'People and expertise',
         'text'  => 'Up to ' . (int) $team . ' team members, each with a photo, their role, and their '
-            . 'qualifications and areas of expertise as you state them. Customers meet the people behind the business.',
+            . 'qualifications and areas of expertise as you state them. Patients and customers meet the people behind the practice.',
     ],
     [
         'icon'  => 'building-2',
@@ -105,7 +105,7 @@ $benefits = array_merge($benefits, [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free business profile. Upgrade to Verified when you want
+                Start with a free practice profile. Upgrade to Verified when you want
                 <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your people, your other
                 locations and your vacancies.
             </p>
@@ -113,7 +113,7 @@ $benefits = array_merge($benefits, [
 
         <div class="pricing-grid" data-scroll-reveal>
             <div class="plan-card pricing-card">
-                <p class="plan-name">Free Business Profile</p>
+                <p class="plan-name">Free Practice Profile</p>
                 <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
                 <p class="plan-blurb">
                     Everything you need to be found online and contacted. No monthly fee, no subscription
@@ -124,9 +124,9 @@ $benefits = array_merge($benefits, [
                         <li class="plan-row-yes"><span><?= esc($line) ?></span></li>
                     <?php endforeach; ?>
                 </ul>
-                <p class="hint plan-terms">Free for any business with a South African address.</p>
+                <p class="hint plan-terms">Free for any practice or business with a South African address.</p>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="free">Create Your FREE Business Profile</a>
+                   data-track="pricing_cta" data-track-label="free">Create Your FREE Practice Profile</a>
             </div>
 
             <div class="plan-card plan-card-featured pricing-card">
@@ -165,7 +165,7 @@ $benefits = array_merge($benefits, [
                     registration document and the owner's ID first. Cancel any time.
                 </p>
                 <a class="btn btn-accent btn-block plan-cta" href="<?= base_url('add-profile') ?>"
-                   data-track="pricing_cta" data-track-label="verified">Get Your Business Verified</a>
+                   data-track="pricing_cta" data-track-label="verified">Get Your Practice Verified</a>
             </div>
         </div>
 

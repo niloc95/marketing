@@ -46,7 +46,7 @@ $benefits = [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free business profile. Add Plus when you want
+                Start with a free practice profile. Add Plus when you want
                 <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your other locations,
                 your team and your vacancies.
             </p>
@@ -55,7 +55,7 @@ $benefits = [
 
         <div class="pricing-grid"<?= $onSignup ? '' : ' data-scroll-reveal' ?>>
             <div class="plan-card pricing-card">
-                <p class="plan-name">Free Business Profile</p>
+                <p class="plan-name">Free Practice Profile</p>
                 <p class="plan-price"><?= esc(money('0', 'USD')) ?><span class="plan-price-unit">free, always</span></p>
                 <p class="plan-blurb">
                     Everything you need to be found online and contacted. No monthly fee, no subscription
@@ -67,7 +67,7 @@ $benefits = [
                     <?php endforeach; ?>
                 </ul>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= $onSignup ? '#listing-form' : base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start free' : 'Create Your FREE Business Profile' ?></a>
+                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start free' : 'Create Your FREE Practice Profile' ?></a>
             </div>
 
             <div class="plan-card plan-card-featured pricing-card">

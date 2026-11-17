@@ -40,17 +40,20 @@ use App\Services\TeamMemberService;
  * The person's own fields are _person_fields.php, shared with the person page
  * in Bookings (T31).
  */
-$regulator = null;
+// Judged against the profile's country: a South African register never
+// shows for a profile abroad, and the script's label table leaves them out.
+$regCountry = ProfessionalRegistration::countryOf(['country' => $v('country')]);
+$regulator  = null;
 foreach ($categories ?? [] as $c) {
     if ((string) $c['id'] === (string) $v('category_id')) {
-        $regulator = ProfessionalRegistration::regulatorFor($c['slug'] ?? null, $c['group_name'] ?? null);
+        $regulator = ProfessionalRegistration::regulatorFor($c['slug'] ?? null, $c['group_name'] ?? null, $regCountry);
         break;
     }
 }
 $adminEdit = ! empty($adminEdit);
 $regLabels = array_map(
     static fn (array $r): array => ['short' => $r['short'], 'name' => $r['name'], 'example' => $r['example'], 'research' => $r['research']],
-    config('Registrations')->regulators
+    array_filter(config('Registrations')->regulators, static fn (array $r): bool => $r['country'] === $regCountry)
 );
 
 // card id => ['id' => provider id, 'bookable' => bool] while bookings are

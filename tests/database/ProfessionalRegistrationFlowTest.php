@@ -176,6 +176,27 @@ final class ProfessionalRegistrationFlowTest extends CIUnitTestCase
         $this->assertMatchesRegularExpression('/data-registration\s+hidden disabled/', $render($this->plumberCat));
     }
 
+    public function testADoctorAbroadIsNeverAskedForASouthAfricanRegistration(): void
+    {
+        $render = fn (string $country): string => view('directory/_team_fields', [
+            'rows'       => [['id' => 5, 'name' => 'Dr Jane Surgeon', 'reg_number' => 'MP0123456']],
+            'err'        => static fn (string $f): string => '',
+            'v'          => fn (string $f): string => match ($f) {
+                'category_id' => (string) $this->doctorCat,
+                'country'     => $country,
+                default       => '',
+            },
+            'categories' => (new DirectoryCategoryModel())->findAll(),
+            'adminEdit'  => false,
+        ], ['saveData' => false]);
+
+        $this->assertStringContainsString('HPCSA</span> registration number', $render('South Africa'));
+        $abroad = $render('Botswana');
+        $this->assertStringNotContainsString('HPCSA', $abroad);
+        $this->assertMatchesRegularExpression('/data-registration\s+hidden disabled/', $abroad);
+        $this->assertNull(ProfessionalRegistration::regulatorForCategoryId($this->doctorCat, 'BW'), 'the save path asks the same question');
+    }
+
     /** @return array<string,mixed>|null */
     private function member(int $listingId): ?array
     {

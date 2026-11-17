@@ -164,7 +164,9 @@ like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
   (`stored()`), then `.env`, then `Config\Directory`. New keys for .app: `plus_price_usd`,
   `usd_zar_rate`, `profile_setup_usd`. `/admin/settings` edits both.
 - **Copy**: `site_copy()` + `Config\Sites::$appCopy`. "Built for South Africa" is co.za
-  only. Header CTA "Add your business" on both. .app has its own FAQ groups
+  only. Header CTA "Add your practice or business" ("Add profile" below 1280px) on both
+  (medical first, 17 Nov 2026). Professional registers (HPCSA, SAVC…) are co.za only:
+  `regulatorFor()` judges the profile's country. .app has its own FAQ groups
   (`_faq_app_groups.php`), a neutral Company and Media page, and `/plus` (mirrors
   `/verified`; co.za `/plus` 301s to .app). Same copy rules everywhere (CLAUDE.md).
 - **Legal**: `Views/legal/app/terms.php` (§4 is Plus) and `legal/app/privacy.php`,

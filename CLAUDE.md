@@ -47,7 +47,12 @@ they hold the rules that are not obvious from the code.
 - Keep "search" only for other people's search: search engines, Google's job search,
   paid search ads, address lookup.
 - Tagline: **Discover local. Be discovered.** Never write "More than a business listing."
-- Prefer "business profile" over "listing". The header button reads "Add your business".
+- **Medical first** (owner, 16 Nov 2026; plan `docs/plans/2026-11-medical-focus.md`):
+  discovery copy leads with practices ("Discover local practices and businesses"), the
+  free product is the **practice profile** ("Create your free practice profile"), and
+  owner calls to action say "practice or business" so shops still see themselves. The
+  header button reads **"Add your practice or business"** ("Add profile" below 1280px).
+  Never "listing". Per profile wording comes from `Config\Verticals` (noun), not new maps.
 - No "—" and no hyphenated words in anything customers see (proper names such as
   KwaZulu-Natal are fine).
 - **On .app:** no rand figures in customer copy (the rate moves); say Plus is billed in

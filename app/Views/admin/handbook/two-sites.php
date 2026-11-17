@@ -16,6 +16,7 @@
                 <tr><td>Admin</td><td><code>/admin</code> behind Cloudflare Access</td><td>None: <code>/admin*</code> 302s to co.za</td></tr>
                 <tr><td>Legal pages</td><td><code>legal/</code></td><td><code>legal/app/</code></td></tr>
                 <tr><td>Copy</td><td>"Built for South Africa"</td><td>Never South African, no rand figures</td></tr>
+                <tr><td>Professional registers</td><td>HPCSA, SANC, SAPC, AHPCSA, SACSSP, LPC, SACAP, ECSA, SAVC (vets)</td><td>None: every register in <code>Config\Registrations</code> is South African (<code>country</code>), so a profile abroad gets no registration box, team card line or JSON-LD (<code>ProfessionalRegistration::regulatorFor()</code> with <code>countryOf()</code>)</td></tr>
                 <tr><td>Holidays</td><td>South African calendar (coded)</td><td>Per country (Yasumi), or none</td></tr>
             </tbody>
         </table>

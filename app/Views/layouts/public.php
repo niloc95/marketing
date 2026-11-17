@@ -15,7 +15,7 @@ $clarityId = $untracked || str_starts_with(trim(uri_string(), '/'), 'admin') ? '
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' | ' . site_copy('title', 'Discover local businesses in South Africa')]) ?>
+    <?= $this->renderSection('head') ?: seo_meta(['title' => config('Directory')->siteName() . ' | ' . site_copy('title', 'Discover local practices and businesses in South Africa')]) ?>
     <?php // Every icon is the orange WebScheduler Local badge, generated from
           // resources/brand/webscheduler-local-badge-1024.png. favicon.ico carries 16-256 for older browsers; the PNGs let modern ones
           // skip the .ico entirely. The apple-touch icon is on white because iOS
@@ -157,7 +157,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                   // role, so this is currently the only search landmark on the site —
                   // but it is the one that is on every page, and it is the one that
                   // appears and disappears under the reader, so it is worth naming. ?>
-            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Discover local businesses">
+            <form class="header-search" method="get" action="<?= base_url('directory') ?>" role="search" aria-label="Discover local practices and businesses">
                 <?php // No value, deliberately — see the comment above: this bar is the
                       // "fresh search from anywhere" gesture, so it starts empty even on
                       // a results page, where the hero form holds the current query. ?>
@@ -202,25 +202,30 @@ foreach (config('Countries')->profiles as $code => $profile) {
                       // old mobile string — "Add" + "free" rendered as "Add free", which
                       // reads as a misspelt "ad-free". The phone has ~110px here once the
                       // brand lockup and menu button are placed, so the full desktop wording
-                      // cannot fit; "Add business" does, and says the same thing. The
+                      // cannot fit; "Add profile" does, and says the same thing. The
                       // longer wording is desktop-only for the same reason; the form states
                       // what is free in its own eyebrow and intro the moment you land.
                       //
                       // .btn is inline-flex with a gap (narrowed by .nav-cta), so <strong>
                       // gets its own spacing without a literal one.
                       //
-                      // While the badge is on sale this is "Add your business", not "Get
+                      // While the badge is on sale this is "Add your practice or business", not "Get
                       // verified": it goes to /add-profile, which shows both options
                       // (Verified first, Free still there). See signup_cta(). Naming
                       // only the paid path told free-profile visitors the button wasn't
-                      // for them; the upsell is the page's job. "Add business" is the
-                      // phone's ~110px version. Each width's phrase is one element, all
+                      // for them; the upsell is the page's job. "Add profile" is the
+                      // phone's ~110px version: neutral, so the shops that make up
+                      // most self signups still see themselves in it (owner,
+                      // 16 Nov 2026; "Add practice" would have turned them away).
+                      // The long wording waits for xl (1280px): at 768 to 1279px it
+                      // pushed the brand and the scrolled search bar out of the
+                      // header (measured 17 Nov 2026, search squeezed to 70px). Each width's phrase is one element, all
                       // bold: split across two, .nav-cta's flex gap reads as a double space. ?>
                 <?php // The same words whether or not the badge is on sale (it never
                       // is on local.webscheduler.app); only where it goes differs. ?>
                 <a href="<?= esc(signup_cta()['verified'] ? signup_cta()['url'] : base_url('add-profile')) ?>" class="btn btn-accent nav-cta">
-                    <strong class="sm:hidden">Add business</strong>
-                    <strong class="hidden sm:inline">Add your business</strong>
+                    <strong class="xl:hidden">Add profile</strong>
+                    <strong class="hidden xl:inline">Add your practice or business</strong>
                 </a>
                 <?php // Icons swap on the `hidden` class, toggled by directory.js alongside
                       // aria-expanded — one source of truth for open/closed. ?>
@@ -261,12 +266,12 @@ foreach (config('Countries')->profiles as $code => $profile) {
               // as the marketing site's header, deliberately — the two properties share
               // the shape, and directory.js adds the dismiss/aria behaviour on top. ?>
         <div id="site-menu" class="mobile-menu hidden md:hidden" data-mobile-menu>
-            <a href="<?= base_url('directory') ?>">Discover local businesses</a>
+            <a href="<?= base_url('directory') ?>">Discover local practices and businesses</a>
             <a href="<?= base_url('directory/categories') ?>">All categories</a>
             <a href="<?= base_url('directory') ?>#map">Discovery map</a>
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>
             <?php // co.za explains the badge, .app explains Plus. ?>
-            <?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus businesses</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?>
+            <?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus profiles</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified profiles</a><?php endif; ?>
             <a href="<?= base_url('pricing') ?>">Pricing</a>
             <a href="<?= base_url('business') ?>">Manage your profile</a>
             <a href="<?= base_url('faq') ?>">FAQ</a>
@@ -341,7 +346,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-64.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline"><?= esc(site_copy('footer', 'Discover local. Be discovered. A discovery platform for South African businesses, services, locations, professionals and opportunities. Create your free business profile.')) ?></p>
+                <p class="site-footer-tagline"><?= esc(site_copy('footer', 'Discover local. Be discovered. A discovery platform for South African practices, businesses, services, locations, professionals and opportunities. Create your free practice profile.')) ?></p>
                 <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
                 <?php // Newsletter: our own list (Newsletter controller), one for
                       // both sites and the brand site. It lands on
@@ -376,13 +381,13 @@ foreach (config('Countries')->profiles as $code => $profile) {
             <div class="site-footer-col">
                 <h3>Discover</h3>
                 <ul>
-                    <li><a href="<?= base_url('directory') ?>">Discover local businesses</a></li>
+                    <li><a href="<?= base_url('directory') ?>">Discover local practices and businesses</a></li>
                     <li><a href="<?= base_url('directory/categories') ?>">All categories</a></li>
                     <li><a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a></li>
                     <li><a href="<?= base_url('jobs/post') ?>">Post a job</a></li>
-                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Add your business' ?></a></li>
+                    <li><a href="<?= esc(signup_cta()['url']) ?>"><?= signup_cta()['verified'] ? 'Get Verified' : 'Add your practice or business' ?></a></li>
                     <?php if (! site()->isApp()): ?>
-                    <li><a href="<?= base_url('recommend') ?>">Recommend a business</a></li>
+                    <li><a href="<?= base_url('recommend') ?>">Recommend a practice or business</a></li>
                     <?php endif; ?>
                     <li><a href="<?= site_url_for(\Config\Sites::ZA, 'partners') ?>">Partner Program</a></li>
                     <li><a href="<?= base_url('business') ?>">Manage your profile</a></li>
@@ -398,7 +403,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                           // not what someone here is asking for. ?>
                     <li><a href="<?= base_url('faq') ?>">FAQ</a></li>
                     <li><a href="<?= base_url('pricing') ?>">Pricing</a></li>
-                    <li><?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus businesses</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified businesses</a><?php endif; ?></li>
+                    <li><?php if (site()->isApp()): ?><a href="<?= base_url('plus') ?>">Plus profiles</a><?php else: ?><a href="<?= base_url('verified') ?>">Verified profiles</a><?php endif; ?></li>
                     <?php // co.za's own pages (Config\Sites::$zaOnlyPaths) are not
                           // offered on local.webscheduler.app. ?>
                     <?php if (! site()->isApp()): ?>
@@ -418,24 +423,24 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <h3>Get Verified</h3>
                     <?php // Same terms as _verification_pitch.php and _plan_cards.php. ?>
                     <p class="site-footer-tagline">
-                        Show customers you're a real, checked business, with your team and your
+                        Show patients and customers you're a real, checked practice or business, with your team and your
                         other branches on your profile. Verified is
                         <?= esc(price_terms((new App\Services\VerificationService())->monthlyAmount(), badge_yearly_price())) ?>, and there is
                         nothing to pay until we've checked your documents.
                     </p>
-                    <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your business verified</a>
+                    <a class="btn btn-accent mt-4" href="<?= esc(signup_cta()['url']) ?>">Get your practice verified</a>
                 <?php elseif (site()->isApp() && ($footerPlus = (new App\Services\VerificationService())->plusOffered() ? (new App\Services\DirectorySettings())->plusPriceUsd() : null) !== null): ?>
                     <?php // local.webscheduler.app's upgrade, as _plus_compare.php words it. ?>
                     <h3>Get Plus</h3>
                     <p class="site-footer-tagline">
-                        Your business profile is free. Plus adds your other locations, your team and the
+                        Your practice profile is free. Plus adds your other locations, your team and the
                         Jobs board, for <?= esc(price_terms($footerPlus, plus_yearly_usd(), 'USD')) ?>, billed in South African rand.
                     </p>
-                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your business</a>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your practice or business</a>
                 <?php else: ?>
                     <h3>Get started</h3>
-                    <p class="site-footer-tagline">Create your business profile in a couple of minutes. No monthly fee. No subscription. No obligation.</p>
-                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your business</a>
+                    <p class="site-footer-tagline">Create your practice profile in a couple of minutes. No monthly fee. No subscription. No obligation.</p>
+                    <a class="btn btn-accent mt-4" href="<?= base_url('add-profile') ?>">Add your practice or business</a>
                 <?php endif; ?>
             </div>
         </div>

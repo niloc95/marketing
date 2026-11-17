@@ -63,7 +63,7 @@ final class SignupModesTest extends CIUnitTestCase
         $this->assertLessThan(strpos($html, 'data-plan-card="free"'), strpos($html, 'data-plan-card="verified"'), 'Verified comes first');
         $this->assertStringContainsString('name="plan" value="verified"', $html);
         $this->assertStringContainsString('name="form_mode" value="verified-page"', $html);
-        $this->assertStringContainsString('A South African business profile is free either way', $html);
+        $this->assertStringContainsString('A South African practice profile is free either way', $html);
     }
 
     /**
@@ -132,17 +132,17 @@ final class SignupModesTest extends CIUnitTestCase
 
         $home = $this->page('/');
         $this->assertStringNotContainsString('add-profile/verified', $home, 'no button advertises a badge we cannot sell');
-        $this->assertStringContainsString('Create your FREE business profile', $home);
+        $this->assertStringContainsString('Create your FREE practice profile', $home);
     }
 
     public function testTheSiteButtonsKeepTheFreeListingForADirectVisitor(): void
     {
         $home = $this->page('/');
 
-        // "Add your business" wording, pointing at /add-profile, which decides the
+        // "Add your practice or business" wording ("Add profile" below 1280px), pointing at /add-profile, which decides the
         // mode: a visitor who came straight to the site still gets the Free card.
-        $this->assertMatchesRegularExpression('#href="' . preg_quote(base_url('add-profile'), '#') . '" class="btn btn-accent nav-cta">\s*<strong class="sm:hidden">Add business</strong>#', $home);
-        $this->assertStringContainsString('<strong class="hidden sm:inline">Add your business</strong>', $home);
+        $this->assertMatchesRegularExpression('#href="' . preg_quote(base_url('add-profile'), '#') . '" class="btn btn-accent nav-cta">\s*<strong class="xl:hidden">Add profile</strong>#', $home);
+        $this->assertStringContainsString('<strong class="hidden xl:inline">Add your practice or business</strong>', $home);
         $this->assertStringNotContainsString('<h3>Get started</h3>', $home, 'the footer leads with the badge while it is on sale');
 
         $direct = $this->page('add-profile');
