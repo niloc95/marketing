@@ -2166,6 +2166,21 @@
     .gallery-video { @apply aspect-video; }
   }
 
+  /* A single photo: shown whole at its own shape, never larger than it was
+     uploaded, centred over a blurred, dimmed copy of itself that fills the
+     band (show.php). Stretching one photo across the screen cropped it hard
+     and blew small uploads up until they looked poor. */
+  .profile-band-single > .profile-band-backdrop {
+    @apply pointer-events-none h-full w-full scale-110 object-cover opacity-50 blur-2xl;
+    grid-area: 1 / 1;
+  }
+  .profile-band-single .gallery-item {
+    @apply flex w-full min-w-0 items-center justify-center bg-transparent;
+  }
+  .profile-band-single .gallery-item img {
+    @apply h-auto max-h-full w-auto min-w-0 max-w-full object-contain;
+  }
+
   /* Previous / next, one each side of the strip, hidden on a phone (a swipe
      does it there) and by directory.js while every photo fits. At an end the
      button fades out rather than sitting there disabled. */
