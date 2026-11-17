@@ -2373,6 +2373,9 @@
   .map-view:fullscreen { @apply aspect-auto rounded-none border-0; }
   .map-approx { @apply mt-2 text-xs text-slate-500; }
   /* The address, above the map: the location panel is the one place it shows. */
+  /* The "Branch or practice name" of a one location profile, over its address. */
+  .map-place { @apply mt-1 font-semibold text-slate-900; }
+  .dark .map-place { @apply text-slate-100; }
   .map-address { @apply mb-3 mt-1 flex items-start gap-2 text-sm text-slate-700; }
   .map-address > svg { @apply mt-0.5 text-slate-400; }
   .dark .map-address { @apply text-slate-300; }

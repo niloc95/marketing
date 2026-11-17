@@ -112,6 +112,8 @@ foreach ($locations as $loc) {
                 <?= view('directory/_map_panel', [
                     'row'     => $row,
                     'name'    => $label,
+                    // The card head already names the place.
+                    'mapPlace' => '',
                     'heading' => 'Map',
                     'class'   => '',
                 ]) ?>
