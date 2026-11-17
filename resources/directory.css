@@ -971,6 +971,20 @@
            no-underline hover:border-primary-300 hover:text-primary-600;
   }
   .dark .home-examples a { @apply border-slate-700 text-slate-300 hover:border-primary-400 hover:text-primary-300; }
+  /* Medical first (owner, 17 Nov 2026): "Find a doctor, dentist or vet",
+     the patient's way in, right under the box. Tinted, so it reads as the
+     main entry points rather than as more examples. */
+  .home-care { @apply mt-5 flex flex-wrap items-center gap-x-3 gap-y-2; }
+  .home-care-label { @apply m-0 text-sm font-semibold text-slate-900; }
+  .home-care ul { @apply m-0 flex list-none flex-wrap gap-2 p-0; }
+  .home-care a {
+    @apply inline-flex h-9 items-center gap-1.5 rounded-control border border-primary-200 bg-primary-50 px-3.5
+           text-sm font-medium text-primary-700 no-underline hover:border-primary-400 hover:bg-primary-100;
+  }
+  .home-care a span { @apply text-xs font-normal text-primary-600; }
+  .dark .home-care-label { @apply text-white; }
+  .dark .home-care a { @apply border-primary-700 bg-primary-900/40 text-primary-200 hover:border-primary-400; }
+  .dark .home-care a span { @apply text-primary-300; }
   .home-open-foot {
     @apply mt-6 flex flex-col items-start gap-3
            sm:flex-row sm:items-center sm:justify-between;

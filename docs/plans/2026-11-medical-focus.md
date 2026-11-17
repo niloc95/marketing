@@ -763,6 +763,12 @@ is absent, the helper looks up the category by id before falling back to "busine
 
 ### Phase 3: Medical first home and Discover
 
+> **Built 17 Nov 2026 by Claude on `feat/medical-first-home`.** Done: the home row
+> (named from the kinds that have profiles, so vets appear once one joins), the
+> "For patients" box, and the health description family. Not done, on purpose: the
+> tile reordering (7 of the top 8 categories on co.za are already medical) and a
+> `vets` category set (one vet category, and "vet" already maps to it).
+
 **Branch:** `feat/medical-first-home`  
 **Estimated size:** Medium (2 to 3 days)  
 **What changes:** Structural and visual changes on the home page and discovery.

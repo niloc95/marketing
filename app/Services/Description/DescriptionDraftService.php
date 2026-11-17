@@ -43,6 +43,9 @@ final class DescriptionDraftService implements DescriptionWriter
 
         $type   = (string) ($facts['type'] ?? 'practice');
         $family = $this->config->family[$type] ?? 'business';
+        if ($family === 'business') {
+            $family = $this->config->groupFamily[(string) ($facts['group'] ?? '')] ?? $family;
+        }
         $set    = $this->config->templates[$family];
         $seed   = crc32(mb_strtolower($name));
 

@@ -192,6 +192,35 @@ final class DescriptionDraftServiceTest extends CIUnitTestCase
     }
 
     /** @param array<string,mixed> $facts */
+    public function testAHealthPracticeWritesAboutPatients(): void
+    {
+        $facts = [
+            'type'              => 'practice',
+            'name'              => 'Dr Jane Surgeon',
+            'category'          => 'General Practitioner',
+            'group'             => 'Health & Medical',
+            'city'              => 'Durban',
+            'customer_location' => 'visit',
+            'services'          => ['Consultations'],
+        ];
+        $text = $this->plain($facts);
+
+        $this->assertStringStartsWith('Dr Jane Surgeon is a general practitioner', $text);
+        $this->assertMatchesRegularExpression('/(appointment|question)\.$/', $text, 'a practice closes on an appointment');
+        $this->assertStringNotContainsString('We help with', $text);
+
+        // Every health line follows the copy rules too.
+        foreach ((new DescriptionTemplates())->templates['health'] as $lines) {
+            foreach ($lines as $line) {
+                $this->assertDoesNotMatchRegularExpression('/\x{2014}|\w-\w/u', $line);
+            }
+        }
+
+        // A health NGO still writes like a cause, not a practice.
+        $ngo = $this->plain(['type' => 'ngo', 'group' => 'Health & Medical'] + $facts);
+        $this->assertStringContainsString('nonprofit organisation', $ngo);
+    }
+
     private function plain(array $facts): string
     {
         return RichText::toPlainText($this->writer->draft($facts));

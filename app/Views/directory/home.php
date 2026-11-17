@@ -165,6 +165,27 @@ $moments += [
                 ], ['saveData' => false]) ?>
             </form>
 
+            <?php // Medical first (owner, 17 Nov 2026): the patient's way in.
+                  // Only kinds with someone published on this site, and the
+                  // label names just those ("Find a doctor or dentist" until a
+                  // vet joins). DirectoryService::careEntryPoints(). ?>
+            <?php $careEntries = $careEntries ?? []; ?>
+            <?php if ($careEntries !== []): ?>
+                <?php
+                $careNouns = array_column($careEntries, 'noun');
+                $careLast  = array_pop($careNouns);
+                $careLabel = 'Find a ' . ($careNouns === [] ? $careLast : implode(', ', $careNouns) . ' or ' . $careLast);
+                ?>
+                <nav class="home-care" aria-label="<?= esc($careLabel, 'attr') ?>">
+                    <p class="home-care-label"><?= esc($careLabel) ?></p>
+                    <ul>
+                        <?php foreach ($careEntries as $care): ?>
+                            <li><a href="<?= esc(base_url($care['path']), 'attr') ?>"><?= esc($care['label']) ?><span><?= number_format((int) $care['count']) ?></span></a></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </nav>
+            <?php endif; ?>
+
             <?php if ($examples !== []): ?>
                 <ul class="home-examples" aria-label="Things to discover">
                     <?php foreach (array_slice($examples, 0, 4) as $example): ?>

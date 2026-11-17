@@ -9,6 +9,12 @@
  * @var array $l
  * @var array $v
  */
+// What the "For patients" box beside the contact card already shows
+// (_care_panel.php, listing_care_facts()) is not said twice.
+$care = $v['careFacts'] ?? [];
+if ($care !== [] && is_array($l['attributes'] ?? null)) {
+    $l['attributes'] = array_diff_key($l['attributes'], array_flip($care));
+}
 $features = listing_feature_labels($l);
 if ($features === []) {
     return;

@@ -65,6 +65,11 @@ class Verticals extends BaseConfig
         // listing_audience(). Never a promise, only the word.
         'audience'         => 'customers',
         'audienceSingular' => 'customer',
+        // Features (Config\ListingAttributes keys) that answer a patient's
+        // first questions, lifted out of "Features & amenities" into a "For
+        // patients" box beside the contact card (_care_panel.php, medical
+        // first, owner 17 Nov 2026). Empty: no box, the features stay put.
+        'careFacts'  => [],
         'headings'   => [
             'description' => 'Business description',
             'brands'      => 'Brands we carry',
@@ -98,6 +103,7 @@ class Verticals extends BaseConfig
             'ownerNounPlural' => 'practices',
             'audience'         => 'patients',
             'audienceSingular' => 'patient',
+            'careFacts'  => ['medical_aid_accepted', 'new_patients_welcome', 'emergency_appointments', 'telehealth', 'house_calls', 'female_practitioner'],
             'headings'   => [
                 'credentials' => 'Qualifications & registrations',
                 'services'    => 'Treatments & fees',
@@ -244,11 +250,12 @@ class Verticals extends BaseConfig
             'noun'       => 'practice',
             'nounPlural' => 'practices',
             // The animals are the patients; the people who bring them are
-            // clients (plan open question 1, to confirm with the owner).
+            // clients (plan open question 1, owner confirmed 17 Nov 2026).
             'ownerNoun'       => 'practice',
             'ownerNounPlural' => 'practices',
             'audience'         => 'clients',
             'audienceSingular' => 'client',
+            'careFacts'  => ['emergency_care', 'home_visits'],
             'headings'   => [
                 'services'    => 'Services & fees',
                 'credentials' => 'Qualifications & registrations',
@@ -359,6 +366,7 @@ class Verticals extends BaseConfig
             'ownerNounPlural' => 'practices',
             'audience'         => 'clients',
             'audienceSingular' => 'client',
+            'careFacts'  => ['medical_aid_accepted', 'new_patients_welcome', 'telehealth', 'house_calls', 'home_visits'],
             'headings'   => [
                 'credentials' => 'Training & registrations',
                 'services'    => 'Treatments & fees',
