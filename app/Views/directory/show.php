@@ -54,7 +54,9 @@ $province = (string) ($l['province'] ?? '');
 // did rather than half-themed.
 $group = $l['category']['group_name'] ?? null;
 $style = category_group_style($group);
-$v     = vertical_profile($group, $catSlug !== '' ? $catSlug : null);
+// The type picks "my" or "our" in a heading ("About my practice" for one
+// doctor, "About our hospital" for a hospital).
+$v     = vertical_profile($group, $catSlug !== '' ? $catSlug : null, (string) ($l['type'] ?? ''));
 $crumbs   = [
     ['name' => 'Discover', 'url' => base_url('directory')],
 ];

@@ -19,7 +19,9 @@
         <li><strong>Script:</strong> <code>public/assets/directory.js</code>, every client behaviour in one file (typeahead, address lookup,
             maps, form steps, repeaters, photo band, lightbox, consent, beacons). Bookings has its own Vite bundle,
             <code>resources/business/*.js</code> → <code>public/assets/business/business.js</code>; the app shell's page swaps
-            (<code>resources/shell/</code>) are in it and, for admin, in <code>public/assets/business/shell.js</code>.</li>
+            (<code>resources/shell/</code>) are in it and, for admin, in <code>public/assets/business/shell.js</code>. The rich text
+            editor (Tiptap) is a third Vite bundle, <code>resources/editor/rich-editor.js</code> → <code>public/assets/editor/rich-editor.js</code>,
+            loaded only on the profile forms; its toolbar is <code>.rt-toolbar</code> / <code>.rt-tool</code>.</li>
         <li><strong>Icons:</strong> Lucide, vendored as SVG in <code>resources/icons/</code>, drawn by <code>lucide()</code>.</li>
         <li><strong>Charts:</strong> inline SVG partials (<code>_bar_chart.php</code>, <code>_stacked_bar_chart.php</code>, <code>_meter_rows.php</code>), no chart library.</li>
     </ul>
