@@ -168,10 +168,11 @@ foreach (config('Countries')->profiles as $code => $profile) {
                 ], ['saveData' => false]) ?>
             </form>
             <nav class="nav">
-                <?php // Three links is the most that stays visible without crowding the
-                      // CTA; everything else lives in the panel below. Hidden on phones,
-                      // where the same links are in the panel instead. ?>
-                <a class="hidden md:inline" href="<?= base_url('directory') ?>">Discover</a>
+                <?php // Few links, so the CTA is never crowded; everything else lives in
+                      // the panel below. Hidden on phones, where the same links are in
+                      // the panel instead. No "Discover" link (owner, 18 Nov 2026): the
+                      // discovery box on every page and the scrolled header search
+                      // already are the way in. ?>
                 <a class="hidden md:inline" href="<?= base_url('directory/categories') ?>">Categories</a>
                 <?php // NOT /directory/map — that route is the JSON pin feed the map
                       // widget fetches, not a page. The map itself is embedded in the
@@ -244,6 +245,10 @@ foreach (config('Countries')->profiles as $code => $profile) {
               // database is unreachable) renders no strip at all, which is why the whole
               // block is inside the guard rather than emitting an empty <nav>.
               //
+              // Desktop and tablet only (owner, 18 Nov 2026): on a phone the
+              // header is already two rows once scrolled, and the categories are
+              // in the menu panel.
+              //
               // Plain links, not directory/_chip: a chip is a tinted pill with a count,
               // which is right for a page of categories to choose from and far too loud
               // for a row of persistent chrome. ?>
@@ -266,7 +271,6 @@ foreach (config('Countries')->profiles as $code => $profile) {
               // as the marketing site's header, deliberately — the two properties share
               // the shape, and directory.js adds the dismiss/aria behaviour on top. ?>
         <div id="site-menu" class="mobile-menu hidden md:hidden" data-mobile-menu>
-            <a href="<?= base_url('directory') ?>">Discover local practices and businesses</a>
             <a href="<?= base_url('directory/categories') ?>">All categories</a>
             <a href="<?= base_url('directory') ?>#map">Discovery map</a>
             <a href="<?= base_url('jobs') ?>">Jobs &amp; services needed</a>

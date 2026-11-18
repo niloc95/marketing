@@ -72,8 +72,9 @@
      strip (see .header-search / .header-quick). Sized to the tallest the header
      gets, because that is the only state an anchor jump can ever land in — and
      it is taller on a phone, where the search is a wrapped row of its own rather
-     than a column of the bar. Measured: 109px at md and up, 161px below it. */
-  html { scroll-behavior: smooth; @apply scroll-pt-44 md:scroll-pt-28; }
+     than a column of the bar. Measured: 109px at md and up, 161px below it
+     until the category strip left phones (18 Nov 2026), now 117px. */
+  html { scroll-behavior: smooth; @apply scroll-pt-32 md:scroll-pt-28; }
   body {
     @apply bg-white font-sans text-slate-900 antialiased;
     @apply transition-colors duration-200;
@@ -246,7 +247,10 @@
      is toggled rather than declared transparent up front because a 1px border on
      a collapsed row is still 1px of header, and the bar over a hero has to
      measure 64px exactly. */
+  /* Not on phones (owner, 18 Nov 2026): display none below md, so the scrolled
+     phone header is the bar and the search row only. */
   .header-quick {
+    @apply hidden md:block;
     @apply invisible h-0 overflow-hidden border-t-0 border-transparent opacity-0;
     @apply transition-[height,opacity,visibility,border-color] duration-200;
   }
