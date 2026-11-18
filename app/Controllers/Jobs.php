@@ -433,6 +433,11 @@ class Jobs extends BaseController
         }
         $back = $svc->url($post) . '#apply';
 
+        // A demo vacancy shows the form and never sends or stores anything.
+        if ($svc->isDemo($post)) {
+            return redirect()->to($back)->with('error', 'This is a demo vacancy, so nothing was sent and nobody was contacted.');
+        }
+
         if ($this->looksLikeABot('job_page_rendered_at')) {
             return redirect()->to($back)->with('applied', JobBoardService::APPLIED_MESSAGE);
         }

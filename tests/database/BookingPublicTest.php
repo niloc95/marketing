@@ -98,7 +98,7 @@ final class BookingPublicTest extends CIUnitTestCase
 
         $res = $this->post('directory/salon-lumi/book', $this->form($slot['start'], $this->sarah));
         $res->assertRedirect();
-        $this->assertSame('This is a demo business profile, so nothing was booked and nobody was contacted.', $_SESSION['error'] ?? null);
+        $this->assertSame('This is a demo profile, so nothing was booked and nobody was contacted.', $_SESSION['error'] ?? null);
         $this->assertSame(0, BookingAppointmentModel::forBusiness($this->listingId)->countAllResults());
         $this->assertSame(0, BookingCustomerModel::forBusiness($this->listingId)->countAllResults());
         $this->assertSame([], $this->sent, 'Nobody is emailed');

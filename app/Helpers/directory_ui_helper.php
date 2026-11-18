@@ -267,7 +267,7 @@ if (! function_exists('listing_has_premium')) {
 
 if (! function_exists('listing_is_demo')) {
     /**
-     * A demo profile (is_demo, set only by `spark demo:fernwood`): a made up
+     * A demo profile (is_demo, set by `spark demo:fernwood` or by hand, e.g. #308): a made up or showcase
      * business that shows what a profile and online booking look like. Left
      * out of discovery by DirectoryService::published(), noindex with no
      * structured data, a banner on its pages, and no booking is ever taken.

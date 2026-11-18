@@ -137,7 +137,8 @@ class JobBoardService
         return $this->posts->live()
             ->select($t . '.*, c.name AS category_name, c.slug AS category_slug,'
                 . ' l.display_name AS listing_name, l.slug AS listing_slug,'
-                . ' l.logo_path AS listing_logo, l.verified_until AS listing_verified_until')
+                . ' l.logo_path AS listing_logo, l.verified_until AS listing_verified_until,'
+                . ' l.is_demo AS listing_is_demo')
             ->join('xs_directory_categories AS c', 'c.id = ' . $t . '.category_id', 'left')
             ->join('xs_directory_listings AS l', 'l.id = ' . $t . '.listing_id', 'left');
     }
@@ -186,7 +187,7 @@ class JobBoardService
         $row = $this->posts
             ->select($t . '.*, c.name AS category_name, c.slug AS category_slug,'
                 . ' l.display_name AS listing_name, l.slug AS listing_slug, l.logo_path AS listing_logo,'
-                . ' l.verified_until AS listing_verified_until, l.status AS listing_status,'
+                . ' l.verified_until AS listing_verified_until, l.status AS listing_status, l.is_demo AS listing_is_demo,'
                 . ' l.email AS listing_email, l.description AS listing_description,'
                 // For listingAddress(): prefixed so they never shadow the
                 // post's own city and province.
@@ -201,6 +202,17 @@ class JobBoardService
             ->first();
 
         return is_array($row) ? $row : null;
+    }
+
+    /**
+     * A vacancy on a demo profile (is_demo, owner 18 Nov 2026): labelled
+     * Demo, never applied to, never offered to search engines.
+     *
+     * @param array<string,mixed> $post a row from find() or the list
+     */
+    public function isDemo(array $post): bool
+    {
+        return (int) ($post['listing_is_demo'] ?? 0) === 1;
     }
 
     /** Published and not past its closing date. */
@@ -364,6 +376,7 @@ class JobBoardService
     {
         $out = [];
         foreach ($this->posts->live()->where('kind', JobPostModel::KIND_JOB)
+            ->where('(listing_id IS NULL OR listing_id NOT IN (SELECT id FROM xs_directory_listings WHERE is_demo = 1))', null, false)
             ->select('id, slug, country_code, updated_at')->orderBy('published_at', 'DESC')->findAll(5000) as $r) {
             $out[] = [
                 'loc'     => $this->url($r),

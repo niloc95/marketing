@@ -137,6 +137,34 @@ final class JobBoardHttpTest extends CIUnitTestCase
         $this->assertStringNotContainsString('drive.example.test', $receiptBody);
     }
 
+    /** A vacancy on a demo profile (is_demo, owner 18 Nov 2026). */
+    public function testADemoVacancyIsLabelledAndNeverApplied(): void
+    {
+        $listing = $this->listing();
+        // Not a form field: set only by hand or by spark demo:fernwood.
+        db_connect()->table('xs_directory_listings')->where('id', $listing['id'])->update(['is_demo' => 1]);
+        $id      = $this->livePost(['listing_id' => $listing['id'], 'slug' => 'demo-admin']);
+
+        $page = (string) $this->get('jobs/' . $id . '-demo-admin')->response()->getBody();
+        $this->assertStringContainsString('This is a demo vacancy.', $page);
+        $this->assertStringContainsString('data-demo-label', $page);
+        $this->assertStringContainsString('noindex', $page);
+        $this->assertStringNotContainsString('"JobPosting"', $page, 'never offered to Google job search');
+
+        $this->assertStringContainsString('data-demo-label', (string) $this->get('jobs')->response()->getBody());
+
+        $this->apply($id)->assertSessionHas('error', 'This is a demo vacancy, so nothing was sent and nobody was contacted.');
+        $this->assertCount(0, $this->sent, 'nobody is emailed');
+        $this->assertSame(0, (new \App\Models\JobResponseModel())->countAllResults(), 'nothing is stored');
+        foreach ((new JobBoardService())->sitemapUrls() as $u) {
+            $this->assertStringNotContainsString('demo-admin', $u['loc'], 'not in the sitemap');
+        }
+
+        // A real employer's vacancy has neither.
+        $real = $this->livePost(['slug' => 'real-one']);
+        $this->assertStringNotContainsString('data-demo-label', (string) $this->get('jobs/' . $real . '-real-one')->response()->getBody());
+    }
+
     public function testTheConfirmationReplacesTheFormWhereTheRedirectLands(): void
     {
         $id   = $this->livePost(['apply_email' => 'hiring@example.test', 'slug' => 'done']);
