@@ -114,13 +114,14 @@ final class RichText
     /**
      * The only classes that survive.
      *
-     * Quill's align and indent formats are class attributors, not style
-     * attributors — that is a large part of why it was chosen over the
-     * alternatives. `style-src-attr` is `'self'` with no `'unsafe-inline'`, so an
+     * Alignment and indent are classes, not style attributes: the names Quill
+     * gave them, kept by the Tiptap editor that replaced it (18 Nov 2026) so
+     * stored text round trips. Line spacing (rt-lh-tight, rt-lh-double) and
+     * space around a paragraph (rt-space-none, rt-space-large) the same way. `style-src-attr` is `'self'` with no `'unsafe-inline'`, so an
      * inline `style="text-align:center"` would apply inside the editor and then
      * be silently dropped by the browser on the public page.
      */
-    private const CLASS_PATTERN = '/^ql-(align-(center|right|justify)|indent-[1-9])$/';
+    private const CLASS_PATTERN = '/^(ql-(align-(center|right|justify)|indent-[1-9])|rt-(lh-(tight|double)|space-(none|large)))$/';
 
     /** Link schemes we will publish. Notably absent: javascript:, data:, vbscript:. */
     private const URL_SCHEMES = ['http', 'https', 'mailto', 'tel'];
@@ -419,6 +420,19 @@ final class RichText
             // at all, so the list is made semantic here instead.
             if ($name === 'ol' && self::isBulletList($child)) {
                 $name = 'ul';
+            }
+
+            // A list item or quote holding paragraphs (<li><p>text</p></li>,
+            // as Tiptap and a Word paste write it) keeps the text and loses
+            // the <p>: paragraph margins inside would space the items apart on
+            // the profile. A second paragraph becomes a line break.
+            if ($name === 'p' && in_array(strtolower($dest->nodeName), ['li', 'blockquote'], true)) {
+                if ($dest->hasChildNodes()) {
+                    $dest->appendChild($out->createElement('br'));
+                }
+                self::copyInto($child, $dest, $out, $depth + 1, $budget, $allowed, $remap, $classes);
+
+                continue;
             }
 
             $el = $out->createElement($name);

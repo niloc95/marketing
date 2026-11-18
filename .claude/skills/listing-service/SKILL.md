@@ -1044,7 +1044,7 @@ Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-side
   after an idle timeout, Cloudflare Access, error pages), is not HTML (downloads), leaves
   the origin, belongs to another shell or a bare one, carries a different
   `meta[name=shell-version]` (a release), or its `main` has `data-spa-full` or a
-  `<script>`. A page with a `scripts` section (admin/edit and admin/new: Leaflet, Quill)
+  `<script>`. A page with a `scripts` section (admin/edit and admin/new: Leaflet, the Tiptap editor)
   gets `data-spa-full` automatically. Opt a link or form out with `data-no-spa` (both Sign
   out forms have it).
 - **Page scripts must survive a swap.** In `/bookings`, register with

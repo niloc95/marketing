@@ -171,12 +171,30 @@ final class RichTextTest extends CIUnitTestCase
 
     // ---------------------------------------------------------------- shapes
 
+    public function testKeepsSpacingClassesAndNothingLikeThem(): void
+    {
+        $out = RichText::sanitise('<p class="rt-lh-double rt-space-large rt-lh-huge rt-space-x">x</p><h2 class="rt-lh-tight rt-space-none">h</h2>');
+
+        $this->assertSame('<p class="rt-lh-double rt-space-large">x</p><h2 class="rt-lh-tight rt-space-none">h</h2>', $out);
+        $this->assertSame('<p>x</p>', RichText::sanitiseBasic('<p class="rt-lh-double">x</p>'));
+    }
+
     public function testConvertsQuillBulletListToRealUl(): void
     {
         // Quill 2 has no <ul>: bullets are an <ol> with data-list on the items.
         $out = RichText::sanitise('<ol><li data-list="bullet">one</li><li data-list="bullet">two</li></ol>');
 
         $this->assertSame('<ul><li>one</li><li>two</li></ul>', $out);
+    }
+
+    public function testUnwrapsParagraphsInsideListItemsAndQuotes(): void
+    {
+        // Tiptap (and a Word paste) put each list item's text in a <p>.
+        $out = RichText::sanitise('<ul><li><p>one</p></li><li><p>two</p><p>more</p></li></ul>');
+
+        $this->assertSame('<ul><li>one</li><li>two<br>more</li></ul>', $out);
+        $this->assertSame('<blockquote>Quote<br>more</blockquote>', RichText::sanitise('<blockquote><p>Quote</p><p>more</p></blockquote>'));
+        $this->assertSame('<ol><li><strong>MD</strong> Moscow</li></ol>', RichText::sanitiseBasic('<ol><li><p><strong>MD</strong> Moscow</p></li></ol>'));
     }
 
     public function testLeavesOrderedListsAlone(): void

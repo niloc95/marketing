@@ -256,7 +256,7 @@ if ($bizContext->isSet() && \App\Services\Bookings\Plans\BookingPlanService::req
 
 <?php // The owner pages built from the public partials (profile form, jobs,
       // reviews, badge) run their script, directory.js. In the scripts section,
-      // after the page's own (Leaflet, Quill), which also makes the shell load
+      // after the page's own (Leaflet, the rich text editor), which also makes the shell load
       // these pages whole instead of swapping them (data-spa-full). ?>
 <?php if (! empty($profileForm)): ?>
 <?= $this->section('scripts') ?>

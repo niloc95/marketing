@@ -3663,13 +3663,19 @@
   .team-member-credentials ul     { @apply my-1 list-disc space-y-0.5 pl-5; }
   .team-member-credentials ol     { @apply my-1 list-decimal space-y-0.5 pl-5; }
   .team-member-credentials strong { @apply font-semibold text-slate-800; }
-  .team-member-bio         { @apply mt-2 whitespace-pre-line text-sm text-slate-700; }
+  /* Rich text since 18 Nov 2026: paragraphs and lists, like the qualifications. */
+  .team-member-bio         { @apply mt-2 text-sm leading-relaxed text-slate-700; }
+  .team-member-bio p       { @apply my-1; }
+  .team-member-bio ul      { @apply my-1 list-disc space-y-0.5 pl-5; }
+  .team-member-bio ol      { @apply my-1 list-decimal space-y-0.5 pl-5; }
+  .team-member-bio strong  { @apply font-semibold text-slate-900; }
 
   .dark .team-member-name        { @apply text-white; }
   .dark .team-member-role        { @apply text-primary-300; }
   .dark .team-member-credentials { @apply text-slate-300; }
   .dark .team-member-credentials strong { @apply text-white; }
   .dark .team-member-bio         { @apply text-slate-300; }
+  .dark .team-member-bio strong  { @apply text-white; }
 
   /* A bookable person's own week, what they offer and their Book button
      (_team_booking.php). Their hours may be shorter than reception's. */
@@ -4179,31 +4185,85 @@
   .dark .pager-jump     { @apply text-slate-400; }
   .dark .pager-jump input { @apply border-slate-700 bg-transparent text-slate-100; }
 
-  /* --------------------------------------------------- description editor */
-  /* Quill's Snow theme, fitted to the form and taught about dark mode. It is
-     vendored under public/assets/vendor/quill/ and loaded only on the three
-     listing forms; none of this reaches a visitor reading a profile.
+  /* --------------------------------------------------- rich text editor */
+  /* The description and a person's qualifications on the profile forms
+     (Tiptap, built from resources/editor/rich-editor.js, loaded only on the
+     forms by directory/_editor_assets). Nothing here reaches a visitor
+     reading a profile.
 
-     Written as explicit selectors rather than utilities because these class
-     names come out of a vendored bundle Tailwind's content globs never scan. */
-  .rt-editor .ql-editor {
-    @apply min-h-[12rem] text-sm text-slate-900;
+     The editor injects no CSS of its own (injectCSS is off, for the CSP), so
+     the ProseMirror base rules it relies on live here too. Explicit selectors
+     rather than utilities in markup: the toolbar is built in JavaScript that
+     Tailwind's content globs never scan. */
+  /* No overflow-hidden: the toolbar's menus hang below it. The toolbar and
+     the writing area round their own corners instead. */
+  .rt-editor {
+    @apply rounded-inner border border-slate-200 bg-white transition;
   }
-  .rt-editor .ql-editor.ql-blank::before {
-    @apply not-italic text-slate-400;
+  .rt-editor:focus-within { @apply border-primary-500 ring-2 ring-primary-500/20; }
+  .rt-toolbar {
+    @apply flex flex-wrap items-center gap-1 rounded-t-inner border-b border-slate-200 bg-slate-50 px-1.5 py-1;
   }
-  /* A person's "Qualifications and credentials" (_person_fields.php): a few
-     lines, not a page. */
-  .rt-editor-mini .ql-editor { @apply min-h-[5rem]; }
-  .rt-editor .ql-toolbar.ql-snow {
-    @apply rounded-t-inner border-slate-200 bg-slate-50;
+  /* Toolbar dropdowns: paragraph style, align, spacing. */
+  .rt-menu-wrap { @apply relative; }
+  .rt-tool.rt-menu-btn { @apply w-auto shrink-0 gap-0.5 px-1.5; }
+  .rt-menu-btn-wide .rt-menu-face { @apply min-w-[5.5rem] text-left text-xs font-medium; }
+  .rt-menu-face { @apply inline-flex items-center; }
+  .rt-menu-chev { @apply opacity-60; }
+  .rt-menu-btn[aria-expanded="true"] { @apply bg-slate-200 text-slate-900; }
+  .rt-menu {
+    @apply absolute left-0 top-full z-30 mt-1 min-w-[12rem] rounded-inner border border-slate-200 bg-white p-1 shadow-lg;
   }
-  .rt-editor .ql-container.ql-snow {
-    @apply rounded-b-inner border-slate-200 bg-white font-sans;
+  .rt-menu[hidden] { display: none; }
+  .rt-menu-title { @apply whitespace-nowrap px-2.5 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500; }
+  .rt-menu-title:first-child { @apply pt-1; }
+  .rt-menu-item {
+    @apply flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-slate-700
+           hover:bg-slate-100 focus:bg-slate-100 focus:outline-none;
   }
-  .rt-editor .ql-snow .ql-picker { @apply text-slate-700; }
-  .rt-editor .ql-snow .ql-stroke  { stroke: theme('colors.slate.600'); }
-  .rt-editor .ql-snow .ql-fill    { fill: theme('colors.slate.600'); }
+  .rt-menu-item > span { @apply flex-1; }
+  .rt-menu-tick { @apply invisible text-primary-600; }
+  .rt-menu-item[aria-checked="true"] { @apply font-medium text-slate-900; }
+  .rt-menu-item[aria-checked="true"] .rt-menu-tick { @apply visible; }
+  .rt-group { @apply flex items-center gap-0.5; }
+  .rt-group + .rt-group { @apply ml-0.5 border-l border-slate-200 pl-1; }
+  .rt-tool {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition
+           hover:bg-slate-200 hover:text-slate-900
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500
+           disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent;
+  }
+  .rt-tool[aria-pressed="true"] { @apply bg-primary-500/10 text-primary-700; }
+  .rt-link {
+    @apply flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2;
+  }
+  .rt-link[hidden] { display: none; }
+  .rt-link-label { @apply m-0 text-xs font-medium text-slate-700; }
+  .field .rt-link-input { @apply h-8 min-w-[12rem] flex-1 py-0 text-sm; }
+  .rt-content {
+    @apply min-h-[12rem] rounded-b-inner px-4 py-3 font-sans text-sm text-slate-900 focus:outline-none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0;
+  }
+  .rt-editor-mini .rt-content { @apply min-h-[5rem]; }
+  .rt-content p.is-editor-empty:first-child::before {
+    @apply pointer-events-none float-left h-0 text-slate-400;
+    content: attr(data-placeholder);
+  }
+  .rt-content ul { @apply my-2 list-disc space-y-1 pl-5; }
+  .rt-content ol { @apply my-2 list-decimal space-y-1 pl-5; }
+  .rt-content li > p { @apply my-0; }
+  .rt-content a  { @apply font-medium text-primary-500 underline underline-offset-2; }
+  .rt-content u  { @apply underline; }
+  .rt-content s  { @apply line-through; }
+  .rt-content .ProseMirror-selectednode { @apply outline outline-2 outline-primary-500; }
+  .rt-content.ProseMirror-hideselection *::selection { background: transparent; }
+  .rt-content .ProseMirror-separator,
+  .rt-content img.ProseMirror-separator { display: inline !important; border: none !important; margin: 0 !important; }
+  .rt-refused { @apply m-0 border-t border-slate-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-900; }
+  .rt-refused[hidden] { display: none; }
 
   /* Live plain-text budget, mirroring RichText::MAX_PLAIN_LENGTH. */
   .rt-count            { @apply mt-1 text-right text-xs text-slate-500; }
@@ -4241,38 +4301,23 @@
   .describe-hints-list .chip  { @apply h-7 px-3 text-xs; }
   .describe-hints-list .chip[aria-pressed="true"] { @apply opacity-60; }
 
-  .dark .rt-editor .ql-toolbar.ql-snow  { @apply border-slate-700 bg-slate-900; }
-  .dark .rt-editor .ql-container.ql-snow { @apply border-slate-700 bg-slate-800; }
-  .dark .rt-editor .ql-editor            { @apply text-white; }
-  .dark .rt-editor .ql-editor.ql-blank::before { @apply text-slate-400; }
-  /* The toolbar icons are inline SVG, so they follow stroke/fill rather than
-     color — leaving them at Snow's near-black makes the whole toolbar
-     disappear against a dark card. */
-  .dark .rt-editor .ql-snow .ql-stroke   { stroke: theme('colors.slate.300'); }
-  .dark .rt-editor .ql-snow .ql-fill     { fill: theme('colors.slate.300'); }
-  .dark .rt-editor .ql-snow .ql-picker   { @apply text-slate-300; }
-  .dark .rt-editor .ql-snow .ql-picker-options {
-    @apply border-slate-700 bg-slate-900 text-slate-200;
-  }
-  .dark .rt-editor .ql-snow .ql-picker.ql-expanded .ql-picker-label {
-    @apply border-slate-700;
-  }
-  .dark .rt-editor .ql-snow.ql-toolbar button:hover .ql-stroke,
-  .dark .rt-editor .ql-snow.ql-toolbar button.ql-active .ql-stroke {
-    stroke: theme('colors.primary.300');
-  }
-  .dark .rt-editor .ql-snow.ql-toolbar button:hover .ql-fill,
-  .dark .rt-editor .ql-snow.ql-toolbar button.ql-active .ql-fill {
-    fill: theme('colors.primary.300');
-  }
-  /* The link tooltip is a floating panel Quill positions itself; without this
-     it stays white-on-white-text in dark mode and reads as empty. */
-  .dark .rt-editor .ql-snow .ql-tooltip {
-    @apply border-slate-700 bg-slate-900 text-slate-200 shadow-lg;
-  }
-  .dark .rt-editor .ql-snow .ql-tooltip input[type="text"] {
-    @apply border-slate-700 bg-slate-800 text-white;
-  }
+  .dark .rt-editor  { @apply border-slate-700 bg-slate-800; }
+  .dark .rt-toolbar { @apply border-slate-700 bg-slate-900; }
+  .dark .rt-group + .rt-group { @apply border-slate-700; }
+  .dark .rt-tool    { @apply text-slate-300 hover:bg-slate-700 hover:text-white; }
+  .dark .rt-tool[aria-pressed="true"] { @apply bg-primary-300/15 text-primary-300; }
+  .dark .rt-link    { @apply border-slate-700 bg-slate-900; }
+  .dark .rt-menu-btn[aria-expanded="true"] { @apply bg-slate-700 text-white; }
+  .dark .rt-menu       { @apply border-slate-700 bg-slate-900; }
+  .dark .rt-menu-title { @apply text-slate-400; }
+  .dark .rt-menu-item  { @apply text-slate-200 hover:bg-slate-800 focus:bg-slate-800; }
+  .dark .rt-menu-item[aria-checked="true"] { @apply text-white; }
+  .dark .rt-menu-tick  { @apply text-primary-300; }
+  .dark .rt-link-label { @apply text-slate-200; }
+  .dark .rt-content { @apply text-white; }
+  .dark .rt-content p.is-editor-empty:first-child::before { @apply text-slate-400; }
+  .dark .rt-content a { @apply text-primary-300; }
+  .dark .rt-refused { @apply border-slate-700 bg-amber-950 text-amber-100; }
 
   /* ------------------------------------------------------- listing prose */
   /* The public rendering of an owner's description — the one place the site
@@ -4287,44 +4332,50 @@
   /* Notion like (owner, 18 Nov 2026): headings in normal case with normal
      letter spacing, clearly larger than the text and clearly smaller than the
      panel's own small capitals title above them, so the two never read alike.
-     The same rules style the editor (.rt-editor .ql-container.ql-snow .ql-editor, which outranks
-     quill.snow.css's 1.5em h2), so what an owner types looks like the page. */
-  .listing-prose > :first-child, .rt-editor .ql-container.ql-snow .ql-editor > :first-child { @apply mt-0; }
-  .listing-prose > :last-child,  .rt-editor .ql-container.ql-snow .ql-editor > :last-child  { @apply mb-0; }
-  .listing-prose p, .rt-editor .ql-container.ql-snow .ql-editor p { @apply my-2 leading-relaxed tracking-normal; }
-  .listing-prose h2, .rt-editor .ql-container.ql-snow .ql-editor h2 { @apply mb-1 mt-7 text-lg font-semibold normal-case leading-snug tracking-normal text-slate-900; }
-  .listing-prose h3, .rt-editor .ql-container.ql-snow .ql-editor h3 { @apply mb-0.5 mt-5 text-[0.9375rem] font-semibold normal-case leading-snug tracking-normal text-slate-900; }
+     The same rules style the editor (.rt-content), so what an owner types
+     looks like the page. */
+  .listing-prose > :first-child, .rt-content > :first-child { @apply mt-0; }
+  .listing-prose > :last-child,  .rt-content > :last-child  { @apply mb-0; }
+  .listing-prose p, .rt-content p { @apply my-2 leading-relaxed tracking-normal; }
+  .listing-prose h2, .rt-content h2 { @apply mb-1 mt-7 text-lg font-semibold normal-case leading-snug tracking-normal text-slate-900; }
+  .listing-prose h3, .rt-content h3 { @apply mb-0.5 mt-5 text-[0.9375rem] font-semibold normal-case leading-snug tracking-normal text-slate-900; }
   .listing-prose ul         { @apply my-2 list-disc space-y-1 pl-5; }
   .listing-prose ol         { @apply my-2 list-decimal space-y-1 pl-5; }
-  .rt-editor .ql-container.ql-snow .ql-editor ol { @apply my-2 space-y-1; }
-  .listing-prose blockquote, .rt-editor .ql-container.ql-snow .ql-editor blockquote { @apply my-3 border-l-2 border-slate-300 pl-3 italic text-slate-600; }
-  .listing-prose strong, .rt-editor .ql-container.ql-snow .ql-editor strong { @apply font-semibold text-slate-900; }
+  .listing-prose blockquote, .rt-content blockquote { @apply my-3 border-l-2 border-slate-300 pl-3 italic text-slate-600; }
+  .listing-prose strong, .rt-content strong { @apply font-semibold text-slate-900; }
   .listing-prose a          { @apply font-medium text-primary-500 underline underline-offset-2 hover:text-primary-300; }
   .dark .listing-prose h2,
   .dark .listing-prose h3,
   .dark .listing-prose strong,
-  .dark .rt-editor .ql-container.ql-snow .ql-editor h2,
-  .dark .rt-editor .ql-container.ql-snow .ql-editor h3,
-  .dark .rt-editor .ql-container.ql-snow .ql-editor strong { @apply text-white; }
-  .dark .listing-prose blockquote, .dark .rt-editor .ql-container.ql-snow .ql-editor blockquote { @apply border-slate-600 text-slate-400; }
+  .dark .rt-content h2,
+  .dark .rt-content h3,
+  .dark .rt-content strong { @apply text-white; }
+  .dark .listing-prose blockquote, .dark .rt-content blockquote { @apply border-slate-600 text-slate-400; }
   .dark .listing-prose a          { @apply text-primary-300 hover:text-white; }
 
-  /* Quill's align and indent formats are classes, not inline styles — which is
-     the reason the CSP tolerates them at all (style-src-attr is 'self'). They
-     arrive from the database, so Tailwind never sees them in a template and
-     they have to be written out longhand. */
-  .listing-prose .ql-align-center  { @apply text-center; }
-  .listing-prose .ql-align-right   { @apply text-right; }
-  .listing-prose .ql-align-justify { @apply text-justify; }
-  .listing-prose .ql-indent-1 { @apply pl-6; }
-  .listing-prose .ql-indent-2 { @apply pl-12; }
-  .listing-prose .ql-indent-3 { @apply pl-[4.5rem]; }
-  .listing-prose .ql-indent-4 { @apply pl-24; }
-  .listing-prose .ql-indent-5 { @apply pl-[7.5rem]; }
-  .listing-prose .ql-indent-6 { @apply pl-36; }
-  .listing-prose .ql-indent-7 { @apply pl-[10.5rem]; }
-  .listing-prose .ql-indent-8 { @apply pl-48; }
-  .listing-prose .ql-indent-9 { @apply pl-[13.5rem]; }
+  /* Alignment and indent are classes (the names Quill gave them, kept by the
+     Tiptap editor), not inline styles, which is the reason the CSP tolerates
+     them at all (style-src-attr is 'self'). They arrive from the database, so
+     Tailwind never sees them in a template and they have to be written out
+     longhand. The editor shows them the same way. */
+  .listing-prose .ql-align-center, .rt-content .ql-align-center  { @apply text-center; }
+  .listing-prose .ql-align-right, .rt-content .ql-align-right   { @apply text-right; }
+  .listing-prose .ql-align-justify, .rt-content .ql-align-justify { @apply text-justify; }
+  .listing-prose .ql-indent-1, .rt-content .ql-indent-1 { @apply pl-6; }
+  .listing-prose .ql-indent-2, .rt-content .ql-indent-2 { @apply pl-12; }
+  .listing-prose .ql-indent-3, .rt-content .ql-indent-3 { @apply pl-[4.5rem]; }
+  .listing-prose .ql-indent-4, .rt-content .ql-indent-4 { @apply pl-24; }
+  .listing-prose .ql-indent-5, .rt-content .ql-indent-5 { @apply pl-[7.5rem]; }
+  .listing-prose .ql-indent-6, .rt-content .ql-indent-6 { @apply pl-36; }
+  .listing-prose .ql-indent-7, .rt-content .ql-indent-7 { @apply pl-[10.5rem]; }
+  .listing-prose .ql-indent-8, .rt-content .ql-indent-8 { @apply pl-48; }
+  .listing-prose .ql-indent-9, .rt-content .ql-indent-9 { @apply pl-[13.5rem]; }
+  /* Line spacing and space around a paragraph, chosen in the editor's
+     Spacing menu (owner, 18 Nov 2026). Normal is no class. */
+  .listing-prose .rt-lh-tight,  .rt-content .rt-lh-tight  { @apply leading-snug; }
+  .listing-prose .rt-lh-double, .rt-content .rt-lh-double { line-height: 2.1; }
+  .listing-prose .rt-space-none,  .rt-content .rt-space-none  { @apply my-0; }
+  .listing-prose .rt-space-large, .rt-content .rt-space-large { @apply my-6; }
 }
 
 /* ---------------------------------------------------------------- keyframes */
