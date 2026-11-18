@@ -8,7 +8,7 @@
 
    Two modules have a dependency, both loaded ahead of this file on the three
    listing forms: the pin picker needs Leaflet (directory/_map_assets) and the
-   description editor needs Quill (directory/_editor_assets). Everything else
+   description editor needs Tiptap (directory/_editor_assets). Everything else
    stays dependency-free, and both degrade to nothing if their library is
    absent — the editor leaves a working plain textarea behind. */
 (function () {
@@ -28,7 +28,7 @@
   // bottom of this file to put restored values back into widgets that keep
   // their own state rather than reading their inputs.
   //
-  // setDescriptionHtml — set by the description editor (Quill).
+  // setDescriptionHtml — set by the description editor (Tiptap).
   // movePinTo — set by the pin picker; the restored coordinate inputs already
   //   hold the values, this only moves the marker onto them.
   var setDescriptionHtml = null;
@@ -4002,263 +4002,79 @@
     });
   })();
 
-  // ------------------------------------------------- description rich text
-  // Turns the description textarea on the three listing forms into a Quill
-  // editor. No-op without [data-rich-text] on the page, and no-op if Quill did
-  // not load — in both cases the plain textarea is still there, still named
-  // "description", and still posts. RichText::sanitise() on the server turns
-  // whatever arrives, markup or not, into the same allowlisted HTML.
+  // ------------------------------------------------- rich text editors
+  // The description on the three profile forms, and a person's
+  // "Qualifications and credentials" on a team card, become rich text
+  // editors (Tiptap, window.RichEditor from public/assets/editor/rich-editor.js,
+  // loaded by directory/_editor_assets). No-op if the editor did not load: the
+  // plain textarea is still there, still named, and still posts, and
+  // RichText on the server turns whatever arrives into the same allowlisted
+  // HTML. The editor itself cleans pastes (style attributes and dashes out),
+  // keeps alignment and indent as classes for the CSP, and refuses an edit
+  // that grows the text past the cap; see resources/editor/rich-editor.js.
   //
-  // The toolbar is deliberately short of colour. Quill writes colour as an
-  // inline style attribute and this site's CSP sets style-src-attr to 'self'
-  // with no 'unsafe-inline', so the colour would show inside the editor and
-  // then be dropped by the browser on the public page — the worst kind of
-  // feature, one that looks like it worked. Align and indent are safe because
-  // Quill implements those as classes.
-  (function () {
-    var field = document.querySelector('[data-rich-text]');
-    if (!field || typeof Quill === 'undefined') return;
-
-    var textarea = field.querySelector('textarea[name="description"]');
-    var shell    = field.querySelector('.rt-editor');
-    var mount    = field.querySelector('[data-rich-text-for]');
-    var counter  = field.querySelector('[data-rich-text-count]');
-    var form     = field.closest('form');
-    if (!textarea || !shell || !mount || !form) return;
-
-    // RichText::MAX_PLAIN_LENGTH, rendered onto the field by the view. The
-    // server is the authority; this only stops someone writing 5000 characters
-    // before being told. 1000 if the attribute is somehow missing.
-    var MAX = parseInt(field.getAttribute('data-rich-text-max') || '', 10) || 1000;
-
-    // ListingQualityService::DESCRIPTION_FULL_CHARS, the length that earns
-    // the description's full points on the profile strength panel.
-    var GOAL = counter ? parseInt(counter.getAttribute('data-rich-text-goal') || '', 10) || 0 : 0;
-
-    shell.hidden = true;
-    if (counter) counter.hidden = true;
-
-    var quill = new Quill(mount, {
-      theme: 'snow',
-      placeholder: textarea.getAttribute('placeholder') || '',
-      formats: [
-        'header', 'bold', 'italic', 'underline', 'strike',
-        'blockquote', 'list', 'indent', 'align', 'link'
-      ],
-      modules: {
-        toolbar: [
-          [{ header: [2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          [{ indent: '-1' }, { indent: '+1' }],
-          [{ align: [] }],
-          ['blockquote', 'link'],
-          ['clean']
-        ],
-        // Quill's default keyboard bindings include tab-to-indent, which traps
-        // keyboard users inside the editor. Restoring tab as "leave this field"
-        // costs an indent shortcut the toolbar still offers.
-        keyboard: {
-          bindings: {
-            tab: { key: 9, handler: function () { return true; } }
-          }
-        }
-      }
-    });
-
-    // Seed from whatever the server rendered: stored HTML on an edit, flashed
-    // input after a failed submit, or plain text on a row that predates the
-    // editor. dangerouslyPasteHTML runs it through Quill's own clipboard
-    // matchers, which is what converts a stored <ul> back into Quill's
-    // data-list markup.
-    var initial = textarea.value.trim();
-    if (initial) {
-      if (initial.indexOf('<') === -1) {
-        quill.setText(initial);
-      } else {
-        quill.clipboard.dangerouslyPasteHTML(initial, 'silent');
-      }
-    }
-
-    textarea.hidden = true;
-    textarea.setAttribute('aria-hidden', 'true');
-    textarea.setAttribute('tabindex', '-1');
-    shell.hidden = false;
-    if (counter) counter.hidden = false;
-
-    // The label points at the textarea, which is now hidden, so move the
-    // association onto the editable element itself.
-    var label = field.querySelector('label[for="description"]');
-    if (label) {
-      label.removeAttribute('for');
-      label.id = label.id || 'description-label';
-      quill.root.setAttribute('aria-labelledby', label.id);
-    }
-
-    // Quill builds its paste DOM by assigning innerHTML, so a pasted
-    // style="color:red" is applied by the HTML parser and refused by
-    // style-src-attr before any clipboard matcher gets a chance to drop it.
-    // That costs a console error and a /csp-report POST per styled element,
-    // and a paste out of Word or Google Docs — the normal way this field gets
-    // filled — carries dozens. The report endpoint is throttled at 30/min, so
-    // one ordinary paste can both spam the log and mask a real violation.
-    //
-    // Stripping the attribute from the string means it never becomes DOM. The
-    // regex is deliberate and is *not* a security control — RichText::sanitise()
-    // on the server is, and it removes style attributes whatever happens here.
-    // Anything this pattern misses simply produces the warning it produces
-    // today, which is why a loose match is acceptable where it would not be on
-    // the write path.
-    //
-    // Capture phase on the shell, not on quill.root: listeners on the element
-    // that is itself the target fire in registration order, and Quill got there
-    // first. An ancestor's capture listener always runs before both.
-    //
-    // The same handler takes dashes out, because customer copy has none and
-    // a ChatGPT answer ("Write it with ChatGPT") is full of them. Em and en
-    // dashes become commas; a hyphen between two lower case letters becomes a
-    // space ("walk-in" reads "walk in"). A hyphen next to a capital is left,
-    // so proper names such as KwaZulu-Natal and Bela-Bela keep theirs. Only
-    // text is touched, never markup, so a link's address survives.
-    var DASHED = /[\u2013\u2014]|[a-z\u00df-\u00ff][\u2010\u2011-][a-z\u00df-\u00ff]/;
-
-    function undashText(text) {
-      return text
-        .replace(/\s*[\u2013\u2014]+\s*/g, ', ')
-        .replace(/([a-z\u00df-\u00ff])[\u2010\u2011-](?=[a-z\u00df-\u00ff])/g, '$1 ');
-    }
-
-    function undashHtml(html) {
-      var doc = new DOMParser().parseFromString(html, 'text/html');
-      var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-      for (var node = walker.nextNode(); node; node = walker.nextNode()) {
-        node.nodeValue = undashText(node.nodeValue);
-      }
-      return doc.body.innerHTML;
-    }
-
-    shell.addEventListener('paste', function (e) {
-      var data = e.clipboardData;
-      if (!data) return;
-
-      var html = data.getData('text/html');
-      var text = data.getData('text/plain');
-      var styled = !!html && html.indexOf('style') !== -1;
-      var dashed = DASHED.test(html || text || '');
-      if (!styled && !dashed) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      var range = quill.getSelection(true);
-      if (!range) return;
-      if (range.length) quill.deleteText(range.index, range.length, 'user');
-
-      if (html) {
-        // Styles out first, as a string, so they never become DOM (see above).
-        var clean = html.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
-        quill.clipboard.dangerouslyPasteHTML(range.index, dashed ? undashHtml(clean) : clean, 'user');
-      } else {
-        var plain = undashText(text);
-        quill.insertText(range.index, plain, 'user');
-        quill.setSelection(range.index + plain.length, 0, 'silent');
-      }
-    }, true);
-
-    function plainLength() {
-      // getText() always ends in a trailing newline Quill maintains itself; it
-      // is not something the owner typed, so it must not count.
-      return quill.getText().replace(/\n+$/, '').length;
-    }
-
-    function render() {
-      var used = plainLength();
-      if (!counter) return;
-      counter.textContent = used > MAX
-        ? (used - MAX) + ' characters over the limit'
-        : (MAX - used) + ' characters left' +
-          (GOAL && used > 0 && used < GOAL ? ' \u00b7 ' + (GOAL - used) + ' more for full profile points' : '');
-      counter.classList.toggle('is-over', used > MAX);
-    }
-
-    // Copy the editor into the real field. On submit, as it always has, and now
-    // on every change too — the draft backup reads the textarea, and without
-    // this a description edit would be the one change it could not see.
-    function syncTextarea() {
-      // getSemanticHTML() is Quill 2's markup export; the older editors used
-      // root.innerHTML, which also carries Quill's own UI nodes.
-      var html = typeof quill.getSemanticHTML === 'function'
-        ? quill.getSemanticHTML()
-        : quill.root.innerHTML;
-
-      textarea.value = plainLength() === 0 ? '' : html;
-    }
-
-    quill.on('text-change', function (delta, old, source) {
-      // Only undo the user's own overflow, and only an edit that made it
-      // longer. A description saved under the old 5000 cap loads already over
-      // this one; undoing every keystroke would lock its owner out of the very
-      // cuts they need to make. Reverting a programmatic change would fight
-      // with the seeding above and with the clean button.
-      var before = Math.max(0, old.length() - 1);
-      if (source === 'user' && plainLength() > MAX && plainLength() > before) {
-        quill.history.undo();
-      }
-      render();
-      // Only the user's edits. Syncing the silent seed above would rewrite the
-      // server's stored HTML into Quill's export before anyone typed a thing,
-      // and every page load would look like an unsaved change.
-      if (source === 'user') syncTextarea();
-    });
-    render();
-
-    setDescriptionHtml = function (html) {
-      quill.setText('', 'silent');
-      if (html) quill.clipboard.dangerouslyPasteHTML(html, 'silent');
-      textarea.value = html;
-      render();
-    };
-
-    form.addEventListener('submit', syncTextarea);
-  })();
-
-  // ------------------------------------- qualifications rich text (per person)
-  // "Qualifications and credentials" on a team card (_person_fields.php): a
-  // small Quill editor, bold, italic and lists only, over the real textarea,
-  // as the description's above. Several on a page (one per person), and a
-  // person added with "+ Add another person" gets one too (repeat:add). The
-  // server keeps RichText::sanitiseBasic() whatever arrives. No styles reach
-  // a paste's DOM for the CSP reason given above.
-  function initMiniEditor(field) {
-    if (!field || field.hasAttribute('data-rich-ready') || typeof Quill === 'undefined') return;
+  // Field markup: [data-rich-text] (description, "full": headings, links,
+  // alignment…) or [data-rich-mini] (qualifications, "basic": bold, italic,
+  // lists), each holding the textarea, .rt-editor > [data-rich-text-for] and
+  // an optional [data-rich-text-count].
+  function initRichField(field, kind) {
+    if (!field || field.hasAttribute('data-rich-ready') || !window.RichEditor) return null;
     var textarea = field.querySelector('textarea');
     var shell    = field.querySelector('.rt-editor');
     var mount    = field.querySelector('[data-rich-text-for]');
     var counter  = field.querySelector('[data-rich-text-count]');
     var form     = field.closest('form');
-    if (!textarea || !shell || !mount || !form) return;
+    if (!textarea || !shell || !mount || !form) return null;
     field.setAttribute('data-rich-ready', '');
 
+    // The cap rendered by the view (RichText::MAX_PLAIN_LENGTH or
+    // TeamMemberService::MAX_CREDENTIALS_LENGTH). The server is the
+    // authority; this only stops someone typing past it before being told.
     var MAX = parseInt(field.getAttribute('data-rich-text-max') || '', 10) || 1000;
+    // ListingQualityService::DESCRIPTION_FULL_CHARS, the length that earns the
+    // description's full points on the profile strength panel.
+    var GOAL = counter ? parseInt(counter.getAttribute('data-rich-text-goal') || '', 10) || 0 : 0;
 
-    var quill = new Quill(mount, {
-      theme: 'snow',
-      placeholder: textarea.getAttribute('placeholder') || '',
-      formats: ['bold', 'italic', 'list'],
-      modules: {
-        toolbar: [['bold', 'italic'], [{ list: 'bullet' }, { list: 'ordered' }], ['clean']],
-        // `formats` above already turns a pasted heading or link into words.
-        keyboard: { bindings: { tab: { key: 9, handler: function () { return true; } } } }
-      }
-    });
+    // The label points at the textarea, which is about to hide, so the
+    // association moves onto the editable element.
+    var label = field.querySelector('label[for="' + textarea.id + '"]') || field.querySelector('label');
+    if (label) {
+      label.removeAttribute('for');
+      label.id = label.id || 'rt-label-' + Math.random().toString(36).slice(2, 9);
+    }
 
-    var initial = textarea.value.trim();
-    if (initial) {
-      if (initial.indexOf('<') === -1) {
-        quill.setText(initial);
-      } else {
-        quill.clipboard.dangerouslyPasteHTML(initial, 'silent');
-      }
+    var rich;
+    try {
+      rich = window.RichEditor.mount({
+        mount: mount,
+        kind: kind,
+        content: textarea.value,
+        placeholder: textarea.getAttribute('placeholder') || '',
+        max: MAX,
+        labelledBy: label ? label.id : '',
+        // Copy into the real field on every edit, not only on submit: the
+        // draft backup reads the textarea. The seed never calls this, so
+        // loading a page is never an unsaved change.
+        onChange: function (html) {
+          textarea.value = html;
+          render();
+        }
+      });
+    } catch (err) {
+      // A broken editor must never cost the owner their field.
+      field.removeAttribute('data-rich-ready');
+      if (label && textarea.id) label.setAttribute('for', textarea.id);
+      return null;
+    }
+
+    function render() {
+      if (!counter) return;
+      var used = rich.length();
+      counter.textContent = used > MAX
+        ? (used - MAX) + ' characters over the limit'
+        : (MAX - used) + ' characters left' +
+          (GOAL && used > 0 && used < GOAL ? ' · ' + (GOAL - used) + ' more for full profile points' : '');
+      counter.classList.toggle('is-over', used > MAX);
     }
 
     textarea.hidden = true;
@@ -4266,48 +4082,25 @@
     textarea.setAttribute('tabindex', '-1');
     shell.hidden = false;
     if (counter) counter.hidden = false;
-
-    var label = field.querySelector('label');
-    if (label) {
-      label.id = label.id || 'rt-mini-' + Math.random().toString(36).slice(2, 9);
-      quill.root.setAttribute('aria-labelledby', label.id);
-    }
-
-    shell.addEventListener('paste', function (e) {
-      var html = e.clipboardData && e.clipboardData.getData('text/html');
-      if (!html || html.indexOf('style') === -1) return;
-      e.preventDefault();
-      e.stopPropagation();
-      var range = quill.getSelection(true);
-      if (!range) return;
-      if (range.length) quill.deleteText(range.index, range.length, 'user');
-      quill.clipboard.dangerouslyPasteHTML(range.index, html.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ''), 'user');
-    }, true);
-
-    function plainLength() {
-      return quill.getText().replace(/\n+$/, '').length;
-    }
-
-    function render() {
-      if (!counter) return;
-      var used = plainLength();
-      counter.textContent = used > MAX ? (used - MAX) + ' characters over the limit' : (MAX - used) + ' characters left';
-      counter.classList.toggle('is-over', used > MAX);
-    }
-
-    function sync() {
-      var html = typeof quill.getSemanticHTML === 'function' ? quill.getSemanticHTML() : quill.root.innerHTML;
-      textarea.value = plainLength() === 0 ? '' : html;
-    }
-
-    quill.on('text-change', function (delta, old, source) {
-      var before = Math.max(0, old.length() - 1);
-      if (source === 'user' && plainLength() > MAX && plainLength() > before) quill.history.undo();
-      render();
-      if (source === 'user') sync();
-    });
     render();
-    form.addEventListener('submit', sync);
+
+    rich.render = render;
+    rich.textarea = textarea;
+    return rich;
+  }
+
+  (function () {
+    var rich = initRichField(document.querySelector('[data-rich-text]'), 'full');
+    if (!rich) return;
+    setDescriptionHtml = function (html) {
+      rich.setHtml(html || '');
+      rich.textarea.value = html || '';
+      rich.render();
+    };
+  })();
+
+  function initMiniEditor(field) {
+    initRichField(field, 'basic');
   }
 
   document.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);
@@ -4939,7 +4732,7 @@
 
     function descriptionProblem(el) {
       if (!el || el.disabled) return '';
-      // The editor has already written its HTML back (syncTextarea runs first).
+      // The editor writes its HTML back on every edit.
       var text = (el.value || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
       return text === '' ? 'Please describe your business: what you do, who it’s for, and why people choose you.' : '';
     }
@@ -4947,7 +4740,7 @@
     function checks() {
       var category = form.querySelector('select[name="category_id"]');
       var describe = form.querySelector('textarea[name="description"]');
-      var editor   = describe && describe.parentNode.querySelector('.ql-editor');
+      var editor   = describe && describe.parentNode.querySelector('.rt-content');
       var group    = category && category.parentNode.querySelector('[data-category-group]');
       var services = form.querySelector('#field-services');
       return [
@@ -5339,7 +5132,7 @@
       : document.querySelector('form[data-draft], form[action$="add-profile"]');
     if (!form) return;
 
-    var CONTROLS = 'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), .ql-editor';
+    var CONTROLS = 'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), select:not([disabled]), textarea:not([disabled]), .rt-content';
     function visible(el) { return !!(el && el.getClientRects().length); }
 
     var marked = [];

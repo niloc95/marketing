@@ -179,6 +179,16 @@ final class RichTextTest extends CIUnitTestCase
         $this->assertSame('<ul><li>one</li><li>two</li></ul>', $out);
     }
 
+    public function testUnwrapsParagraphsInsideListItemsAndQuotes(): void
+    {
+        // Tiptap (and a Word paste) put each list item's text in a <p>.
+        $out = RichText::sanitise('<ul><li><p>one</p></li><li><p>two</p><p>more</p></li></ul>');
+
+        $this->assertSame('<ul><li>one</li><li>two<br>more</li></ul>', $out);
+        $this->assertSame('<blockquote>Quote<br>more</blockquote>', RichText::sanitise('<blockquote><p>Quote</p><p>more</p></blockquote>'));
+        $this->assertSame('<ol><li><strong>MD</strong> Moscow</li></ol>', RichText::sanitiseBasic('<ol><li><p><strong>MD</strong> Moscow</p></li></ol>'));
+    }
+
     public function testLeavesOrderedListsAlone(): void
     {
         $out = RichText::sanitise('<ol><li data-list="ordered">one</li></ol>');

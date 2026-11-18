@@ -37,7 +37,7 @@ $showSwitch = $showSwitch ?? true;
 </div>
 <?php // Rich text since 18 Nov 2026, when the profile wide Credentials box was
       // folded in here (owner). The textarea is the real field: directory.js
-      // mounts a small Quill editor over it (bold, italic, lists) and copies
+      // mounts a small rich text editor over it (bold, italic, lists) and copies
       // the HTML back; without the script it posts plain text, one line per
       // qualification. TeamMemberService keeps RichText::sanitiseBasic(). ?>
 <div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_CREDENTIALS_LENGTH ?>">

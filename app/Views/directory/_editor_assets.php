@@ -1,32 +1,31 @@
 <?php
 /**
- * Quill assets for the description editor on the listing forms.
+ * The rich text editor (Tiptap) for the description and a person's
+ * qualifications on the profile forms.
  *
- * Included by the same three views that render directory/_form_fields (public
- * signup, owner self-service edit, admin edit) via the layout's "scripts"
- * section, alongside _map_assets, so the three can't drift apart on which
- * version they load.
+ * Included by every view that renders directory/_form_fields or
+ * _person_fields (public signup, owner area, admin edit, provider page) via
+ * the layout's "scripts" section, alongside _map_assets, so they can't drift
+ * apart on which version they load.
  *
- * Self-hosted for the same reason Leaflet is: scripts/build-listing-app.js
- * produces a self-contained bundle for cPanel, and a CDN would put a third
- * party in the critical path of every listing edit. It would also be blocked
- * outright — script-src is 'self' plus Google Tag Manager, nothing else.
+ * Built from resources/editor/rich-editor.js by `npm run editor:build` into
+ * one self hosted script that sets window.RichEditor. Self hosted because
+ * script-src allows our own origin and a short list of named services, and a
+ * CDN would put a third party in the path of every profile edit.
  *
- * Quill rather than TinyMCE or Trix, for two CSP reasons and one feature one:
- * TinyMCE edits inside an iframe and frame-src is 'none'; Quill's align and
- * indent formats are class attributors (ql-align-center, ql-indent-1) rather
- * than inline styles, which matters because style-src-attr is 'self' with no
- * 'unsafe-inline'; and Trix has neither headings nor alignment. Text colour is
- * left off the toolbar for the same CSP reason — Quill writes colour as an
- * inline style attribute, which would apply inside the editor and then be
- * dropped by the browser on the public page.
+ * Tiptap since 18 Nov 2026 (owner), replacing Quill 2.0.3. TinyMCE was ruled
+ * out for the CSP: it writes inline style attributes (style-src-attr is
+ * 'self' with no 'unsafe-inline') and its cloud build loads from tiny.cloud.
+ * Tiptap writes clean HTML, injects no <style> (injectCSS is off; its rules
+ * are in directory.css), and alignment and indent stay the ql-align-* and
+ * ql-indent-* classes RichText keeps, so stored descriptions open unchanged.
  *
- * `defer` on the script matters — deferred scripts run in document order, and
- * directory.js (which uses Quill) is emitted after this by the layout.
+ * `defer` matters: deferred scripts run in document order, and directory.js
+ * (which uses window.RichEditor) is emitted after this by the layout.
  *
- * Form-only, like _map_assets: the public profile renders stored HTML with
- * ordinary CSS, so a visitor reading a listing never downloads an editor.
+ * Form only, like _map_assets: the public profile renders stored HTML with
+ * ordinary CSS, so a visitor reading a profile never downloads an editor.
  */
+$editorJs = 'assets/editor/rich-editor.js';
 ?>
-<link rel="stylesheet" href="<?= base_url('assets/vendor/quill/quill.snow.css') ?>">
-<script defer src="<?= base_url('assets/vendor/quill/quill.js') ?>"></script>
+<script defer src="<?= base_url($editorJs) ?>?v=<?= @filemtime(FCPATH . $editorJs) ?: 0 ?>"></script>

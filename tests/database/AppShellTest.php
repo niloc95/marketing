@@ -105,7 +105,7 @@ final class AppShellTest extends CIUnitTestCase
     {
         $html = (string) $this->withSession(['dir_admin' => true, AdminFilter::SEEN_KEY => time()])->get('admin/new')->response()->getBody();
 
-        // Leaflet and Quill load with the page, so the shell must not swap it in.
+        // Leaflet and the rich text editor load with the page, so the shell must not swap it in.
         $this->assertMatchesRegularExpression('#<main id="spa-content"[^>]*data-spa-full#', $html);
     }
 

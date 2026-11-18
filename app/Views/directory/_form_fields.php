@@ -347,9 +347,9 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
     <label for="description">Business description<?= $privateDetailsRequired ? ' *' : '' ?></label>
     <?php /*
         The textarea is the real form field and stays that way. directory.js
-        hides it, mounts Quill into the div below, and copies the editor's HTML
-        back into it on submit — so with JavaScript off or Quill failing to
-        load, this posts plain text and RichText::sanitise() turns it into
+        hides it, mounts the rich text editor (Tiptap) into the div below, and
+        copies the editor's HTML back into it on every edit, so with JavaScript
+        off or the editor failing to load, this posts plain text and RichText::sanitise() turns it into
         paragraphs. Nothing about the form depends on the editor existing.
 
         maxlength is gone because it counts markup, not words. The cap
@@ -359,10 +359,8 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
     */ ?>
     <textarea id="description" name="description" rows="6" placeholder="A few sentences: what you do, who it’s for, and why people choose you."><?= esc($v('description')) ?></textarea>
     <?php /*
-        The inner div is the mount and the outer one is not redundant: Quill
-        turns the element it is given into .ql-container and inserts .ql-toolbar
-        as its *previous sibling*. Without a wrapper the toolbar lands loose in
-        .field, out of reach of the styles below and above the label's own hint.
+        The inner div is the mount: the editor builds its toolbar, link row
+        and writing area inside it. The outer .rt-editor carries the frame.
     */ ?>
     <div class="rt-editor" hidden>
         <div data-rich-text-for="description"></div>

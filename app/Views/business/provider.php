@@ -207,7 +207,7 @@ $archived   = $provider['archived_at'] !== null;
 
 <?= $this->section('shell_title') ?><?= esc((string) $provider['name']) ?><?= $this->endSection() ?>
 
-<?php // The person's fields carry the Qualifications editor (Quill), which
+<?php // The person's fields carry the Qualifications editor (Tiptap), which
       // directory.js mounts: the profile_form flag loads it, whole page. ?>
 <?= $this->section('profile_form') ?>1<?= $this->endSection() ?>
 <?= $this->section('scripts') ?>

@@ -14,6 +14,7 @@
                 <tr><td>Mail</td><td>Amazon SES on the <code>mail.</code> subdomain, only through <code>App\Libraries\Mailer</code>. The apex SPF is Microsoft 365 only. Mailpit on dev.</td></tr>
                 <tr><td>Payments</td><td>Paystack for every new payment (in page checkout, webhook on co.za); PayFast for older subscriptions until they move. Bookings deposits go to the business's own gateway.</td></tr>
                 <tr><td>Maps and addresses</td><td>Mapbox for address lookup (Nominatim fallback), Leaflet with CARTO tiles for maps.</td></tr>
+                <tr><td>Rich text</td><td>Tiptap 3 (on ProseMirror), self hosted, for the profile description and a person's qualifications. Built by <code>npm run editor:build</code> from <code>resources/editor/rich-editor.js</code>; stored HTML is cleaned by <code>App\Libraries\RichText</code>.</td></tr>
                 <tr><td>Analytics</td><td>GA4 under Consent Mode and Microsoft Clarity (only after Accept), per site. Search Console and GA4 pulled nightly by a service account.</td></tr>
                 <tr><td>Backups</td><td>Nightly to S3 in af-south-1, <code>backups:check</code>, a monthly restore drill.</td></tr>
                 <tr><td>Bookings integrations</td><td>WhatsApp (Twilio or Meta), Zoom, Jitsi, Google Calendar, signed webhooks.</td></tr>
