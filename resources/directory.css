@@ -123,8 +123,10 @@
     @apply fixed inset-x-0 top-0 z-40 border-b border-transparent
            transition-colors duration-300;
   }
-  .site-header.is-solid { @apply border-slate-200 bg-white/90 backdrop-blur; }
-  .dark .site-header.is-solid { @apply border-slate-800 bg-surface-page/90; }
+  /* No line under the bar (owner, 18 Nov 2026): the border stays transparent
+     even when solid, so the 1px is kept and no height measured below moves. */
+  .site-header.is-solid { @apply bg-white/90 backdrop-blur; }
+  .dark .site-header.is-solid { @apply bg-surface-page/90; }
   /* Deliberately NOT flex-wrap. Wrapping was the old overflow behaviour and it
      dropped the whole nav onto a second row on any phone, which is a taller,
      lopsided header rather than a graceful degradation. The bar is now a fixed
@@ -250,10 +252,11 @@
     @apply invisible h-0 overflow-hidden border-t-0 border-transparent opacity-0;
     @apply transition-[height,opacity,visibility,border-color] duration-200;
   }
+  /* The border keeps its 1px but no colour (owner, 18 Nov 2026: no lines
+     between the header rows), so the scrolled header is still 109px. */
   .site-header.is-solid .header-quick {
-    @apply visible h-11 border-t border-slate-200 opacity-100;
+    @apply visible h-11 border-t border-transparent opacity-100;
   }
-  .dark .site-header.is-solid .header-quick { @apply border-slate-800; }
 
   /* Scrolls sideways rather than wrapping: a second row of categories would
      change the header's height depending on how long the category names happen
@@ -1995,15 +1998,15 @@
      breadcrumbs scroll away, then the whole header stays under the scrolled
      site header (109px, see html's scroll padding) while the gallery and the
      content pass beneath it. Opaque for that reason. directory.js adds
-     .is-stuck (hairline and shadow) and measures the height into
+     .is-stuck (a little padding) and measures the height into
      --profile-head-h, which the right column and in-page jumps read. */
   .profile-head-sticky {
     @apply lg:sticky lg:top-[109px] lg:z-20 lg:bg-white;
     @apply lg:transition-[box-shadow,padding] lg:duration-200;
   }
-  .profile-head-sticky.is-stuck { @apply lg:border-b lg:border-slate-200 lg:py-3 lg:shadow-sm; }
+  /* No line or shadow when stuck (owner, 18 Nov 2026), only a little air. */
+  .profile-head-sticky.is-stuck { @apply lg:py-3; }
   .dark .profile-head-sticky { @apply lg:bg-surface-page; }
-  .dark .profile-head-sticky.is-stuck { @apply lg:border-slate-800; }
   @media (prefers-reduced-motion: reduce) {
     .profile-head-sticky { @apply transition-none; }
   }
