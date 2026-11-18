@@ -24,6 +24,9 @@ $who    = $isJob || ! empty($p['listing_name']) ? $svc->hiringName($p) : '';
                 <span class="badge badge-category gap-1 <?= $isJob ? 'cat-tint-blue' : 'cat-tint-amber' ?>">
                     <?= lucide($isJob ? 'briefcase' : 'wrench', 'h-3 w-3 shrink-0') ?><?= $isJob ? 'Job' : 'Service needed' ?>
                 </span>
+                <?php if ($svc->isDemo($p)): ?>
+                    <span class="badge badge-category cat-tint-slate" data-demo-label>Demo</span>
+                <?php endif; ?>
                 <?php if (! empty($p['category_name'])): ?>
                     <span class="text-xs text-slate-500 dark:text-slate-400"><?= esc($p['category_name']) ?></span>
                 <?php endif; ?>

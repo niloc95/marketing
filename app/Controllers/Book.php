@@ -213,7 +213,7 @@ class Book extends BaseController
         // A demo profile shows the steps and never books, emails or stores anything.
         if (listing_is_demo($listing)) {
             return redirect()->to($back)->with('book_old', form_typed_fields($post))
-                ->with('error', 'This is a demo business profile, so nothing was booked and nobody was contacted.');
+                ->with('error', 'This is a demo profile, so nothing was booked and nobody was contacted.');
         }
         $email     = strtolower(trim((string) ($post['email'] ?? '')));
         $throttler = service('throttler');

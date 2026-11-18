@@ -13,12 +13,12 @@ $onBooking = ($where ?? '') === 'booking';
 ?>
 <?php if (! $onBooking): ?><div class="container"><?php endif; ?>
     <div class="alert alert-info my-4" role="note" data-demo-banner>
-        <strong>This is a demo business profile.</strong>
-        <?= esc((string) ($listing['display_name'] ?? 'This business')) ?> is not a real business. It shows what a
-        <?= bookings_in_premium() ? 'business profile and online booking look' : 'business profile looks' ?> like on <?= esc(config('Directory')->siteName()) ?>.
-        <?php if ($onBooking): ?>
-            Try the steps; nothing is booked and nobody is contacted.
-        <?php endif; ?>
+        <?php // Neutral on purpose (owner, 18 Nov 2026): a demo can be a real
+              // practice's profile used to show the platform, so it never
+              // says the business is not real. ?>
+        <strong>This is a demo profile.</strong>
+        It shows what a profile, online booking and vacancies look like on <?= esc(config('Directory')->siteName()) ?>.
+        <?= $onBooking ? 'Try the steps; nothing' : 'Nothing' ?> here is booked or sent, and nobody is contacted.
         <a class="underline" href="<?= base_url('add-profile') ?>">Add your business</a>
     </div>
 <?php if (! $onBooking): ?></div><?php endif; ?>

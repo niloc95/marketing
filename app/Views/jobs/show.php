@@ -42,8 +42,8 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
     'canonical'   => $canonical,
     'image'       => ! empty($post['listing_logo']) ? listing_image_url((string) $post['listing_logo']) : '',
     // Service requests are a private person's errand, not something to rank.
-    'robots'      => $isJob && $isLive,
-    'schema'      => $svc->jobPostingSchema($post),
+    'robots'      => $isJob && $isLive && ! $svc->isDemo($post),
+    'schema'      => $svc->isDemo($post) ? [] : $svc->jobPostingSchema($post),
 ]) ?>
 <?= $this->endSection() ?>
 
@@ -64,7 +64,16 @@ $star      = $screens ? ' <span class="req" aria-hidden="true">*</span>' : '';
             <span class="badge badge-category gap-1 <?= $isJob ? 'cat-tint-blue' : 'cat-tint-amber' ?>">
                 <?= lucide($isJob ? 'briefcase' : 'wrench', 'h-3 w-3 shrink-0') ?><?= $isJob ? 'Job' : 'Service needed' ?>
             </span>
+            <?php if ($svc->isDemo($post)): ?>
+                <span class="badge badge-category cat-tint-slate" data-demo-label>Demo</span>
+            <?php endif; ?>
         </div>
+        <?php if ($svc->isDemo($post)): ?>
+            <div class="alert alert-info mt-4" role="note" data-demo-banner>
+                <strong>This is a demo vacancy.</strong>
+                It shows what a vacancy looks like on <?= esc(config('Directory')->siteName()) ?>. Applying sends nothing and nobody is contacted.
+            </div>
+        <?php endif; ?>
         <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl"><?= esc($post['title']) ?></h1>
 
         <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">
