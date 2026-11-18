@@ -3837,7 +3837,8 @@
   .loc-status { @apply text-sm text-slate-600; }
   .dark .loc-area   { @apply text-slate-400; }
   .dark .loc-status { @apply text-slate-300; }
-  .loc-chevron { @apply mt-1 text-slate-400 transition-transform; }
+  /* Our orange (owner, 18 Nov 2026), so a folded card reads as one to open. */
+  .loc-chevron { @apply mt-1 text-brand-orange transition-transform; }
   .loc[open] .loc-chevron { @apply rotate-180; }
   .loc-body { @apply border-t border-slate-200 px-5 pb-5; }
   .dark .loc-body { @apply border-slate-700; }
