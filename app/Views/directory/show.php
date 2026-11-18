@@ -112,11 +112,11 @@ $metaDesc = listing_meta_description($l);
       // statistics by directory.js. Never on a preview: nobody is visiting yet. ?>
 <section class="section"<?php if (empty($preview)): ?> data-stat-url="<?= esc(base_url('stats/tap'), 'attr') ?>" data-stat-slug="<?= esc((string) $l['slug'], 'attr') ?>"<?php endif; ?>>
     <?php // vertical-scope plus the group's tint class is the whole per-category
-          // treatment on this page: the tint class sets custom properties, and
-          // .vertical-scope .panel h3 reads them, so every panel heading below —
-          // the listing's own and each branch's — arrives in the group's hue with
-          // no per-panel plumbing. An unmapped group resolves to cat-tint-slate
-          // and every consumer falls back to navy on its own.
+          // treatment on this page: the tint class sets custom properties that
+          // the header and buttons read. Panel titles are no longer tinted
+          // (owner, 18 Nov 2026): every section title is one dark heading. An
+          // unmapped group resolves to cat-tint-slate and every consumer falls
+          // back to navy on its own.
           //
           // On a wrapper rather than the .container: the photo band runs the full
           // width of the screen, outside any container, and sits inside it too. ?>

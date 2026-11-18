@@ -1648,10 +1648,9 @@
      Scoped to .panel h3 deliberately — h2 section headings stay slate, because
      tinting every heading on the page tips this from "its own zone" into "a
      differently coloured site". */
-  /* :not(.listing-prose *): an owner's own headings inside the description
-     are content, not panel titles (owner, 18 Nov 2026). */
-  .vertical-scope .panel h3:not(.listing-prose *), .vertical-scope .panel .panel-title { color: var(--tint-fg, theme(colors.primary.600)); }
-  .dark .vertical-scope .panel h3:not(.listing-prose *), .dark .vertical-scope .panel .panel-title { color: var(--tint-fg-dark, theme(colors.primary.300)); }
+  /* Profile panel titles are no longer tinted (owner, 18 Nov 2026): every
+     section title is the same dark, Notion like heading; see "Profile section
+     titles" below. The tint stays on the header and buttons. */
 
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
@@ -2026,17 +2025,19 @@
   .profile-grid > div:first-child > :first-child { @apply border-t-0 pt-0; }
   /* Descendant, not child: the reviews panel sets its h3 in a row beside the
      rating. Each of these panels has exactly one h3. */
+  /* Profile section titles (owner, 18 Nov 2026): one style for every title,
+     normal case and letter spacing, dark, clearly above an owner's own
+     headings in the description (.listing-prose h2 is 18px semibold). Left
+     column 24px bold; the right column's cards the same at 18px (below).
+     :not(.listing-prose *): headings inside the description are content. */
   .profile-grid > div:first-child > .panel h3:not(.listing-prose *),
   .profile-grid > div:first-child > .panel .panel-title,
   .profile-grid > div:first-child > .branch-section > .branch-section-title {
-    @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em];
+    @apply mb-5 text-2xl font-bold normal-case leading-tight tracking-tight text-slate-900;
   }
-  .profile-grid > div:first-child > .branch-section > .branch-section-title {
-    color: var(--tint-fg, theme(colors.primary.600));
-  }
-  .dark .profile-grid > div:first-child > .branch-section > .branch-section-title {
-    color: var(--tint-fg-dark, theme(colors.primary.300));
-  }
+  .dark .profile-grid > div:first-child > .panel h3:not(.listing-prose *),
+  .dark .profile-grid > div:first-child > .panel .panel-title,
+  .dark .profile-grid > div:first-child > .branch-section > .branch-section-title { @apply text-white; }
   .dark .profile-grid > div:first-child > :is(.panel, .branch-section) { @apply border-slate-800 bg-transparent; }
 
   /* The right column is where a visitor acts — call, find, check the hours —
@@ -3804,6 +3805,18 @@
   .loc-body > .panel:last-child  { @apply pb-0; }
   .dark .loc-body > .panel { @apply border-slate-700 bg-transparent; }
   .loc-body > .panel h3, .loc-body > .panel .panel-title { @apply text-base; }
+  /* The right column's titles (Contact, For patients, Rooms & practices, and
+     Map and hours inside each location card): the same heading as the left
+     column, one step smaller because the column is narrower. After the
+     .loc-body rule so it wins. */
+  .profile-grid > div:last-child .panel h3:not(.listing-prose *),
+  .profile-grid > div:last-child .panel .panel-title,
+  .profile-grid > div:last-child .branch-section-title {
+    @apply mb-3 text-lg font-bold normal-case leading-snug tracking-tight text-slate-900;
+  }
+  .dark .profile-grid > div:last-child .panel h3:not(.listing-prose *),
+  .dark .profile-grid > div:last-child .panel .panel-title,
+  .dark .profile-grid > div:last-child .branch-section-title { @apply text-white; }
 
   /* The header's list of locations, under today's hours. A dot per location
      for open or closed now; the words are there for screen readers. */
