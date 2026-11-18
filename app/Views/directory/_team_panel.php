@@ -69,13 +69,13 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if (! empty($m['role'])): ?>
                         <p class="team-member-role"><?= esc($m['role']) ?></p>
                     <?php endif; ?>
-                    <?php // Rich text (bold, italic, lists) since 18 Nov 2026; sanitised
-                          // again here so a row from before the editor, or one
-                          // written around the service, still renders only the
-                          // short list. Plain text comes out as paragraphs. ?>
-                    <?php $creds = \App\Libraries\RichText::sanitiseBasic((string) ($m['credentials'] ?? '')); ?>
+                    <?php // Rich text since 18 Nov 2026, the description's editor and
+                          // allowlist later the same day; sanitised again here so a row
+                          // written around the service still renders only that
+                          // list. Plain text comes out as paragraphs. ?>
+                    <?php $creds = listing_rich_text((string) ($m['credentials'] ?? '')); ?>
                     <?php if ($creds !== ''): ?>
-                        <div class="team-member-credentials"><?= $creds ?></div>
+                        <div class="team-member-credentials listing-prose"><?= $creds ?></div>
                     <?php endif; ?>
 
                     <?php // Self declared unless an admin ticked it, and always
@@ -110,10 +110,10 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                         </div>
                     <?php endif; ?>
 
-                    <?php // Rich text (bold, italic, lists); a plain bio from before becomes paragraphs. ?>
-                    <?php $bioHtml = \App\Libraries\RichText::sanitiseBasic((string) ($m['bio'] ?? '')); ?>
+                    <?php // Rich text like the description; a plain bio from before becomes paragraphs. ?>
+                    <?php $bioHtml = listing_rich_text((string) ($m['bio'] ?? '')); ?>
                     <?php if ($bioHtml !== ''): ?>
-                        <div class="team-member-bio"><?= $bioHtml ?></div>
+                        <div class="team-member-bio listing-prose"><?= $bioHtml ?></div>
                     <?php endif; ?>
 
                     <?php if (isset($m['id'], $bookable[(int) $m['id']])): ?>
@@ -132,9 +132,9 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if ($p['title'] !== ''): ?>
                         <p class="team-member-role"><?= esc($p['title']) ?></p>
                     <?php endif; ?>
-                    <?php $bioHtml = \App\Libraries\RichText::sanitiseBasic((string) $p['bio']); ?>
+                    <?php $bioHtml = listing_rich_text((string) $p['bio']); ?>
                     <?php if ($bioHtml !== ''): ?>
-                        <div class="team-member-bio"><?= $bioHtml ?></div>
+                        <div class="team-member-bio listing-prose"><?= $bioHtml ?></div>
                     <?php endif; ?>
                     <?= view('directory/_team_booking', ['p' => $p], ['saveData' => false]) ?>
                 </div>

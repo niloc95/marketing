@@ -720,7 +720,7 @@ if (! function_exists('schema_local_business')) {
                 'name'          => trim((string) ($member['name'] ?? '')),
                 'jobTitle'      => trim((string) ($member['role'] ?? '')),
                 'image'         => listing_image_url($member['photo_path'] ?? null),
-                'description'   => RichText::toPlainText(RichText::sanitiseBasic((string) ($member['bio'] ?? ''))),
+                'description'   => RichText::toPlainText(RichText::sanitise((string) ($member['bio'] ?? ''))),
                 'knowsAbout'    => $knowsAbout !== [] ? $knowsAbout : null,
                 'hasCredential' => schema_member_credentials($member['credentials'] ?? null) ?: null,
                 'identifier'    => $reg !== null && $reg['number'] !== ''
@@ -740,7 +740,7 @@ if (! function_exists('schema_local_business')) {
                 '@type'       => 'Person',
                 'name'        => (string) $p['name'],
                 'jobTitle'    => (string) $p['title'],
-                'description' => RichText::toPlainText(RichText::sanitiseBasic((string) $p['bio'])),
+                'description' => RichText::toPlainText(RichText::sanitise((string) $p['bio'])),
                 'worksFor'    => ['@id' => $canonical . '#business'],
             ], static fn ($v) => $v !== '');
         }

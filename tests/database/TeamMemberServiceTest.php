@@ -243,17 +243,19 @@ final class TeamMemberServiceTest extends CIUnitTestCase
 
     // ----------------------------------------------------- specializations
 
-    public function testQualificationsAreStoredAsBasicRichText(): void
+    public function testQualificationsAreStoredLikeTheDescription(): void
     {
         $id = $this->listing('Pillay Rooms');
 
         $result = $this->service->syncFromForm($id, [[
             'name'        => 'Dr Ana Pillay',
-            'credentials' => '<h2>x</h2><ul><li><strong>MBChB</strong> (UCT)</li></ul><script>alert(1)</script>',
+            'credentials' => '<h2>Degrees</h2><ul><li><strong>MBChB</strong> (UCT)</li></ul><p class="ql-align-center rt-lh-double" style="color:red">x</p><script>alert(1)</script>',
         ]]);
 
+        // The description's editor and allowlist (owner, 18 Nov 2026):
+        // headings and spacing classes stay, style attributes and scripts go.
         $this->assertSame([], $result['errors']);
-        $this->assertSame('<p>x</p><ul><li><strong>MBChB</strong> (UCT)</li></ul>', $this->members->forListing($id)[0]['credentials']);
+        $this->assertSame('<h2>Degrees</h2><ul><li><strong>MBChB</strong> (UCT)</li></ul><p class="ql-align-center rt-lh-double">x</p>', $this->members->forListing($id)[0]['credentials']);
     }
 
     public function testQualificationsAreCappedInPlainText(): void
@@ -268,7 +270,7 @@ final class TeamMemberServiceTest extends CIUnitTestCase
         $this->assertArrayHasKey('team.0.credentials', $result['errors']);
     }
 
-    public function testTheBioIsBasicRichTextCappedInPlainText(): void
+    public function testTheBioIsRichTextCappedInPlainText(): void
     {
         $id = $this->listing('Bio Rooms');
 
@@ -277,7 +279,7 @@ final class TeamMemberServiceTest extends CIUnitTestCase
             'bio'  => '<p>Treats <strong>knees</strong>.</p><ul><li>Sports</li></ul><a href="https://x.test">link</a><script>alert(1)</script>',
         ]]);
         $this->assertSame([], $result['errors']);
-        $this->assertSame('<p>Treats <strong>knees</strong>.</p><ul><li>Sports</li></ul><p>link</p>', $this->members->forListing($id)[0]['bio']);
+        $this->assertSame('<p>Treats <strong>knees</strong>.</p><ul><li>Sports</li></ul><p><a href="https://x.test" rel="nofollow noopener noreferrer" target="_blank">link</a></p>', $this->members->forListing($id)[0]['bio']);
 
         $fits = '<p>' . str_repeat('a', TeamMemberService::MAX_BIO_LENGTH) . '</p>';
         $this->assertSame([], $this->service->syncFromForm($id, [['name' => 'Dr Fits', 'bio' => $fits]])['errors']);

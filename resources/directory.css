@@ -3696,26 +3696,23 @@
   .team-member-body        { @apply min-w-0 flex-1; }
   .team-member-name        { @apply text-sm font-semibold text-slate-900; }
   .team-member-role        { @apply text-sm text-primary-600; }
-  /* Rich text since 18 Nov 2026 (RichText::sanitiseBasic): paragraphs and
-     lists, the card's own qualifications, so readable rather than a caption. */
+  /* Rich text since 18 Nov 2026, the description's editor later the same day
+     (RichText::sanitise): the views add .listing-prose, which draws headings,
+     lists, quotes, links, alignment and spacing as in the description. These
+     rules only size it down for a card beside a photo; .team-member-body in
+     front outranks the .listing-prose rules further down. */
   .team-member-credentials        { @apply mt-1.5 text-sm leading-relaxed text-slate-600; }
-  .team-member-credentials p      { @apply my-0.5; }
-  .team-member-credentials ul     { @apply my-1 list-disc space-y-0.5 pl-5; }
-  .team-member-credentials ol     { @apply my-1 list-decimal space-y-0.5 pl-5; }
-  .team-member-credentials strong { @apply font-semibold text-slate-800; }
-  /* Rich text since 18 Nov 2026: paragraphs and lists, like the qualifications. */
-  .team-member-bio         { @apply mt-2 text-sm leading-relaxed text-slate-700; }
-  .team-member-bio p       { @apply my-1; }
-  .team-member-bio ul      { @apply my-1 list-disc space-y-0.5 pl-5; }
-  .team-member-bio ol      { @apply my-1 list-decimal space-y-0.5 pl-5; }
-  .team-member-bio strong  { @apply font-semibold text-slate-900; }
+  .team-member-bio                { @apply mt-2 text-sm leading-relaxed text-slate-700; }
+  .team-member-body .listing-prose p  { @apply my-1; }
+  .team-member-body .listing-prose ul,
+  .team-member-body .listing-prose ol { @apply my-1 space-y-0.5; }
+  .team-member-body .listing-prose h2 { @apply mb-0.5 mt-3 text-[0.9375rem]; }
+  .team-member-body .listing-prose h3 { @apply mb-0 mt-2 text-sm; }
 
   .dark .team-member-name        { @apply text-white; }
   .dark .team-member-role        { @apply text-primary-300; }
   .dark .team-member-credentials { @apply text-slate-300; }
-  .dark .team-member-credentials strong { @apply text-white; }
   .dark .team-member-bio         { @apply text-slate-300; }
-  .dark .team-member-bio strong  { @apply text-white; }
 
   /* A bookable person's own week, what they offer and their Book button
      (_team_booking.php). Their hours may be shorter than reception's. */

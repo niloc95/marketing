@@ -62,7 +62,7 @@ class MoveCredentials extends BaseCommand
         foreach ($rows as $l) {
             $id   = (int) $l['id'];
             $text = trim((string) $l['credentials']);
-            if (RichText::toPlainText(RichText::sanitiseBasic($text)) === '') {
+            if (RichText::toPlainText(RichText::sanitise($text)) === '') {
                 continue;
             }
             $cards = $db->table('xs_directory_listing_team')->select('id, name, credentials')
@@ -70,11 +70,11 @@ class MoveCredentials extends BaseCommand
 
             if (count($cards) === 1) {
                 $card    = $cards[0];
-                $current = RichText::sanitiseBasic((string) ($card['credentials'] ?? ''));
+                $current = RichText::sanitise((string) ($card['credentials'] ?? ''));
                 $squash  = static fn (string $t): string => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $t)));
-                $already = $current !== '' && str_contains($squash(RichText::toPlainText($current)), $squash(RichText::toPlainText(RichText::sanitiseBasic($text))));
+                $already = $current !== '' && str_contains($squash(RichText::toPlainText($current)), $squash(RichText::toPlainText(RichText::sanitise($text))));
                 if ($apply) {
-                    $team->setCredentials((int) $card['id'], $already ? $current : $current . RichText::sanitiseBasic($text));
+                    $team->setCredentials((int) $card['id'], $already ? $current : $current . RichText::sanitise($text));
                     $this->empty($id);
                 }
                 $count['card']++;

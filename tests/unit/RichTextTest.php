@@ -176,7 +176,6 @@ final class RichTextTest extends CIUnitTestCase
         $out = RichText::sanitise('<p class="rt-lh-double rt-space-large rt-lh-huge rt-space-x">x</p><h2 class="rt-lh-tight rt-space-none">h</h2>');
 
         $this->assertSame('<p class="rt-lh-double rt-space-large">x</p><h2 class="rt-lh-tight rt-space-none">h</h2>', $out);
-        $this->assertSame('<p>x</p>', RichText::sanitiseBasic('<p class="rt-lh-double">x</p>'));
     }
 
     public function testConvertsQuillBulletListToRealUl(): void
@@ -194,7 +193,7 @@ final class RichTextTest extends CIUnitTestCase
 
         $this->assertSame('<ul><li>one</li><li>two<br>more</li></ul>', $out);
         $this->assertSame('<blockquote>Quote<br>more</blockquote>', RichText::sanitise('<blockquote><p>Quote</p><p>more</p></blockquote>'));
-        $this->assertSame('<ol><li><strong>MD</strong> Moscow</li></ol>', RichText::sanitiseBasic('<ol><li><p><strong>MD</strong> Moscow</p></li></ol>'));
+        $this->assertSame('<ol><li><strong>MD</strong> Moscow</li></ol>', RichText::sanitise('<ol><li><p><strong>MD</strong> Moscow</p></li></ol>'));
     }
 
     public function testLeavesOrderedListsAlone(): void
@@ -331,29 +330,5 @@ final class RichTextTest extends CIUnitTestCase
         $out = RichText::sanitise(str_repeat('<p>x</p>', 5000));
 
         $this->assertLessThan(2100, substr_count($out, '<p>'));
-    }
-
-    // --------------------------------------------- sanitiseBasic (team cards)
-
-    public function testBasicKeepsBoldItalicAndListsOnly(): void
-    {
-        $out = RichText::sanitiseBasic('<h2>Degrees</h2><ul><li><strong>MBChB</strong> (UCT)</li><li><em>FCP</em> (SA)</li></ul>'
-            . '<blockquote>Quote</blockquote><p class="ql-align-center"><a href="https://x.test">site</a> <u>u</u></p>');
-
-        $this->assertSame('<p>Degrees</p><ul><li><strong>MBChB</strong> (UCT)</li><li><em>FCP</em> (SA)</li></ul>'
-            . '<p>Quote</p><p>site u</p>', $out);
-    }
-
-    public function testBasicStillDropsScriptsAndHandlers(): void
-    {
-        $out = RichText::sanitiseBasic('<p onclick="x()">BDS<script>alert(1)</script></p><svg><a href="javascript:1">y</a></svg>');
-
-        $this->assertSame('<p>BDS</p>', $out);
-    }
-
-    public function testBasicTurnsPlainLinesIntoParagraphs(): void
-    {
-        $this->assertSame('<p>MBChB (UCT)<br>FCP (SA)</p>', RichText::sanitiseBasic("MBChB (UCT)\nFCP (SA)"));
-        $this->assertSame('', RichText::sanitiseBasic('<p><br></p>'));
     }
 }

@@ -37,9 +37,9 @@ $showSwitch = $showSwitch ?? true;
 </div>
 <?php // Rich text since 18 Nov 2026, when the profile wide Credentials box was
       // folded in here (owner). The textarea is the real field: directory.js
-      // mounts a small rich text editor over it (bold, italic, lists) and copies
-      // the HTML back; without the script it posts plain text, one line per
-      // qualification. TeamMemberService keeps RichText::sanitiseBasic(). ?>
+      // mounts the description's full editor over it (since 18 Nov 2026) and
+      // copies the HTML back; without the script it posts plain text, one line
+      // per qualification. TeamMemberService keeps RichText::sanitise(). ?>
 <div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_CREDENTIALS_LENGTH ?>">
     <label>Qualifications and credentials</label>
     <textarea name="<?= $name('credentials') ?>" rows="3"
@@ -97,8 +97,9 @@ $showSwitch = $showSwitch ?? true;
     <div class="hint">Separate with commas, up to 12 per person.</div>
     <?php if ($e('specializations')): ?><div class="err"><?= esc($e('specializations')) ?></div><?php endif; ?>
 </div>
-<?php // Rich text since 18 Nov 2026 (owner), the same small editor as the
-      // qualifications above. No maxlength: it would count the markup. ?>
+<?php // Rich text since 18 Nov 2026 (owner), the description's full editor
+      // later the same day, like the qualifications above. No maxlength: it would
+      // count the markup. ?>
 <div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_BIO_LENGTH ?>">
     <label>Short bio</label>
     <textarea name="<?= $name('bio') ?>" rows="2"
