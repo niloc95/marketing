@@ -11,8 +11,8 @@
  * uses (_contact_panel, _map_panel, _hours_panel), flattened into the card by
  * .loc .panel so no card sits inside another.
  *
- * Each card is a native <details>: the primary opens by default, branches start
- * folded so six of them stay a short list. The header's location links and
+ * Each card is a native <details>, all folded at first, the primary too
+ * (owner, 18 Nov 2026), so the rooms read as one short list. The header's location links and
  * "See hours" jump to #location-N and #hours, and directory.js opens the card
  * holding the target. Folded cards still carry all their text, so the page
  * reads the same to search engines and without JavaScript.
@@ -77,7 +77,7 @@ foreach ($locations as $loc) {
             : null;
         $state  = ['open' => 'hours-glance-open', 'closed' => 'hours-glance-closed'][$today['state'] ?? ''] ?? 'hours-glance-unknown';
         ?>
-        <details class="panel loc" id="location-<?= $number ?>"<?= $isPrimary ? ' open' : '' ?>>
+        <details class="panel loc" id="location-<?= $number ?>">
             <summary class="loc-head">
                 <span class="loc-num" aria-hidden="true"><?= $number ?></span>
                 <span class="loc-id">

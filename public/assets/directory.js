@@ -4109,6 +4109,36 @@
     if (row) row.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);
   });
 
+  // --------------------------------------------------- sticky profile head
+  // The profile header sticks under the site header on a desktop (CSS,
+  // .profile-head-sticky, owner 18 Nov 2026). This measures it into
+  // --profile-head-h, which places the sticky right column and in-page
+  // jumps, and marks it .is-stuck once it has reached the top (hairline and
+  // shadow). Set through the CSSOM, which the CSP allows (no style attribute).
+  (function () {
+    var head = document.querySelector('[data-profile-head]');
+    if (!head) return;
+    var root = document.documentElement;
+    function measure() {
+      root.style.setProperty('--profile-head-h', Math.round(head.getBoundingClientRect().height) + 'px');
+    }
+    var pending = false;
+    function check() {
+      pending = false;
+      var stuck = window.scrollY > 0 && head.getBoundingClientRect().top <= 110 && getComputedStyle(head).position === 'sticky';
+      if (stuck !== head.classList.contains('is-stuck')) head.classList.toggle('is-stuck', stuck);
+    }
+    window.addEventListener('scroll', function () {
+      if (!pending) { pending = true; requestAnimationFrame(check); }
+    }, { passive: true });
+    // border-box: sticking adds padding, which a content-box observer misses.
+    if ('ResizeObserver' in window) new ResizeObserver(measure).observe(head, { box: 'border-box' });
+    head.addEventListener('transitionend', measure);
+    window.addEventListener('resize', measure);
+    measure();
+    check();
+  })();
+
   // ------------------------------------------------- description helper
   // "Write it with ChatGPT" under the description, and the hints from the
   // chosen category. The prompt and the hints both come from

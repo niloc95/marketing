@@ -165,10 +165,22 @@ $metaDesc = listing_meta_description($l);
             <?php endforeach; ?>
         </nav>
 
-        <?php // The name, logo, hours and address on the page itself, above the
-              // photos rather than over them: owners mostly upload logos, flyers
-              // and cut out portraits, and white type over those needed a dark
-              // scrim that hid half of each picture. ?>
+    </div>
+
+    <?php // The name, logo, hours and address on the page itself, above the
+          // photos rather than over them: owners mostly upload logos, flyers
+          // and cut out portraits, and white type over those needed a dark
+          // scrim that hid half of each picture.
+          //
+          // Sticky on a desktop (owner, 18 Nov 2026): the breadcrumbs scroll
+          // away, then this header stays under the site header while the
+          // gallery and the content scroll up beneath it. Its own wrapper, a
+          // direct child of .vertical-scope, so it stays stuck for the whole
+          // profile (a sticky element only travels inside its parent).
+          // directory.js measures it into --profile-head-h for the right
+          // column and in-page jumps. ?>
+    <div class="profile-head-sticky" data-profile-head>
+        <div class="container">
             <div class="profile-head">
                 <?= $avatar ?>
                 <div class="min-w-0 flex-1">
@@ -178,6 +190,7 @@ $metaDesc = listing_meta_description($l);
                 </div>
                 <?= $share ?>
             </div>
+        </div>
     </div>
 
     <?php if ($hasBand): ?>

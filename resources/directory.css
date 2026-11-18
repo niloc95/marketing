@@ -124,8 +124,10 @@
     @apply fixed inset-x-0 top-0 z-40 border-b border-transparent
            transition-colors duration-300;
   }
-  .site-header.is-solid { @apply border-slate-200 bg-white/90 backdrop-blur; }
-  .dark .site-header.is-solid { @apply border-slate-800 bg-surface-page/90; }
+  /* No line under the bar (owner, 18 Nov 2026): the border stays transparent
+     even when solid, so the 1px is kept and no height measured below moves. */
+  .site-header.is-solid { @apply bg-white/90 backdrop-blur; }
+  .dark .site-header.is-solid { @apply bg-surface-page/90; }
   /* Deliberately NOT flex-wrap. Wrapping was the old overflow behaviour and it
      dropped the whole nav onto a second row on any phone, which is a taller,
      lopsided header rather than a graceful degradation. The bar is now a fixed
@@ -254,10 +256,11 @@
     @apply invisible h-0 overflow-hidden border-t-0 border-transparent opacity-0;
     @apply transition-[height,opacity,visibility,border-color] duration-200;
   }
+  /* The border keeps its 1px but no colour (owner, 18 Nov 2026: no lines
+     between the header rows), so the scrolled header is still 109px. */
   .site-header.is-solid .header-quick {
-    @apply visible h-11 border-t border-slate-200 opacity-100;
+    @apply visible h-11 border-t border-transparent opacity-100;
   }
-  .dark .site-header.is-solid .header-quick { @apply border-slate-800; }
 
   /* Scrolls sideways rather than wrapping: a second row of categories would
      change the header's height depending on how long the category names happen
@@ -1994,6 +1997,43 @@
            sm:grid-cols-[auto_minmax(0,1fr)_auto];
   }
   .profile-head > .share-row { @apply col-span-2 sm:col-span-1; }
+
+  /* The sticky profile header (owner, 18 Nov 2026), desktop only: the
+     breadcrumbs scroll away, then the whole header stays under the scrolled
+     site header (109px, see html's scroll padding) while the gallery and the
+     content pass beneath it. Opaque for that reason. directory.js adds
+     .is-stuck (a little padding) and measures the height into
+     --profile-head-h, which the right column and in-page jumps read. */
+  .profile-head-sticky {
+    @apply lg:sticky lg:top-[109px] lg:z-20 lg:bg-white;
+    @apply lg:transition-[box-shadow,padding] lg:duration-200;
+  }
+  /* No line or shadow when stuck (owner, 18 Nov 2026), only a little air. */
+  .profile-head-sticky.is-stuck { @apply lg:py-3; }
+  .dark .profile-head-sticky { @apply lg:bg-surface-page; }
+  @media (prefers-reduced-motion: reduce) {
+    .profile-head-sticky { @apply transition-none; }
+  }
+  /* The right column, as it always was (Contact, then the rest), stays in view
+     below the header. When it is taller than the room left on screen it
+     scrolls on its own, so the Contact card at its top is always there. */
+  @media (min-width: 1024px) {
+    .profile-grid > div:last-child {
+      position: sticky;
+      align-self: start;
+      top: calc(109px + var(--profile-head-h, 14rem) + 1.5rem);
+      max-height: calc(100vh - 109px - var(--profile-head-h, 14rem) - 2.5rem);
+      overflow-y: auto;
+      /* No visible scrollbar (owner, 18 Nov 2026): the column still scrolls
+         with the wheel, trackpad or keyboard when it is taller than the room
+         left under the header, so the cards below Contact stay reachable. */
+      scrollbar-width: none;
+      @apply -mx-1 px-1 pb-1;
+    }
+    .profile-grid > div:last-child::-webkit-scrollbar { display: none; }
+    /* In-page jumps (#reviews, a team member) land below the header. */
+    html:has(.profile-head-sticky) { scroll-padding-top: calc(109px + var(--profile-head-h, 14rem) + 1rem); }
+  }
   /* The logo or initials larger than the 48px list thumbnail: here it is the
      business's mark, beside its name. */
   .profile-head > .avatar       { @apply h-16 w-16 text-lg sm:h-20 sm:w-20 sm:text-xl; }
@@ -3811,7 +3851,8 @@
   .loc-status { @apply text-sm text-slate-600; }
   .dark .loc-area   { @apply text-slate-400; }
   .dark .loc-status { @apply text-slate-300; }
-  .loc-chevron { @apply mt-1 text-slate-400 transition-transform; }
+  /* Our orange (owner, 18 Nov 2026), so a folded card reads as one to open. */
+  .loc-chevron { @apply mt-1 text-brand-orange transition-transform; }
   .loc[open] .loc-chevron { @apply rotate-180; }
   .loc-body { @apply border-t border-slate-200 px-5 pb-5; }
   .dark .loc-body { @apply border-slate-700; }

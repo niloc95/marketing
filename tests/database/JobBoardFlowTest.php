@@ -195,6 +195,19 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('id="open-positions"', $profile);
     }
 
+    public function testTheProfileHeaderHasItsOwnStickyWrapper(): void
+    {
+        // Owner, 18 Nov 2026: on a desktop the whole header sticks while the
+        // gallery and content scroll; the right column keeps Contact first and
+        // the vacancies after it.
+        $listing = $this->listing();
+        $this->svc->submitForListing($listing, $this->jobInput());
+
+        $profile = (string) $this->get('directory/' . $listing['slug'])->response()->getBody();
+        $this->assertMatchesRegularExpression('#<div class="profile-head-sticky" data-profile-head>\s*<div class="container">\s*<div class="profile-head">#', $profile);
+        $this->assertLessThan(strpos($profile, 'id="open-positions"'), strpos($profile, '<div class="profile-contact">'));
+    }
+
     public function testNoHiringNoticeWithoutALiveVacancy(): void
     {
         $listing = $this->listing();
