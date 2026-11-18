@@ -2020,9 +2020,13 @@
       top: calc(109px + var(--profile-head-h, 14rem) + 1.5rem);
       max-height: calc(100vh - 109px - var(--profile-head-h, 14rem) - 2.5rem);
       overflow-y: auto;
-      scrollbar-width: thin;
+      /* No visible scrollbar (owner, 18 Nov 2026): the column still scrolls
+         with the wheel, trackpad or keyboard when it is taller than the room
+         left under the header, so the cards below Contact stay reachable. */
+      scrollbar-width: none;
       @apply -mx-1 px-1 pb-1;
     }
+    .profile-grid > div:last-child::-webkit-scrollbar { display: none; }
     /* In-page jumps (#reviews, a team member) land below the header. */
     html:has(.profile-head-sticky) { scroll-padding-top: calc(109px + var(--profile-head-h, 14rem) + 1rem); }
   }
