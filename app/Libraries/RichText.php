@@ -116,11 +116,12 @@ final class RichText
      *
      * Alignment and indent are classes, not style attributes: the names Quill
      * gave them, kept by the Tiptap editor that replaced it (18 Nov 2026) so
-     * stored text round trips. `style-src-attr` is `'self'` with no `'unsafe-inline'`, so an
+     * stored text round trips. Line spacing (rt-lh-tight, rt-lh-double) and
+     * space around a paragraph (rt-space-none, rt-space-large) the same way. `style-src-attr` is `'self'` with no `'unsafe-inline'`, so an
      * inline `style="text-align:center"` would apply inside the editor and then
      * be silently dropped by the browser on the public page.
      */
-    private const CLASS_PATTERN = '/^ql-(align-(center|right|justify)|indent-[1-9])$/';
+    private const CLASS_PATTERN = '/^(ql-(align-(center|right|justify)|indent-[1-9])|rt-(lh-(tight|double)|space-(none|large)))$/';
 
     /** Link schemes we will publish. Notably absent: javascript:, data:, vbscript:. */
     private const URL_SCHEMES = ['http', 'https', 'mailto', 'tel'];

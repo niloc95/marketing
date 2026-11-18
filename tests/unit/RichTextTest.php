@@ -171,6 +171,14 @@ final class RichTextTest extends CIUnitTestCase
 
     // ---------------------------------------------------------------- shapes
 
+    public function testKeepsSpacingClassesAndNothingLikeThem(): void
+    {
+        $out = RichText::sanitise('<p class="rt-lh-double rt-space-large rt-lh-huge rt-space-x">x</p><h2 class="rt-lh-tight rt-space-none">h</h2>');
+
+        $this->assertSame('<p class="rt-lh-double rt-space-large">x</p><h2 class="rt-lh-tight rt-space-none">h</h2>', $out);
+        $this->assertSame('<p>x</p>', RichText::sanitiseBasic('<p class="rt-lh-double">x</p>'));
+    }
+
     public function testConvertsQuillBulletListToRealUl(): void
     {
         // Quill 2 has no <ul>: bullets are an <ol> with data-list on the items.

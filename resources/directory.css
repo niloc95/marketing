@@ -4185,13 +4185,36 @@
      the ProseMirror base rules it relies on live here too. Explicit selectors
      rather than utilities in markup: the toolbar is built in JavaScript that
      Tailwind's content globs never scan. */
+  /* No overflow-hidden: the toolbar's menus hang below it. The toolbar and
+     the writing area round their own corners instead. */
   .rt-editor {
-    @apply overflow-hidden rounded-inner border border-slate-200 bg-white transition;
+    @apply rounded-inner border border-slate-200 bg-white transition;
   }
   .rt-editor:focus-within { @apply border-primary-500 ring-2 ring-primary-500/20; }
   .rt-toolbar {
-    @apply flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-1.5 py-1;
+    @apply flex flex-wrap items-center gap-1 rounded-t-inner border-b border-slate-200 bg-slate-50 px-1.5 py-1;
   }
+  /* Toolbar dropdowns: paragraph style, align, spacing. */
+  .rt-menu-wrap { @apply relative; }
+  .rt-tool.rt-menu-btn { @apply w-auto shrink-0 gap-0.5 px-1.5; }
+  .rt-menu-btn-wide .rt-menu-face { @apply min-w-[5.5rem] text-left text-xs font-medium; }
+  .rt-menu-face { @apply inline-flex items-center; }
+  .rt-menu-chev { @apply opacity-60; }
+  .rt-menu-btn[aria-expanded="true"] { @apply bg-slate-200 text-slate-900; }
+  .rt-menu {
+    @apply absolute left-0 top-full z-30 mt-1 min-w-[12rem] rounded-inner border border-slate-200 bg-white p-1 shadow-lg;
+  }
+  .rt-menu[hidden] { display: none; }
+  .rt-menu-title { @apply whitespace-nowrap px-2.5 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500; }
+  .rt-menu-title:first-child { @apply pt-1; }
+  .rt-menu-item {
+    @apply flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-slate-700
+           hover:bg-slate-100 focus:bg-slate-100 focus:outline-none;
+  }
+  .rt-menu-item > span { @apply flex-1; }
+  .rt-menu-tick { @apply invisible text-primary-600; }
+  .rt-menu-item[aria-checked="true"] { @apply font-medium text-slate-900; }
+  .rt-menu-item[aria-checked="true"] .rt-menu-tick { @apply visible; }
   .rt-group { @apply flex items-center gap-0.5; }
   .rt-group + .rt-group { @apply ml-0.5 border-l border-slate-200 pl-1; }
   .rt-tool {
@@ -4208,7 +4231,7 @@
   .rt-link-label { @apply m-0 text-xs font-medium text-slate-700; }
   .field .rt-link-input { @apply h-8 min-w-[12rem] flex-1 py-0 text-sm; }
   .rt-content {
-    @apply min-h-[12rem] px-4 py-3 font-sans text-sm text-slate-900 focus:outline-none;
+    @apply min-h-[12rem] rounded-b-inner px-4 py-3 font-sans text-sm text-slate-900 focus:outline-none;
     white-space: pre-wrap;
     word-wrap: break-word;
     font-variant-ligatures: none;
@@ -4274,6 +4297,12 @@
   .dark .rt-tool    { @apply text-slate-300 hover:bg-slate-700 hover:text-white; }
   .dark .rt-tool[aria-pressed="true"] { @apply bg-primary-300/15 text-primary-300; }
   .dark .rt-link    { @apply border-slate-700 bg-slate-900; }
+  .dark .rt-menu-btn[aria-expanded="true"] { @apply bg-slate-700 text-white; }
+  .dark .rt-menu       { @apply border-slate-700 bg-slate-900; }
+  .dark .rt-menu-title { @apply text-slate-400; }
+  .dark .rt-menu-item  { @apply text-slate-200 hover:bg-slate-800 focus:bg-slate-800; }
+  .dark .rt-menu-item[aria-checked="true"] { @apply text-white; }
+  .dark .rt-menu-tick  { @apply text-primary-300; }
   .dark .rt-link-label { @apply text-slate-200; }
   .dark .rt-content { @apply text-white; }
   .dark .rt-content p.is-editor-empty:first-child::before { @apply text-slate-400; }
@@ -4331,6 +4360,12 @@
   .listing-prose .ql-indent-7, .rt-content .ql-indent-7 { @apply pl-[10.5rem]; }
   .listing-prose .ql-indent-8, .rt-content .ql-indent-8 { @apply pl-48; }
   .listing-prose .ql-indent-9, .rt-content .ql-indent-9 { @apply pl-[13.5rem]; }
+  /* Line spacing and space around a paragraph, chosen in the editor's
+     Spacing menu (owner, 18 Nov 2026). Normal is no class. */
+  .listing-prose .rt-lh-tight,  .rt-content .rt-lh-tight  { @apply leading-snug; }
+  .listing-prose .rt-lh-double, .rt-content .rt-lh-double { line-height: 2.1; }
+  .listing-prose .rt-space-none,  .rt-content .rt-space-none  { @apply my-0; }
+  .listing-prose .rt-space-large, .rt-content .rt-space-large { @apply my-6; }
 }
 
 /* ---------------------------------------------------------------- keyframes */

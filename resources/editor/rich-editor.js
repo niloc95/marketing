@@ -19,8 +19,10 @@
  *    ProseMirror parses it.
  *
  * Two kinds:
- *  - "full", the description: headings, bold, italic, underline, strike,
- *    lists, quote, link, alignment, indent, undo and redo, clear formatting.
+ *  - "full", the description: a paragraph style menu (paragraph, heading,
+ *    subheading), bold, italic, underline, strike, lists, quote, link, an
+ *    align menu, a spacing menu (line spacing, space around paragraphs),
+ *    indent, undo and redo, clear formatting.
  *    Mirrors RichText::sanitise().
  *  - "basic", a person's qualifications: bold, italic and lists. Mirrors
  *    RichText::sanitiseBasic().
@@ -33,6 +35,7 @@ import { ListItem } from '@tiptap/extension-list';
 import { Placeholder } from '@tiptap/extensions';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 
+import iconPara from 'lucide-static/icons/pilcrow.svg?raw';
 import iconH2 from 'lucide-static/icons/heading-2.svg?raw';
 import iconH3 from 'lucide-static/icons/heading-3.svg?raw';
 import iconBold from 'lucide-static/icons/bold.svg?raw';
@@ -49,6 +52,9 @@ import iconRight from 'lucide-static/icons/text-align-end.svg?raw';
 import iconJustify from 'lucide-static/icons/text-align-justify.svg?raw';
 import iconOutdent from 'lucide-static/icons/indent-decrease.svg?raw';
 import iconIndent from 'lucide-static/icons/indent-increase.svg?raw';
+import iconSpacing from 'lucide-static/icons/unfold-vertical.svg?raw';
+import iconChevron from 'lucide-static/icons/chevron-down.svg?raw';
+import iconCheck from 'lucide-static/icons/check.svg?raw';
 import iconUndo from 'lucide-static/icons/undo-2.svg?raw';
 import iconRedo from 'lucide-static/icons/redo-2.svg?raw';
 import iconClear from 'lucide-static/icons/remove-formatting.svg?raw';
@@ -56,6 +62,10 @@ import iconClear from 'lucide-static/icons/remove-formatting.svg?raw';
 const SEED = 'rtSeed';
 const ALIGNS = ['center', 'right', 'justify'];
 const MAX_INDENT = 9;
+// Spacing, as classes like alignment (RichText::CLASS_PATTERN keeps them,
+// directory.css draws them on the profile). null is the normal spacing.
+const LINE_HEIGHTS = ['tight', 'double'];
+const SPACES = ['none', 'large'];
 
 /* ------------------------------------------------------------ text helpers */
 
@@ -121,7 +131,8 @@ function exportHtml(editor) {
 
 /**
  * Alignment and indent on paragraphs and headings, as the classes Quill wrote
- * (and RichText::CLASS_PATTERN keeps), so stored text round trips unchanged.
+ * (and RichText::CLASS_PATTERN keeps), so stored text round trips unchanged;
+ * line and paragraph spacing (owner, 18 Nov 2026) as rt-lh-* and rt-space-*.
  */
 const BlockFormat = Extension.create({
   name: 'blockFormat',
@@ -146,6 +157,22 @@ const BlockFormat = Extension.create({
           },
           renderHTML: (attrs) => (attrs.indent > 0 ? { class: 'ql-indent-' + Math.min(attrs.indent, MAX_INDENT) } : {}),
         },
+        lineHeight: {
+          default: null,
+          parseHTML: (el) => {
+            const m = (el.getAttribute('class') || '').match(/\brt-lh-(tight|double)\b/);
+            return m ? m[1] : null;
+          },
+          renderHTML: (attrs) => (LINE_HEIGHTS.includes(attrs.lineHeight) ? { class: 'rt-lh-' + attrs.lineHeight } : {}),
+        },
+        space: {
+          default: null,
+          parseHTML: (el) => {
+            const m = (el.getAttribute('class') || '').match(/\brt-space-(none|large)\b/);
+            return m ? m[1] : null;
+          },
+          renderHTML: (attrs) => (SPACES.includes(attrs.space) ? { class: 'rt-space-' + attrs.space } : {}),
+        },
       },
     }];
   },
@@ -163,6 +190,10 @@ const BlockFormat = Extension.create({
     return {
       setAlign: (align) => ({ state, tr }) =>
         eachBlock(state, tr, () => ({ align: ALIGNS.includes(align) ? align : null })),
+      setLineHeight: (value) => ({ state, tr }) =>
+        eachBlock(state, tr, () => ({ lineHeight: LINE_HEIGHTS.includes(value) ? value : null })),
+      setSpace: (value) => ({ state, tr }) =>
+        eachBlock(state, tr, () => ({ space: SPACES.includes(value) ? value : null })),
       // In a list, indent nests the item; elsewhere it steps the block in.
       changeIndent: (delta) => ({ editor, state, tr }) => {
         if (editor.isActive('listItem')) {
@@ -232,6 +263,130 @@ function button(spec) {
   return b;
 }
 
+/**
+ * A toolbar dropdown: a button showing the current choice and a list of
+ * choices under it (role menu, items menuitemradio). Arrow keys move, Enter
+ * or Space picks, Escape closes and returns to the button. Positioned by CSS
+ * classes only (no style attributes, for the CSP).
+ */
+function menu(spec, editor, onOpen) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rt-menu-wrap';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'rt-tool rt-menu-btn' + (spec.wide ? ' rt-menu-btn-wide' : '');
+  btn.title = spec.label;
+  btn.setAttribute('aria-label', spec.label);
+  btn.setAttribute('aria-haspopup', 'menu');
+  btn.setAttribute('aria-expanded', 'false');
+  const face = document.createElement('span');
+  face.className = 'rt-menu-face';
+  btn.appendChild(face);
+  const chev = icon(iconChevron);
+  chev.setAttribute('width', '14');
+  chev.setAttribute('height', '14');
+  chev.classList.add('rt-menu-chev');
+  btn.appendChild(chev);
+
+  const list = document.createElement('div');
+  list.className = 'rt-menu';
+  list.setAttribute('role', 'menu');
+  list.setAttribute('aria-label', spec.label);
+  list.hidden = true;
+
+  const items = [];
+  spec.sections.forEach((section) => {
+    if (section.title) {
+      const h = document.createElement('div');
+      h.className = 'rt-menu-title';
+      h.textContent = section.title;
+      list.appendChild(h);
+    }
+    section.items.forEach((item) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rt-menu-item';
+      b.setAttribute('role', 'menuitemradio');
+      b.setAttribute('aria-checked', 'false');
+      b.tabIndex = -1;
+      if (item.icon) b.appendChild(icon(item.icon));
+      const t = document.createElement('span');
+      t.textContent = item.label;
+      b.appendChild(t);
+      const tick = icon(iconCheck);
+      tick.classList.add('rt-menu-tick');
+      b.appendChild(tick);
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      // Focus goes back to the text first, synchronously: Tiptap's own
+      // focus() waits a frame, and a key pressed in that frame (or the Enter
+      // that picked this item) would land on a hidden button.
+      b.addEventListener('click', () => {
+        editor.view.focus();
+        item.run(editor);
+        close(false);
+      });
+      list.appendChild(b);
+      items.push({ b, item });
+    });
+  });
+
+  wrap.appendChild(btn);
+  wrap.appendChild(list);
+
+  function open() {
+    onOpen(close);
+    list.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    const on = items.find((i) => i.b.getAttribute('aria-checked') === 'true') || items[0];
+    on.b.focus();
+    document.addEventListener('mousedown', outside, true);
+  }
+  function close(refocus) {
+    if (list.hidden) return;
+    list.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('mousedown', outside, true);
+    if (refocus) btn.focus();
+  }
+  function outside(e) {
+    if (!wrap.contains(e.target)) close(false);
+  }
+  btn.addEventListener('mousedown', (e) => e.preventDefault());
+  btn.addEventListener('click', () => (list.hidden ? open() : close(false)));
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); open(); }
+  });
+  list.addEventListener('keydown', (e) => {
+    const at = items.findIndex((i) => i.b === document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const next = (at + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items[next].b.focus();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      close(true);
+    } else if (e.key === 'Tab') {
+      close(false);
+    }
+  });
+
+  // Show what the cursor is in: the style's name, or the chosen item's icon.
+  function refresh() {
+    let current = null;
+    items.forEach(({ b, item }) => {
+      const on = !!item.active(editor);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      if (on && !current) current = item;
+    });
+    face.textContent = '';
+    if (spec.icon) face.appendChild(icon(spec.icon));
+    else if (spec.wide) face.textContent = current ? current.label : spec.label;
+    else if (current && current.icon) face.appendChild(icon(current.icon));
+  }
+
+  return { el: wrap, refresh, close };
+}
+
 const MOD = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘' : 'Ctrl+';
 
 function toolsFor(kind) {
@@ -253,8 +408,14 @@ function toolsFor(kind) {
 
   return [
     [
-      { label: 'Heading', icon: iconH2, toggle: true, run: (e) => c(e).toggleHeading({ level: 2 }).run(), active: (e) => e.isActive('heading', { level: 2 }) },
-      { label: 'Subheading', icon: iconH3, toggle: true, run: (e) => c(e).toggleHeading({ level: 3 }).run(), active: (e) => e.isActive('heading', { level: 3 }) },
+      {
+        menu: 'style', label: 'Paragraph style', wide: true,
+        sections: [{ items: [
+          { label: 'Paragraph', icon: iconPara, run: (e) => c(e).setParagraph().run(), active: (e) => !e.isActive('heading') },
+          { label: 'Heading', icon: iconH2, run: (e) => c(e).setHeading({ level: 2 }).run(), active: (e) => e.isActive('heading', { level: 2 }) },
+          { label: 'Subheading', icon: iconH3, run: (e) => c(e).setHeading({ level: 3 }).run(), active: (e) => e.isActive('heading', { level: 3 }) },
+        ] }],
+      },
     ],
     [
       basic[0][0],
@@ -269,12 +430,30 @@ function toolsFor(kind) {
       { label: 'Link', icon: iconLink, keys: MOD + 'K', toggle: true, link: true, active: (e) => e.isActive('link') },
     ],
     [
-      { label: 'Align left', icon: iconLeft, toggle: true, run: (e) => c(e).setAlign(null).run(), active: (e) => !ALIGNS.some((a) => blockAttr(e, 'align') === a) },
-      { label: 'Centre', icon: iconCenter, toggle: true, run: (e) => c(e).setAlign('center').run(), active: (e) => blockAttr(e, 'align') === 'center' },
-      { label: 'Align right', icon: iconRight, toggle: true, run: (e) => c(e).setAlign('right').run(), active: (e) => blockAttr(e, 'align') === 'right' },
-      { label: 'Justify', icon: iconJustify, toggle: true, run: (e) => c(e).setAlign('justify').run(), active: (e) => blockAttr(e, 'align') === 'justify' },
-    ],
-    [
+      {
+        menu: 'align', label: 'Align',
+        sections: [{ items: [
+          { label: 'Align left', icon: iconLeft, run: (e) => c(e).setAlign(null).run(), active: (e) => !ALIGNS.includes(blockAttr(e, 'align')) },
+          { label: 'Centre', icon: iconCenter, run: (e) => c(e).setAlign('center').run(), active: (e) => blockAttr(e, 'align') === 'center' },
+          { label: 'Align right', icon: iconRight, run: (e) => c(e).setAlign('right').run(), active: (e) => blockAttr(e, 'align') === 'right' },
+          { label: 'Justify', icon: iconJustify, run: (e) => c(e).setAlign('justify').run(), active: (e) => blockAttr(e, 'align') === 'justify' },
+        ] }],
+      },
+      {
+        menu: 'spacing', label: 'Spacing', icon: iconSpacing,
+        sections: [
+          { title: 'Line spacing', items: [
+            { label: 'Single', run: (e) => c(e).setLineHeight('tight').run(), active: (e) => blockAttr(e, 'lineHeight') === 'tight' },
+            { label: 'Normal', run: (e) => c(e).setLineHeight(null).run(), active: (e) => !LINE_HEIGHTS.includes(blockAttr(e, 'lineHeight')) },
+            { label: 'Double', run: (e) => c(e).setLineHeight('double').run(), active: (e) => blockAttr(e, 'lineHeight') === 'double' },
+          ] },
+          { title: 'Space around paragraphs', items: [
+            { label: 'None', run: (e) => c(e).setSpace('none').run(), active: (e) => blockAttr(e, 'space') === 'none' },
+            { label: 'Normal', run: (e) => c(e).setSpace(null).run(), active: (e) => !SPACES.includes(blockAttr(e, 'space')) },
+            { label: 'Large', run: (e) => c(e).setSpace('large').run(), active: (e) => blockAttr(e, 'space') === 'large' },
+          ] },
+        ],
+      },
       { label: 'Indent less', icon: iconOutdent, run: (e) => c(e).changeIndent(-1).run() },
       { label: 'Indent more', icon: iconIndent, run: (e) => c(e).changeIndent(1).run() },
     ],
@@ -408,11 +587,23 @@ function mount(o) {
   /* toolbar wiring */
   const groups = toolsFor(kind);
   const wired = [];
+  const menus = [];
+  let closeOpenMenu = null;
+  const onMenuOpen = (close) => {
+    if (closeOpenMenu && closeOpenMenu !== close) closeOpenMenu(false);
+    closeOpenMenu = close;
+  };
   let linkTool = null;
   groups.forEach((group) => {
     const g = document.createElement('div');
     g.className = 'rt-group';
     group.forEach((spec) => {
+      if (spec.menu) {
+        const m = menu(spec, editor, onMenuOpen);
+        g.appendChild(m.el);
+        menus.push(m);
+        return;
+      }
       const b = button(spec);
       // Keep the selection: a mousedown on a button would otherwise blur it away.
       b.addEventListener('mousedown', (e) => e.preventDefault());
@@ -513,6 +704,7 @@ function mount(o) {
       if (spec.active) b.setAttribute('aria-pressed', spec.active(editor) ? 'true' : 'false');
       if (spec.enabled) b.disabled = !spec.enabled(editor);
     });
+    menus.forEach((m) => m.refresh());
   };
   editor.on('selectionUpdate', refresh);
   editor.on('transaction', refresh);
