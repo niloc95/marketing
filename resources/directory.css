@@ -1648,8 +1648,10 @@
      Scoped to .panel h3 deliberately — h2 section headings stay slate, because
      tinting every heading on the page tips this from "its own zone" into "a
      differently coloured site". */
-  .vertical-scope .panel h3, .vertical-scope .panel .panel-title { color: var(--tint-fg, theme(colors.primary.600)); }
-  .dark .vertical-scope .panel h3, .dark .vertical-scope .panel .panel-title { color: var(--tint-fg-dark, theme(colors.primary.300)); }
+  /* :not(.listing-prose *): an owner's own headings inside the description
+     are content, not panel titles (owner, 18 Nov 2026). */
+  .vertical-scope .panel h3:not(.listing-prose *), .vertical-scope .panel .panel-title { color: var(--tint-fg, theme(colors.primary.600)); }
+  .dark .vertical-scope .panel h3:not(.listing-prose *), .dark .vertical-scope .panel .panel-title { color: var(--tint-fg-dark, theme(colors.primary.300)); }
 
   /* ----------------------------------------------------------------- cards */
   .card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
@@ -2024,7 +2026,7 @@
   .profile-grid > div:first-child > :first-child { @apply border-t-0 pt-0; }
   /* Descendant, not child: the reviews panel sets its h3 in a row beside the
      rating. Each of these panels has exactly one h3. */
-  .profile-grid > div:first-child > .panel h3,
+  .profile-grid > div:first-child > .panel h3:not(.listing-prose *),
   .profile-grid > div:first-child > .panel .panel-title,
   .profile-grid > div:first-child > .branch-section > .branch-section-title {
     @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em];
@@ -2051,10 +2053,10 @@
   .kv .k { @apply shrink-0 font-medium text-slate-500; }
   /* Profile panels head with h2.panel-title (the page's second level, under
      the business name); other .panel boxes keep their own h2 and h3 styles. */
-  .panel h3, .panel .panel-title { @apply mb-3 text-base font-semibold text-slate-900; }
+  .panel h3:not(.listing-prose *), .panel .panel-title { @apply mb-3 text-base font-semibold text-slate-900; }
   .dark .kv    { @apply border-slate-800; }
   .dark .kv .k { @apply text-slate-400; }
-  .dark .panel h3, .dark .panel .panel-title { @apply text-white; }
+  .dark .panel h3:not(.listing-prose *), .dark .panel .panel-title { @apply text-white; }
 
   /* The contact card: value on the left, icon on the right, one row each. Its
      own rows rather than .kv because there is no label column — the icon is
@@ -4255,23 +4257,29 @@
      Hand-written rather than @tailwindcss/typography: the plugin is not a
      dependency of this project, and its defaults assume far more markup than
      thirteen tags. */
-  .listing-prose > :first-child { @apply mt-0; }
-  .listing-prose > :last-child  { @apply mb-0; }
-  .listing-prose p          { @apply my-2 leading-relaxed; }
-  /* Both sit *below* the panel's own <h3> "About", which is 16px/600. An
-     owner's heading organises their copy; it does not get to look like the
-     site's section title sitting directly above it. */
-  .listing-prose h2         { @apply mb-1.5 mt-4 text-[0.9375rem] font-semibold text-slate-900; }
-  .listing-prose h3         { @apply mb-1 mt-3 text-sm font-semibold text-slate-900; }
+  /* Notion like (owner, 18 Nov 2026): headings in normal case with normal
+     letter spacing, clearly larger than the text and clearly smaller than the
+     panel's own small capitals title above them, so the two never read alike.
+     The same rules style the editor (.rt-editor .ql-container.ql-snow .ql-editor, which outranks
+     quill.snow.css's 1.5em h2), so what an owner types looks like the page. */
+  .listing-prose > :first-child, .rt-editor .ql-container.ql-snow .ql-editor > :first-child { @apply mt-0; }
+  .listing-prose > :last-child,  .rt-editor .ql-container.ql-snow .ql-editor > :last-child  { @apply mb-0; }
+  .listing-prose p, .rt-editor .ql-container.ql-snow .ql-editor p { @apply my-2 leading-relaxed tracking-normal; }
+  .listing-prose h2, .rt-editor .ql-container.ql-snow .ql-editor h2 { @apply mb-1 mt-7 text-lg font-semibold normal-case leading-snug tracking-normal text-slate-900; }
+  .listing-prose h3, .rt-editor .ql-container.ql-snow .ql-editor h3 { @apply mb-0.5 mt-5 text-[0.9375rem] font-semibold normal-case leading-snug tracking-normal text-slate-900; }
   .listing-prose ul         { @apply my-2 list-disc space-y-1 pl-5; }
   .listing-prose ol         { @apply my-2 list-decimal space-y-1 pl-5; }
-  .listing-prose blockquote { @apply my-3 border-l-2 border-slate-300 pl-3 italic text-slate-600; }
-  .listing-prose strong     { @apply font-semibold text-slate-900; }
+  .rt-editor .ql-container.ql-snow .ql-editor ol { @apply my-2 space-y-1; }
+  .listing-prose blockquote, .rt-editor .ql-container.ql-snow .ql-editor blockquote { @apply my-3 border-l-2 border-slate-300 pl-3 italic text-slate-600; }
+  .listing-prose strong, .rt-editor .ql-container.ql-snow .ql-editor strong { @apply font-semibold text-slate-900; }
   .listing-prose a          { @apply font-medium text-primary-500 underline underline-offset-2 hover:text-primary-300; }
   .dark .listing-prose h2,
   .dark .listing-prose h3,
-  .dark .listing-prose strong { @apply text-white; }
-  .dark .listing-prose blockquote { @apply border-slate-600 text-slate-400; }
+  .dark .listing-prose strong,
+  .dark .rt-editor .ql-container.ql-snow .ql-editor h2,
+  .dark .rt-editor .ql-container.ql-snow .ql-editor h3,
+  .dark .rt-editor .ql-container.ql-snow .ql-editor strong { @apply text-white; }
+  .dark .listing-prose blockquote, .dark .rt-editor .ql-container.ql-snow .ql-editor blockquote { @apply border-slate-600 text-slate-400; }
   .dark .listing-prose a          { @apply text-primary-300 hover:text-white; }
 
   /* Quill's align and indent formats are classes, not inline styles — which is
