@@ -1990,6 +1990,39 @@
            sm:grid-cols-[auto_minmax(0,1fr)_auto];
   }
   .profile-head > .share-row { @apply col-span-2 sm:col-span-1; }
+
+  /* The sticky profile header (owner, 18 Nov 2026), desktop only: the
+     breadcrumbs scroll away, then the whole header stays under the scrolled
+     site header (109px, see html's scroll padding) while the gallery and the
+     content pass beneath it. Opaque for that reason. directory.js adds
+     .is-stuck (hairline and shadow) and measures the height into
+     --profile-head-h, which the right column and in-page jumps read. */
+  .profile-head-sticky {
+    @apply lg:sticky lg:top-[109px] lg:z-20 lg:bg-white;
+    @apply lg:transition-[box-shadow,padding] lg:duration-200;
+  }
+  .profile-head-sticky.is-stuck { @apply lg:border-b lg:border-slate-200 lg:py-3 lg:shadow-sm; }
+  .dark .profile-head-sticky { @apply lg:bg-surface-page; }
+  .dark .profile-head-sticky.is-stuck { @apply lg:border-slate-800; }
+  @media (prefers-reduced-motion: reduce) {
+    .profile-head-sticky { @apply transition-none; }
+  }
+  /* The right column, as it always was (Contact, then the rest), stays in view
+     below the header. When it is taller than the room left on screen it
+     scrolls on its own, so the Contact card at its top is always there. */
+  @media (min-width: 1024px) {
+    .profile-grid > div:last-child {
+      position: sticky;
+      align-self: start;
+      top: calc(109px + var(--profile-head-h, 14rem) + 1.5rem);
+      max-height: calc(100vh - 109px - var(--profile-head-h, 14rem) - 2.5rem);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      @apply -mx-1 px-1 pb-1;
+    }
+    /* In-page jumps (#reviews, a team member) land below the header. */
+    html:has(.profile-head-sticky) { scroll-padding-top: calc(109px + var(--profile-head-h, 14rem) + 1rem); }
+  }
   /* The logo or initials larger than the 48px list thumbnail: here it is the
      business's mark, beside its name. */
   .profile-head > .avatar       { @apply h-16 w-16 text-lg sm:h-20 sm:w-20 sm:text-xl; }
@@ -2012,41 +2045,7 @@
      The gap goes to 0 because every panel brings its own spacing. */
   .profile-grid { @apply max-lg:flex max-lg:flex-col max-lg:gap-0; }
   .profile-grid > div { @apply max-lg:contents; }
-  .profile-grid > div > .profile-contact-sticky { @apply max-lg:contents; }
-  .profile-grid .profile-contact { @apply max-lg:order-first max-lg:mb-8; }
-  /* Desktop (owner, 18 Nov 2026): the right column is the Contact card alone,
-     and it stays in view beside the content as it scrolls, like the facts
-     column on a job posting (.posting-aside-inner). Its top clears the
-     scrolled site header (109px) and the compact profile bar (56px) with a
-     gutter. The column stretches the grid row (no items-start), so the card
-     travels the whole length of the content and stops before "More like this". */
-  .profile-contact-sticky { @apply lg:sticky lg:top-[11.5rem]; }
-
-  /* The compact profile bar (_profile_bar.php), lg and up only: docks under
-     the scrolled site header once the full header has left the screen
-     (directory.js adds .is-shown). Hidden by opacity and a small slide, never
-     display, so showing it does not move the page. */
-  .profile-bar {
-    @apply pointer-events-none invisible fixed inset-x-0 top-[109px] z-30 hidden -translate-y-2 border-b border-slate-200 bg-white/95 opacity-0 backdrop-blur lg:block;
-    @apply transition-[opacity,transform,visibility] duration-200;
-  }
-  .profile-bar.is-shown { @apply pointer-events-auto visible translate-y-0 opacity-100; }
-  .profile-bar-inner { @apply flex h-14 items-center gap-3; }
-  .profile-bar .avatar { @apply h-9 w-9 shrink-0 text-xs; }
-  .profile-bar .avatar-logo { @apply w-auto min-w-9 max-w-24 p-1; }
-  .profile-bar-text { @apply min-w-0; }
-  .profile-bar-name { @apply m-0 truncate text-base font-bold leading-tight text-slate-900; }
-  .profile-bar-meta { @apply m-0 flex min-w-0 items-center gap-x-3 truncate text-xs text-slate-500; }
-  .profile-bar-category { @apply font-semibold text-brand-orange; }
-  .profile-bar-hours { @apply truncate; }
-  .dark .profile-bar      { @apply border-slate-800 bg-slate-900/95; }
-  .dark .profile-bar-name { @apply text-white; }
-  .dark .profile-bar-meta { @apply text-slate-400; }
-  @media (prefers-reduced-motion: reduce) {
-    .profile-bar { @apply transition-none; }
-  }
-  /* In-page jumps (#hours, #reviews, a branch) land below the bar too. */
-  html:has(.profile-bar) { @apply lg:scroll-pt-48; }
+  .profile-grid > div > .profile-contact { @apply max-lg:order-first max-lg:mb-8; }
 
   /* The left column is the profile's story, so its panels are sections on the
      canvas, not boxes: a hairline above, generous space, and the heading as a

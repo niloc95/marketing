@@ -195,22 +195,17 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('id="open-positions"', $profile);
     }
 
-    public function testTheProfileKeepsOnlyTheContactCardInTheStickyColumn(): void
+    public function testTheProfileHeaderHasItsOwnStickyWrapper(): void
     {
-        // Owner, 18 Nov 2026: on a desktop the Contact card sticks beside the
-        // content and a compact bar docks under the header, so the vacancies
-        // (and map and hours) are drawn in the main column, before the card.
+        // Owner, 18 Nov 2026: on a desktop the whole header sticks while the
+        // gallery and content scroll; the right column keeps Contact first and
+        // the vacancies after it.
         $listing = $this->listing();
         $this->svc->submitForListing($listing, $this->jobInput());
 
         $profile = (string) $this->get('directory/' . $listing['slug'])->response()->getBody();
-        $this->assertStringContainsString('data-profile-bar aria-hidden="true"', $profile);
-        $positions = strpos($profile, 'id="open-positions"');
-        $sticky    = strpos($profile, 'class="profile-contact-sticky"');
-        $this->assertNotFalse($positions);
-        $this->assertNotFalse($sticky);
-        $this->assertLessThan($sticky, $positions);
-        $this->assertStringContainsString('<div class="profile-contact">', substr($profile, $sticky, 600));
+        $this->assertMatchesRegularExpression('#<div class="profile-head-sticky" data-profile-head>\s*<div class="container">\s*<div class="profile-head">#', $profile);
+        $this->assertLessThan(strpos($profile, 'id="open-positions"'), strpos($profile, '<div class="profile-contact">'));
     }
 
     public function testNoHiringNoticeWithoutALiveVacancy(): void

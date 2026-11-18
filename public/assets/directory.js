@@ -4316,25 +4316,34 @@
     if (row) row.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);
   });
 
-  // ----------------------------------------------------------- profile bar
-  // The compact bar on a profile (_profile_bar.php, owner 18 Nov 2026):
-  // shown once the full header (.profile-head) has gone up behind the site
-  // header and the bar's own row, hidden again when it comes back. Desktop
-  // only by CSS (.profile-bar is display none below lg); this only toggles a
-  // class. Without IntersectionObserver the bar simply never shows.
+  // --------------------------------------------------- sticky profile head
+  // The profile header sticks under the site header on a desktop (CSS,
+  // .profile-head-sticky, owner 18 Nov 2026). This measures it into
+  // --profile-head-h, which places the sticky right column and in-page
+  // jumps, and marks it .is-stuck once it has reached the top (hairline and
+  // shadow). Set through the CSSOM, which the CSP allows (no style attribute).
   (function () {
-    var bar  = document.querySelector('[data-profile-bar]');
-    var head = document.querySelector('.profile-head');
-    if (!bar || !head || !('IntersectionObserver' in window)) return;
-    // 109px scrolled site header + 56px bar: the head counts as gone once its
-    // bottom passes under the bar.
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        var gone = !entry.isIntersecting && entry.boundingClientRect.top < 165;
-        bar.classList.toggle('is-shown', gone);
-      });
-    }, { rootMargin: '-165px 0px 0px 0px', threshold: 0 });
-    io.observe(head);
+    var head = document.querySelector('[data-profile-head]');
+    if (!head) return;
+    var root = document.documentElement;
+    function measure() {
+      root.style.setProperty('--profile-head-h', Math.round(head.getBoundingClientRect().height) + 'px');
+    }
+    var pending = false;
+    function check() {
+      pending = false;
+      var stuck = window.scrollY > 0 && head.getBoundingClientRect().top <= 110 && getComputedStyle(head).position === 'sticky';
+      if (stuck !== head.classList.contains('is-stuck')) head.classList.toggle('is-stuck', stuck);
+    }
+    window.addEventListener('scroll', function () {
+      if (!pending) { pending = true; requestAnimationFrame(check); }
+    }, { passive: true });
+    // border-box: sticking adds padding, which a content-box observer misses.
+    if ('ResizeObserver' in window) new ResizeObserver(measure).observe(head, { box: 'border-box' });
+    head.addEventListener('transitionend', measure);
+    window.addEventListener('resize', measure);
+    measure();
+    check();
   })();
 
   // ------------------------------------------------- description helper
