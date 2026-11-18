@@ -105,8 +105,11 @@ class Verticals extends BaseConfig
             'audienceSingular' => 'patient',
             'careFacts'  => ['medical_aid_accepted', 'new_patients_welcome', 'emergency_appointments', 'telehealth', 'house_calls', 'female_practitioner'],
             'headings'   => [
+                // Owner, 18 Nov 2026: a practice talks about itself, and its
+                // services are specialisations rather than priced items.
+                'description' => 'About my practice',
                 'credentials' => 'Qualifications & registrations',
-                'services'    => 'Treatments & fees',
+                'services'    => 'Specialisations & treatments',
                 'team'        => 'Practitioners',
                 'hours'       => 'Reception hours',
                 'tags'        => 'Special interests',

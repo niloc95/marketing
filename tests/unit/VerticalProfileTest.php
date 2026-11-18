@@ -142,7 +142,10 @@ final class VerticalProfileTest extends CIUnitTestCase
 
         $this->assertSame('Qualifications & registrations', $v['headings']['credentials']);
         $this->assertSame('Reception hours', $v['headings']['hours']);
-        $this->assertSame('Business description', $v['headings']['description'], 'unnamed headings fall through');
+        $this->assertSame('Brands we carry', $v['headings']['brands'], 'unnamed headings fall through');
+        $this->assertSame('About my practice', $v['headings']['description']);
+        $this->assertSame('Specialisations & treatments', $v['headings']['services']);
+        $this->assertSame('Business description', $this->verticals->forCategory('Beauty & Wellness')['headings']['description'], 'only medical changes');
         $this->assertSame('credentials', $v['order'][0], 'a practice leads with its qualifications');
     }
 

@@ -3,7 +3,7 @@
  * The service menu and its prices. See _panel_description.php for the contract.
  *
  * The heading is the single clearest signal that a page belongs to its vertical:
- * a restaurant calls this "Menu", a practice "Treatments & fees", a lodge
+ * a restaurant calls this "Menu", a practice "Specialisations & treatments", a lodge
  * "Packages & rates". price_label is free text by design ("from R150", "POA");
  * link_url, when set, turns the service name into a link.
  *
