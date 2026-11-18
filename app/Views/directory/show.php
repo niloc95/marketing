@@ -177,6 +177,7 @@ $metaDesc = listing_meta_description($l);
                 <?= $share ?>
             </div>
     </div>
+    <?= view('directory/_profile_bar', ['l' => $l, 'name' => $name, 'prof' => $prof, 'avatar' => $avatar], ['saveData' => false]) ?>
 
     <?php if ($hasBand): ?>
         <?php // The gallery, after Airbnb's listing page: a rounded grid the width
@@ -322,38 +323,15 @@ $metaDesc = listing_meta_description($l);
                       // but eight repeated renders in a loop is exactly the shape
                       // that bug takes. ?>
                 <?php foreach ($v['order'] as $panel): ?>
-                    <?php // Locations live in the right column; see _panel_locations.php. ?>
+                    <?php // Locations are drawn after the story, below; see _panel_locations.php. ?>
                     <?php if ($panel === 'locations') { continue; } ?>
                     <?= view('directory/_panel_' . $panel, ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
                 <?php endforeach; ?>
-            </div>
 
-            <div>
-                <?php // The listing's own address, rendered by the same three panels
-                      // each branch above gets. One definition per panel, used twice.
-                      // .profile-contact: on a phone or tablet the CSS lifts this card
-                      // above the description (owner, 12 Nov 2026), so Book, WhatsApp
-                      // and Email are the first thing under the header. Moved by CSS,
-                      // not rendered twice, so ids and tap counts stay single. ?>
-                <div class="profile-contact">
-                    <?= view('directory/_contact_panel', [
-                        'row'        => $l,
-                        'heading'    => 'Contact',
-                        'showWeb'    => true,
-                        'emailUrl'   => ! empty($l['email_public']) ? base_url('directory/' . $l['slug'] . '/email') : '',
-                        'messageUrl' => base_url('directory/' . $l['slug'] . '/message'),
-                    ]) ?>
-                </div>
-
-                <?php // For the owner, not the visitor: a quiet line under the contact
-                      // panel, on profiles without the badge while it is on sale. It
-                      // links to /verified, which explains the badge and how to apply.
-                      // Worded as an offer to the owner, so it never reads as a warning
-                      // that this business is unchecked. ?>
-                <?php if (signup_cta()['verified'] && ! listing_is_verified_business($l)): ?>
-                    <a class="contact-suggest" href="<?= base_url('verified') ?>"><?= lucide('badge-check') ?>Is this your business? Get Verified</a>
-                <?php endif; ?>
-
+                <?php // Where, when and who is hiring, after the profile's story. These
+                      // were the right column until the Contact card became sticky
+                      // there on a desktop (owner, 18 Nov 2026). On a phone the order
+                      // is as before: content, then these. ?>
                 <?= view('directory/_care_panel', ['l' => $l, 'v' => $v], ['saveData' => false]) ?>
 
                 <?= view('directory/_service_area_panel', ['l' => $l, 'class' => 'mt-5'], ['saveData' => false]) ?>
@@ -403,6 +381,41 @@ $metaDesc = listing_meta_description($l);
                         </ul>
                     </div>
                 <?php endif; ?>
+            </div>
+
+            <div>
+                <?php // The listing's own address, rendered by the same three panels
+                      // each branch above gets. One definition per panel, used twice.
+                      // .profile-contact: on a phone or tablet the CSS lifts this card
+                      // above the description (owner, 12 Nov 2026), so Book, WhatsApp
+                      // and Email are the first thing under the header. Moved by CSS,
+                      // not rendered twice, so ids and tap counts stay single. ?>
+                <?php // Sticky on a desktop (owner, 18 Nov 2026), beside the content as
+                      // it scrolls, like the facts column on a job posting. The
+                      // column holds nothing else: the map, hours, branches and
+                      // vacancies are in the main column, so the card never covers
+                      // a panel of its own column. ?>
+                <div class="profile-contact-sticky">
+                <div class="profile-contact">
+                    <?= view('directory/_contact_panel', [
+                        'row'        => $l,
+                        'heading'    => 'Contact',
+                        'showWeb'    => true,
+                        'emailUrl'   => ! empty($l['email_public']) ? base_url('directory/' . $l['slug'] . '/email') : '',
+                        'messageUrl' => base_url('directory/' . $l['slug'] . '/message'),
+                    ]) ?>
+                </div>
+
+                <?php // For the owner, not the visitor: a quiet line under the contact
+                      // panel, on profiles without the badge while it is on sale. It
+                      // links to /verified, which explains the badge and how to apply.
+                      // Worded as an offer to the owner, so it never reads as a warning
+                      // that this business is unchecked. ?>
+                <?php if (signup_cta()['verified'] && ! listing_is_verified_business($l)): ?>
+                    <a class="contact-suggest" href="<?= base_url('verified') ?>"><?= lucide('badge-check') ?>Is this your business? Get Verified</a>
+                <?php endif; ?>
+                </div>
+
             </div>
         </div>
 

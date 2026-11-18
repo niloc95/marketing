@@ -4316,6 +4316,27 @@
     if (row) row.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);
   });
 
+  // ----------------------------------------------------------- profile bar
+  // The compact bar on a profile (_profile_bar.php, owner 18 Nov 2026):
+  // shown once the full header (.profile-head) has gone up behind the site
+  // header and the bar's own row, hidden again when it comes back. Desktop
+  // only by CSS (.profile-bar is display none below lg); this only toggles a
+  // class. Without IntersectionObserver the bar simply never shows.
+  (function () {
+    var bar  = document.querySelector('[data-profile-bar]');
+    var head = document.querySelector('.profile-head');
+    if (!bar || !head || !('IntersectionObserver' in window)) return;
+    // 109px scrolled site header + 56px bar: the head counts as gone once its
+    // bottom passes under the bar.
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var gone = !entry.isIntersecting && entry.boundingClientRect.top < 165;
+        bar.classList.toggle('is-shown', gone);
+      });
+    }, { rootMargin: '-165px 0px 0px 0px', threshold: 0 });
+    io.observe(head);
+  })();
+
   // ------------------------------------------------- description helper
   // "Write it with ChatGPT" under the description, and the hints from the
   // chosen category. The prompt and the hints both come from

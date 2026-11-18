@@ -195,6 +195,24 @@ final class JobBoardFlowTest extends CIUnitTestCase
         $this->assertStringContainsString('id="open-positions"', $profile);
     }
 
+    public function testTheProfileKeepsOnlyTheContactCardInTheStickyColumn(): void
+    {
+        // Owner, 18 Nov 2026: on a desktop the Contact card sticks beside the
+        // content and a compact bar docks under the header, so the vacancies
+        // (and map and hours) are drawn in the main column, before the card.
+        $listing = $this->listing();
+        $this->svc->submitForListing($listing, $this->jobInput());
+
+        $profile = (string) $this->get('directory/' . $listing['slug'])->response()->getBody();
+        $this->assertStringContainsString('data-profile-bar aria-hidden="true"', $profile);
+        $positions = strpos($profile, 'id="open-positions"');
+        $sticky    = strpos($profile, 'class="profile-contact-sticky"');
+        $this->assertNotFalse($positions);
+        $this->assertNotFalse($sticky);
+        $this->assertLessThan($sticky, $positions);
+        $this->assertStringContainsString('<div class="profile-contact">', substr($profile, $sticky, 600));
+    }
+
     public function testNoHiringNoticeWithoutALiveVacancy(): void
     {
         $listing = $this->listing();
