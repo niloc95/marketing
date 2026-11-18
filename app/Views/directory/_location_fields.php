@@ -111,6 +111,13 @@ $row = function ($i, array $loc = [], bool $spare = false) use ($err, $provinces
             </div>
         </div>
         <div class="field">
+            <label>WhatsApp number</label>
+            <input type="text" name="<?= $n('whatsapp') ?>" maxlength="40" inputmode="tel" placeholder="082 123 4567"
+                   value="<?= esc($val('whatsapp'), 'attr') ?>">
+            <div class="hint">Adds a <em>Chat on WhatsApp</em> button to this location. Leave blank to hide it.</div>
+            <?php if ($e('whatsapp')): ?><div class="err"><?= esc($e('whatsapp')) ?></div><?php endif; ?>
+        </div>
+        <div class="field">
             <label>Email</label>
             <input type="email" name="<?= $n('email') ?>" maxlength="190"
                    value="<?= esc($val('email'), 'attr') ?>">

@@ -96,7 +96,9 @@ foreach ($locations as $loc) {
             <div class="loc-body">
                 <?php if (! $isPrimary): ?>
                     <?= view('directory/_contact_panel', [
-                        'row'      => $row,
+                        // The business's name, for the WhatsApp greeting
+                        // ("Hi, I found … on WebScheduler Local.").
+                        'row'      => $row + ['display_name' => (string) ($primary['display_name'] ?? '')],
                         'heading'  => 'Contact',
                         // Website and socials belong to the business, not the branch.
                         'showWeb'  => false,

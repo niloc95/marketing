@@ -52,6 +52,7 @@ final class LocationFormRenderTest extends CIUnitTestCase
             'locations[0][postal_code]',
             'locations[0][phone]',
             'locations[0][phone_alt]',
+            'locations[0][whatsapp]',
             'locations[0][email]',
         ] as $field) {
             $this->assertStringContainsString('name="' . $field . '"', $html, $field . ' must be on the branch form');
@@ -298,6 +299,31 @@ final class LocationFormRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('9 Old Street', $html);
         $this->assertStringNotContainsString('data-map-view', $html);
         $this->assertStringNotContainsString('Trading hours', $html);
+    }
+
+    /**
+     * A branch with its own WhatsApp line gets its own Chat on WhatsApp button,
+     * greeting with the business's name; one without gets none, and never the
+     * listing's own number (owner, 18 Nov 2026).
+     */
+    public function testABranchWhatsappRendersItsOwnChatButton(): void
+    {
+        helper(['directory_hours', 'directory_ui', 'slug']);
+
+        $html = html_entity_decode(view('directory/_location_panel', [
+            'primary'   => ['display_name' => 'Dr Two Rooms', 'slug' => 'dr-two-rooms', 'whatsapp' => '27763147093', 'city' => 'Durban'],
+            'locations' => [
+                ['id' => 1, 'name' => 'Rooms with WhatsApp', 'city' => 'Durban', 'whatsapp' => '27838525117'],
+                ['id' => 2, 'name' => 'Rooms without', 'city' => 'Durban', 'whatsapp' => null],
+            ],
+        ], ['saveData' => false]), ENT_QUOTES | ENT_HTML5);
+        // The panel's own nested view() calls keep $primary on the shared
+        // renderer; drop it so the next test's panel has no primary.
+        \Config\Services::resetSingle('renderer');
+
+        $this->assertStringContainsString('https://wa.me/27838525117?text=' . rawurlencode('Hi, I found Dr Two Rooms on WebScheduler Local.'), $html);
+        $this->assertSame(1, substr_count($html, 'Chat on WhatsApp'), 'only the branch that has a number; the primary card leaves contact rows to the Contact panel');
+        $this->assertStringNotContainsString('wa.me/27763147093', $html);
     }
 
     /** A nameless branch still needs a heading. */

@@ -21,8 +21,8 @@
  *
  * @var array  $row      a listing row, or a practice-location row
  * @var string $heading  panel heading
- * @var bool   $showWeb  render the business-wide rows: Book online, Chat on
- *                       WhatsApp, website, socials and Suggest an edit. False for a branch: a
+ * @var bool   $showWeb  render the business-wide rows: Book online, website,
+ *                       socials and Suggest an edit. False for a branch: a
  *                       per-branch copy would only go stale against the
  *                       listing's own, and one edit link per profile is enough.
  * @var string $emailUrl where "Show email" fetches the address (Directory::email);
@@ -57,8 +57,11 @@ if ($showWeb) {
     }
 }
 
-// wa.me with the digits whatsapp_digits() stores; '' hides the button.
-$whatsappUrl = $showWeb ? whatsapp_chat_url($row['whatsapp'] ?? '', (string) ($row['display_name'] ?? '')) : '';
+// wa.me with the digits whatsapp_digits() stores; '' hides the button. Shown
+// for a branch too: unlike the website, a branch can have its own WhatsApp line
+// (practice_locations.whatsapp, since 18 Nov 2026), and a branch row carries
+// only its own number, never the listing's.
+$whatsappUrl = whatsapp_chat_url($row['whatsapp'] ?? '', (string) ($row['display_name'] ?? ''));
 
 // safe_external_url() at render time as well as normaliseUrl() on save: a row
 // written before either check existed must still never reach an href unvetted.

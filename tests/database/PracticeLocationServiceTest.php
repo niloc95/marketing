@@ -279,6 +279,38 @@ final class PracticeLocationServiceTest extends CIUnitTestCase
         $this->assertSame([], $this->locations->forListing($listing), 'nothing may be written on a validation failure');
     }
 
+    // ------------------------------------------------------------- whatsapp
+
+    public function testABranchWhatsappIsStoredAsWaMeDigits(): void
+    {
+        $listing = $this->listing('Two Rooms Practice');
+
+        $result = $this->service->syncFromForm($listing, [
+            ['name' => 'Rooms A', 'whatsapp' => '083 852 5117'],
+            ['name' => 'Rooms B', 'whatsapp' => '+44 7700 900123'],
+            ['name' => 'Rooms C', 'whatsapp' => ''],
+        ]);
+
+        $this->assertSame([], $result['errors']);
+        $rows = $this->locations->forListing($listing);
+        $this->assertSame('27838525117', $rows[0]['whatsapp'], 'a leading 0 is read in the branch country, South Africa by default');
+        $this->assertSame('447700900123', $rows[1]['whatsapp']);
+        $this->assertNull($rows[2]['whatsapp'], 'blank clears it');
+    }
+
+    public function testAnInvalidBranchWhatsappIsRejected(): void
+    {
+        $listing = $this->listing('Bad WhatsApp Co');
+
+        $result = $this->service->syncFromForm($listing, [[
+            'name'     => 'Branch',
+            'whatsapp' => 'call me',
+        ]]);
+
+        $this->assertArrayHasKey('locations.0.whatsapp', $result['errors']);
+        $this->assertSame([], $this->locations->forListing($listing), 'nothing may be written on a validation failure');
+    }
+
     // ------------------------------------------------------------ geocoding
 
     public function testABranchAddressIsGeocodedOnSave(): void

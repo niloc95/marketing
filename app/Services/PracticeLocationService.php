@@ -138,6 +138,17 @@ class PracticeLocationService
                 $errors[$prefix . 'contact_person'] = $problem;
             }
 
+            // wa.me digits, as the listing's own number (whatsapp_digits()):
+            // a leading 0 is read in the branch's country, South Africa when
+            // none is given, the same default the country column gets below.
+            $whatsapp = whatsapp_digits(
+                $this->limited($row['whatsapp'] ?? '', 40, $prefix . 'whatsapp', 'The WhatsApp number', $errors),
+                country_dial_code(trim((string) ($row['country'] ?? '')) ?: 'South Africa')
+            );
+            if ($whatsapp === null) {
+                $errors[$prefix . 'whatsapp'] = 'Enter a WhatsApp number for this branch, e.g. 082 123 4567 or +44 7700 900123, or leave it blank.';
+            }
+
             $submitted[] = [
                 'existing' => $existing,
                 'raw'      => $row,
@@ -160,6 +171,7 @@ class PracticeLocationService
                     'country'      => $this->limited($row['country'] ?? '', 80, $prefix . 'country', 'The country', $errors) ?: 'South Africa',
                     'phone'        => $this->limited($row['phone'] ?? '', 40, $prefix . 'phone', 'The phone number', $errors) ?: null,
                     'phone_alt'    => $this->limited($row['phone_alt'] ?? '', 40, $prefix . 'phone_alt', 'The alternate phone number', $errors) ?: null,
+                    'whatsapp'     => $whatsapp ?: null,
                     'email'        => $email ?: null,
                     // The same encoder the listing's own hours go through, so a
                     // branch's JSON is the shape hours_decode() and the shared

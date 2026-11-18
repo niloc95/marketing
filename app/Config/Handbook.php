@@ -53,7 +53,7 @@ class Handbook extends BaseConfig
     public array $tables = [
         // ---------------------------------------------------------- profiles
         'xs_directory_listings' => ['purpose' => 'Business profiles, the hub every other profile table hangs off', 'owner' => 'DirectoryListingMutationService (public, owner), DirectoryAdminService (admin)', 'product' => 'local', 'personal' => 'Owner name, email, phone; kept while the profile exists'],
-        'xs_directory_practice_locations' => ['purpose' => 'Extra branches of a profile (Verified or Plus)', 'owner' => 'PracticeLocationService', 'product' => 'local', 'personal' => null],
+        'xs_directory_practice_locations' => ['purpose' => 'Extra branches of a profile (Verified or Plus): address, hours, phones, own WhatsApp number (wa.me digits) and email', 'owner' => 'PracticeLocationService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_photos' => ['purpose' => 'Profile photos, in order', 'owner' => 'DirectoryListingMutationService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_brands' => ['purpose' => '"Brands we carry" names and logos', 'owner' => 'ListingBrandService', 'product' => 'local', 'personal' => null],
         'xs_directory_listing_menu_files' => ['purpose' => 'Uploaded menu PDFs for food profiles', 'owner' => 'ListingMenuService', 'product' => 'local', 'personal' => null],
