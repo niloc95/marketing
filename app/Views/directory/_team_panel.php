@@ -110,8 +110,10 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                         </div>
                     <?php endif; ?>
 
-                    <?php if (! empty($m['bio'])): ?>
-                        <p class="team-member-bio"><?= esc($m['bio']) ?></p>
+                    <?php // Rich text (bold, italic, lists); a plain bio from before becomes paragraphs. ?>
+                    <?php $bioHtml = \App\Libraries\RichText::sanitiseBasic((string) ($m['bio'] ?? '')); ?>
+                    <?php if ($bioHtml !== ''): ?>
+                        <div class="team-member-bio"><?= $bioHtml ?></div>
                     <?php endif; ?>
 
                     <?php if (isset($m['id'], $bookable[(int) $m['id']])): ?>
@@ -130,8 +132,9 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if ($p['title'] !== ''): ?>
                         <p class="team-member-role"><?= esc($p['title']) ?></p>
                     <?php endif; ?>
-                    <?php if ($p['bio'] !== ''): ?>
-                        <p class="team-member-bio"><?= esc($p['bio']) ?></p>
+                    <?php $bioHtml = \App\Libraries\RichText::sanitiseBasic((string) $p['bio']); ?>
+                    <?php if ($bioHtml !== ''): ?>
+                        <div class="team-member-bio"><?= $bioHtml ?></div>
                     <?php endif; ?>
                     <?= view('directory/_team_booking', ['p' => $p], ['saveData' => false]) ?>
                 </div>

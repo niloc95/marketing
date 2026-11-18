@@ -39,7 +39,8 @@ class TeamMemberService
     private const MAX_SPECIALIZATION_LENGTH = 60;
 
     /** Long enough for a professional summary, short enough to stay a panel. */
-    private const MAX_BIO_LENGTH = 1200;
+    /** Plain text characters, like the qualifications (the bio is rich text since 18 Nov 2026). */
+    public const MAX_BIO_LENGTH = 1200;
 
     /**
      * "Qualifications and credentials", counted in plain text like the
@@ -374,7 +375,13 @@ class TeamMemberService
         if (mb_strlen(RichText::toPlainText($credentials)) > self::MAX_CREDENTIALS_LENGTH) {
             $errors[$prefix . 'credentials'] = sprintf('The qualifications must be %d characters or fewer.', self::MAX_CREDENTIALS_LENGTH);
         }
-        $bio         = $this->limited($row['bio'] ?? '', self::MAX_BIO_LENGTH, $prefix . 'bio', 'The bio', $errors);
+        // Rich text since 18 Nov 2026 (owner): bold, italic and lists, like
+        // the qualifications; the cap counts the words, not the markup. A
+        // plain text bio from before becomes paragraphs.
+        $bio = RichText::sanitiseBasic((string) ($row['bio'] ?? ''));
+        if (mb_strlen(RichText::toPlainText($bio)) > self::MAX_BIO_LENGTH) {
+            $errors[$prefix . 'bio'] = sprintf('The bio must be %d characters or fewer.', self::MAX_BIO_LENGTH);
+        }
 
         $specializations = $this->normaliseSpecializations(
             $row['specializations'] ?? '',

@@ -268,6 +268,23 @@ final class TeamMemberServiceTest extends CIUnitTestCase
         $this->assertArrayHasKey('team.0.credentials', $result['errors']);
     }
 
+    public function testTheBioIsBasicRichTextCappedInPlainText(): void
+    {
+        $id = $this->listing('Bio Rooms');
+
+        $result = $this->service->syncFromForm($id, [[
+            'name' => 'Dr Ana Pillay',
+            'bio'  => '<p>Treats <strong>knees</strong>.</p><ul><li>Sports</li></ul><a href="https://x.test">link</a><script>alert(1)</script>',
+        ]]);
+        $this->assertSame([], $result['errors']);
+        $this->assertSame('<p>Treats <strong>knees</strong>.</p><ul><li>Sports</li></ul><p>link</p>', $this->members->forListing($id)[0]['bio']);
+
+        $fits = '<p>' . str_repeat('a', TeamMemberService::MAX_BIO_LENGTH) . '</p>';
+        $this->assertSame([], $this->service->syncFromForm($id, [['name' => 'Dr Fits', 'bio' => $fits]])['errors']);
+        $result = $this->service->syncFromForm($id, [['name' => 'Dr Long', 'bio' => str_repeat('a', TeamMemberService::MAX_BIO_LENGTH + 1)]]);
+        $this->assertArrayHasKey('team.0.bio', $result['errors']);
+    }
+
     public function testSpecializationsAreTrimmedDedupedAndRejoined(): void
     {
         $listingId = $this->listing('Smith Attorneys');

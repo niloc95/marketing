@@ -3659,13 +3659,19 @@
   .team-member-credentials ul     { @apply my-1 list-disc space-y-0.5 pl-5; }
   .team-member-credentials ol     { @apply my-1 list-decimal space-y-0.5 pl-5; }
   .team-member-credentials strong { @apply font-semibold text-slate-800; }
-  .team-member-bio         { @apply mt-2 whitespace-pre-line text-sm text-slate-700; }
+  /* Rich text since 18 Nov 2026: paragraphs and lists, like the qualifications. */
+  .team-member-bio         { @apply mt-2 text-sm leading-relaxed text-slate-700; }
+  .team-member-bio p       { @apply my-1; }
+  .team-member-bio ul      { @apply my-1 list-disc space-y-0.5 pl-5; }
+  .team-member-bio ol      { @apply my-1 list-decimal space-y-0.5 pl-5; }
+  .team-member-bio strong  { @apply font-semibold text-slate-900; }
 
   .dark .team-member-name        { @apply text-white; }
   .dark .team-member-role        { @apply text-primary-300; }
   .dark .team-member-credentials { @apply text-slate-300; }
   .dark .team-member-credentials strong { @apply text-white; }
   .dark .team-member-bio         { @apply text-slate-300; }
+  .dark .team-member-bio strong  { @apply text-white; }
 
   /* A bookable person's own week, what they offer and their Book button
      (_team_booking.php). Their hours may be shorter than reception's. */

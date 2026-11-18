@@ -97,10 +97,14 @@ $showSwitch = $showSwitch ?? true;
     <div class="hint">Separate with commas, up to 12 per person.</div>
     <?php if ($e('specializations')): ?><div class="err"><?= esc($e('specializations')) ?></div><?php endif; ?>
 </div>
-<div class="field">
+<?php // Rich text since 18 Nov 2026 (owner), the same small editor as the
+      // qualifications above. No maxlength: it would count the markup. ?>
+<div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_BIO_LENGTH ?>">
     <label>Short bio</label>
-    <textarea name="<?= $name('bio') ?>" rows="2" maxlength="1200"
+    <textarea name="<?= $name('bio') ?>" rows="2"
               placeholder="A paragraph on what they do and who they help."><?= esc($val('bio')) ?></textarea>
+    <div class="rt-editor rt-editor-mini" hidden><div data-rich-text-for></div></div>
+    <div class="rt-count" data-rich-text-count hidden></div>
     <?php if ($e('bio')): ?><div class="err"><?= esc($e('bio')) ?></div><?php endif; ?>
 </div>
 <div class="field">
