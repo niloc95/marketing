@@ -728,9 +728,9 @@ if (! function_exists('vertical_profile')) {
      *
      * @return array<string,mixed>
      */
-    function vertical_profile(?string $group, ?string $categorySlug = null): array
+    function vertical_profile(?string $group, ?string $categorySlug = null, ?string $type = null): array
     {
-        return config('Verticals')->forCategory($group, $categorySlug);
+        return config('Verticals')->forCategory($group, $categorySlug, $type);
     }
 }
 
@@ -750,7 +750,7 @@ if (! function_exists('listing_vertical')) {
     {
         ['group' => $group, 'slug' => $slug] = listing_category_ref($listing);
 
-        return vertical_profile($group, $slug);
+        return vertical_profile($group, $slug, isset($listing['type']) ? (string) $listing['type'] : null);
     }
 }
 
