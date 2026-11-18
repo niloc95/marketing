@@ -243,6 +243,31 @@ final class TeamMemberServiceTest extends CIUnitTestCase
 
     // ----------------------------------------------------- specializations
 
+    public function testQualificationsAreStoredAsBasicRichText(): void
+    {
+        $id = $this->listing('Pillay Rooms');
+
+        $result = $this->service->syncFromForm($id, [[
+            'name'        => 'Dr Ana Pillay',
+            'credentials' => '<h2>x</h2><ul><li><strong>MBChB</strong> (UCT)</li></ul><script>alert(1)</script>',
+        ]]);
+
+        $this->assertSame([], $result['errors']);
+        $this->assertSame('<p>x</p><ul><li><strong>MBChB</strong> (UCT)</li></ul>', $this->members->forListing($id)[0]['credentials']);
+    }
+
+    public function testQualificationsAreCappedInPlainText(): void
+    {
+        $id = $this->listing('Long Rooms');
+
+        // Markup does not count: 1000 characters in a list still fit.
+        $fits = '<ul><li>' . str_repeat('a', TeamMemberService::MAX_CREDENTIALS_LENGTH) . '</li></ul>';
+        $this->assertSame([], $this->service->syncFromForm($id, [['name' => 'Dr Fits', 'credentials' => $fits]])['errors']);
+
+        $result = $this->service->syncFromForm($id, [['name' => 'Dr Long', 'credentials' => str_repeat('a', TeamMemberService::MAX_CREDENTIALS_LENGTH + 1)]]);
+        $this->assertArrayHasKey('team.0.credentials', $result['errors']);
+    }
+
     public function testSpecializationsAreTrimmedDedupedAndRejoined(): void
     {
         $listingId = $this->listing('Smith Attorneys');

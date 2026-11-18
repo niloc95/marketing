@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\ProfessionalRegistration;
+use App\Libraries\RichText;
 use App\Models\DirectoryListingPhotoModel;
 use App\Models\DirectoryListingTeamModel;
 
@@ -39,6 +40,14 @@ class TeamMemberService
 
     /** Long enough for a professional summary, short enough to stay a panel. */
     private const MAX_BIO_LENGTH = 1200;
+
+    /**
+     * "Qualifications and credentials", counted in plain text like the
+     * description. Rich text (RichText::sanitiseBasic) since 18 Nov 2026,
+     * when the profile wide Credentials box was folded into the person
+     * (owner): room for a degree list, not for a CV.
+     */
+    public const MAX_CREDENTIALS_LENGTH = 1000;
 
     /** Public: HandlesListingUploads writes the files, this class owns where they go. */
     public const UPLOAD_DIR = 'assets/listings/team';
@@ -314,6 +323,18 @@ class TeamMemberService
     }
 
     /**
+     * Set one card's "Qualifications and credentials" and nothing else, for
+     * directory:move-credentials (the profile wide box folded into the
+     * person, 18 Nov 2026). Sanitised like a form save; no length check, so
+     * moved text is never refused (an owner shortens it on their next edit).
+     */
+    public function setCredentials(int $cardId, string $html): void
+    {
+        $clean = RichText::sanitiseBasic($html);
+        $this->members->update($cardId, ['credentials' => $clean !== '' ? $clean : null]);
+    }
+
+    /**
      * Ids of this listing's cards that a booking provider (not archived) is.
      *
      * @return list<int>
@@ -349,7 +370,10 @@ class TeamMemberService
         }
 
         $role        = $this->limited($row['role'] ?? '', 120, $prefix . 'role', 'The position', $errors);
-        $credentials = $this->limited($row['credentials'] ?? '', 255, $prefix . 'credentials', 'The qualifications', $errors);
+        $credentials = RichText::sanitiseBasic((string) ($row['credentials'] ?? ''));
+        if (mb_strlen(RichText::toPlainText($credentials)) > self::MAX_CREDENTIALS_LENGTH) {
+            $errors[$prefix . 'credentials'] = sprintf('The qualifications must be %d characters or fewer.', self::MAX_CREDENTIALS_LENGTH);
+        }
         $bio         = $this->limited($row['bio'] ?? '', self::MAX_BIO_LENGTH, $prefix . 'bio', 'The bio', $errors);
 
         $specializations = $this->normaliseSpecializations(

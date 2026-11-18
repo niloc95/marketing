@@ -179,7 +179,7 @@ final class CategoryInsightsTest extends CIUnitTestCase
         $this->assertStringNotContainsString('not_a_feature', $json['prompt']);
     }
 
-    public function testThePromptCarriesTheOwnersAnswersAndCredentials(): void
+    public function testThePromptCarriesTheOwnersAnswers(): void
     {
         $query = http_build_query([
             'category_id'  => $this->categories['dentist'],
@@ -194,7 +194,9 @@ final class CategoryInsightsTest extends CIUnitTestCase
 
         $prompt = json_decode($this->get('description/prompt?' . $query)->getJSON(), true)['prompt'];
 
-        $this->assertStringContainsString('Credentials: BDS (Wits)', $prompt);
+        // Qualifications are a person's (team card) since 18 Nov 2026; the
+        // form no longer has a profile wide box to send.
+        $this->assertStringNotContainsString('Credentials:', $prompt);
         $this->assertStringContainsString('What we believe, or how we work: Gentle care, no rushing', $prompt);
         $this->assertStringContainsString('and their qualifications: Dr Thandi Mokoena, dentist', $prompt);
         $this->assertStringContainsString('How long we have been doing this: 12 years', $prompt);

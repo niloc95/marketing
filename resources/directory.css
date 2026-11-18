@@ -3652,12 +3652,19 @@
   .team-member-body        { @apply min-w-0 flex-1; }
   .team-member-name        { @apply text-sm font-semibold text-slate-900; }
   .team-member-role        { @apply text-sm text-primary-600; }
-  .team-member-credentials { @apply mt-0.5 text-xs text-slate-500; }
+  /* Rich text since 18 Nov 2026 (RichText::sanitiseBasic): paragraphs and
+     lists, the card's own qualifications, so readable rather than a caption. */
+  .team-member-credentials        { @apply mt-1.5 text-sm leading-relaxed text-slate-600; }
+  .team-member-credentials p      { @apply my-0.5; }
+  .team-member-credentials ul     { @apply my-1 list-disc space-y-0.5 pl-5; }
+  .team-member-credentials ol     { @apply my-1 list-decimal space-y-0.5 pl-5; }
+  .team-member-credentials strong { @apply font-semibold text-slate-800; }
   .team-member-bio         { @apply mt-2 whitespace-pre-line text-sm text-slate-700; }
 
   .dark .team-member-name        { @apply text-white; }
   .dark .team-member-role        { @apply text-primary-300; }
-  .dark .team-member-credentials { @apply text-slate-400; }
+  .dark .team-member-credentials { @apply text-slate-300; }
+  .dark .team-member-credentials strong { @apply text-white; }
   .dark .team-member-bio         { @apply text-slate-300; }
 
   /* A bookable person's own week, what they offer and their Book button
@@ -4181,6 +4188,9 @@
   .rt-editor .ql-editor.ql-blank::before {
     @apply not-italic text-slate-400;
   }
+  /* A person's "Qualifications and credentials" (_person_fields.php): a few
+     lines, not a page. */
+  .rt-editor-mini .ql-editor { @apply min-h-[5rem]; }
   .rt-editor .ql-toolbar.ql-snow {
     @apply rounded-t-inner border-slate-200 bg-slate-50;
   }

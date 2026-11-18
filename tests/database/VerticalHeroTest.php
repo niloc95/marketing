@@ -43,6 +43,7 @@ final class VerticalHeroTest extends CIUnitTestCase
             'slug'         => 'dr-a-nkosi',
             'status'       => 'published',
             'credentials'  => 'MBChB, FCP(SA)',
+            'description'  => '<p>A cardiology practice in Johannesburg.</p>',
             'city'         => 'Johannesburg',
             'province'     => 'Gauteng',
             'trading_hours' => '{"mon":{"open":"08:00","close":"16:30"}}',
@@ -70,9 +71,12 @@ final class VerticalHeroTest extends CIUnitTestCase
         // The hours assertion below is only meaningful because the fixture carries
         // trading_hours — _hours_panel returns early without them.
         $this->assertStringContainsString('vertical-scope cat-tint-red', $html);
-        $this->assertStringContainsString('Qualifications &amp; registrations', $html);
+        $this->assertStringContainsString('About my practice', $html);
         $this->assertStringContainsString('Reception hours', $html);
-        $this->assertStringNotContainsString('<h2 class="panel-title">Credentials</h2>', $html, 'the generic wording is gone');
+        $this->assertStringNotContainsString('Business description', $html, 'the generic wording is gone');
+        // The profile wide box is no longer shown (18 Nov 2026): a person's
+        // qualifications are on their team card, a Verified/Plus panel.
+        $this->assertStringNotContainsString('FCP(SA)', $html);
     }
 
     public function testABrowseFilteredToOneCategoryMatchesItsLandingPage(): void
@@ -130,7 +134,7 @@ final class VerticalHeroTest extends CIUnitTestCase
             'category_id'  => null,
             'slug'         => 'orphaned-business',
             'status'       => 'published',
-            'credentials'  => 'Some credential',
+            'description'  => '<p>Some description.</p>',
             'city'         => 'Durban',
             'province'     => 'KwaZulu-Natal',
             'trading_hours' => '{"mon":{"open":"08:00","close":"16:30"}}',
@@ -139,7 +143,7 @@ final class VerticalHeroTest extends CIUnitTestCase
         $html = $this->get('directory/orphaned-business')->getBody();
 
         $this->assertStringContainsString('vertical-scope cat-tint-slate', $html, 'the documented grey fallback');
-        $this->assertStringContainsString('<h2 class="panel-title">Credentials</h2>', $html, 'the wording it always had');
+        $this->assertStringContainsString('<h2 class="panel-title">Business description</h2>', $html, 'the wording it always had');
         $this->assertStringContainsString('Trading hours', $html);
     }
 }

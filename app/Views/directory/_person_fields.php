@@ -35,11 +35,17 @@ $showSwitch = $showSwitch ?? true;
         <?php if ($e('role')): ?><div class="err"><?= esc($e('role')) ?></div><?php endif; ?>
     </div>
 </div>
-<div class="field">
-    <label>Qualifications</label>
-    <input type="text" name="<?= $name('credentials') ?>" maxlength="255"
-           value="<?= esc($val('credentials'), 'attr') ?>"
-           placeholder="e.g. BA LLB (UCT), admitted attorney 1996">
+<?php // Rich text since 18 Nov 2026, when the profile wide Credentials box was
+      // folded in here (owner). The textarea is the real field: directory.js
+      // mounts a small Quill editor over it (bold, italic, lists) and copies
+      // the HTML back; without the script it posts plain text, one line per
+      // qualification. TeamMemberService keeps RichText::sanitiseBasic(). ?>
+<div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_CREDENTIALS_LENGTH ?>">
+    <label>Qualifications and credentials</label>
+    <textarea name="<?= $name('credentials') ?>" rows="3"
+              placeholder="One per line, e.g. MBChB (UCT), FCS (Orth) SA"><?= esc($val('credentials')) ?></textarea>
+    <div class="rt-editor rt-editor-mini" hidden><div data-rich-text-for></div></div>
+    <div class="rt-count" data-rich-text-count hidden></div>
     <?php if ($e('credentials')): ?><div class="err"><?= esc($e('credentials')) ?></div><?php endif; ?>
 </div>
 <?php // Hidden AND disabled with no regulator, so nothing of it posts. ?>

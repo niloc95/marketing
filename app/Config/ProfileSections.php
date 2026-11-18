@@ -32,7 +32,7 @@ class ProfileSections extends BaseConfig
                 'title', 'position', 'contact_person', 'type', 'category_id',
                 'display_name', 'email_public', 'phone', 'phone_alt', 'whatsapp', 'website',
                 'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
-                'description', 'credentials', 'specializations',
+                'description', 'specializations',
                 'marketing_present', 'marketing_opt_in',
             ],
             'errors'  => ['email', 'consent'],

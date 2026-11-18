@@ -817,8 +817,8 @@ if (! function_exists('schema_local_business')) {
             array_merge([$l['category']['name'] ?? ($l['category_name'] ?? '')], $l['tags'] ?? [])
         ))));
 
-        // An individual's credentials are theirs, on the Person node.
-        $credentials = $isPerson ? [] : schema_listing_credentials($l);
+        // Credentials are a person's (the team card's "Qualifications and
+        // credentials", 18 Nov 2026), so the business node carries none.
 
         $type = schema_business_type((string) ($l['category']['group_name'] ?? ''), (string) ($l['category']['slug'] ?? ''), (string) ($l['type'] ?? ''), $l['category']['schema_type'] ?? null);
 
@@ -904,7 +904,6 @@ if (! function_exists('schema_local_business')) {
             'sameAs'                   => $sameAs !== [] ? $sameAs : null,
             'employee'                 => $employees !== [] ? $employees : null,
             'department'               => $branches !== [] ? $branches : null,
-            'hasCredential'            => $credentials !== [] ? $credentials : null,
             'potentialAction'          => $reserve,
             'hasOfferCatalog'          => $catalog,
             'hasMenu'                  => $hasMenu,
@@ -913,29 +912,6 @@ if (! function_exists('schema_local_business')) {
             'aggregateRating'          => $rating,
             'review'                   => $reviewList !== [] ? $reviewList : null,
         ], static fn ($v) => $v !== '' && $v !== null && $v !== []);
-    }
-}
-
-if (! function_exists('schema_listing_credentials')) {
-    /**
-     * One credential per line of the listing's free-text box, which is how
-     * owners list them ("BDS (Wits)" / "HPCSA registered"). Named only: the
-     * text is the owner's claim and there is nothing verified to add to it.
-     *
-     * @param array<string,mixed> $l
-     *
-     * @return list<array{'@type':string,name:string}>
-     */
-    function schema_listing_credentials(array $l): array
-    {
-        $out = [];
-        foreach (preg_split('/\R/', trim((string) ($l['credentials'] ?? ''))) ?: [] as $line) {
-            if (trim($line) !== '') {
-                $out[] = ['@type' => 'EducationalOccupationalCredential', 'name' => trim($line)];
-            }
-        }
-
-        return $out;
     }
 }
 
@@ -1072,15 +1048,8 @@ if (! function_exists('schema_person')) {
             $workLocation[] = ['@id' => $canonical . '#branch-' . ($i + 2)];
         }
 
-        $credentials = schema_listing_credentials($l);
-        if ($card !== null) {
-            $named = array_map(static fn (array $c): string => mb_strtolower((string) ($c['name'] ?? '')), $credentials);
-            foreach (schema_member_credentials($card['credentials'] ?? null) as $c) {
-                if (! in_array(mb_strtolower((string) ($c['name'] ?? '')), $named, true)) {
-                    $credentials[] = $c;
-                }
-            }
-        }
+        // Theirs, from their own team card (the profile wide box is gone).
+        $credentials = $card !== null ? schema_member_credentials($card['credentials'] ?? null) : [];
         $image = listing_image_url($l['logo_path'] ?? null) ?: listing_image_url($l['photos'][0]['path'] ?? null);
 
         return array_filter([
@@ -1111,18 +1080,19 @@ if (! function_exists('schema_member_credentials')) {
     /**
      * A team member's qualifications as credential nodes.
      *
-     * The member field is one line ("BDS (Wits), MSc Dent (UP)"), unlike the
-     * listing's own box, which takes one per line, so this splits on commas and
-     * semicolons as well. A comma inside brackets is part of a credential
-     * ("MBChB (UCT, 2010)") and does not split it. Named only, for the same
-     * reason as the listing's credentials: it is the owner's claim, and there
-     * is nothing verified to add to it.
+     * Rich text since 18 Nov 2026 (one per line or list item), and older
+     * cards hold one line ("BDS (Wits), MSc Dent (UP)"), so this reads the
+     * plain text and splits on lines, commas and semicolons. A comma inside
+     * brackets is part of a credential ("MBChB (UCT, 2010)") and does not
+     * split it. Named only: it is the owner's claim, and there is nothing
+     * verified to add to it.
      *
      * @return list<array{'@type':string,name:string}>
      */
     function schema_member_credentials(?string $credentials): array
     {
-        $parts = preg_split('/[;\r\n]+|,(?![^(]*\))/', trim((string) $credentials)) ?: [];
+        $plain = \App\Libraries\RichText::toPlainText(trim((string) $credentials));
+        $parts = preg_split('/[;\r\n]+|,(?![^(]*\))/', $plain) ?: [];
 
         $out = [];
         foreach ($parts as $part) {

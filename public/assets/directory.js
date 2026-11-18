@@ -4222,6 +4222,100 @@
     form.addEventListener('submit', syncTextarea);
   })();
 
+  // ------------------------------------- qualifications rich text (per person)
+  // "Qualifications and credentials" on a team card (_person_fields.php): a
+  // small Quill editor, bold, italic and lists only, over the real textarea,
+  // as the description's above. Several on a page (one per person), and a
+  // person added with "+ Add another person" gets one too (repeat:add). The
+  // server keeps RichText::sanitiseBasic() whatever arrives. No styles reach
+  // a paste's DOM for the CSP reason given above.
+  function initMiniEditor(field) {
+    if (!field || field.hasAttribute('data-rich-ready') || typeof Quill === 'undefined') return;
+    var textarea = field.querySelector('textarea');
+    var shell    = field.querySelector('.rt-editor');
+    var mount    = field.querySelector('[data-rich-text-for]');
+    var counter  = field.querySelector('[data-rich-text-count]');
+    var form     = field.closest('form');
+    if (!textarea || !shell || !mount || !form) return;
+    field.setAttribute('data-rich-ready', '');
+
+    var MAX = parseInt(field.getAttribute('data-rich-text-max') || '', 10) || 1000;
+
+    var quill = new Quill(mount, {
+      theme: 'snow',
+      placeholder: textarea.getAttribute('placeholder') || '',
+      formats: ['bold', 'italic', 'list'],
+      modules: {
+        toolbar: [['bold', 'italic'], [{ list: 'bullet' }, { list: 'ordered' }], ['clean']],
+        // `formats` above already turns a pasted heading or link into words.
+        keyboard: { bindings: { tab: { key: 9, handler: function () { return true; } } } }
+      }
+    });
+
+    var initial = textarea.value.trim();
+    if (initial) {
+      if (initial.indexOf('<') === -1) {
+        quill.setText(initial);
+      } else {
+        quill.clipboard.dangerouslyPasteHTML(initial, 'silent');
+      }
+    }
+
+    textarea.hidden = true;
+    textarea.setAttribute('aria-hidden', 'true');
+    textarea.setAttribute('tabindex', '-1');
+    shell.hidden = false;
+    if (counter) counter.hidden = false;
+
+    var label = field.querySelector('label');
+    if (label) {
+      label.id = label.id || 'rt-mini-' + Math.random().toString(36).slice(2, 9);
+      quill.root.setAttribute('aria-labelledby', label.id);
+    }
+
+    shell.addEventListener('paste', function (e) {
+      var html = e.clipboardData && e.clipboardData.getData('text/html');
+      if (!html || html.indexOf('style') === -1) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var range = quill.getSelection(true);
+      if (!range) return;
+      if (range.length) quill.deleteText(range.index, range.length, 'user');
+      quill.clipboard.dangerouslyPasteHTML(range.index, html.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ''), 'user');
+    }, true);
+
+    function plainLength() {
+      return quill.getText().replace(/\n+$/, '').length;
+    }
+
+    function render() {
+      if (!counter) return;
+      var used = plainLength();
+      counter.textContent = used > MAX ? (used - MAX) + ' characters over the limit' : (MAX - used) + ' characters left';
+      counter.classList.toggle('is-over', used > MAX);
+    }
+
+    function sync() {
+      var html = typeof quill.getSemanticHTML === 'function' ? quill.getSemanticHTML() : quill.root.innerHTML;
+      textarea.value = plainLength() === 0 ? '' : html;
+    }
+
+    quill.on('text-change', function (delta, old, source) {
+      var before = Math.max(0, old.length() - 1);
+      if (source === 'user' && plainLength() > MAX && plainLength() > before) quill.history.undo();
+      render();
+      if (source === 'user') sync();
+    });
+    render();
+    form.addEventListener('submit', sync);
+  }
+
+  document.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);
+  document.addEventListener('repeat:add', function (e) {
+    var row = e.detail && e.detail.row;
+    if (row) row.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);
+  });
+
   // ------------------------------------------------- description helper
   // "Write it with ChatGPT" under the description, and the hints from the
   // chosen category. The prompt and the hints both come from
@@ -4276,7 +4370,6 @@
         var el = form.querySelector('input[name="' + n + '"]');
         if (el && el.checked) p.append('features[]', n);
       });
-      p.append('credentials', value('credentials'));
       box.querySelectorAll('[data-describe-q]').forEach(function (el) {
         p.append('q_' + el.getAttribute('data-describe-q'), el.value);
       });
@@ -4331,7 +4424,7 @@
     // Only the fields params() sends. Anything else (the phone number, the
     // description itself) changes nothing in the prompt, and asking anyway
     // would spend the endpoint's per minute allowance on keystrokes.
-    var PROMPT_FIELDS = /^(type|category_id|display_name|city|suburb|service_areas|customer_location|specializations|credentials|attributes\[\]|accepts_card_payments|offers_delivery|offers_online_booking|services\[\d+\]\[(name|_remove)\])$/;
+    var PROMPT_FIELDS = /^(type|category_id|display_name|city|suburb|service_areas|customer_location|specializations|attributes\[\]|accepts_card_payments|offers_delivery|offers_online_booking|services\[\d+\]\[(name|_remove)\])$/;
 
     function refreshPrompt() {
       var mine = ++promptRequest;

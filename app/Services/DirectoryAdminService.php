@@ -177,7 +177,6 @@ class DirectoryAdminService
             'contact_person' => null,
             'title'          => null,
             'position'       => null,
-            'credentials'    => null,
             'description'    => 'richtext',
             'phone'          => null,
             'phone_alt'      => null,
