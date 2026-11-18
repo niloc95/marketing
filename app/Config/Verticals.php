@@ -107,7 +107,11 @@ class Verticals extends BaseConfig
             'headings'   => [
                 // Owner, 18 Nov 2026: a practice talks about itself, and its
                 // services are specialisations rather than priced items.
-                'description' => 'About my practice',
+                // {my} and {noun} are filled per profile (forCategory()): a
+                // doctor on their own reads "About my practice", a group
+                // practice "About our practice", a hospital "About our
+                // hospital", a pharmacy "About our pharmacy".
+                'description' => 'About {my} {noun}',
                 'services'    => 'Specialisations & treatments',
                 'team'        => 'Practitioners',
                 'hours'       => 'Reception hours',
@@ -667,7 +671,12 @@ class Verticals extends BaseConfig
      *
      * @return array<string,mixed>
      */
-    public function forCategory(?string $group, ?string $categorySlug = null): array
+    /**
+     * @param string|null $type the profile's type (DirectoryListingModel::TYPES):
+     *                          'person' speaks as "my", anything else as "our".
+     *                          Unknown (null) reads "our", which suits any profile.
+     */
+    public function forCategory(?string $group, ?string $categorySlug = null, ?string $type = null): array
     {
         $out = $this->defaults;
 
@@ -683,6 +692,11 @@ class Verticals extends BaseConfig
             $out = array_replace($out, $layer);
 
             $out['headings'] = array_replace($headings, $layer['headings'] ?? []);
+        }
+
+        $tokens = ['{my}' => $type === 'person' ? 'my' : 'our', '{noun}' => (string) $out['ownerNoun']];
+        foreach ($out['headings'] as $key => $heading) {
+            $out['headings'][$key] = strtr((string) $heading, $tokens);
         }
 
         return $out;

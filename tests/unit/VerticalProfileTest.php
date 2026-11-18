@@ -144,7 +144,11 @@ final class VerticalProfileTest extends CIUnitTestCase
         $this->assertSame('Practitioners', $v['headings']['team']);
         $this->assertSame('Reception hours', $v['headings']['hours']);
         $this->assertSame('Brands we carry', $v['headings']['brands'], 'unnamed headings fall through');
-        $this->assertSame('About my practice', $v['headings']['description']);
+        // One doctor speaks as "my", anyone else as "our", in their own noun.
+        $this->assertSame('About our practice', $v['headings']['description'], 'type unknown: our');
+        $this->assertSame('About my practice', $this->verticals->forCategory('Health & Medical', 'general-practitioner', 'person')['headings']['description']);
+        $this->assertSame('About our practice', $this->verticals->forCategory('Health & Medical', 'general-practitioner', 'practice')['headings']['description']);
+        $this->assertSame('About our hospital', $this->verticals->forCategory('Health & Medical', 'hospital', 'facility')['headings']['description']);
         $this->assertSame('Specialisations & treatments', $v['headings']['services']);
         $this->assertSame('Business description', $this->verticals->forCategory('Beauty & Wellness')['headings']['description'], 'only medical changes');
         $this->assertSame('team', $v['order'][0], 'a practice leads with its people and their qualifications');
@@ -305,14 +309,16 @@ final class VerticalProfileTest extends CIUnitTestCase
     public function testAPanelIsNamedByItsVertical(): void
     {
         $cases = [
-            ['Health & Medical', 'general-practitioner', 'About my practice'],
-            ['Beauty & Wellness', 'hair-salon', 'Business description'],
+            ['Health & Medical', 'general-practitioner', 'person', 'About my practice'],
+            ['Health & Medical', 'general-practitioner', 'practice', 'About our practice'],
+            ['Health & Medical', 'hospital', 'facility', 'About our hospital'],
+            ['Beauty & Wellness', 'hair-salon', 'practice', 'Business description'],
         ];
 
-        foreach ($cases as [$group, $slug, $expected]) {
+        foreach ($cases as [$group, $slug, $type, $expected]) {
             $html = view('directory/_panel_description', [
                 'l' => ['description' => '<p>x</p>'],
-                'v' => vertical_profile($group, $slug),
+                'v' => vertical_profile($group, $slug, $type),
             ], ['saveData' => false]);
 
             $this->assertStringContainsString('<h2 class="panel-title">' . $expected . '</h2>', $html, $slug);
