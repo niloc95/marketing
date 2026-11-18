@@ -569,7 +569,9 @@ final class SchemaHelperTest extends CIUnitTestCase
         $this->assertSame([base_url('uploads/logo.jpg'), base_url('uploads/a.jpg'), base_url('uploads/b.jpg')], $business['image']);
         // Category first, duplicates and whitespace dropped.
         $this->assertSame(['Dentist', 'Implants', 'Whitening'], $business['knowsAbout']);
-        $this->assertSame(['BDS (Wits)', 'HPCSA registered'], array_column($business['hasCredential'], 'name'));
+        // The profile wide box is no longer published (18 Nov 2026): credentials
+        // are a person's, on their team card.
+        $this->assertArrayNotHasKey('hasCredential', $business);
         $this->assertSame([['@type' => 'PropertyValue', 'name' => 'Languages', 'value' => 'English, Zulu']], $business['additionalProperty']);
     }
 

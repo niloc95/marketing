@@ -65,7 +65,6 @@ final class DescriptionPrompt
             . $line('Areas of focus', $facts['tags'] ?? [])
             . ($where !== 'visit' ? $line('We travel to customers in', $facts['service_areas'] ?? []) : '')
             . $line('Features', $facts['features'] ?? [])
-            . $line('Credentials', $facts['credentials'] ?? '')
             . $line('What we believe, or how we work', $facts['approach'] ?? '')
             . $line('The people customers will see, and their qualifications', $facts['people'] ?? '')
             . $line('How long we have been doing this', $facts['years'] ?? '')

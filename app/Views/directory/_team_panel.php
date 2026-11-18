@@ -69,8 +69,13 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if (! empty($m['role'])): ?>
                         <p class="team-member-role"><?= esc($m['role']) ?></p>
                     <?php endif; ?>
-                    <?php if (! empty($m['credentials'])): ?>
-                        <p class="team-member-credentials"><?= esc($m['credentials']) ?></p>
+                    <?php // Rich text (bold, italic, lists) since 18 Nov 2026; sanitised
+                          // again here so a row from before the editor, or one
+                          // written around the service, still renders only the
+                          // short list. Plain text comes out as paragraphs. ?>
+                    <?php $creds = \App\Libraries\RichText::sanitiseBasic((string) ($m['credentials'] ?? '')); ?>
+                    <?php if ($creds !== ''): ?>
+                        <div class="team-member-credentials"><?= $creds ?></div>
                     <?php endif; ?>
 
                     <?php // Self declared unless an admin ticked it, and always

@@ -314,4 +314,28 @@ final class RichTextTest extends CIUnitTestCase
 
         $this->assertLessThan(2100, substr_count($out, '<p>'));
     }
+
+    // --------------------------------------------- sanitiseBasic (team cards)
+
+    public function testBasicKeepsBoldItalicAndListsOnly(): void
+    {
+        $out = RichText::sanitiseBasic('<h2>Degrees</h2><ul><li><strong>MBChB</strong> (UCT)</li><li><em>FCP</em> (SA)</li></ul>'
+            . '<blockquote>Quote</blockquote><p class="ql-align-center"><a href="https://x.test">site</a> <u>u</u></p>');
+
+        $this->assertSame('<p>Degrees</p><ul><li><strong>MBChB</strong> (UCT)</li><li><em>FCP</em> (SA)</li></ul>'
+            . '<p>Quote</p><p>site u</p>', $out);
+    }
+
+    public function testBasicStillDropsScriptsAndHandlers(): void
+    {
+        $out = RichText::sanitiseBasic('<p onclick="x()">BDS<script>alert(1)</script></p><svg><a href="javascript:1">y</a></svg>');
+
+        $this->assertSame('<p>BDS</p>', $out);
+    }
+
+    public function testBasicTurnsPlainLinesIntoParagraphs(): void
+    {
+        $this->assertSame('<p>MBChB (UCT)<br>FCP (SA)</p>', RichText::sanitiseBasic("MBChB (UCT)\nFCP (SA)"));
+        $this->assertSame('', RichText::sanitiseBasic('<p><br></p>'));
+    }
 }

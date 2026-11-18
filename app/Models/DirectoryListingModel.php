@@ -135,7 +135,7 @@ class DirectoryListingModel extends Model
      */
     public const OWNER_EDITABLE = [
         'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
-        'credentials', 'description', 'phone', 'phone_alt', 'whatsapp', 'website',
+        'description', 'phone', 'phone_alt', 'whatsapp', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'location_name', 'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
         'logo_path',

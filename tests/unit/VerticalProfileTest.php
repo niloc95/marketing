@@ -140,10 +140,14 @@ final class VerticalProfileTest extends CIUnitTestCase
     {
         $v = $this->verticals->forCategory('Health & Medical');
 
-        $this->assertSame('Qualifications & registrations', $v['headings']['credentials']);
+        $this->assertArrayNotHasKey('credentials', $v['headings'], 'qualifications are on the team cards since 18 Nov 2026');
+        $this->assertSame('Practitioners', $v['headings']['team']);
         $this->assertSame('Reception hours', $v['headings']['hours']);
-        $this->assertSame('Business description', $v['headings']['description'], 'unnamed headings fall through');
-        $this->assertSame('credentials', $v['order'][0], 'a practice leads with its qualifications');
+        $this->assertSame('Brands we carry', $v['headings']['brands'], 'unnamed headings fall through');
+        $this->assertSame('About my practice', $v['headings']['description']);
+        $this->assertSame('Specialisations & treatments', $v['headings']['services']);
+        $this->assertSame('Business description', $this->verticals->forCategory('Beauty & Wellness')['headings']['description'], 'only medical changes');
+        $this->assertSame('team', $v['order'][0], 'a practice leads with its people and their qualifications');
     }
 
     /**
@@ -256,13 +260,13 @@ final class VerticalProfileTest extends CIUnitTestCase
         $this->assertNull(category_photo(['group_name' => null]), 'and no hero photograph');
 
         $v = vertical_profile(null, null);
-        $html = view('directory/_panel_credentials', [
-            'l' => ['credentials' => 'BSc (Hons)'],
+        $html = view('directory/_panel_description', [
+            'l' => ['description' => '<p>We fix shoes.</p>'],
             'v' => $v,
         ], ['saveData' => false]);
 
-        $this->assertStringContainsString('<h2 class="panel-title">Credentials</h2>', $html, 'the wording it always had');
-        $this->assertStringContainsString('BSc (Hons)', $html);
+        $this->assertStringContainsString('Business description', $html, 'the wording it always had');
+        $this->assertStringContainsString('We fix shoes.', $html);
     }
 
     /**
@@ -301,14 +305,13 @@ final class VerticalProfileTest extends CIUnitTestCase
     public function testAPanelIsNamedByItsVertical(): void
     {
         $cases = [
-            ['Health & Medical', 'general-practitioner', 'Qualifications &amp; registrations'],
-            ['Legal & Financial', 'attorney', 'Admissions &amp; accreditation'],
-            ['Home & Trades', 'plumber', 'Certifications &amp; registrations'],
+            ['Health & Medical', 'general-practitioner', 'About my practice'],
+            ['Beauty & Wellness', 'hair-salon', 'Business description'],
         ];
 
         foreach ($cases as [$group, $slug, $expected]) {
-            $html = view('directory/_panel_credentials', [
-                'l' => ['credentials' => 'x'],
+            $html = view('directory/_panel_description', [
+                'l' => ['description' => '<p>x</p>'],
                 'v' => vertical_profile($group, $slug),
             ], ['saveData' => false]);
 

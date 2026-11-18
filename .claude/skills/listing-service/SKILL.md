@@ -121,7 +121,7 @@ the `{segment}`/`{token}` catch-alls, or the catch-all swallows them first.
 over `display_name`/`description`/`credentials`.
 
 - `OWNER_EDITABLE` allowlist (what `/manage/edit` may write): business fields only —
-  `type, display_name, contact_person, title, position, category_id, credentials, description,
+  `type, display_name, contact_person, title, position, category_id, description,
   phone, phone_alt, whatsapp, website, social_facebook, social_instagram,
   social_linkedin, social_tiktok, address_line, address_line_2, suburb, city, province,
   region, postal_code, logo_path, trading_hours, by_appointment, accepts_card_payments, offers_delivery,
@@ -131,6 +131,11 @@ over `display_name`/`description`/`credentials`.
   address, dodge the International Listing paywall, or break the SEO'd URL. Read the
   constant rather than trusting this copy of it, since it is a security boundary and
   this doc has drifted from it before.
+- **Qualifications are a person's** (owner, 18 Nov 2026): the listing `credentials`
+  column is no longer written by any form nor shown (kept for practices that
+  `directory:move-credentials` could not place). A team card's `credentials` is rich
+  text (`RichText::sanitiseBasic`: p, br, strong, em, ul, ol, li; 1000 plain chars), and
+  like every team card shows only on Verified/Plus. Free owners use the description.
 - **Links and the WhatsApp number are checked on every write path *and* at render.**
   `website`/`booking_url` go through `normaliseUrl()` + `safe_external_url()`. The four
   `social_*` fields go through `social_profile_url()` (in `directory_ui_helper.php`),

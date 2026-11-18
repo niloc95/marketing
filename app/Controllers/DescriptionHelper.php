@@ -59,7 +59,7 @@ class DescriptionHelper extends BaseController
 
     /**
      * The form as sent, cleaned up into the facts DescriptionPrompt reads
-     * (the same shape DescriptionWriter takes, plus credentials and the four
+     * (the same shape DescriptionWriter takes, plus the four
      * answers). Null without an active category and a business name.
      *
      * @return array<string,mixed>|null
@@ -107,7 +107,6 @@ class DescriptionHelper extends BaseController
             'services'          => array_slice($services, 0, 20),
             'tags'              => array_slice($tags, 0, 20),
             'features'          => $features,
-            'credentials'       => $this->text('credentials', 500),
         ];
     }
 

@@ -107,7 +107,7 @@ final class TeamPeopleTest extends CIUnitTestCase
 
         $provider = (new TeamService($id))->provider($providerId);
         $card     = (new DirectoryListingTeamModel())->find((int) $provider['team_member_id']);
-        $this->assertSame('Diploma in Hairdressing', $card['credentials']);
+        $this->assertSame('<p>Diploma in Hairdressing</p>', $card['credentials'], 'rich text since 18 Nov 2026');
         $this->assertSame('1', (string) $card['show_on_profile']);
         $this->assertSame('Senior stylist', $provider['title']);
         $this->assertSame('teal', $provider['color']);

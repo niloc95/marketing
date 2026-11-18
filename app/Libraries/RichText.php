@@ -98,6 +98,16 @@ final class RichText
         'div'    => 'p',
     ];
 
+    /**
+     * The short list for a person's qualifications (sanitiseBasic()): bold,
+     * italic, lists and line breaks. No headings, quotes or links: a card is
+     * a few lines beside a photo, and a link there would be a backlink for
+     * sale. Anything else is folded onto a paragraph or unwrapped to its text.
+     */
+    private const BASIC = ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li'];
+
+    private const BASIC_REMAP = ['h2' => 'p', 'h3' => 'p', 'blockquote' => 'p'];
+
     /** Elements that stand on their own at the root; anything else there gets wrapped in a <p>. */
     private const BLOCK = ['p', 'h2', 'h3', 'ul', 'ol', 'blockquote'];
 
@@ -160,6 +170,26 @@ final class RichText
      */
     public static function sanitise(string $html): string
     {
+        return self::clean($html, self::ALLOWED, []);
+    }
+
+    /**
+     * sanitise() with the short list (BASIC): what a team card's
+     * "Qualifications and credentials" box keeps. Classes go too, so a pasted
+     * centred line cannot reach a card. Plain text, such as a row written
+     * before the box had an editor, becomes paragraphs as in sanitise().
+     */
+    public static function sanitiseBasic(string $html): string
+    {
+        return self::clean($html, self::BASIC, self::BASIC_REMAP, false);
+    }
+
+    /**
+     * @param list<string>          $allowed
+     * @param array<string,string>  $remap   applied after REMAP
+     */
+    private static function clean(string $html, array $allowed, array $remap, bool $classes = true): string
+    {
         $html = trim($html);
         if ($html === '') {
             return '';
@@ -192,7 +222,7 @@ final class RichText
         $out->appendChild($root);
 
         $budget = self::MAX_NODES;
-        self::copyInto($source, $root, $out, 0, $budget);
+        self::copyInto($source, $root, $out, 0, $budget, $allowed, $remap, $classes);
         self::wrapStrayInline($root, $out);
 
         $result = '';
@@ -338,7 +368,7 @@ final class RichText
      * $budget is by reference so the node ceiling is shared across the whole
      * tree rather than reset for each branch.
      */
-    private static function copyInto(DOMNode $src, DOMNode $dest, DOMDocument $out, int $depth, int &$budget): void
+    private static function copyInto(DOMNode $src, DOMNode $dest, DOMDocument $out, int $depth, int &$budget, array $allowed = self::ALLOWED, array $remap = [], bool $classes = true): void
     {
         foreach ($src->childNodes as $child) {
             if ($budget <= 0) {
@@ -372,12 +402,13 @@ final class RichText
             }
 
             $name = self::REMAP[$name] ?? $name;
+            $name = $remap[$name] ?? $name;
 
             // Not on the allowlist, or too deep to keep nesting: unwrap it and
             // carry on with its children, so the text survives but the element
             // does not.
-            if ($depth >= self::MAX_DEPTH || ! in_array($name, self::ALLOWED, true)) {
-                self::copyInto($child, $dest, $out, $depth + 1, $budget);
+            if ($depth >= self::MAX_DEPTH || ! in_array($name, $allowed, true)) {
+                self::copyInto($child, $dest, $out, $depth + 1, $budget, $allowed, $remap, $classes);
 
                 continue;
             }
@@ -391,11 +422,13 @@ final class RichText
             }
 
             $el = $out->createElement($name);
-            self::applyAttributes($child, $el);
+            if ($classes || $name === 'a') {
+                self::applyAttributes($child, $el);
+            }
 
             if ($name === 'a' && ! $el->hasAttribute('href')) {
                 // A link we could not make safe keeps its text and loses its href.
-                self::copyInto($child, $dest, $out, $depth + 1, $budget);
+                self::copyInto($child, $dest, $out, $depth + 1, $budget, $allowed, $remap, $classes);
 
                 continue;
             }
@@ -404,7 +437,7 @@ final class RichText
             $dest->appendChild($el);
 
             if ($name !== 'br') {
-                self::copyInto($child, $el, $out, $depth + 1, $budget);
+                self::copyInto($child, $el, $out, $depth + 1, $budget, $allowed, $remap, $classes);
             }
         }
     }

@@ -130,7 +130,8 @@ final class SchemaTypesTest extends CIUnitTestCase
         $this->assertSame('Dr', $person['honorificPrefix']);
         $this->assertSame('Endocrinologist', $person['jobTitle']);
         $this->assertSame(['@type' => 'Occupation', 'name' => 'Endocrinologist'], $person['hasOccupation']);
-        $this->assertSame(['MBChB (UCT)', 'FCP (SA)'], array_column($person['hasCredential'], 'name'));
+        // Only a team card carries credentials now, and this profile has none.
+        $this->assertArrayNotHasKey('hasCredential', $person);
         $this->assertSame(['Diabetes', 'Thyroid'], $person['knowsAbout']);
         $this->assertSame(['https://www.linkedin.com/in/ana-pillay'], $person['sameAs']);
         $this->assertSame(['@id' => self::CANONICAL . '#business'], $person['worksFor']);
@@ -152,13 +153,13 @@ final class SchemaTypesTest extends CIUnitTestCase
         $this->assertSame(['https://www.facebook.com/pillayrooms'], $business['sameAs']);
     }
 
-    public function testAPracticeHasNoPersonAndKeepsItsCredentials(): void
+    public function testAPracticeHasNoPersonAndNoProfileWideCredentials(): void
     {
         $l = $this->doctor(['type' => 'practice']);
 
         $this->assertSame([], schema_person($l, self::CANONICAL));
         $business = schema_local_business($l, self::CANONICAL);
-        $this->assertSame(['MBChB (UCT)', 'FCP (SA)'], array_column($business['hasCredential'], 'name'));
+        $this->assertArrayNotHasKey('hasCredential', $business, 'the old box is not published');
         $this->assertArrayNotHasKey('employee', $business);
         $this->assertContains('https://www.linkedin.com/in/ana-pillay', $business['sameAs']);
     }
@@ -167,7 +168,7 @@ final class SchemaTypesTest extends CIUnitTestCase
     {
         $l = $this->doctor(['team' => [
             ['name' => 'Ana  Pillay', 'slug' => 'ana-pillay', 'role' => 'Head of Practice',
-                'credentials' => 'MBChB (UCT), MMed (Wits)', 'specializations' => 'Diabetes, Thyroid, and Bone Health'],
+                'credentials' => '<ul><li>MBChB (UCT)</li><li>MMed (Wits, 2015)</li></ul>', 'specializations' => 'Diabetes, Thyroid, and Bone Health'],
             ['name' => 'Sam Dube', 'slug' => 'sam-dube', 'role' => 'Practice manager'],
         ]]);
         $business = schema_local_business($l, self::CANONICAL);
@@ -181,10 +182,10 @@ final class SchemaTypesTest extends CIUnitTestCase
         $this->assertCount(2, $business['employee']);
 
         // What the card knows goes on the one Person node instead: its
-        // credentials (deduplicated against the profile's own) and topics,
-        // with a stray "and" from an Oxford comma stripped.
+        // credentials (rich text: one per list item, a comma in brackets kept)
+        // and topics, with a stray "and" from an Oxford comma stripped.
         $person = schema_person($l, self::CANONICAL);
-        $this->assertSame(['MBChB (UCT)', 'FCP (SA)', 'MMed (Wits)'], array_column($person['hasCredential'], 'name'));
+        $this->assertSame(['MBChB (UCT)', 'MMed (Wits, 2015)'], array_column($person['hasCredential'], 'name'));
         $this->assertContains('Bone Health', $person['knowsAbout']);
         $this->assertNotContains('and Bone Health', $person['knowsAbout']);
         $this->assertSame('Endocrinologist', $person['jobTitle']);

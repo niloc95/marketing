@@ -184,7 +184,7 @@ final class ProfileTypesAndPlacesTest extends CIUnitTestCase
     {
         $vertical = config('Verticals')->forCategory('Faith & Worship', 'church');
         $this->assertSame('Service times', $vertical['headings']['hours']);
-        $this->assertSame('Registrations', $vertical['headings']['credentials'], 'the group headings still apply');
+        $this->assertSame('Our leaders', $vertical['headings']['team'], 'the group headings still apply');
 
         $facets = config('ListingFacets')->forCategory('Faith & Worship', 'mosque');
         $this->assertArrayHasKey('worship_language', $facets);

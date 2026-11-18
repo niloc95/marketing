@@ -24,7 +24,7 @@ class DirectoryPracticeLocationModel extends Model
         'country_code',
         'listing_id', 'name', 'contact_person',
         'address_line', 'address_line_2', 'suburb', 'city', 'province', 'postal_code', 'country',
-        'phone', 'phone_alt', 'email',
+        'phone', 'phone_alt', 'whatsapp', 'email',
         'latitude', 'longitude', 'geocode_precision',
         'geocoded_at', 'geocoded_address', 'geocoding_status',
         'trading_hours',

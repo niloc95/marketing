@@ -177,8 +177,9 @@ final class ContactPanelRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('href="https://wa.me/27821234567?text=', $html);
         $this->assertStringNotContainsString('Chat on WhatsApp', $this->render([]));
         $this->assertStringNotContainsString('Chat on WhatsApp', $this->render(['whatsapp' => 'nope']));
-        // Business-wide, like Book online — a branch panel does not repeat it.
-        $this->assertStringNotContainsString('Chat on WhatsApp', $this->render(['whatsapp' => '27821234567'], false));
+        // Not business-wide since 18 Nov 2026: a branch row carries its own
+        // number (practice_locations.whatsapp), so a branch panel shows it.
+        $this->assertStringContainsString('href="https://wa.me/27821234567?text=', $this->render(['whatsapp' => '27821234567'], false));
     }
 
     public function testSocialsRenderAsLabelledIconsOnlyForTheirOwnNetwork(): void

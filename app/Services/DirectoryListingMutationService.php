@@ -364,7 +364,6 @@ class DirectoryListingMutationService
             'display_name'   => ListingText::tidyName((string) ($input['display_name'] ?? '')),
             'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
-            'credentials' => $this->clean($input['credentials'] ?? ''),
             'description'      => $description,
             'description_text' => RichText::toPlainText($description),
             'phone'          => $this->clean($input['phone'] ?? ''),
@@ -1066,15 +1065,15 @@ class DirectoryListingMutationService
      * pasted address one character too long fails silently and forever. In
      * non-strict mode it is worse: the value is truncated and saved.
      *
-     * credentials and description are TEXT; their ceilings are editorial, not
-     * structural.
+     * description is TEXT; its ceiling is editorial, not structural. The
+     * profile wide credentials column is no longer written by any form: a
+     * person's qualifications live on the team card (18 Nov 2026).
      */
     private const MAX_LENGTHS = [
         'display_name'   => [200, 'business name'],
         'contact_person' => [150, 'contact person'],
         'title'          => [60, 'title'],
         'position'       => [40, 'position'],
-        'credentials'    => [500, 'credentials'],
         'phone'          => [40, 'phone number'],
         'email'          => [190, 'email'],
         'website'        => [255, 'website'],

@@ -811,17 +811,14 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 <?php endif; ?>
 
 <?php if ($in('details')): ?>
-<details class="disclosure" <?= $v('credentials') !== '' || $v('specializations') !== '' || $err('credentials') !== '' || $err('specializations') !== '' ? 'open' : '' ?>>
+<?php // Qualifications are a person's, on their team card (_person_fields.php),
+      // since 18 Nov 2026 (owner): the profile wide Credentials box is gone. ?>
+<details class="disclosure" <?= $v('specializations') !== '' || $err('specializations') !== '' ? 'open' : '' ?>>
     <summary class="disclosure-summary">
         <span>More details</span>
-        <span class="hint">Qualifications and areas of focus</span>
+        <span class="hint">Areas of focus</span>
     </summary>
     <div class="disclosure-body">
-<div class="field">
-    <label>Credentials</label>
-    <textarea name="credentials" rows="2" maxlength="500"><?= esc($v('credentials')) ?></textarea>
-    <?php if ($err('credentials')): ?><div class="err"><?= esc($err('credentials')) ?></div><?php endif; ?>
-</div>
 <div class="field">
     <label>Areas of focus</label>
     <input type="text" id="field-tags" name="specializations" value="<?= esc($v('specializations'), 'attr') ?>" placeholder="Comma separated, e.g. Bridal packages, Emergency callouts, Home visits">
