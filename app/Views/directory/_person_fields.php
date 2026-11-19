@@ -40,8 +40,9 @@ $showSwitch = $showSwitch ?? true;
       // mounts the description's full editor over it (since 18 Nov 2026) and
       // copies the HTML back; without the script it posts plain text, one line
       // per qualification. TeamMemberService keeps RichText::sanitise(). ?>
-<div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_CREDENTIALS_LENGTH ?>">
+<div class="field person-section" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_CREDENTIALS_LENGTH ?>">
     <label>Qualifications and credentials</label>
+    <div class="hint person-section-hint">Degrees, diplomas and fellowships, each with where and when it was earned.</div>
     <textarea name="<?= $name('credentials') ?>" rows="3"
               placeholder="One per line, e.g. MBChB (UCT), FCS (Orth) SA"><?= esc($val('credentials')) ?></textarea>
     <div class="rt-editor rt-editor-mini" hidden><div data-rich-text-for></div></div>
@@ -51,7 +52,7 @@ $showSwitch = $showSwitch ?? true;
 <?php // Hidden AND disabled with no regulator, so nothing of it posts. ?>
 <?php $off = $regulator === null; ?>
 <fieldset class="field team-registration" data-registration <?= $off ? 'hidden disabled' : '' ?>>
-    <legend>Professional registration <span class="text-slate-400">(optional)</span></legend>
+    <legend>Professional registration <span class="team-registration-optional">Optional</span></legend>
     <input type="hidden" name="<?= $name(ProfessionalRegistration::MARKER) ?>" value="1">
     <div class="form-row">
         <div class="field">
@@ -89,7 +90,7 @@ $showSwitch = $showSwitch ?? true;
         <?php if (! empty($m['reg_checked_at'])): ?><div class="hint">Checked <?= esc(date('j F Y', strtotime((string) $m['reg_checked_at']))) ?>.</div><?php endif; ?>
     <?php endif; ?>
 </fieldset>
-<div class="field">
+<div class="field person-section">
     <label>Areas of focus</label>
     <input type="text" name="<?= $name('specializations') ?>" maxlength="500"
            value="<?= esc($val('specializations'), 'attr') ?>"
@@ -100,15 +101,16 @@ $showSwitch = $showSwitch ?? true;
 <?php // Rich text since 18 Nov 2026 (owner), the description's full editor
       // later the same day, like the qualifications above. No maxlength: it would
       // count the markup. ?>
-<div class="field" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_BIO_LENGTH ?>">
+<div class="field person-section" data-rich-mini data-rich-text-max="<?= \App\Services\TeamMemberService::MAX_BIO_LENGTH ?>">
     <label>Short bio</label>
+    <div class="hint person-section-hint">A few sentences on their experience and who they help, shown on their card.</div>
     <textarea name="<?= $name('bio') ?>" rows="2"
               placeholder="A paragraph on what they do and who they help."><?= esc($val('bio')) ?></textarea>
     <div class="rt-editor rt-editor-mini" hidden><div data-rich-text-for></div></div>
     <div class="rt-count" data-rich-text-count hidden></div>
     <?php if ($e('bio')): ?><div class="err"><?= esc($e('bio')) ?></div><?php endif; ?>
 </div>
-<div class="field">
+<div class="field person-section">
     <label>Photo</label>
     <?php if (! empty($m['photo_path'])): ?>
         <img src="<?= esc(base_url($m['photo_path'])) ?>" alt="" width="48" height="48" class="team-avatar team-avatar-sm mb-2" loading="lazy">

@@ -168,7 +168,8 @@ final class BookingProfileTest extends CIUnitTestCase
         $page = $this->get('directory/soul-clinic');
         $page->assertSee('team-booking');
         $page->assertSee('Book with Ben');
-        $this->assertStringContainsString('10:00&ndash;15:00', $page->getBody());
+        // The card carries only the button since 19 Nov 2026 (owner): no week, no service tags.
+        $this->assertStringNotContainsString('team-hours', $page->getBody());
         $page->assertSee('Physiotherapist');
     }
 

@@ -2074,12 +2074,12 @@
      headings in the description (.listing-prose h2 is 18px semibold). Left
      column 24px bold; the right column's cards the same at 18px (below).
      :not(.listing-prose *): headings inside the description are content. */
-  .profile-grid > div:first-child > .panel h3:not(.listing-prose *),
+  .profile-grid > div:first-child > .panel h3:not(.listing-prose *, .team-member-section-title),
   .profile-grid > div:first-child > .panel .panel-title,
   .profile-grid > div:first-child > .branch-section > .branch-section-title {
     @apply mb-5 text-2xl font-bold normal-case leading-tight tracking-tight text-slate-900;
   }
-  .dark .profile-grid > div:first-child > .panel h3:not(.listing-prose *),
+  .dark .profile-grid > div:first-child > .panel h3:not(.listing-prose *, .team-member-section-title),
   .dark .profile-grid > div:first-child > .panel .panel-title,
   .dark .profile-grid > div:first-child > .branch-section > .branch-section-title { @apply text-white; }
   .dark .profile-grid > div:first-child > :is(.panel, .branch-section) { @apply border-slate-800 bg-transparent; }
@@ -2098,10 +2098,10 @@
   .kv .k { @apply shrink-0 font-medium text-slate-500; }
   /* Profile panels head with h2.panel-title (the page's second level, under
      the business name); other .panel boxes keep their own h2 and h3 styles. */
-  .panel h3:not(.listing-prose *), .panel .panel-title { @apply mb-3 text-base font-semibold text-slate-900; }
+  .panel h3:not(.listing-prose *, .team-member-section-title), .panel .panel-title { @apply mb-3 text-base font-semibold text-slate-900; }
   .dark .kv    { @apply border-slate-800; }
   .dark .kv .k { @apply text-slate-400; }
-  .dark .panel h3:not(.listing-prose *), .dark .panel .panel-title { @apply text-white; }
+  .dark .panel h3:not(.listing-prose *, .team-member-section-title), .dark .panel .panel-title { @apply text-white; }
 
   /* The contact card: value on the left, icon on the right, one row each. Its
      own rows rather than .kv because there is no label column — the icon is
@@ -3426,12 +3426,30 @@
 
   /* A person's professional registration, inside their team row. Bare
      fieldsets: the legend is the label, the browser's border is not wanted. */
-  .team-member-registration { @apply mt-1 space-y-0.5 text-sm text-slate-700; }
-  .dark .team-member-registration { @apply text-slate-300; }
+  /* A highlighted box, so the number and the register link stand out. */
+  .team-member-registration { @apply space-y-1 rounded-inner border border-primary-100 bg-primary-50/70 px-3.5 py-2.5 text-sm text-slate-700; }
+  .dark .team-member-registration { @apply border-slate-700 bg-slate-800/60 text-slate-300; }
   .team-registration, .team-registration fieldset { @apply m-0 min-w-0 border-0 p-0; }
-  .team-registration { @apply mb-4; }
-  .team-registration > legend { @apply mb-2 p-0 text-sm font-medium text-slate-700; }
-  .dark .team-registration > legend { @apply text-slate-200; }
+  /* A tinted panel with its own heading (owner, 19 Nov 2026: it read weaker
+     than the plain labels around it). The legend floats so it sits inside the
+     panel's padding instead of on its border; the next element clears it. */
+  .team-registration { @apply mb-4 mt-6 rounded-inner border border-primary-100 bg-primary-50/60 p-4 sm:p-5; }
+  .dark .team-registration { @apply border-slate-700 bg-slate-800/60; }
+  .team-registration > legend { @apply float-left mb-3 flex w-full items-center gap-2 p-0 text-base font-semibold text-slate-900; }
+  .team-registration > :not(legend) { @apply clear-both; }
+  .dark .team-registration > legend { @apply text-white; }
+  .team-registration-optional { @apply rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-slate-200; }
+  .dark .team-registration-optional { @apply bg-slate-900 text-slate-300 ring-slate-600; }
+  .team-registration .form-row:last-of-type .field,
+  .team-registration .field:last-child { @apply mb-3; }
+
+  /* The person card's larger parts (qualifications, areas of focus, bio,
+     photo): a divider and room above each, so they no longer run together. */
+  .person-section { @apply mt-6 border-t border-slate-200 pt-5; }
+  .dark .person-section { @apply border-slate-700; }
+  .person-section > label { @apply mb-1 text-base; }
+  .person-section-hint { @apply mb-2.5 mt-0; }
+  .team-registration + .person-section { @apply mt-6; }
   .dark .repeat-remove { @apply text-slate-400; }
 
   /* ---------------------------------------------- services & features (form) */
@@ -3701,8 +3719,16 @@
      lists, quotes, links, alignment and spacing as in the description. These
      rules only size it down for a card beside a photo; .team-member-body in
      front outranks the .listing-prose rules further down. */
-  .team-member-credentials        { @apply mt-1.5 text-sm leading-relaxed text-slate-600; }
-  .team-member-bio                { @apply mt-2 text-sm leading-relaxed text-slate-700; }
+  .team-member-credentials        { @apply text-sm leading-relaxed text-slate-600; }
+  .team-member-bio                { @apply text-sm leading-relaxed text-slate-700; }
+  /* Qualifications, registration, areas of focus and biography: each its own
+     part with room and a hairline between (owner, 19 Nov 2026). */
+  .team-member-section            { @apply mt-4 border-t border-slate-100 pt-4; }
+  .team-member-role + .team-member-section { @apply mt-3; }
+  .dark .team-member-section      { @apply border-slate-800; }
+  /* Two classes deep: the profile's own title rule sizes every h3 in the left column. */
+  .team-member-body .team-member-section-title      { @apply m-0 mb-1.5 text-xs font-semibold uppercase leading-normal tracking-wide text-slate-500; }
+  .dark .team-member-body .team-member-section-title { @apply text-slate-400; }
   .team-member-body .listing-prose p  { @apply my-1; }
   .team-member-body .listing-prose ul,
   .team-member-body .listing-prose ol { @apply my-1 space-y-0.5; }
@@ -3714,19 +3740,11 @@
   .dark .team-member-credentials { @apply text-slate-300; }
   .dark .team-member-bio         { @apply text-slate-300; }
 
-  /* A bookable person's own week, what they offer and their Book button
-     (_team_booking.php). Their hours may be shorter than reception's. */
-  .team-booking   { @apply mt-3; }
-  .team-hours     { @apply m-0 grid gap-0.5 text-sm text-slate-700; }
-  .team-hours-row { @apply flex gap-3; }
-  .team-hours dt  { @apply w-24 shrink-0 font-medium text-slate-900; }
-  .team-hours dd  { @apply m-0; }
-  .team-hours-place { @apply ml-1 text-xs text-slate-500; }
-  .team-hours-period { @apply block; }
-  .team-book      { @apply mt-3 gap-2; }
-  .dark .team-hours    { @apply text-slate-300; }
-  .dark .team-hours dt { @apply text-white; }
-  .dark .team-hours-place { @apply text-slate-400; }
+  /* A bookable person's Book button on their team card (_team_booking.php;
+     only the button since 19 Nov 2026). */
+  .team-booking   { @apply mt-4 border-t border-slate-100 pt-4; }
+  .dark .team-booking { @apply border-slate-800; }
+  .team-book      { @apply gap-2; }
 
   /* The booking page's "With" choices, with a headshot when there is one. */
   .book-who       { @apply gap-2; }
@@ -3864,12 +3882,12 @@
      Map and hours inside each location card): the same heading as the left
      column, one step smaller because the column is narrower. After the
      .loc-body rule so it wins. */
-  .profile-grid > div:last-child .panel h3:not(.listing-prose *),
+  .profile-grid > div:last-child .panel h3:not(.listing-prose *, .team-member-section-title),
   .profile-grid > div:last-child .panel .panel-title,
   .profile-grid > div:last-child .branch-section-title {
     @apply mb-3 text-lg font-bold normal-case leading-snug tracking-tight text-slate-900;
   }
-  .dark .profile-grid > div:last-child .panel h3:not(.listing-prose *),
+  .dark .profile-grid > div:last-child .panel h3:not(.listing-prose *, .team-member-section-title),
   .dark .profile-grid > div:last-child .panel .panel-title,
   .dark .profile-grid > div:last-child .branch-section-title { @apply text-white; }
 

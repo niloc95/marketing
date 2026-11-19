@@ -10,8 +10,9 @@ use App\Services\TeamMemberService;
  * the gate is not repeated here. _panel_team.php is the caller, and is where
  * the heading comes from.
  *
- * Everything is escaped. Unlike the business description there is deliberately
- * no rich text on this page — see the migration for why bios are plain.
+ * Each part of a card (qualifications, registration, areas of focus, biography)
+ * is a .team-member-section with its own small heading and a divider, and the
+ * registration is a highlighted box (owner, 19 Nov 2026: it read as one block).
  *
  * $teamHeading rather than $heading for the reason _location_panel.php spells
  * out: CI4 keeps view data between render() calls, and 'heading' is already
@@ -75,13 +76,18 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                           // list. Plain text comes out as paragraphs. ?>
                     <?php $creds = listing_rich_text((string) ($m['credentials'] ?? '')); ?>
                     <?php if ($creds !== ''): ?>
-                        <div class="team-member-credentials listing-prose"><?= $creds ?></div>
+                        <div class="team-member-section">
+                            <h3 class="team-member-section-title">Qualifications</h3>
+                            <div class="team-member-credentials listing-prose"><?= $creds ?></div>
+                        </div>
                     <?php endif; ?>
 
                     <?php // Self declared unless an admin ticked it, and always
                           // beside the regulator's own lookup. ?>
                     <?php $reg = \App\Libraries\ProfessionalRegistration::forPerson($m, $regulator); ?>
                     <?php if ($reg !== null): ?>
+                        <div class="team-member-section">
+                        <h3 class="team-member-section-title">Professional registration</h3>
                         <ul class="team-member-registration" data-registration-line>
                             <?php if ($reg['number'] !== ''): ?>
                                 <li>
@@ -101,19 +107,26 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                                 </li>
                             <?php endif; ?>
                         </ul>
+                        </div>
                     <?php endif; ?>
 
                     <?php $areas = TeamMemberService::splitSpecializations($m['specializations'] ?? null); ?>
                     <?php if ($areas !== []): ?>
-                        <div class="taglist mt-2">
-                            <?php foreach ($areas as $area): ?><span class="tag"><?= esc($area) ?></span><?php endforeach; ?>
+                        <div class="team-member-section">
+                            <h3 class="team-member-section-title">Areas of focus</h3>
+                            <div class="taglist">
+                                <?php foreach ($areas as $area): ?><span class="tag"><?= esc($area) ?></span><?php endforeach; ?>
+                            </div>
                         </div>
                     <?php endif; ?>
 
                     <?php // Rich text like the description; a plain bio from before becomes paragraphs. ?>
                     <?php $bioHtml = listing_rich_text((string) ($m['bio'] ?? '')); ?>
                     <?php if ($bioHtml !== ''): ?>
-                        <div class="team-member-bio listing-prose"><?= $bioHtml ?></div>
+                        <div class="team-member-section">
+                            <h3 class="team-member-section-title">Biography</h3>
+                            <div class="team-member-bio listing-prose"><?= $bioHtml ?></div>
+                        </div>
                     <?php endif; ?>
 
                     <?php if (isset($m['id'], $bookable[(int) $m['id']])): ?>
