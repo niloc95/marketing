@@ -92,10 +92,11 @@ class Verticals extends BaseConfig
      * @var array<string,array<string,mixed>>
      */
     public array $byGroup = [
-        // The people lead. Someone choosing a doctor is asking "is this person
-        // qualified" before anything else; since 18 Nov 2026 the answer is on
-        // each practitioner's card ("Qualifications and credentials"), not a
-        // profile wide box, so the team panel comes first.
+        // The people come high. Someone choosing a doctor asks "is this
+        // person qualified"; since 18 Nov 2026 the answer is on each
+        // practitioner's card ("Qualifications and credentials"), not a
+        // profile wide box. Since 19 Nov 2026 (owner) the team panel sits
+        // straight after "About our practice" rather than above it.
         'Health & Medical' => [
             'noun'       => 'practice',
             'nounPlural' => 'practices',
@@ -119,7 +120,7 @@ class Verticals extends BaseConfig
                 'locations'   => 'Other rooms & practices',
             ],
             'cta'   => 'Book an appointment',
-            'order' => ['team', 'ataglance', 'description', 'brands', 'services', 'features', 'venue', 'tags', 'locations', 'reviews'],
+            'order' => ['ataglance', 'description', 'team', 'brands', 'services', 'features', 'venue', 'tags', 'locations', 'reviews'],
         ],
         'Beauty & Wellness' => [
             'noun'       => 'salon',

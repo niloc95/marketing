@@ -151,7 +151,7 @@ final class VerticalProfileTest extends CIUnitTestCase
         $this->assertSame('About our hospital', $this->verticals->forCategory('Health & Medical', 'hospital', 'facility')['headings']['description']);
         $this->assertSame('Specialisations & treatments', $v['headings']['services']);
         $this->assertSame('Business description', $this->verticals->forCategory('Beauty & Wellness')['headings']['description'], 'only medical changes');
-        $this->assertSame('team', $v['order'][0], 'a practice leads with its people and their qualifications');
+        $this->assertSame('team', $v['order'][array_search('description', $v['order'], true) + 1], 'the practitioners follow "About our practice"');
     }
 
     /**
