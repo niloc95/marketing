@@ -1505,6 +1505,124 @@
     document.addEventListener('click', function (e) {
       if (!addressWrap.contains(e.target)) hideList();
     });
+
+    initPlaceFinder(addressWrap, isPrimary, fillAddress);
+  }
+
+  // ------------------------------------------------------------- find a place
+  // "At a hospital, medical centre or mall? Find it by name" (owner, 19 Nov
+  // 2026). One /address-place lookup per press of Find or Enter, never per
+  // keystroke: it is OpenStreetMap's Nominatim, whose policy forbids
+  // autocomplete. A pick fills this block's address through fillAddress with
+  // the place's own point as an exact pin, and names the location or branch
+  // when that is still empty. Address line 2 (unit, floor) is left as typed.
+  function initPlaceFinder(addressWrap, isPrimary, fillAddress) {
+    var finder = addressWrap.querySelector('[data-place-finder]');
+    if (!finder) return;
+    var query = finder.querySelector('[data-place-query]');
+    var button = finder.querySelector('[data-place-find]');
+    var list = finder.querySelector('[data-place-results]');
+    var status = finder.querySelector('[data-place-status]');
+    var url = finder.getAttribute('data-place-url');
+    if (!query || !button || !list || !url) return;
+    finder.hidden = false;
+
+    var credit = status ? status.innerHTML : '';
+    var places = [];
+    var seq = 0;
+
+    var say = function (text) {
+      if (!status) return;
+      if (text) {
+        status.textContent = text;
+      } else {
+        status.innerHTML = credit; // our own markup from the page, never typed text
+      }
+    };
+
+    var nameTarget = function () {
+      if (isPrimary) return document.getElementById('f-location-name');
+      var row = addressWrap.closest('[data-repeat-item]');
+      return row ? row.querySelector('[data-place-name-target]') : null;
+    };
+
+    var pick = function (place) {
+      var line2 = addressField(addressWrap, 'address_line_2');
+      var row = {};
+      Object.keys(place).forEach(function (k) { row[k] = place[k]; });
+      row.address_line_2 = line2 ? line2.value : '';
+      fillAddress(row, 'exact');
+
+      var target = nameTarget();
+      if (target && !target.value.trim()) target.value = place.name;
+
+      list.hidden = true;
+      list.innerHTML = '';
+      say('Filled in from ' + place.name + '. Please check the address and the pin.');
+    };
+
+    var render = function () {
+      list.innerHTML = '';
+      places.forEach(function (place, i) {
+        var li = document.createElement('li');
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'place-finder-option';
+        btn.setAttribute('data-place-index', String(i));
+        var name = document.createElement('span');
+        name.className = 'place-finder-name';
+        name.textContent = place.name;
+        var where = document.createElement('span');
+        where.className = 'place-finder-where';
+        where.textContent = place.label;
+        btn.appendChild(name);
+        btn.appendChild(where);
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+      list.hidden = places.length === 0;
+    };
+
+    var find = function () {
+      var q = query.value.trim();
+      if (q.length < 3) {
+        say('Type at least three letters of the name.');
+        return;
+      }
+      var mine = ++seq;
+      button.disabled = true;
+      say('Looking it up…');
+      fetch(url + '?q=' + encodeURIComponent(q) + countryParam('&'))
+        .then(function (res) { return res.ok ? res.json() : []; })
+        .then(function (json) {
+          if (mine !== seq) return;
+          places = Array.isArray(json) ? json : [];
+          render();
+          say(places.length
+            ? 'Pick the right one to fill in the address and pin.'
+            : 'Nothing found by that name. Type the street address below, or place the pin on the map.');
+        })
+        .catch(function (err) {
+          console.error('Place finder: /address-place failed, ' + err.message);
+          if (mine === seq) say('The lookup did not work. Type the street address below instead.');
+        })
+        .finally(function () { if (mine === seq) button.disabled = false; });
+    };
+
+    button.addEventListener('click', find);
+    // Enter would submit the whole profile form.
+    query.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        find();
+      }
+    });
+    list.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-place-index]');
+      if (!btn) return;
+      var place = places[Number(btn.getAttribute('data-place-index'))];
+      if (place) pick(place);
+    });
   }
 
   document.querySelectorAll('[data-address-autocomplete]').forEach(initAddressAutocomplete);

@@ -62,6 +62,21 @@ class Services extends BaseService
     }
 
     /**
+     * Finds a place by name for the address forms' "Find" box
+     * (NominatimGeocoder::findPlaces()). Always Nominatim, even with a Mapbox
+     * token: Mapbox's geocoder has no named places. Its own service so tests
+     * can inject a fake without touching the geocoder.
+     */
+    public static function placeFinder(bool $getShared = true): NominatimGeocoder
+    {
+        if ($getShared) {
+            return static::getSharedInstance('placeFinder');
+        }
+
+        return new NominatimGeocoder();
+    }
+
+    /**
      * Whatever reads a typed search into category, place and keywords.
      *
      * The rules today (free, local). A model-backed interpreter replaces this
