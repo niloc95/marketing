@@ -7,7 +7,7 @@ namespace App\Controllers;
  * and unauthenticated (used during signup, before an owner/admin session
  * exists), so every action is throttled by IP.
  *
- * All three proxy to service('geocoder'): Mapbox when a token is set, which is
+ * index, locate and reverse proxy to service('geocoder'): Mapbox when a token is set, which is
  * billed per request, otherwise Nominatim, which is donation-funded. Either way
  * the throttle is what stops this app becoming a way to run up the bill or
  * hammer someone else's server. Nothing here is ever called from a page render
@@ -22,6 +22,7 @@ class AddressSuggest extends BaseController
 {
     private const MAX_PER_MINUTE = 20;
     private const SUGGESTION_LIMIT = 5;
+    private const PLACE_PER_MINUTE = 10;
 
     public function index()
     {
@@ -95,6 +96,32 @@ class AddressSuggest extends BaseController
     }
 
     /**
+     * Places by name, for the "Find" box above the address fields: a hospital,
+     * medical centre or mall whose street the person does not know. Each row
+     * is a whole address with the place's own point (precision 'exact').
+     *
+     * Always OpenStreetMap (service('placeFinder')), one lookup per press of
+     * the button, never per keystroke. Its own, lower throttle: a press is
+     * deliberate, so ten a minute is plenty for a person.
+     */
+    public function place()
+    {
+        $query = trim((string) $this->request->getGet('q'));
+
+        if (mb_strlen($query) < 3) {
+            return $this->response->setJSON([]);
+        }
+
+        if (! $this->allow('address-place', self::PLACE_PER_MINUTE)) {
+            return $this->response->setJSON([]);
+        }
+
+        return $this->response->setJSON(
+            service('placeFinder')->findPlaces($query, $this->country(), self::SUGGESTION_LIMIT)
+        );
+    }
+
+    /**
      * The country the form is filling in, posted by the script as the
      * country select's value (a name). South Africa when absent, which is
      * every form that has no country select. A country without a profile in
@@ -110,11 +137,11 @@ class AddressSuggest extends BaseController
     }
 
     /** Per-IP, per-action rate limit. False means "over the limit". */
-    private function allow(string $action): bool
+    private function allow(string $action, int $perMinute = self::MAX_PER_MINUTE): bool
     {
         return service('throttler')->check(
             $action . '-' . md5((string) $this->request->getIPAddress()),
-            self::MAX_PER_MINUTE,
+            $perMinute,
             MINUTE
         ) !== false;
     }

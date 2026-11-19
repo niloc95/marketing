@@ -83,7 +83,7 @@ $row = function ($i, array $loc = [], bool $spare = false) use ($err, $provinces
         <div class="form-row">
             <div class="field">
                 <label>Branch name</label>
-                <input type="text" name="<?= $n('name') ?>" maxlength="200"
+                <input type="text" name="<?= $n('name') ?>" maxlength="200" data-place-name-target
                        value="<?= esc($val('name'), 'attr') ?>" placeholder="e.g. Claremont office">
                 <?php if ($e('name')): ?><div class="err"><?= esc($e('name')) ?></div><?php endif; ?>
             </div>

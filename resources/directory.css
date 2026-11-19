@@ -3906,6 +3906,25 @@
     @apply text-slate-500 hover:bg-transparent hover:text-slate-500;
   }
 
+  /* find a place by name, above every address block (_address_inputs.php) */
+  .place-finder-row { @apply flex gap-2; }
+  .place-finder-row input { @apply min-w-0 flex-1; }
+  .place-finder-row button { @apply shrink-0; }
+  .place-finder-results {
+    @apply mt-2 overflow-hidden rounded-surface border border-slate-200 bg-white text-sm;
+  }
+  .place-finder-results li + li { @apply border-t border-slate-100; }
+  .place-finder-option {
+    @apply flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-slate-700
+           hover:bg-primary-50 hover:text-primary-700 focus-visible:bg-primary-50 focus-visible:outline-none;
+  }
+  .place-finder-name  { @apply font-medium; }
+  .place-finder-where { @apply text-xs text-slate-500; }
+  .dark .place-finder-results { @apply border-slate-700 bg-surface-card; }
+  .dark .place-finder-results li + li { @apply border-slate-800; }
+  .dark .place-finder-option { @apply text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:bg-slate-800; }
+  .dark .place-finder-where { @apply text-slate-400; }
+
   /* search typeahead, on every search box (directory/_search_input.php).
      Its own rules rather than sharing .address-suggest-list: this one opens over
      the page rather than inside a form, so it needs to clear the z-40 header,
