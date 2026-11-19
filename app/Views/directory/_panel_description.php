@@ -1,6 +1,7 @@
 <?php
 /**
- * The business's own description, on its public profile.
+ * The business's own description, on its public profile, then its extra
+ * headed cards (Verified/Plus, up to ListingSectionService::MAX_EXTRA).
  *
  * One of the eight panels show.php renders by walking Config\Verticals' 'order',
  * so every one of them takes the same two variables and decides for itself
@@ -10,10 +11,14 @@
  * @var array $l the listing, from DirectoryService::getProfile()
  * @var array $v vertical_profile() — headings, nouns, CTA and order
  */
-if (empty($l['description'])) {
+// Extra cards (Verified/Plus, ListingSectionService): already gated by
+// DirectoryService::profileFor(), so an empty list on a lapsed plan.
+$extra = is_array($l['sections'] ?? null) ? $l['sections'] : [];
+if (empty($l['description']) && $extra === []) {
     return;
 }
 ?>
+<?php if (! empty($l['description'])): ?>
 <div class="panel mb-5">
     <h2 class="panel-title"><?= esc($v['headings']['description']) ?></h2>
     <?php /* The only unescaped listing content on the site. listing_rich_text()
@@ -21,3 +26,11 @@ if (empty($l['description'])) {
              bare echo, and do not add esc() (it would print the tags). */ ?>
     <div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text($l['description']) ?></div>
 </div>
+<?php endif; ?>
+<?php foreach ($extra as $card): ?>
+<div class="panel mb-5">
+    <h2 class="panel-title"><?= esc((string) $card['heading']) ?></h2>
+    <?php // Sanitised again at render, as the description is. ?>
+    <div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text((string) $card['body']) ?></div>
+</div>
+<?php endforeach; ?>

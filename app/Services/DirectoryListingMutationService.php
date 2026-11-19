@@ -18,6 +18,7 @@ use App\Models\DirectoryTagModel;
 use App\Services\ListingFacetService;
 use App\Services\ListingQualityService;
 use App\Services\PracticeLocationService;
+use App\Services\ListingSectionService;
 use App\Services\ServiceMenuService;
 use App\Services\TeamMemberService;
 use App\Services\VerificationService;
@@ -1850,6 +1851,14 @@ class DirectoryListingMutationService
 
         if (array_key_exists('locations', $input) && $locations->canManage($listing)) {
             $result = $locations->syncFromForm($id, $input['locations']);
+            $errors = array_merge($errors, $result['errors']);
+        }
+
+        // Extra description cards: same gate. Keyed on the marker, because a
+        // form with every card removed posts no `sections` at all.
+        $sections = new ListingSectionService();
+        if (array_key_exists(ListingSectionService::MARKER, $input) && $sections->canManage($listing)) {
+            $result = $sections->syncFromForm($id, $input['sections'] ?? []);
             $errors = array_merge($errors, $result['errors']);
         }
 

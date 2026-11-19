@@ -23,6 +23,7 @@
  * @var int      $gallerySlots  photos still addable (8 minus what the listing has)
  * @var array    $vTeam       team rows (old input wins), rendered by _team_fields.php
  * @var array    $vLocations  branch rows (old input wins), rendered by _location_fields.php
+ * @var array    $vSections   extra description cards (old input wins), rendered by _section_fields.php
  * @var bool     $showExtras  render the team and location sections at all
  * @var bool     $adminEdit   admin edit only: each person's "checked against the register" tick
  * @var bool     $extrasHidden admin form only: drawn but hidden until the Free/Verified
@@ -66,6 +67,7 @@ $gallerySlots = $gallerySlots ?? \App\Controllers\Listing::GALLERY_MAX;
 // against the stored row; this only decides what is drawn.
 $vTeam      = $vTeam      ?? [];
 $vLocations = $vLocations ?? [];
+$vSections  = $vSections  ?? [];
 $showExtras = $showExtras ?? false;
 $extrasWrap = '<div data-admin-plan-extras' . (! empty($extrasHidden) ? ' class="hidden"' : '') . '>';
 $vServices   = $vServices   ?? [];
@@ -417,6 +419,19 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
     </div>
     <?php if ($err('description')): ?><div class="err"><?= esc($err('description')) ?></div><?php endif; ?>
 </div>
+
+<?php // Up to five more headed cards under the description: Verified and Plus
+      // (ListingSectionService). A Free owner sees one line saying so. ?>
+<?php if ($showExtras && $in('details')): ?>
+    <?= $extrasWrap ?>
+    <?= view('directory/_section_fields', ['rows' => $vSections, 'err' => $err], ['saveData' => false]) ?>
+    </div>
+<?php elseif ($section === 'details' && empty($adminEdit)): ?>
+    <p class="hint" id="field-sections">
+        Need more room? <?= service('site')->isApp() ? 'Plus' : 'Verified' ?> profiles can add up to <?= \App\Services\ListingSectionService::MAX_EXTRA ?> more cards, each with its own heading.
+        <a href="<?= base_url('business/badge') ?>">See the plan</a>
+    </p>
+<?php endif; ?>
 
 <?= $stepClose() ?>
 <?php endif; ?>

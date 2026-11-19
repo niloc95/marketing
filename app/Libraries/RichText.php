@@ -43,12 +43,14 @@ final class RichText
      * Was 5000, came down to 1000 because the long box was the part of signup
      * people stalled on, then went to 3000 (1000 left no room for a practice
      * with several people or a real story to tell), and back to 5000 on the
-     * owner's call (4 Nov 2026). The ChatGPT target
+     * owner's call (4 Nov 2026), then to 3000 again (19 Nov 2026) when
+     * Verified and Plus profiles got up to five more headed cards of the same
+     * size (ListingSectionService), so a long story is split, not cut. The ChatGPT target
      * (DescriptionPrompt::TARGET_CHARS) still asks for short, so most owners
      * never come near it. exceedsCap() keeps any stored text that is over the
      * cap saveable until its owner edits it.
      */
-    public const MAX_PLAIN_LENGTH = 5000;
+    public const MAX_PLAIN_LENGTH = 3000;
 
     /**
      * Every element permitted in stored HTML.

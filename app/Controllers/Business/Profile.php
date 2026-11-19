@@ -163,6 +163,10 @@ class Profile extends BaseController
             $overrides['tags'] = $tags;
         }
 
+        if (array_key_exists(\App\Services\ListingSectionService::MARKER, $post)) {
+            $overrides['sections'] = (new \App\Services\ListingSectionService())->fromInput($listing, $post['sections'] ?? null);
+        }
+
         helper('directory_hours');
         $profile = (new DirectoryService())->profileFor($row, $overrides);
         hours_context($profile);
@@ -293,6 +297,7 @@ class Profile extends BaseController
             // their team and branches, they just stop rendering.
             'team'       => (new TeamMemberService())->forListing($id),
             'locations'  => (new PracticeLocationService())->forListing($id),
+            'sections'   => (new \App\Services\ListingSectionService())->forListing($id),
             'showExtras' => (new TeamMemberService())->canManage($listing),
             'tabs'       => $this->tabs($section, $listing),
             // The side column's meter, the same one the overview shows.

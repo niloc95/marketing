@@ -13,7 +13,7 @@ use Tests\Support\FreshDatabase;
  * The editorial cap on the business description.
  *
  * The number lives in RichText::MAX_PLAIN_LENGTH; the counter in
- * public/assets/directory.js reads it from the form. It went 2000 → 5000 → 1000 → 3000 → 5000:
+ * public/assets/directory.js reads it from the form. It went 2000 → 5000 → 1000 → 3000 → 5000 → 3000 (19 Nov 2026, with the extra cards of ListingSectionService):
  * the cut to 1000 came with the structured Services and Features sections, and it
  * brought a second rule — a description saved under an older, larger cap is
  * not refused until its owner actually edits the text. The cap is enforced
@@ -51,9 +51,9 @@ final class DescriptionLimitTest extends CIUnitTestCase
         ], true);
     }
 
-    public function testTheCapIsFiveThousandPlainCharacters(): void
+    public function testTheCapIsThreeThousandPlainCharacters(): void
     {
-        $this->assertSame(5000, RichText::MAX_PLAIN_LENGTH);
+        $this->assertSame(3000, RichText::MAX_PLAIN_LENGTH);
     }
 
     // ------------------------------------------------------- grandfathering

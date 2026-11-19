@@ -46,6 +46,7 @@ if (! is_array($old['hours'] ?? null)) {
 
 $vTeam      = is_array($old['team'] ?? null) ? $old['team'] : $team;
 $vLocations = is_array($old['locations'] ?? null) ? $old['locations'] : $locations;
+$vSections  = array_key_exists('sections_present', $old) ? (is_array($old['sections'] ?? null) ? $old['sections'] : []) : ($sections ?? []);
 
 // Keyed off the section marker, not the array: a rejected save with every box
 // unticked sends no attributes[] at all, and that must not fall back to the
@@ -111,6 +112,9 @@ $panes = array_values(array_filter($tabs, static fn (array $t): bool => $t['inli
                     'gallerySlots' => $slots,
                     'vTeam'        => $vTeam,
                     'vLocations'   => $vLocations,
+                    'vSections'    => $vSections,
+                    // Explicit: an omitted variable inherits an earlier render's.
+                    'adminEdit'    => false,
                     'vServices'    => $vServices,
                     'servicesFromBookings' => $servicesFromBookings ?? false,
                     'bookingPeople' => $bookingPeople ?? null,
