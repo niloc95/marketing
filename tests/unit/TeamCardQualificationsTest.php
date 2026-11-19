@@ -5,7 +5,8 @@ use CodeIgniter\Test\CIUnitTestCase;
 /**
  * A person's "Qualifications and credentials" on their team card: rich text
  * since 18 Nov 2026, when the profile wide Credentials box was folded into
- * the person (owner).
+ * the person (owner), with the description's full editor and allowlist
+ * later the same day.
  *
  * @internal
  */
@@ -24,7 +25,7 @@ final class TeamCardQualificationsTest extends CIUnitTestCase
     {
         $html = $this->card('<ul><li><strong>MBChB</strong> (UCT)</li><li>FCP (SA)</li></ul>');
 
-        $this->assertStringContainsString('<div class="team-member-credentials"><ul><li><strong>MBChB</strong> (UCT)</li><li>FCP (SA)</li></ul></div>', $html);
+        $this->assertStringContainsString('<div class="team-member-credentials listing-prose"><ul><li><strong>MBChB</strong> (UCT)</li><li>FCP (SA)</li></ul></div>', $html);
     }
 
     public function testStoredMarkupIsSanitisedAgainAtRender(): void
@@ -35,14 +36,15 @@ final class TeamCardQualificationsTest extends CIUnitTestCase
         $this->assertStringContainsString('<p>BDS</p>', $html);
         $this->assertStringNotContainsString('onclick', $html);
         $this->assertStringNotContainsString('<script>alert', $html);
-        $this->assertStringNotContainsString('spam.test', $html, 'no links on a card');
+        // Links are allowed like in the description, never as a followed backlink.
+        $this->assertStringContainsString('<a href="https://spam.test" rel="nofollow noopener noreferrer" target="_blank">buy</a>', $html);
     }
 
     public function testAnOldPlainCardStillReads(): void
     {
         $html = $this->card('BA LLB (UCT), admitted attorney 1996');
 
-        $this->assertStringContainsString('<div class="team-member-credentials"><p>BA LLB (UCT), admitted attorney 1996</p></div>', $html);
+        $this->assertStringContainsString('<div class="team-member-credentials listing-prose"><p>BA LLB (UCT), admitted attorney 1996</p></div>', $html);
         $this->assertStringNotContainsString('team-member-credentials', $this->card(''));
     }
 }

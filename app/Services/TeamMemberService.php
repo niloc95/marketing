@@ -44,7 +44,8 @@ class TeamMemberService
 
     /**
      * "Qualifications and credentials", counted in plain text like the
-     * description. Rich text (RichText::sanitiseBasic) since 18 Nov 2026,
+     * description. Rich text since 18 Nov 2026 (RichText::sanitise, the
+     * description's allowlist and editor later the same day),
      * when the profile wide Credentials box was folded into the person
      * (owner): room for a degree list, not for a CV.
      */
@@ -331,7 +332,7 @@ class TeamMemberService
      */
     public function setCredentials(int $cardId, string $html): void
     {
-        $clean = RichText::sanitiseBasic($html);
+        $clean = RichText::sanitise($html);
         $this->members->update($cardId, ['credentials' => $clean !== '' ? $clean : null]);
     }
 
@@ -371,14 +372,15 @@ class TeamMemberService
         }
 
         $role        = $this->limited($row['role'] ?? '', 120, $prefix . 'role', 'The position', $errors);
-        $credentials = RichText::sanitiseBasic((string) ($row['credentials'] ?? ''));
+        $credentials = RichText::sanitise((string) ($row['credentials'] ?? ''));
         if (mb_strlen(RichText::toPlainText($credentials)) > self::MAX_CREDENTIALS_LENGTH) {
             $errors[$prefix . 'credentials'] = sprintf('The qualifications must be %d characters or fewer.', self::MAX_CREDENTIALS_LENGTH);
         }
-        // Rich text since 18 Nov 2026 (owner): bold, italic and lists, like
-        // the qualifications; the cap counts the words, not the markup. A
-        // plain text bio from before becomes paragraphs.
-        $bio = RichText::sanitiseBasic((string) ($row['bio'] ?? ''));
+        // Rich text since 18 Nov 2026 (owner), the full description editor
+        // later the same day (headings, links, align, spacing): the same allowlist as
+        // the description. The cap counts the words, not the markup. A plain
+        // text bio from before becomes paragraphs.
+        $bio = RichText::sanitise((string) ($row['bio'] ?? ''));
         if (mb_strlen(RichText::toPlainText($bio)) > self::MAX_BIO_LENGTH) {
             $errors[$prefix . 'bio'] = sprintf('The bio must be %d characters or fewer.', self::MAX_BIO_LENGTH);
         }

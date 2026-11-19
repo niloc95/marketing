@@ -4131,9 +4131,9 @@
   // keeps alignment and indent as classes for the CSP, and refuses an edit
   // that grows the text past the cap; see resources/editor/rich-editor.js.
   //
-  // Field markup: [data-rich-text] (description, "full": headings, links,
-  // alignment…) or [data-rich-mini] (qualifications, "basic": bold, italic,
-  // lists), each holding the textarea, .rt-editor > [data-rich-text-for] and
+  // Field markup: [data-rich-text] (the description) or [data-rich-mini] (a
+  // person's qualifications and bio, several per page), both the "full"
+  // editor since 18 Nov 2026 (owner), each holding the textarea, .rt-editor > [data-rich-text-for] and
   // an optional [data-rich-text-count].
   function initRichField(field, kind) {
     if (!field || field.hasAttribute('data-rich-ready') || !window.RichEditor) return null;
@@ -4218,7 +4218,7 @@
   })();
 
   function initMiniEditor(field) {
-    initRichField(field, 'basic');
+    initRichField(field, 'full');
   }
 
   document.querySelectorAll('[data-rich-mini]').forEach(initMiniEditor);

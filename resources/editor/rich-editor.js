@@ -23,9 +23,10 @@
  *    subheading), bold, italic, underline, strike, lists, quote, link, an
  *    align menu, a spacing menu (line spacing, space around paragraphs),
  *    indent, undo and redo, clear formatting.
- *    Mirrors RichText::sanitise().
- *  - "basic", a person's qualifications: bold, italic and lists. Mirrors
- *    RichText::sanitiseBasic().
+ *    Mirrors RichText::sanitise(). Also a person's qualifications and bio
+ *    since 18 Nov 2026 (owner).
+ *  - "basic": bold, italic and lists. Unused since then; the server has no
+ *    matching short allowlist any more, so a new use needs one.
  *
  * The server is the authority on both: whatever arrives is sanitised again.
  */
