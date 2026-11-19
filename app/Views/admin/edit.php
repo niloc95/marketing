@@ -185,6 +185,7 @@ if (! is_array($old['hours'] ?? null)) {
                 // Each person's "checked against the register" tick.
                 'adminEdit'    => true,
                 'vLocations'   => is_array($old['locations'] ?? null) ? $old['locations'] : $locations,
+                'vSections'    => array_key_exists('sections_present', $old) ? (is_array($old['sections'] ?? null) ? $old['sections'] : []) : ($sections ?? []),
                 // Marker, not the array — see business/profile.php.
                 'vServices'    => array_key_exists('services_present', $old) ? (is_array($old['services'] ?? null) ? $old['services'] : []) : $services,
                 'servicesFromBookings' => $servicesFromBookings ?? false,

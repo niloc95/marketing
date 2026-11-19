@@ -1688,6 +1688,9 @@ class DirectoryService
         // a business on the strength of a panel the visitor cannot see.
         $builder->orWhere($this->teamExists($q), null, false);
 
+        // Extra description cards, gated the same way (sectionExists()).
+        $builder->orWhere($this->sectionExists($terms), null, false);
+
         // The brands a business carries ("nike" finds the shoe shops). Free
         // for every profile, so no badge clause. Prefix only, on the phrase and
         // each word, so the name index does the work.
@@ -1904,15 +1907,42 @@ class DirectoryService
         // a prefix alone never took "installation" to a profile that says
         // "installer" (13 Nov 2026, "solar installation"). The two sit in one
         // group, so with $all either form satisfies the word.
-        $expr = implode(' ', array_map(static function ($t) use ($all) {
+        return 'MATCH(xs_directory_listings.display_name, xs_directory_listings.description_text, xs_directory_listings.credentials) '
+            . 'AGAINST (' . $this->listings->db->escape($this->fulltextExpr($terms, $all)) . ' IN BOOLEAN MODE)';
+    }
+
+    /** The BOOLEAN MODE expression fulltextMatch() and sectionExists() share. */
+    private function fulltextExpr(array $terms, bool $all = false): string
+    {
+        return implode(' ', array_map(static function ($t) use ($all) {
             $stem = DiscoveryModelService::stem((string) $t);
             $one  = $stem !== mb_strtolower((string) $t) ? '(' . $t . '* ' . $stem . '*)' : $t . '*';
 
             return ($all ? '+' : '') . $one;
         }, $terms));
+    }
 
-        return 'MATCH(xs_directory_listings.display_name, xs_directory_listings.description_text, xs_directory_listings.credentials) '
-            . 'AGAINST (' . $this->listings->db->escape($expr) . ' IN BOOLEAN MODE)';
+    /**
+     * EXISTS over the extra description cards (ListingSectionService), only
+     * while the plan that shows them is live: the badge, or Plus on a profile
+     * abroad (listing_has_premium()). Without the gate a lapsed profile would
+     * be found by a panel the visitor cannot see. Filter only: it is not in
+     * relevanceSelect(), so paying for more cards never ranks a profile up.
+     *
+     * @param list<string> $terms
+     */
+    private function sectionExists(array $terms): string
+    {
+        if ($terms === []) {
+            return '0';
+        }
+
+        return 'EXISTS (SELECT 1 FROM xs_directory_listing_sections ls'
+            . ' WHERE ls.listing_id = xs_directory_listings.id'
+            . ' AND (xs_directory_listings.verified_until >= CURDATE()'
+            . " OR (xs_directory_listings.hosting_paid_until >= CURDATE() AND xs_directory_listings.country_code <> 'ZA'))"
+            . ' AND MATCH(ls.heading, ls.body_text) AGAINST ('
+            . $this->listings->db->escape($this->fulltextExpr($terms)) . ' IN BOOLEAN MODE))';
     }
 
     /** '%term%', escaped for a LIKE with ESCAPE '!'. */
@@ -2088,6 +2118,8 @@ class DirectoryService
         }
         $listing['photos']         = $this->photos->forListing((int) $listing['id']);
         $listing['brands']         = (new ListingBrandService())->forListing((int) $listing['id']);
+        // Extra description cards: Verified/Plus, hidden (not deleted) on a lapse.
+        $listing['sections']       = $overrides['sections'] ?? (new ListingSectionService())->forProfile($listing);
 
         // Free for every listing — see ServiceMenuService.
         $menu                   = new ServiceMenuService();

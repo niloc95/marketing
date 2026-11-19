@@ -380,6 +380,9 @@ class Admin extends BaseController
             'locations'  => $listing
                 ? (new PracticeLocationService())->forListing((int) $listing['id'])
                 : [],
+            'sections'   => $listing
+                ? (new \App\Services\ListingSectionService())->forListing((int) $listing['id'])
+                : [],
             // Rendered whenever this profile could be Verified, and hidden
             // by the Free/Verified switch until Verified is picked (asBuilt()).
             'showExtras' => $badgeOffer || $extrasOpen,
