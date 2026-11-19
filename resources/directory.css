@@ -3429,9 +3429,26 @@
   .team-member-registration { @apply mt-1 space-y-0.5 text-sm text-slate-700; }
   .dark .team-member-registration { @apply text-slate-300; }
   .team-registration, .team-registration fieldset { @apply m-0 min-w-0 border-0 p-0; }
-  .team-registration { @apply mb-4; }
-  .team-registration > legend { @apply mb-2 p-0 text-sm font-medium text-slate-700; }
-  .dark .team-registration > legend { @apply text-slate-200; }
+  /* A tinted panel with its own heading (owner, 19 Nov 2026: it read weaker
+     than the plain labels around it). The legend floats so it sits inside the
+     panel's padding instead of on its border; the next element clears it. */
+  .team-registration { @apply mb-4 mt-6 rounded-inner border border-primary-100 bg-primary-50/60 p-4 sm:p-5; }
+  .dark .team-registration { @apply border-slate-700 bg-slate-800/60; }
+  .team-registration > legend { @apply float-left mb-3 flex w-full items-center gap-2 p-0 text-base font-semibold text-slate-900; }
+  .team-registration > :not(legend) { @apply clear-both; }
+  .dark .team-registration > legend { @apply text-white; }
+  .team-registration-optional { @apply rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-slate-200; }
+  .dark .team-registration-optional { @apply bg-slate-900 text-slate-300 ring-slate-600; }
+  .team-registration .form-row:last-of-type .field,
+  .team-registration .field:last-child { @apply mb-3; }
+
+  /* The person card's larger parts (qualifications, areas of focus, bio,
+     photo): a divider and room above each, so they no longer run together. */
+  .person-section { @apply mt-6 border-t border-slate-200 pt-5; }
+  .dark .person-section { @apply border-slate-700; }
+  .person-section > label { @apply mb-1 text-base; }
+  .person-section-hint { @apply mb-2.5 mt-0; }
+  .team-registration + .person-section { @apply mt-6; }
   .dark .repeat-remove { @apply text-slate-400; }
 
   /* ---------------------------------------------- services & features (form) */
