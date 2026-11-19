@@ -138,6 +138,23 @@ $currentRegions = $regionLists[$currentCountry] ?? [];
         <?php if ($e('country')): ?><div class="err"><?= esc($e('country')) ?></div><?php endif; ?>
     </div>
 <?php endif; ?>
+    <?php // Find a place by name (owner, 19 Nov 2026): a practice in a hospital
+          // or medical centre knows the building, not its street. One
+          // OpenStreetMap lookup per press of Find (AddressSuggest::place),
+          // never per keystroke. A pick fills the fields below and an exact
+          // pin. Hidden until directory.js runs, since without it the box
+          // does nothing, and the input has no name so it never posts.
+          // OpenStreetMap's licence asks for the credit line. ?>
+    <div class="field place-finder" data-place-finder data-place-url="<?= base_url('address-place') ?>" hidden>
+        <label for="<?= esc($listId, 'attr') ?>-place">At a hospital, medical centre or mall? Find it by name</label>
+        <div class="place-finder-row">
+            <input type="text" id="<?= esc($listId, 'attr') ?>-place" maxlength="120" autocomplete="off"
+                   data-place-query placeholder="e.g. the name of your hospital or medical centre">
+            <button type="button" class="btn-ghost btn-xs" data-place-find>Find</button>
+        </div>
+        <ul class="place-finder-results" data-place-results hidden></ul>
+        <p class="hint" role="status" data-place-status>Pick it from the list to fill in the address and pin below. Place data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.</p>
+    </div>
     <div class="form-row">
         <div class="field relative">
             <label>Address<?= $star ?></label>

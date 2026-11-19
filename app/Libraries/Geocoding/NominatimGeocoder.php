@@ -283,6 +283,144 @@ class NominatimGeocoder implements GeocoderInterface
     }
 
     /**
+     * OpenStreetMap feature classes that are an area or a road, not a place
+     * someone goes to. Streets are the address box's job; towns and suburbs
+     * would only give a centre point, which is what this exists to avoid.
+     */
+    private const NOT_A_PLACE = ['boundary', 'place', 'highway', 'landuse', 'natural', 'waterway', 'railway', 'route'];
+
+    /** Longest place name we will look up. Anything longer is not a name. */
+    private const PLACE_NAME_MAX = 120;
+
+    /**
+     * Places by name ("Netcare N17 Hospital", "Medicross Umhlanga", a mall),
+     * for practices whose address is a building nobody knows the street of.
+     *
+     * Owner, 19 Nov 2026: the hospital's own street was hard to work out and
+     * the imported one was in the wrong town. Mapbox's geocoder has no named
+     * places (POIs live in its separately billed Search Box API), so this is
+     * always Nominatim, whatever Services::geocoder() picked.
+     *
+     * One lookup per press of the form's Find button, never per keystroke:
+     * Nominatim's usage policy forbids autocomplete, and a single lookup is the
+     * use it permits. Results are OpenStreetMap data (ODbL), so storing them is
+     * allowed with the attribution the form shows. Never throws.
+     *
+     * Each row is a whole address with the place's own point, so precision is
+     * 'exact': the pin goes on the building, not somewhere along a road.
+     *
+     * @return list<array{name:string,label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}>
+     */
+    public function findPlaces(string $name, string $country = 'ZA', int $limit = 5): array
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+        if (mb_strlen($name) < 3 || mb_strlen($name) > self::PLACE_NAME_MAX) {
+            return [];
+        }
+
+        $this->country = strtoupper(trim($country)) ?: 'ZA';
+        $cacheKey      = 'place_' . md5(mb_strtolower($name)) . self::keySuffix($this->country);
+        $cached        = cache($cacheKey);
+        if (is_array($cached)) {
+            return array_slice($cached, 0, $limit);
+        }
+
+        $results = $this->placeRequest($name);
+        if ($results === null) {
+            // Nominatim did not answer. Not cached, so the next press asks again.
+            return [];
+        }
+
+        $places = [];
+        $seen   = [];
+        foreach ($results as $result) {
+            $place = is_array($result) ? $this->mapPlace($result) : null;
+            if ($place === null) {
+                continue;
+            }
+            // OSM often holds one hospital twice (the amenity and its
+            // building), with the same name and address.
+            $key = mb_strtolower($place['name'] . '|' . $place['label']);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $places[]   = $place;
+        }
+
+        // A miss is remembered briefly (OSM is edited all the time), a hit for
+        // as long as addresses are.
+        cache()->save($cacheKey, $places, $places === [] ? HOUR : self::CACHE_TTL);
+
+        return array_slice($places, 0, $limit);
+    }
+
+    /**
+     * One free form lookup by name. The raw Nominatim list, [] for no match,
+     * null when Nominatim could not be reached. Protected as a test seam, like
+     * request().
+     *
+     * @return list<array<string,mixed>>|null
+     */
+    protected function placeRequest(string $name): ?array
+    {
+        $results = $this->call([
+            'q'              => $name,
+            'format'         => 'json',
+            'addressdetails' => 1,
+            'countrycodes'   => strtolower($this->country),
+            'limit'          => 10,
+        ], 'place(' . $name . ')');
+
+        return $results === null ? null : array_values(array_filter($results, 'is_array'));
+    }
+
+    /**
+     * A Nominatim result as a place the form can fill in, or null when it is
+     * not a named place in this country with at least a town.
+     *
+     * @param array<string,mixed> $result
+     *
+     * @return array{name:string,label:string,address_line:string,suburb:string,city:string,province:string,postal_code:string,lat:float,lng:float,precision:string}|null
+     */
+    private function mapPlace(array $result): ?array
+    {
+        $name = trim((string) ($result['name'] ?? ''));
+        if ($name === '' || in_array((string) ($result['class'] ?? ''), self::NOT_A_PLACE, true)) {
+            return null;
+        }
+        if (! isset($result['lat'], $result['lon'])
+            || ! self::isPlausible((float) $result['lat'], (float) $result['lon'], $this->country)) {
+            return null;
+        }
+
+        $mapped = $this->mapSuggestion($result);
+        if ($mapped === null || $mapped['city'] === '') {
+            return null;
+        }
+
+        // Short enough to read in a list: street, suburb, town. Nominatim's own
+        // display_name also carries wards and municipalities.
+        $where = array_values(array_filter(
+            [$mapped['address_line'], $mapped['suburb'], $mapped['city']],
+            static fn (string $part): bool => $part !== '' && strcasecmp($part, $name) !== 0
+        ));
+
+        return [
+            'name'         => $name,
+            'label'        => implode(', ', array_unique($where)),
+            'address_line' => $mapped['address_line'],
+            'suburb'       => $mapped['suburb'],
+            'city'         => $mapped['city'],
+            'province'     => $mapped['province'],
+            'postal_code'  => $mapped['postal_code'],
+            'lat'          => $mapped['lat'],
+            'lng'          => $mapped['lng'],
+            'precision'    => 'exact',
+        ];
+    }
+
+    /**
      * The address at a point, for when someone drags the map marker.
      *
      * Deliberately does NOT overwrite anything on its own. A dragged pin is the

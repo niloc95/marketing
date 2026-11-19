@@ -135,6 +135,7 @@ $routes->post('newsletter/unsubscribe/(:segment)', 'Newsletter::unsubscribe/$1')
 $routes->get('address-suggest', 'AddressSuggest::index');
 $routes->get('address-locate', 'AddressSuggest::locate');
 $routes->get('address-reverse', 'AddressSuggest::reverse');
+$routes->get('address-place', 'AddressSuggest::place');
 
 // The description field of the same three forms: hints mined from the
 // category, and the prompt for "Write it with ChatGPT". Read-only GETs, so no

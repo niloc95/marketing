@@ -326,4 +326,109 @@ final class NominatimGeocoderTest extends CIUnitTestCase
         $this->assertSame('GB', NominatimGeocoder::countryOf(['country' => 'United Kingdom']));
         $this->assertSame('ZA', NominatimGeocoder::countryOf([]));
     }
+    // ------------------------------------------------------- places by name
+
+    /** A geocoder whose name lookups answer from a callable. */
+    private function placeStub(callable $respond): NominatimGeocoder
+    {
+        return new class ($respond) extends NominatimGeocoder {
+            /** @var callable */
+            private $respond;
+
+            public function __construct(callable $respond)
+            {
+                $this->respond = $respond;
+            }
+
+            protected function placeRequest(string $name): ?array
+            {
+                return ($this->respond)($name);
+            }
+        };
+    }
+
+    /** Netcare N17 Hospital as Nominatim answered on 19 Nov 2026. */
+    private static function n17(string $class = 'amenity'): array
+    {
+        return [
+            'lat' => '-26.2714586', 'lon' => '28.4277715', 'class' => $class, 'type' => 'hospital',
+            'name' => 'Netcare N17 Hospital',
+            'display_name' => 'Netcare N17 Hospital, 7, Tonk Meter Way, Selection Park, Ekurhuleni Ward 78, Springs, City of Ekurhuleni Metropolitan Municipality, Gauteng, 1559, South Africa',
+            'address' => [
+                'amenity' => 'Netcare N17 Hospital', 'house_number' => '7', 'road' => 'Tonk Meter Way',
+                'suburb' => 'Selection Park', 'town' => 'Springs', 'state' => 'Gauteng', 'postcode' => '1559',
+                'country_code' => 'za',
+            ],
+        ];
+    }
+
+    public function testAPlaceByNameFillsTheWholeAddressWithAnExactPin(): void
+    {
+        cache()->clean();
+        $places = $this->placeStub(static fn (): array => [self::n17(), self::n17('building')])
+            ->findPlaces('Netcare N17 Hospital');
+
+        // The amenity and its building are one place.
+        $this->assertCount(1, $places);
+        $this->assertSame([
+            'name'         => 'Netcare N17 Hospital',
+            'label'        => '7 Tonk Meter Way, Selection Park, Springs',
+            'address_line' => '7 Tonk Meter Way',
+            'suburb'       => 'Selection Park',
+            'city'         => 'Springs',
+            'province'     => 'Gauteng',
+            'postal_code'  => '1559',
+            'lat'          => -26.2714586,
+            'lng'          => 28.4277715,
+            'precision'    => 'exact',
+        ], $places[0]);
+    }
+
+    public function testRoadsTownsAndUnnamedOrForeignResultsAreNotPlaces(): void
+    {
+        cache()->clean();
+        $road    = ['class' => 'highway', 'name' => 'Hospital Road'] + self::n17();
+        $town    = ['class' => 'place', 'name' => 'Springs'] + self::n17();
+        $unnamed = ['name' => ''] + self::n17();
+        $london  = ['lat' => '51.5', 'lon' => '-0.12', 'name' => 'Guy\'s Hospital'] + self::n17();
+
+        $places = $this->placeStub(static fn (): array => [$road, $town, $unnamed, $london])
+            ->findPlaces('Some Hospital');
+
+        $this->assertSame([], $places);
+    }
+
+    public function testShortNamesAndAnUnreachableServiceGiveNothing(): void
+    {
+        cache()->clean();
+        $asked = 0;
+        $geo   = $this->placeStub(static function () use (&$asked): ?array {
+            $asked++;
+
+            return null;
+        });
+
+        $this->assertSame([], $geo->findPlaces('N1'));
+        $this->assertSame(0, $asked, 'two letters never reach Nominatim');
+        $this->assertSame([], $geo->findPlaces('Netcare N17 Hospital'));
+        $this->assertSame([], $geo->findPlaces('Netcare N17 Hospital'));
+        $this->assertSame(2, $asked, 'a failed lookup is not cached');
+    }
+
+    public function testAFoundPlaceIsCached(): void
+    {
+        cache()->clean();
+        $asked = 0;
+        $geo   = $this->placeStub(static function () use (&$asked): array {
+            $asked++;
+
+            return [self::n17()];
+        });
+
+        $geo->findPlaces('Netcare N17 Hospital');
+        $again = $geo->findPlaces('  netcare   n17 hospital ');
+
+        $this->assertSame(1, $asked);
+        $this->assertSame('Springs', $again[0]['city']);
+    }
 }

@@ -362,6 +362,14 @@ Leaflet/CARTO, and "near me" stays a query against `xs_directory_listing_points`
   `data-suggest-url` (`Config\Directory::addressAutocompleteEnabled()`). With no URL,
   the script never searches. Single lookups on save, the pin picker, reverse lookups and
   `spark directory:geocode` still use Nominatim.
+- **Find a place by name** (since 19 Nov 2026): the box above every address block
+  (`_address_inputs.php`, `[data-place-finder]`) calls `GET /address-place`
+  (`AddressSuggest::place`, 10/min/IP) → `service('placeFinder')` =
+  `NominatimGeocoder::findPlaces()`, **always Nominatim** (Mapbox's geocoder has no
+  POIs), one lookup per press of Find, never per keystroke. Named places only (roads,
+  towns, areas dropped, duplicates merged), cached 30 days; a pick fills the address,
+  an `exact` pin and an empty location or branch name (`[data-place-name-target]`).
+  The OpenStreetMap credit line is required by the ODbL.
 - The dropdown's "Address search by Mapbox" credit line is required by Mapbox's terms.
   The privacy policy names Mapbox as a recipient of entered addresses.
 - The token is sent server to server only, never rendered. Use a `pk.` token with **no URL

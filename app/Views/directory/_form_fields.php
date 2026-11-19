@@ -433,7 +433,7 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
 <h4 class="form-subhead">Primary location</h4>
 <div class="field" id="field-location-name">
     <label for="f-location-name">Branch or practice name <span class="text-slate-400">(optional)</span></label>
-    <input type="text" id="f-location-name" name="location_name" maxlength="200"
+    <input type="text" id="f-location-name" name="location_name" maxlength="200" data-place-name-target
            value="<?= esc($v('location_name'), 'attr') ?>" placeholder="e.g. City centre branch">
     <div class="hint">Names this address on your profile. Leave it blank and we use your suburb.</div>
     <?php if ($err('location_name')): ?><div class="err"><?= esc($err('location_name')) ?></div><?php endif; ?>
