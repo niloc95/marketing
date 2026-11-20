@@ -35,7 +35,7 @@ class LoadCheck extends BaseCommand
     public function run(array $params): int
     {
         $db = db_connect();
-        if ($db->getDatabase() !== LoadDb::LOAD_DB) {
+        if (ENVIRONMENT === 'production' || $db->getDatabase() !== LoadDb::LOAD_DB) {
             CLI::error('The live DB is ' . $db->getDatabase() . ', not ' . LoadDb::LOAD_DB . '. Run npm run load:on first.');
 
             return EXIT_ERROR;
