@@ -310,8 +310,9 @@ class SystemHandbookService
             if (count($parts) < 7) {
                 continue;
             }
-            // Keep the spark command, drop the cd, user and log redirect noise.
-            $command = preg_match('/spark\s+([^\s>&|;]+(?:\s+--?[\w=,-]+(?:\s+[\w,]+)?)*)/', $parts[6], $m) ? 'spark ' . trim($m[1]) : $parts[6];
+            // Keep the spark command, drop the cd, user, the cron-job.sh wrapper and log redirect noise.
+            $rest    = (string) preg_replace('#^(?:cd \S+ && )?\S*cron-job\.sh \S+ #', '', $parts[6]);
+            $command = preg_match('/spark\s+([^\s>&|;]+(?:\s+--?[\w=,-]+(?:\s+[\w,]+)?)*)/', $rest, $m) ? 'spark ' . trim($m[1]) : $rest;
             $jobs[]  = ['when' => implode(' ', array_slice($parts, 0, 5)), 'command' => $command];
         }
 

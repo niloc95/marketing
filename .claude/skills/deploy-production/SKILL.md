@@ -84,8 +84,11 @@ sudo -u deploy -H bash -lc 'cd ~/src && git pull \
   && composer install --no-dev --optimize-autoloader \
   && npm ci --ignore-scripts && npm run list:build'
 
-sudo cp -a /home/deploy/src/dist/listing/directory-app/.      /var/www/listing/directory-app/
-sudo cp -a /home/deploy/src/dist/listing/docroot/.            /var/www/listing/public_html/
+# -R --preserve=timestamps, not -a: -a also copies the bundle's folder modes onto the
+# live writable/cache etc., so for the seconds until the chown below PHP cannot
+# write its cache and every rate limit is off (6 errors on release days, Nov 2026).
+sudo cp -R --preserve=timestamps /home/deploy/src/dist/listing/directory-app/. /var/www/listing/directory-app/
+sudo cp -R --preserve=timestamps /home/deploy/src/dist/listing/docroot/.       /var/www/listing/public_html/
 
 # ALWAYS — cp -a under sudo leaves everything root-owned
 sudo chown -R deploy:www-data /var/www/listing
@@ -100,6 +103,9 @@ cd /var/www/listing/directory-app && sudo -u deploy php spark migrate --all
 sudo systemctl reload php8.3-fpm
 ```
 
+On the server, write any build log under `~deploy` (`> ~/release-build.log`), not `/tmp`:
+`/tmp/release-build.log` belongs to another user and stops the release under `set -e`.
+
 Over SSH from the Mac the same block runs as `ssh lightsail '…'`; keep `set -e` so a
 failed copy stops before the reload. Then purge the Cloudflare cache if needed and run
 the verification below. **When a purge is needed:** HTML is never edge cached, and
@@ -107,6 +113,30 @@ the verification below. **When a purge is needed:** HTML is never edge cached, a
 `og:image` files and other bare asset URLs still need *Caching → Configuration → Purge*
 (both zones if both serve it). Marketing-only change? The listing `cp -a` lines, the migration
 and the FPM reload are all skippable — but re-running them is harmless.
+
+## Monitoring: the system watch and the uptime monitor
+
+Since 20 Nov 2026 (`system:watch`, `App\Libraries\SystemWatch`):
+
+- **Every 5 minutes** the server emails the admin when a `/health` check starts failing
+  (again hourly, at once when the fault changes, once more when fixed) and when new
+  CRITICAL/ERROR/ALERT/EMERGENCY lines reach the app log (each kind at most hourly).
+- **`/health` includes the booking engine** (`bookings`): `bookings:dispatch` finished a run
+  in the last 5 minutes and `bookings:payments` in the last 20 (`writable/watch/beat-*`),
+  no due message waiting over 15 minutes, fewer than 3 failed in the last hour. Checked
+  only while some business takes bookings.
+- **Every scheduled job runs through `scripts/cron-job.sh`**: `writable/watch/job-NAME.json`
+  (when, exit code) and `.out` (last output); a failure emails the admin (hourly at most).
+- **05:05 UTC daily summary**, sent even when all is well. If it stops arriving, the
+  watch is down: check cron and `writable/watch/`.
+- **The outside uptime monitor** covers what the server cannot report: itself down, PHP
+  down, mail not leaving. GET (not HEAD) `https://local.webscheduler.co.za/health`
+  (503 = a check fails), `https://local.webscheduler.app/` and a booking page, every
+  minute, alerts to the owner.
+
+**After a release that touches cron:** reinstall `/etc/cron.d/webscheduler` from
+`deploy/cron/webscheduler` (owner OK), then run `bookings:dispatch` and `bookings:payments`
+once as deploy so their heartbeats exist before the first watch run.
 
 ## Production `.env` and settings you may need to touch
 

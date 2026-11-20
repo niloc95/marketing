@@ -35,6 +35,8 @@ class BookingsPayments extends BaseCommand
         }
         try {
             $stats = DepositService::sweep();
+            // Only a run that finished counts: /health and system:watch alert when this goes stale.
+            \App\Libraries\Heartbeat::beat('bookings:payments');
         } finally {
             $db->query('SELECT RELEASE_LOCK(?)', ['webscheduler_bookings_payments']);
         }
