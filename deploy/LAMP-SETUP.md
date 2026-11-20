@@ -827,8 +827,11 @@ sudo -u deploy -H bash -lc 'cd ~/src && git pull \
   && npm ci --ignore-scripts && npm run list:build && npm run site:build'
 
 sudo cp -a /home/deploy/src/dist/site/.                       /var/www/marketing/
-sudo cp -a /home/deploy/src/dist/listing/directory-app/.      /var/www/listing/directory-app/
-sudo cp -a /home/deploy/src/dist/listing/docroot/.            /var/www/listing/public_html/
+# -R --preserve=timestamps, not -a: -a also copies the bundle's folder modes onto the
+# live writable/cache etc., so for the seconds until the chown below PHP cannot
+# write its cache and every rate limit is off (6 errors on release days, Nov 2026).
+sudo cp -R --preserve=timestamps /home/deploy/src/dist/listing/directory-app/. /var/www/listing/directory-app/
+sudo cp -R --preserve=timestamps /home/deploy/src/dist/listing/docroot/.       /var/www/listing/public_html/
 ```
 
 Then, every time:

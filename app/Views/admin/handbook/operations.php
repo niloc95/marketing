@@ -51,4 +51,11 @@
 
     <h3>Health</h3>
     <p><code>/health</code> is the source of truth; <code>/admin/status</code> shows checks, mail and logs; <code>/admin/forms</code> shows form failures.</p>
+    <ul>
+        <li><strong><code>/health</code> checks</strong> the database, cache, storage (including <code>writable/watch</code>), mail and, while any business takes bookings, the booking engine: <code>bookings:dispatch</code> finished a run in the last 5 minutes and <code>bookings:payments</code> in the last 20 (heartbeat files <code>writable/watch/beat-*</code>), no due booking message waiting over 15 minutes, fewer than 3 failed in the last hour. Any failure answers 503.</li>
+        <li><strong>System watch</strong> (<code>php spark system:watch</code>, every 5 minutes): emails the admin when a check starts failing (hourly while it lasts, at once when the fault changes, once when fixed) and when new CRITICAL, ERROR, ALERT or EMERGENCY lines reach the app log (each kind at most hourly). State in <code>writable/watch/state.json</code>.</li>
+        <li><strong>Scheduled jobs</strong> all run through <code>scripts/cron-job.sh</code>: <code>writable/watch/job-NAME.json</code> (last end, exit code) and <code>.out</code> (its output); a failing job emails the admin, hourly at most.</li>
+        <li><strong>Morning summary</strong> at 05:05 UTC (<code>system:watch --daily</code>): health, yesterday's errors by kind, booking messages, failed jobs, origin certificate days left, disk. Sent even when all is well; if it stops arriving, the watch is down.</li>
+        <li><strong>Outside uptime monitor</strong> (owner's account): GET <code>local.webscheduler.co.za/health</code>, <code>local.webscheduler.app/</code> and a booking page every minute; it covers what the server cannot report about itself.</li>
+    </ul>
 </div>

@@ -33,6 +33,7 @@ class SystemHealth
             'cache'    => $this->guard(fn () => $this->checkCache()),
             'storage'  => $this->guard(fn () => $this->checkStorage()),
             'mail'     => $this->guard(fn () => $this->checkMail()),
+            'bookings' => $this->guard(fn () => $this->checkBookings()),
         ];
     }
 
@@ -129,6 +130,8 @@ class SystemHealth
             // Restaurants' PDF menus. Created by git with the deploy user's
             // ownership, so this is where a wrong owner would show up first.
             'writable/menus'         => WRITEPATH . 'menus',
+            // Job heartbeats and the system watch's state (Heartbeat, SystemWatch).
+            'writable/watch'         => WRITEPATH . 'watch',
         ];
     }
 
@@ -160,6 +163,58 @@ class SystemHealth
                 $last ? date('c', $last['at']) : 'unknown',
                 $last['reason'] ?? 'unknown'
             );
+        }
+
+        return $problems === [] ? null : implode('; ', $problems);
+    }
+
+    /** Most minutes since the booking message job last finished a run (cron: every minute). */
+    public const DISPATCH_STALE_MIN = 5;
+
+    /** Most minutes since the deposit sweep last finished (cron: every 5 minutes). */
+    public const PAYMENTS_STALE_MIN = 20;
+
+    /** Most minutes a due booking message may wait. */
+    public const QUEUE_WAIT_MIN = 15;
+
+    /** Booking messages given up on in the last hour before it counts as a fault. */
+    public const FAILED_PER_HOUR = 3;
+
+    /**
+     * The booking engine (system watch, 20 Nov 2026): while any business takes
+     * bookings, its two jobs must keep finishing runs, due messages must not
+     * pile up, and messages must not keep failing. Nothing to check while
+     * bookings are off everywhere. Cheap: two indexed counts and two files.
+     */
+    private function checkBookings(): ?string
+    {
+        if (! config('Bookings')->enabled()) {
+            return null;
+        }
+        $db = db_connect();
+        if ($db->table('directory_listings')->where('bookings_enabled', 1)->countAllResults() === 0) {
+            return null;
+        }
+        $problems = [];
+        foreach (['bookings:dispatch' => self::DISPATCH_STALE_MIN, 'bookings:payments' => self::PAYMENTS_STALE_MIN] as $job => $limit) {
+            $last = Heartbeat::last($job);
+            if ($last === null) {
+                $problems[] = $job . ' has not finished a run on this server';
+            } elseif (time() - $last > $limit * 60) {
+                $problems[] = sprintf('%s last finished %d minutes ago', $job, intdiv(time() - $last, 60));
+            }
+        }
+        $now    = gmdate('Y-m-d H:i:s');
+        $oldest = $db->table('booking_notification_queue')->selectMin('run_after', 'oldest')
+            ->where('status', 'queued')->where('run_after <=', $now)->get()->getRowArray()['oldest'] ?? null;
+        if ($oldest !== null && strtotime($oldest . ' UTC') < time() - self::QUEUE_WAIT_MIN * 60) {
+            $waiting = $db->table('booking_notification_queue')->where('status', 'queued')->where('run_after <=', $now)->countAllResults();
+            $problems[] = sprintf('%d booking messages waiting, the oldest for %d minutes', $waiting, intdiv(time() - strtotime($oldest . ' UTC'), 60));
+        }
+        $failed = $db->table('booking_notification_queue')->where('status', 'failed')
+            ->where('updated_at >=', gmdate('Y-m-d H:i:s', time() - 3600))->countAllResults();
+        if ($failed >= self::FAILED_PER_HOUR) {
+            $problems[] = $failed . ' booking messages failed in the last hour';
         }
 
         return $problems === [] ? null : implode('; ', $problems);

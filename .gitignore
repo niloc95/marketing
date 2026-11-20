@@ -97,6 +97,10 @@ Vagrantfile
 /writable/careers/*
 !/writable/careers/index.html
 
+# System watch: job heartbeats, last run output, alert state (server only)
+/writable/watch/*
+!/writable/watch/index.html
+
 php_errors.log
 
 #-------------------------

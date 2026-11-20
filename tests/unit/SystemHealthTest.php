@@ -33,11 +33,11 @@ final class SystemHealthTest extends CIUnitTestCase
         parent::tearDown();
     }
 
-    public function testReportsTheFourChecksInTheExpectedShape(): void
+    public function testReportsTheFiveChecksInTheExpectedShape(): void
     {
         $checks = $this->health->checks();
 
-        $this->assertSame(['database', 'cache', 'storage', 'mail'], array_keys($checks));
+        $this->assertSame(['database', 'cache', 'storage', 'mail', 'bookings'], array_keys($checks));
 
         foreach ($checks as $name => $c) {
             $this->assertArrayHasKey('ok', $c, $name);
@@ -99,7 +99,7 @@ final class SystemHealthTest extends CIUnitTestCase
         // Losing any one of these breaks something silently: sessions, the
         // rate limiter, the log the admin page reads, or uploads.
         $this->assertSame(
-            ['writable/logs', 'writable/session', 'writable/cache', 'public/assets/listings', 'writable/menus'],
+            ['writable/logs', 'writable/session', 'writable/cache', 'public/assets/listings', 'writable/menus', 'writable/watch'],
             array_keys($this->health->storagePaths())
         );
     }

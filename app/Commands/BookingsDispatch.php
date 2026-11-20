@@ -42,6 +42,8 @@ class BookingsDispatch extends BaseCommand
         try {
             $jobs  = (new IntegrationWorker())->run(200, microtime(true) + 20);
             $stats = (new NotificationDispatcher())->run(500, microtime(true) + 50);
+            // Only a run that finished counts: /health and system:watch alert when this goes stale.
+            \App\Libraries\Heartbeat::beat('bookings:dispatch');
         } finally {
             $db->query('SELECT RELEASE_LOCK(?)', ['webscheduler_bookings_dispatch']);
         }

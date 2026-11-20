@@ -59,7 +59,7 @@ const APP_FILES = ['composer.json', 'composer.lock', 'spark', 'package.json', 't
  * discovering the permission problem as a failed document submission.
  * `menus` (restaurants' PDF menus, ListingMenuService) and `careers` (CVs sent
  * to /careers, CareersService) are the same case. */
-const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification', 'menus', 'careers'];
+const WRITABLE_DIRS = ['cache', 'debugbar', 'logs', 'session', 'uploads', 'verification', 'menus', 'careers', 'watch'];
 
 /** The line in public/index.php that resolves the app root. */
 const PATHS_REQUIRE_FROM = "require FCPATH . '../app/Config/Paths.php';";
