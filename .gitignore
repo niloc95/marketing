@@ -81,6 +81,9 @@ Vagrantfile
 /writable/debugbar/*
 !/writable/debugbar/index.html
 
+# load:seed tallies (dev only, load test DB)
+/writable/loadtest/
+
 # Verification documents: company registration certificates and owner ID
 # copies. PII — never in the repo, never under public/.
 /writable/verification/*

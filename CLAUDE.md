@@ -85,6 +85,10 @@ they hold the rules that are not obvious from the code.
     `bookings:dispatch`, and `bookings:payments` every five), so booking messages reach
     Mailpit as on production. A job, not a server. Logs: `~/Library/Logs/webscheduler-dev-jobs.log`.
   - Dev DB `webscheduler_directory`, test DB `webscheduler_directory_tests`.
+  - One exception (owner, 20 Nov 2026): the load test DB `webscheduler_loadtest`, a copy of the dev DB
+    seeded by `php spark load:seed`. `npm run load:on` points 8095 at it, `npm run load:off` back; only
+    one is live at a time, and always `load:off` when done. Check `npm run load:status` first: if 8095
+    is on the load DB, the dev data you expect is not there.
 - **System handbook** (`/admin/documents/system`): every change that adds or alters a
   table, route group, service, dependency, design token, cron job, external service, id
   format, a per site difference, Bookings or the brand site updates `Config\Handbook`

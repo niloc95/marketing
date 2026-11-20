@@ -498,7 +498,17 @@ class TeamService
         // resetTransStatus(): see CatalogueService::saveService().
         $db = db_connect();
         $db->resetTransStatus()->transStart();
-        BookingProviderHoursModel::forBusiness($this->listingId)->where('provider_id', $providerId)->delete();
+        // The person's row is the lock (as BookingLock), and the old periods
+        // go by id: "delete every period of this person" took a gap lock, and
+        // two businesses saving hours at once deadlocked (load test, 20 Nov 2026).
+        $db->query('SELECT id FROM ' . $db->prefixTable('booking_providers') . ' WHERE id = ? AND listing_id = ? FOR UPDATE', [$providerId, $this->listingId]);
+        $old = array_map('intval', array_column(
+            BookingProviderHoursModel::forBusiness($this->listingId)->select('id')->where('provider_id', $providerId)->findAll(),
+            'id',
+        ));
+        if ($old !== []) {
+            BookingProviderHoursModel::forBusiness($this->listingId)->whereIn('id', $old)->delete();
+        }
         foreach ($clean as $dayRows) {
             foreach ($dayRows as $row) {
                 BookingProviderHoursModel::forBusiness($this->listingId)->insert($row);

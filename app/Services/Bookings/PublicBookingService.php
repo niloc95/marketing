@@ -584,8 +584,12 @@ class PublicBookingService
         } elseif (! in_array($providerId, array_map('intval', array_column($this->providersFor($serviceId), 'id')), true)) {
             return ['token' => null, 'reference' => null, 'errors' => ['provider_id' => AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::NOT_OFFERED]]];
         } elseif ($place !== null && ! in_array($start, array_column($this->times($serviceId, $providerId, (new DateTimeImmutable($start, new DateTimeZone('UTC')))->setTimezone($this->timezone())->format('Y-m-d'), $place), 'start'), true)) {
-            // The time is not at the place they chose (the person works elsewhere then).
-            return ['token' => null, 'reference' => null, 'errors' => ['start' => AppointmentService::CUSTOMER_PROBLEMS[AvailabilityService::NOT_ON_THE_GRID]]];
+            // Not offered at the place they chose: say why when the engine
+            // knows (closed for a public holiday, just booked, too soon), else
+            // the person works elsewhere then (load test, 20 Nov 2026).
+            $why = $this->engine->problem($providerId, $serviceId, $start, true) ?? AvailabilityService::NOT_ON_THE_GRID;
+
+            return ['token' => null, 'reference' => null, 'errors' => ['start' => AppointmentService::CUSTOMER_PROBLEMS[$why]]];
         }
 
         // The customer as the business's form asks for them.

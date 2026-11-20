@@ -56,6 +56,12 @@ class CatalogueService
      */
     public function services(bool $includeArchived = false): array
     {
+        return BookingMemo::remember($this->listingId, 'services:' . (int) $includeArchived, fn (): array => $this->readServices($includeArchived));
+    }
+
+    /** @return list<array<string,mixed>> */
+    private function readServices(bool $includeArchived): array
+    {
         $model = BookingServiceModel::forBusiness($this->listingId)
             ->select('xs_booking_services.*, c.name AS category_name, c.color AS category_color')
             ->join('xs_booking_categories c', 'c.id = xs_booking_services.category_id', 'left');
@@ -275,6 +281,8 @@ class CatalogueService
         }
         $this->setProvidersForService($id, $providerIds);
         if ($db->transComplete() === false) {
+            BookingMemo::forget($this->listingId);
+
             throw new \RuntimeException('Saving a booking service was rolled back.');
         }
         if ($mirror) {
@@ -346,12 +354,14 @@ class CatalogueService
      */
     public function providerLinks(): array
     {
-        $out = [];
-        foreach (BookingProviderServiceModel::forBusiness($this->listingId)->findAll() as $row) {
-            $out[(int) $row['service_id']][] = (int) $row['provider_id'];
-        }
+        return BookingMemo::remember($this->listingId, 'links', function (): array {
+            $out = [];
+            foreach (BookingProviderServiceModel::forBusiness($this->listingId)->findAll() as $row) {
+                $out[(int) $row['service_id']][] = (int) $row['provider_id'];
+            }
 
-        return $out;
+            return $out;
+        });
     }
 
     /** @return list<int> */
@@ -375,10 +385,31 @@ class CatalogueService
      */
     public function setProvidersForService(int $serviceId, array $providerIds): void
     {
-        $valid = $this->validProviderIds($providerIds);
-        BookingProviderServiceModel::forBusiness($this->listingId)->where('service_id', $serviceId)->delete();
-        foreach ($valid as $providerId) {
-            BookingProviderServiceModel::forBusiness($this->listingId)->insert(['provider_id' => $providerId, 'service_id' => $serviceId]);
+        $this->replaceLinks('service_id', $serviceId, 'provider_id', $this->validProviderIds($providerIds));
+    }
+
+    /**
+     * Make one service's people (or one person's services) exactly $wanted,
+     * touching only the links that change. Each delete names the whole key:
+     * deleting "every link of this service" took a gap lock, and two
+     * businesses saving a new service at the same moment deadlocked (load
+     * test, 20 Nov 2026). The caller holds the lock on the service or the
+     * person row, so two saves of the same one wait for each other.
+     *
+     * @param 'service_id'|'provider_id' $by
+     * @param list<int>                   $wanted
+     */
+    private function replaceLinks(string $by, int $id, string $other, array $wanted): void
+    {
+        $have = array_map('intval', array_column(
+            BookingProviderServiceModel::forBusiness($this->listingId)->select($other)->where($by, $id)->findAll(),
+            $other,
+        ));
+        foreach (array_diff($have, $wanted) as $gone) {
+            BookingProviderServiceModel::forBusiness($this->listingId)->where($by, $id)->where($other, $gone)->delete();
+        }
+        foreach (array_diff($wanted, $have) as $new) {
+            BookingProviderServiceModel::forBusiness($this->listingId)->insert([$by => $id, $other => $new]);
         }
     }
 
@@ -392,9 +423,15 @@ class CatalogueService
         $known = array_map('intval', array_column($this->services(true), 'id'));
         $valid = array_values(array_intersect(array_unique(array_map('intval', $serviceIds)), $known));
         $owned = $this->ownsList();
-        BookingProviderServiceModel::forBusiness($this->listingId)->where('provider_id', $providerId)->delete();
-        foreach ($valid as $serviceId) {
-            BookingProviderServiceModel::forBusiness($this->listingId)->insert(['provider_id' => $providerId, 'service_id' => $serviceId]);
+        // See replaceLinks(): the person's row is the lock, never a range.
+        $db = db_connect();
+        $db->resetTransStatus()->transStart();
+        $db->query('SELECT id FROM ' . $db->prefixTable('booking_providers') . ' WHERE id = ? AND listing_id = ? FOR UPDATE', [$providerId, $this->listingId]);
+        $this->replaceLinks('provider_id', $providerId, 'service_id', $valid);
+        if ($db->transComplete() === false) {
+            BookingMemo::forget($this->listingId);
+
+            throw new \RuntimeException('Saving the services of this person was rolled back.');
         }
         $this->mirrorToProfile($owned);
     }

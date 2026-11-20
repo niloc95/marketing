@@ -9,4 +9,7 @@ class BookingCategoryModel extends BookingScopedModel
     protected $primaryKey    = 'id';
     protected $useTimestamps = true;
     protected $allowedFields = ['listing_id', 'name', 'color', 'sort_order'];
+
+    /** Read through BookingMemo; a write forgets the business. */
+    protected bool $memo = true;
 }

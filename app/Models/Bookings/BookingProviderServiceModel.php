@@ -12,4 +12,7 @@ class BookingProviderServiceModel extends BookingScopedModel
     protected $createdField = 'created_at';
     protected $updatedField = '';
     protected $allowedFields = ['listing_id', 'provider_id', 'service_id'];
+
+    /** Read through BookingMemo; a write forgets the business. */
+    protected bool $memo = true;
 }

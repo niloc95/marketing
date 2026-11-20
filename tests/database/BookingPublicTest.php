@@ -388,6 +388,62 @@ final class BookingPublicTest extends CIUnitTestCase
 
     // Helpers
 
+    // Load test fixes (20 Nov 2026)
+
+    public function testARefusedTimeAtAChosenPlaceSaysWhy(): void
+    {
+        $slot = $this->firstSlot($this->sarah);
+        $svc  = new PublicBookingService($this->listing());
+        $who  = ['service_id' => $this->serviceId, 'provider_id' => $this->sarah, 'start' => $slot['start'], 'place' => '0', 'first_name' => 'Alice', 'last_name' => 'Johnson', 'email' => 'alice@example.test', 'phone' => '082 555 1234'];
+        $this->assertSame([], $svc->book($who)['errors']);
+
+        $again = (new PublicBookingService($this->listing()))->book(['email' => 'bongi@example.test', 'first_name' => 'Bongi', 'phone' => '082 555 9876'] + $who);
+        $this->assertSame(['start' => 'Someone has just booked that time. Choose another.'], $again['errors'], 'Not "Choose one of the times offered"');
+    }
+
+    public function testASettingSavedOrWrittenIsReadAtOnceDespiteTheMemo(): void
+    {
+        $this->assertSame(2880, BookingSettings::for($this->listingId)->int('booking.lead_minutes'));
+        BookingSettings::for($this->listingId)->save(['booking.lead_minutes' => '60'], null);
+        $this->assertSame(60, BookingSettings::for($this->listingId)->int('booking.lead_minutes'));
+
+        $row = \App\Models\Bookings\BookingSettingModel::forBusiness($this->listingId)->where('name', 'booking.lead_minutes')->first();
+        \App\Models\Bookings\BookingSettingModel::forBusiness($this->listingId)->update((int) $row['id'], ['value' => '120']);
+        $this->assertSame(120, BookingSettings::for($this->listingId)->int('booking.lead_minutes'), 'A write through the model forgets the memo');
+    }
+
+    public function testLinksChangeOnlyWhereTheyDifferAndAreReadAtOnce(): void
+    {
+        $catalogue = new CatalogueService($this->listingId);
+        $this->assertSame([$this->sarah, $this->james], $this->sorted($catalogue->providerLinks()[$this->serviceId]));
+
+        $catalogue->setServicesForProvider($this->james, []);
+        $this->assertSame([$this->sarah], (new CatalogueService($this->listingId))->providerLinks()[$this->serviceId]);
+
+        $saved = (new CatalogueService($this->listingId))->saveService($this->serviceId, ['name' => 'Cut', 'duration_min' => 60, 'price' => '250', 'delivery_modes' => ['onsite'], 'provider_ids' => [$this->james]], null);
+        $this->assertSame([], $saved['errors']);
+        $this->assertSame([$this->james], (new CatalogueService($this->listingId))->services()[0]['provider_ids']);
+        $this->assertSame(1, $this->db->table('booking_provider_services')->where('service_id', $this->serviceId)->countAllResults());
+    }
+
+    public function testSavingHoursAgainReplacesThePeriods(): void
+    {
+        $team = new TeamService($this->listingId);
+        $team->saveHours($this->sarah, array_fill_keys([1, 2, 3], ['active' => 1, 'start' => '08:00', 'end' => '12:00']), null);
+        $rows = $this->db->table('booking_provider_hours')->where('provider_id', $this->sarah)->get()->getResultArray();
+        $this->assertCount(3, $rows);
+        $this->assertSame(['08:00:00'], array_values(array_unique(array_column($rows, 'start_time'))));
+        $this->assertCount(7, $this->db->table('booking_provider_hours')->where('provider_id', $this->james)->get()->getResultArray(), 'The other person is untouched');
+    }
+
+    /** @param list<int> $ids @return list<int> */
+    private function sorted(array $ids): array
+    {
+        sort($ids);
+
+        return $ids;
+    }
+
     /** @return array{start:string,time:string} the first free time for a person, after $after */
     private function firstSlot(int $providerId, ?string $after = null, ?int $serviceId = null): array
     {
