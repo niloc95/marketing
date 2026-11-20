@@ -112,7 +112,7 @@ class LoadSeed extends BaseCommand
     ];
 
     /** person (0..2) => indexes of the services they give */
-    private const OFFERS = [0 => [0, 1], 1 => [1, 2], 2 => [0, 2]];
+    public const OFFERS = [0 => [0, 1], 1 => [1, 2], 2 => [0, 2]];
 
     private const COLORS = ['ocean', 'teal', 'violet'];
 
@@ -182,6 +182,7 @@ class LoadSeed extends BaseCommand
                     $tally['tries'] = $try;
                 } catch (\Throwable $e) {
                     $db->transRollback();
+                    \App\Services\Bookings\BookingMemo::flush();
                     CLI::error(sprintf('#%04d try %d: %s: %s at %s:%d', $n, $try, $e::class, $e->getMessage(), $e->getFile(), $e->getLine()));
                     $this->retried[] = ['n' => $n, 'try' => $try, 'error' => $e->getMessage()];
                     usleep(mt_rand(200000, 1500000));

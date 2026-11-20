@@ -36,6 +36,9 @@ abstract class BookingScopedModel extends Model
 
     private ?int $scopeListingId = null;
 
+    /** True for tables whose reads go through BookingMemo: any write forgets the business. */
+    protected bool $memo = false;
+
     /** A model limited to one business. */
     public static function forBusiness(int $listingId): static
     {
@@ -69,6 +72,9 @@ abstract class BookingScopedModel extends Model
     protected function applyScope(array $data): array
     {
         $this->builder()->where($this->table . '.listing_id', $this->requireScope());
+        if ($this->memo && ! array_key_exists('method', $data)) { // an update or delete, not a find
+            \App\Services\Bookings\BookingMemo::forget($this->scopeListingId);
+        }
 
         return $data;
     }
@@ -77,6 +83,9 @@ abstract class BookingScopedModel extends Model
     protected function stampScope(array $data): array
     {
         $listingId = $this->requireScope();
+        if ($this->memo) {
+            \App\Services\Bookings\BookingMemo::forget($listingId);
+        }
         if (isset($data['data']['listing_id']) && (int) $data['data']['listing_id'] !== $listingId) {
             throw new LogicException('Refusing to write a row for another business.');
         }

@@ -24,5 +24,6 @@ trait FreshDatabase
         TestSchema::build($this->db, $this->migrations);
         TestSchema::reset($this->db);
         \Config\Services::resetSingle('throttler');
+        \App\Services\Bookings\BookingMemo::flush();
     }
 }

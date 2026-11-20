@@ -137,8 +137,11 @@ class BookingSettings
     private function stored(): array
     {
         if ($this->stored === null) {
-            $rows         = BookingSettingModel::forBusiness($this->listingId)->findAll();
-            $this->stored = array_column($rows, 'value', 'name');
+            $this->stored = BookingMemo::remember($this->listingId, 'settings', fn (): array => array_column(
+                BookingSettingModel::forBusiness($this->listingId)->findAll(),
+                'value',
+                'name',
+            ));
         }
 
         return $this->stored;
