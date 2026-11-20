@@ -13,6 +13,7 @@ use CodeIgniter\CLI\CLI;
  *
  *   php spark load:db copy     copy the dev DB into webscheduler_loadtest (drops the old copy)
  *   php spark load:db status   which DB is live, and counts in both
+ *   php spark load:db top      the costliest queries (--reset to start counting again)
  *
  * The copy goes through the app's own connection (same MySQL server):
  * SHOW CREATE TABLE keeps every index and foreign key, then INSERT ...
@@ -26,7 +27,7 @@ class LoadDb extends BaseCommand
     protected $group       = 'Directory';
     protected $name        = 'load:db';
     protected $description = 'Copy the dev DB into the load test DB, or show which is live.';
-    protected $usage       = 'load:db copy|status';
+    protected $usage       = 'load:db copy|status|top [--reset]';
 
     public function run(array $params): int
     {
@@ -39,6 +40,7 @@ class LoadDb extends BaseCommand
         return match ($params[0] ?? 'status') {
             'copy'   => $this->copy(),
             'status' => $this->status(),
+            'top'    => $this->top(),
             default  => $this->usage(),
         };
     }
@@ -93,6 +95,41 @@ class LoadDb extends BaseCommand
         CLI::write(count($tables) . ' tables copied.', 'green');
 
         return $this->status();
+    }
+
+    /**
+     * Where the database time goes: the statements with the most total time
+     * since MySQL started (performance_schema), with rows examined per call,
+     * so a query that scans the whole table instead of one business shows.
+     */
+    private function top(): int
+    {
+        // --reset: start the counts again, to see only what runs from now on.
+        if (CLI::getOption('reset') !== null) {
+            db_connect()->query('TRUNCATE TABLE performance_schema.events_statements_summary_by_digest');
+            CLI::write('Counts reset.');
+
+            return EXIT_SUCCESS;
+        }
+        $rows = db_connect()->query('SELECT DIGEST_TEXT AS q, COUNT_STAR AS calls, ROUND(SUM_TIMER_WAIT / 1e12, 1) AS total_s,
+                ROUND(AVG_TIMER_WAIT / 1e9, 2) AS avg_ms, ROUND(SUM_ROWS_EXAMINED / GREATEST(COUNT_STAR, 1)) AS rows_per_call
+            FROM performance_schema.events_statements_summary_by_digest
+            WHERE SCHEMA_NAME = ? AND DIGEST_TEXT NOT LIKE \'%performance_schema%\'
+            ORDER BY SUM_TIMER_WAIT DESC LIMIT 15', [self::LOAD_DB])->getResultArray();
+        foreach ($rows as $r) {
+            CLI::write(sprintf('%8.1fs %9d calls %8.2f ms %9d rows/call  %s', $r['total_s'], $r['calls'], $r['avg_ms'], $r['rows_per_call'], mb_substr(preg_replace('/\s+/', ' ', (string) $r['q']), 0, 230)));
+        }
+
+        // Does the data fit in memory? Disk reads per logical read, and the size on disk.
+        $db   = db_connect();
+        $pool = (int) $db->query("SELECT @@innodb_buffer_pool_size AS n")->getRowArray()['n'];
+        $st   = array_column($db->query("SHOW GLOBAL STATUS WHERE Variable_name IN ('Innodb_buffer_pool_reads', 'Innodb_buffer_pool_read_requests')")->getResultArray(), 'Value', 'Variable_name');
+        $size = (int) $db->query('SELECT SUM(data_length + index_length) AS n FROM information_schema.tables WHERE table_schema = ?', [self::LOAD_DB])->getRowArray()['n'];
+        CLI::newLine();
+        CLI::write(sprintf('InnoDB buffer pool %d MB, load DB %d MB on disk, %.3f%% of reads went to disk.',
+            $pool / 1048576, $size / 1048576, 100 * (int) $st['Innodb_buffer_pool_reads'] / max(1, (int) $st['Innodb_buffer_pool_read_requests'])));
+
+        return EXIT_SUCCESS;
     }
 
     private function status(): int
