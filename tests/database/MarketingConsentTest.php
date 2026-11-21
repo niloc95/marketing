@@ -272,7 +272,7 @@ final class MarketingConsentTest extends CIUnitTestCase
         $result = $this->get($this->path($url));
 
         $result->assertStatus(200);
-        $result->assertSee('Stop the monthly analytics email?');
+        $result->assertSee('Stop emails about your profile?');
         $this->assertSame('1', (string) $this->listings->find($id)['marketing_opt_in'], 'a link scanner must not unsubscribe anyone');
     }
 

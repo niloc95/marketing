@@ -116,6 +116,8 @@ class Handbook extends BaseConfig
         'xs_directory_site_daily' => ['purpose' => 'Search Console and GA4 totals per site per day', 'owner' => 'GoogleDataService', 'product' => 'local', 'personal' => null],
         'xs_directory_site_breakdown' => ['purpose' => 'Search Console and GA4 breakdowns (queries, channels)', 'owner' => 'GoogleDataService', 'product' => 'local', 'personal' => null],
         'xs_directory_google_pulls' => ['purpose' => 'Once per day guard for the Google pulls', 'owner' => 'GoogleDataService', 'product' => 'local', 'personal' => null],
+        'xs_campaigns' => ['purpose' => 'Communications campaigns from /admin/communications (template kind, edited subject and plain text body, audience JSON, daily limit, status draft/sending/paused/done/cancelled)', 'owner' => 'CommunicationsService', 'product' => 'local', 'personal' => null],
+        'xs_campaign_recipients' => ['purpose' => 'The communications send log: one row per campaign and profile (unique), snapshotted at start, so nobody gets a campaign twice; status queued/sent/failed/skipped with the reason', 'owner' => 'CommunicationsService', 'product' => 'local', 'personal' => 'Email address at queue time (kept with the log)'],
         'xs_directory_form_events' => ['purpose' => 'What each form submission did (form health), 180 days', 'owner' => 'FormHealthService', 'product' => 'local', 'personal' => null],
         'xs_migrations' => ['purpose' => 'Migrations applied, with batch numbers', 'owner' => 'CodeIgniter (php spark migrate)', 'product' => 'local', 'personal' => null],
 

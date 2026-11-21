@@ -75,9 +75,33 @@ class MarketingConsentService
 
         $now = date('Y-m-d H:i:s');
 
+        // One opt out for all (owner, 21 Nov 2026): opting back in from
+        // /business also lifts the communications opt out.
         return (bool) $this->listings->update($listingId, $optIn
-            ? ['marketing_opt_in' => 1, 'marketing_consent_at' => $now, 'marketing_consent_source' => $source]
+            ? ['marketing_opt_in' => 1, 'marketing_consent_at' => $now, 'marketing_consent_source' => $source, 'comms_opt_out_at' => null, 'comms_opt_out_source' => null]
             : ['marketing_opt_in' => 0, 'marketing_withdrawn_at' => $now, 'marketing_consent_source' => $source]);
+    }
+
+    /**
+     * Stop every communications campaign (/admin/communications) to this
+     * profile, from the footer link or one click unsubscribe. Imported
+     * profiles never opted in to the report, so setPreference() alone would
+     * change nothing for them; this stamp is what the campaign audience reads.
+     * Writes once, so the first date is kept.
+     *
+     * @return bool whether anything changed
+     */
+    public function optOutOfCommunications(int $listingId, string $source): bool
+    {
+        $listing = $this->listings->find($listingId);
+        if (! is_array($listing) || ! empty($listing['comms_opt_out_at'])) {
+            return false;
+        }
+
+        return (bool) $this->listings->update($listingId, [
+            'comms_opt_out_at'     => date('Y-m-d H:i:s'),
+            'comms_opt_out_source' => $source,
+        ]);
     }
 
     /**

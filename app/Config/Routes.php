@@ -622,6 +622,18 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
 
     // Form health: what every form submission did (FormHealthService). Read-only.
     $routes->get('forms', 'AdminForms::index');
+    // Communications: campaigns to a chosen group of profiles, sent in daily
+    // batches by comms:send (CommunicationsService). Literal segments before (:num).
+    $routes->get('communications', 'AdminCommunications::index');
+    $routes->get('communications/new', 'AdminCommunications::create');
+    $routes->post('communications/new', 'AdminCommunications::store');
+    $routes->get('communications/(:num)', 'AdminCommunications::show/$1');
+    $routes->post('communications/(:num)', 'AdminCommunications::update/$1');
+    $routes->get('communications/(:num)/preview', 'AdminCommunications::preview/$1');
+    $routes->get('communications/(:num)/raw', 'AdminCommunications::raw/$1');
+    $routes->post('communications/(:num)/test', 'AdminCommunications::test/$1');
+    $routes->post('communications/(:num)/start', 'AdminCommunications::start/$1');
+    $routes->post('communications/(:num)/status', 'AdminCommunications::status/$1');
     // Online bookings across the platform (Phase 10, D12): counts and setup;
     // a business's contents only through the logged support view.
     $routes->get('bookings', 'AdminBookings::index');

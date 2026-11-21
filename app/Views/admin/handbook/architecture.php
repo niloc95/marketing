@@ -24,6 +24,22 @@
         <li><strong>Commands</strong> (<code>app/Commands/</code>): spark jobs run by cron (Operations chapter).</li>
     </ul>
 
+    <h3>Communications (emails to groups of profiles)</h3>
+    <ul>
+        <li><code>/admin/communications</code> (<code>AdminCommunications</code>) builds a campaign from a template in
+            <code>Config\Campaigns</code>: editable subject and plain text paragraphs with merge fields, an audience
+            (<code>Communications\CampaignAudience</code>: unclaimed imports, Free, Verified and Plus, by site, main category,
+            province, signup source) and a daily limit. <code>Communications\CommunicationsService</code> is the only writer of
+            <code>xs_campaigns</code> and <code>xs_campaign_recipients</code>.</li>
+        <li>A test send unlocks Start; Start snapshots the audience into the send log (unique campaign and profile, so nobody gets
+            a campaign twice). <code>comms:send</code> (cron) sends each campaign's share of the day, checks each profile again
+            first (opted out, claimed, email changed, unpublished), stamps sent only when <code>Mailer</code> says it went, and
+            pauses the campaign after 5 failures in a row.</li>
+        <li>One opt out for all: the footer link (<code>/unsubscribe/{token}</code>, one click via List-Unsubscribe-Post) stamps
+            <code>comms_opt_out_at</code> and withdraws the monthly report; opting back in from <code>/business</code> lifts both.
+            One email per address; any opted out profile on an address blocks the others. Links go to the profile's own site.</li>
+    </ul>
+
     <h3>Discovery and the category matcher</h3>
     <ul>
         <li>Discover has no AI and no outside service: <code>Search\RuleBasedInterpreter</code> reads the words with
