@@ -306,9 +306,17 @@ class DirectoryListingModel extends Model
         return $this->where('status', 'published');
     }
 
-    public function findPublishedBySlug(string $slug): ?array
+    public function findPublishedBySlug(string $slug, bool $scoped = false): ?array
     {
-        $row = $this->where('slug', $slug)->where('status', 'published')->first();
+        $builder = $this->where('slug', $slug)->where('status', 'published');
+        if ($scoped) {
+            $scope = service('site')->scopeSql('country_code');
+            if ($scope !== '') {
+                $builder->where($scope, null, false);
+            }
+        }
+
+        $row = $builder->first();
         return is_array($row) ? $row : null;
     }
 
