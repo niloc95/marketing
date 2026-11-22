@@ -6,9 +6,9 @@ namespace App\Models\Concerns;
  * Row counts per status for the admin queue tabs.
  *
  * The using model must define a STATUSES class constant (array of status
- * strings). The body is identical across DirectoryReferralModel,
- * DirectoryReviewModel and DirectoryPartnerModel. JobPostModel keeps its
- * own counts() because it appends an 'ended' virtual total.
+ * strings). Used by DirectoryReferralModel, DirectoryReviewModel and
+ * DirectoryPartnerModel as is; JobPostModel aliases it to statusCounts()
+ * and adds its 'ended' total on top.
  */
 trait HasStatusCounts
 {
