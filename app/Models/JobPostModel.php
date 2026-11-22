@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\DerivesCountryCode;
+use App\Models\Concerns\HasStatusCounts;
 use CodeIgniter\Model;
 
 /**
@@ -12,6 +13,7 @@ use CodeIgniter\Model;
 class JobPostModel extends Model
 {
     use DerivesCountryCode;
+    use HasStatusCounts;
 
     protected $table          = 'xs_directory_job_posts';
     protected $primaryKey     = 'id';
@@ -131,6 +133,8 @@ class JobPostModel extends Model
 
     /**
      * Row counts per status for the queue tabs, every status present.
+     * Adds the 'ended' virtual total (closed + expired) on top of the
+     * base counts from HasStatusCounts.
      *
      * @return array<string,int>
      */
