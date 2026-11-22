@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Libraries\Mailer;
 use App\Models\DirectoryListingModel;
-use Throwable;
 
 /**
  * The one-off "finish your profile" email.
@@ -202,27 +201,9 @@ class ProfileNudgeService
         $this->listings->update($id, ['quality_nudge_sent_at' => date('Y-m-d H:i:s')]);
     }
 
-    /**
-     * A live magic link, as VerificationService::ownerLink() gives the badge
-     * approval mail: the email asks the owner to do something, and sending them
-     * to a sign-in page to request a second email first is the detour that
-     * loses them. Minting replaces any older manage link, which is acceptable
-     * for an email sent once. A failure falls back to the sign-in page.
-     */
+    /** A live sign in link; see DirectoryListingMutationService::signInLink(). */
     private function manageLink(int $id): string
     {
-        try {
-            $token = (new DirectoryListingMutationService())
-                ->mintManageToken($id, config('Directory')->approvalLinkTtl);
-
-            return listing_site_url($id, 'manage/' . $token);
-        } catch (Throwable $e) {
-            log_message('error', 'Could not mint a nudge link for listing {id}: {msg}', [
-                'id'  => $id,
-                'msg' => trim((string) preg_replace('/\s+/', ' ', $e->getMessage())),
-            ]);
-
-            return listing_site_url($id, 'business');
-        }
+        return (new DirectoryListingMutationService())->signInLink($id);
     }
 }

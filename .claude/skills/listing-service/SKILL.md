@@ -472,6 +472,41 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   CSRF-exempt for RFC 8058 one-click.
 - `terms_version` records `Legal::LAST_UPDATED['terms']`. Bump that date whenever the
   terms change.
+## Communications (`/admin/communications`, since 21 Nov 2026)
+
+Emails the admin sends to a chosen group of profiles in daily batches (owner, 21 Nov
+2026; first use: the claim outreach, medical plan phase 3c). `Communications\CommunicationsService`
+is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log).
+
+- **Templates** in `Config\Campaigns::$kinds` (`claim`, `verified_upgrade`,
+  `announcement`): allowed segments, default subject and paragraphs, button target
+  (`signin`, `upgrade`, `business`, `profile`). The admin edits subject and plain text
+  paragraphs per campaign; merge fields `CampaignRenderer::FIELDS`, unknown ones refused,
+  as are dashes, hyphenated words and links. A paragraph with `{appearances}` is dropped
+  for a profile with 0 Google impressions in 30 days.
+- **Audience** (`CampaignAudience`): `unclaimed_imports` (signup_source `import-*`, no
+  active `xs_business_members` row), `free`, `premium` (the dates `listing_has_premium()`
+  reads; COALESCE the NULLs), filters site, group, province, source. Always out: demo,
+  unpublished, canary, no email, opted out. One email per address; one opted out profile
+  on an address blocks the rest. Gotcha: build the opted out list **before** the main
+  builder (a second `table()` on the shared connection resets the alias list, `l.`
+  becomes `xs_l.`).
+- **Flow:** draft, test (unlocks Start; changing subject or body needs a new test), start
+  (snapshot into the log, unique campaign and profile, `resetTransStatus()` first),
+  `comms:send` (cron every 10 minutes 06:00 to 14:50 UTC) sends `ceil(daily_limit / 54)`
+  per run, rechecks each profile (skipped reasons: opted_out, claimed, email_changed,
+  unpublished, left_audience), sent only when Mailer says so, 3 tries, 5 failures in a row
+  pause the campaign. Live sends mint a 7 day sign in link
+  (`DirectoryListingMutationService::signInLink()`); preview and test never do.
+- **One opt out for all:** `/unsubscribe/{token}` POST withdraws the report and stamps
+  `comms_opt_out_at` (`MarketingConsentService::optOutOfCommunications()`); opting back in
+  from /business clears both. Every campaign email carries List-Unsubscribe and
+  List-Unsubscribe-Post.
+- Preview of the real HTML is `admin/communications/{id}/raw`, its own locked CSP
+  (`default-src 'none'`, `style-src 'unsafe-inline'`, sandbox).
+- **No bulk send to production without the owner's OK**, the POPIA basis and an SES
+  quota check. Tests: `tests/database/CommunicationsTest.php`.
+
 ## Newsletter (own list since 4 Nov 2026, Mautic retired)
 
 - `NewsletterService` is the only writer of `xs_newsletter_subscribers`: one row per
@@ -1347,6 +1382,7 @@ Spark commands (run from the app root; `--dry-run` where offered):
 | `reviews:prune` | unconfirmed reviews, reviewer retention, digest | 04:00 |
 | `directory:quality:nudge` | the one off "improve your profile" email | 07:00 |
 | `directory:holidays:remind [--refresh-only]` | roll holiday dates, remind owners | 07:05 |
+| `comms:send [--limit N] [--dry-run]` | send the next share of every running communications campaign | every 10 min 06:00 to 14:50 |
 | `directory:geocode [--status failed,stale] [--limit 100]` | pin profiles (billed lookups) | Sun 04:10 |
 | `directory:countries:backfill` | fill `country_code` from `country` | once per release that needs it |
 | `directory:audit-text [--all]` | report names and descriptions that break the rules | |

@@ -88,6 +88,7 @@ $groups = [
         ['Comparison table', 'admin/comparison', 'scale', 0, []],
     ],
     'Business' => [
+        ['Communications', 'admin/communications', 'mail', 0, []],
         ['Documents', 'admin/documents', 'file-text', 0, []],
         ['Badge funnel', 'admin/funnel', 'chart-column', 0, []],
         ['Discovery', 'admin/discovery', 'search', 0, []],

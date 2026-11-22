@@ -5,7 +5,9 @@ namespace App\Controllers;
 use App\Services\MarketingConsentService;
 
 /**
- * Opting out of marketing email from the link in its footer.
+ * Opting out of email about the profile from the link in its footer: the
+ * monthly report and every communications campaign, one opt out for all
+ * (owner, 21 Nov 2026).
  *
  * GET only asks; POST does it. Mail providers and corporate link scanners
  * fetch every URL in a message before anyone reads it, so a GET that
@@ -42,7 +44,9 @@ class Unsubscribe extends BaseController
             return $this->invalid();
         }
 
+        // One opt out for all: the monthly report and every campaign.
         $consent->setPreference((int) $listing['id'], false, MarketingConsentService::SOURCE_UNSUBSCRIBE);
+        $consent->optOutOfCommunications((int) $listing['id'], MarketingConsentService::SOURCE_UNSUBSCRIBE);
 
         return view('directory/unsubscribe', [
             'listing' => $listing,

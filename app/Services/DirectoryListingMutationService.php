@@ -683,6 +683,28 @@ class DirectoryListingMutationService
     }
 
     /**
+     * A live sign in link for an email that asks the owner to do something
+     * (the profile strength nudge, communications campaigns): sending them to
+     * a sign in page to request a second email first is the detour that loses
+     * them. Lasts Config\Directory::$approvalLinkTtl (7 days). Minting
+     * replaces any older manage link, which is fine for an email sent once.
+     * A failure falls back to the sign in page.
+     */
+    public function signInLink(int $listingId): string
+    {
+        try {
+            return listing_site_url($listingId, 'manage/' . $this->mintManageToken($listingId, $this->config->approvalLinkTtl));
+        } catch (\Throwable $e) {
+            log_message('error', 'Could not mint a sign in link for listing {id}: {msg}', [
+                'id'  => $listingId,
+                'msg' => trim((string) preg_replace('/\s+/', ' ', $e->getMessage())),
+            ]);
+
+            return listing_site_url($listingId, 'business');
+        }
+    }
+
+    /**
      * Redeem a manage token. Single use: the token is cleared on success, so a
      * link cannot be replayed from an inbox, a browser history or a log.
      *
