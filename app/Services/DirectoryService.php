@@ -713,25 +713,7 @@ class DirectoryService
             ->limit($limit + count($taken))
             ->findAll();
 
-        $out = [];
-        foreach ($rows as $row) {
-            $url = base_url('directory/' . $row['slug']);
-            if (isset($taken[$url])) {
-                continue;
-            }
-            $where = trim(implode(', ', array_filter([(string) ($row['city'] ?? ''), (string) ($row['province'] ?? '')])));
-            $out[] = [
-                'type'  => 'listing',
-                'label' => (string) $row['display_name'],
-                'sub'   => trim(implode(' · ', array_filter([(string) ($row['category'] ?? ''), $where]))),
-                'url'   => $url,
-            ];
-            if (count($out) >= $limit) {
-                break;
-            }
-        }
-
-        return $out;
+        return $this->buildListingRows($rows, $taken, $limit);
     }
 
     /**
@@ -988,6 +970,20 @@ class DirectoryService
             ->limit($limit + count($taken))
             ->findAll();
 
+        return $this->buildListingRows($rows, $taken, $limit);
+    }
+
+    /**
+     * Turn a page of raw listing rows (display_name, slug, city, province,
+     * category) into the uniform suggestion shape, deduplicating against
+     * $taken (a url-keyed array) and stopping at $limit.
+     *
+     * @param list<array<string,mixed>> $rows   rows from the query builder
+     * @param array<string,mixed>       $taken  urls already in the list (from array_flip)
+     * @return list<array{type:string,label:string,sub:string,url:string}>
+     */
+    private function buildListingRows(array $rows, array $taken, int $limit): array
+    {
         $out = [];
         foreach ($rows as $row) {
             $url = base_url('directory/' . $row['slug']);
@@ -998,7 +994,7 @@ class DirectoryService
             $out[] = [
                 'type'  => 'listing',
                 'label' => (string) $row['display_name'],
-                'sub'   => trim(implode(' · ', array_filter([(string) $row['category'], $where]))),
+                'sub'   => trim(implode(' · ', array_filter([(string) ($row['category'] ?? ''), $where]))),
                 'url'   => $url,
             ];
             if (count($out) >= $limit) {
