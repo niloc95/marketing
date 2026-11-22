@@ -37,6 +37,12 @@ use CodeIgniter\HTTP\Files\UploadedFile;
  */
 class VerificationDocumentProcessor
 {
+    /** Folders: owner and group (www-data, which deploy belongs to), setgid. */
+    public const DIR_MODE = 02770;
+
+    /** Files: owner writes, group reads (the offsite backup runs as deploy). */
+    public const FILE_MODE = 0640;
+
     /**
      * Deliberately narrower than the image processor's list. A registration
      * certificate is a CIPC PDF; an ID is a PDF or a phone photo of a document.
@@ -201,10 +207,13 @@ class VerificationDocumentProcessor
         $ext  = strtolower($file->getClientExtension() ?: '');
         $mime = strtolower(trim(explode(';', (string) $file->getMimeType())[0]));
 
-        // 0700, not the 0755 used for public assets. Nothing but PHP should be
-        // able to list this directory, and on shared hosting "nothing but PHP"
-        // is worth spelling out rather than inheriting.
-        if (! is_dir($destDir) && ! @mkdir($destDir, 0700, true) && ! is_dir($destDir)) {
+        // 2770, not the 0755 used for public assets: the web server and the
+        // deploy user (in the www-data group, it runs the nightly offsite
+        // backup, scripts/backup-offsite.sh) can list it, nobody else can. The
+        // setgid bit keeps new month folders in the www-data group. It was
+        // 0700 until 22 Nov 2026, which made every folder and file PHP created
+        // between releases unreadable to the backup, and the tar failed.
+        if (! is_dir($destDir) && ! @mkdir($destDir, self::DIR_MODE, true) && ! is_dir($destDir)) {
             log_message('error', 'VerificationDocumentProcessor: could not create storage directory');
 
             return $this->fail('The server could not store the document. Please try again later.');
@@ -214,8 +223,10 @@ class VerificationDocumentProcessor
         // process umask, and with recursive creation PHP does not apply it
         // consistently across platforms. Observed in practice: a directory asked
         // for as 0700 arriving as 0755. Restating it here is the only way the
-        // permission is actually what this code says it is.
-        @chmod($destDir, 0700);
+        // permission is actually what this code says it is. It fails, quietly,
+        // on a folder the release left owned by deploy; that one is already
+        // 2770 (deploy-production skill).
+        @chmod($destDir, self::DIR_MODE);
 
         $stored = $this->generateName($ext);
         $bytes  = (int) $file->getSize();
@@ -229,7 +240,8 @@ class VerificationDocumentProcessor
             return $this->fail(sprintf('“%s” could not be saved. Please try again.', $name));
         }
 
-        @chmod($destDir . '/' . $stored, 0600);
+        // Group readable (0640) for the backup, never world readable.
+        @chmod($destDir . '/' . $stored, self::FILE_MODE);
 
         // Hashed after the move, from the file on disk, deliberately: the claim
         // worth being able to make later is about the bytes we are keeping, not
