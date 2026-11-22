@@ -326,8 +326,12 @@ final class VerificationDocumentProcessorTest extends CIUnitTestCase
 
         $this->assertTrue($result['ok']);
 
-        // 0600: these are ID copies on what may well be shared hosting.
-        $this->assertSame('0600', substr(sprintf('%o', fileperms($this->dest . '/' . $result['name'])), -4));
-        $this->assertSame('0700', substr(sprintf('%o', fileperms($this->dest)), -4), 'the directory must not be listable either');
+        // ID copies: never world readable, but the group (www-data, which the
+        // deploy user that runs the offsite backup belongs to) must read them,
+        // or the nightly tar fails (22 Nov 2026).
+        $this->assertSame('0640', substr(sprintf('%o', fileperms($this->dest . '/' . $result['name'])), -4));
+        // 0770 plus setgid where the platform allows it (macOS may drop the
+        // setgid bit in a temp folder whose group the test user is not in).
+        $this->assertSame('770', substr(sprintf('%o', fileperms($this->dest)), -3), 'the directory must not be listable by others, but the group must enter it');
     }
 }

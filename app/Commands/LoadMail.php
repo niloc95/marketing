@@ -15,7 +15,13 @@ use DateTimeZone;
 /**
  * Booking emails under load (owner, 20 Nov 2026), on the load test DB.
  *
- *   php spark load:mail fire [--flood 20] [--workers 8] [--keep-on]
+ *   php spark load:mail fire [--flood 20] [--workers 8] [--keep-on] [--at "2026-11-22 22:00"]
+ *
+ * --at runs the dispatcher as if it were that UTC time (the flood still
+ * books in real time). Reminders only go for appointments in the next 24
+ * hours, and the seeded practices are shut on Sundays, so on a Saturday the
+ * real clock queues none: --at the Sunday night before puts a whole Monday
+ * in the reminder window.
  *
  * Holds the bookings:dispatch lock throughout, so the dev jobs agent sends
  * nothing on the side. Then:
@@ -42,7 +48,7 @@ class LoadMail extends BaseCommand
     protected $group       = 'Directory';
     protected $name        = 'load:mail';
     protected $description = 'Fire booking emails on the load test DB and check each one.';
-    protected $usage       = 'load:mail fire|off [--flood 20] [--workers 8] [--keep-on]';
+    protected $usage       = 'load:mail fire|off [--flood 20] [--workers 8] [--keep-on] [--at "Y-m-d H:i" UTC]';
 
     private const LOCK = 'webscheduler_bookings_dispatch';
 
@@ -126,6 +132,9 @@ class LoadMail extends BaseCommand
             return EXIT_ERROR;
         }
 
+        // A whole Monday of reminders is some 25,000 emails to hold for the check.
+        ini_set('memory_limit', '1G');
+
         try {
             $startLog = (int) ($db->query('SELECT COALESCE(MAX(id), 0) AS n FROM xs_booking_delivery_logs')->getRow()->n);
             $before   = (int) $db->query("SELECT COUNT(*) AS n FROM xs_booking_notification_queue WHERE status = 'queued'")->getRow()->n;
@@ -144,20 +153,40 @@ class LoadMail extends BaseCommand
             CLI::write("Queued after the bookings: {$queued} (reminders are queued by the first run).");
 
             // Every email, as it leaves (CI4 triggers 'email' after a successful send).
+            // Only what the check needs is kept: the full HTML of some
+            // 10,000 emails ran past the 128 MB memory limit (21 Nov 2026), mostly the CSS.
             $sent = [];
             Events::on('email', static function (array $archive) use (&$sent): void {
-                $sent[] = ['to' => array_values((array) ($archive['recipients'] ?? [])), 'subject' => (string) ($archive['subject'] ?? ''), 'body' => (string) ($archive['body'] ?? '')];
+                $body = (string) ($archive['body'] ?? '');
+                preg_match_all('#book/customer/([0-9a-f]{64})#', $body, $m);
+                // strip_tags keeps what is inside <style>, so the CSS goes first.
+                $html   = (string) preg_replace('#<(head|style|script)\b.*?</\1>#is', '', $body);
+                $text   = html_entity_decode(strip_tags((string) ($archive['subject'] ?? '') . "\n" . $html), ENT_QUOTES | ENT_HTML5);
+                $sent[] = [
+                    'to'   => array_values((array) ($archive['recipients'] ?? [])),
+                    'text' => $text,
+                    'keys' => array_values(array_unique($m[1])),
+                ];
             });
+
+            $at = CLI::getOption('at');
+            if (is_string($at) && $at !== '') {
+                $now = new DateTimeImmutable($at, new DateTimeZone('UTC'));
+                CLI::write('Dispatcher clock set to ' . $now->format('Y-m-d H:i') . ' UTC (--at).', 'yellow');
+            } else {
+                $now = null;
+            }
+            $nowSql = $now === null ? gmdate('Y-m-d H:i:s') : $now->format('Y-m-d H:i:s');
 
             $runs = [];
             $t0   = microtime(true);
             do {
                 $t     = microtime(true);
-                $stats = (new NotificationDispatcher())->run(500, microtime(true) + 50);
+                $stats = (new NotificationDispatcher($now))->run(500, microtime(true) + 50);
                 $runs[] = $stats + ['s' => microtime(true) - $t];
-                CLI::write(sprintf('  run %2d: reminders queued %5d, sent %4d, failed %d, waiting %4d, not needed %d, %.1f s',
-                    count($runs), $stats['reminders'], $stats['sent'], $stats['failed'], $stats['retrying'], $stats['cancelled'], microtime(true) - $t));
-                $left = (int) $db->query("SELECT COUNT(*) AS n FROM xs_booking_notification_queue WHERE status = 'queued' AND run_after <= UTC_TIMESTAMP()")->getRow()->n;
+                CLI::write(sprintf('  run %2d: reminders queued %5d, sent %4d, failed %d, waiting %4d, not needed %d, %.1f s, %d MB',
+                    count($runs), $stats['reminders'], $stats['sent'], $stats['failed'], $stats['retrying'], $stats['cancelled'], microtime(true) - $t, memory_get_usage() >> 20));
+                $left = (int) $db->query("SELECT COUNT(*) AS n FROM xs_booking_notification_queue WHERE status = 'queued' AND run_after <= ?", [$now === null ? gmdate('Y-m-d H:i:s') : $nowSql])->getRow()->n;
             } while ($left > 0 && count($runs) < 400);
             $total = microtime(true) - $t0;
 
@@ -184,7 +213,7 @@ class LoadMail extends BaseCommand
      * Pair each email with the delivery log the dispatcher wrote after it
      * (one process, in order), and check it against the appointment.
      *
-     * @param list<array{to:list<string>,subject:string,body:string}> $sent
+     * @param list<array{to:list<string>,text:string,keys:list<string>}> $sent
      *
      * @return array<string,list<mixed>>
      */
@@ -240,13 +269,13 @@ class LoadMail extends BaseCommand
                 continue;
             }
             $to   = array_map('strtolower', $mail['to']);
-            $text = html_entity_decode(strip_tags($mail['subject'] . "\n" . $mail['body']), ENT_QUOTES | ENT_HTML5);
+            $text = $mail['text'];
 
             if ($log['recipient_type'] === 'customer') {
                 if ($to !== [strtolower((string) $a['customer_email'])]) {
                     $out['To the appointment\'s own customer'][] = $ref + ['to' => $to, 'expected' => $a['customer_email']];
                 }
-                if (preg_match_all('#book/customer/([0-9a-f]{64})#', $mail['body'], $m) && array_diff(array_unique($m[1]), [$a['customer_hash']]) !== []) {
+                if (array_diff($mail['keys'], [$a['customer_hash']]) !== []) {
                     $out['Customer link carries that customer\'s own key'][] = $ref;
                 }
             } else {
