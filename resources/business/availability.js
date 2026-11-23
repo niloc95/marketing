@@ -39,25 +39,38 @@ export function initAvailability(root) {
     pendingToast = '';
   }
 
-  function open(link) {
+  /** Open the dialog; any of service, provider, date, time left out keeps the form's own. */
+  function open({ service, provider, date, time } = {}) {
     form.reset();
     choose(null);
     form.querySelectorAll('[data-error-for]').forEach((p) => { p.textContent = ''; p.classList.add('hidden'); });
     formError.classList.add('hidden');
-    const set = (name, value) => { form.querySelector(`[name="${name}"]`).value = value; };
-    set('service_id', link.dataset.bookService);
-    set('provider_id', link.dataset.bookProvider);
-    set('date', link.dataset.bookDate);
-    set('time', link.dataset.bookTime);
+    const set = (name, value) => {
+      const field = form.querySelector(`[name="${name}"]`);
+      if (value && [...(field.options || [{ value }])].some((o) => o.value === value)) field.value = value;
+    };
+    set('service_id', service);
+    set('provider_id', provider);
+    set('date', date);
+    set('time', time);
     free.refresh();
     dialog.showModal();
   }
 
   function onClick(e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     const link = e.target.closest('[data-book-service]');
-    if (!link || !root.contains(link) || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-    e.preventDefault();
-    open(link);
+    if (link && root.contains(link)) {
+      e.preventDefault();
+      const d = link.dataset;
+      open({ service: d.bookService, provider: d.bookProvider, date: d.bookDate, time: d.bookTime });
+      return;
+    }
+    // The top bar's Book an appointment: the day and the filters shown here, no time yet.
+    if (e.target.closest('[data-shell-book]')) {
+      e.preventDefault();
+      open({ service: root.dataset.service, provider: root.dataset.provider, date: root.dataset.date });
+    }
   }
 
   async function onSubmit(e) {
@@ -81,13 +94,14 @@ export function initAvailability(root) {
 
   const closers = [...dialog.querySelectorAll('[data-avail-close]')];
   const close = () => dialog.close();
-  root.addEventListener('click', onClick);
+  // Capture: before the shell's link handler on document follows the link.
+  document.addEventListener('click', onClick, true);
   form.addEventListener('submit', onSubmit);
   closers.forEach((b) => b.addEventListener('click', close));
 
   return () => {
     clearTimeout(toastTimer);
-    root.removeEventListener('click', onClick);
+    document.removeEventListener('click', onClick, true);
     if (dialog.open) dialog.close();
   };
 }

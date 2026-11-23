@@ -87,6 +87,9 @@ function swap(doc, next) {
   document.title = doc.title;
 
   startPages(incoming);
+  // The top bar's head came with the page: its scripts (the /business Find) start too.
+  const head = document.querySelector('[data-shell-head]');
+  if (head) startPages(head);
   return incoming;
 }
 

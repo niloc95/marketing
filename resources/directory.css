@@ -4557,8 +4557,6 @@
   .cal-filter select,
   .cal-filter input { @apply h-9 rounded-control border-slate-200 bg-white py-0 pl-3 text-sm font-normal dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100; }
   .cal-filter select { @apply max-w-[16rem] pr-8; }
-  .cal-find-results { @apply absolute right-0 top-full z-30 mt-1 w-[min(28rem,calc(100vw-2rem))] max-h-72 divide-y shadow-lg divide-slate-100 overflow-auto rounded-xl border border-slate-200 bg-white text-sm dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900; }
-  .cal-find-results button { @apply block w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800; }
   .cal-body { @apply min-h-[20rem] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900; }
   .cal-body[aria-busy="true"] { @apply opacity-60; }
 
@@ -4718,6 +4716,34 @@
   .dark .shell-title { @apply text-white; }
   .shell-actions { @apply flex flex-wrap items-center gap-2; }
   .shell-actions form { @apply m-0; }
+  /* The /business tools, the same on every page (business/_topbar_tools.php):
+     Find, Your booking page, Add a customer, Book an appointment. Below lg the
+     buttons show their icon only and Find opens over the top bar. */
+  .shell-tools { @apply ml-auto flex shrink-0 items-center gap-2; }
+  .shell-tool-label { @apply hidden lg:inline; }
+  .shell-tool { @apply max-lg:px-2.5; }
+  .shell-find { @apply relative hidden items-center lg:flex; }
+  .shell-find input { @apply h-9 w-56 rounded-full border border-slate-200 bg-white py-1 pl-9 pr-3 text-sm xl:w-72; }
+  .dark .shell-find input { @apply border-slate-700 bg-slate-900; }
+  .shell-find-icon { @apply pointer-events-none absolute left-3 text-slate-400; }
+  .shell-find .shell-find-close { @apply hidden; }
+  .shell-tools .shell-find-open { @apply lg:hidden; }
+  .shell-tools.is-finding .shell-find { @apply absolute inset-x-2 top-1/2 z-30 flex -translate-y-1/2 lg:static lg:translate-y-0; }
+  .shell-tools.is-finding .shell-find input { @apply w-full pr-10 lg:w-56 lg:pr-3 xl:w-72; }
+  .shell-tools.is-finding .shell-find .shell-find-close { @apply absolute right-0 grid lg:hidden; }
+  .shell-find-results { @apply absolute right-0 top-full z-40 mt-2 max-h-[70vh] w-full min-w-[20rem] overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl lg:w-[26rem]; }
+  .dark .shell-find-results { @apply border-slate-700 bg-slate-900; }
+  .shell-find-results[hidden] { @apply hidden; }
+  .shell-find-heading { @apply px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .shell-find-row { @apply flex flex-col rounded-lg px-3 py-2 text-sm no-underline hover:bg-slate-100; }
+  .shell-find-row[aria-selected] { @apply bg-primary-50; }
+  .dark .shell-find-row:hover, .dark .shell-find-row[aria-selected] { @apply bg-white/10; }
+  .shell-find-name { @apply font-semibold text-slate-900; }
+  .dark .shell-find-name { @apply text-white; }
+  .shell-find-when { @apply text-xs font-medium text-brand-ocean; }
+  .dark .shell-find-when { @apply text-primary-300; }
+  .shell-find-detail { @apply truncate text-xs text-slate-500; }
+  .shell-find-empty { @apply px-3 py-3 text-sm text-slate-500; }
   .shell-icon-btn { @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-slate-500 hover:bg-slate-200/60 hover:text-slate-900; }
   .dark .shell-icon-btn { @apply text-slate-400 hover:bg-white/10 hover:text-white; }
 
@@ -4918,7 +4944,7 @@ body[data-shell-bare] .shell-main { padding-left: 0; }
 
 @media print {
   /* The top bar carries the page's title (its h1), so it prints, without its buttons. */
-  .shell-sidebar, .shell-overlay, .shell-skip, .shell-actions, .shell-topbar .shell-icon-btn, .shell-progress { display: none !important; }
+  .shell-sidebar, .shell-overlay, .shell-skip, .shell-actions, .shell-tools, .shell-topbar .shell-icon-btn, .shell-progress { display: none !important; }
   .shell-topbar { position: static !important; border: 0 !important; background: none !important; backdrop-filter: none !important; padding-left: 0 !important; }
   .shell-main { padding-left: 0 !important; }
 }

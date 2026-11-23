@@ -43,7 +43,6 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                     <button type="button" class="cal-view-btn" data-cal-view="<?= $key ?>" aria-pressed="<?= $key === $view ? 'true' : 'false' ?>"><?= $label ?></button>
                 <?php endforeach ?>
             </div>
-            <a href="<?= base_url('business/appointments/new') ?>" class="btn btn-primary btn-xs" data-cal-book><?= lucide('plus', 'h-4 w-4') ?> Book</a>
         </div>
     </div>
 
@@ -92,14 +91,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
             </select>
         </label>
         <p class="min-w-0 flex-1 basis-40 pb-1 text-xs text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. Drag an appointment to move it.</p>
-        <?php // Results open over the grid, so the grid keeps its size. ?>
-        <div class="relative ml-auto">
-            <label class="cal-filter">
-                <span>Find</span>
-                <input type="text" name="q" placeholder="Name, email, phone or reference" autocomplete="off" data-cal-find>
-            </label>
-            <ul class="cal-find-results" data-cal-find-results hidden></ul>
-        </div>
+        <?php // Find and Book an appointment are in the top bar on every page (business/_topbar_tools.php); here Book opens the dialog below. ?>
     </form>
 
     <div class="cal-body mt-3" data-cal-body aria-busy="true">

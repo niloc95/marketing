@@ -423,6 +423,7 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:customers.
     $routes->get('customers/new', 'Business\Customers::new');
     $routes->post('customers/new', 'Business\Customers::create');
     $routes->get('api/customers', 'Business\Customers::lookup');
+    $routes->get('api/find', 'Business\Customers::find');
     $routes->get('customers/(:segment)', 'Business\Customers::show/$1');
     $routes->post('customers/(:segment)/emails', 'Business\Customers::emailsAgain/$1');
     $routes->post('customers/(:segment)', 'Business\Customers::save/$1');

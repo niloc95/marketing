@@ -1,1 +1,1 @@
-import{i}from"./index-BEBEsj-P.js";i();
+import{i}from"./index-BnbJ1W43.js";i();

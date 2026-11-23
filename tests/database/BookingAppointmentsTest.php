@@ -430,6 +430,34 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertSame(['Alice'], array_column($found['data'], 'name'));
     }
 
+    public function testTheTopBarToolsAndFindOnEveryPage(): void
+    {
+        $this->book('10:00', ['first_name' => 'Alice', 'last_name' => 'Smith', 'email' => 'alice@example.test']);
+
+        // The same tools on every page; the pages no longer carry their own copies.
+        foreach (['business', 'business/customers', 'business/calendar', 'business/availability'] as $path) {
+            $body = $this->signedIn()->get($path)->getBody();
+            $this->assertStringContainsString('class="shell-tools"', $body, $path);
+            $this->assertStringContainsString('data-shell-find', $body, $path);
+            $this->assertStringContainsString('Add a customer', $body, $path);
+            $this->assertStringContainsString('Book an appointment', $body, $path);
+            $this->assertSame(1, substr_count($body, 'href="' . base_url('business/customers/new') . '"'), $path . ': one Add a customer');
+        }
+        $this->assertStringNotContainsString('data-cal-find', $this->signedIn()->get('business/calendar')->getBody(), 'one Find, in the top bar');
+
+        $found = json_decode($this->signedIn()->get('business/api/find?q=alice')->getJSON(), true)['data'];
+        $this->assertSame(['Alice Smith'], array_column($found['customers'], 'name'));
+        $this->assertStringContainsString('business/customers/', $found['customers'][0]['url']);
+        $this->assertCount(1, $found['appointments']);
+        $this->assertStringContainsString('business/calendar?view=day&date=', $found['appointments'][0]['url']);
+        $this->assertSame(['customers' => [], 'appointments' => []], json_decode($this->signedIn()->get('business/api/find?q=a')->getJSON(), true)['data'], 'two letters at least');
+
+        // Another business finds nothing of this one's.
+        $other = $this->business('other-find');
+        $none  = json_decode($this->signedIn(null, $other)->get('business/api/find?q=alice')->getJSON(), true)['data'] ?? null;
+        $this->assertTrue($none === null || ($none['customers'] === [] && $none['appointments'] === []));
+    }
+
     public function testBookingFromACustomersPageStartsWithThatCustomer(): void
     {
         $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);

@@ -13,8 +13,7 @@ import { renderAgenda } from './agenda.js';
 import { enableDragDrop } from './drag-drop.js';
 import { initDetails } from './details.js';
 import { initCreate } from './create.js';
-import { eventChip } from './chip.js';
-import { addDays, addMonths, longDay, shortDay, toDate } from './dates.js';
+import { addDays, addMonths, longDay, toDate } from './dates.js';
 import { MSG } from './messages.js';
 
 const POLL_MS = 60000;
@@ -55,16 +54,19 @@ export class Scheduler {
 
     this.details = initDetails(this.root, this);
     this.create = initCreate(this.root, this);
-    this.root.querySelector('[data-cal-book]').addEventListener('click', (e) => {
+    // The top bar's Book an appointment (business/_topbar_tools.php) opens the dialog here.
+    this.onShellBook = (e) => {
+      if (!e.target.closest('[data-shell-book]') || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
       e.preventDefault();
       this.create.open({ date: this.date });
-    });
+    };
+    // Capture: before the shell's link handler on document follows the link.
+    document.addEventListener('click', this.onShellBook, true);
     this.body.addEventListener('click', (e) => {
       const node = e.target.closest('[data-appointment-id]');
       if (node) { e.stopPropagation(); this.details.open(Number(node.dataset.appointmentId)); }
     }, true);
     enableDragDrop(this.body, this);
-    this.initFind();
     this.onResize = () => {
       clearTimeout(this.resizeTimer);
       this.resizeTimer = setTimeout(() => { if (this.model) this.render(); }, 150);
@@ -86,6 +88,7 @@ export class Scheduler {
     clearTimeout(this.toastTimer);
     clearTimeout(this.resizeTimer);
     window.removeEventListener('resize', this.onResize);
+    document.removeEventListener('click', this.onShellBook, true);
     if (this.request) this.request.abort();
   }
 
@@ -201,33 +204,6 @@ export class Scheduler {
   async openByHash(hash) {
     const match = [...this.byId.values()].find((a) => a.hash === hash);
     if (match) this.details.open(match.id);
-  }
-
-  initFind() {
-    const input = this.root.querySelector('[data-cal-find]');
-    const list = this.root.querySelector('[data-cal-find-results]');
-    let timer = null;
-    input.addEventListener('input', () => {
-      clearTimeout(timer);
-      const q = input.value.trim();
-      if (q.length < 2) { list.hidden = true; return; }
-      timer = setTimeout(async () => {
-        let body;
-        try { body = await getJson(`${this.root.dataset.appointmentUrl}/find?q=${encodeURIComponent(q)}`); } catch { return; }
-        list.replaceChildren();
-        body.data.forEach((a) => {
-          const li = document.createElement('li');
-          const chip = eventChip(a, this.today);
-          chip.draggable = false;
-          chip.prepend(Object.assign(document.createElement('span'), { className: 'w-24 shrink-0 text-slate-500', textContent: shortDay(a.start.slice(0, 10)) }));
-          chip.addEventListener('click', () => { list.hidden = true; this.details.open(a.id); });
-          li.append(chip);
-          list.append(li);
-        });
-        if (!body.data.length) list.append(Object.assign(document.createElement('li'), { className: 'px-3 py-2 text-slate-500', textContent: MSG.noneMatch }));
-        list.hidden = false;
-      }, 250);
-    });
   }
 }
 

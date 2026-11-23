@@ -85,6 +85,7 @@ $n = 0;
         <ul>
             <li><strong>Your profile</strong> holds the pages of your public profile, plus Reviews, Jobs and Stats.</li>
             <?php if ($bookingsOn): ?><li><strong>Bookings</strong> holds your online bookings: calendar, customers, availability and settings.</li><?php endif; ?>
+            <?php if ($bookingsOn): ?><li>The bar at the top of every page has <strong>Find</strong> (a customer or an appointment; press / to start), <strong>Your booking page</strong>, <strong>Add a customer</strong> and <strong>Book an appointment</strong>. On the Calendar and Availability pages, Book an appointment opens right there.</li><?php endif; ?>
             <li><strong>Plan</strong> holds <?= esc($planName) ?> and this manual.</li>
             <li>An item with a lock comes with <?= esc($planName) ?>. Open it to see what it does.<?= $upgrade ?></li>
         </ul>

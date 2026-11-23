@@ -91,6 +91,8 @@ const ICONS = [
   'file-text', 'log-out',
   // The owner's user manual (business/manual.php) and its print button.
   'book-open', 'printer',
+  // The /business top bar tools (business/_topbar_tools.php).
+  'user-plus', 'calendar-plus',
 ];
 
 /**

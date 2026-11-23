@@ -42,7 +42,7 @@ under `/bookings/api/` so session and CSRF rules stay simple.
 | `GET /api/calendar/day|week|month` | `GET /bookings/api/calendar/{view}` | 4 |
 | `GET/POST /api/appointments`, `PATCH /{id}`, `/{id}/status`, `/{id}/notes`, `/{id}/payment-status`, `POST /{id}/notify` | `/bookings/api/appointments`: `GET /{id}`, `GET /find?q=`, `GET /{id}/free` and `GET /free?service_id&provider_id&date` (next free times for a move or a new booking), `POST /`, `POST /{id}/reschedule`, `/{id}/status`, `/{id}/notes` (POST, not PATCH; built in Phase 4); `POST /{id}/notify` (6); `POST /{id}/payment` {action: paid or refunded} (8, `payments.manage`); `/bookings/payments` and `/bookings/settings/payments` (+ `/check`) (8) | 4, 6, 8 |
 | `GET /api/availability/*` | `GET /bookings/api/availability/*` | 3 |
-| `GET /api/customers/*` | `/bookings/api/customers/*` | 4 |
+| `GET /api/customers/*` | `/bookings/api/customers/*`; `GET /business/api/find?q=` (the top bar's Find: customers and appointments in the member's scope, each with the page it opens; 23 Nov 2026) | 4 |
 | `GET /dashboard/api/*`, `/api/dashboard/provider-slots` | `GET /bookings/api/dashboard/today` (HTML partial for the refresh; free times are rendered with the page) | 7 |
 | `GET/POST integrations/*` | plain forms under `/bookings/settings/connections/*` (zoom, jitsi, zoom/check, google, google/check, google/disconnect, webhook, webhook/test, webhook/secret, webhook/remove, webhook/{id}/retry) and `/bookings/settings/api/keys` (+ `/{id}/revoke`); built 5 Nov 2026 | 9 |
 

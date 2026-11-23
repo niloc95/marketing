@@ -14,10 +14,8 @@
  * @var array<string,mixed>       $cards    and $schedule, $today, $canValue: see _dash_today.php
  * @var bool                      $canBook
  */
-use App\Services\Bookings\PublicBookingService;
 
 $roles   = config('BookingPermissions')->roleLabels;
-$bookUrl = PublicBookingService::bookUrl($listing);
 $states  = ['working' => 'Working now', 'break' => 'On a break', 'off' => 'Not working now', 'time_off' => 'Time off'];
 $day     = static fn (string $local): string => date('D j M, H:i', (int) strtotime(str_replace('T', ' ', substr($local, 0, 16))));
 ?>
@@ -124,11 +122,4 @@ $day     = static fn (string $local): string => date('D j M, H:i', (int) strtoti
 </div>
 <?= $this->endSection() ?>
 
-<?= $this->section('shell_actions') ?>
-<?php if ($canBook): ?>
-    <a class="btn btn-primary btn-xs" href="<?= base_url('business/appointments/new') ?>"><?= lucide('plus', 'h-4 w-4') ?>Book an appointment</a>
-<?php endif ?>
-<?php if ($bookUrl !== ''): ?>
-    <a class="btn btn-ghost btn-xs" href="<?= esc($bookUrl, 'attr') ?>">Your booking page</a>
-<?php endif ?>
-<?= $this->endSection() ?>
+<?php // Book an appointment and Your booking page are in the top bar on every page (business/_topbar_tools.php). ?>

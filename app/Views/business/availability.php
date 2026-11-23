@@ -48,7 +48,7 @@ $byDate = array_column($days, null, 'date');
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
 <?php // availability.js: a free time opens the Book dialog here (same fields and JSON as the calendar's); without the script the link opens /business/appointments/new. ?>
-<div data-availability
+<div data-availability data-date="<?= esc($date, 'attr') ?>" data-service="<?= esc($service, 'attr') ?>" data-provider="<?= esc($who, 'attr') ?>"
      data-appointment-url="<?= esc(base_url('business/api/appointments'), 'attr') ?>"
      data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>"
      data-csrf-header="<?= esc(config('Security')->headerName, 'attr') ?>" data-csrf-hash="<?= esc(csrf_hash(), 'attr') ?>">
