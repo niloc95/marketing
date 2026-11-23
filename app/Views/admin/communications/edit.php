@@ -170,9 +170,13 @@ $reasons = [
                     <div class="hint">
                         Plain text, a blank line between paragraphs. Merge fields: <?= esc(implode(' ', CampaignRenderer::FIELDS)) ?>.
                         A paragraph with {appearances} is left out for a profile Google has not shown yet.
-                        The button (<?= esc($kind['button'][0] ?? '') ?>) and the opt out line are added for you.
+                        The button (<?= esc($kind['button'][0] ?? '') ?>), the opt out line and the company footer below are added for you.
                     </div>
                     <?= $err('body') ?>
+                </div>
+
+                <div class="mb-5">
+                    <?= $this->include('admin/communications/_footer_preview') ?>
                 </div>
 
                 <fieldset class="mb-5"<?= ($isNew || $isDraft) ? '' : ' disabled' ?>>
