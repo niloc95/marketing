@@ -295,9 +295,19 @@ final class CommunicationsTest extends CIUnitTestCase
             $page->assertStatus(200);
             $page->assertSee($text);
         }
+        // The company footer is shown to the admin while writing and previewing,
+        // and is in the email itself.
+        foreach (['admin/communications/new?kind=claim', 'admin/communications/' . $id, 'admin/communications/' . $id . '/preview'] as $path) {
+            $page = $as->get($path);
+            $page->assertSee('Added under every email');
+            $page->assertSee('Registration number 2026/138798/07');
+            $page->assertSee('za_admin@webscheduler.co.za');
+            $this->assertStringNotContainsString('style="', $page->getBody(), $path . ' must stay inside the admin CSP');
+        }
         $raw = $as->get('admin/communications/' . $id . '/raw');
         $raw->assertStatus(200);
         $raw->assertSee('Claim my free profile');
+        $raw->assertSee('Registration number 2026/138798/07');
         // CI4 writes the CSP in send(), which a feature test never reaches.
         $response = $raw->response();
         $response->getCSP()->finalize($response);

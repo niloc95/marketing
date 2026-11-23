@@ -2604,6 +2604,9 @@
      directory.js puts on the fallback Save button. */
   .switch-save[hidden] { @apply !hidden; }
   .hint { @apply mt-1 text-xs text-slate-500; }
+  /* Admin Communications: the email footer as the admin sees it (_footer_preview.php). */
+  .comms-footer-preview { @apply rounded-inner border border-dashed border-slate-300 bg-slate-50 px-4 py-3; }
+  .dark .comms-footer-preview { @apply border-slate-600 bg-slate-800/40; }
   .err  { @apply mt-1 text-sm font-medium text-brand-crimson; }
   /* Set by "failed-save errors" in directory.js on the field each message is for. */
   .has-error > label { @apply text-brand-crimson; }

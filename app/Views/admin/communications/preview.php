@@ -45,6 +45,9 @@ $query = $listingId > 0 ? '?listing=' . $listingId : '';
             <p class="mb-5 font-semibold text-slate-900 dark:text-white"><?= esc($email['subject']) ?></p>
             <a class="btn btn-primary" href="<?= base_url('admin/communications/' . $id . '/raw' . $query) ?>" target="_blank" rel="noopener" data-no-spa>Open the email as sent</a>
             <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">The preview button links to the sign in page; the real email carries a one use sign in link minted at send time.</p>
+            <div class="mt-5">
+                <?= $this->include('admin/communications/_footer_preview') ?>
+            </div>
         </div>
     <?php endif; ?>
 </div>

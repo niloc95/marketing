@@ -32,4 +32,25 @@ class Company extends BaseConfig
 
     /** The logo, a path under public/, made absolute when rendered. */
     public string $logoPath = 'assets/brand/logo-64.png';
+
+    /**
+     * The footer's two text lines, worded once for the email
+     * (emails/_footer.php) and the admin's view of it
+     * (admin/communications/_footer_preview.php).
+     *
+     * @return list<string>
+     */
+    public function legalLines(): array
+    {
+        return [
+            $this->name . ', registered in South Africa',
+            'Registration number ' . $this->registration,
+        ];
+    }
+
+    /** The website without scheme or trailing slash, as shown. */
+    public function websiteLabel(): string
+    {
+        return (string) preg_replace('#^https?://|/$#i', '', $this->website);
+    }
 }
