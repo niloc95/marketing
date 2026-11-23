@@ -755,26 +755,17 @@ class CareersService
             return false;
         }
 
-        $body = view('emails/job-notice', [
-            'site'           => $this->site->siteName(),
+        $notice = [
             'eyebrow'        => $this->site->siteName() . ' Careers',
             'heading'        => $content['heading'],
             'paragraphs'     => array_merge([$this->greeting((string) $app['name'])], $content['paragraphs']),
-            'button'         => null,
             'footnote'       => 'Reply to this email if you have any questions about your application.',
-            'footnoteLink'   => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
+        ];
 
         // Replies go to the careers inbox, not the no reply sender.
         $inbox = $this->config->inbox !== '' ? $this->config->inbox : $this->site->adminEmail();
 
-        return (new Mailer())->send((string) $app['email'], $content['subject'], $body, $inbox);
+        return (new Mailer())->notice((string) $app['email'], $content['subject'], $notice, $inbox);
     }
 
     /** "Hi Sipho," when the first name is plainly a name, otherwise "Hello,". */
@@ -837,11 +828,9 @@ class CareersService
         $roleTitle = $role !== null ? (string) $role['title'] : 'General application';
         $marked    = $this->screeningResult($app);
 
-        // The shared notice template, with saveData off and every optional key
-        // defaulted, as in PartnerService::notice(). The CV is not attached:
-        // it stays on our server and opens from the admin page.
-        $body = view('emails/job-notice', [
-            'site'           => $this->site->siteName(),
+        // The shared notice (Mailer::notice() defaults the rest). The CV is
+        // not attached: it stays on our server and opens from the admin page.
+        $notice = [
             'eyebrow'        => 'Careers',
             'heading'        => 'New application: ' . $roleTitle,
             'paragraphs'     => array_values(array_filter([
@@ -852,20 +841,15 @@ class CareersService
             ])),
             'button'         => ['Open in admin', site_url_for(Sites::ZA, 'admin/careers/applications') . '#application-' . $id],
             'footnote'       => 'Reply to this email to answer ' . strtok($app['name'], ' ') . ' directly. The CV opens from the admin page.',
-            'footnoteLink'   => null,
             'bullets'        => $marked !== null ? $this->screening->lines($marked) : null,
             'bulletsHeading' => $marked !== null ? 'Screening: ' . $this->screening->summary($marked) : null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
+        ];
 
         $score = $marked !== null
             ? ' (' . $marked['score'] . '/' . $marked['total'] . (! empty($marked['over_time']) ? ', over time' : '') . ')'
             : '';
 
-        (new Mailer())->send($to, 'Careers: ' . $roleTitle . ', ' . $app['name'] . $score, $body, $app['email']);
+        (new Mailer())->notice($to, 'Careers: ' . $roleTitle . ', ' . $app['name'] . $score, $notice, $app['email']);
     }
 
     /**
@@ -878,8 +862,7 @@ class CareersService
         $greeting = $this->greeting((string) $app['name']);
         $applied  = $role !== null ? 'for the ' . $role['title'] . ' role' : 'to ' . $this->site->siteName();
 
-        $body = view('emails/job-notice', [
-            'site'           => $this->site->siteName(),
+        $notice = [
             'eyebrow'        => $this->site->siteName() . ' Careers',
             'heading'        => 'We have received your application',
             'paragraphs'     => [
@@ -887,19 +870,12 @@ class CareersService
                 'Thank you for applying ' . $applied . '. We have successfully received your application and CV.',
                 'Your application is now under review, and we will get back to you within ' . self::REPLY_WITHIN . '.',
             ],
-            'button'         => null,
             'footnote'       => 'You are receiving this because this address was used to apply on our careers page. '
                 . 'If that was not you, you can ignore this email.',
             'footnoteLink'   => ['Privacy policy', site_url_for(Sites::ZA, 'privacy') . '#careers'],
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
+        ];
 
-        (new Mailer())->send((string) $app['email'], 'We have received your application', $body);
+        (new Mailer())->notice((string) $app['email'], 'We have received your application', $notice);
     }
 
     /**
