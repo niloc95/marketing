@@ -21,6 +21,8 @@ use App\Services\Bookings\AvailabilityOverview;
 
 $params = ['service_id' => $service, 'provider_id' => $who, 'view' => $view, 'date' => $date] + ($public ? [] : ['as' => 'business']);
 $link   = static fn (array $over): string => base_url('business/availability') . '?' . http_build_query($over + $params);
+// A free time opens the New appointment form with service, person, day and time filled in.
+$book   = static fn (int $serviceId, int $providerId, string $time): string => base_url('business/appointments/new') . '?' . http_build_query(['service_id' => $serviceId, 'provider_id' => $providerId, 'date' => $date, 'time' => $time]);
 $fmt    = static fn (string $d, string $f): string => (new DateTimeImmutable($d))->format($f);
 $shift  = static fn (int $by): string => (new DateTimeImmutable($date))->modify(match ($view) {
     'week' => ($by * 7) . ' days', 'month' => $by . ' months', 'year' => ($by * 12) . ' months', default => $by . ' days',
@@ -100,16 +102,27 @@ $byDate = array_column($days, null, 'date');
             <?php if ($day['count'] === 0): ?>
                 <p class="alert alert-info"><?= esc($long[$day['reason']] ?? 'No times on this day.') ?></p>
             <?php else: ?>
-                <p class="mb-3 text-sm text-slate-600 dark:text-slate-300"><?= $day['count'] ?> start <?= $day['count'] === 1 ? 'time' : 'times' ?> free.</p>
+                <p class="mb-3 text-sm text-slate-600 dark:text-slate-300"><?= $day['count'] ?> start <?= $day['count'] === 1 ? 'time' : 'times' ?> free. Pick a time to book it.</p>
                 <?php foreach ($day['services'] as $s): ?>
                     <section class="panel mb-3">
                         <h3 class="mb-2 subsection-title"><?= esc($s['name']) ?></h3>
                         <ul class="flex flex-wrap gap-2">
                             <?php foreach ($s['times'] as $t): ?>
-                                <li class="avail-time" title="<?= esc(implode(', ', $t['people']), 'attr') ?>">
-                                    <span class="avail-time-when"><?= esc($t['time']) ?></span>
-                                    <span class="avail-time-where"><?= esc(implode(', ', array_filter($t['places']))) ?><?= count($providers) > 1 ? ' · ' . esc(implode(', ', $t['people'])) : '' ?></span>
-                                </li>
+                                <?php $where = esc(implode(', ', array_filter($t['places']))); ?>
+                                <?php if (count($t['provider_ids']) === 1): ?>
+                                    <li><a class="avail-time avail-time-book" href="<?= esc($book((int) $s['id'], $t['provider_ids'][0], $t['time']), 'attr') ?>" title="<?= esc('Book ' . $t['time'] . ' with ' . $t['people'][0], 'attr') ?>">
+                                        <span class="avail-time-when"><?= esc($t['time']) ?></span>
+                                        <span class="avail-time-where"><?= $where ?><?= count($providers) > 1 ? ($where !== '' ? ' · ' : '') . esc($t['people'][0]) : '' ?></span>
+                                    </a></li>
+                                <?php else: ?>
+                                    <li class="avail-time">
+                                        <span class="avail-time-when"><?= esc($t['time']) ?></span>
+                                        <?php if ($where !== ''): ?><span class="avail-time-where"><?= $where ?></span><?php endif ?>
+                                        <span class="avail-time-where">Book with
+                                            <?php foreach ($t['provider_ids'] as $i => $pid): ?><?= $i > 0 ? ', ' : '' ?><a class="underline hover:text-brand-ocean" href="<?= esc($book((int) $s['id'], $pid, $t['time']), 'attr') ?>"><?= esc($t['people'][$i]) ?></a><?php endforeach ?>
+                                        </span>
+                                    </li>
+                                <?php endif ?>
                             <?php endforeach ?>
                         </ul>
                     </section>

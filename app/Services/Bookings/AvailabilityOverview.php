@@ -70,7 +70,7 @@ final class AvailabilityOverview
     /**
      * One day: per service, its free times, each with who and where.
      *
-     * @return array{date:string,count:int,reason:?string,services:list<array{id:int,name:string,times:list<array{time:string,start:string,people:list<string>,places:list<string>}>}>}
+     * @return array{date:string,count:int,reason:?string,services:list<array{id:int,name:string,times:list<array{time:string,start:string,people:list<string>,provider_ids:list<int>,places:list<string>}>}>}
      */
     public function day(string $date): array
     {
@@ -80,8 +80,9 @@ final class AvailabilityOverview
             $byStart = [];
             foreach ($this->offering($s) as $pid) {
                 foreach ($this->engine->slots($pid, (int) $s['id'], $date, $this->public) as $slot) {
-                    $t                       = $byStart[$slot['start']] ??= ['time' => $slot['time'], 'start' => $slot['start'], 'people' => [], 'places' => []];
+                    $t                       = $byStart[$slot['start']] ??= ['time' => $slot['time'], 'start' => $slot['start'], 'people' => [], 'provider_ids' => [], 'places' => []];
                     $t['people'][]           = $this->names[$pid] ?? '';
+                    $t['provider_ids'][]     = (int) $pid;
                     $t['places'][]           = $this->places[(int) ($slot['location_id'] ?? 0)] ?? '';
                     $t['places']             = array_values(array_unique($t['places']));
                     $byStart[$slot['start']] = $t;

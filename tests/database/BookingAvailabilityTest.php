@@ -274,7 +274,10 @@ final class BookingAvailabilityTest extends CIUnitTestCase
         $ownerId = (int) (new App\Models\Bookings\AccountModel())->findByEmail('owner@example.test')['id'];
         $session = [BusinessSession::ACCOUNT => $ownerId, BusinessSession::LISTING => $this->listingId, BusinessSession::SEEN => time()];
 
-        $this->withSession($session)->get('business/availability?service_id=' . $this->serviceId . '&provider_id=any&date=2030-01-07')->assertOK();
+        $page = $this->withSession($session)->get('business/availability?service_id=' . $this->serviceId . '&provider_id=any&date=2030-01-07&as=business');
+        $page->assertOK();
+        // A free time books it: the New appointment form, filled in.
+        $this->assertStringContainsString('business/appointments/new?' . str_replace('&', '&amp;', http_build_query(['service_id' => $this->serviceId, 'provider_id' => $this->providerId, 'date' => '2030-01-07', 'time' => '09:00'])), $page->getBody());
         // Every view, all services and everyone; a year far ahead says why it is empty for customers.
         foreach (['day', 'week', 'month', 'year'] as $view) {
             $this->withSession($session)->get('business/availability?service_id=all&provider_id=any&view=' . $view . '&date=2031-03-01')->assertOK();

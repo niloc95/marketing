@@ -3783,6 +3783,8 @@
   .avail-time      { @apply flex flex-col rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm; }
   .avail-time-when { @apply font-semibold tabular-nums; }
   .avail-time-where { @apply text-xs text-slate-500; }
+  .avail-time-book { @apply transition-colors hover:border-brand-ocean hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ocean; }
+  .dark .avail-time-book:hover { @apply border-brand-ocean bg-slate-800; }
   .dark .avail-time { @apply border-slate-700 bg-slate-900; }
   .dark .avail-time-where { @apply text-slate-400; }
   .avail-year      { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4; }

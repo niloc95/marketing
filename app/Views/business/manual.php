@@ -265,7 +265,7 @@ $n = 0;
                 <li><strong>Customers</strong>: everyone who has booked, with their history.</li>
                 <li><strong>Services</strong> and <strong>Team</strong>: what can be booked, for how long, and with whom.</li>
                 <li><strong>Time off</strong>: times nobody can book. Public holidays follow your profile's holiday hours.</li>
-                <li><strong>Availability</strong>: the free times for any service and person, as <?= esc($audience) ?> see them.</li>
+                <li><strong>Availability</strong>: the free times for any service and person, as <?= esc($audience) ?> see them. Pick a free time to book it.</li>
                 <li><strong>Analytics</strong>: bookings over time.</li>
                 <li><strong>Booking settings</strong>: booking rules (how far ahead, changes and cancellations), the booking form, the wording of the emails, payments<?= $isApp ? '' : ' and deposits' ?>, connections and your local time.</li>
                 <li><strong>Activity</strong>: who changed what, and when.</li>
