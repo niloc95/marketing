@@ -4168,6 +4168,31 @@
   .handbook-swatches li { @apply flex items-center gap-2; }
   .handbook-swatches svg { @apply shrink-0 text-slate-900; }
   .dark .handbook-toc { @apply border-slate-800 bg-surface-card; }
+
+  /* The owner's user manual (business/manual.php): a readable column, the
+     contents box, numbered sections, and a chip for what comes with the
+     paid plan. Prints as a document (print rules at the foot). */
+  .manual              { @apply max-w-4xl text-slate-700 dark:text-slate-300; }
+  .manual-head         { @apply mb-6; }
+  .manual-eyebrow      { @apply text-xs font-bold uppercase tracking-widest text-accent-500; }
+  .manual-title        { @apply mt-1 text-2xl font-bold tracking-tight text-primary-500 dark:text-white; }
+  .manual-lead         { @apply mt-2 text-base leading-relaxed; }
+  .manual-actions      { @apply mt-4 flex flex-wrap items-center gap-3; }
+  .manual-actions .btn { @apply inline-flex items-center gap-2; }
+  .manual-hint         { @apply text-sm text-slate-500 dark:text-slate-400; }
+  .manual-print-line   { @apply hidden; }
+  .manual-toc          { @apply mb-8 rounded-surface border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-surface-card; }
+  .manual-toc h3       { @apply mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+  .manual-toc ol       { @apply grid list-decimal gap-x-8 gap-y-1 pl-5 text-sm sm:grid-cols-2; }
+  .manual-toc a, .manual-section a { @apply font-medium text-primary-600 hover:underline dark:text-primary-300; }
+  .manual-section      { @apply mb-10 scroll-mt-24; }
+  .manual-section > h2 { @apply mb-3 border-b border-slate-200 pb-2 text-xl font-bold tracking-tight text-primary-500 dark:border-slate-800 dark:text-white; }
+  .manual-section h3   { @apply mb-1.5 mt-5 flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900 dark:text-white; }
+  .manual-section p    { @apply mb-3 text-sm leading-relaxed; }
+  .manual-section ul   { @apply mb-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed; }
+  .manual-section ol   { @apply mb-3 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed; }
+  .manual-section strong { @apply text-slate-900 dark:text-white; }
+  .manual-chip         { @apply inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 align-middle text-xs font-semibold text-primary-700 dark:border-primary-800 dark:bg-primary-900/40 dark:text-primary-200; }
   .dark .handbook-chapter > h2 { @apply border-slate-800 text-white; }
   .dark .handbook-swatches { @apply text-slate-400; }
   .dark .handbook-swatches svg { @apply text-white; }
@@ -4870,6 +4895,20 @@ body[data-shell-bare] .shell-main { padding-left: 0; }
 /* The system handbook prints as a document: no site chrome, no contents box,
    every chapter on paper. directory.js opens each table's <details> before
    printing, since a closed one prints its summary only. */
+/* The owner's user manual prints as a document: no buttons or contents
+   links, black text on white, sections kept whole where they fit. */
+@media print {
+  .manual { max-width: none; color: #0f172a; }
+  .manual-actions, .manual-toc { display: none !important; }
+  .manual-print-line { display: block !important; margin-top: 0.5rem; font-size: 0.8rem; color: #475569; }
+  .manual-section { break-inside: auto; margin-bottom: 1.25rem; }
+  .manual-section > h2 { break-after: avoid; color: #003049; }
+  .manual-section h3 { break-after: avoid; color: #0f172a; }
+  .manual-section li { break-inside: avoid; }
+  .manual a { color: #003049; text-decoration: none; }
+  .manual-chip { border-color: #94a3b8; background: none; color: #003049; }
+}
+
 @media print {
   .handbook-print .site-header,
   .handbook-print .site-footer,

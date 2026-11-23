@@ -83,6 +83,60 @@ class Owner extends BaseController
         ]);
     }
 
+    /**
+     * The user manual (business/manual.php): how every part of the owner
+     * area works, worded for this profile's site, plan and kind, and
+     * printable (Print or save as PDF). Only facts and numbers from the
+     * code: the limits below come from the services that enforce them.
+     */
+    public function manual()
+    {
+        $listing  = service('businessContext')->listing();
+        $isApp    = site()->forRow($listing) === \Config\Sites::APP;
+        $setup    = new \App\Services\Bookings\BookingSetupService();
+        $bookable = $setup->isOn($listing) && $setup->whyNot($listing) === null;
+
+        return view('business/manual', [
+            'listing'     => $listing,
+            'isApp'       => $isApp,
+            'planName'    => $isApp ? 'Plus' : 'Verified',
+            'premium'     => listing_has_premium($listing),
+            'bookable'    => $bookable,
+            'bookingsOn'  => $bookable || bookings_in_premium(site()->forRow($listing)),
+            'reviewsOff'  => \App\Services\ReviewService::offForGroup($listing),
+            'noun'        => listing_noun($listing),
+            'audience'    => listing_audience($listing),
+            'profileUrl'  => listing_url($listing),
+            'welcomePack' => (new \App\Services\WelcomePackService())->available($listing),
+            'company'     => config('Company'),
+            // A register to quote (HPCSA, SAVC…): South African regulated categories only.
+            'regulator'   => (static function (array $l): ?array {
+                $ref = listing_category_ref($l);
+
+                return \App\Libraries\ProfessionalRegistration::regulatorFor($ref['slug'], $ref['group'], \App\Libraries\ProfessionalRegistration::countryOf($l));
+            })($listing),
+            'limits'      => [
+                'gallery'    => \App\Controllers\Business\Profile::GALLERY_MAX, // the uploads trait's cap
+                'team'       => \App\Services\TeamMemberService::MAX_MEMBERS,
+                'branches'   => \App\Services\PracticeLocationService::MAX_LOCATIONS,
+                'cards'      => \App\Services\ListingSectionService::MAX_EXTRA,
+                'cardChars'  => \App\Services\ListingSectionService::MAX_PLAIN_LENGTH,
+                'brands'     => \App\Services\ListingBrandService::MAX_BRANDS,
+                'reply'      => config('Reviews')->replyMax,
+                'jobDays'    => config('JobBoard')->defaultDays,
+                'jobMax'     => config('JobBoard')->maxDays,
+                'msgMin'     => \App\Services\ListingMessageService::MIN_MESSAGE,
+                'msgMax'     => \App\Services\ListingMessageService::MAX_MESSAGE,
+                'msgFiles'   => \App\Services\ListingMessageService::MAX_FILES,
+                'msgFileMb'  => (int) (\App\Services\ListingMessageService::MAX_FILE_BYTES / 1048576),
+                'msgTotalMb' => (int) (\App\Services\ListingMessageService::MAX_TOTAL_BYTES / 1048576),
+                'msgLinks'   => \App\Services\ListingMessageService::MAX_LINKS,
+                'msgPerDay'  => \App\Services\ListingMessageService::LIMIT_LISTING,
+                'msgSender'  => \App\Services\ListingMessageService::LIMIT_SENDER,
+            ],
+        ]);
+    }
+
     public function stats()
     {
         $listing  = service('businessContext')->listing();
