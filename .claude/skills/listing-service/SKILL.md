@@ -7,9 +7,9 @@ description: Work on WebScheduler Local, the CodeIgniter 4 app in app/ that serv
 
 A local business discovery and visibility platform: free business profiles, discovery
 (browse, smart search, maps, near me), public profile pages, signup gated by email
-verification, owner self service through a passwordless magic link, a Jobs board, reviews,
-and an admin backend. One install serves **two sites**: `local.webscheduler.co.za` (South
-Africa) and `local.webscheduler.app` (every other country, live since 25 Oct 2026). How the
+verification, an owner area at `/business` (with Bookings, see the `bookings` skill), a
+Jobs board, reviews, and an admin backend. One install serves **two sites**: `local.webscheduler.co.za` (South
+Africa) and `local.webscheduler.app` (every other country). How the
 two are kept apart is the **`two-sites`** skill; read it before touching anything a page
 shows, where a link points, or a price.
 
@@ -18,10 +18,9 @@ condensed working reference for making and verifying code changes.
 
 **Deploying is a separate skill: `deploy-production`.** Use it for releases, migrations
 against production, and diagnosing a deploy that went green without changing anything.
-`deploy/README.md` and `deploy/LAMP-SETUP.md` are the first-time server setup; `DEPLOY.md`
-is the archived Hostinger record.
+`deploy/README.md` and `deploy/LAMP-SETUP.md` are the first-time server setup.
 
-## Copy keywords: discover, discovery, platform (since 21 Oct 2026)
+## Copy keywords: discover, discovery, platform
 
 Customer facing copy (public views, owner pages, emails, JS messages, `Config\Comparison`)
 uses **discover**, **discovery** and **platform** as its key words. WebScheduler Local is
@@ -36,13 +35,15 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 - Code identifiers stay: `_search_composer`, `/directory/suggest`, `Config\Search`, CSS
   classes, `name="q"`.
 - No dashes or hyphenated words in this copy either (see the no dashes rule).
-- **Medical first** (since 17 Nov 2026, phase 1): "practices and businesses" in discovery
+- Never "listing" in customer copy: "profile".
+- **Medical first** (owner, 16 Nov 2026): "practices and businesses" in discovery
   copy, the **practice profile** as the free product, "Add your practice or business"
   ("Add profile" below 1280px) as the owner call to action, "Verified profiles" / "Plus
-  profiles" in the footer. Per profile wording (phase 2) comes from `Config\Verticals`:
+  profiles" in the footer. Per profile wording comes from `Config\Verticals`:
   `listing_noun($listing)` (`ownerNoun`: practice, pharmacy, hospital, organisation,
   else business) and `listing_audience($listing)` (`audience`: patients, clients, else
-  customers). Never `noun` after "your": it names the trade ("tradesperson"). Plan and phases: `docs/plans/2026-11-medical-focus.md`.
+  customers). Never `noun` after "your": it names the trade ("tradesperson"). Never add
+  a new wording map. Plan: `docs/plans/2026-11-medical-focus.md`.
 - Tagline (footer, /company, `Config\Directory::$slogan` in the home JSON-LD):
   **Discover local. Be discovered.** Never write "More than a business listing."
 - On .app: never "built for South Africa", and no rand figures (see `two-sites`).
@@ -51,18 +52,19 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 
 | Where | What lives there |
 |---|---|
-| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (old /manage addresses, manage link redeem, badge and Plus actions), `Business\Profile` + `Business\Owner` (owner area pages), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
+| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (old /manage addresses, manage link redeem, badge and Plus actions), `Business\*` (owner area and Bookings), `Book` (public booking), `Api\V1\*` (booking API), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup`, `PayFastNotify`, `PaystackWebhook`, `Pricing`, `Newsletter`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Discovery` + `Stats` + `FormEvents` (beacons), `Developers`, `Health`, `Csp`, `Errors`, `Admin` + `AdminDashboard`, `AdminBookings`, `AdminCareers`, `AdminCommunications`, `AdminDiscovery`, `AdminForms`, `AdminHandbook`, `AdminProfileSetup`, `AdminStats` |
 | `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
-| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `NewsletterService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
-| `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
+| `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `NewsletterService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`, `OwnerAccess`; `Search/` (discovery interpreter and model), `Description/` (description helper and hints), `Communications/`, `Bookings/` |
+| `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Paystack`, `PaymentReference`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
 | `app/Helpers/` (autoloaded: url, seo, schema, slug, map, directory_ui, money, site) | `directory_ui_helper` (badges, pills, gates like `listing_is_verified_business()` / `listing_has_premium()`, `listing_public_view()`, `signup_cta()`, `listing_form_steps()`…), `directory_hours_helper` (hours, holidays, per profile clock), `schema_helper` (JSON-LD), `seo_helper` (`seo_meta()`), `site_helper`, `money_helper`, `map_helper`, `slug_helper`, `video_helper` |
-| `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` (exempt: `csp-report`, both PayFast ITNs, `unsubscribe/*`, `add-profile/score`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
-| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Handbook` (the system handbook), `Hostnames`, `ContentSecurityPolicy` |
+| `app/Filters/` (order in `Config\Filters`) | Before: `FrontControllerPath` (404s a typed `/index.php/…`), `SiteResolver`, `BotTrap`, `csrf` = `CsrfGuard` (exempt list in `Config\Filters`: webhooks, beacons, unsubscribe, previews, `api/v1/*`), `SignupChannel` (`?via=`). After: `honeypot`, `PartnerRef` (`?ref=`), `SecureHeaders` (CSP and friends). Admin: `cfaccess` (`CloudflareAccessFilter`, JWT) on `admin`/`admin/*`, then the `admin` group filter (`AdminFilter`, password session). A new webhook needs the same exemptions as `payfast/notify` |
+| `app/Config/` (own) | `Directory` (prices, quality bars, keys), `Sites`, `Countries`, `Search`, `JobBoard`, `Reviews`, `Careers`, `Screening`, `Partners`, `Comparison`, `ListingAttributes`, `ListingFacets`, `Verticals`, `DescriptionTemplates`, `DocTypes`, `Documents` (the document library), `Handbook` (the system handbook), `Forms` (form health registry), `Campaigns`, `Registrations`, `SchemaTypes`, `ProfileSections`, `Bookings*`, `Hostnames`, `ContentSecurityPolicy` |
 | `app/Models/` | One per table, `xs_` prefix. `DirectoryListingModel` is the hub; `Concerns/DerivesCountryCode` |
-| `app/Views/` | `layouts/public.php` (every public page: header, footer, analytics), `layouts/_shell.php` + `admin.php` / `business.php` (the app shell for `/admin` and `/bookings`, see "App shell"), `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
+| `app/Views/` | `layouts/public.php` (every public page: header, footer, analytics), `layouts/_shell.php` + `admin.php` / `business.php` (the app shell for `/admin` and `/business`, see "App shell"), `business/`, `book/`, `directory/` (public and owner pages, `_partials`), `admin/`, `jobs/`, `careers/`, `emails/` (`_layout.php` + one per message), `legal/` (+ `legal/app/` for .app), `errors/`, `partials/` |
 | `app/Commands/` | spark commands, see Commands below |
-| `resources/directory.css` → `public/assets/directory.css` | Tailwind (`tailwind.directory.cjs`, tokens shared with the marketing site in `tailwind.tokens.cjs`) |
-| `public/assets/directory.js` | every client behaviour, one file: typeahead, address lookup and maps, form steps, repeaters, photo band, lightbox, consent |
+| `resources/directory.css` → `public/assets/directory.css` | Tailwind (`tailwind.directory.cjs`, tokens shared with the brand site in `tailwind.tokens.cjs`) |
+| `public/assets/directory.js` | every public client behaviour, one file: typeahead, address lookup and maps, form steps, repeaters, gallery, lightbox, consent, beacons |
+| `resources/business/`, `resources/shell/` → Vite → `public/assets/business/` | the app shell and Bookings scripts (`npm run biz:build`) |
 | `tests/database/`, `tests/unit/` | PHPUnit. `tests/_support/` holds `ValidListingInput`, `WithEnv` and the bootstrap |
 
 **Conventions worth copying:** a feature's rules live in one service that is the only
@@ -98,9 +100,10 @@ writer of its tables; controllers stay thin; anything an owner must not set stay
 | `GET /privacy`, `/terms`, `/cookie-policy` | `Legal::*` (per site views) |
 | `GET /address-suggest`, `/address-locate`, `/address-reverse` | address lookup |
 | `GET /description/insights`, `/description/prompt` | the description helper |
-| `POST /payfast/notify` | PayFast ITN (old subscriptions; `payfast/setup-notify` retired 23 Nov 2026) |
+| `POST /payfast/notify`, `POST /paystack/webhook` | PayFast ITN (old subscriptions), Paystack webhook |
+| `/directory/{slug}/book`, `/book/*`, `/api/v1/*` | public booking and the booking API (`bookings` skill) |
 | `GET /sitemap.xml`, `/robots.txt`, `/health`, `POST /csp-report` | per site sitemap and robots, health, CSP reports |
-| `/admin/*` | profiles, categories, venues, verifications (`?plan=plus`, `/admin/plus`), jobs, reviews, referrals, partners, careers, profile setup, hero, settings, comparison, documents, status, funnel |
+| `/admin/*` | dashboard, profiles, categories, venues, verifications (`?plan=plus`, `/admin/plus`), jobs, reviews, referrals, partners, careers, profile setup, bookings, communications, discovery, forms, stats, hero, settings, comparison, documents (+ system handbook), status, funnel |
 
 **404s go through `Errors::notFound`**, the `Config\Routing::$override404`. That covers
 unknown routes and any `PageNotFoundException` a controller throws. It renders the branded
@@ -120,18 +123,12 @@ the `{segment}`/`{token}` catch-alls, or the catch-all swallows them first.
 `DirectoryListingModel` — table `xs_directory_listings`, soft-deletes, FULLTEXT search
 over `display_name`/`description`/`credentials`.
 
-- `OWNER_EDITABLE` allowlist (what `/manage/edit` may write): business fields only —
-  `type, display_name, contact_person, title, position, category_id, description,
-  phone, phone_alt, whatsapp, website, social_facebook, social_instagram,
-  social_linkedin, social_tiktok, address_line, address_line_2, suburb, city, province,
-  region, postal_code, logo_path, trading_hours, by_appointment, accepts_card_payments, offers_delivery,
-  offers_online_booking, booking_url, customer_location, show_address, service_areas`. Deliberately **excludes** `email`, `slug`,
-  `status`, `is_featured`, `is_verified`, `country` (it decides whether a listing is
-  free) and `venue_id` — a crafted owner POST can't publish/feature a listing, hijack the
-  address, dodge the International Listing paywall, or break the SEO'd URL. Read the
-  constant rather than trusting this copy of it, since it is a security boundary and
-  this doc has drifted from it before.
-- **Qualifications are a person's** (owner, 18 Nov 2026): the listing `credentials`
+- `OWNER_EDITABLE` allowlist (what the owner area may write): business fields only.
+  Deliberately **excludes** `email`, `slug`, `status`, `is_featured`, `is_verified`,
+  `country` (it decides the site) and `venue_id`, so a crafted owner POST can't publish
+  or feature a profile, hijack the address, move sites, or break the URL. **Read the
+  constant**: it is a security boundary and copies of it drift.
+- **Qualifications are a person's**: the listing `credentials`
   column is no longer written by any form nor shown (kept for practices that
   `directory:move-credentials` could not place). A team card's `credentials` is rich
   text (`RichText::sanitiseBasic`: p, br, strong, em, ul, ol, li; 1000 plain chars), and
@@ -170,20 +167,19 @@ over `display_name`/`description`/`credentials`.
   `_partner_clicks`, `_partner_commissions`, `_partner_payouts`); careers
   (`_career_roles`, `_career_applications`); `_application_keys` (apply once); home
   (`_hero_images`, `_hero_videos`); `_settings` (`name`, `value`).
-- Country columns (since 23 Oct 2026): `country_code` on listings, locations, venues, job
+- Country columns: `country_code` on listings, locations, venues, job
   posts, careers and referrals (derived, see `two-sites`); `timezone` on listings and
   locations; `currency` on the money tables.
 
-## Signup quality rules (since 30 Sep 2026)
+## Signup quality rules
 
-Added after a spam profile ("Polokwane ➸ [+②⑦⑦…] A TRADITIONAL HEALER…") went live.
-Enforced in `DirectoryListingMutationService::validate()` on **signup and owner edit**;
+Against spam profiles. Enforced in `DirectoryListingMutationService::validate()` on **signup and owner edit**;
 admin intake (`DirectoryAdminService::upsert()`) is exempt.
 
 - **Name / description** rules live in `App\Libraries\ListingText`. Spam shapes (phone
   numbers, emoji, ②-style digits, `[]`, >3 commas, URLs) are **rejected**; ALL-CAPS is
   **fixed quietly** (`tidyName()`, `tidyDescriptionHtml()` via `RichText::mapText()`).
-  Description is compulsory, 50+ plain chars. A stored value that is unchanged is never
+  Description is compulsory, `ListingText::DESCRIPTION_MIN` (50) plain chars. A stored value that is unchanged is never
   re-judged (the `$stored` argument to `validate()`), so legacy rows can still save.
 - **Website**: `normaliseUrl()` upgrades `http://` → `https://`, refuses IPs/localhost/
   userinfo/no-TLD, and a new or changed link must resolve in DNS through
@@ -211,9 +207,10 @@ admin intake (`DirectoryAdminService::upsert()`) is exempt.
   identical on-screen message either way), `verify()` (publishes), `requestManageLink()` /
   `redeemManageToken()` (single-use, 1h TTL), `updateOwn()` (applies only
   `OWNER_EDITABLE`).
-- **Description cap** is `RichText::MAX_PLAIN_LENGTH` (1000 plain-text chars; the JS counter
-  reads it from `data-rich-text-max`). `RichText::exceedsCap()` exempts an *unchanged*
-  description, so profiles saved under the old 5000 cap can still save other edits.
+- **Description cap** is `RichText::MAX_PLAIN_LENGTH` (3000 plain chars; the JS counter
+  reads it from `data-rich-text-max`), plus up to 5 headed description cards on
+  Verified/Plus. `RichText::exceedsCap()` exempts an *unchanged* description, so older
+  longer descriptions can still save other edits.
 - **`App\Libraries\Mailer`** — the **one** outbound-mail path. `send($to, $subject, $body,
   $replyTo = '')` returns whether it went out and records the result in `MailHealth`. It
   logs the recipient *domain* only, never the address or body. Signup/edit callers ignore
@@ -280,7 +277,7 @@ compulsory and stored for everyone. Only what the public sees changes.
   coordinate onto the venue and refuses when they disagree. `--limit 20`, never
   `--limit=20` (the CLI quirk `GeocodeListings` documents).
 
-## Profile types and Places (added 10 Oct 2026)
+## Profile types and Places
 
 - **`DirectoryListingModel::TYPES` is the one list** (person, practice, facility, ngo,
   community, foundation, project, place). Signup, owner edit, admin intake and the form all
@@ -313,7 +310,7 @@ compulsory and stored for everyone. Only what the public sees changes.
 - Fitness & Sport has the `sport` facet set (`facilities`, `access`) in `Config\ListingFacets`,
   which is how "padel courts" finds a club.
 
-## Structured data: types, Person pages, adding a category (since 3 Nov 2026)
+## Structured data: types, Person pages, adding a category
 
 - **Types live in `Config\SchemaTypes`**, read by `schema_business_type()` in this order:
   the category's `schema_type` column (set on `/admin/categories`, only from
@@ -352,8 +349,7 @@ Leaflet/CARTO, and "near me" stays a query against `xs_directory_listing_points`
   (`geocodeParts()`, `permanent=true`) for the pin it posts. `geocodeParts()` and `reverse()`
   are permanent and cached for 30 days. Do not add coordinates back to suggestion rows.
   `MapboxGeocoderTest` pins all of this.
-- **A street match must be in the suburb asked for** (`inAskedPlace()`, since 11 Nov
-  2026): same suburb by name, or within 3 km of the suburb's centre (15 km of the city's
+- **A street match must be in the suburb asked for** (`inAskedPlace()`): same suburb by name, or within 3 km of the suburb's centre (15 km of the city's
   when no suburb), the centre looked up once and cached. Imported addresses that start
   with building names matched same-named streets far away ("Parklane, Deelkraal" for
   Parktown). A rejected street falls to the suburb circle.
@@ -362,7 +358,7 @@ Leaflet/CARTO, and "near me" stays a query against `xs_directory_listing_points`
   `data-suggest-url` (`Config\Directory::addressAutocompleteEnabled()`). With no URL,
   the script never searches. Single lookups on save, the pin picker, reverse lookups and
   `spark directory:geocode` still use Nominatim.
-- **Find a place by name** (since 19 Nov 2026): the box above every address block
+- **Find a place by name**: the box above every address block
   (`_address_inputs.php`, `[data-place-finder]`) calls `GET /address-place`
   (`AddressSuggest::place`, 10/min/IP) → `service('placeFinder')` =
   `NominatimGeocoder::findPlaces()`, **always Nominatim** (Mapbox's geocoder has no
@@ -376,9 +372,9 @@ Leaflet/CARTO, and "near me" stays a query against `xs_directory_listing_points`
   restriction**. Mapbox checks those against the browser's `Referer`, which a server request
   doesn't send, so adding one can make every lookup fail.
 
-## Search typeahead (`/directory/suggest`)
+## Discover typeahead (`/directory/suggest`)
 
-Every search box — the header bar and the four hero `.searchbar` forms — renders through
+Every Discover box renders through `directory/_search_composer.php` →
 **one partial, `directory/_search_input.php`**, which carries the markup contract
 (`[data-search-suggest]`, the combobox input, the listbox `<ul>`). The client module sits
 in `public/assets/directory.js` beside the address autocomplete and copies it: 3-character
@@ -391,7 +387,7 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   lookups (businesses 5, team members 2, categories 3, venues 2, cities 3, capped at 8 total), because `browse()` is
   FULLTEXT + four LIKEs + a correlated EXISTS and must never run per keystroke. Ordering
   puts a prefix match above a mid-word one.
-- **Businesses by description (since 29 Oct 2026):** after name and topic rows, free
+- **Businesses by description:** after name and topic rows, free
   business slots are filled from the same FULLTEXT the results page runs, four letters
   up, ranked by match then quality (never `is_featured`), sub line = category. When any
   are shown, the list ends with a `search` row "Discover every match for …".
@@ -429,7 +425,7 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
     only non cache table: removed now and never relearned).
   - Word columns are `utf8mb4_bin`: the default collation made "maré" and "mare" one key
     and rolled the nightly rebuild back.
-- **Category sets** (`Config\Search::$categorySets`, since 11 Nov 2026): a word that
+- **Category sets** (`Config\Search::$categorySets`): a word that
   means several categories ("doctor(s)" = every category `SchemaTypes::$bySlug` publishes
   as `Physician`) reads as a virtual main category, `?group=doctors`.
   `DirectoryService::findGroupBySlug()` returns it with `slugs` and its real
@@ -444,8 +440,7 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
 - `'suggest'` is in `listing_reserved_slugs()`, like `map` and `province`.
 - **Every caller must pass ALL of the partial's variables**, even empty ones. CI4 renders
   the content view before the layout and shares one data array, so an omitted variable
-  inherits the other box's value rather than the default — that is how the header bar,
-  which must start empty everywhere, came back pre-filled with the current search.
+  inherits the other box's value rather than the default.
 - **Team-member rows (`type: person`) link to `/directory/{slug}#team-{member slug}`.**
   `team_member_anchor()` is the one definition of that fragment: the card id in
   `_team_panel.php`, the Person `@id` in `schema_local_business()` and the typeahead URL all
@@ -465,17 +460,17 @@ floor, 450ms debounce, `++requestSeq` stale-response guard, arrow/Enter/Escape, 
   never writes them. Every change is stamped `marketing_consent_at` /
   `marketing_withdrawn_at` + `marketing_consent_source`.
 - The duplicate-email signup branches do not touch consent, because anyone can type another
-  person's address. `/manage/edit` uses the `marketing_present` marker.
+  person's address. The owner form uses the `marketing_present` marker.
 - The marketing audience is `MarketingConsentService::audience()`, meaning opted in **and**
   `is_verified`. Get unsubscribe links from `unsubscribeUrl($id)`, which stores a random
   token on first use. `GET /unsubscribe/{token}` only asks; `POST` acts, and is
   CSRF-exempt for RFC 8058 one-click.
 - `terms_version` records `Legal::LAST_UPDATED['terms']`. Bump that date whenever the
   terms change.
-## Communications (`/admin/communications`, since 21 Nov 2026)
+## Communications (`/admin/communications`)
 
-Emails the admin sends to a chosen group of profiles in daily batches (owner, 21 Nov
-2026; first use: the claim outreach, medical plan phase 3c). `Communications\CommunicationsService`
+Emails the admin sends to a chosen group of profiles in daily batches (first use: the
+claim outreach, medical plan phase 3c). `Communications\CommunicationsService`
 is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log).
 
 - **Templates** in `Config\Campaigns::$kinds` (`claim`, `verified_upgrade`,
@@ -507,7 +502,7 @@ is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log)
 - **No bulk send to production without the owner's OK**, the POPIA basis and an SES
   quota check. Tests: `tests/database/CommunicationsTest.php`.
 
-## Newsletter (own list since 4 Nov 2026, Mautic retired)
+## Newsletter (own list; Mautic is retired)
 
 - `NewsletterService` is the only writer of `xs_newsletter_subscribers`: one row per
   address for all three forms, `source` = `za`, `app` or `brand` (the brand site
@@ -519,24 +514,23 @@ is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log)
 - `POST /newsletter` and `newsletter/unsubscribe/*` are CSRF exempt (brand site cross
   origin; RFC 8058 one click). Confirm keeps CSRF. Throttles `newsletter-ip-` 5/h,
   `newsletter-to-` 3/day. Unsubscribed rows are the do not contact list: never delete.
-- The one off Mautic import (4 Nov 2026) is done and its command removed (17 Nov 2026);
-  imported rows keep consent source `import`.
+- Rows imported from Mautic keep consent source `import`.
 - Tests: `tests/database/NewsletterTest.php`.
 
 ## Jobs board (`/jobs`)
 
 Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
 `directory_job_posts`. Rules live in `JobBoardService`; `Jobs` is the controller for all of
-`/jobs/*` and the owner routes under `/manage/jobs/*`. Limits are in `Config\JobBoard`.
+`/jobs/*` and the owner routes under `/business/jobs/*`. Limits are in `Config\JobBoard`.
 
-- **Vacancies and replies are Verified Business features** (since 29 Sep 2026).
-  `JobBoardService::canUseJobsFeatures($listing)` is the one rule: published, and either the
-  badge is live (`listing_is_verified_business()`) or the badge is switched off (then Jobs
+- **Vacancies and replies are Verified/Plus features.**
+  `JobBoardService::canUseJobsFeatures($listing)` is the one rule: published, and either
+  `listing_has_premium()` or the badge is switched off (then Jobs
   reopens to every listing). It is checked in `submitForListing()` (kind=job),
   `respond()` (`not_verified`), `submitUnlisted()` (a vacancy whose poster email belongs to a
   listing without the badge is refused, so the public form is no way round it),
-  `Jobs::ownerCreate()` / `ownerRenew()` (redirect to `manage/edit#get-verified`), the
-  dashboard panel and the request page. **Requesting a service stays open to everyone.** A
+  `Jobs::ownerCreate()` / `ownerRenew()` (redirect to `business/badge`), the
+  owner page and the request page. **Requesting a service stays open to everyone.** A
   lapsed badge keeps its live posts to their closing date, but cannot post or renew
   vacancies. Terms §4 and §6 say all of this. Change them together.
 - **Two posting paths, deliberately unequal.** A listed business posts from its manage
@@ -544,7 +538,7 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
   then waits in `/admin/jobs` for approval and is emailed a reusable manage link
   (`/jobs/manage/{token}`, valid until a month after the closing date).
 - **Editing:** `updatePost()` serves both paths. Listed businesses use
-  `/manage/jobs/{id}/edit`; unlisted posters use `/jobs/manage`, which the confirm link
+  `/business/jobs/{id}/edit`; unlisted posters use `/jobs/manage`, which the confirm link
   opens straight away so they can edit while waiting for review. A clean edit to a live post
   stays live; a flagged edit goes back to the queue. A listed post always keeps the
   listing's name.
@@ -574,7 +568,7 @@ Vacancies (`kind = job`) and "service required" requests (`kind = service`), in
   3 in 24h. `directory_job_alerts` has a unique (post, listing) key, so re-runs and renewals
   never double-send, and the cap of 10 is per request, not per run. Alerts are on by
   default. The email's stop link (`/jobs/alerts/off/{token}`, GET asks, POST acts) and the
-  dashboard checkbox (`POST /manage/jobs/alerts`) turn them off. `job_alerts` is not in
+  owner checkbox (`POST /business/jobs/alerts`) turn them off. `job_alerts` is not in
   `OWNER_EDITABLE`.
 - **Every board email renders with `saveData => false` and defaults for optional keys.**
   CI4 keeps view data between renders, so without that a notice with no button or stop link
@@ -600,16 +594,16 @@ the SA directories (one column, with notes naming which directory does what).
   filled in at render from the service constants, so an edited copy never freezes a cap.
   `ComparisonPageTest` pins the default tiers.
 - Keep the honest rows: booking (a "Book online" link free; built in bookings with
-  Verified, since 12 Nov 2026), and the `/verified` rule that qualifications are not checked.
+  Verified/Plus), and the `/verified` rule that qualifications are not checked.
 - Chip classes in `compare.php` are written out in full. A concatenated class name is
   purged from the Tailwind build.
 
-## Customer reviews (`/reviews`, added 3 Oct 2026)
+## Customer reviews (`/reviews`)
 
 1–5 stars plus text on any business profile. Rules are in `ReviewService`, the only writer
 of `directory_reviews`, `directory_review_reports` and the listing's `review_count` /
 `rating_avg`. Limits are in `Config\Reviews`. The controller is `Reviews` (public
-`/reviews/*` and owner `/manage/reviews/*`), and the admin queue is `/admin/reviews`.
+`/reviews/*` and owner `/business/reviews/*`), and the admin queue is `/admin/reviews`.
 
 - **Two gates:** the email confirm link (`unverified → pending`) and then admin approval
   (`→ published`). A review is never public before both.
@@ -671,7 +665,7 @@ the rows are `directory_referrals`.
 - Emails go through `emails/job-notice` with an `$eyebrow`, and render with `saveData => false`.
 - Tests: `tests/database/ReferralFlowTest.php`.
 
-## Partner Program (`/partners`, added 9 Oct 2026)
+## Partner Program (`/partners`)
 
 Affiliates who promote the site with a tracked link and earn a share of what
 referred businesses pay. Rules are in `PartnerService`, the only writer of the
@@ -705,15 +699,15 @@ referred businesses pay. Rules are in `PartnerService`, the only writer of the
 - **Bank details** are encrypted with the CI4 Encrypter. With no
   `encryption.key` (the local default) saving is refused, never stored plain.
 - **Dashboard** at `/partners/dashboard`: emailed single use sign in link
-  (1h), session key `partner_id`, like `/manage`.
+  (1h), session key `partner_id`.
 - Terms §19, privacy §10, and the cookie policy describe all of this.
 - Tests: `tests/database/PartnerProgramTest.php`.
 
-## System handbook (`/admin/documents/system`, since 7 Nov 2026)
+## System handbook (`/admin/documents/system`)
 
 One internal page that describes everything: Local on both sites, Bookings, the brand site,
 architecture, design, tech stack, every table, ids and formats, operations. First row on
-`/admin/documents`. Owner rule (7 Nov 2026): **every change keeps it true.**
+`/admin/documents`. Owner rule: **every change keeps it true.**
 
 - **Live half** (`App\Services\SystemHandbookService`, read on every open, nothing to
   edit): tables from `information_schema` with exact `COUNT(*)`, highest id and next
@@ -750,7 +744,7 @@ architecture, design, tech stack, every table, ids and formats, operations. Firs
   `directory.js` opens every table's `<details>` on `beforeprint`.
 - Tests: `tests/database/SystemHandbookTest.php`.
 
-## Document library (every PDF we publish, since 7 Nov 2026)
+## Document library (every PDF we publish)
 
 One registry, `app/Config/Documents.php`, and two folders. Never put a document anywhere
 else, and never link one that is not in the registry.
@@ -764,15 +758,15 @@ else, and never link one that is not in the registry.
   builder`. `/resources` (`Contact::resources()`) lists those with `listed` true, in
   registry order, with `?v=<filemtime>` (a replaced file needs no Cloudflare purge).
   `listed => false` (the proposal) is public but only linked where we send it.
-  `builder` is the rebuild command, `null` for the two built outside the repo
-  (Verified brochure, 2027 outlook): replace those files by hand.
+  `builder` is the rebuild command, `null` for the two made outside the repo (hiring
+  guide, 2027 outlook): replace those files by hand.
 - **`$internal`**: the build copies `resources/documents/` into `directory-app/` outside
   the web root. `Admin::document($key)` streams by registry key, never by path, with the
   same nosniff/no-store/locked CSP as verification documents. Never put these in public/.
 - **Old URLs** `/assets/playbook/…` and `/assets/proposal/…` 301 to the library through
   `Contact::legacyDocument()`, only for a file `$published` names (else 404). Sent
   emails, signatures and printed proposals still carry them: keep the routes.
-- **Builders** in `marketing-site/outreach/*` publish into the library (`--publish` →
+- **Builders** in `marketing-site/outreach/*` (the `marketing-site` skill) publish into the library (`--publish` →
   public, `--admin` → `resources/documents/`).
 - **Guards:** `scripts/build-listing-app.js` fails when an entry's file is missing from
   its folder; `DocumentLibraryTest` fails on a missing file, a public PDF anywhere under
@@ -792,17 +786,18 @@ kept working, as the legacy routes do.
 Built from partials so the profile, cards and schema read the same data. Every row goes
 through `listing_public_view()` first (hidden addresses).
 
-- **Header:** a Yelp style photo band (name, category, rating and hours over an edge to
-  edge photo strip; one swipeable photo on a phone), or the light `.profile-head` when
-  there are no photos and no video. Shared pieces in `_profile_head_parts.php` (`pills`,
-  `locations`…). Arrows reuse the home showcase controller (`data-showcase-step="page"`).
+- **Header:** a sticky full profile head (`.profile-head-sticky`, `[data-profile-head]`)
+  with name, pills, hours and location links from `_profile_head_parts.php`, then the
+  gallery: a rounded photo grid (`gallery-n1..5`, video first, "See all N photos" opens
+  the lightbox via `[data-gallery-open]`). Demo profiles show `_demo_banner.php`,
+  previews `_preview_bar.php`.
 - **Pills:** Featured, the Verified pill (`verified_badge_pill()`) or Plus
   (`plus_badge_pill()`), a sky "We're hiring" pill when the profile has live vacancies
   (one: "Apply for {title}"; more: "See N open positions" → `#open-positions`).
 - **Today's hours line** ("Open now · 08:30–16:30 today · See hours") in the profile's own
   timezone (`hours_today_line()`, `hours_context()`).
 - **Video** (badge only, `ListingVideoService` + `video_helper.php`): a YouTube or Vimeo
-  link checked by oEmbed before the save; first tile of the band, plays in the lightbox;
+  link checked by oEmbed before the save; first tile of the gallery, plays in the lightbox;
   owner options autoplay (silent loop) and start with sound. Our own pause and sound
   buttons drive the players by postMessage. CSP admits `player.vimeo.com`.
 - **Photo alt text** is built at render by `listing_image_alt()` ("Name, Category in
@@ -818,10 +813,10 @@ through `listing_public_view()` first (hidden addresses).
   service area, map** each have their own `_*.php` partial in `app/Views/directory/`.
 - Public holidays: see below.
 
-## Owner area (`/business`, since 10 Nov 2026, branch `feat/business-area`)
+## Owner area (`/business`)
 
-One back office for every owner (owner decision 10 Nov 2026), replacing `/manage/edit`
-and the separate `/bookings` area:
+One back office for every owner, Free included (old `/manage/*` and `/bookings/*`
+addresses redirect here):
 
 - **One account each.** `OwnerAccess` makes the profile's email an `xs_accounts` row with
   an admin membership of every profile on that email, at the first emailed sign in link,
@@ -839,6 +834,8 @@ and the separate `/bookings` area:
   `storedFormInput()` and keeps only the page's errors; the geocoder runs only for `where`.
   Team and Branches are locked for Free; while bookings are usable Team is `/business/team`
   and Services is `/business/services` once the catalogue owns them.
+- **Pages:** `/business` (overview, or the bookings dashboard), `/business/profile/{details,
+  where,services,photos,team,branches}` (+ `/preview`), `/business/{badge,jobs,reviews,stats}`.
 - **Sidebar** (`layouts/business.php`): Your profile, Bookings, Plan; locked items carry
   a lock. Pages built from public partials set `profileForm` so the layout loads
   `directory.js` (and the page loads whole, not swapped).
@@ -849,8 +846,8 @@ and the separate `/bookings` area:
   Five numbered colour cards, one list: `listing_form_steps()` (blue, teal, violet,
   amber, pink; class names written out in full so Tailwind keeps them). Each card is a
   `<section id="form-step-N" data-form-step>`. The tracker is `_form_steps_nav.php`: in
-  the sticky score bar on `/add-profile`, in `.form-steps-dock` with a Save button on
-  `/manage/edit`; none on admin edit. JS marks accordions `is-todo` / `is-done`.
+  the sticky score bar on `/add-profile`, in `.form-steps-dock` with a Save button in the
+  owner area; none on admin edit. JS marks accordions `is-todo` / `is-done`.
   A new section needs an entry in `listing_form_steps()` and a wrapper in
   `_form_fields.php`; `SignupModesTest::testTheFormIsFiveNumberedSectionsWithATracker`
   pins the structure.
@@ -870,7 +867,7 @@ overridable in `.env` as `directory.*`:
 
 - `indexMinQuality` 40 **and** `indexMinDescription` 50 characters: below either, the
   profile is `noindex, follow` and out of the sitemap (`listing_is_indexable()`). Set
-  `indexMinDescription = 0` to switch that half off (production does, since 25 Oct 2026).
+  `indexMinDescription = 0` to switch that half off (production does).
 - `recentMinQuality` 55: the home "Recently added" strip.
 - `qualityTarget` 65: shown on the strength panel; `directory:quality:nudge` (07:00)
   emails opted in owners once, 3 to 17 days after going live, if still under it. Admin
@@ -928,7 +925,7 @@ overridable in `.env` as `directory.*`:
   before sending, released if the send fails). Forms carry `data-submit-once`. CI4
   gotcha: inside `transBegin()` a duplicate key insert returns -1 instead of throwing.
 
-## Paystack (new payments since Nov 2026) beside PayFast
+## Paystack (every new payment) beside PayFast
 
 `directory.paymentProvider = paystack` plus `directory.paystackSecretKey` sends every
 **new** checkout (badge, Plus, monthly or yearly, profile setup) through Paystack; `payfast`
@@ -940,7 +937,7 @@ renewing through `payfast/notify` until the owner moves.
   POST to our own `manage/verification/pay` / `profile-setup/pay` (CSRF on), which calls
   `initialize` and redirects to `checkout.paystack.com` (in CSP `form-action` and
   `FormOutcome::PAYMENT_HOSTS`). A fresh reference per attempt; metadata carries the row id.
-- **Payment references** (owner, 3 Nov 2026) come only from `App\Libraries\PaymentReference`:
+- **Payment references** come only from `App\Libraries\PaymentReference`:
   `WSL-SETUP-000123`, `WSL-VER-M-`/`WSL-VER-Y-`, `WSL-PLUS-M-`/`WSL-PLUS-Y-` + the row's id,
   `WSB-BOOK-` reserved for Bookings. A row's `payment_attempts` only goes up and a second
   reference adds `-2`, `-3`…, because both gateways refuse a reference they have seen.
@@ -971,11 +968,10 @@ We build the profile for a once off fee: R250 on co.za (`Config\Directory::$prof
 `xs_directory_profile_setup_orders` (reference `WSL-SETUP-000123`, `-2` on a second try), **always Paystack**
 whatever `paymentProvider` says (no mandate to keep): `POST profile-setup/pay` → Paystack
 checkout → `GET profile-setup/paystack` (verify) and the Paystack webhook, both through
-`PaystackPayments`. `POST /payfast/setup-notify` was retired on 23 Nov 2026 (only unpaid
-test orders were left on PayFast). Queue at `/admin/profile-setup`. If a paid order never shows as paid,
+`PaystackPayments`. Queue at `/admin/profile-setup`. If a paid order never shows as paid,
 look at the rejection table and `Paystack:` / `Paystack return:` log lines first.
 
-## Professional registers are South African only (since 17 Nov 2026)
+## Professional registers are South African only
 
 Every regulator in `Config\Registrations` names its `country` ('ZA'), and
 `ProfessionalRegistration::regulatorFor($slug, $group, $country)` returns null for a
@@ -998,10 +994,10 @@ Vets are on the SAVC (no published number format, so the generic check). Tests:
   `data-track="name"` send a GA4 `{name}_click` event with `data-track-label` as its `cta`
   parameter, e.g. the pricing cards' `pricing_cta_click`.
 
-## Form health (`FormHealthService`, released 1 Nov 2026 at 547818c)
+## Form health (`FormHealthService`)
 
-What every form submission did, after 14 to 27 Oct 2026 lost about 18 signups to a
-404 with nobody noticing. Table `xs_directory_form_events` (no IP, email, session or
+What every form submission did, so a broken form is noticed (a 404 once lost about 18
+signups unseen). Table `xs_directory_form_events` (no IP, email, session or
 typed value; `detail` = field keys, exception class or script error; 180 days).
 
 - **Registry `Config\Forms`:** form key → POST route patterns → the URL a failure goes
@@ -1031,7 +1027,7 @@ typed value; `detail` = field keys, exception class or script error; 180 days).
 - Tests: `FormFailureLandingTest`, `FormHealthServiceTest`, `AdminFormsTest`. File
   cache persists between tests: `cache()->deleteMatching('form-*')` in setUp.
 
-## Admin dashboard (`/admin`, released 1 Nov 2026 at 7bea0c0)
+## Admin dashboard (`/admin`)
 
 The landing page after sign in (`AdminDashboard`, view `admin/dashboard.php`). The
 profiles list moved to **`/admin/profiles`**; `/admin` with any list key (`status`, `q`,
@@ -1053,10 +1049,10 @@ list points there now.
   `_meter_rows.php`. Colours validated with the dataviz validator, light and dark.
 - Tests: `tests/database/AdminDashboardTest.php`.
 
-## App shell: sidebar and page swaps for `/admin` and `/bookings` (since 7 Nov 2026, unreleased)
+## App shell: sidebar and page swaps for `/admin` and `/business`
 
-Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-sidebar.js`
-(branch `feat/spa-shell`). Public pages and profiles are untouched: they keep
+Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-sidebar.js`.
+Public pages and profiles are untouched: they keep
 `layouts/public.php`.
 
 - **Layouts.** `layouts/_shell.php` is the frame (sidebar slot, top bar with the page
@@ -1066,7 +1062,7 @@ Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-side
   (`header_quick_categories()`), no footer, no GA. The admin nav is built in
   `layouts/admin.php` (groups, icons, `queueCounts()`); the old `admin/_bar.php` is gone.
   Add an admin page to the sidebar there; the top bar title is the active item's label.
-  `admin/login.php` sets a `bare` section (shell without sidebar); /bookings is bare while
+  `admin/login.php` sets a `bare` section (shell without sidebar); /business is bare while
   signed out.
 - **Nested layouts:** every `view()` call in `admin.php` / `business.php` sits inside a
   section. One outside a section renders the layout early, because the page's `extend()`
@@ -1090,7 +1086,7 @@ Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-side
   `<script>`. A page with a `scripts` section (admin/edit and admin/new: Leaflet, the Tiptap editor)
   gets `data-spa-full` automatically. Opt a link or form out with `data-no-spa` (both Sign
   out forms have it).
-- **Page scripts must survive a swap.** In `/bookings`, register with
+- **Page scripts must survive a swap.** In `/business`, register with
   `registerPage(selector, init)` (`resources/shell/lifecycle.js`); `init(el)` returns a
   cleanup that runs before the page leaves (the calendar's 60 s poll and the dashboard's
   refresh clear their timers there). In `directory.js`, anything an admin page uses must
@@ -1106,7 +1102,7 @@ Ported from WebScheduler Bookings' `layouts/app.php`, `spa.js` and `unified-side
   public header, roles in the business sidebar, bare sign in pages, public pages
   unchanged). The browser behaviour was checked headless with Playwright on dev.
 
-## Profile statistics (`ListingStatsService`, since 30 Oct 2026, unreleased)
+## Profile statistics (`ListingStatsService`)
 
 Daily totals per profile in `xs_directory_listing_stats` (primary key listing_id + day,
 UTC days): `views`, `appearances`, `taps_call|whatsapp|website|directions|booking|email`.
@@ -1139,7 +1135,7 @@ and never throws. Switch: `directory.profileStats`.
   (no google/apiclient); tests override `send()` or inject a fake. GA4 is admin only.
   Tests: `tests/database/GoogleDataTest.php`.
 - **Owner panel** (`_stats_panel.php`, data `ListingStatsService::forOwner()`): on
-  `/manage/edit` above the strength panel, published profiles only. Everyone: last 30
+  `/business/stats`, published profiles only. Everyone: last 30
   days of views, appearances and taps against the 30 before (only once counting covers
   them) and tips (`tips()`: rarely shown, shown but rarely opened, opened but few
   contacts; none before 14 days of counting; each names only empty parts of the
@@ -1158,10 +1154,10 @@ and never throws. Switch: `directory.profileStats`.
 
 ## Verified Business — the one paid feature
 
-A monthly badge on an otherwise free listing — R29.99 at the time of writing, but the live
-figure comes from `DirectorySettings::badgePrice()` (see precedence below), so read it there
-rather than trusting this number. Everything else on the site is free and must stay free;
-the FAQ, T&Cs and signup copy all promise that in writing.
+Verified (co.za, monthly or yearly) and Plus (.app) on an otherwise free profile. Live
+prices come from `DirectorySettings` (see precedence below) and `/pricing.json`; never
+type a figure. Everything else on the site is free and must stay free; the FAQ, Terms
+and signup copy promise that in writing.
 
 **Documents are what apply, not any plan field.** `Listing::store()` starts an application
 when `resolveVerificationDocuments()` returns files — it never reads the form's `plan`
@@ -1198,15 +1194,11 @@ That last row is load-bearing. Discovery results are ordered by `is_featured` (a
 only), then `quality_score` (profile completeness, `ListingQualityService`), then newest;
 near me puts distance first. **Nothing behind the badge or Plus may score**
 (`ListingQualityTest::testPayingForTheBadgeDoesNotMoveTheScore`), and ratings are not a
-key either. Nothing in any view may hint that paying moves a business up — it would be
-false today and a promise we'd then have to keep. (The plan cards used to
-carry a ✗/✗ "A higher position in the search results" row saying so; the owner removed it
-on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" row, ✓ on
-**both** cards, because every listing gets the Jobs board.)
+key either. Nothing in any view may hint that paying moves a business up.
 
 - **`VerificationService`** — `isEnabled()` (just `DirectorySettings::badgeEnabled()`; when
-  false the offer must not render at all), `canTakePayment()` (adds "PayFast is
-  configured" — an approved application without it waits for manual/EFT activation),
+  false the offer must not render at all), `canTakePayment()` (adds "the payment
+  provider is configured"; without it an approved application waits for manual activation),
   `monthlyAmount()`, and `applyPaidUntil()`, the **only** writer of
   `xs_directory_listings.verified_until`.
 - The public badge is a render-time date compare on `verified_until` —
@@ -1221,7 +1213,7 @@ on 29 Sep 2026. The rule stands without it. The cards now carry a "Post jobs" ro
 - **The price is snapshotted** onto `directory_verifications.amount` at application time, so
   changing the price never reprices existing subscribers.
 - **Benefit copy lives in two partials that must change together**:
-  `_verification_pitch.php` (prose — `/verified` and the owner dashboard) and
+  `_verification_pitch.php` (prose — `/verified` and `/business/badge`) and
   `_plan_cards.php` (the ✓/✗ matrix on the signup form). Deliberately not merged; each
   docblock points at the other. Caps come from the service constants in both, never typed.
 
@@ -1250,10 +1242,8 @@ source. `isVerifiedPageMode()` also accepts the old `verified-only` value.
 | `/add-profile/verified` ("Get Verified" from the brand site, referral invites) | the same: both cards, Verified picked |
 | `/add-profile?plan=free` | both cards, Free picked |
 
-- **Free is on every signup page, for everyone** (owner, 2 Nov 2026). Until then a
-  verified-only mode (no Free card) served `/add-profile/verified` and every visit with a
-  `?via=` or invite in the session, so one tagged link hid Free for the whole visit. It
-  is retired; do not bring back a page without the Free card.
+- **Free is on every signup page, for everyone** (owner rule). Never bring back a page
+  without the Free card.
 - **The Verified card keeps its small print** ("A South African business profile is free
   either way, and stays free"): the Terms and FAQ promise it, and `store()` saves the
   listing when no documents are attached.
@@ -1263,16 +1253,15 @@ source. `isVerifiedPageMode()` also accepts the old `verified-only` value.
   `form_mode`, to `xs_directory_listings.signup_source`. It is always overwritten
   server-side and never taken from the form. It is admin-visible (edit page) and never
   owner-editable.
-- **After publishing**, `Directory::verify()` lands a listing with no application on
-  `manage/edit#get-verified` (the id on `_verification_panel.php`) while the badge is on
-  sale, and a profile abroad without Plus on `manage/edit#get-plus` (`_plus_panel.php`).
+- **After publishing**, `Directory::verify()` lands a profile with no application on
+  `/business/badge` (Verified while on sale, Plus abroad).
   The confirm email's badge section says so; it has deliberately no second button.
 - An unverified profile shows "Is this your business? Get the Verified Business badge",
   linking to `/verified`, while the badge is on sale. It is worded as an offer to the owner,
   never as a warning that the business is unchecked.
 - Tests: `tests/database/SignupModesTest.php`.
 
-Three rules from the original two-state design still hold:
+Three rules of the plan picker:
 
 1. **Never render the verification fields twice.** `_verification_fields.php` would appear twice, giving the
    form two inputs named `verify_doc_registration` and two elements sharing an id.
@@ -1335,7 +1324,7 @@ Production `.env` also carries `sites.app.enabled = true` and `sites.app.analyti
 
 ### One checkout, one server, one database
 
-Since 29 Oct 2026 there is exactly one of each. Sessions take turns.
+Exactly one of each. Sessions take turns.
 
 - **Code:** this checkout. `git switch -c <branch>` for a change, back to `main` when it
   is merged. No git worktrees.
@@ -1347,22 +1336,28 @@ Since 29 Oct 2026 there is exactly one of each. Sessions take turns.
   start a second server or port.
 - **Databases:** dev `webscheduler_directory`, tests `webscheduler_directory_tests`.
   A branch's migration runs against the dev DB with `php spark migrate --all`.
+- **Load test DB** (owner, 20 Nov 2026, the one exception): `webscheduler_loadtest`, a
+  copy of the dev DB seeded by `php spark load:seed`. `npm run load:on` points 8095 at
+  it, `npm run load:off` back; one is live at a time, always `load:off` when done. Check
+  `npm run load:status` first: if 8095 is on the load DB, the dev data is not there.
+- **Booking jobs:** `dev:install` also installs launchd jobs (`bookings:dispatch` every
+  minute, `bookings:payments` every five) so booking mail reaches Mailpit as on
+  production. Logs `~/Library/Logs/webscheduler-dev-jobs.log`.
 - **.app locally:** set `sites.app.enabled = true` and `sites.app.host = app.localhost`
   in `.env` and `npm run dev:restart`. co.za stays `localhost:8095`, .app is
   `app.localhost:8095`. Put it back when done.
 
-Other ports: 8096 marketing `site:serve`, 8097 `site:preview` (marketing site only,
-started on demand).
 
 ## Commands
 
 | Command | Does |
 |---|---|
 | `npm run list:css` / `list:dev` | Tailwind → `public/assets/directory.css` (once / `--watch`) |
-| `npm run list:serve` | Serve at http://localhost:8095 — **must** go through `vendor/codeigniter4/framework/system/rewrite.php`, not `public/index.php`, or `/assets/*` 404s and the app renders unstyled. Binds `[::]`, not `localhost`, so the LAN can reach it — `[::]` and not `0.0.0.0` because the Bonjour name resolves to IPv6 and an IPv4-only bind would refuse it |
-| `npm run list:hot` | **All three at once** — Tailwind `--watch`, `php -S` :8095, and the file watcher. Ctrl-C stops the lot. The usual way to work |
-| `npm run list:watch` | The file watcher alone, to pair with an existing `list:serve` |
-| `npm run list:build` | `list:css` + assembles the deploy bundle in `dist/listing/` |
+| `npm run dev:status` / `dev:restart` | the always on dev server (launchd runs `list:hot`: `php -S` via `rewrite.php` on `[::]:8095`, Tailwind watch, file watcher). Never start another |
+| `npm run list:build` | `list:css` + `biz:build` + assembles the deploy bundle in `dist/listing/` |
+| `npm run biz:build` / `biz:dev` | Vite build of the app shell and Bookings scripts |
+| `npm run agent:check` | the shared gate (pre-commit hook; `agent:hooks` installs it) |
+| `npm run load:status` / `load:on` / `load:off` | which DB 8095 serves (load test DB) |
 | `npm run mail:dev` | Mailpit (idempotent adopt-or-spawn) — SMTP :1025, inbox http://localhost:8025 |
 
 Spark commands (run from the app root; `--dry-run` where offered):
@@ -1393,38 +1388,21 @@ Spark commands (run from the app root; `--dry-run` where offered):
 The cron template is `deploy/cron/webscheduler`; the live copy is
 `/etc/cron.d/webscheduler`, installed by hand. A new scheduled command needs both.
 
-`npm run list:hot` is the one-command version of `list:serve` + `list:dev`, and adds
-hot reload: save a view, helper or controller and the browser reloads itself; save
-`resources/directory.css` and the compiled stylesheet is swapped in **without
-navigating**, so scroll position and the scrolled header state survive.
-
-Two things worth knowing about it:
-
-- The reload client is only served while the watcher is running — it writes
-  `public/assets/.dev-reload.json` on startup and deletes it on exit, and
-  `layouts/public.php` loads the client only when that file exists. So plain
-  `list:serve` behaves exactly as it always did.
-- Both `list:serve` and `list:hot` are reachable from other devices on the network;
-  `list:hot` prints every URL it can be opened on at startup. That needs the host in
-  `app.devHostnames` too — see Local environment above.
-- The 500ms poll means Playwright/Puppeteer `waitUntil: 'networkidle'` never
-  resolves against the dev server. Use `'load'` or `'domcontentloaded'` in local
-  browser scripts. Production is unaffected — the client is development-only and
-  is excluded from the deploy bundle.
-
-Pair `list:serve` with `list:dev` in a second terminal if you want the old
-two-terminal split without hot reload.
+`list:hot` (what the launchd dev server runs) adds hot reload: views, helpers and
+controllers reload the page, `resources/directory.css` swaps in without navigating. The
+reload client is served only while the watcher runs (`public/assets/.dev-reload.json`),
+and its 500 ms poll means Playwright `waitUntil: 'networkidle'` never resolves: use
+`'load'`. Other devices on the LAN need their host in `app.devHostnames`.
 
 ## Tests
 
-- `php vendor/bin/phpunit` runs everything (about 1,600 tests) in about 30 seconds.
+- `php vendor/bin/phpunit` runs everything in about 30 seconds.
   Iterate with `--filter` anyway.
 - **DB test classes use `Tests\Support\FreshDatabase`, never `DatabaseTestTrait`
   directly.** `TestSchema` drops every table and migrates once per run (refusing any
   database whose name does not end in `_tests`), then empties every table before each
   test in one transaction, and the throttler service is reset (it otherwise keeps its
   buckets across tests). AUTO_INCREMENT is not reset: use the id an insert returns.
-  Until 29 Oct 2026 every test re-ran all migrations and a run took 20 to 40+ minutes.
 - The bootstrap (`tests/_support/bootstrap.php`) pins `sites.app.*` and resets the index
   gates (`directory.indexMin*`) to their code defaults, so the dev `.env` cannot change
   test results.
@@ -1440,9 +1418,8 @@ two-terminal split without hot reload.
 
 ## Verify workflow
 
-- **Listing detail page**: `list:serve` + `list:dev`, visit
-  `http://localhost:8095/directory/{slug}` for a published, seeded listing.
-- **Search typeahead**: type two characters into any search box (nothing should happen —
+- **Profile page**: `http://localhost:8095/directory/{slug}` for a published profile.
+- **Discover typeahead**: type two characters into any search box (nothing should happen —
   check the network tab), then a third. Arrow keys, Enter on a highlighted row, Escape,
   and Enter with nothing highlighted (must submit the search). Check the header bar too,
   at phone width and scrolled, and the home hero — those are the two places the dropdown
@@ -1451,18 +1428,16 @@ two-terminal split without hot reload.
 - **Signup flow**: submit `/add-profile`, open Mailpit
   (http://localhost:8025), click the verification link, confirm the listing is now live at
   its slug.
-- **Owner self-service**: `/manage` → enter email → Mailpit link → `/manage/edit` → save →
+- **Owner area**: `/business` → enter email → Mailpit link → edit a profile page → save →
   confirm the edit shows on the public page and that `status`/`slug`/`email` are unchanged.
-- **Admin**: `php spark directory:adminhash`, set `directory.adminPasswordHash` in `.env`,
-  log in at `/admin` (throttled 5 attempts / 15 min by IP).
-- **Verified Business**: apply from `/add-profile/verified` or the owner dashboard, approve
+- **Admin**: `/admin`, dev password "dev" (throttled 5 attempts / 15 min by IP).
+- **Verified Business**: apply from `/add-profile/verified` or `/business/badge`, approve
   at `/admin/verifications`, then check `verified_until` on the listing and that the badge
   renders on the profile *and* in search results.
 - **Both sites**: with `.app` enabled locally (see `two-sites`), check the page on
   `localhost:<port>` **and** `app.localhost:<port>`: no South African profile, town, rand
   figure or badge copy on .app, and co.za unchanged. Plus: sign up abroad on .app, confirm
-  in Mailpit, land on `#get-plus`, check out with `?plan=plus`, and see the row at
-  `/admin/plus`.
+  in Mailpit, land on `/business/badge`, check out Plus, and see the row at `/admin/plus`.
 - **Production**: the release checks are in `deploy-production`. Pages that differ per
   site must be checked on both hosts.
 
@@ -1494,19 +1469,14 @@ than an error. When editing views:
   `'self'` with no `'unsafe-inline'` (a nonce makes browsers ignore `'unsafe-inline'`
   anyway, so adding it back buys nothing).
 - **No `style=""` attribute on any element either** — `style-src-attr` is `'self'`, so an
-  inline style is dropped and the element silently renders unstyled. The brand `<img>`
-  carried one for months: the logo drew on the text fallback's ocean tile, and every page
-  load wrote two violations into `writable/logs/`. It is `img.brand-mark` in the
-  stylesheet now. JS setting one property at a time (`el.style.setProperty`) is fine.
+  inline style is dropped and the element silently renders unstyled. JS setting one
+  property at a time (`el.style.setProperty`) is fine.
 - **No inline event handlers** (`onclick=`, `javascript:` URLs) — `script-src-attr` is
   `'self'`. Bind listeners from a file instead.
 - **A new off-site form POST needs adding to `form-action`, and so does wherever it
   redirects.** It does not fall back to `default-src`; an unlisted target dies silently at
-  the last click. The redirect half is the one that bites: PayFast answers the checkout
-  POST with a 302, and **live crosses to `https://payment.payfast.io`** while the sandbox
-  stays on `sandbox.payfast.co.za` — so this passes every sandbox test and breaks the
-  moment real payments are switched on. All of it is listed now
-  (`www.payfast.co.za`, `sandbox.payfast.co.za`, `*.payfast.io`).
+  the last click. Gateways redirect: PayFast live crosses to `*.payfast.io`, Paystack to
+  `checkout.paystack.com`; both are listed.
   The symptom is a console error quoting a policy that visibly *contains* the host it
   claims was violated, because Chrome names the URL the form pointed at rather than the
   redirect it actually refused. `writable/logs/` records what the browser enforced.
@@ -1517,12 +1487,9 @@ than an error. When editing views:
   policy — and a *watermarked* map, as opposed to a blank one, is never CSP: that is
   `directory.mapTileKey` missing.
 
-## Schema history worth knowing
+## Two tokens on a profile
 
-- `2026-07-28-120000_RenameProfessionsToCategories.php` — renamed
-  `directory_professions`→`directory_categories`, `profession_id`→`category_id`,
-  `qualifications`→`credentials` (the domain pivoted from healthcare-only to general
-  service businesses).
-- `2026-07-29-100000_AddManageTokenToListings.php` — added `manage_token`/`manage_expires`
-  columns + indexes, separate from `verify_token`: `verify_token` publishes on first use
-  (48h TTL), `manage_token` only proves ownership and is re-issuable anytime (1h TTL).
+`verify_token` publishes on first use (48h); `manage_token` only proves ownership and can
+be issued any time (1h). Old column names: `directory_professions` became
+`directory_categories`, `profession_id` became `category_id`, `qualifications` became
+`credentials`.

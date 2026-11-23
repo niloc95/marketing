@@ -1,6 +1,6 @@
 ---
 name: two-sites
-description: How one WebScheduler Local install serves two sites — local.webscheduler.co.za (South Africa only) and local.webscheduler.app (every other country, live since 25 Oct 2026). Site context and scoping, the countries registry, cross site redirects, per site copy, settings, caches, analytics and legal pages, country aware geocoding, hours and holidays, money and the Plus plan, local dev for both hosts, the tests that guard against leaks, and the one flag that rolls .app back. Use for any change that touches what a page shows, where a link points, prices, countries, emails, or anything that could differ between co.za and .app.
+description: How one WebScheduler Local install serves two sites — local.webscheduler.co.za (South Africa only) and local.webscheduler.app (every other country). Site context and scoping, the countries registry, cross site redirects, per site copy, settings, caches, analytics and legal pages, country aware geocoding, hours and holidays, money and the Plus plan, local dev for both hosts, the tests that guard against leaks, and the one flag that rolls .app back. Use for any change that touches what a page shows, where a link points, prices, countries, emails, or anything that could differ between co.za and .app.
 ---
 
 # Two sites, one install
@@ -78,8 +78,7 @@ country on the .app signup form.
 ## Countries (`Config\Countries`)
 
 - `$codes`: country name → ISO code for every country in the signup list.
-- `$profiles`: the fourteen with full support (ZA, GB, US, AU, NZ, NA, BW, MZ, SZ, LS, ZW, ZM, KE, NG; the five
-  neighbours added 15 Nov 2026 because Mozambique, with 274 imported profiles, had no landing pages): `slug`
+- `$profiles`: the fourteen with full support (ZA, GB, US, AU, NZ, NA, BW, MZ, SZ, LS, ZW, ZM, KE, NG): `slug`
   (`united-kingdom`), `regions` (ZA = the nine provinces, exactly as stored; GB = the four
   nations; US states; AU states), `timezone` + `regionTimezones`, `dialCode`,
   `postalPattern`, `bbox`, `mapView`, `currency`, `locale`, `holidays`.
@@ -123,8 +122,8 @@ country on the .app signup form.
 - **`money($amount, $currency = 'ZAR')`** formats every price. ZAR output is byte
   identical to the old hand typed `R` prefixes. USD reads `$8.99`.
 - **No rand figures in .app customer copy** (owner rule): the rate moves. Copy says Plus
-  is billed in South African rand by a South African company through Paystack (PayFast
-  for subscriptions not yet moved). A South African Paystack account charges ZAR only. Admin
+  is billed in South African rand by a South African company through Paystack (older
+  subscriptions may still renew on PayFast). A South African Paystack account charges ZAR only. Admin
   screens may show rand.
 - **Plus is the International plan once .app is live.** `VerificationService::plusMode()`
   = `site()->scoping()`. `PLAN_INTERNATIONAL` rows are Plus; nobody pays to be published
@@ -138,8 +137,8 @@ country on the .app signup form.
     gate for branches, team members and the Jobs board. Profile video stays badge only.
   - `plus_badge_pill()` links to `/plus`. It must never look like the emerald Verified
     pill: nothing about a Plus business is checked.
-  - Owner side: `_plus_panel.php` on the dashboard (`#get-plus`); `Directory::verify()`
-    lands a newly confirmed profile abroad there. `_plus_compare.php` on signup and home.
+  - Owner side: `_plus_panel.php` on `/business/badge`; `Directory::verify()` lands a
+    newly confirmed profile abroad there. `_plus_compare.php` on signup and home.
     `cancelPlus()`: a lapse keeps the profile and takes the extras.
   - Admin: `/admin/verifications?plan=plus` (or `/admin/plus`).
   - PayFast: return and cancel URLs go to the listing's own site; **the ITN `notify_url`
@@ -151,12 +150,11 @@ country on the .app signup form.
 
 ## Online bookings on both sites
 
-Since decision T24 (5 Nov 2026, `docs/bookings/decisions.md`; skill `bookings`): a business
-takes bookings on its own site's host only (booking page, `/bookings`, `/api/v1`). Clock and
-currency come from `App\Services\Bookings\BusinessLocale` (profile timezone, else the country's;
-the country's currency). Deposits are rand only, so co.za only. The Bookings plan abroad is shown
-in US dollars (`Config\Bookings::$planTiers` `usd`) and charged in rand at `usd_zar_rate@app`,
-like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
+Decision T24 (skill `bookings`): a business takes bookings on its own site's host only
+(booking page, `/business`, `/api/v1`). Bookings come with Verified on co.za and Plus on
+.app; there is no separate plan. Clock and currency come from
+`App\Services\Bookings\BusinessLocale` (profile timezone, else the country's). Deposits
+are rand only, so co.za only.
 
 ## Settings, copy, legal, SEO per site
 
@@ -165,7 +163,7 @@ like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
   `usd_zar_rate`, `profile_setup_usd`. `/admin/settings` edits both.
 - **Copy**: `site_copy()` + `Config\Sites::$appCopy`. "Built for South Africa" is co.za
   only. Header CTA "Add your practice or business" ("Add profile" below 1280px) on both
-  (medical first, 17 Nov 2026). Professional registers (HPCSA, SAVC…) are co.za only:
+  (medical first). Professional registers (HPCSA, SAVC…) are co.za only:
   `regulatorFor()` judges the profile's country. .app has its own FAQ groups
   (`_faq_app_groups.php`), a neutral Company and Media page, and `/plus` (mirrors
   `/verified`; co.za `/plus` 301s to .app). Same copy rules everywhere (CLAUDE.md).
@@ -188,9 +186,7 @@ like Plus; `DirectorySettings::usdZarRate(Sites::APP)` reads it from any host.
   `app.devHostnames` if `base_url()` does not follow), then `npm run dev:restart`. co.za
   is `http://localhost:8095`, .app is `http://app.localhost:8095` (browsers resolve
   `*.localhost` themselves). Put both lines back when done.
-- The dev DB is a copy of production, so .app shows the real foreign profiles. The old
-  `international-app` worktree, its port 8098 and its `_intl` databases were removed on
-  29 Oct 2026.
+- The dev DB is a copy of production, so .app shows the real foreign profiles.
 
 ## System handbook
 
@@ -219,6 +215,6 @@ the `listing-service` skill, "System handbook". Rows per site there are live.
   Cloudflare origin certificate at `/etc/ssl/cloudflare/webscheduler.app.{pem,key}`).
 - **Rollback: set `sites.app.enabled = false` in the server `.env` and reload PHP FPM.**
   .app then 302s to co.za and co.za serves every country as it did before launch.
-- Open items (26 Oct 2026): a separate Cloudflare Access application for
+- Open items: a separate Cloudflare Access application for
   `local.webscheduler.app/admin*`, sitemaps to Search Console and Bing, rotating the .app
   origin certificate, the first real Plus purchase.
