@@ -157,9 +157,15 @@ $n = 0;
         <h2><?= ++$n ?>. Messages from visitors</h2>
         <p>
             Your profile has an <strong>Email this business</strong> button. Visitors write to you through WebScheduler Local
-            and never see your email address, which keeps it away from spam and scrapers. You answer them from your own email,
-            as with any other email.
+            and never see your email address. You answer them from your own email, as with any other email.
         </p>
+
+        <h3>Why messages go through us</h3>
+        <ul>
+            <li><strong>To protect you from spam.</strong> An email address shown on a web page is soon found by spammers and fills your inbox with junk. Kept off the page, it reaches only the people who really want to contact you.</li>
+            <li><strong>To protect you from site scraping.</strong> Automated programs copy contact details from websites in bulk and sell or misuse them. Your address is never in the page, so there is nothing to copy.</li>
+            <li>You lose nothing: every message still reaches your inbox, and you reply as usual.</li>
+        </ul>
 
         <h3>How a message reaches you</h3>
         <ol>

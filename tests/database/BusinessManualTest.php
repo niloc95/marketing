@@ -67,6 +67,9 @@ final class BusinessManualTest extends CIUnitTestCase
 
         $this->assertStringContainsString('Messages from visitors', $page);
         $this->assertStringContainsString('Email this business', $page);
+        $this->assertStringContainsString('Why messages go through us', $page);
+        $this->assertStringContainsString('To protect you from spam.', $page);
+        $this->assertStringContainsString('To protect you from site scraping.', $page);
         $this->assertStringContainsString('press <strong>Reply</strong>', $page);
         $this->assertStringContainsString('goes straight to the visitor', $page);
         $this->assertStringContainsString('up to ' . ListingMessageService::MAX_FILES . ' files', $page);
