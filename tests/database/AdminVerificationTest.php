@@ -109,6 +109,9 @@ final class AdminVerificationTest extends CIUnitTestCase
     public function testActivateGrantsTheBadgeNow(): void
     {
         $id = $this->listing(['status' => 'published', 'is_verified' => 1]);
+        // Pack already sent, so the last email is the activation one (the
+        // welcome pack would follow it otherwise; WelcomePackTest covers that).
+        db_connect()->table('directory_listings')->where('id', $id)->update(['welcome_pack_sent_at' => date('Y-m-d H:i:s')]);
 
         $result = $this->svc->grantByAdmin($id, [], 'Paid by EFT', 'activate', 3, 'admin@test');
 

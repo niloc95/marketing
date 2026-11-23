@@ -1151,6 +1151,8 @@ class VerificationService
 
         if (empty($row['activated_at'])) {
             $this->mailOwner((int) $row['listing_id'], 'activated', ['product' => $this->productOf($row)]);
+            // The plan's first start: the welcome pack, once (it never throws).
+            (new WelcomePackService())->sendIfDue((int) $row['listing_id']);
         }
 
         return true;
@@ -1367,6 +1369,8 @@ class VerificationService
                 'product' => $this->productOf($verification),
                 'cycle'   => DirectoryVerificationModel::cycleOf($verification),
             ]);
+            // The plan's first start: the welcome pack, once (it never throws).
+            (new WelcomePackService())->sendIfDue($listingId);
         }
 
         // The new mandate is live, so the old one must stop. After the

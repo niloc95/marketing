@@ -971,6 +971,29 @@ checkout → `GET profile-setup/paystack` (verify) and the Paystack webhook, bot
 `PaystackPayments`. Queue at `/admin/profile-setup`. If a paid order never shows as paid,
 look at the rejection table and `Paystack:` / `Paystack return:` log lines first.
 
+## Welcome pack (Verified and Plus)
+
+A branded PDF (`WelcomePackService`, view `welcome_pack/pack.php`, controller
+`WelcomePack`): cover and welcome letter, the profile in print with a QR code, an A4 QR
+poster, four counter cards, a share kit. Built with dompdf on every download, never stored.
+
+- `available()` is the one rule (published, email confirmed, not demo,
+  `listing_has_premium()`). Emailed once by `sendIfDue()` after the plan's FIRST
+  activation (`VerificationService`, both paths, where `activated_at` was empty) and from
+  `Directory::verify()`; `welcome_pack_sent_at` is the guard. Admin can resend (new token).
+- Routes: `welcome-pack/{token}` (emailed, hashed token, no expiry, 12/min/IP),
+  `business/welcome-pack` (card on `/business/badge`), `admin/welcome-pack/{id}` (+ `/send`).
+- Public facts only (`listing_public_view()`, email only when `email_public`). The site is
+  the PROFILE's: .app packs have no badge logo (it says "in South Africa"), no Verified.
+- **dompdf gotchas:** a table row never splits across pages (long content in a cell
+  becomes blank pages: keep it full width); a nested inline span drops to the next line;
+  `height` + `line-height` puts text on the box's bottom edge (use padding); its SVG
+  renderer drops QR modules when `connectPaths` is on; images only as data URIs (remote
+  off, chroot public/); `<meta charset="utf-8">` or every non ASCII letter is "?".
+- Check a render by eye: `GET /admin/welcome-pack/{id}` signed in on dev. The mock mailer
+  keeps only the LAST email, so a test that reads the "is live" email after an activation
+  must mark the pack sent first. Tests: `tests/database/WelcomePackTest.php`.
+
 ## Professional registers are South African only
 
 Every regulator in `Config\Registrations` names its `country` ('ZA'), and

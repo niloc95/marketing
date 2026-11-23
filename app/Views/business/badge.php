@@ -43,6 +43,10 @@
         ]) ?>
     <?php endif ?>
 
+    <?php if (! empty($welcomePack)): ?>
+        <?= view('business/_welcome_pack_card', ['planName' => $welcomePackPlan], ['saveData' => false]) ?>
+    <?php endif ?>
+
     <?= view('directory/_profile_setup_offer') ?>
 </div>
 <?= $this->endSection() ?>

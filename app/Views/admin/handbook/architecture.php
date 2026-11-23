@@ -24,6 +24,23 @@
         <li><strong>Commands</strong> (<code>app/Commands/</code>): spark jobs run by cron (Operations chapter).</li>
     </ul>
 
+    <h3>Welcome pack (Verified and Plus)</h3>
+    <ul>
+        <li><code>WelcomePackService</code> builds a branded PDF from the live profile: cover and welcome letter, the profile in
+            print with a QR code, an A4 QR poster, four counter cards and a share kit (view <code>welcome_pack/pack.php</code>,
+            dompdf; QR codes as vector SVG data URIs). Never stored. Only public facts: rows go through <code>listing_public_view()</code>,
+            the email only when <code>email_public</code>.</li>
+        <li><code>available()</code> is the one rule: published, email confirmed, not a demo, <code>listing_has_premium()</code>.
+            Emailed once when the plan first starts (<code>VerificationService</code> after the first activation, and
+            <code>Directory::verify()</code> for a profile paid before its email was confirmed); <code>welcome_pack_sent_at</code>
+            is the guard, claimed by a conditional update. Renewals never resend it.</li>
+        <li>Ways in: <code>GET welcome-pack/{token}</code> (emailed, no sign in, 12 a minute per IP; a lapsed profile goes to
+            its plan page), <code>GET business/welcome-pack</code> (owner, card on the Plan page), <code>GET admin/welcome-pack/{id}</code>
+            (preview any published profile) and <code>POST admin/welcome-pack/{id}/send</code> (new link, paid only). The response
+            has the locked document CSP, nosniff, no-store and noindex.</li>
+        <li>The site is the profile's, not the request's: copy reads the row's site and links use <code>listing_site_url()</code>.</li>
+    </ul>
+
     <h3>Communications (emails to groups of profiles)</h3>
     <ul>
         <li><code>/admin/communications</code> (<code>AdminCommunications</code>) builds a campaign from a template in

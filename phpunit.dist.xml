@@ -43,6 +43,10 @@
     </source>
 
     <php>
+        <!-- The suite peaked at 114 MB before the welcome pack (dompdf) and
+             a CLI's default is 128 MB: ListingImageProcessorTest then failed
+             for want of 4 MB. Production FPM keeps its own 128 MB. -->
+        <ini name="memory_limit" value="256M"/>
         <server name="app.baseURL" value="http://example.com/"/>
         <server name="CODEIGNITER_SCREAM_DEPRECATIONS" value="0"/>
         <!-- ScrapeGuard off for the suite, which opens hundreds of directory

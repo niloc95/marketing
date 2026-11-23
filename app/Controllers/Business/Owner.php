@@ -34,6 +34,9 @@ class Owner extends BaseController
         return view('business/badge', [
             'profileForm'         => true,
             'listing'             => $listing,
+            // The welcome pack card, while Verified or Plus is live.
+            'welcomePack'         => (new \App\Services\WelcomePackService())->available($listing),
+            'welcomePackPlan'     => listing_is_verified_business($listing) ? 'Verified' : 'Plus',
             'verificationOffered' => $verification->isEnabled(),
             'verificationPayable' => $verification->canTakePayment(),
             'verificationAmount'  => $verification->monthlyAmount(),
