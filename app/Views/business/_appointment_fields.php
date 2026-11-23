@@ -64,7 +64,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
     <?php endif ?>
 </div>
 
-<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's by morning, afternoon and evening. A click fills Date and Time and folds the lists to one line (Change time opens them). Hidden without the script. ?>
+<?php // Filled by free-times.js: a week of free times, one column per place (book/_board.php, T33). A click fills Date and Time and folds the board to one line (Change time opens it). Hidden without the script. ?>
 <div class="free-times mb-4" data-free hidden>
     <div class="free-times-summary" data-free-summary hidden>
         <?= lucide('clock', 'h-5 w-5 shrink-0') ?>
@@ -72,27 +72,18 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <button type="button" class="btn btn-ghost btn-xs ml-auto" data-free-change>Change time</button>
     </div>
     <div data-free-lists>
-        <p class="free-times-heading" data-free-next-heading>Next free times</p>
-        <div class="free-times-list" data-free-next></div>
-        <p class="free-times-heading" data-free-day-heading hidden></p>
-        <div class="free-times-groups" data-free-day hidden></div>
+        <div data-free-board><p class="free-times-empty">Finding free times…</p></div>
     </div>
 </div>
 </div>
 
 <div class="book-form-who">
 <?php // Filled by free-times.js as the fields change: what is being booked, in one place. Hidden without the script. ?>
-<section class="book-summary" data-book-summary data-timezone="<?= esc(service('businessContext')->isSet() ? service('businessContext')->timezone() : app_timezone(), 'attr') ?>" hidden>
-    <h3 class="book-summary-title">Appointment summary</h3>
-    <dl class="book-summary-list">
-        <div><dt>Service</dt><dd data-sum="service"></dd></div>
-        <div><dt>With</dt><dd data-sum="who"></dd></div>
-        <div><dt>Date</dt><dd data-sum="date"></dd></div>
-        <div><dt>Time</dt><dd data-sum="time"></dd></div>
-        <div><dt>When</dt><dd data-sum="when"></dd></div>
-        <div><dt>Where</dt><dd data-sum="where"></dd></div>
-    </dl>
-</section>
+<?= view('book/_summary', [
+    'rows'   => array_map(static fn (array $r): array => ['key' => $r[0], 'label' => $r[1]], [['service', 'Service'], ['who', 'With'], ['date', 'Date'], ['time', 'Time'], ['when', 'When'], ['where', 'Where']]),
+    'attrs'  => 'data-book-summary data-timezone="' . esc(service('businessContext')->isSet() ? service('businessContext')->timezone() : app_timezone(), 'attr') . '"',
+    'hidden' => true,
+], ['saveData' => false]) ?>
 
 <fieldset class="mt-2" data-customer-picker<?php if (! empty($initialCustomer)): ?> data-customer-initial="<?= esc(json_encode($initialCustomer), 'attr') ?>"<?php endif ?>>
     <legend class="text-sm font-semibold text-slate-900 dark:text-white">Customer</legend>

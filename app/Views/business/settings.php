@@ -110,8 +110,8 @@ $labels = [
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="field">
                 <label for="biz-step">Times offered every</label>
-                <?= $select('biz-step', 'slot_step', ['0' => 'The service duration', '10' => '10 minutes', '15' => '15 minutes', '20' => '20 minutes', '30' => '30 minutes', '60' => 'Hour'], $settings['booking.slot_step']) ?>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">With a 45 minute service, "the service duration" offers 09:00, 09:45, 10:30; "15 minutes" offers 09:00, 09:15, 09:30.</p>
+                <?= $select('biz-step', 'slot_step', ['0' => 'The service duration, with its free minutes', '10' => '10 minutes', '15' => '15 minutes', '20' => '20 minutes', '30' => '30 minutes', '60' => 'Hour'], $settings['booking.slot_step']) ?>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">With a 45 minute service and 15 free minutes after every booking, "the service duration" offers 09:00, 10:00, 11:00; "15 minutes" offers 09:00, 09:15, 09:30, and a booking at 09:00 then takes 09:15 to 09:45 away.</p>
             </div>
             <div class="field">
                 <label for="biz-lead">Minimum notice, in hours</label>
@@ -121,7 +121,7 @@ $labels = [
             <div class="field">
                 <label for="biz-buffer">Free minutes after every booking</label>
                 <input id="biz-buffer" type="number" name="buffer_time" min="0" max="240" step="5" value="<?= (int) $settings['business.buffer_time'] ?>">
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Added to each service's own gaps.</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Added to each service's own gaps. Nobody can be booked in them.</p>
             </div>
         </div>
         <button type="submit" class="btn btn-primary">Save</button>

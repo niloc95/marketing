@@ -16,7 +16,7 @@ export function initCreate(root, scheduler) {
   // Find a customer as you type: shared with /business/appointments/new.
   const { choose } = initCustomerPicker(form.querySelector('[data-customer-picker]'), root.dataset.customerUrl, form);
   // Next free times for the chosen service and person: a click fills Date and Time.
-  const free = initFreeTimes(form, `${root.dataset.appointmentUrl}/free`);
+  const free = initFreeTimes(form, `${root.dataset.appointmentUrl}/board`);
 
   dialog.querySelectorAll('[data-cal-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => scheduler.busy(false));

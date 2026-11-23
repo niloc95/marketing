@@ -156,6 +156,24 @@ final class BookingAvailabilityTest extends CIUnitTestCase
         $this->assertSame('10:10', $this->times()[0]);
     }
 
+    public function testTheServiceDurationStepIncludesTheFreeMinutes(): void
+    {
+        // 09:00 to 12:00, a 60 minute service, 60 free minutes after every booking:
+        // spaced by the whole booking, not the service alone, on an empty day too.
+        BookingSettings::for($this->listingId)->save(['business.buffer_time' => '60', 'booking.slot_step' => '0'], null);
+        $this->assertSame(['09:00'], $this->times(), '11:00 plus its free hour would end after 12:00');
+
+        BookingSettings::for($this->listingId)->save(['business.buffer_time' => '0'], null);
+        $this->assertSame(['09:00', '10:00', '11:00'], $this->times());
+
+        // 30 minutes with 30 free after: every hour. A fixed step keeps its grid.
+        $short = $this->service(['name' => 'Check', 'duration_min' => 30]);
+        BookingSettings::for($this->listingId)->save(['business.buffer_time' => '30'], null);
+        $this->assertSame(['09:00', '10:00', '11:00'], $this->times($short));
+        BookingSettings::for($this->listingId)->save(['booking.slot_step' => '30'], null);
+        $this->assertSame(['09:00', '09:30', '10:00', '10:30', '11:00'], $this->times($short));
+    }
+
     public function testTheProfileHoursLimitTheDay(): void
     {
         $this->setProfileHours(['mon' => ['open' => '10:00', 'close' => '11:30']]);

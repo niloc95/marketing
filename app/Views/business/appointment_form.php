@@ -17,7 +17,7 @@
 <?= $this->section('content') ?>
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/calendar') ?>">Calendar</a></p>
 <?php // data-customer-url: customer-picker.js finds existing customers as you type. ?>
-<form method="post" action="<?= base_url('business/appointments/new') ?>" class="form-card" data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>" data-free-url="<?= esc(base_url('business/api/appointments/free'), 'attr') ?>">
+<form method="post" action="<?= base_url('business/appointments/new') ?>" class="form-card" data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>" data-free-url="<?= esc(base_url('business/api/appointments/board'), 'attr') ?>">
     <?= csrf_field() ?>
     <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. You can book any free time in working hours.</p>
     <?php if ($services === [] || $providers === []): ?>

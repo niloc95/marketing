@@ -187,7 +187,7 @@ $byDate = array_column($days, null, 'date');
 
     <?php // Book dialog: the same fields as /business/appointments/new, sent as JSON by availability.js. ?>
     <dialog class="cal-dialog book-dialog" data-avail-book aria-labelledby="avail-book-title">
-        <form method="post" action="<?= base_url('business/appointments/new') ?>" data-avail-book-form data-free-url="<?= esc(base_url('business/api/appointments/free'), 'attr') ?>" novalidate>
+        <form method="post" action="<?= base_url('business/appointments/new') ?>" data-avail-book-form data-free-url="<?= esc(base_url('business/api/appointments/board'), 'attr') ?>" novalidate>
             <?= csrf_field() ?>
             <div class="mb-4 flex items-center gap-3">
                 <h2 id="avail-book-title" class="flex-1 text-lg font-bold text-slate-900 dark:text-white">Book an appointment</h2>

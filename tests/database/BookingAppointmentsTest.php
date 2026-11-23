@@ -458,6 +458,20 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertTrue($none === null || ($none['customers'] === [] && $none['appointments'] === []));
     }
 
+    public function testTheBookFormsBoardIsAColumnPerPlaceInScope(): void
+    {
+        $answer = json_decode($this->signedIn()->get('business/api/appointments/board?service_id=' . $this->serviceId . '&provider_id=' . $this->sarah . '&from=2030-01-07')->getJSON(), true);
+        $this->assertTrue($answer['ok']);
+        $this->assertSame('2030-01-07', $answer['data']['from']);
+        $this->assertStringContainsString('class="board-col"', $answer['data']['html']);
+        $this->assertStringContainsString('data-board-time data-date="2030-01-07"', $answer['data']['html'], 'buttons, not links');
+        $this->assertStringNotContainsString('href=', $answer['data']['html']);
+
+        // Another business's member cannot ask about this one's people.
+        $other = json_decode($this->signedIn($this->otherAccountId, $this->otherListingId)->get('business/api/appointments/board?service_id=' . $this->serviceId . '&provider_id=' . $this->sarah)->getJSON(), true);
+        $this->assertSame([], $other['ok'] ? array_filter([$other['data']['html'] ?? ''], static fn (string $h): bool => str_contains($h, 'data-board-time')) : []);
+    }
+
     public function testBookingFromACustomersPageStartsWithThatCustomer(): void
     {
         $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);

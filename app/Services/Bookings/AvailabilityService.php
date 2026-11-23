@@ -126,7 +126,14 @@ class AvailabilityService
 
         $duration = (int) $service['duration_min'] * 60;
         [$before, $after] = $this->holds($service);
-        $step     = ($this->settings->int('booking.slot_step') ?: (int) $service['duration_min']) * 60;
+        // "Times offered every: the service duration" (slot_step 0) spaces times by
+        // the whole booking: its gap before, the service, and its gap after plus
+        // the business's free minutes. Spaced by the service alone, an empty day
+        // never showed the free minutes (owner, 23 Nov 2026). A fixed step keeps
+        // its grid; the gaps then remove the times next to a booking.
+        $step     = $this->settings->int('booking.slot_step') > 0
+            ? $this->settings->int('booking.slot_step') * 60
+            : $before + $duration + $after;
         $earliest = $public ? $this->earliestStart() : PHP_INT_MIN;
         $busy     = $this->busy($providerId, $date, $excludeAppointmentId);
         $out      = [];
@@ -572,8 +579,13 @@ class AvailabilityService
         return in_array($providerId, $service['provider_ids'], true) ? $service : null;
     }
 
-    /** @return list<int> */
-    private function providersFor(int $serviceId, bool $public): array
+    /**
+     * The people who offer a service (customers: only bookable people), in
+     * team order. Used by slotsForAnyone() and FreeTimesBoard.
+     *
+     * @return list<int>
+     */
+    public function providersFor(int $serviceId, bool $public): array
     {
         $service = $this->catalog->service($serviceId);
         if ($service === null || $service['archived_at'] !== null) {
