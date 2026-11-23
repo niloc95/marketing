@@ -21,7 +21,7 @@ routes.
 | Sign in | password hashing, lockout per IP and per account, session id regenerated on sign in (`BusinessSession`), idle timeout, membership checked against the database on every request |
 | Links customers hold | change or cancel token 64 hex, stored hashed, rotated on every change; customer page key 64 hex; a reference never opens a booking; `no-store` and `no-referrer` on keyed pages |
 | CSRF exemptions | only `book/unsubscribe/*` (one click, can only stop emails), `book/payfast/notify` (PayFast's four checks under the business's passphrase), `api/v1/*` (Bearer key, no cookie, no CORS) |
-| Webhooks in | PayFast deposits: signature, source IP, POST back, amount; Paystack: verified with Paystack on return and by the sweep; the Bookings plan reuses the platform's Paystack webhook (signature, IP, verify, amount) |
+| Webhooks in | PayFast deposits: signature, source IP, POST back, amount; Paystack: verified with Paystack on return and by the sweep |
 | Calls out | webhook endpoints and Jitsi servers through `SafeUrl` (https, port 443, public addresses only), no redirects followed, 10 s timeout; nothing called inside a customer's request |
 | Secrets | integration accounts encrypted (CI4 Encrypter), write only in the UI; API keys stored as SHA-256 of a 160 bit secret, shown once; webhook payloads signed with a timestamp |
 | Raw queries across businesses | only where a random hash, token, reference or key prefix picks the row, or in cron sweeps; every other read goes through `forBusiness()` |

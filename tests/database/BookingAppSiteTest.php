@@ -10,9 +10,7 @@ use App\Services\Bookings\BookingSetupService;
 use App\Services\Bookings\BusinessLocale;
 use App\Services\Bookings\BusinessSession;
 use App\Services\Bookings\CatalogueService;
-use App\Services\Bookings\Plans\BookingPlanService;
 use App\Services\Bookings\TeamService;
-use App\Services\DirectorySettings;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
@@ -25,9 +23,8 @@ use Tests\Support\WithEnv;
  *
  * A business abroad turns bookings on like one at home and uses its own
  * site's host for everything (booking page, /bookings, the API); prices are
- * in its own currency on its own clock; no deposits (rand only); its plan is
- * shown in US dollars and charged in rand at the Plus rate, with no rand
- * figure on its pages. co.za businesses stay on co.za.
+ * in its own currency on its own clock; no deposits (rand only), and no
+ * rand figure on its pages. co.za businesses stay on co.za.
  *
  * @internal
  */
@@ -145,38 +142,10 @@ final class BookingAppSiteTest extends CIUnitTestCase
         $wrong->assertJSONFragment(['error' => ['code' => 'wrong_site']]);
     }
 
-    public function testThePlanAbroadIsInDollarsChargedInRand(): void
-    {
-        $this->setEnv('bookings.planRequired', 'true');
-        (new BookingPlanService())->startTrial($this->londonId, null);
-        $status = (new BookingPlanService())->status($this->londonId);
-        $this->assertSame([true, '$8.99', null, false], [$status['abroad'], $status['display'], $status['price'], $status['can_subscribe']], 'no rate set yet: not on sale');
-
-        db_connect()->table('xs_directory_settings')->insert(['name' => 'usd_zar_rate@app', 'value' => '18.5000']);
-        (new DirectorySettings())->forget();
-        $status = (new BookingPlanService())->status($this->londonId);
-        $this->assertSame(['166.32', true], [$status['price'], $status['can_subscribe']], 'US$8.99 at R18.50');
-
-        $tab = $this->app()->get('business/settings/plan');
-        $tab->assertSee('$8.99');
-        $tab->assertSee('Billed in South African rand');
-        $this->assertDoesNotMatchRegularExpression('/R\s?\d/', strip_tags((string) $tab->getBody()), 'no rand figure on .app');
-
-        $this->app()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirect();
-        $init = service('paystack')->callsOf('initialize')[0][1];
-        $this->assertSame([16632, 'PLN_monthly_16632'], [$init['amountCents'], $init['planCode']]);
-        $this->assertStringEndsWith('/business/plan/paystack', $init['callbackUrl']);
-        $this->assertSame('Solo', (new BookingPlanService())->forListing($this->londonId)['checkout_tier']);
-    }
-
     public function testCoZaIsUnchanged(): void
     {
         $salon = $this->listings->find($this->salonId);
         $this->assertSame(['ZAR', 'Africa/Johannesburg'], [BusinessLocale::currency($salon), BusinessLocale::timezoneName($salon)]);
-        $this->setEnv('bookings.planRequired', 'true');
-        (new BookingPlanService())->startTrial($this->salonId, null);
-        $status = (new BookingPlanService())->status($this->salonId);
-        $this->assertSame(['R160', '160.00', false], [$status['display'], $status['price'], $status['abroad']]);
     }
 
     // Helpers

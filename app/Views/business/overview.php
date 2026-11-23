@@ -75,7 +75,7 @@ $live   = $status === 'published';
                     <a class="btn btn-primary mt-3" href="<?= base_url('business/badge') ?>"><?= $za ? 'Get Verified' : 'Get Plus' ?></a>
                 <?php endif ?>
             <?php elseif ($owner): ?>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Let customers book a time with you, with a calendar for your team and reminders.<?php if (App\Services\Bookings\Plans\BookingPlanService::required()): ?> Free for <?= (int) config('Bookings')->trialDays ?> days to try.<?php endif ?></p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Let customers book a time with you, with a calendar for your team and reminders.</p>
                 <form method="post" action="<?= base_url('business/bookings/turn-on') ?>" class="mt-3">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-primary">Turn on online bookings</button>

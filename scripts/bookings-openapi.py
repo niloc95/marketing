@@ -36,7 +36,7 @@ when_body = {"type": "object", "description": "Send `start`, or `date` and `time
 
 schemas = {
   "Error": {"type": "object", "required": ["error"], "properties": {"error": {"type": "object", "required": ["message", "code"], "properties": {
-      "message": {"type": "string"}, "code": {"type": "string", "enum": ["unauthenticated", "invalid_key", "bookings_off", "plan_required", "rate_limited", "insufficient_scope", "not_found", "invalid", "refused"]},
+      "message": {"type": "string"}, "code": {"type": "string", "enum": ["unauthenticated", "invalid_key", "bookings_off", "rate_limited", "insufficient_scope", "not_found", "invalid", "refused"]},
       "details": {"type": "object", "properties": {"fields": {"type": "object", "additionalProperties": {"type": "string"}}}}}}}},
   "Money": money,
   "Business": {"type": "object", "properties": {"id": {"type": "integer"}, "name": {"type": "string"}, "profile_url": {"type": "string"}, "booking_url": {"type": "string"},
@@ -134,7 +134,7 @@ spec = {
       "schemas": schemas,
       "responses": {
           "Unauthenticated": errresp("No key, or a key that is unknown, revoked or expired."),
-          "Forbidden": errresp("The key lacks the scope, its person's role does not allow it, or the business no longer takes bookings (bookings_off) or its plan has ended (plan_required)."),
+          "Forbidden": errresp("The key lacks the scope, its person's role does not allow it, or the business no longer takes bookings (bookings_off)."),
           "RateLimited": errresp("More than 120 requests a minute. Wait for Retry-After seconds."),
           "NotFound": errresp("Not found, or not in this key's reach."),
           "Invalid": errresp("Something sent is missing or wrong; details.fields says what."),

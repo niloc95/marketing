@@ -54,11 +54,6 @@ class SetupCheck
             $za    = site()->forRow($listing) === \Config\Sites::ZA;
             $out[] = ['code' => 'premium_ended', 'text' => BookingSetupService::premiumNeeded(site()->forRow($listing)) . ' Customers cannot book online until it is renewed.', 'link' => $za ? 'verified' : 'plus'];
         }
-        // The plan has ended: customers cannot book until it is renewed (Phase 10).
-        if (Plans\BookingPlanService::required() && $listing !== null
-            && ! (new Plans\BookingPlanService())->allows($listing)) {
-            $out[] = ['code' => 'plan_ended', 'text' => 'Your online bookings plan has ended, so customers cannot book online. Choose the plan to carry on.', 'link' => 'business/settings/plan'];
-        }
         // Online by Zoom with no Zoom on: no meeting is made (Phase 9).
         if (array_filter($services, static fn (array $s): bool => in_array('online_zoom', (array) $s['delivery_modes'], true)) !== []
             && ! (new Notifications\BookingIntegrations($listingId))->active('zoom')) {

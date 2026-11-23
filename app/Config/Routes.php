@@ -308,10 +308,6 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
     // Phase 8: the business's own PayFast or Paystack account for deposits.
     $routes->post('settings/payments', 'Business\PaymentSettings::save');
     $routes->post('settings/payments/check', 'Business\PaymentSettings::check');
-    // Phase 10: the Bookings plan.
-    $routes->post('settings/plan/subscribe', 'Business\PlanSettings::subscribe');
-    $routes->post('settings/plan/cancel', 'Business\PlanSettings::cancel');
-    $routes->get('plan/paystack', 'Business\PlanSettings::returned');
     // Phase 9: video meetings, Google Calendar and the webhook.
     $routes->post('settings/connections/(zoom|jitsi)', 'Business\ConnectionSettings::saveVideo/$1');
     $routes->post('settings/connections/zoom/check', 'Business\ConnectionSettings::checkZoom');
@@ -635,7 +631,6 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // Online bookings across the platform (Phase 10, D12): counts and setup;
     // a business's contents only through the logged support view.
     $routes->get('bookings', 'AdminBookings::index');
-    $routes->post('bookings/(:num)/extend', 'AdminBookings::extend/$1');
     $routes->post('bookings/(:num)/support', 'AdminBookings::support/$1');
     $routes->post('status/clear-mail', 'Admin::clearMailStatus');
 });

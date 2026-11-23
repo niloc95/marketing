@@ -46,7 +46,7 @@ final class BookingsInPremiumCopyTest extends CIUnitTestCase
         return html_entity_decode((string) $this->get($uri)->response()->getBody(), ENT_QUOTES);
     }
 
-    public function testTheHelperFollowsTheSwitchAndThePlan(): void
+    public function testTheHelperFollowsTheSwitch(): void
     {
         $this->setEnv('bookings.enabled', 'false');
         $this->assertFalse(bookings_in_premium('za'));
@@ -54,9 +54,6 @@ final class BookingsInPremiumCopyTest extends CIUnitTestCase
         $this->setEnv('bookings.enabled', 'true');
         $this->assertTrue(bookings_in_premium('za'));
         $this->assertTrue(bookings_in_premium('app'));
-
-        $this->setEnv('bookings.planRequired', 'true');
-        $this->assertFalse(bookings_in_premium('za'), 'A separate Bookings plan means the badge does not include them.');
     }
 
     public function testEverySalesPageSellsBookingsWhileTheyAreOn(): void

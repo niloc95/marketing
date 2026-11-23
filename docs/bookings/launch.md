@@ -34,7 +34,7 @@ Full suite green before the merge (`php vendor/bin/phpunit`).
 2. Code, `npm run list:build` on the server (the business bundle and the stylesheet).
 3. Cron: reinstall `/etc/cron.d/webscheduler` from `deploy/cron/webscheduler`. New lines:
    `bookings:dispatch` (every minute), `bookings:payments` (every 5 minutes),
-   `bookings:prune` 04:35, `bookings:plans` 04:40, `bookings:retention` 04:45.
+   `bookings:prune` 04:35, `bookings:retention` 04:45.
 4. Still dark: `bookings.enabled` stays off. Check both hosts: no Book online button, `/bookings`,
    `/api/v1/*` and `/developers/bookings` answer 404, .app shows nothing of it.
 
@@ -50,25 +50,17 @@ Full suite green before the merge (`php vendor/bin/phpunit`).
 
 ## 5. Switch on for a test profile
 
-1. `.env`: `bookings.enabled = true`, `bookings.planRequired = false` for the first days.
+1. `.env`: `bookings.enabled = true`.
 2. Turn bookings on for the owner's own test profile from `/manage/bookings`, set it up, book
    from a phone, change and cancel by link, pay a sandbox deposit, check every email in a real
    inbox (SES), check `/admin/bookings`.
 3. Turn off again or keep, as the owner decides.
 
-## 6. Paid plan (D1)
+## 6. Who gets bookings (T32)
 
-| Setting | Value |
-|---|---|
-| Prices (T23) | Solo R160, Team R420, Business R890 a month by bookable people, already in `Config\Bookings::$planTiers`; `bookings.planPrices = 160,420,890` in `.env` only to change them |
-| `bookings.planRequired` | `true` when the plan goes on sale; every business then needs a trial or a paid plan for its booking page and API |
-| Trial | 30 days (`Config\Bookings::$trialDays`), once per business, started when bookings are turned on |
-
-Businesses that turned bookings on before `planRequired = true` have no plan row: they show
-"You have no plan yet" and stop taking bookings. Before switching it on, give each of them a
-trial from `/admin/bookings` (Add free days), which starts it.
-
-The brand site's pricing (`/pricing.json`) does not list the Bookings plan yet.
+Bookings come with Verified on co.za and Plus on .app; there is no separate Bookings plan
+(retired 23 Nov 2026). Production `.env` may still carry `bookings.planRequired = false`
+and `bookings.planPrices`: nothing reads them, remove them at the next `.env` edit.
 
 ## 7. Google Calendar (T22, owner's step)
 
@@ -82,13 +74,11 @@ Until verified, only test users added in Google Cloud can connect.
 
 Section 12a "Online bookings" in `app/Views/legal/privacy.php` shows only while bookings are
 on. The owner reads it before the switch. The Terms may need a matching line for businesses
-(the plan, deposits going to their own account, we are not a party to their bookings).
+(deposits going to their own account, we are not a party to their bookings).
 
 ## 8a. local.webscheduler.app (T24)
 
 - Nothing extra to switch: `bookings.enabled` covers both sites (`Config\Bookings::$sites`).
-- The plan abroad needs the Plus rate: `usd_zar_rate@app` in `/admin/settings` (already set for
-  Plus). Without it the trial runs and the plan shows as not on sale.
 - Google Calendar: add the second redirect URI
   `https://local.webscheduler.app/bookings/connections/google/callback` to the OAuth client.
 - Check both hosts after the switch: a London test profile books on .app in pounds, no deposit

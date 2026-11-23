@@ -14,7 +14,6 @@
  * @var string                    $reason
  * @var list<array<string,mixed>> $rows
  * @var list<array<string,mixed>> $problems
- * @var array<string,mixed>       $plan
  */
 $tz   = \App\Services\Bookings\BusinessLocale::zone($listing);
 $when = static fn (string $utc): string => (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->setTimezone($tz)->format('D j M H:i');

@@ -1,9 +1,7 @@
 <?php
 
 use App\Filters\AdminFilter;
-use App\Libraries\Paystack;
 use App\Models\Bookings\BookingAppointmentModel as A;
-use App\Models\Bookings\BookingPlanModel as Plan;
 use App\Models\Bookings\BusinessMemberModel;
 use App\Models\DirectoryCategoryModel;
 use App\Models\DirectoryListingModel;
@@ -15,30 +13,23 @@ use App\Services\Bookings\BookingSetupService;
 use App\Services\Bookings\BusinessSession;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\CustomerService;
-use App\Services\Bookings\Plans\BookingPlanService;
 use App\Services\Bookings\Privacy\Retention;
 use App\Services\Bookings\PublicBookingService;
 use App\Services\Bookings\SetupCheck;
 use App\Services\Bookings\TeamService;
-use App\Services\PaystackPayments;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
-use Tests\Support\FakePaystack;
 use Tests\Support\FreshDatabase;
 use Tests\Support\WithEnv;
 
 /**
  * Phase 10 of online bookings: launch.
  *
- * The Bookings plan (D1): off changes nothing; on, turning bookings on starts
- * one free trial; a trial that ended stops the booking page and the API but
- * never the business area; paying through Paystack (the browser's return
- * and the webhook, counted once), renewals on the mandate, a wrong amount,
- * stopping renewal, a failed renewal, the trial reminder and the admin's
- * extra days. POPIA (D12): the 24 month purge and the customer's data
- * download. Platform admin: counts only, and the logged support view. And
+ * No separate plan: Bookings come with Verified (Plus on .app), and the
+ * Bookings plan retired on 23 Nov 2026 gates nothing. POPIA (D12): the 24
+ * month purge and the customer's data download. Platform admin: counts only, and the logged support view. And
  * the route guards: every business, API and admin route behind its gate.
  *
  * @internal
@@ -61,8 +52,6 @@ final class BookingLaunchTest extends CIUnitTestCase
 
     private int $serviceId;
 
-    private FakePaystack $paystack;
-
     /** @var list<array<string,mixed>> */
     private array $sent = [];
 
@@ -70,9 +59,6 @@ final class BookingLaunchTest extends CIUnitTestCase
     {
         parent::setUp();
         $this->setEnv('bookings.enabled', 'true');
-        $this->setEnv('bookings.planRequired', 'true');
-        $this->paystack = new FakePaystack();
-        Services::injectMock('paystack', $this->paystack);
 
         $this->listings   = new DirectoryListingModel();
         $this->categoryId = (int) (new DirectoryCategoryModel())->insert([
@@ -101,167 +87,19 @@ final class BookingLaunchTest extends CIUnitTestCase
         parent::tearDown();
     }
 
-    // The plan
+    // No separate plan
 
-    public function testWithThePlanOffNothingChanges(): void
+    public function testBookingsNeedNoPlanOfTheirOwn(): void
     {
-        $this->setEnv('bookings.planRequired', 'false');
-        [$id] = $this->business('free-salon');
-
-        $this->assertNull((new BookingPlanService())->forListing($id));
-        $this->assertTrue((new BookingPlanService())->allows($this->listings->find($id)));
-        $this->signedIn()->get('business/settings/plan')->assertStatus(404);
-    }
-
-    public function testTurningOnStartsOneFreeTrial(): void
-    {
-        $plan = (new BookingPlanService())->forListing($this->listingId);
-        $this->assertSame(Plan::TRIAL, $plan['state']);
-        $status = (new BookingPlanService())->status($this->listingId);
-        $this->assertSame(['trial', true, 30], [$status['state'], $status['allows'], $status['days_left']]);
-
-        $this->endTrial();
-        (new BookingSetupService())->turnOn($this->listings->find($this->listingId));
-        $this->assertSame('trial_ended', (new BookingPlanService())->status($this->listingId)['state'], 'a second turn on never restarts the trial');
-    }
-
-    public function testAnEndedTrialStopsBookingButNotTheBusinessArea(): void
-    {
+        // The separate Bookings plan was retired on 23 Nov 2026: Bookings come
+        // with Verified (Plus on .app), and nothing else gates them.
         $this->assertTrue(PublicBookingService::takesBookings($this->listings->find($this->listingId)));
-        $key = $this->apiKey();
-        $this->endTrial();
-
-        $this->assertFalse(PublicBookingService::takesBookings($this->listings->find($this->listingId)));
-        $this->get('directory/salon-lumi/book')->assertStatus(404);
-        $r = $this->withHeaders(['Authorization' => 'Bearer ' . $key])->get('api/v1/services');
-        $r->assertStatus(403);
-        $r->assertJSONFragment(['error' => ['code' => 'plan_required']]);
-        $this->assertContains('plan_ended', array_column(SetupCheck::problems($this->listingId), 'code'));
-
-        $page = $this->signedIn()->get('business');
-        $page->assertStatus(200);
-        $page->assertSee('Your plan has ended, so customers cannot book online.');
-        $this->signedIn()->get('business/settings/plan')->assertSee('Your free trial ended on');
-    }
-
-    public function testPayingOpensAPaystackSubscriptionAndCountsOnce(): void
-    {
-        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirectTo('https://checkout.paystack.com/fake123');
-
-        $init = $this->paystack->callsOf('initialize')[0][1];
-        $plan = (new BookingPlanService())->forListing($this->listingId);
-        $this->assertSame(sprintf('WSL-BKG-M-%06d', $plan['id']), $init['reference']);
-        $this->assertSame([16000, 'PLN_monthly_16000', (int) $plan['id']], [$init['amountCents'], $init['planCode'], $init['metadata']['booking_plan_id']]);
-        $this->assertSame('WebScheduler Local online bookings, monthly', $this->paystack->plans[0]['name']);
-
-        $this->paystack->transactions[$init['reference']] = $this->charge(1001, $init['reference'], 16000);
-        $back = $this->signedIn()->get('business/plan/paystack?reference=' . $init['reference']);
-        $back->assertRedirectTo(base_url('business/settings/plan'));
-
-        $plan = (new BookingPlanService())->forListing($this->listingId);
-        $this->assertSame([Plan::ACTIVE, 'CUS_1', 'PLN_monthly_16000', 'SUB_fake'], [$plan['state'], $plan['paystack_customer_code'], $plan['paystack_plan_code'], $plan['paystack_subscription_code']]);
-        $trialEnd = strtotime((string) $plan['trial_ends_at'] . ' UTC');
-        $this->assertSame(gmdate('Y-m-d H:i:s', strtotime('+1 month', $trialEnd)), $plan['paid_until'], 'paying in the trial loses no free days');
-
-        $this->assertStringStartsWith('duplicate', (new PaystackPayments($this->paystack))->confirmReference($init['reference']), 'the webhook after the return changes nothing');
-        $this->assertSame(1, db_connect()->table('xs_booking_plan_payments')->countAllResults());
-    }
-
-    public function testAWrongAmountIsRefused(): void
-    {
-        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()]);
-        $ref = $this->paystack->callsOf('initialize')[0][1]['reference'];
-        $this->paystack->transactions[$ref] = $this->charge(1002, $ref, 100);
-
-        $this->assertStringStartsWith('rejected', (new PaystackPayments($this->paystack))->confirmReference($ref));
-        $this->assertSame(Plan::TRIAL, (new BookingPlanService())->forListing($this->listingId)['state']);
-    }
-
-    public function testARenewalOnTheMandateAddsAMonth(): void
-    {
-        $this->paid();
-        $before = (new BookingPlanService())->forListing($this->listingId)['paid_until'];
-        $this->paystack->transactions['T_renew'] = $this->charge(2001, 'T_renew', 16000);
-
-        $this->assertStringStartsWith('applied', (new PaystackPayments($this->paystack))->confirmReference('T_renew'));
-        $this->assertSame(gmdate('Y-m-d H:i:s', strtotime('+1 month', strtotime($before . ' UTC'))), (new BookingPlanService())->forListing($this->listingId)['paid_until']);
-    }
-
-    public function testStoppingRenewalKeepsThePlanToItsPaidDate(): void
-    {
-        $this->paid();
-        $this->signedIn()->post('business/settings/plan/cancel', [csrf_token() => csrf_hash()])->assertRedirect();
-
-        $this->assertSame([['disable', 'SUB_fake', 'etok_fake']], $this->paystack->callsOf('disable'));
-        $status = (new BookingPlanService())->status($this->listingId);
-        $this->assertSame(['cancelled', true, false], [$status['state'], $status['allows'], $status['renews']]);
-
-        db_connect()->table('xs_booking_plans')->update(['paid_until' => '2020-01-01 00:00:00']);
-        $this->assertSame('ended', (new BookingPlanService())->status($this->listingId)['state']);
-    }
-
-    public function testPaystackWebhooksForThePlan(): void
-    {
-        $this->paid();
-        $hook = fn (array $body): string => (new PaystackPayments($this->paystack))->handleWebhook(
-            $raw = json_encode($body), hash_hmac('sha512', $raw, FakePaystack::SECRET), Paystack::WEBHOOK_IPS[0],
-        );
-
-        $this->assertStringStartsWith('mailed', $hook(['event' => 'invoice.payment_failed', 'data' => ['subscription' => ['subscription_code' => 'SUB_fake']]]));
-        $this->assertSame('Your online bookings payment did not go through', $this->sent[array_key_last($this->sent)]['subject'] ?? null);
-
-        $this->assertStringStartsWith('cancelled', $hook(['event' => 'subscription.disable', 'data' => ['subscription_code' => 'SUB_fake']]));
-        $this->assertSame(Plan::CANCELLED, (new BookingPlanService())->forListing($this->listingId)['state']);
-    }
-
-    public function testTheTrialReminderGoesOnce(): void
-    {
-        db_connect()->table('xs_booking_plans')->update(['trial_ends_at' => gmdate('Y-m-d H:i:s', time() + 2 * 86400)]);
-
-        $this->assertSame(1, (new BookingPlanService())->sweep()['reminded']);
-        $this->assertSame(0, (new BookingPlanService())->sweep()['reminded']);
-        $this->assertStringContainsString('trial ends soon', (string) $this->sent[array_key_last($this->sent)]['subject']);
-    }
-
-    public function testThePriceFollowsTheTeamSize(): void
-    {
-        $team = new TeamService($this->listingId);
-        $this->assertSame(['Solo', '160.00'], array_values(array_intersect_key((new BookingPlanService())->status($this->listingId), ['tier' => 0, 'price' => 0])));
-        $team->saveProvider(null, ['name' => 'James', 'bookable' => 1], null);
-        $team->saveProvider(null, ['name' => 'Desk', 'bookable' => 0], null);
-        $status = (new BookingPlanService())->status($this->listingId);
-        $this->assertSame([2, 'Team', '420.00'], [$status['people'], $status['tier'], $status['price']], 'people who cannot be booked are not counted');
-
-        $this->setEnv('bookings.planPrices', '150,400,850');
-        $this->assertSame('400.00', (new BookingPlanService())->status($this->listingId)['price']);
-        for ($i = 0; $i < 4; $i++) {
-            $team->saveProvider(null, ['name' => 'Person ' . $i, 'bookable' => 1], null);
-        }
-        $this->assertSame(['Business', '850.00'], [(new BookingPlanService())->status($this->listingId)['tier'], (new BookingPlanService())->status($this->listingId)['price']]);
-    }
-
-    public function testGrowingPastTheTierMovesThePlanAndStopsTheOldPayments(): void
-    {
-        $this->paid();
-        $this->assertFalse((new BookingPlanService())->status($this->listingId)['can_move']);
-        (new TeamService($this->listingId))->saveProvider(null, ['name' => 'James', 'bookable' => 1], null);
-        $status = (new BookingPlanService())->status($this->listingId);
-        $this->assertSame([true, 'Team'], [$status['can_move'], $status['tier']]);
-        $this->signedIn()->get('business/settings/plan')->assertSee('Move to Team');
-        $until = (new BookingPlanService())->forListing($this->listingId)['paid_until'];
-
-        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertRedirect();
-        $init = $this->paystack->callsOf('initialize')[1][1];
-        $this->assertSame([42000, 'PLN_monthly_42000'], [$init['amountCents'], $init['planCode']]);
-        $this->paystack->subscription = ['code' => 'SUB_team', 'email_token' => 'etok_team'];
-        $this->paystack->transactions[$init['reference']] = ['plan' => 'PLN_monthly_42000'] + $this->charge(1003, $init['reference'], 42000);
-
-        $this->assertStringStartsWith('applied', (new PaystackPayments($this->paystack))->confirmReference($init['reference']));
-        $plan = (new BookingPlanService())->forListing($this->listingId);
-        $this->assertSame([42000, 'PLN_monthly_42000', 'SUB_team'], [(int) $plan['amount_cents'], $plan['paystack_plan_code'], $plan['paystack_subscription_code']]);
-        $this->assertSame([['disable', 'SUB_fake', 'etok_fake']], $this->paystack->callsOf('disable'), 'the old payments stop');
-        $this->assertSame(gmdate('Y-m-d H:i:s', strtotime('+1 month', strtotime($until . ' UTC'))), $plan['paid_until'], 'a month added, nothing lost');
-        $this->assertFalse((new BookingPlanService())->status($this->listingId)['can_move']);
+        $this->assertNotContains('plan_ended', array_column(SetupCheck::problems($this->listingId), 'code'));
+        $this->assertSame(0, db_connect()->table('xs_booking_plans')->countAllResults(), 'turning on starts no trial');
+        $this->signedIn()->get('business/settings/plan')->assertStatus(404);
+        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()])->assertStatus(404);
+        $this->withHeaders(['Authorization' => 'Bearer ' . $this->apiKey()])->get('api/v1/services')->assertStatus(200);
+        $this->signedIn()->get('business')->assertDontSee('free trial');
     }
 
     // POPIA
@@ -334,8 +172,7 @@ final class BookingLaunchTest extends CIUnitTestCase
         $this->assertStringContainsString('Owner asked why a booking is missing', (string) $log['new_value']);
         $this->signedIn()->get('business/audit')->assertSee('WebScheduler Local support opened your bookings');
 
-        $this->withSession($this->admin())->post('admin/bookings/' . $this->listingId . '/extend', ['days' => '14', csrf_token() => csrf_hash()])->assertRedirect();
-        $this->assertSame(44, (new BookingPlanService())->status($this->listingId)['days_left']);
+        $this->assertSame(404, $this->withSession($this->admin())->post('admin/bookings/' . $this->listingId . '/extend', ['days' => '14', csrf_token() => csrf_hash()])->response()->getStatusCode(), 'no free days to add: there is no trial');
     }
 
     // Route guards
@@ -364,30 +201,6 @@ final class BookingLaunchTest extends CIUnitTestCase
     }
 
     // Helpers
-
-    private function endTrial(): void
-    {
-        db_connect()->table('xs_booking_plans')->where('listing_id', $this->listingId)->update(['trial_ends_at' => '2020-01-01 00:00:00']);
-    }
-
-    /** Pay the plan once, as the browser's return would. */
-    private function paid(): void
-    {
-        $this->signedIn()->post('business/settings/plan/subscribe', [csrf_token() => csrf_hash()]);
-        $ref = $this->paystack->callsOf('initialize')[0][1]['reference'];
-        $this->paystack->transactions[$ref] = $this->charge(1001, $ref, 16000);
-        $this->assertStringStartsWith('applied', (new PaystackPayments($this->paystack))->confirmReference($ref));
-    }
-
-    /** @return array<string,mixed> */
-    private function charge(int $id, string $reference, int $cents): array
-    {
-        return [
-            'id' => $id, 'reference' => $reference, 'status' => 'success', 'amount' => $cents, 'currency' => 'ZAR',
-            'paid_at' => gmdate('c'), 'customer' => ['customer_code' => 'CUS_1'], 'plan' => 'PLN_monthly_16000',
-            'metadata' => [],
-        ];
-    }
 
     /** @return array{customer:int,appointment:int} */
     private function bookAt(string $when, string $email, string $name): array

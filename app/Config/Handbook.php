@@ -146,7 +146,7 @@ class Handbook extends BaseConfig
         'xs_booking_payments' => ['purpose' => 'Deposits paid into the business\'s own gateway', 'owner' => 'DepositService', 'product' => 'bookings', 'personal' => null],
         'xs_booking_outbox' => ['purpose' => 'Webhook, Zoom and Google Calendar jobs (bookings:dispatch)', 'owner' => 'Outbox, IntegrationWorker', 'product' => 'bookings', 'personal' => null],
         'xs_booking_api_keys' => ['purpose' => 'API keys for /api/v1 (SHA-256, wsk_ prefix)', 'owner' => 'ApiKeys', 'product' => 'bookings', 'personal' => null],
-        'xs_booking_plans' => ['purpose' => 'The business\'s Bookings plan: trial, tier, Paystack mandate', 'owner' => 'BookingPlanService', 'product' => 'bookings', 'personal' => null],
-        'xs_booking_plan_payments' => ['purpose' => 'Payments on Bookings plans (WSL-BKG-M-)', 'owner' => 'BookingPlanService', 'product' => 'bookings', 'personal' => null],
+        'xs_booking_plans' => ['purpose' => 'Retired 23 Nov 2026: the separate Bookings plan (never sold). Empty, kept rather than dropped', 'owner' => 'none (retired)', 'product' => 'bookings', 'personal' => null],
+        'xs_booking_plan_payments' => ['purpose' => 'Retired 23 Nov 2026 with xs_booking_plans. Empty, kept rather than dropped', 'owner' => 'none (retired)', 'product' => 'bookings', 'personal' => null],
     ];
 }

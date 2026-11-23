@@ -103,7 +103,10 @@ never changed by the profile.
 Appointments got `video_meeting_id` (Zoom) and `google_event_id` in Phase 9; with `video_link`
 they are written only by `Integrations\IntegrationSync`, without touching `updated_at`.
 
-## The Bookings plan (Phase 10)
+## The Bookings plan (Phase 10, retired 23 Nov 2026, T32)
+
+Both tables are empty and have no writer since the plan was retired. They are kept, not
+dropped; the notes below describe what they held.
 
 | Table | Notes |
 |---|---|

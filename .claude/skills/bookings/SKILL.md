@@ -30,7 +30,7 @@ No decisions open (D10, D11, D13 became T25 to T27: English only, the feature is
 | 8 Payments | built 5 Nov 2026 on `bookings-p8-payments` (off p7, merged 5 Nov): deposits into the business's own PayFast or Paystack account, hold while paying, `bookings:payments` sweep, mark paid and refunded, /bookings/payments, Payments settings tab |
 | 9 Integrations and API | built 5 Nov 2026 on `bookings-p9-integrations` (off p8, merged 5 Nov): outbox run by `bookings:dispatch`, signed webhooks, Zoom and Jitsi meetings, Google Calendar push, API keys, `/api/v1`, OpenAPI file, `/developers/bookings` |
 | .app (T24) | built 5 Nov 2026 on `bookings-app` (off p10, merged 5 Nov): bookings on local.webscheduler.app, `BusinessLocale`, per host gates, plan in US dollars, migration `2026-11-21-100000_AddBookingPlanTier` (`tier`, `checkout_tier`) |
-| 10 Hardening and launch | built 5 Nov 2026 on `bookings-p10-launch` (off p9, merged 5 Nov): Bookings plan with trial, POPIA retention and export, `/admin/bookings`, route guard test, security review, restore drill and load test scripts, launch checklist. Production steps wait for the owner (docs/bookings/launch.md) |
+| 10 Hardening and launch | built 5 Nov 2026 on `bookings-p10-launch` (off p9, merged 5 Nov): Bookings plan with trial (**retired 23 Nov 2026, T32**), POPIA retention and export, `/admin/bookings`, route guard test, security review, restore drill and load test scripts, launch checklist. Production steps wait for the owner (docs/bookings/launch.md) |
 
 Update this table and the decisions file as phases land.
 
@@ -127,8 +127,7 @@ Bookings rules that still hold after the port:
   site's host (`BusinessAuth` redirects GETs and refuses POSTs on the wrong host, `BookingApi`
   answers 404 `wrong_site`); clock and currency from `BusinessLocale` (never `Africa/Johannesburg`
   or `ZAR` by hand); no deposits abroad (Payments tab and deposit field hidden, `amountFor()` is
-  rand only); the plan abroad shows US dollars and charges rand at `usd_zar_rate@app`; no rand
-  figure on any .app page. Tests: `tests/database/BookingAppSiteTest.php`.
+  rand only); no rand figure on any .app page. Tests: `tests/database/BookingAppSiteTest.php`.
 
 ## Phase 1 in the code
 
@@ -384,12 +383,9 @@ exempt from CSRF, BotTrap and honeypot, sessionless, and has no CORS. On release
 
 | Piece | Where |
 |---|---|
-| Plan | migration `2026-11-19-100000_CreateBookingPlans`, `BookingPlanModel` (not scoped), `Plans\BookingPlanService` (`required()`, `allows()`, `status()`, `startTrial()` from `BookingSetupService::turnOn()`, `people()`, `priceFor()`, `checkout()` (also a move to the right tier; the old subscription is disabled once the new one is paid), `rowForCharge()`, `recordPayment()` once per Paystack id, `cancel()`, `extendTrial()`, `sweep()`). Config `planRequired`, `planTiers` (T23: Solo 1 person R160, Team up to 5 R420, Business R890; `bookings.planPrices` overrides; `planTierFor()`), `trialDays` 30, `planGraceDays` 3 (`bookings.*` in .env). Reference `WSL-BKG-M-000123` |
-| Paystack | `PaystackPayments` routes our plan's charges (reference, `booking_plan_id` metadata, or the mandate) and its subscription events to the plan service; Paystack plan name "WebScheduler Local online bookings, monthly" |
-| Enforced | `PublicBookingService::takesBookings()`, `BookingApi` (403 `plan_required`), SetupCheck `plan_ended`, banner in `layouts/business.php`. `/bookings` itself always works |
-| Pages | Settings tab Plan (`Business\PlanSettings`, `_settings_plan.php`, hidden while not required), email `emails/booking-plan.php`, offer lines on `/manage/bookings` and the owner panel |
+| Plan | **Retired 23 Nov 2026 (T32): no separate Bookings plan.** Bookings come with Verified (co.za) or Plus (.app), gated by `listing_has_premium()` only. `BookingPlanService`, `PlanSettings`, the Plan tab, `emails/booking-plan.php`, `bookings:plans`, `bookings.planRequired`/`planTiers`/`trialDays`, the trial and `WSL-BKG-M-` are gone; `xs_booking_plans` and `xs_booking_plan_payments` stay, empty, no writer. Never bring a plan back without the owner |
 | POPIA | `Privacy\Retention` (`bookings:retention`), `Privacy\CustomerExport` (`/bookings/customers/{hash}/export`, admins), privacy policy section 12a (shown only while bookings are on; owner to read) |
-| Admin | `AdminBookings` (`/admin/bookings`: counts, plan, setup, connections; Add free days; support view with a reason, audited as `support.opened`) |
+| Admin | `AdminBookings` (`/admin/bookings`: counts, paid plan (Verified/Plus), setup, connections; support view with a reason, audited as `support.opened`) |
 | Scripts | `scripts/bookings-restore-drill.php` (restore a dump into the test DB, compare every booking table, reset), `scripts/bookings-load-test.sh` (ab; needs `BOT_TOKEN` past ScrapeGuard) |
 | Tests | `tests/database/BookingLaunchTest.php` (FakePaystack; includes the route guard test) |
 

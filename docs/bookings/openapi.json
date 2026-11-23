@@ -1440,7 +1440,6 @@
                   "unauthenticated",
                   "invalid_key",
                   "bookings_off",
-                  "plan_required",
                   "rate_limited",
                   "insufficient_scope",
                   "not_found",
@@ -2062,7 +2061,7 @@
         }
       },
       "Forbidden": {
-        "description": "The key lacks the scope, its person's role does not allow it, or the business no longer takes bookings (bookings_off) or its plan has ended (plan_required).",
+        "description": "The key lacks the scope, its person's role does not allow it, or the business no longer takes bookings (bookings_off).",
         "content": {
           "application/json": {
             "schema": {

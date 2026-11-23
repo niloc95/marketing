@@ -119,10 +119,6 @@ class BookingSetupService
         $catalog  = new CatalogueService($listingId, $this->audit);
         $catalog->seedFromProfile($default !== null ? (int) $default : null, (int) $account['id']);
         $catalog->mirrorToProfile();
-        // The free trial of the Bookings plan starts once, at the first turn on (D1).
-        if (Plans\BookingPlanService::required()) {
-            (new Plans\BookingPlanService())->startTrial($listingId, (int) $account['id']);
-        }
 
         return $account;
     }
