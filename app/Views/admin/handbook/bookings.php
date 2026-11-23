@@ -51,8 +51,8 @@ $booking = $tables === null ? [] : array_values(array_filter(
         <li><strong>Messages:</strong> email and WhatsApp only (SMS removed), queued and sent by <code>bookings:dispatch</code> every minute.</li>
         <li><strong>Deposits:</strong> into the business's own PayFast or Paystack account (co.za only), <code>bookings:payments</code> every five minutes.</li>
         <li><strong>Integrations and API:</strong> signed webhooks, Zoom, Jitsi, Google Calendar, API keys (<code>wsk_</code>), <code>/api/v1</code>.</li>
-        <li><strong>Plan:</strong> 30 day trial, then Solo, Team or Business tier via Paystack (<code>WSL-BKG-M-</code>); in US dollars on .app, charged in rand.</li>
-        <li><strong>Admin:</strong> <code>/admin/bookings</code> (counts, plans, support view, audited).</li>
+        <li><strong>Who gets it:</strong> Bookings come with Verified on co.za and Plus on .app; there is no separate Bookings plan (retired 23 Nov 2026; <code>xs_booking_plans</code> and <code>xs_booking_plan_payments</code> stay, empty).</li>
+        <li><strong>Admin:</strong> <code>/admin/bookings</code> (counts, paid plan, support view, audited).</li>
     </ul>
 
     <h3>Rules that must hold</h3>

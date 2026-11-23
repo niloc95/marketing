@@ -21,8 +21,8 @@ class Bookings extends BaseConfig
     /**
      * Sites that may use bookings (Config\Sites keys): both, since decision
      * D2 (owner, 5 Nov 2026). A business uses the site its country belongs to;
-     * abroad it prices in its own currency, takes no deposits, and its plan is
-     * in US dollars charged in rand (BusinessLocale, BookingPlanService).
+     * abroad it prices in its own currency and takes no deposits
+     * (BusinessLocale). Bookings come with Verified (Plus on .app).
      *
      * @var list<string>
      */
@@ -72,83 +72,8 @@ class Bookings extends BaseConfig
     /** Days finished outbox rows (the delivery log) are kept. */
     public int $outboxKeepDays = 30;
 
-    /**
-     * The Bookings plan (Phase 10, decision D1): a monthly subscription with
-     * a free trial. Off (`bookings.planRequired = false`) every business with
-     * bookings on may use them, as before.
-     *
-     * Priced by how many bookable people the business has (decision T23,
-     * owner 5 Nov 2026), in rand a month. `people` is the most the tier
-     * covers, 0 for no limit. The prices can be changed in .env with
-     * `bookings.planPrices = 160,420,890` (one per tier, in this order).
-     * Abroad (local.webscheduler.app, D2) the price is `usd`, shown in US
-     * dollars and charged in rand at the Plus rate (`usd_zar_rate@app` in
-     * /admin/settings), as Plus is; `bookings.planPricesUsd` overrides it.
-     *
-     * @var list<array{name:string,people:int,price:string,usd:string}>
-     */
-    public bool $planRequired = false;
-
-    public array $planTiers = [
-        ['name' => 'Solo', 'people' => 1, 'price' => '160.00', 'usd' => '8.99'],
-        ['name' => 'Team', 'people' => 5, 'price' => '420.00', 'usd' => '23.99'],
-        ['name' => 'Business', 'people' => 0, 'price' => '890.00', 'usd' => '49.99'],
-    ];
-
-    public int $trialDays = 30;
-
-    /** Days a lapsed renewal keeps working while Paystack tries the card again. */
-    public int $planGraceDays = 3;
-
-    /** Days before the trial ends that the admins are reminded. */
-    public int $trialReminderDays = 3;
-
     /** Months a customer is kept after their last appointment (POPIA, decision D12). */
     public int $retentionMonths = 24;
-
-    public function planRequired(): bool
-    {
-        $env = env('bookings.planRequired');
-
-        return $env === null || $env === '' ? $this->planRequired : filter_var($env, FILTER_VALIDATE_BOOLEAN);
-    }
-
-    /**
-     * The tiers with .env's prices applied.
-     *
-     * @return list<array{name:string,people:int,price:string,usd:string}>
-     */
-    public function planTiers(): array
-    {
-        $tiers = $this->planTiers;
-        foreach (['price' => 'bookings.planPrices', 'usd' => 'bookings.planPricesUsd'] as $field => $key) {
-            $prices = array_map('trim', explode(',', (string) (env($key) ?? '')));
-            foreach ($tiers as $i => $tier) {
-                $price = $prices[$i] ?? '';
-                if (preg_match('/^\d+(\.\d{1,2})?$/', $price) && (float) $price >= 1) {
-                    $tiers[$i][$field] = number_format((float) $price, 2, '.', '');
-                }
-            }
-        }
-
-        return $tiers;
-    }
-
-    /**
-     * The tier for a business with this many bookable people.
-     *
-     * @return array{name:string,people:int,price:string,usd:string}
-     */
-    public function planTierFor(int $people): array
-    {
-        foreach ($this->planTiers() as $tier) {
-            if ($tier['people'] === 0 || max(1, $people) <= $tier['people']) {
-                return $tier;
-            }
-        }
-
-        return $this->planTiers()[array_key_last($this->planTiers)];
-    }
 
     public function googleCalendarOffered(): bool
     {

@@ -284,17 +284,14 @@ if (! function_exists('bookings_in_premium')) {
     /**
      * Whether the paid plan's sales copy may promise online bookings: the
      * Verified Business badge on co.za, Plus on .app (owner, 12 Nov 2026,
-     * "Bookings is included in Verified"). True only while bookings are on
-     * for this site and come with the plan, not a separate Bookings plan
-     * (bookings.planRequired): BookingSetupService::whyNot() is the gate this
-     * copy describes. Every pitch, card, FAQ and email line about bookings
+     * "Bookings is included in Verified"; the separate Bookings plan was
+     * retired 23 Nov 2026). True while bookings are on for this site:
+     * BookingSetupService::whyNot() is the gate this copy describes. Every pitch, card, FAQ and email line about bookings
      * checks it, so switching bookings off takes the promise down with it.
      */
     function bookings_in_premium(?string $siteKey = null): bool
     {
-        $config = config('Bookings');
-
-        return $config->siteAllowed($siteKey ?? site()->key()) && ! $config->planRequired();
+        return config('Bookings')->siteAllowed($siteKey ?? site()->key());
     }
 }
 

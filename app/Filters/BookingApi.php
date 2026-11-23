@@ -6,7 +6,6 @@ use App\Models\Bookings\AccountModel;
 use App\Models\DirectoryListingModel;
 use App\Services\Bookings\Api\ApiKeys;
 use App\Services\Bookings\BookingSetupService;
-use App\Services\Bookings\Plans\BookingPlanService;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -53,9 +52,6 @@ class BookingApi implements FilterInterface
         $setup   = new BookingSetupService();
         if (! is_array($listing) || ! $setup->isOn($listing) || $setup->whyNot($listing) !== null) {
             return self::error(403, 'bookings_off', 'This business does not take online bookings at the moment.');
-        }
-        if (! (new BookingPlanService())->allows($listing)) {
-            return self::error(403, 'plan_required', 'The online bookings plan of this business has ended. An admin can renew it in Settings, Plan.');
         }
         // A business's API is on its own site's host (D2): co.za for South Africa, .app abroad.
         if (site()->forRow($listing) !== site()->key()) {

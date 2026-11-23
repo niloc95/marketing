@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Models\Bookings\BookingAppointmentModel as A;
 use App\Models\DirectoryListingModel;
 use App\Services\Bookings\BookingAudit;
-use App\Services\Bookings\Plans\BookingPlanService;
 use App\Services\Bookings\SetupCheck;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -26,7 +25,7 @@ class AdminBookings extends BaseController
         $db  = db_connect();
         $now = gmdate('Y-m-d H:i:s');
         $ids = array_map('intval', array_column($db->query(
-            'SELECT id FROM xs_directory_listings WHERE bookings_enabled = 1 OR id IN (SELECT listing_id FROM xs_booking_plans) ORDER BY bookings_enabled_at DESC LIMIT 500',
+            'SELECT id FROM xs_directory_listings WHERE bookings_enabled = 1 OR bookings_enabled_at IS NOT NULL ORDER BY bookings_enabled_at DESC LIMIT 500',
         )->getResultArray(), 'id'));
 
         $count = static function (string $sql, array $binds = []) use ($db, $ids): array {
@@ -51,32 +50,18 @@ class AdminBookings extends BaseController
             }
         }
 
-        $plans = new BookingPlanService();
-        $rows  = [];
+        $rows = [];
         foreach ($ids === [] ? [] : (new DirectoryListingModel())->whereIn('id', $ids)->findAll() as $l) {
             $id     = (int) $l['id'];
             $rows[] = [
                 'listing'  => $l,
-                'plan'     => $plans->status($id),
                 'problems' => count(SetupCheck::problems($id)),
                 'channels' => $channels[$id] ?? [],
             ] + array_map(static fn (array $c): int => (int) ($c[$id] ?? 0), $counts);
         }
         usort($rows, static fn (array $a, array $b): int => strcmp((string) $b['listing']['bookings_enabled_at'], (string) $a['listing']['bookings_enabled_at']));
 
-        return view('admin/bookings', ['rows' => $rows, 'planRequired' => BookingPlanService::required()]);
-    }
-
-    /** More free time for a business (first businesses, goodwill). */
-    public function extend(int $listingId)
-    {
-        $days = (int) $this->request->getPost('days');
-        if ((new DirectoryListingModel())->find($listingId) === null || $days < 1 || $days > 365) {
-            return redirect()->to(base_url('admin/bookings'))->with('error', 'Choose 1 to 365 days.');
-        }
-        (new BookingPlanService())->extendTrial($listingId, $days, $this->who());
-
-        return redirect()->to(base_url('admin/bookings'))->with('success', 'Added ' . $days . ' days.');
+        return view('admin/bookings', ['rows' => $rows]);
     }
 
     /**
@@ -105,7 +90,6 @@ class AdminBookings extends BaseController
             'reason'   => $reason,
             'rows'     => $rows,
             'problems' => SetupCheck::problems($listingId),
-            'plan'     => (new BookingPlanService())->status($listingId),
         ]);
     }
 

@@ -15,15 +15,12 @@ use CodeIgniter\Exceptions\PageNotFoundException;
  */
 class Settings extends BaseController
 {
-    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'notifications' => 'Messages', 'payments' => 'Payments', 'connections' => 'Connections', 'api' => 'API keys', 'plan' => 'Plan', 'localization' => 'Local time'];
+    public const TABS = ['general' => 'General', 'booking' => 'Booking rules', 'questions' => 'Booking form', 'notifications' => 'Messages', 'payments' => 'Payments', 'connections' => 'Connections', 'api' => 'API keys', 'localization' => 'Local time'];
 
-    /** The tabs; Plan only while the Bookings plan is required (Phase 10). */
+    /** The tabs, less those this site does not offer. */
     public static function tabs(): array
     {
         $tabs = self::TABS;
-        if (! \App\Services\Bookings\Plans\BookingPlanService::required()) {
-            unset($tabs['plan']);
-        }
         // Deposits take rand only (the business's own PayFast or Paystack in South Africa):
         // no Payments tab on local.webscheduler.app (decision D2).
         if (site()->isApp()) {
@@ -55,7 +52,6 @@ class Settings extends BaseController
             'payments' => $tab === 'payments' ? PaymentSettings::viewData($context->listingId()) : null,
             'connections' => $tab === 'connections' ? ConnectionSettings::viewData($context->listing()) : null,
             'api'      => $tab === 'api' ? ApiKeys::viewData($context->listingId()) : null,
-            'plan'     => $tab === 'plan' ? PlanSettings::viewData($context->listingId()) : null,
         ]);
     }
 

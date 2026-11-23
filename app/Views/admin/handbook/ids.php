@@ -13,7 +13,6 @@ $examples = [
     'PLUS_MONTHLY'  => 'WSL-PLUS-M-000123, Plus monthly',
     'PLUS_YEARLY'   => 'WSL-PLUS-Y-000123, Plus yearly',
     'BOOKING'       => 'WSB-BOOK-000123, an appointment; deposit tries WSB-BOOK-000123-P1, P2',
-    'BOOKINGS_PLAN' => 'WSL-BKG-M-000123, a business\'s Bookings plan',
 ];
 ?>
 <div class="prose-legal">

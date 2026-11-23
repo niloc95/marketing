@@ -88,8 +88,7 @@ class PublicBookingService
             && site()->forRow($listing) === site()->key()
             && (int) ($listing['bookings_enabled'] ?? 0) === 1
             && ($listing['status'] ?? '') === 'published'
-            && listing_has_premium($listing)
-            && (new Plans\BookingPlanService())->allows($listing);
+            && listing_has_premium($listing);
     }
 
     /** The link to book a profile, or '' when it takes no bookings. */
