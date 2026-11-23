@@ -1358,6 +1358,11 @@ class Directory extends BaseController
             // BusinessSession::signIn() regenerates the session id.
             \App\Services\OwnerAccess::signInFor($listing);
 
+            // Paid for before the email was confirmed (Verified granted while
+            // we built the profile): the welcome pack goes now. Once only,
+            // never throws; a free profile is skipped.
+            (new \App\Services\WelcomePackService())->sendIfDue((int) $listing['id']);
+
             // A listing outside South Africa is verified but not yet published:
             // verify() left it 'pending' because the International Listing
             // subscription is what publishes it. Sending them to their profile

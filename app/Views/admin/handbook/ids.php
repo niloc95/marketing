@@ -48,6 +48,8 @@ $examples = [
         <li><strong>Verify link</strong> (<code>verify_token</code>, 48 hours, publishes once) and <strong>manage link</strong> (<code>manage_token</code>, 1 hour, single use, reissued any time).</li>
         <li><strong>Unsubscribe tokens</strong> per profile and per newsletter row, random, stored on first use.</li>
         <li><strong>Partner codes:</strong> <code>/p/{code}</code> or <code>?ref={code}</code>; cookie <code>ws_partner</code>, last click wins.</li>
+        <li><strong>Welcome pack link:</strong> <code>welcome-pack/{token}</code>, 64 hex, SHA-256 stored in
+            <code>xs_directory_listings.welcome_pack_token</code>; no expiry (it opens public facts only), replaced by admin's Send.</li>
         <li><strong>Profile preview:</strong> <code>preview/{token}</code>, private.</li>
         <li><strong>Bookings:</strong> change or cancel link a 64 hex token stored hashed, rotated on every change; customer page key the customer's 64 character hash; API keys <code>wsk_&lt;prefix&gt;_&lt;secret&gt;</code>, SHA-256 stored.</li>
         <li><strong>Hashes, not values:</strong> apply once keys (HMAC of email and phone), invite suppressions, review email hashes.</li>

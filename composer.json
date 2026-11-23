@@ -7,7 +7,9 @@
     "require": {
         "php": "^8.2",
         "azuyalabs/yasumi": "^2.7",
+        "chillerlan/php-qrcode": "^5.0",
         "codeigniter4/framework": "^4.7",
+        "dompdf/dompdf": "^3.1",
         "phpmailer/phpmailer": "^6.9"
     },
     "require-dev": {

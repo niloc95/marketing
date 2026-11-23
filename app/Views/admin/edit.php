@@ -335,6 +335,30 @@ if (! is_array($old['hours'] ?? null)) {
                 </div>
             <?php endif; ?>
             <?php endif; ?>
+
+            <?php if (($listing['status'] ?? '') === 'published'): ?>
+                <?php $packReady = (new \App\Services\WelcomePackService())->available($listing); ?>
+                <div class="panel flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-sm text-slate-600 dark:text-slate-300">
+                        <strong>Welcome pack.</strong>
+                        The printable profile, QR poster, counter cards and share kit (PDF), emailed once when Verified or Plus starts.
+                        <?php if (! empty($listing['welcome_pack_sent_at'])): ?>
+                            <br><span class="text-xs text-slate-500 dark:text-slate-400">Last emailed <?= esc(local_datetime($listing['welcome_pack_sent_at'])) ?>.</span>
+                        <?php endif; ?>
+                        <?php if (! $packReady): ?>
+                            <br><span class="text-xs text-slate-500 dark:text-slate-400">Preview only: the owner gets it with Verified or Plus.</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a class="btn btn-ghost btn-xs" href="<?= esc(base_url('admin/welcome-pack/' . (int) $listing['id']), 'attr') ?>" target="_blank" rel="noopener" data-no-spa>Preview PDF</a>
+                        <form method="post" action="<?= base_url('admin/welcome-pack/' . (int) $listing['id'] . '/send') ?>"
+                              data-confirm="Email the welcome pack to the owner? A new link replaces the old one.">
+                            <?= csrf_field() ?>
+                            <button class="btn btn-primary btn-xs" <?= $packReady ? '' : 'disabled' ?>>Email welcome pack</button>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
     <?php endforeach; ?>

@@ -177,6 +177,8 @@ $routes->post('manage/verification/pay', 'Manage::pay');
 $routes->get('manage/verification/paystack', 'Manage::paystackReturn');
 $routes->get('manage/verification/move', 'Manage::move');
 $routes->get('manage/(:segment)', 'Manage::redeem/$1');
+// The emailed welcome pack link (WelcomePackService): the token is the key.
+$routes->get('welcome-pack/(:segment)', 'WelcomePack::download/$1');
 
 // Jobs board: vacancies and "service required" requests. Top-level, so it
 // never meets the directory/{segment} catch-all. The literal segments MUST
@@ -328,6 +330,8 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:settings.m
 // and reviews actions (Jobs and Reviews, which own those tables).
 $routes->get('business/badge', 'Business\Owner::badge', ['filter' => ['businessauth:owner', 'businesscan:profile.billing']]);
 $routes->get('business/stats', 'Business\Owner::stats', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']]);
+// The welcome pack PDF (WelcomePackService): the signed in owner's copy.
+$routes->get('business/welcome-pack', 'WelcomePack::owner', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']]);
 $routes->group('business/jobs', ['filter' => ['businessauth:owner', 'businesscan:jobs.manage']], static function ($routes) {
     $routes->get('/', 'Business\Owner::jobs');
     $routes->get('new', 'Jobs::ownerCreate');
@@ -473,6 +477,9 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     // app can only be made to mail an owner by someone already signed in here.
     $routes->post('edit/(:num)/nudge', 'Admin::nudgeOwner/$1');
     $routes->post('edit/(:num)/verify-badge', 'Admin::grantVerification/$1');
+    // The welcome pack: preview any published profile's, email a Verified or Plus one.
+    $routes->get('welcome-pack/(:num)', 'WelcomePack::adminDownload/$1');
+    $routes->post('welcome-pack/(:num)/send', 'WelcomePack::adminSend/$1');
     // One tab of the editor (Admin::EDIT_TAB_ADMIN or a Config\ProfileSections
     // key). After the literal edit/{id}/... posts above, which it would swallow.
     $routes->get('edit/(:num)/(:segment)', 'Admin::edit/$1/$2');
