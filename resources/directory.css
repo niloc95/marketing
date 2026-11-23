@@ -4696,7 +4696,6 @@
   .dark .shell-title { @apply text-white; }
   .shell-actions { @apply flex flex-wrap items-center gap-2; }
   .shell-actions form { @apply m-0; }
-  body[data-shell-bare] .shell-head { @apply invisible; }
   .shell-icon-btn { @apply grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-slate-500 hover:bg-slate-200/60 hover:text-slate-900; }
   .dark .shell-icon-btn { @apply text-slate-400 hover:bg-white/10 hover:text-white; }
 
@@ -4707,7 +4706,17 @@
   .shell-content { @apply min-w-0 outline-none transition-opacity duration-150; }
   .shell-loading .shell-content { @apply opacity-60 delay-200; }
 
-  body[data-shell-bare] [data-shell-menu] { @apply hidden; }
+  /* Signed out pages (layouts/_shell.php, bare): brand bar, page, slim footer
+     held to the foot of the screen. */
+  .shell-bare-brand { @apply flex min-w-0 flex-1 items-center gap-2.5 font-bold leading-tight text-slate-900 no-underline; }
+  .dark .shell-bare-brand { @apply text-white; }
+  body[data-shell-bare] .shell-main { @apply flex min-h-dvh flex-col; }
+  body[data-shell-bare] .shell-content { @apply flex-1; }
+  .shell-footer { @apply flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-slate-200/70 px-4 py-4 text-sm text-slate-500 lg:px-8; }
+  .dark .shell-footer { @apply border-slate-800 text-slate-400; }
+  .shell-footer-links { @apply flex flex-wrap gap-x-5 gap-y-1; }
+  .shell-footer-links a { @apply text-slate-500 no-underline hover:text-slate-900 hover:underline; }
+  .dark .shell-footer-links a { @apply text-slate-400 hover:text-white; }
 }
 
 @keyframes shell-progress {

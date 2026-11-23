@@ -30,6 +30,13 @@
  *               any is opened with a full page load, never swapped in
  *   end         the layout's deferred scripts, after the page's own
  *
+ *   bare        set (any text) on the signed out pages (admin/login, the
+ *               /business sign in pages): no sidebar, so the top bar carries
+ *               the brand and a way back to the site instead of the menu and
+ *               title, and a slim footer with the legal links follows the page
+ *               (owner, 23 Nov 2026). Read without saveData: kept, it would
+ *               outlive this page on the shared renderer.
+ *
  * No analytics, no Clarity, no consent banner: these are private pages.
  */
 $asset = static fn (string $path): string => base_url($path) . '?v=' . (@filemtime(FCPATH . $path) ?: 0);
@@ -43,6 +50,7 @@ if ($ownTitle !== '') {
 $titleHtml = $ownTitle !== '' ? $ownTitle : esc($pageTitle);
 $actions   = trim($this->renderSection('shell_actions'));
 $scripts   = $this->renderSection('scripts');
+$bare      = trim($this->renderSection('bare')) !== '';
 // spa.js opens a page with scripts by asking for it again with a plain page
 // load. When it fetched this one (X-Shell), keep the flash messages, old
 // input and validation errors for that second request, or the save's
@@ -92,6 +100,12 @@ foreach (['assets/directory.css', 'assets/directory.js', 'assets/business/busine
 
     <div class="shell-main">
         <header class="shell-topbar">
+            <?php if ($bare): ?>
+            <a class="shell-bare-brand" href="<?= base_url('/') ?>">
+                <img class="brand-mark" src="<?= $asset('assets/brand/logo-64.png') ?>" alt="" width="32" height="32">
+                <span class="truncate max-[359px]:hidden">WebScheduler <span class="text-brand-orange">Local</span></span>
+            </a>
+            <?php else: ?>
             <button type="button" class="shell-icon-btn lg:hidden" data-shell-menu aria-controls="shell-sidebar" aria-expanded="false" aria-label="Menu">
                 <?= lucide('menu', 'h-5 w-5') ?>
             </button>
@@ -102,6 +116,7 @@ foreach (['assets/directory.css', 'assets/directory.js', 'assets/business/busine
                     <div class="shell-actions"><?= $actions ?></div>
                 <?php endif ?>
             </div>
+            <?php endif ?>
             <span class="shell-progress" aria-hidden="true"></span>
             <div class="flex shrink-0 items-center gap-1">
                 <button type="button" class="shell-icon-btn" data-theme-toggle aria-pressed="false" aria-label="Switch light or dark">
@@ -116,6 +131,16 @@ foreach (['assets/directory.css', 'assets/directory.js', 'assets/business/busine
             <?= $this->renderSection('main_top') ?>
             <?= $this->renderSection('content') ?>
         </main>
+        <?php if ($bare): ?>
+        <footer class="shell-footer">
+            <span>&copy; <?= date('Y') ?> <?= esc(config('Directory')->siteName()) ?></span>
+            <nav class="shell-footer-links" aria-label="Legal">
+                <a href="<?= base_url('privacy') ?>">Privacy</a>
+                <a href="<?= base_url('terms') ?>">Terms</a>
+                <a href="<?= base_url('contact') ?>">Contact</a>
+            </nav>
+        </footer>
+        <?php endif ?>
     </div>
 
     <?= $this->renderSection('after_main') ?>

@@ -15,6 +15,11 @@ $bare = trim($this->renderSection('bare')) !== '';
 ?>
 <?= $this->extend('layouts/_shell') ?>
 
+<?php // Reading it above used it up; set it again for _shell's brand bar and footer. ?>
+<?php if ($bare): ?>
+<?= $this->section('bare') ?>1<?= $this->endSection() ?>
+<?php endif ?>
+
 <?= $this->section('assets') ?>
 <?php $shellJs = 'assets/business/shell.js'; ?>
 <?php if (is_file(FCPATH . $shellJs)): ?>

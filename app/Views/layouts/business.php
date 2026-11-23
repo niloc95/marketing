@@ -194,6 +194,11 @@ foreach ($attrs as $name => $value) {
 ?>
 <?= $this->endSection() ?>
 
+<?php // Signed out (sign in, sign in link, password pages): _shell draws the brand bar and footer. ?>
+<?php if (! $context->hasAccount()): ?>
+<?= $this->section('bare') ?>1<?= $this->endSection() ?>
+<?php endif ?>
+
 <?= $this->section('sidebar') ?>
 <?php // Signed in without a business chosen yet (business/choose): no items, but the foot with account and sign out. ?>
 <?php if ($context->hasAccount()): ?>
