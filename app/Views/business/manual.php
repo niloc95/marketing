@@ -258,7 +258,7 @@ $n = 0;
                     : 'Online bookings come with ' . esc($planName) . '.' . $upgrade ?>
             </p>
         <?php else: ?>
-            <p><?= esc(ucfirst($audience)) ?> book from the <strong>Book online</strong> button on your profile. They get a confirmation and a reminder by email, with a link to move or cancel within your rules.</p>
+            <p><?= esc(ucfirst($audience)) ?> book from the <strong>Book online</strong> button on your profile: they choose a service and who with, then a time from a week of free times laid out in a column per place, so they see where before they pick. They get a confirmation and a reminder by email, with a link to move or cancel within your rules.</p>
             <ul>
                 <li><strong>Dashboard</strong>: today's appointments and what needs attention.</li>
                 <li><strong>Notices</strong>: every booking made, moved or cancelled online. Choose <strong>Email me too</strong> to get them by email as well.</li>

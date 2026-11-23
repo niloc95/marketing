@@ -7,10 +7,12 @@ use App\Models\DirectoryPracticeLocationModel;
 use App\Services\Bookings\AvailabilityService;
 use App\Services\Bookings\BookingSetupService;
 use App\Services\Bookings\CatalogueService;
+use App\Services\Bookings\FreeTimesBoard;
 use App\Services\Bookings\PublicBookingService;
 use App\Services\Bookings\SetupCheck;
 use App\Services\Bookings\TeamService;
 use CodeIgniter\Test\CIUnitTestCase;
+use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\FreshDatabase;
 use Tests\Support\WithEnv;
@@ -30,6 +32,7 @@ use Tests\Support\WithEnv;
  */
 final class BookingSchedulePeriodsTest extends CIUnitTestCase
 {
+    use FeatureTestTrait;
     use FreshDatabase;
     use WithEnv;
 
@@ -320,6 +323,57 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $this->assertSame([], $booked['errors']);
         $row = BookingAppointmentModel::forBusiness($this->practiceId)->where('start_at', $atB[0]['start'])->first();
         $this->assertSame($this->practiceB, (int) $row['location_id']);
+    }
+
+    public function testTheBoardShowsAColumnPerPlaceAWeekAtATime(): void
+    {
+        $now     = new DateTimeImmutable('2030-01-07 06:00', new DateTimeZone('Africa/Johannesburg'));
+        $listing = $this->listings->find($this->practiceId);
+        $board   = (new FreeTimesBoard($listing, true, $now))->week($this->consult, $this->doctor, '2030-01-07');
+
+        $this->assertSame(['Practice A', 'Practice B'], array_column($board['places'], 'name'), 'a column per place');
+        $this->assertSame(['2030-01-07', '2030-01-08'], array_column($board['places'][1]['days'], 'date'), 'only days with free times');
+        $this->assertSame(['14:30', '15:00', '15:30'], array_column($board['places'][1]['days'][0]['times'], 'time'), 'the afternoon at practice B');
+        $this->assertSame('09:00', $board['places'][0]['days'][0]['times'][0]['time'], 'the morning at practice A');
+        $this->assertSame('Johannesburg', $board['places'][1]['address']);
+        $this->assertSame(['2030-01-07', '2030-01-13', null, '2030-01-14'], [$board['from'], $board['to'], $board['prev'], $board['next']]);
+
+        // Only where the service is given; anyone who offers it; a week back is not before today.
+        $this->assertSame(['Practice A'], array_column((new FreeTimesBoard($listing, true, $now))->week($this->diabetes, null, '2030-01-07')['places'], 'name'));
+        $anyone = (new FreeTimesBoard($listing, true, $now))->week($this->consult, null, '2030-01-07');
+        $this->assertSame([$this->doctor], $anyone['places'][1]['days'][0]['times'][0]['provider_ids']);
+        $this->assertSame('2030-01-07', (new FreeTimesBoard($listing, true, $now))->week($this->consult, $this->doctor, '2030-01-10')['prev']);
+        $this->assertSame('2030-01-07', (new FreeTimesBoard($listing, true, $now))->week($this->consult, $this->doctor, '2029-12-01')['from'], 'never before today');
+
+        // The business never sees a time already gone, even on today's column.
+        $midday = new DateTimeImmutable('2030-01-07 12:10', new DateTimeZone('Africa/Johannesburg'));
+        $this->assertSame(['12:30'], array_column((new FreeTimesBoard($listing, false, $midday))->week($this->consult, $this->doctor, '2030-01-07')['places'][0]['days'][0]['times'], 'time'));
+
+        // Customers stop at the future limit; the business does not.
+        \App\Services\Bookings\BookingSettings::for($this->practiceId)->save(['business.future_limit' => '10'], null);
+        $late = (new FreeTimesBoard($listing, true, $now))->week($this->consult, $this->doctor, '2030-01-14');
+        $this->assertSame(['2030-01-17', null], [$late['to'], $late['next']]);
+        $this->assertNotNull((new FreeTimesBoard($listing, false, $now))->week($this->consult, $this->doctor, '2030-01-14')['next']);
+
+        // Someone who does not offer the service gets no times.
+        $other = (int) (new TeamService($this->practiceId))->saveProvider(null, ['name' => 'Locum', 'bookable' => 1], null)['id'];
+        $this->assertSame([], (new FreeTimesBoard($listing, true, $now))->week($this->consult, $other, '2030-01-07')['places']);
+    }
+
+    public function testThePublicPageHasNoWhereStepAndEachTimeCarriesItsPlace(): void
+    {
+        $page = $this->get('directory/dr-bertus/book?service=' . $this->consult . '&provider=' . $this->doctor);
+        $page->assertOK();
+        $body = $page->getBody();
+        $this->assertStringNotContainsString('book-place', $body, 'no Where step');
+        $this->assertSame(2, substr_count($body, 'class="board-col"'), 'a column per place');
+        $this->assertMatchesRegularExpression('/href="[^"]*place=' . $this->practiceB . '&amp;date=\d{4}-\d{2}-\d{2}&amp;start=[^"]*#details"/', $body, 'a time at practice B carries its place');
+
+        // Following that link opens the details with the place, and says where.
+        preg_match('/href="([^"]*place=' . $this->practiceB . '&amp;date=[^"]*)#details"/', $body, $m);
+        $details = $this->get(str_replace([base_url(), '&amp;'], ['', '&'], $m[1]))->getBody();
+        $this->assertStringContainsString('name="place" value="' . $this->practiceB . '"', $details);
+        $this->assertStringContainsString('Practice B', $details);
     }
 
     /** Monday and Tuesday: practice A 09:00 to 13:00, practice B 14:30 to 16:00 for consultations only. */

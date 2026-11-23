@@ -3751,8 +3751,38 @@
   .book-who       { @apply gap-2; }
   .book-who-photo { @apply h-8 w-8 shrink-0 rounded-full object-cover; }
   /* Booking: Where cards, and the two column calendar (month left, times right) */
-  .book-place      { @apply flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 no-underline transition hover:border-primary-400 hover:bg-primary-50/40; }
-  .dark .book-place { @apply border-slate-700 bg-slate-900 hover:border-primary-400 hover:bg-primary-500/10; }
+  /* Free times, one column per place, a week at a time (book/_board.php, T33):
+     the public booking page and every /business Book form. */
+  .board            { @apply flex flex-col gap-3; }
+  .board-head       { @apply flex items-center gap-2; }
+  .board-range      { @apply m-0 flex-1 text-center text-sm font-semibold text-slate-900; }
+  .dark .board-range { @apply text-white; }
+  .board-step       { @apply gap-1; }
+  .board-step.is-off { @apply pointer-events-none opacity-40; }
+  .board-cols       { @apply grid gap-3; }
+  .board-cols-2     { @apply md:grid-cols-2; }
+  .board-cols-3     { @apply md:grid-cols-2 xl:grid-cols-3; }
+  .board-col        { @apply flex min-w-0 flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3; }
+  .dark .board-col  { @apply border-slate-700 bg-slate-900; }
+  .board-place      { @apply mb-1 flex items-start gap-2 border-b border-slate-100 pb-2 text-brand-ocean; }
+  .dark .board-place { @apply border-slate-800 text-primary-300; }
+  .board-place-name { @apply block text-sm font-semibold text-slate-900; }
+  .dark .board-place-name { @apply text-white; }
+  .board-place-address { @apply block text-xs font-normal text-slate-500; }
+  .dark .board-place-address { @apply text-slate-400; }
+  .board-day        { @apply rounded-lg; }
+  .board-day > summary { @apply flex cursor-pointer list-none items-baseline justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50; }
+  .board-day > summary::-webkit-details-marker { display: none; }
+  .dark .board-day > summary:hover { @apply bg-white/5; }
+  .board-day-name   { @apply text-sm font-semibold text-slate-900; }
+  .dark .board-day-name { @apply text-white; }
+  .board-day-info   { @apply text-xs text-slate-500; }
+  .board-times      { @apply flex flex-wrap gap-1.5 px-2 pb-2 pt-1; }
+  .board-time       { @apply min-w-[4.25rem] cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-center text-sm font-semibold tabular-nums text-slate-900 no-underline hover:border-brand-ocean; }
+  .dark .board-time { @apply border-slate-700 bg-slate-900 text-white; }
+  .board-time.is-on, .board-time[aria-pressed='true'] { @apply border-brand-ocean bg-primary-50 ring-1 ring-brand-ocean; }
+  .dark .board-time.is-on, .dark .board-time[aria-pressed='true'] { @apply border-primary-300 bg-primary-500/15 ring-primary-300; }
+  .board-empty      { @apply m-0 px-2 py-2 text-sm text-slate-500; }
   .book-when       { @apply grid gap-6 md:grid-cols-2 md:gap-8; }
   .book-when-times { @apply md:border-l md:border-slate-200 md:pl-8; }
   .dark .book-when-times { @apply md:border-slate-700; }
@@ -3767,16 +3797,10 @@
   .free-times-list    { @apply flex flex-wrap gap-2; }
   .free-times-empty   { @apply text-sm text-slate-500; }
   .free-times-chosen  { @apply text-sm font-semibold text-brand-ocean; }
-  /* One day's times by part of the day: name on the left, times wrap beside it. */
-  .free-times-groups  { @apply flex flex-col gap-2; }
-  .free-times-group   { @apply flex items-start gap-3; }
-  .free-times-group-name { @apply w-20 shrink-0 pt-1.5 text-xs font-semibold text-slate-500; }
-  .free-times-groups .free-time { @apply px-2.5 py-1; }
   /* A chosen time folded to one line (free-times.js); Change time opens the lists. */
   .free-times-summary { @apply flex items-center gap-3 rounded-xl border border-brand-ocean/40 bg-primary-50 px-4 py-3 text-brand-ocean; }
   .free-times [hidden] { @apply hidden; }
   .dark .free-times-summary { @apply border-primary-300/40 bg-primary-500/15 text-white; }
-  .dark .free-times-group-name { @apply text-slate-400; }
   /* The Book form: one column, or when (left) and customer (right) from lg up. */
   .book-layout        { @apply grid gap-4; }
   .book-layout-wide   { @apply lg:grid-cols-2 lg:gap-8; }

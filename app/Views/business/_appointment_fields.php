@@ -64,7 +64,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
     <?php endif ?>
 </div>
 
-<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's by morning, afternoon and evening. A click fills Date and Time and folds the lists to one line (Change time opens them). Hidden without the script. ?>
+<?php // Filled by free-times.js: a week of free times, one column per place (book/_board.php, T33). A click fills Date and Time and folds the board to one line (Change time opens it). Hidden without the script. ?>
 <div class="free-times mb-4" data-free hidden>
     <div class="free-times-summary" data-free-summary hidden>
         <?= lucide('clock', 'h-5 w-5 shrink-0') ?>
@@ -72,10 +72,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <button type="button" class="btn btn-ghost btn-xs ml-auto" data-free-change>Change time</button>
     </div>
     <div data-free-lists>
-        <p class="free-times-heading" data-free-next-heading>Next free times</p>
-        <div class="free-times-list" data-free-next></div>
-        <p class="free-times-heading" data-free-day-heading hidden></p>
-        <div class="free-times-groups" data-free-day hidden></div>
+        <div data-free-board><p class="free-times-empty">Finding free times…</p></div>
     </div>
 </div>
 </div>

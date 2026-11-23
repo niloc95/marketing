@@ -579,8 +579,13 @@ class AvailabilityService
         return in_array($providerId, $service['provider_ids'], true) ? $service : null;
     }
 
-    /** @return list<int> */
-    private function providersFor(int $serviceId, bool $public): array
+    /**
+     * The people who offer a service (customers: only bookable people), in
+     * team order. Used by slotsForAnyone() and FreeTimesBoard.
+     *
+     * @return list<int>
+     */
+    public function providersFor(int $serviceId, bool $public): array
     {
         $service = $this->catalog->service($serviceId);
         if ($service === null || $service['archived_at'] !== null) {

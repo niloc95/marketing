@@ -5,8 +5,10 @@ namespace App\Controllers\Business;
 use App\Controllers\BaseController;
 use App\Services\Bookings\AppointmentService;
 use App\Services\Bookings\AppointmentStatus;
+use App\Services\Bookings\BookingSettings;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\CustomerService;
+use App\Services\Bookings\FreeTimesBoard;
 use App\Services\Bookings\Payments\DepositService;
 use App\Services\Bookings\TeamService;
 
@@ -49,19 +51,30 @@ class Appointments extends BaseController
     }
 
     /**
-     * Free times for a new appointment (the Book form and dialog):
-     * ?service_id, ?provider_id, and ?date for every free time that day.
+     * The Book forms' free times (T33): a week, one column per place, as
+     * HTML (book/_board.php in button mode, shared with the public page).
+     * ?service_id, ?provider_id (in the member's scope), ?from.
      */
-    public function freeNew()
+    public function board()
     {
-        $date = (string) $this->request->getGet('date');
-        $free = $this->service()->freeForNew((int) $this->request->getGet('service_id'), (int) $this->request->getGet('provider_id'), $date !== '' ? $date : null);
-        if ($free === null) {
-            // 200: the form shows the reason in place of the times (getJson() throws on 4xx).
+        $context    = service('businessContext');
+        $serviceId  = (int) $this->request->getGet('service_id');
+        $providerId = (int) $this->request->getGet('provider_id');
+        $scope      = $context->providerScope();
+        if ($serviceId <= 0 || $providerId <= 0 || ($scope !== null && ! in_array($providerId, $scope, true))) {
             return $this->json(['ok' => false, 'error' => AppointmentService::PROBLEMS['not_offered']]);
         }
+        $board = (new FreeTimesBoard($context->listing(), false))->week($serviceId, $providerId, (string) $this->request->getGet('from'));
+        $twelve = BookingSettings::for($context->listingId())->get('localization.time_format') === '12h';
 
-        return $this->json(['ok' => true, 'data' => $free]);
+        return $this->json(['ok' => true, 'data' => [
+            'from' => $board['from'],
+            'html' => view('book/_board', [
+                'board' => $board,
+                'mode'  => 'button',
+                'clock' => $twelve ? static fn (string $t): string => (new \DateTimeImmutable('2000-01-01 ' . $t))->format('g:ia') : null,
+            ], ['saveData' => false]),
+        ]]);
     }
 
     /** Deposit: {action: paid|refunded}. Only for an appointment in the member's scope. */

@@ -360,21 +360,8 @@ class PublicBookingService
      */
     public function places(): array
     {
-        if ($this->places !== null) {
-            return $this->places;
-        }
-        helper(['map', 'directory_ui']);
-        $names = (new TeamService($this->listingId))->locationChoices($this->listing);
-        $rows  = [0 => listing_public_view($this->listing)];
-        foreach ((new \App\Models\DirectoryPracticeLocationModel())->forListing($this->listingId) as $loc) {
-            $rows[(int) $loc['id']] = $loc;
-        }
-        $out = [];
-        foreach ($names as $id => $name) {
-            $out[$id] = ['id' => $id, 'name' => (string) $name, 'address' => isset($rows[$id]) ? map_address_text($rows[$id]) : ''];
-        }
-
-        return $this->places = $out;
+        // One list for the public page and /business (FreeTimesBoard, T33).
+        return $this->places ??= (new FreeTimesBoard($this->listing, true, $this->now))->places();
     }
 
     /**

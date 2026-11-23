@@ -12,14 +12,11 @@
  * @var string                         $who       '' not chosen, 'any', or a provider id
  * @var int                            $withId    the person a "Book with" link named, 0 for none
  * @var list<array{id:int,name:string,address:string}> $placeOptions where the chosen service is given (PublicBookingService::placesFor())
- * @var array{id:int,name:string,address:string}|null  $place        the chosen place (0 = the main address)
- * @var array<int,list<string>>        $placePeople who gives the service at each place, while choosing
+ * @var array{id:int,name:string,address:string}|null  $place        the chosen time's place (0 = the main address)
  * @var string                         $today
- * @var array<string,mixed>|null       $calendar  PublicBookingService::month()
+ * @var array<string,mixed>|null       $board     FreeTimesBoard::week(): a week, one column per place (T33)
  * @var string|null                    $date
- * @var list<array<string,mixed>>      $times
  * @var array<string,mixed>|null       $slot
- * @var array<string,mixed>|null       $next
  * @var list<array<string,mixed>>      $fields
  * @var list<array<string,mixed>>      $questions
  * @var array<int,int|null>            $deposits  deposit in cents by service id
@@ -62,9 +59,9 @@ $types = ['email' => 'email', 'phone' => 'tel'];
 $val   = static fn (string $k): string => (string) ($old[$k] ?? '');
 $err   = static fn (string $k): string => isset($errors[$k]) ? '<p class="mt-1 text-sm text-rose-600">' . esc($errors[$k]) . '</p>' : '';
 $whoParam = $who === '' ? null : $who;
-$placeParam = $place !== null && count($placeOptions) > 1 ? $place['id'] : null;
-// Everything chosen so far, for the links of the later steps.
-$chosen = $service !== null ? ['service' => $service['id'], 'place' => $placeParam, 'provider' => $whoParam] : [];
+// Everything chosen so far, for the links of the later steps. The place
+// comes with the time a customer picks (T33), never before.
+$chosen = $service !== null ? ['service' => $service['id'], 'provider' => $whoParam] : [];
 $step   = 1;
 ?>
 <?= $this->extend('layouts/public') ?>
@@ -112,47 +109,18 @@ $step   = 1;
             <?php endif ?>
         </div>
 
-        <?php // 2. Where (T29: a person may work at two practices) ?>
-        <?php if ($service !== null): ?>
-            <div class="panel mb-4" id="where">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. Where</h2>
-                <?php if ($placeOptions === []): ?>
-                    <p class="text-sm">This service has no times online at the moment. Please contact <?= esc($listing['display_name']) ?> to book it.</p>
-                <?php elseif ($place !== null): ?>
-                    <p class="flex flex-wrap items-start gap-3">
-                        <span class="flex items-start gap-2"><?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0 text-slate-400') ?>
-                            <span><strong><?= esc($place['name']) ?></strong><?php if ($place['address'] !== ''): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($place['address']) ?></span><?php endif ?></span></span>
-                        <?php if (count($placeOptions) > 1): ?><a class="text-sm underline" href="<?= $link(['service' => $service['id']] + ($withId > 0 ? ['provider' => $withId] : [])) ?>#where">Change</a><?php endif ?>
-                    </p>
-                <?php else: ?>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <?php foreach ($placeOptions as $pl): ?>
-                            <a class="book-place" href="<?= $link(['service' => $service['id'], 'place' => $pl['id']] + ($withId > 0 ? ['provider' => $withId] : [])) ?>#<?= $withId > 0 ? 'time' : 'with' ?>">
-                                <?= lucide('map-pin', 'mt-0.5 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-300') ?>
-                                <span class="min-w-0">
-                                    <span class="block font-semibold"><?= esc($pl['name']) ?></span>
-                                    <?php if ($pl['address'] !== ''): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($pl['address']) ?></span><?php endif ?>
-                                    <?php if (($placePeople[$pl['id']] ?? []) !== [] && $withId === 0): ?><span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">With <?= esc(implode(', ', $placePeople[$pl['id']])) ?></span><?php endif ?>
-                                </span>
-                            </a>
-                        <?php endforeach ?>
-                    </div>
-                <?php endif ?>
-            </div>
-        <?php endif ?>
-
-        <?php // 3. Who ?>
-        <?php if ($service !== null && $place !== null && count($providers) > 1): ?>
+        <?php // 2. Who ?>
+        <?php if ($service !== null && count($providers) > 1): ?>
             <div class="panel mb-4" id="with">
                 <h2 class="mb-3 font-bold"><?= ++$step ?>. With</h2>
                 <?php if ($who !== ''): ?>
                     <p class="flex flex-wrap items-center gap-3"><strong><?= $provider !== null ? esc((string) $provider['name']) : 'Anyone available' ?></strong>
-                        <a class="text-sm underline" href="<?= $link(['service' => $service['id'], 'place' => $placeParam]) ?>#with">Change</a></p>
+                        <a class="text-sm underline" href="<?= $link(['service' => $service['id']]) ?>#with">Change</a></p>
                 <?php else: ?>
                     <div class="flex flex-wrap gap-2">
-                        <a class="btn btn-ghost" href="<?= $link(['service' => $service['id'], 'place' => $placeParam, 'provider' => 'any']) ?>#time">Anyone available</a>
+                        <a class="btn btn-ghost" href="<?= $link(['service' => $service['id'], 'provider' => 'any']) ?>#time">Anyone available</a>
                         <?php foreach ($providers as $p): ?>
-                            <a class="btn btn-ghost book-who" href="<?= $link(['service' => $service['id'], 'place' => $placeParam, 'provider' => $p['id']]) ?>#time">
+                            <a class="btn btn-ghost book-who" href="<?= $link(['service' => $service['id'], 'provider' => $p['id']]) ?>#time">
                                 <?php if (! empty($p['photo_path'])): ?><img src="<?= esc(base_url($p['photo_path'])) ?>" alt="" width="32" height="32" class="book-who-photo" loading="lazy"><?php endif ?>
                                 <span class="text-left"><?= esc((string) $p['name']) ?><?php if (trim((string) ($p['title'] ?? '')) !== ''): ?><span class="block text-xs font-normal text-slate-500 dark:text-slate-400"><?= esc((string) $p['title']) ?></span><?php endif ?></span>
                             </a>
@@ -162,51 +130,34 @@ $step   = 1;
             </div>
         <?php endif ?>
 
-        <?php // 4. Day and time: the month on the left, that day's times on the right ?>
-        <?php if ($calendar !== null): ?>
+        <?php // 3. When and where: a week of free times, one column per place (book/_board.php, shared with /business) ?>
+        <?php if ($service !== null && $placeOptions === []): ?>
+            <div class="panel mb-4" id="time">
+                <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
+                <p class="text-sm">This service has no times online at the moment. Please contact <?= esc($listing['display_name']) ?> to book it.</p>
+            </div>
+        <?php elseif ($board !== null): ?>
             <div class="panel mb-4" id="time">
                 <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
                 <?php if ($slot !== null): ?>
-                    <p class="flex flex-wrap items-center gap-3"><strong><?= esc($longDay((string) $date)) ?>, <?= esc($clock($slot['time'])) ?><?= $place !== null ? ' at ' . esc($place['name']) : '' ?></strong>
-                        <a class="text-sm underline" href="<?= $link($chosen + ['date' => $date]) ?>#time">Change</a></p>
+                    <p class="flex flex-wrap items-start gap-3">
+                        <span class="flex items-start gap-2"><?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0 text-slate-400') ?>
+                            <span><strong><?= esc($longDay((string) $date)) ?>, <?= esc($clock($slot['time'])) ?></strong>
+                                <?php if ($place !== null): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($place['name']) ?><?= $place['address'] !== '' ? ', ' . esc($place['address']) : '' ?></span><?php endif ?></span></span>
+                        <a class="text-sm underline" href="<?= $link($chosen + ['from' => $date]) ?>#time">Change</a></p>
                 <?php else: ?>
-                    <div class="book-when">
-                        <?= view('book/_month', [
-                            'calendar' => $calendar,
-                            'date'     => $date,
-                            'timezone' => $tz,
-                            'dayUrl'   => static fn (string $d): string => $link($chosen + ['date' => $d]) . '#time',
-                            'monthUrl' => static fn (string $m): string => $link($chosen + ['month' => $m]) . '#time',
-                        ], ['saveData' => false]) ?>
-                        <div class="book-when-times">
-                            <?php if ($date === null): ?>
-                                <p class="text-sm text-slate-600 dark:text-slate-300">Choose a green day in the calendar to see its times.</p>
-                                <?php if ($next !== null): ?>
-                                    <p class="mt-3 text-sm">Next free time:
-                                        <a class="font-semibold underline" href="<?= $link($chosen + ['date' => $next['date']]) ?>#time"><?= esc($longDay($next['date'])) ?> at <?= esc($clock($next['time'])) ?></a></p>
-                                <?php elseif ($calendar['free'] === []): ?>
-                                    <p class="mt-3 text-sm">No free times in the next while. Please contact <?= esc($listing['display_name']) ?>.</p>
-                                <?php endif ?>
-                            <?php else: ?>
-                                <h3 class="mb-3 font-semibold"><?= esc($longDay($date)) ?></h3>
-                                <?php if ($times === []): ?>
-                                    <p class="text-sm">No times left on this day. Try another day.</p>
-                                <?php else: ?>
-                                    <div class="book-times">
-                                        <?php foreach ($times as $t): ?>
-                                            <a class="btn btn-ghost btn-xs tabular-nums" href="<?= $link($chosen + ['date' => $date, 'start' => $t['start']]) ?>#details"><?= esc($clock($t['time'])) ?></a>
-                                        <?php endforeach ?>
-                                    </div>
-                                <?php endif ?>
-                                <?php if ($place !== null): ?><p class="mt-4 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><?= lucide('map-pin', 'h-3.5 w-3.5') ?> At <?= esc($place['name']) ?></p><?php endif ?>
-                            <?php endif ?>
-                        </div>
-                    </div>
+                    <?= view('book/_board', [
+                        'board'   => $board,
+                        'mode'    => 'link',
+                        'clock'   => $clock,
+                        'timeUrl' => static fn (string $d, string $start, int $placeId): string => $link($chosen + ['place' => $placeId, 'date' => $d, 'start' => $start]) . '#details',
+                        'weekUrl' => static fn (string $from): string => $link($chosen + ['from' => $from]) . '#time',
+                    ], ['saveData' => false]) ?>
                 <?php endif ?>
             </div>
         <?php endif ?>
 
-        <?php // 4. Details ?>
+        <?php // 4. Your details ?>
         <?php if ($slot !== null): ?>
             <form method="post" action="<?= base_url($base) ?>" class="form-card" id="details">
                 <?= csrf_field() ?>

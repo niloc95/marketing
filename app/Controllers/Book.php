@@ -8,6 +8,7 @@ use App\Models\DirectoryListingModel;
 use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\Notifications\NotificationRules;
 use App\Services\Bookings\Payments\DepositService;
+use App\Services\Bookings\FreeTimesBoard;
 use App\Services\Bookings\PublicBookingService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use DateTimeImmutable;
@@ -56,8 +57,10 @@ class Book extends BaseController
         }
         $serviceId = (int) $this->request->getGet('service');
         $service   = $svc->service($serviceId) ?? (count($services) === 1 ? $services[0] : null);
-        // Where: the places that service is given at (with the named person,
-        // when "Book with" chose one). One place is chosen for them.
+        // Where (T33, owner 23 Nov 2026): no step of its own any more. The
+        // free times come in a column per place, and the time a customer
+        // picks carries its place (?place, checked against where the
+        // service is given; 0 = the main address).
         $placeOptions = $service !== null ? $svc->placesFor((int) $service['id'], $withId > 0 ? $withId : null) : [];
         $placeParam   = (string) ($this->request->getGet('place') ?? '');
         $place        = null;
@@ -67,14 +70,7 @@ class Book extends BaseController
             }
         }
         $placeId   = $place !== null ? $place['id'] : null;
-        $providers = $service !== null && $place !== null ? $svc->providersFor((int) $service['id'], $placeId) : [];
-        // Who works at each place, for the Where cards.
-        $placePeople = [];
-        if ($service !== null && $place === null) {
-            foreach ($placeOptions as $pl) {
-                $placePeople[$pl['id']] = array_column($svc->providersFor((int) $service['id'], $pl['id']), 'name');
-            }
-        }
+        $providers = $service !== null ? $svc->providersFor((int) $service['id']) : [];
         // A person's headshot from their team card, which only a Verified or
         // Plus profile shows publicly.
         if ($providers !== [] && listing_has_premium($listing)) {
@@ -102,9 +98,9 @@ class Book extends BaseController
         $start = (string) ($this->request->getGet('start') ?? '');
         $ready = $service !== null && $whoChosen;
 
-        // The month calendar of free days, as on the change page.
-        $calendar = $ready ? $svc->month((int) $service['id'], $providerId, $placeId, (string) ($this->request->getGet('month') ?? ($date !== null ? substr($date, 0, 7) : ''))) : null;
-        $times    = $ready && $date !== null ? $svc->times((int) $service['id'], $providerId, $date, $placeId) : [];
+        // A week of free times, one column per place (FreeTimesBoard, shared with /business).
+        $board = $ready ? (new FreeTimesBoard($listing, true))->week((int) $service['id'], $providerId, (string) ($this->request->getGet('from') ?? $date ?? '')) : null;
+        $times = $ready && $date !== null && $start !== '' ? $svc->times((int) $service['id'], $providerId, $date, $placeId) : [];
         $slot  = null;
         foreach ($times as $t) {
             if ($t['start'] === $start) {
@@ -130,16 +126,13 @@ class Book extends BaseController
             'withId'    => $withId,
             'placeOptions' => $placeOptions,
             'place'     => $place,
-            'placePeople' => $placePeople,
             'providers' => $providers,
             'provider'  => $provider,
             'who'       => $whoChosen ? ($provider !== null ? (string) $provider['id'] : 'any') : '',
             'today'     => $today,
-            'calendar'  => $calendar,
+            'board'     => $board,
             'date'      => $date,
-            'times'     => $times,
             'slot'      => $slot,
-            'next'      => $ready && $slot === null ? $svc->nextAvailable((int) $service['id'], $providerId, $placeId) : null,
             'modes'     => $service !== null ? \App\Services\Bookings\Integrations\DeliveryModes::offered((int) $listing['id'], $service) : [],
             'fields'    => $svc->customerFields($deposit !== null),
             'questions' => (new \App\Services\Bookings\CustomerService((int) $listing['id']))->customFields(),
