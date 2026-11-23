@@ -68,7 +68,6 @@ $routes->get('assets/playbook/(:segment)', 'Contact::legacyDocument/$1');
 $routes->get('assets/proposal/(:segment)', 'Contact::legacyDocument/$1');
 // Profile setup service: we complete a profile for a once-off Paystack fee.
 // pay opens Paystack's checkout, paystack is where it sends the buyer back.
-// payfast/setup-notify stays for a PayFast checkout opened before the switch.
 $routes->get('profile-setup', 'ProfileSetup::index');
 $routes->post('profile-setup', 'ProfileSetup::order');
 $routes->get('profile-setup/checkout', 'ProfileSetup::checkout');
@@ -236,7 +235,6 @@ $routes->get('pricing.json', 'Pricing::json');
 // honeypot in Config\Filters — there is no browser here to carry a token. The
 // controller's four validation checks are what stands in their place.
 $routes->post('payfast/notify', 'PayFastNotify::index');
-$routes->post('payfast/setup-notify', 'ProfileSetupNotify::index');
 // Paystack's webhook, for every payment it takes (PaystackWebhook). Exempt
 // like the two above; PaystackPayments' checks stand in for CSRF.
 $routes->post('paystack/webhook', 'PaystackWebhook::index');

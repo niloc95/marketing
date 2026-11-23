@@ -1,29 +1,26 @@
 <?php
 
 use App\Filters\AdminFilter;
-use App\Libraries\PayFast;
 use App\Models\ProfileSetupOrderModel;
 use App\Services\ProfileSetupService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\FeatureTestTrait;
-use Config\Directory as DirectoryConfig;
 use Config\Services;
 use Tests\Support\FreshDatabase;
 
 /**
- * /profile-setup: we complete a profile for a single PayFast payment.
+ * /profile-setup: we complete a profile for a single Paystack payment.
  *
  * Pinned:
  *
  * 1. **The page** renders full width with its FAQ markup, and is in the
  *    footer and the sitemap.
  * 2. **An order** is saved awaiting payment only when the form is valid,
- *    and the checkout signs a once-off payment (no subscription fields) at
- *    the price the order was sold at.
- * 3. **Only a checked PayFast notification** marks an order paid: a bad
- *    signature, a wrong amount or an unknown reference changes nothing, and
- *    a repeat notification sends no second set of emails.
+ *    and the checkout opens Paystack at the price the order was sold at.
+ * 3. **A payment is recorded once**: a repeat (webhook and return both
+ *    landing) sends no second set of emails, and the retired PayFast
+ *    notification endpoint is gone.
  * 4. **The admin queue** cannot mark an order paid by hand, nor work an
  *    unpaid order.
  *
@@ -98,60 +95,6 @@ final class ProfileSetupTest extends CIUnitTestCase
         $this->assertTrue($result['ok'], json_encode($result['errors']));
 
         return $result['order'];
-    }
-
-    /**
-     * Real signing and parsing, with the two network checks dictated: the
-     * source address lookup and PayFast's POST-back.
-     */
-    private function payfast(bool $fromPayFast = true, bool $confirmed = true): PayFast
-    {
-        $config                     = new DirectoryConfig();
-        $config->payfastMerchantId  = '10000100';
-        $config->payfastMerchantKey = '46f0cd694581a';
-
-        return new class ($config, $fromPayFast, $confirmed) extends PayFast {
-            public function __construct(DirectoryConfig $config, private bool $fromPayFast, private bool $confirmed)
-            {
-                parent::__construct($config);
-            }
-
-            public function isConfigured(): bool
-            {
-                return true;
-            }
-
-            public function isSandbox(): bool
-            {
-                return false;
-            }
-
-            public function isValidSourceIp(string $ip): bool
-            {
-                return $this->fromPayFast;
-            }
-
-            public function validateWithPayFast(string $rawBody): bool
-            {
-                return $this->confirmed;
-            }
-        };
-    }
-
-    /** A signed ITN body for an order, as PayFast would post it. */
-    private function itn(PayFast $pf, array $order, array $over = []): string
-    {
-        $fields = $over + [
-            'm_payment_id'   => $order['reference'],
-            'pf_payment_id'  => '1234567',
-            'payment_status' => 'COMPLETE',
-            'item_name'      => 'Profile setup service',
-            'amount_gross'   => (string) $order['amount'],
-            'custom_str1'    => (string) $order['id'],
-        ];
-        $fields['signature'] = $pf->signature($fields, null, false);
-
-        return http_build_query($fields);
     }
 
     private function asAdmin(): self
@@ -230,19 +173,6 @@ final class ProfileSetupTest extends CIUnitTestCase
         $this->assertSame(0, $this->orders->countAllResults());
     }
 
-    public function testTheCheckoutSignsAOnceOffPaymentAtTheOrderPrice(): void
-    {
-        $pf     = $this->payfast();
-        $fields = $pf->onceOffFields($this->order());
-
-        $this->assertSame('250.00', $fields['amount']);
-        $this->assertSame(base_url('payfast/setup-notify'), $fields['notify_url']);
-        $this->assertSame('Thandi', $fields['name_first']);
-        $this->assertArrayNotHasKey('subscription_type', $fields);
-        $this->assertArrayNotHasKey('recurring_amount', $fields);
-        $this->assertSame($pf->signature($fields), $fields['signature']);
-    }
-
     public function testThePostedFormGoesToCheckoutAndBotsSaveNothing(): void
     {
         $this->setEnv('directory.paystackSecretKey', \Tests\Support\FakePaystack::SECRET);
@@ -292,54 +222,25 @@ final class ProfileSetupTest extends CIUnitTestCase
 
     // ------------------------------------------------------------- payment
 
-    public function testACheckedNotificationMarksTheOrderPaidOnce(): void
+    public function testAPaymentIsRecordedOnceAndSendsTwoEmails(): void
     {
-        $pf    = $this->payfast();
         $order = $this->order();
-        $raw   = $this->itn($pf, $order);
 
-        $this->assertSame('paid: order ' . $order['id'], $this->svc->handleNotification($raw, '197.97.145.144', $pf));
+        $this->assertSame('paid: order ' . $order['id'], $this->svc->recordPayment($order, 'paystack:1234567'));
 
         $paid = $this->orders->find($order['id']);
         $this->assertSame(ProfileSetupOrderModel::STATUS_PAID, $paid['status']);
-        $this->assertSame('1234567', $paid['pf_payment_id']);
+        $this->assertSame('paystack:1234567', $paid['pf_payment_id']);
         $this->assertNotEmpty($paid['paid_at']);
         $this->assertCount(2, $this->sent, 'the inbox and the buyer');
 
-        $this->assertStringStartsWith('duplicate', $this->svc->handleNotification($raw, '197.97.145.144', $pf));
-        $this->assertCount(2, $this->sent, 'a retried notification sends nothing more');
+        $this->assertStringStartsWith('duplicate', $this->svc->recordPayment($paid, 'paystack:1234567'));
+        $this->assertCount(2, $this->sent, 'a second confirmation sends nothing more');
     }
 
-    public function testANotificationThatFailsACheckChangesNothing(): void
+    public function testTheRetiredPayFastSetupNotificationIsGone(): void
     {
-        $order = $this->order();
-        $good  = $this->payfast();
-
-        $cases = [
-            'bad signature'        => [$good, str_replace('signature=', 'signature=0', $this->itn($good, $order))],
-            'not from PayFast'     => [$this->payfast(false), $this->itn($good, $order)],
-            'not confirmed'        => [$this->payfast(true, false), $this->itn($good, $order)],
-            'wrong amount'         => [$good, $this->itn($good, $order, ['amount_gross' => '1.00'])],
-            'unknown reference'    => [$good, $this->itn($good, $order, ['m_payment_id' => 'ps-000000000000', 'custom_str1' => '999'])],
-        ];
-
-        foreach ($cases as $label => [$pf, $raw]) {
-            $this->assertStringStartsWith('rejected', $this->svc->handleNotification($raw, '197.97.145.144', $pf), $label);
-        }
-
-        $this->assertSame(ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT, $this->orders->find($order['id'])['status']);
-        $this->assertSame([], $this->sent);
-    }
-
-    public function testAFailedPaymentLeavesTheOrderAwaitingPayment(): void
-    {
-        $pf    = $this->payfast();
-        $order = $this->order();
-
-        $outcome = $this->svc->handleNotification($this->itn($pf, $order, ['payment_status' => 'CANCELLED']), '197.97.145.144', $pf);
-
-        $this->assertStringStartsWith('noted', $outcome);
-        $this->assertSame(ProfileSetupOrderModel::STATUS_AWAITING_PAYMENT, $this->orders->find($order['id'])['status']);
+        $this->post('payfast/setup-notify', ['m_payment_id' => 'ps-000000000000'])->assertStatus(404);
     }
 
     // ------------------------------------------------------------- admin
