@@ -116,7 +116,6 @@ class Forms extends BaseConfig
         'book/unsubscribe/(:segment)',
         'csp-report',
         'payfast/notify',
-        'payfast/setup-notify',
         'paystack/webhook',
         'book/payfast/notify',
         // The bookings API: JSON for programs, no page to send a failure back to.

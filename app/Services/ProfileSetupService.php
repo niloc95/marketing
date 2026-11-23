@@ -5,9 +5,7 @@ namespace App\Services;
 use App\Libraries\Input;
 use App\Libraries\Mailer;
 use App\Libraries\PaymentReference;
-use App\Libraries\PayFast;
 use App\Libraries\Paystack;
-use App\Models\DirectoryVerificationItnRejectionModel;
 use App\Models\ProfileSetupOrderModel;
 use Config\Directory as DirectoryConfig;
 use Config\Sites;
@@ -19,8 +17,8 @@ use Config\Sites;
  *
  * Always Paystack, whatever directory.paymentProvider says: a once-off
  * payment has no subscription to carry over, so there is nothing to keep on
- * PayFast. handleNotification() stays only for a PayFast checkout a buyer
- * opened before the switch and pays afterwards.
+ * PayFast. Its notification endpoint for setup orders (payfast/setup-notify)
+ * was retired on 23 Nov 2026: the only PayFast orders left were unpaid tests.
  *
  * An order is saved before payment as awaiting_payment, and only a payment
  * Paystack confirms (PaystackPayments: webhook or verify) moves it to paid.
@@ -194,62 +192,9 @@ class ProfileSetupService
     }
 
     /**
-     * Handle a PayFast notification for an order. The same four checks as
-     * App\Controllers\PayFastNotify, in the same order: signature, source
-     * address, PayFast's own confirmation, then the amount. Here rather than
-     * in the controller so tests can hand in a PayFast double.
-     *
-     * Returns a short outcome for the log. Every refusal is also written to
-     * the ITN rejection table the verification notifications use.
-     */
-    public function handleNotification(string $raw, string $ip, PayFast $payfast): string
-    {
-        if (! $payfast->isConfigured()) {
-            return 'ignored: PayFast is not configured';
-        }
-        if (trim($raw) === '') {
-            return 'ignored: empty body';
-        }
-
-        $fields = $payfast->parseNotification($raw);
-
-        $refused = $payfast->checkNotification($fields, $raw, $ip, 'Profile setup ITN');
-        if ($refused !== null) {
-            return $this->reject($refused, $fields, $ip);
-        }
-
-        $order = $this->orders->findByReference((string) ($fields['m_payment_id'] ?? ''));
-        if ($order === null && ! empty($fields['custom_str1'])) {
-            $row   = $this->orders->find((int) $fields['custom_str1']);
-            $order = is_array($row) ? $row : null;
-        }
-        if ($order === null) {
-            return $this->reject('no matching order', $fields, $ip);
-        }
-
-        $status = strtoupper(trim((string) ($fields['payment_status'] ?? '')));
-        if ($status !== 'COMPLETE') {
-            // A once-off payment has nothing to cancel on our side: a failed
-            // or abandoned payment leaves the order awaiting payment.
-            return 'noted: ' . ($status === '' ? 'no status' : $status) . ' for order ' . (int) $order['id'];
-        }
-
-        $gross = isset($fields['amount_gross']) && $fields['amount_gross'] !== '' ? (float) $fields['amount_gross'] : null;
-        if (! $payfast->amountMatches($gross, (string) $order['amount'])) {
-            return $this->reject(sprintf(
-                'amount %s does not match the expected %s',
-                $gross === null ? 'missing' : (string) $gross,
-                (string) $order['amount']
-            ), $fields, $ip);
-        }
-
-        return $this->recordPayment($order, (string) ($fields['pf_payment_id'] ?? ''));
-    }
-
-    /**
-     * Mark an order paid and send both emails. Safe to call twice: PayFast
-     * retries notifications, and a second one for a paid order changes
-     * nothing and sends nothing.
+     * Mark an order paid and send both emails. Safe to call twice: Paystack's
+     * webhook and the buyer's return can both land, and a second call for a
+     * paid order changes nothing and sends nothing.
      */
     public function recordPayment(array $order, string $pfPaymentId): string
     {
@@ -271,7 +216,7 @@ class ProfileSetupService
     }
 
     /**
-     * Status and notes from /admin/profile-setup. Paid is PayFast's to set,
+     * Status and notes from /admin/profile-setup. Paid is Paystack's to set,
      * never ours, and an order nobody has paid for cannot be marked worked on.
      *
      * @return array{ok:bool,message:string}
@@ -303,16 +248,6 @@ class ProfileSetupService
 
     // ------------------------------------------------------------- helpers
 
-    /** @param array<string,string> $fields */
-    private function reject(string $reason, array $fields, string $ip): string
-    {
-        $message = 'Profile setup: ' . $reason . '.';
-        log_message('warning', 'PayFast ITN: ' . $message . (isset($fields['m_payment_id']) ? ' [m_payment_id=' . $fields['m_payment_id'] . ']' : ''));
-        (new DirectoryVerificationItnRejectionModel())->record($message, $fields, $ip, null);
-
-        return 'rejected: ' . $reason;
-    }
-
     private function notifyInbox(array $order): void
     {
         $to = $this->site->adminEmail();
@@ -320,8 +255,7 @@ class ProfileSetupService
             return;
         }
 
-        $body = view('emails/job-notice', [
-            'site'           => $this->site->siteName(),
+        $notice = [
             'eyebrow'        => 'Profile setup',
             'heading'        => 'Paid: ' . $order['business_name'],
             'paragraphs'     => array_values(array_filter([
@@ -333,16 +267,9 @@ class ProfileSetupService
             'button'         => ['Open the queue', site_url_for(Sites::ZA, 'admin/profile-setup') . '#order-' . (int) $order['id']],
             'footnote'       => 'Reply to this email to ask ' . strtok((string) $order['name'], ' ') . ' for their logo, photos and details. '
                 . 'We promised to finish within ' . $this->days() . ' business days of having them.',
-            'footnoteLink'   => null,
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
+        ];
 
-        (new Mailer())->send($to, 'Profile setup paid: ' . $order['business_name'], $body, (string) $order['email']);
+        (new Mailer())->notice($to, 'Profile setup paid: ' . $order['business_name'], $notice, (string) $order['email']);
     }
 
     /**
@@ -356,8 +283,7 @@ class ProfileSetupService
         $greeting = preg_match('/^\p{L}[\p{L}\']{0,29}$/u', $first) === 1 ? 'Hi ' . $first . ',' : 'Hello,';
         $admin    = $this->site->adminEmail();
 
-        $body = view('emails/job-notice', [
-            'site'           => $this->site->siteName(),
+        $notice = [
             'eyebrow'        => 'Profile setup',
             'heading'        => 'Thank you, your payment is confirmed',
             'paragraphs'     => [
@@ -367,18 +293,11 @@ class ProfileSetupService
                     . 'the services you offer and the areas you serve. You can also reply to this email with them now.',
                 'Once we have your details, we will complete your profile within ' . $this->days() . ' business days and email you when it is live.',
             ],
-            'button'         => null,
             'footnote'       => 'You are receiving this because this address was used to order a profile setup on '
                 . $this->site->siteName() . '. Keep it as your receipt.',
             'footnoteLink'   => ['Terms of the service', site_url_for(Sites::ZA, 'profile-setup') . '#terms'],
-            'bullets'        => null,
-            'bulletsHeading' => null,
-            'extras'         => null,
-            'extrasHeading'  => null,
-            'highlight'      => null,
-            'closing'        => null,
-        ], ['saveData' => false]);
+        ];
 
-        (new Mailer())->send((string) $order['email'], 'Your profile setup payment is confirmed', $body, $admin);
+        (new Mailer())->notice((string) $order['email'], 'Your profile setup payment is confirmed', $notice, $admin);
     }
 }

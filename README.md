@@ -16,9 +16,10 @@ Separate from the standalone WebScheduler product, which is self-hosted per cust
 - **Production:** https://local.webscheduler.co.za (its own subdomain; the former `listing.` host 301s here — see `deploy/README.md`)
 - **Local:** http://localhost:8095
 
-This repo also holds the static marketing site (`marketing-site/`), which links to
-WebScheduler Local. The two share a Tailwind palette via `tailwind.tokens.cjs` but build and deploy
-independently.
+This repo also still holds the **old** static marketing site (`marketing-site/`). Since
+1 Nov 2026 `webscheduler.co.za` is built and released from its own repo,
+`niloc95/webscheduler-site`; `marketing-site/` stays only for the outreach builders. Never build
+it into production. The `site:*` scripts below serve that old copy.
 
 ## Setup
 
@@ -102,8 +103,8 @@ damaged; it refuses any database whose name does not end in `_tests`.
 |---|---|---|
 | `npm run dev:install` | the directory app, **always on** (launchd runs `list:hot` at login and restarts it) | http://localhost:8095 |
 | `npm run list:serve` | the directory app, by hand (only if the launchd service is not installed) | http://localhost:8095 |
-| `npm run site:serve` | marketing **source** (`marketing-site/`) | http://localhost:8096 |
-| `npm run site:preview` | marketing **build output** (`dist/site/`) | http://localhost:8097 |
+| `npm run site:serve` | old marketing **source** (`marketing-site/`, superseded) | http://localhost:8096 |
+| `npm run site:preview` | old marketing **build output** (`dist/site/`, superseded) | http://localhost:8097 |
 
 Pair a server with its watcher in a second terminal — `list:dev` or `site:dev` — for live
 CSS. `site:serve` needs `npm run site:css` to have run at least once; `site:preview` needs

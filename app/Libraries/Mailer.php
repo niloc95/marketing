@@ -142,9 +142,12 @@ class Mailer
      * data between renders, so a notice with no button would otherwise inherit
      * the previous email's (a lead alert's stop link, say).
      *
-     * @param array{heading:string,paragraphs:list<string>,eyebrow?:string,button?:array{0:string,1:string},footnote?:string,footnoteLink?:array{0:string,1:string}} $content
+     * $replyTo, when given, is where a reply goes instead of the no reply
+     * sender (the careers inbox, the buyer of a profile setup).
+     *
+     * @param array{heading:string,paragraphs:list<string>,eyebrow?:string,button?:array{0:string,1:string}|null,footnote?:string,footnoteLink?:array{0:string,1:string}|null,bullets?:list<string>|null,bulletsHeading?:string|null} $content
      */
-    public function notice(string $to, string $subject, array $content): bool
+    public function notice(string $to, string $subject, array $content, string $replyTo = ''): bool
     {
         if ($to === '') {
             return false;
@@ -163,7 +166,7 @@ class Mailer
             'closing'        => null,
         ], ['saveData' => false]);
 
-        return $this->send($to, $subject, $body);
+        return $this->send($to, $subject, $body, $replyTo);
     }
 
     /** Collapse whitespace so a failure message can't forge extra log lines. */

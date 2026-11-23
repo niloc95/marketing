@@ -58,7 +58,7 @@ country on the .app signup form.
    leak. Add any new public page to its `PAGES`.
 2. **Wrong host, permanent move.** `Controllers/Concerns/RedirectsToOwningSite` 301s a
    profile, venue or job on the wrong host to the same path on its owner's host (GET/HEAD
-   only). Never redirect `POST /payfast/notify`, `payfast/setup-notify`, `manage/*` POSTs or
+   only). Never redirect `POST /payfast/notify`, `paystack/webhook`, `manage/*` POSTs or
    unsubscribe POSTs.
 3. **Country decides the site, and it can change.** An admin who corrects a country moves
    the profile: the old URL 301s, new emails use the new host. One database, so the

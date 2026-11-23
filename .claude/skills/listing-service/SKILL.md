@@ -51,7 +51,7 @@ uses **discover**, **discovery** and **platform** as its key words. WebScheduler
 
 | Where | What lives there |
 |---|---|
-| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (old /manage addresses, manage link redeem, badge and Plus actions), `Business\Profile` + `Business\Owner` (owner area pages), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup` + `ProfileSetupNotify`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
+| `app/Controllers/` | `Directory` (home, discovery, categories, map, suggest, province/country/region/venue pages, profile `show`, menu, verify, sitemap, robots), `Listing` (signup at `/add-profile`, live score, cross site hand over), `Manage` (old /manage addresses, manage link redeem, badge and Plus actions), `Business\Profile` + `Business\Owner` (owner area pages), `Jobs`, `Reviews`, `Referral`, `Partners`, `Careers`, `ProfileSetup`, `PayFastNotify`, `Contact` (contact, faq, company, verified, plus, compare, resources, media), `Legal`, `Unsubscribe`, `AddressSuggest`, `DescriptionHelper`, `Health`, `Csp`, `Errors`, `Admin` + `AdminCareers` + `AdminProfileSetup` + `AdminDiscovery` + `AdminStats`, `Stats` (tap beacon) |
 | `app/Controllers/Concerns/` | `HandlesListingUploads`, `HandlesVerificationUploads`, `LocksDownDocumentCsp`, `RedirectsToOwningSite` |
 | `app/Services/` | Read side `DirectoryService`; write side `DirectoryListingMutationService` (public + owner) and `DirectoryAdminService` (admin); one service per feature: `VerificationService`, `JobBoardService`, `ReviewService`, `ReferralService`, `PartnerService`, `CareersService`, `ProfileSetupService`, `HolidayHoursService`, `MarketingConsentService`, `NewsletterService`, `TeamMemberService`, `PracticeLocationService`, `ServiceMenuService`, `ListingMenuService`, `ListingFacetService`, `ListingBrandService`, `ListingVideoService`, `ListingQualityService`, `ListingStatsService`, `GoogleDataService`, `ProfileNudgeService`, `ApplicationOnceService`, `ComparisonService`, `HeroImageService`, `FunnelService`, `SystemStatusService`, `DirectorySettings`, `SiteContext`; `Search/` (smart search interpreter), `Description/` (description helper and hints) |
 | `app/Libraries/` | `Mailer` (the only mail path), `PayFast`, `Geocoding/*` + `ListingGeocoder`, `PublicHolidays` / `YasumiHolidays` / `NoPublicHolidays`, `ListingText`, `RichText`, `ServiceArea`, `PostingSections`, `Screening` + `ScreeningBank`, `ListingImageProcessor`, `VerificationDocumentProcessor`, `CloudflareAccess`, `DomainChecker`, `TokenHash`, `SpatialSupport`, `SystemHealth`, `MailHealth`, `LogReader`, `Input`, `GoogleApi` |
@@ -98,7 +98,7 @@ writer of its tables; controllers stay thin; anything an owner must not set stay
 | `GET /privacy`, `/terms`, `/cookie-policy` | `Legal::*` (per site views) |
 | `GET /address-suggest`, `/address-locate`, `/address-reverse` | address lookup |
 | `GET /description/insights`, `/description/prompt` | the description helper |
-| `POST /payfast/notify`, `POST /payfast/setup-notify` | PayFast ITNs (subscriptions, setup orders) |
+| `POST /payfast/notify` | PayFast ITN (old subscriptions; `payfast/setup-notify` retired 23 Nov 2026) |
 | `GET /sitemap.xml`, `/robots.txt`, `/health`, `POST /csp-report` | per site sitemap and robots, health, CSP reports |
 | `/admin/*` | profiles, categories, venues, verifications (`?plan=plus`, `/admin/plus`), jobs, reviews, referrals, partners, careers, profile setup, hero, settings, comparison, documents, status, funnel |
 
@@ -971,8 +971,8 @@ We build the profile for a once off fee: R250 on co.za (`Config\Directory::$prof
 `xs_directory_profile_setup_orders` (reference `WSL-SETUP-000123`, `-2` on a second try), **always Paystack**
 whatever `paymentProvider` says (no mandate to keep): `POST profile-setup/pay` → Paystack
 checkout → `GET profile-setup/paystack` (verify) and the Paystack webhook, both through
-`PaystackPayments`. `POST /payfast/setup-notify` stays only for a PayFast checkout opened
-before the switch. Queue at `/admin/profile-setup`. If a paid order never shows as paid,
+`PaystackPayments`. `POST /payfast/setup-notify` was retired on 23 Nov 2026 (only unpaid
+test orders were left on PayFast). Queue at `/admin/profile-setup`. If a paid order never shows as paid,
 look at the rejection table and `Paystack:` / `Paystack return:` log lines first.
 
 ## Professional registers are South African only (since 17 Nov 2026)

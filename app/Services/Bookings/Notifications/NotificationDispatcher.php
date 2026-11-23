@@ -9,7 +9,6 @@ use App\Models\DirectoryListingModel;
 use App\Services\Bookings\AppointmentStatus;
 use Config\BookingNotifications as Catalog;
 use DateTimeImmutable;
-use DateTimeZone;
 
 /**
  * Sends what the queue holds (`php spark bookings:dispatch`, cron each

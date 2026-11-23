@@ -70,10 +70,4 @@ class BookingAuthorization
 
         return $scope === null || in_array($providerId, $scope, true);
     }
-
-    /** @param array<string,mixed> $member */
-    public function hasRole(array $member, string ...$roles): bool
-    {
-        return ($member['status'] ?? '') === 'active' && in_array((string) ($member['role'] ?? ''), $roles, true);
-    }
 }

@@ -3,7 +3,6 @@
 namespace App\Services\Bookings\Notifications;
 
 use App\Libraries\Mailer;
-use Config\BookingNotifications as Catalog;
 
 /**
  * Sending one message on one channel. Ported from Bookings'
