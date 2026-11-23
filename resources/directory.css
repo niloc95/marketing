@@ -4852,6 +4852,12 @@ body[data-shell-bare] .shell-main { padding-left: 0; }
     @apply fixed bottom-20 left-1/2 z-50 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg transition-opacity duration-500 xl:bottom-6 dark:bg-white dark:text-slate-900;
   }
   .save-toast.is-gone { @apply opacity-0; }
+  /* A save that failed: stays until clicked or the next save. */
+  .save-toast.is-error { @apply max-w-md cursor-pointer bg-rose-700 text-white dark:bg-rose-600 dark:text-white; }
+
+  /* The rich text editor did not load (directory.js "rich text editors"):
+     said above the plain box that now shows the stored HTML. */
+  .rt-missing { @apply mb-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100; }
 }
 
 @media print {

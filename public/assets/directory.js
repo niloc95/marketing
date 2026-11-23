@@ -4135,8 +4135,27 @@
   // person's qualifications and bio, several per page), both the "full"
   // editor since 18 Nov 2026 (owner), each holding the textarea, .rt-editor > [data-rich-text-for] and
   // an optional [data-rich-text-count].
+  // The editor did not take over a field (its script never arrived, which a
+  // slow or dropped connection does, 23 Nov 2026; or it failed to start):
+  // the plain box shows the stored HTML, which reads as broken. Say so above
+  // it once. Saving from the box is still safe: RichText cleans what arrives.
+  function noEditor(field) {
+    if (!field || field.querySelector('.rt-missing')) return;
+    var textarea = field.querySelector('textarea');
+    if (!textarea) return;
+    var note = document.createElement('p');
+    note.className = 'rt-missing';
+    note.setAttribute('role', 'status');
+    note.textContent = 'The text editor did not load, so this box shows your text with its formatting code. Reload the page to get the editor back. You can still save: your text and formatting are kept.';
+    textarea.parentNode.insertBefore(note, textarea);
+  }
+
   function initRichField(field, kind) {
-    if (!field || field.hasAttribute('data-rich-ready') || !window.RichEditor) return null;
+    if (!field || field.hasAttribute('data-rich-ready')) return null;
+    if (!window.RichEditor) {
+      noEditor(field);
+      return null;
+    }
     var textarea = field.querySelector('textarea');
     var shell    = field.querySelector('.rt-editor');
     var mount    = field.querySelector('[data-rich-text-for]');
@@ -4182,6 +4201,7 @@
       // A broken editor must never cost the owner their field.
       field.removeAttribute('data-rich-ready');
       if (label && textarea.id) label.setAttribute('for', textarea.id);
+      noEditor(field);
       return null;
     }
 
@@ -5867,15 +5887,27 @@
     var WATCH = ['category_id', 'type', 'country'];
     var forms = document.querySelectorAll('form[data-silent-save]');
 
-    function toast(message) {
+    // How long a background save may take before the page gives up on it
+    // (23 Nov 2026: on a stalled connection the button said "Saving…" for
+    // ever and the page looked frozen). A save answers in well under a
+    // second, so this only ever trips on a connection that has stopped.
+    var SAVE_TIMEOUT_MS = 25000;
+
+    // A failure stays until the next save or a click on it: it says the
+    // edits were not saved, which must not fade away unread.
+    function toast(message, failed) {
       if (!message) return;
       var old = document.querySelector('.save-toast');
       if (old) old.remove();
       var box = document.createElement('div');
-      box.className = 'save-toast';
-      box.setAttribute('role', 'status');
+      box.className = failed ? 'save-toast is-error' : 'save-toast';
+      box.setAttribute('role', failed ? 'alert' : 'status');
       box.textContent = message;
       document.body.appendChild(box);
+      if (failed) {
+        box.addEventListener('click', function () { box.remove(); });
+        return;
+      }
       setTimeout(function () { box.classList.add('is-gone'); }, 3500);
       setTimeout(function () { box.remove(); }, 4000);
     }
@@ -5997,13 +6029,24 @@
       sending = true;
       busy(form, true);
 
-      var done = function () { sending = false; busy(form, false); };
+      var old = document.querySelector('.save-toast.is-error');
+      if (old) old.remove();
+
+      var controller = window.AbortController ? new AbortController() : null;
+      var timedOut = false;
+      var timer = controller ? setTimeout(function () {
+        timedOut = true;
+        controller.abort();
+      }, SAVE_TIMEOUT_MS) : 0;
+      var done = function () { clearTimeout(timer); sending = false; busy(form, false); };
       fetch(form.action, {
         method: 'POST',
         body: new FormData(form),
         credentials: 'same-origin',
         headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+        signal: controller ? controller.signal : undefined,
       }).then(function (res) {
+        clearTimeout(timer);
         var json = (res.headers.get('content-type') || '').indexOf('application/json') !== -1;
         // Signed out meanwhile (the owner area answers 401 with where to go;
         // admin follows a redirect to its sign in page): that page, as a
@@ -6034,8 +6077,17 @@
           toast(data.message || 'Saved.');
         });
       }).catch(function () {
-        // Network trouble: the plain post, which shows whatever happened.
         done();
+        // No answer in time: the connection has stalled. A plain post now
+        // would most likely end on the browser's or Cloudflare's error page
+        // and take the form off screen, so the page stays, the edits stay
+        // in the fields (and in the draft copy), and Save works again.
+        if (timedOut) {
+          toast('Not saved: the connection is too slow right now. Your changes are still here. Check your connection and press Save again.', true);
+          return;
+        }
+        // Any other failure (a sign in page on another host after an idle
+        // timeout, for one): the plain post, which shows whatever happened.
         keepScroll(form);
         HTMLFormElement.prototype.submit.call(form);
       });
