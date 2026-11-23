@@ -152,6 +152,40 @@ class ContentSecurityPolicy extends BaseConfig
     public $childSrc = 'self';
 
     /**
+     * GA4 with Google signals, beyond the analytics hosts: gtag.js sends
+     * its /g/collect and audience hits to www.google.com, the visitor's own
+     * Google country domain (www.google.co.za…), stats.g.doubleclick.net and
+     * googletagmanager.com, as fetch or as an image. Google's published CSP
+     * for GA4 lists exactly these. Production logged all of them blocked in
+     * Nov 2026 (about 1,600 reports), each one a hit lost. A country domain
+     * cannot be wildcarded in CSP, so the common ones are listed: ours, the
+     * countries .app serves, and the ones seen in the log.
+     *
+     * @var list<string>
+     */
+    public const GOOGLE_SIGNALS = [
+        'https://*.google.com',
+        'https://*.g.doubleclick.net',
+        'https://*.googletagmanager.com',
+        'https://www.google.co.za',
+        'https://www.google.co.uk',
+        'https://www.google.com.au',
+        'https://www.google.co.nz',
+        'https://www.google.ca',
+        'https://www.google.co.in',
+        'https://www.google.nl',
+        'https://www.google.se',
+        'https://www.google.de',
+        'https://www.google.co.ke',
+        'https://www.google.com.ng',
+        'https://www.google.com.na',
+        'https://www.google.co.bw',
+        'https://www.google.co.zw',
+        'https://www.google.co.zm',
+        'https://www.google.co.mz',
+    ];
+
+    /**
      * Limits the origins that you can connect to (via XHR,
      * WebSockets, and EventSource).
      *
@@ -313,7 +347,8 @@ class ContentSecurityPolicy extends BaseConfig
             $imageSrc[] = $tileHost;
         }
 
-        $this->imageSrc = $imageSrc;
+        $this->imageSrc = [...$imageSrc, ...self::GOOGLE_SIGNALS];
+        $this->connectSrc = [...(array) $this->connectSrc, ...self::GOOGLE_SIGNALS];
 
         // The badge checkout is a browser form POST straight to PayFast — see
         // verification_checkout.php and PayFast::processUrl(). form-action does
