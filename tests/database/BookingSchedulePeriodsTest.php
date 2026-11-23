@@ -374,6 +374,11 @@ final class BookingSchedulePeriodsTest extends CIUnitTestCase
         $details = $this->get(str_replace([base_url(), '&amp;'], ['', '&'], $m[1]))->getBody();
         $this->assertStringContainsString('name="place" value="' . $this->practiceB . '"', $details);
         $this->assertStringContainsString('Practice B', $details);
+        // The appointment summary (book/_summary.php) says what, with whom, when and where.
+        $this->assertStringContainsString('Appointment summary', $details);
+        $this->assertMatchesRegularExpression('/data-sum="time">\d{2}:\d{2} to \d{2}:\d{2}</', $details);
+        $this->assertMatchesRegularExpression('/data-sum="where">Practice B, Johannesburg</', $details);
+        $this->assertStringContainsString('data-sum="where" class="is-missing"', $body, 'before a time, where waits for it');
     }
 
     /** Monday and Tuesday: practice A 09:00 to 13:00, practice B 14:30 to 16:00 for consultations only. */

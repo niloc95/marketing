@@ -3819,6 +3819,10 @@
   .book-summary-list dd { @apply m-0 min-w-0 font-medium text-slate-900; }
   .dark .book-summary-list dd { @apply text-white; }
   .book-summary-list dd.is-missing { @apply font-normal italic text-slate-400; }
+  /* The public booking page: the steps, and the summary beside them from lg
+     (above them on a phone), sticky while the steps scroll. */
+  .book-page.has-summary { @apply grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6; }
+  .book-page-summary  { @apply lg:sticky lg:top-24 lg:order-last; }
   .book-actions       { @apply mt-5 flex gap-3 border-t border-slate-200 pt-4; }
   .dark .book-actions { @apply border-slate-700; }
   .free-time          { @apply flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-left text-sm hover:border-brand-ocean; }

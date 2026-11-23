@@ -63,6 +63,26 @@ $whoParam = $who === '' ? null : $who;
 // comes with the time a customer picks (T33), never before.
 $chosen = $service !== null ? ['service' => $service['id'], 'provider' => $whoParam] : [];
 $step   = 1;
+
+// The appointment summary (book/_summary.php, the same card as /business),
+// filled in as the steps are: each step is its own page load.
+$summary = [];
+if ($service !== null) {
+    $whoName = $provider !== null ? (string) $provider['name'] : ($who === 'any' ? 'Anyone available' : (count($providers) === 1 ? (string) $providers[0]['name'] : ''));
+    $endTime = $slot !== null ? (new DateTimeImmutable((string) $slot['end'], new DateTimeZone('UTC')))->setTimezone($tz)->format('H:i') : '';
+    $days    = $slot !== null ? (int) (new DateTimeImmutable($today, $tz))->diff(new DateTimeImmutable((string) $date, $tz))->format('%r%a') : null;
+    $where   = $slot !== null && $place !== null ? $place : (count($placeOptions) === 1 ? $placeOptions[0] : null);
+    $cost    = trim($price($service) . ($depositText($service) !== '' ? ', ' . $depositText($service) : ''), ', ');
+    $summary = array_values(array_filter([
+        ['key' => 'service', 'label' => 'Service', 'text' => $service['name'] . ', ' . (int) $service['duration_min'] . ' min'],
+        $cost !== '' ? ['key' => 'price', 'label' => 'Price', 'text' => $cost] : null,
+        ['key' => 'who', 'label' => 'With', 'text' => $whoName !== '' ? $whoName : 'Choose who', 'missing' => $whoName === ''],
+        ['key' => 'date', 'label' => 'Date', 'text' => $slot !== null ? $longDay((string) $date) : 'Choose a time', 'missing' => $slot === null],
+        ['key' => 'time', 'label' => 'Time', 'text' => $slot !== null ? $clock($slot['time']) . ' to ' . $clock($endTime) : 'Choose a time', 'missing' => $slot === null],
+        ['key' => 'when', 'label' => 'When', 'text' => $days === null ? 'Choose a time' : ($days === 0 ? 'Today' : ($days === 1 ? 'Tomorrow' : 'In ' . $days . ' days')), 'missing' => $days === null],
+        ['key' => 'where', 'label' => 'Where', 'text' => $where !== null ? $where['name'] . ($where['address'] !== '' ? ', ' . $where['address'] : '') : 'The place of the time you choose', 'missing' => $where === null],
+    ]));
+}
 ?>
 <?= $this->extend('layouts/public') ?>
 
@@ -83,6 +103,11 @@ $step   = 1;
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white">Book online</h1>
         <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>.</p>
 
+        <div class="book-page<?= $summary !== [] ? ' has-summary' : '' ?>">
+        <?php if ($summary !== []): ?>
+            <aside class="book-page-summary"><?= view('book/_summary', ['rows' => $summary], ['saveData' => false]) ?></aside>
+        <?php endif ?>
+        <div class="min-w-0">
         <?php // 1. Service ?>
         <div class="panel mb-4">
             <h2 class="mb-3 font-bold">1. Service</h2>
@@ -227,6 +252,9 @@ $step   = 1;
                 <button type="submit" class="btn btn-accent btn-block"><?= $deposit !== null ? 'Book and pay the deposit' : 'Book ' . esc((string) $service['name']) . ', ' . esc($dayName((string) $date)) . ' at ' . esc($clock($slot['time'])) ?></button>
             </form>
         <?php endif ?>
+
+        </div>
+        </div>
 
         <p class="mt-6 text-sm text-slate-500 dark:text-slate-400">Booked before? <a class="underline" href="<?= base_url('book/find') ?>">Find your booking</a> to change or cancel it.</p>
     </div>
