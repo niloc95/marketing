@@ -332,6 +332,8 @@ $routes->get('business/badge', 'Business\Owner::badge', ['filter' => ['businessa
 $routes->get('business/stats', 'Business\Owner::stats', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']]);
 // The welcome pack PDF (WelcomePackService): the signed in owner's copy.
 $routes->get('business/welcome-pack', 'WelcomePack::owner', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']]);
+// The user manual: how every part of the owner area works, printable.
+$routes->get('business/manual', 'Business\Owner::manual', ['filter' => ['businessauth:owner']]);
 $routes->group('business/jobs', ['filter' => ['businessauth:owner', 'businesscan:jobs.manage']], static function ($routes) {
     $routes->get('/', 'Business\Owner::jobs');
     $routes->get('new', 'Jobs::ownerCreate');

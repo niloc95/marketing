@@ -89,6 +89,8 @@ const ICONS = [
   'contact', 'user',
   // The admin and /business sidebar (layouts/_sidebar.php): Documents and Sign out.
   'file-text', 'log-out',
+  // The owner's user manual (business/manual.php) and its print button.
+  'book-open', 'printer',
 ];
 
 /**

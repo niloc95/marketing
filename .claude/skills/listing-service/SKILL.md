@@ -836,6 +836,11 @@ addresses redirect here):
   and Services is `/business/services` once the catalogue owns them.
 - **Pages:** `/business` (overview, or the bookings dashboard), `/business/profile/{details,
   where,services,photos,team,branches}` (+ `/preview`), `/business/{badge,jobs,reviews,stats}`.
+- **User manual** (`/business/manual`, `Business\Owner::manual`, `business/manual.php`):
+  how every owner page, the message relay, reviews, jobs, stats, bookings and the plan
+  work, worded per site and plan, printable ([data-print]). **A change to any of those
+  changes the manual in the same commit**; numbers come from the services' constants,
+  never typed. `BusinessManualTest` pins the relay facts, .app wording and copy rules.
 - **Sidebar** (`layouts/business.php`): Your profile, Bookings, Plan; locked items carry
   a lock. Pages built from public partials set `profileForm` so the layout loads
   `directory.js` (and the page loads whole, not swapped).

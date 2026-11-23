@@ -52,12 +52,13 @@ class ListingMessageService
     public const MAX_TOTAL_BYTES = 10 * 1024 * 1024;
 
     /** Links in a message before it reads as spam. */
-    private const MAX_LINKS = 2;
+    public const MAX_LINKS = 2;
 
     /** Per IP an hour, per sender a day, per business a day. */
-    private const LIMIT_IP      = 5;
-    private const LIMIT_SENDER  = 5;
-    private const LIMIT_LISTING = 30;
+    /** Public so the owner's user manual quotes the real numbers. */
+    public const LIMIT_IP      = 5;
+    public const LIMIT_SENDER  = 5;
+    public const LIMIT_LISTING = 30;
 
     private const TABLE = 'directory_listing_messages';
 

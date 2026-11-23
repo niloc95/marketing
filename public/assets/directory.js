@@ -5737,6 +5737,17 @@
     });
   })();
 
+  // Print buttons ([data-print], the owner's user manual): the browser's own
+  // print dialog, where "Save as PDF" keeps a copy. Delegated on document so
+  // it works on a page the app shell swapped in (resources/shell/spa.js);
+  // an inline onclick would be refused by the CSP.
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-print]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    window.print();
+  });
+
   // System handbook (admin/handbook.php): print every chapter in full. A
   // closed <details> prints its summary only, so open them all first and put
   // them back after. Looked up when printing, not at load: the handbook may

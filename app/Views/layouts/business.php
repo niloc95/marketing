@@ -93,6 +93,8 @@ if ($listing !== null) {
     if ($context->can('audit.view') && $bookable) {
         $more[] = ['business/audit', 'Activity', 'history'];
     }
+    // Everyone signed in to a profile: how the owner area works.
+    $more[] = ['business/manual', 'User manual', 'book-open'];
 
     $groups = [
         ['heading' => null, 'items' => [['business', $bookable ? 'Dashboard' : 'Overview', 'layout-dashboard']]],
