@@ -207,17 +207,17 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
     </dialog>
 
     <?php // Book dialog: the same fields as /business/appointments/new, sent as JSON by create.js. ?>
-    <dialog class="cal-dialog" data-cal-create aria-labelledby="cal-create-title">
+    <dialog class="cal-dialog book-dialog" data-cal-create aria-labelledby="cal-create-title">
         <form method="post" action="<?= base_url('business/appointments/new') ?>" data-cal-create-form novalidate>
             <?= csrf_field() ?>
             <div class="mb-4 flex items-center gap-3">
                 <h2 id="cal-create-title" class="flex-1 text-lg font-bold text-slate-900 dark:text-white">Book an appointment</h2>
                 <button type="button" class="rounded-control p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-cal-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
             </div>
-            <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => ['date' => $date], 'errors' => [], 'prefix' => 'cal-new']) ?>
+            <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => ['date' => $date], 'errors' => [], 'prefix' => 'cal-new', 'wide' => true]) ?>
             <p class="mt-2 hidden text-sm text-rose-600" data-create-error role="alert"></p>
-            <div class="mt-4 flex gap-3">
-                <button type="submit" class="btn btn-primary">Book</button>
+            <div class="book-actions">
+                <button type="submit" class="btn btn-primary" data-book-submit>Book</button>
                 <button type="button" class="btn btn-ghost" data-cal-close>Cancel</button>
             </div>
         </form>

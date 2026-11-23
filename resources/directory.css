@@ -3766,7 +3766,25 @@
   .free-times-heading { @apply mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500; }
   .free-times-list    { @apply flex flex-wrap gap-2; }
   .free-times-empty   { @apply text-sm text-slate-500; }
-  .free-times-chosen  { @apply mt-2 text-sm font-semibold text-brand-ocean; }
+  .free-times-chosen  { @apply text-sm font-semibold text-brand-ocean; }
+  /* One day's times by part of the day: name on the left, times wrap beside it. */
+  .free-times-groups  { @apply flex flex-col gap-2; }
+  .free-times-group   { @apply flex items-start gap-3; }
+  .free-times-group-name { @apply w-20 shrink-0 pt-1.5 text-xs font-semibold text-slate-500; }
+  .free-times-groups .free-time { @apply px-2.5 py-1; }
+  /* A chosen time folded to one line (free-times.js); Change time opens the lists. */
+  .free-times-summary { @apply flex items-center gap-3 rounded-xl border border-brand-ocean/40 bg-primary-50 px-4 py-3 text-brand-ocean; }
+  .free-times [hidden] { @apply hidden; }
+  .dark .free-times-summary { @apply border-primary-300/40 bg-primary-500/15 text-white; }
+  .dark .free-times-group-name { @apply text-slate-400; }
+  /* The Book form: one column, or when (left) and customer (right) from lg up. */
+  .book-layout        { @apply grid gap-4; }
+  .book-layout-wide   { @apply lg:grid-cols-2 lg:gap-8; }
+  .book-layout-wide .book-form-who { @apply lg:border-l lg:border-slate-200 lg:pl-8; }
+  .dark .book-layout-wide .book-form-who { @apply lg:border-slate-700; }
+  .book-form-who > * + *   { @apply mt-4; }
+  .book-actions       { @apply mt-5 flex gap-3 border-t border-slate-200 pt-4; }
+  .dark .book-actions { @apply border-slate-700; }
   .free-time          { @apply flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-left text-sm hover:border-brand-ocean; }
   .free-time[aria-pressed='true'] { @apply border-brand-ocean bg-primary-50 ring-1 ring-brand-ocean; }
   .free-time-when     { @apply font-semibold text-slate-900; }
@@ -4596,6 +4614,8 @@
 
   /* Details and Book dialogs */
   .cal-dialog { @apply w-[min(40rem,calc(100vw-2rem))] max-h-[90vh] overflow-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100; }
+  /* The Book dialogs (calendar, availability): two columns need the room. */
+  .cal-dialog.book-dialog { @apply w-[min(64rem,calc(100vw-2rem))]; }
   .cal-facts { @apply grid grid-cols-[1.25rem_1fr] items-start gap-x-2 gap-y-1.5 text-sm; }
   .cal-facts dt { @apply pt-0.5 text-slate-400; }
   /* A class that sets display must never beat the hidden attribute. */

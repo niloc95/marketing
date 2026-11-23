@@ -11,13 +11,17 @@
  * @var array<string,string>                     $errors
  * @var string                                   $prefix id prefix, unique per page
  * @var array<string,mixed>|null                 $initialCustomer a customer already chosen (?customer= on the booking page)
+ * @var bool                                     $wide   two columns from lg up: when on the left, who on the right (the page and the wide dialogs)
  */
 $old    ??= [];
+$wide   ??= false;
 $errors ??= [];
 $val    = static fn (string $k): string => (string) ($old[$k] ?? '');
 // Always printed, empty when fine, so the calendar script can fill it in place.
 $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600' . (isset($errors[$k]) ? '' : ' hidden') . '" data-error-for="' . esc($k, 'attr') . '">' . esc($errors[$k] ?? '') . '</p>';
 ?>
+<div class="book-layout<?= $wide ? ' book-layout-wide' : '' ?>">
+<div class="book-form-when">
 <div class="grid gap-4 sm:grid-cols-2">
     <div class="field">
         <label for="<?= $prefix ?>-service">Service</label>
@@ -60,14 +64,23 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
     <?php endif ?>
 </div>
 
-<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's. A click fills Date and Time. Hidden without the script. ?>
+<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's by morning, afternoon and evening. A click fills Date and Time and folds the lists to one line (Change time opens them). Hidden without the script. ?>
 <div class="free-times mb-4" data-free hidden>
-    <p class="free-times-heading">Next free times</p>
-    <div class="free-times-list" data-free-next></div>
-    <p class="free-times-heading" data-free-day-heading hidden></p>
-    <div class="free-times-list" data-free-day hidden></div>
-    <p class="free-times-chosen" data-free-chosen hidden></p>
+    <div class="free-times-summary" data-free-summary hidden>
+        <?= lucide('clock', 'h-5 w-5 shrink-0') ?>
+        <span class="free-times-chosen" data-free-chosen></span>
+        <button type="button" class="btn btn-ghost btn-xs ml-auto" data-free-change>Change time</button>
+    </div>
+    <div data-free-lists>
+        <p class="free-times-heading" data-free-next-heading>Next free times</p>
+        <div class="free-times-list" data-free-next></div>
+        <p class="free-times-heading" data-free-day-heading hidden></p>
+        <div class="free-times-groups" data-free-day hidden></div>
+    </div>
 </div>
+</div>
+
+<div class="book-form-who">
 
 <fieldset class="mt-2" data-customer-picker<?php if (! empty($initialCustomer)): ?> data-customer-initial="<?= esc(json_encode($initialCustomer), 'attr') ?>"<?php endif ?>>
     <legend class="text-sm font-semibold text-slate-900 dark:text-white">Customer</legend>
@@ -122,4 +135,6 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <label for="<?= $prefix ?>-notes">Notes <span class="font-normal text-slate-500">(only your team sees them)</span></label>
         <textarea id="<?= $prefix ?>-notes" name="notes" rows="2" maxlength="5000"><?= esc($val('notes')) ?></textarea>
     </div>
+</div>
+</div>
 </div>

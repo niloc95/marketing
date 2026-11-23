@@ -11,6 +11,7 @@ import { initCalendar } from './calendar/scheduler.js';
 import { initProviderForm } from './providers.js';
 import { dashboardPages } from './dashboard.js';
 import { initBookingForm } from './customer-picker.js';
+import { initAvailability } from './availability.js';
 
 // Once per load: they live outside the swapped content.
 initTheme();
@@ -19,6 +20,7 @@ initInactivityMonitor();
 registerPage('[data-calendar]', initCalendar);
 registerPage('[data-provider-form]', initProviderForm);
 registerPage('form[data-customer-url]', initBookingForm);
+registerPage('[data-availability]', initAvailability);
 dashboardPages.forEach(([selector, init]) => registerPage(selector, init));
 
 initShell();
