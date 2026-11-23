@@ -27,7 +27,7 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <label for="<?= $prefix ?>-service">Service</label>
         <select id="<?= $prefix ?>-service" name="service_id" required>
             <?php foreach ($services as $s): ?>
-                <option value="<?= (int) $s['id'] ?>"<?= $val('service_id') === (string) $s['id'] ? ' selected' : '' ?>><?= esc((string) $s['name']) ?> (<?= (int) $s['duration_min'] ?> min)</option>
+                <option value="<?= (int) $s['id'] ?>" data-name="<?= esc((string) $s['name'], 'attr') ?>" data-duration="<?= (int) $s['duration_min'] ?>"<?= $val('service_id') === (string) $s['id'] ? ' selected' : '' ?>><?= esc((string) $s['name']) ?> (<?= (int) $s['duration_min'] ?> min)</option>
             <?php endforeach ?>
         </select>
         <?= $err('service_id') ?>
@@ -81,6 +81,18 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
 </div>
 
 <div class="book-form-who">
+<?php // Filled by free-times.js as the fields change: what is being booked, in one place. Hidden without the script. ?>
+<section class="book-summary" data-book-summary data-timezone="<?= esc(service('businessContext')->isSet() ? service('businessContext')->timezone() : app_timezone(), 'attr') ?>" hidden>
+    <h3 class="book-summary-title">Appointment summary</h3>
+    <dl class="book-summary-list">
+        <div><dt>Service</dt><dd data-sum="service"></dd></div>
+        <div><dt>With</dt><dd data-sum="who"></dd></div>
+        <div><dt>Date</dt><dd data-sum="date"></dd></div>
+        <div><dt>Time</dt><dd data-sum="time"></dd></div>
+        <div><dt>When</dt><dd data-sum="when"></dd></div>
+        <div><dt>Where</dt><dd data-sum="where"></dd></div>
+    </dl>
+</section>
 
 <fieldset class="mt-2" data-customer-picker<?php if (! empty($initialCustomer)): ?> data-customer-initial="<?= esc(json_encode($initialCustomer), 'attr') ?>"<?php endif ?>>
     <legend class="text-sm font-semibold text-slate-900 dark:text-white">Customer</legend>

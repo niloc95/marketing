@@ -65,7 +65,11 @@ export function initFreeTimes(form, url) {
   const summary = q('[data-free-summary]');
   const lists = q('[data-free-lists]');
   const submit = form.querySelector('[data-book-submit]');
+  const sum = form.querySelector('[data-book-summary]');
   let ask = 0;
+  // The free times last asked for, to say where a chosen time is.
+  let known = [];
+  let loaded = false;
 
   block.hidden = false;
 
@@ -79,22 +83,66 @@ export function initFreeTimes(form, url) {
     if (submit) submit.textContent = field('time').value ? MSG.bookAt(field('time').value) : MSG.book;
   }
 
+  /** The appointment summary (business/_appointment_fields.php): service, who, date, time, when, where. */
+  function summarise() {
+    if (!sum) return;
+    sum.hidden = false;
+    const set = (key, text, muted = false) => {
+      const dd = sum.querySelector(`[data-sum="${key}"]`);
+      dd.textContent = text;
+      dd.classList.toggle('is-missing', muted);
+    };
+    const service = field('service_id').selectedOptions[0];
+    const who = field('provider_id').selectedOptions[0];
+    const minutes = Number(service?.dataset.duration || 0);
+    set('service', service ? `${service.dataset.name || service.textContent}${minutes ? `, ${minutes} min` : ''}` : MSG.sumNone, !service);
+    set('who', who ? who.textContent.trim() : MSG.sumNone, !who);
+    const date = field('date').value;
+    const time = field('time').value;
+    set('date', date ? longDay(date) : MSG.sumChooseDay, !date);
+    if (time) {
+      const [h, m] = time.split(':').map(Number);
+      const end = h * 60 + m + minutes;
+      const pad = (n) => String(n).padStart(2, '0');
+      set('time', minutes ? MSG.sumTime(time, `${pad(Math.floor(end / 60) % 24)}:${pad(end % 60)}`) : time);
+    } else {
+      set('time', MSG.sumChooseTime, true);
+    }
+    // When: today, tomorrow, in N days, in the business's own time zone.
+    if (date) {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: sum.dataset.timezone || undefined }).format(new Date());
+      const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+      set('when', MSG.sumWhen(days), days < 0);
+    } else {
+      set('when', MSG.sumChooseDay, true);
+    }
+    // Where: the place their working hours give that time, as the booking will.
+    const slot = date && time ? known.find((t) => t.date === date && t.time === time) : null;
+    if (slot) set('where', slot.place || MSG.sumMainAddress);
+    else if (date && time && loaded) set('where', MSG.sumNotFree, true);
+    else set('where', MSG.sumWhereLater, true);
+  }
+
   function pick(t, button) {
     field('date').value = t.date;
     field('time').value = t.time;
     block.querySelectorAll('.free-time[aria-pressed]').forEach((x) => x.removeAttribute('aria-pressed'));
     if (button) button.setAttribute('aria-pressed', 'true');
-    chosen.textContent = MSG.bookingTime(t.label, t.place);
+    chosen.textContent = t.label; // The place is in the appointment summary.
     fold(true);
     label();
+    summarise();
   }
 
   q('[data-free-change]').addEventListener('click', () => fold(false));
-  field('time').addEventListener('input', label);
+  field('time').addEventListener('input', () => { label(); summarise(); });
+  form.addEventListener('reset', () => setTimeout(summarise));
 
   async function refresh() {
     const mine = ++ask;
     fold(false);
+    loaded = false;
+    summarise();
     const params = new URLSearchParams({ service_id: field('service_id').value, provider_id: field('provider_id').value });
     const date = field('date').value;
     if (date) params.set('date', date);
@@ -112,8 +160,12 @@ export function initFreeTimes(form, url) {
       nextBox.replaceChildren(el('p', 'free-times-empty', body.error || MSG.failed));
       dayHeading.hidden = true;
       dayBox.hidden = true;
+      known = [];
+      summarise();
       return;
     }
+    known = [...body.data.day, ...body.data.next];
+    loaded = true;
     // One place for every time: say it once (the summary, the heading), not on each button.
     const places = new Set([...body.data.next, ...body.data.day].map((t) => t.place || ''));
     const showPlace = places.size > 1;
@@ -122,6 +174,8 @@ export function initFreeTimes(form, url) {
     dayBox.hidden = !date;
     // The next times all fall on the chosen day: the day's list already has them.
     const nextHeading = q('[data-free-next-heading]');
+    const onePlace = !showPlace ? (body.data.next[0]?.place || body.data.day[0]?.place || '') : '';
+    if (nextHeading) nextHeading.textContent = onePlace ? MSG.nextAt(onePlace) : MSG.next;
     const same = Boolean(date) && body.data.next.length > 0 && body.data.next.every((t) => t.date === date);
     if (nextHeading) nextHeading.hidden = same;
     nextBox.hidden = same;
@@ -136,6 +190,7 @@ export function initFreeTimes(form, url) {
     const match = date && time ? body.data.day.find((t) => t.time === time) : null;
     if (match) pick(match, dayBox.querySelector(`.free-time[data-time="${CSS.escape(`${match.date} ${match.time}`)}"]`));
     label();
+    summarise();
   }
 
   ['service_id', 'provider_id', 'date'].forEach((name) => field(name).addEventListener('change', refresh));

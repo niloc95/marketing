@@ -3783,6 +3783,18 @@
   .book-layout-wide .book-form-who { @apply lg:border-l lg:border-slate-200 lg:pl-8; }
   .dark .book-layout-wide .book-form-who { @apply lg:border-slate-700; }
   .book-form-who > * + *   { @apply mt-4; }
+  /* Appointment summary (free-times.js): what is being booked, in one place. */
+  .book-summary       { @apply rounded-xl border border-slate-200 bg-slate-50 px-4 py-3; }
+  .dark .book-summary { @apply border-slate-700 bg-slate-800/60; }
+  .book-summary[hidden] { @apply hidden; }
+  .book-summary-title { @apply mb-2 text-sm font-semibold text-slate-900; }
+  .dark .book-summary-title { @apply text-white; }
+  .book-summary-list  { @apply m-0 grid gap-y-1.5 text-sm; }
+  .book-summary-list > div { @apply flex min-w-0 gap-2; }
+  .book-summary-list dt { @apply w-16 shrink-0 text-slate-500; }
+  .book-summary-list dd { @apply m-0 min-w-0 font-medium text-slate-900; }
+  .dark .book-summary-list dd { @apply text-white; }
+  .book-summary-list dd.is-missing { @apply font-normal italic text-slate-400; }
   .book-actions       { @apply mt-5 flex gap-3 border-t border-slate-200 pt-4; }
   .dark .book-actions { @apply border-slate-700; }
   .free-time          { @apply flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-left text-sm hover:border-brand-ocean; }

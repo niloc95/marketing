@@ -332,7 +332,7 @@ final class BookingDashboardTest extends CIUnitTestCase
         $r = $this->signedIn()->get('business/appointments/new?provider_id=' . $this->james . '&service_id=' . $this->serviceId . '&date=2030-01-07&time=11:00');
         $r->assertOK();
         $this->assertMatchesRegularExpression('/<option value="' . $this->james . '" selected>/', $r->getBody());
-        $this->assertMatchesRegularExpression('/<option value="' . $this->serviceId . '" selected>/', $r->getBody());
+        $this->assertMatchesRegularExpression('/<option value="' . $this->serviceId . '"[^>]* selected>/', $r->getBody());
     }
 
     // Helpers
