@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ResolvesStoredPath;
 use CodeIgniter\Model;
 
 /**
@@ -11,6 +12,8 @@ use CodeIgniter\Model;
  */
 class CareerApplicationModel extends Model
 {
+    use ResolvesStoredPath;
+
     public const STATUS_NEW         = 'new';
     public const STATUS_REVIEWING   = 'reviewing';
     public const STATUS_SHORTLISTED = 'shortlisted';
@@ -39,32 +42,6 @@ class CareerApplicationModel extends Model
     public static function storageRoot(): string
     {
         return rtrim(WRITEPATH, '/\\') . '/careers';
-    }
-
-    /**
-     * The absolute path of a stored CV, or null when it is missing or the
-     * stored value tries to leave the storage root. Same checks as
-     * DirectoryVerificationDocumentModel::resolvePath().
-     */
-    public function resolvePath(string $path): ?string
-    {
-        $path = ltrim(trim($path), '/');
-        if ($path === '' || str_contains($path, "\0")) {
-            return null;
-        }
-
-        $root = realpath(self::storageRoot());
-        if ($root === false) {
-            return null;
-        }
-        $root = rtrim($root, '/');
-        $full = realpath($root . '/' . $path);
-
-        if ($full === false || ! str_starts_with($full, $root . '/') || ! is_file($full)) {
-            return null;
-        }
-
-        return $full;
     }
 
     /**
