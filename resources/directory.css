@@ -4843,6 +4843,12 @@ body[data-shell-bare] .shell-main { padding-left: 0; }
   }
   .form-savebar > .btn { @apply flex-1; }
   .dark .form-savebar { @apply border-slate-800 bg-surface-tone/95; }
+  /* "Saved" after a silent save of the profile editor (directory.js): above
+     the phone save bar, bottom centre on desktop. */
+  .save-toast {
+    @apply fixed bottom-20 left-1/2 z-50 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg transition-opacity duration-500 xl:bottom-6 dark:bg-white dark:text-slate-900;
+  }
+  .save-toast.is-gone { @apply opacity-0; }
 }
 
 @media print {

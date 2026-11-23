@@ -86,13 +86,13 @@ class Profile extends BaseController
             $this->discardLogo($logo['path']);
             $this->discardTeamPhotos($headshots['team']);
 
-            return $this->withUploadErrors(
+            return $this->silentSave($this->withUploadErrors(
                 redirect()->to($here)
                     ->with('errors', $uploads ? $this->withFilesNote($result['errors']) : $result['errors'])
                     ->with('old', form_typed_fields($post))
                     ->with('error', $result['message']),
                 array_filter(array_merge([$logo['error']], $headshots['errors']))
-            );
+            ), false, (int) $listing['id'], static fn (): string => '');
         }
 
         $extra = [];
@@ -112,10 +112,10 @@ class Profile extends BaseController
         // transaction and score too.
         (new ListingQualityService())->recalculate((int) $listing['id']);
 
-        return $this->withUploadErrors(
+        return $this->silentSave($this->withUploadErrors(
             redirect()->to($here)->with('success', 'Saved. ' . $result['message']),
             array_filter(array_merge([$logo['error']], $extra, $headshots['errors']))
-        );
+        ), true, (int) $listing['id'], fn (): string => $this->strengthPanel((int) $listing['id']));
     }
 
     /**
@@ -303,6 +303,22 @@ class Profile extends BaseController
             // The side column's meter, the same one the overview shows.
             'strength'   => (new ListingQualityService())->strength($listing),
         ];
+    }
+
+    /** The side column's strength panel as business/profile.php draws it, for a silent save. */
+    private function strengthPanel(int $id): string
+    {
+        $listing = (new \App\Models\DirectoryListingModel())->find($id);
+        if ($listing === null) {
+            return '';
+        }
+
+        return view('directory/_strength_panel', [
+            'strength'   => (new ListingQualityService())->strength($listing),
+            'floor'      => (int) config('Directory')->recentMinQuality,
+            'target'     => (int) config('Directory')->qualityTarget,
+            'anchorBase' => 'business/profile',
+        ], ['saveData' => false]);
     }
 
     /**

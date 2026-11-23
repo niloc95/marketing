@@ -433,4 +433,53 @@ trait HandlesListingUploads
     {
         return $errors === [] ? $redirect : $redirect->with('upload_errors', $errors);
     }
+
+    /**
+     * The answer to a profile editor Save (business/profile.php,
+     * admin/edit.php) that directory.js sent in the background ("silent
+     * save", owner 23 Nov 2026: a reload put the page back at the top after
+     * every save). A plain form post gets $redirect unchanged.
+     *
+     * A clean save answers JSON and the page stays where it is: the message,
+     * the new CSRF hash (every token on the page is dead after a POST), the
+     * profile's updated_at for the unsaved draft copies, and the strength
+     * panel drawn again. The success flash $redirect set is taken back, or
+     * the next page load would say "Saved" a second time.
+     *
+     * A rejected save, or one that came with upload problems, answers only
+     * where to go: the flash stays and the page reloads to show it, with the
+     * messages beside their fields as before. So the error handling is the
+     * one the plain form has.
+     *
+     * @param callable(): string $strength the strength panel's markup now ('' for none)
+     */
+    protected function silentSave(\CodeIgniter\HTTP\RedirectResponse $redirect, bool $ok, int $listingId, callable $strength): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (! $this->request->isAJAX()) {
+            return $redirect;
+        }
+
+        $session = session();
+        $csrf    = ['name' => csrf_token(), 'hash' => csrf_hash()];
+        $notes   = $session->getFlashdata('upload_errors');
+        if (! $ok || (is_array($notes) && $notes !== [])) {
+            return service('response')->setJSON([
+                'ok'     => $ok,
+                'reload' => $redirect->getHeaderLine('Location'),
+                'csrf'   => $csrf,
+            ]);
+        }
+
+        $message = (string) ($session->getFlashdata('success') ?? 'Saved.');
+        $session->remove('success');
+        $row = (new DirectoryListingModel())->find($listingId);
+
+        return service('response')->setJSON([
+            'ok'       => true,
+            'message'  => $message,
+            'csrf'     => $csrf,
+            'version'  => (string) ($row['updated_at'] ?? ''),
+            'strength' => $strength(),
+        ]);
+    }
 }
