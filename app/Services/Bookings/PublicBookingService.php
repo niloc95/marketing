@@ -5,8 +5,6 @@ namespace App\Services\Bookings;
 use App\Libraries\Mailer;
 use App\Libraries\TokenHash;
 use App\Models\Bookings\BookingAppointmentModel;
-use App\Models\Bookings\BookingProviderModel;
-use App\Models\Bookings\BookingProviderServiceModel;
 use App\Models\DirectoryListingModel;
 use App\Services\Bookings\Integrations\DeliveryModes;
 use App\Services\Bookings\Payments\DepositService;

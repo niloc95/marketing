@@ -4,7 +4,6 @@ namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
 use App\Services\Bookings\Notifications\OptOuts;
-use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\CustomerService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 

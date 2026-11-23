@@ -67,14 +67,6 @@ class TeamService
         return is_array($row) ? $row : null;
     }
 
-    /** The provider a member is linked to, if any. @return array<string,mixed>|null */
-    public function providerForMember(int $memberId): ?array
-    {
-        $row = BookingProviderModel::forBusiness($this->listingId)->where('member_id', $memberId)->where('archived_at', null)->first();
-
-        return is_array($row) ? $row : null;
-    }
-
     /**
      * A business with no provider gets one named after itself, working the
      * profile's opening hours, linked to the given membership (the owner).
