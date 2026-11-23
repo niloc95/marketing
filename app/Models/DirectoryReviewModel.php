@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use App\Models\Concerns\HasStatusCounts;
 
 /**
  * Customer reviews. See the migration for the two gates before a review is
@@ -10,6 +11,8 @@ use CodeIgniter\Model;
  */
 class DirectoryReviewModel extends Model
 {
+    use HasStatusCounts;
+
     protected $table          = 'xs_directory_reviews';
     protected $primaryKey     = 'id';
     protected $returnType     = 'array';
@@ -113,21 +116,5 @@ class DirectoryReviewModel extends Model
             'pager' => $this->pager,
             'total' => $this->pager->getTotal('default'),
         ];
-    }
-
-    /**
-     * Row counts per status for the queue tabs, every status present.
-     *
-     * @return array<string,int>
-     */
-    public function counts(): array
-    {
-        $counts = array_fill_keys(self::STATUSES, 0);
-
-        foreach ($this->select('status, COUNT(*) AS n')->groupBy('status')->findAll() as $row) {
-            $counts[(string) $row['status']] = (int) $row['n'];
-        }
-
-        return $counts;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\DerivesCountryCode;
+use App\Models\Concerns\HasStatusCounts;
 use CodeIgniter\Model;
 
 /**
@@ -12,6 +13,7 @@ use CodeIgniter\Model;
 class DirectoryReferralModel extends Model
 {
     use DerivesCountryCode;
+    use HasStatusCounts;
 
     public const STATUS_PENDING   = 'pending';
     public const STATUS_INVITED   = 'invited';
@@ -74,17 +76,5 @@ class DirectoryReferralModel extends Model
             'pager' => $this->pager,
             'total' => $this->pager->getTotal('default'),
         ];
-    }
-
-    /** @return array<string,int> */
-    public function counts(): array
-    {
-        $counts = array_fill_keys(self::STATUSES, 0);
-
-        foreach ($this->select('status, COUNT(*) AS n')->groupBy('status')->findAll() as $row) {
-            $counts[(string) $row['status']] = (int) $row['n'];
-        }
-
-        return $counts;
     }
 }

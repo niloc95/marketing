@@ -90,9 +90,6 @@ final class BookingFoundationTest extends CIUnitTestCase
         $this->withSession(\Tests\Support\OwnerSession::for($id))->get('business/calendar')->assertStatus(403);
         $this->withSession(\Tests\Support\OwnerSession::for($id))->post('business/bookings/turn-on', [csrf_token() => csrf_hash()])->assertRedirectTo(base_url('business/calendar'));
         $this->assertSame(0, (int) $this->listings->find($id)['bookings_enabled']);
-
-        $panel = view('directory/_bookings_panel', ['listing' => $this->listings->find($id)], ['saveData' => false]);
-        $this->assertStringNotContainsString('Online bookings', $panel);
     }
 
     // 2. Scoping
@@ -369,7 +366,7 @@ final class BookingFoundationTest extends CIUnitTestCase
         $files = array_merge(
             glob(APPPATH . 'Views/business/*.php') ?: [],
             glob(APPPATH . 'Views/book/*.php') ?: [],
-            [APPPATH . 'Views/layouts/business.php', APPPATH . 'Views/layouts/_shell.php', APPPATH . 'Views/layouts/_sidebar.php', APPPATH . 'Views/directory/_bookings_panel.php'],
+            [APPPATH . 'Views/layouts/business.php', APPPATH . 'Views/layouts/_shell.php', APPPATH . 'Views/layouts/_sidebar.php'],
             glob(APPPATH . 'Views/emails/booking-*.php') ?: [],
         );
         foreach ($files as $file) {

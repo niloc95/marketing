@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\DerivesCountryCode;
+use App\Models\Concerns\HasStatusCounts;
 use CodeIgniter\Model;
 
 /**
@@ -12,6 +13,9 @@ use CodeIgniter\Model;
 class JobPostModel extends Model
 {
     use DerivesCountryCode;
+    use HasStatusCounts {
+        counts as private statusCounts;
+    }
 
     protected $table          = 'xs_directory_job_posts';
     protected $primaryKey     = 'id';
@@ -130,18 +134,14 @@ class JobPostModel extends Model
     }
 
     /**
-     * Row counts per status for the queue tabs, every status present.
+     * Row counts per status for the queue tabs (HasStatusCounts), plus the
+     * 'ended' tab: closed and expired together.
      *
      * @return array<string,int>
      */
     public function counts(): array
     {
-        $counts = array_fill_keys(self::STATUSES, 0);
-
-        foreach ($this->select('status, COUNT(*) AS n')->groupBy('status')->findAll() as $row) {
-            $counts[(string) $row['status']] = (int) $row['n'];
-        }
-
+        $counts          = $this->statusCounts();
         $counts['ended'] = $counts[self::STATUS_CLOSED] + $counts[self::STATUS_EXPIRED];
 
         return $counts;

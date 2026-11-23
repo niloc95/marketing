@@ -34,13 +34,7 @@ class Discovery extends BaseController
             return $response;
         }
 
-        $scope   = service('site')->scopeSql('country_code');
-        $listing = (new DirectoryListingModel())
-            ->select('id')
-            ->where('slug', $slug)
-            ->where('status', 'published')
-            ->where($scope !== '' ? $scope : '1 = 1', null, false)
-            ->first();
+        $listing = (new DirectoryListingModel())->findPublishedBySlug($slug, scoped: true);
         if ($listing !== null) {
             (new DiscoveryEventService())->logClick($q, (int) $listing['id'], (int) $this->request->getPost('position'));
         }

@@ -2113,7 +2113,6 @@
   }
   .contact-row > svg { @apply h-5 w-5 shrink-0 text-slate-400; }
   .contact-row a:not(.reveal-btn) { @apply break-words font-medium text-primary-500 hover:underline; }
-  .contact-sub       { @apply mt-0.5 block text-slate-500; }
   /* WhatsApp's own green (#25D366) fails contrast under white text, so the
      button uses its darker teal: recognisably WhatsApp, and legible. */
   .btn-whatsapp { @apply btn bg-[#0f7a6c] text-white hover:bg-[#075e54] focus:ring-[#0f7a6c]; }
@@ -2128,7 +2127,6 @@
   .contact-suggest svg { @apply h-4 w-4 shrink-0; }
   .dark .contact-row         { @apply border-slate-800; }
   .dark .contact-row a:not(.reveal-btn) { @apply text-primary-300; }
-  .dark .contact-sub         { @apply text-slate-400; }
   .dark .contact-suggest     { @apply text-slate-400 hover:text-primary-300; }
 
   /* ---------------------------------------------------------------- gallery */
@@ -4097,9 +4095,7 @@
   .dark .hours-holiday-except-title { @apply text-slate-200; }
   .hours-holiday-row input[type="time"],
   .hours-holiday-row input.hours-note { @apply h-11 w-full rounded-control border-slate-200 px-4 text-sm; }
-  .hours-holiday-date { @apply block text-xs font-normal text-slate-500; }
   .dark .hours-holiday-row    { @apply border-slate-800; }
-  .dark .hours-holiday-date   { @apply text-slate-400; }
   .dark .hours-holiday-row select,
   .dark .hours-holiday-row input[type="time"] {
     @apply border-slate-700 bg-slate-800 text-white [color-scheme:dark];
@@ -4720,7 +4716,7 @@ body[data-shell-bare] .shell-main { padding-left: 0; }
 /* ------------------------------------------------------ shell page standard
    One look for every /admin and /business page (owner, 12 Nov 2026): the page
    fills the width beside the sidebar (layouts/admin.php and business.php set
-   the padding, no max width), one header (.page-head, h1.page-title), one tab
+   the padding, no max width), one title (the top bar's shell_title; h1.page-title on bare pages), one tab
    strip (.page-tabs), one box (.panel), two heading sizes (.section-title,
    .subsection-title), ocean for the main button, rounded-surface for boxes and
    rounded-control for buttons. ShellStyleStandardTest reads the views for it.
@@ -4729,15 +4725,10 @@ body[data-shell-bare] .shell-main { padding-left: 0; }
 @layer components {
   .shell-page { @apply min-w-0; }
 
-  .page-head { @apply mb-6 flex flex-wrap items-center justify-between gap-3; }
-  .page-head-text { @apply min-w-0; }
   .page-title { @apply m-0 text-xl font-bold text-slate-900; }
   .dark .page-title { @apply text-white; }
   .page-title-count { @apply text-sm font-normal text-slate-500; }
   .dark .page-title-count { @apply text-slate-400; }
-  .page-sub { @apply mb-0 mt-1 text-sm text-slate-600; }
-  .dark .page-sub { @apply text-slate-400; }
-  .page-actions { @apply flex flex-wrap items-center gap-2; }
 
   .section-title { @apply mb-3 mt-0 text-lg font-semibold text-slate-900; }
   .subsection-title { @apply mb-2 mt-0 text-base font-semibold text-slate-900; }

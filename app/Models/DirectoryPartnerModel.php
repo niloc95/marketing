@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use App\Models\Concerns\HasStatusCounts;
 
 /**
  * Partner Program affiliates. Written only through PartnerService; see the
@@ -10,6 +11,8 @@ use CodeIgniter\Model;
  */
 class DirectoryPartnerModel extends Model
 {
+    use HasStatusCounts;
+
     public const STATUS_APPLIED   = 'applied';
     public const STATUS_APPROVED  = 'approved';
     public const STATUS_REJECTED  = 'rejected';
@@ -74,17 +77,5 @@ class DirectoryPartnerModel extends Model
             'pager' => $this->pager,
             'total' => $this->pager->getTotal('default'),
         ];
-    }
-
-    /** @return array<string,int> */
-    public function counts(): array
-    {
-        $counts = array_fill_keys(self::STATUSES, 0);
-
-        foreach ($this->select('status, COUNT(*) AS n')->groupBy('status')->findAll() as $row) {
-            $counts[(string) $row['status']] = (int) $row['n'];
-        }
-
-        return $counts;
     }
 }
