@@ -17,7 +17,9 @@
  *   page_title  the top bar title, also data-page-title on #spa-content
  *   shell_title a page's own title for the top bar (may hold a count span),
  *               instead of the sidebar item's name
- *   shell_actions the page's buttons, at the right of the top bar
+ *   shell_actions the page's buttons, beside its title in the top bar
+ *   shell_tools  the layout's tools, the same on every page, at the right of
+ *               the top bar (/business: business/_topbar_tools.php)
  *
  * The top bar is the page's header (owner, 12 Nov 2026): its title is the
  * page's h1, so views never draw one of their own (ShellStyleStandardTest),
@@ -49,6 +51,7 @@ if ($ownTitle !== '') {
 }
 $titleHtml = $ownTitle !== '' ? $ownTitle : esc($pageTitle);
 $actions   = trim($this->renderSection('shell_actions'));
+$tools     = trim($this->renderSection('shell_tools'));
 $scripts   = $this->renderSection('scripts');
 $bare      = trim($this->renderSection('bare')) !== '';
 // spa.js opens a page with scripts by asking for it again with a plain page
@@ -115,6 +118,7 @@ foreach (['assets/directory.css', 'assets/directory.js', 'assets/business/busine
                 <?php if ($actions !== ''): ?>
                     <div class="shell-actions"><?= $actions ?></div>
                 <?php endif ?>
+                <?= $tools ?>
             </div>
             <?php endif ?>
             <span class="shell-progress" aria-hidden="true"></span>

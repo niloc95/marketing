@@ -3,10 +3,12 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\AvailabilityOverview;
 use App\Services\Bookings\AvailabilityService;
 use App\Services\Bookings\BusinessLocale;
 use App\Services\Bookings\CatalogueService;
+use App\Services\Bookings\CustomerService;
 use App\Services\Bookings\TeamService;
 use DateTimeImmutable;
 
@@ -60,6 +62,9 @@ class Availability extends BaseController
             'horizon'   => $overview->engine()->customerHorizon(),
             'today'     => (new DateTimeImmutable('now', $tz))->format('Y-m-d'),
             'timezone'  => $tz->getName(),
+            // The Book dialog (business/_appointment_fields.php), as on /business/appointments/new.
+            'customFields' => (new CustomerService($context->listingId()))->customFields(),
+            'statuses'     => array_values(array_filter(AppointmentStatus::options(), static fn (array $s): bool => in_array($s['value'], AppointmentStatus::UPCOMING, true))),
         ]);
     }
 

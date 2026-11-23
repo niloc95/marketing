@@ -43,6 +43,4 @@
 
 <?= $this->section('shell_title') ?>Customers <span class="page-title-count">(<?= number_format((int) $result['total']) ?>)</span><?= $this->endSection() ?>
 
-<?= $this->section('shell_actions') ?>
-<a href="<?= base_url('business/customers/new') ?>" class="btn btn-primary btn-xs"><?= lucide('plus', 'h-4 w-4') ?> Add a customer</a>
-<?= $this->endSection() ?>
+<?php // Add a customer is in the top bar on every page (business/_topbar_tools.php). ?>

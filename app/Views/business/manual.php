@@ -85,6 +85,7 @@ $n = 0;
         <ul>
             <li><strong>Your profile</strong> holds the pages of your public profile, plus Reviews, Jobs and Stats.</li>
             <?php if ($bookingsOn): ?><li><strong>Bookings</strong> holds your online bookings: calendar, customers, availability and settings.</li><?php endif; ?>
+            <?php if ($bookingsOn): ?><li>The bar at the top of every page has <strong>Find</strong> (a customer or an appointment; press / to start), <strong>Your booking page</strong>, <strong>Add a customer</strong> and <strong>Book an appointment</strong>. On the Calendar and Availability pages, Book an appointment opens right there.</li><?php endif; ?>
             <li><strong>Plan</strong> holds <?= esc($planName) ?> and this manual.</li>
             <li>An item with a lock comes with <?= esc($planName) ?>. Open it to see what it does.<?= $upgrade ?></li>
         </ul>
@@ -265,7 +266,7 @@ $n = 0;
                 <li><strong>Customers</strong>: everyone who has booked, with their history.</li>
                 <li><strong>Services</strong> and <strong>Team</strong>: what can be booked, for how long, and with whom.</li>
                 <li><strong>Time off</strong>: times nobody can book. Public holidays follow your profile's holiday hours.</li>
-                <li><strong>Availability</strong>: the free times for any service and person, as <?= esc($audience) ?> see them.</li>
+                <li><strong>Availability</strong>: the free times for any service and person, as <?= esc($audience) ?> see them. Pick a free time to book it.</li>
                 <li><strong>Analytics</strong>: bookings over time.</li>
                 <li><strong>Booking settings</strong>: booking rules (how far ahead, changes and cancellations), the booking form, the wording of the emails, payments<?= $isApp ? '' : ' and deposits' ?>, connections and your local time.</li>
                 <li><strong>Activity</strong>: who changed what, and when.</li>

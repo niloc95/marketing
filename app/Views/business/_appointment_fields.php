@@ -11,19 +11,23 @@
  * @var array<string,string>                     $errors
  * @var string                                   $prefix id prefix, unique per page
  * @var array<string,mixed>|null                 $initialCustomer a customer already chosen (?customer= on the booking page)
+ * @var bool                                     $wide   two columns from lg up: when on the left, who on the right (the page and the wide dialogs)
  */
 $old    ??= [];
+$wide   ??= false;
 $errors ??= [];
 $val    = static fn (string $k): string => (string) ($old[$k] ?? '');
 // Always printed, empty when fine, so the calendar script can fill it in place.
 $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600' . (isset($errors[$k]) ? '' : ' hidden') . '" data-error-for="' . esc($k, 'attr') . '">' . esc($errors[$k] ?? '') . '</p>';
 ?>
+<div class="book-layout<?= $wide ? ' book-layout-wide' : '' ?>">
+<div class="book-form-when">
 <div class="grid gap-4 sm:grid-cols-2">
     <div class="field">
         <label for="<?= $prefix ?>-service">Service</label>
         <select id="<?= $prefix ?>-service" name="service_id" required>
             <?php foreach ($services as $s): ?>
-                <option value="<?= (int) $s['id'] ?>"<?= $val('service_id') === (string) $s['id'] ? ' selected' : '' ?>><?= esc((string) $s['name']) ?> (<?= (int) $s['duration_min'] ?> min)</option>
+                <option value="<?= (int) $s['id'] ?>" data-name="<?= esc((string) $s['name'], 'attr') ?>" data-duration="<?= (int) $s['duration_min'] ?>"<?= $val('service_id') === (string) $s['id'] ? ' selected' : '' ?>><?= esc((string) $s['name']) ?> (<?= (int) $s['duration_min'] ?> min)</option>
             <?php endforeach ?>
         </select>
         <?= $err('service_id') ?>
@@ -60,14 +64,35 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
     <?php endif ?>
 </div>
 
-<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's. A click fills Date and Time. Hidden without the script. ?>
+<?php // Filled by free-times.js: the next free times for the chosen service and person, and the chosen date's by morning, afternoon and evening. A click fills Date and Time and folds the lists to one line (Change time opens them). Hidden without the script. ?>
 <div class="free-times mb-4" data-free hidden>
-    <p class="free-times-heading">Next free times</p>
-    <div class="free-times-list" data-free-next></div>
-    <p class="free-times-heading" data-free-day-heading hidden></p>
-    <div class="free-times-list" data-free-day hidden></div>
-    <p class="free-times-chosen" data-free-chosen hidden></p>
+    <div class="free-times-summary" data-free-summary hidden>
+        <?= lucide('clock', 'h-5 w-5 shrink-0') ?>
+        <span class="free-times-chosen" data-free-chosen></span>
+        <button type="button" class="btn btn-ghost btn-xs ml-auto" data-free-change>Change time</button>
+    </div>
+    <div data-free-lists>
+        <p class="free-times-heading" data-free-next-heading>Next free times</p>
+        <div class="free-times-list" data-free-next></div>
+        <p class="free-times-heading" data-free-day-heading hidden></p>
+        <div class="free-times-groups" data-free-day hidden></div>
+    </div>
 </div>
+</div>
+
+<div class="book-form-who">
+<?php // Filled by free-times.js as the fields change: what is being booked, in one place. Hidden without the script. ?>
+<section class="book-summary" data-book-summary data-timezone="<?= esc(service('businessContext')->isSet() ? service('businessContext')->timezone() : app_timezone(), 'attr') ?>" hidden>
+    <h3 class="book-summary-title">Appointment summary</h3>
+    <dl class="book-summary-list">
+        <div><dt>Service</dt><dd data-sum="service"></dd></div>
+        <div><dt>With</dt><dd data-sum="who"></dd></div>
+        <div><dt>Date</dt><dd data-sum="date"></dd></div>
+        <div><dt>Time</dt><dd data-sum="time"></dd></div>
+        <div><dt>When</dt><dd data-sum="when"></dd></div>
+        <div><dt>Where</dt><dd data-sum="where"></dd></div>
+    </dl>
+</section>
 
 <fieldset class="mt-2" data-customer-picker<?php if (! empty($initialCustomer)): ?> data-customer-initial="<?= esc(json_encode($initialCustomer), 'attr') ?>"<?php endif ?>>
     <legend class="text-sm font-semibold text-slate-900 dark:text-white">Customer</legend>
@@ -122,4 +147,6 @@ $err    = static fn (string $k): string => '<p class="mt-1 text-sm text-rose-600
         <label for="<?= $prefix ?>-notes">Notes <span class="font-normal text-slate-500">(only your team sees them)</span></label>
         <textarea id="<?= $prefix ?>-notes" name="notes" rows="2" maxlength="5000"><?= esc($val('notes')) ?></textarea>
     </div>
+</div>
+</div>
 </div>

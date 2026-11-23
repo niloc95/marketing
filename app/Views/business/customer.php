@@ -94,6 +94,5 @@ $local = static fn (string $utc): string => (new DateTimeImmutable($utc, new Dat
 
 <?= $this->section('shell_title') ?><?= esc($customer['name']) ?><?= $this->endSection() ?>
 
-<?= $this->section('shell_actions') ?>
-<a href="<?= base_url('business/appointments/new?customer=' . $customer['hash']) ?>" class="btn btn-primary btn-xs"><?= lucide('plus', 'h-4 w-4') ?> Book</a>
-<?= $this->endSection() ?>
+<?php // The top bar's Book an appointment books for this customer (layouts/business.php). ?>
+<?= $this->section('book_customer') ?><?= esc((string) $customer['hash']) ?><?= $this->endSection() ?>

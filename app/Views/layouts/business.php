@@ -131,6 +131,21 @@ foreach ($groups as $group) {
 $pageTitle ??= 'Your business';
 $tabTitle  ??= $pageTitle;
 
+// The same tools at the right of the top bar on every page (business/_topbar_tools.php):
+// only while the profile takes bookings, each for a member allowed to use it.
+$tools = '';
+if ($listing !== null && ! empty($bookable) && $context->isSet()) {
+    // A customer's page books for that customer (section book_customer: their hash).
+    $bookFor = trim($this->renderSection('book_customer', true));
+    $tools   = view('business/_topbar_tools', [
+        'canFind'        => $context->can('customers.manage'),
+        'canBook'        => $context->can('appointments.manage'),
+        'canAddCustomer' => $context->can('customers.manage'),
+        'bookUrl'        => App\Services\Bookings\PublicBookingService::bookUrl($listing),
+        'bookHref'       => base_url('business/appointments/new') . (preg_match('/^[0-9a-f]{32,64}$/', $bookFor) ? '?customer=' . $bookFor : ''),
+    ], ['saveData' => false]);
+}
+
 $footer = '';
 if ($context->hasAccount()) {
     $footer = '<a class="shell-link" href="' . base_url('business/account') . '">' . lucide('circle-user', 'shell-link-icon h-5 w-5')
@@ -193,6 +208,10 @@ foreach ($attrs as $name => $value) {
 }
 ?>
 <?= $this->endSection() ?>
+
+<?php if ($tools !== ''): ?>
+<?= $this->section('shell_tools') ?><?= $tools ?><?= $this->endSection() ?>
+<?php endif ?>
 
 <?php // Signed out (sign in, sign in link, password pages): _shell draws the brand bar and footer. ?>
 <?php if (! $context->hasAccount()): ?>

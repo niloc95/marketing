@@ -16,11 +16,15 @@
  * @var string                    $horizon  the last day customers can book
  * @var string                    $today
  * @var string                    $timezone
+ * @var list<array<string,mixed>> $customFields  for the Book dialog
+ * @var list<array{value:string,label:string}> $statuses for the Book dialog
  */
 use App\Services\Bookings\AvailabilityOverview;
 
 $params = ['service_id' => $service, 'provider_id' => $who, 'view' => $view, 'date' => $date] + ($public ? [] : ['as' => 'business']);
 $link   = static fn (array $over): string => base_url('business/availability') . '?' . http_build_query($over + $params);
+// A free time opens the New appointment form with service, person, day and time filled in.
+$book   = static fn (int $serviceId, int $providerId, string $time): string => base_url('business/appointments/new') . '?' . http_build_query(['service_id' => $serviceId, 'provider_id' => $providerId, 'date' => $date, 'time' => $time]);
 $fmt    = static fn (string $d, string $f): string => (new DateTimeImmutable($d))->format($f);
 $shift  = static fn (int $by): string => (new DateTimeImmutable($date))->modify(match ($view) {
     'week' => ($by * 7) . ' days', 'month' => $by . ' months', 'year' => ($by * 12) . ' months', default => $by . ' days',
@@ -43,6 +47,11 @@ $byDate = array_column($days, null, 'date');
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
+<?php // availability.js: a free time opens the Book dialog here (same fields and JSON as the calendar's); without the script the link opens /business/appointments/new. ?>
+<div data-availability data-date="<?= esc($date, 'attr') ?>" data-service="<?= esc($service, 'attr') ?>" data-provider="<?= esc($who, 'attr') ?>"
+     data-appointment-url="<?= esc(base_url('business/api/appointments'), 'attr') ?>"
+     data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>"
+     data-csrf-header="<?= esc(config('Security')->headerName, 'attr') ?>" data-csrf-hash="<?= esc(csrf_hash(), 'attr') ?>">
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The free times for all your services or one, everyone or one person, on a day, a week, a month or a year. Times are in <?= esc($timezone) ?>.</p>
 
 <?php if ($services === []): ?>
@@ -100,16 +109,34 @@ $byDate = array_column($days, null, 'date');
             <?php if ($day['count'] === 0): ?>
                 <p class="alert alert-info"><?= esc($long[$day['reason']] ?? 'No times on this day.') ?></p>
             <?php else: ?>
-                <p class="mb-3 text-sm text-slate-600 dark:text-slate-300"><?= $day['count'] ?> start <?= $day['count'] === 1 ? 'time' : 'times' ?> free.</p>
+                <p class="mb-3 text-sm text-slate-600 dark:text-slate-300"><?= $day['count'] ?> start <?= $day['count'] === 1 ? 'time' : 'times' ?> free. Pick a time to book it.</p>
                 <?php foreach ($day['services'] as $s): ?>
+                    <?php
+                    // Every time at one place: say it once under the heading, not on each time.
+                    $allPlaces = array_values(array_unique(array_map(static fn (array $t): string => implode(', ', array_filter($t['places'])), $s['times'])));
+                    $onePlace  = count($allPlaces) === 1 ? $allPlaces[0] : null;
+                    ?>
                     <section class="panel mb-3">
-                        <h3 class="mb-2 subsection-title"><?= esc($s['name']) ?></h3>
-                        <ul class="flex flex-wrap gap-2">
+                        <h3 class="subsection-title"><?= esc($s['name']) ?></h3>
+                        <?php if ($onePlace !== null && $onePlace !== ''): ?><p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400"><?= esc($onePlace) ?></p><?php endif ?>
+                        <ul class="mt-2 flex flex-wrap gap-2">
                             <?php foreach ($s['times'] as $t): ?>
-                                <li class="avail-time" title="<?= esc(implode(', ', $t['people']), 'attr') ?>">
-                                    <span class="avail-time-when"><?= esc($t['time']) ?></span>
-                                    <span class="avail-time-where"><?= esc(implode(', ', array_filter($t['places']))) ?><?= count($providers) > 1 ? ' · ' . esc(implode(', ', $t['people'])) : '' ?></span>
-                                </li>
+                                <?php $where = $onePlace !== null ? '' : esc(implode(', ', array_filter($t['places']))); ?>
+                                <?php if (count($t['provider_ids']) === 1): ?>
+                                    <li><a class="avail-time avail-time-book" href="<?= esc($book((int) $s['id'], $t['provider_ids'][0], $t['time']), 'attr') ?>" data-book-service="<?= (int) $s['id'] ?>" data-book-provider="<?= $t['provider_ids'][0] ?>" data-book-date="<?= esc($date, 'attr') ?>" data-book-time="<?= esc($t['time'], 'attr') ?>" title="<?= esc('Book ' . $t['time'] . ' with ' . $t['people'][0], 'attr') ?>">
+                                        <span class="avail-time-when"><?= esc($t['time']) ?></span>
+                                        <?php $line = $where . (count($providers) > 1 ? ($where !== '' ? ' · ' : '') . esc($t['people'][0]) : ''); ?>
+                                        <?php if ($line !== ''): ?><span class="avail-time-where"><?= $line ?></span><?php endif ?>
+                                    </a></li>
+                                <?php else: ?>
+                                    <li class="avail-time">
+                                        <span class="avail-time-when"><?= esc($t['time']) ?></span>
+                                        <?php if ($where !== ''): ?><span class="avail-time-where"><?= $where ?></span><?php endif ?>
+                                        <span class="avail-time-where">Book with
+                                            <?php foreach ($t['provider_ids'] as $i => $pid): ?><?= $i > 0 ? ', ' : '' ?><a class="underline hover:text-brand-ocean" href="<?= esc($book((int) $s['id'], $pid, $t['time']), 'attr') ?>" data-book-service="<?= (int) $s['id'] ?>" data-book-provider="<?= $pid ?>" data-book-date="<?= esc($date, 'attr') ?>" data-book-time="<?= esc($t['time'], 'attr') ?>"><?= esc($t['people'][$i]) ?></a><?php endforeach ?>
+                                        </span>
+                                    </li>
+                                <?php endif ?>
                             <?php endforeach ?>
                         </ul>
                     </section>
@@ -155,7 +182,27 @@ $byDate = array_column($days, null, 'date');
             <span class="avail-day avail-too_far">Not open yet</span>
         </p>
     <?php endif ?>
+
+    <div class="cal-toast" data-avail-toast role="status" aria-live="polite" hidden></div>
+
+    <?php // Book dialog: the same fields as /business/appointments/new, sent as JSON by availability.js. ?>
+    <dialog class="cal-dialog book-dialog" data-avail-book aria-labelledby="avail-book-title">
+        <form method="post" action="<?= base_url('business/appointments/new') ?>" data-avail-book-form data-free-url="<?= esc(base_url('business/api/appointments/free'), 'attr') ?>" novalidate>
+            <?= csrf_field() ?>
+            <div class="mb-4 flex items-center gap-3">
+                <h2 id="avail-book-title" class="flex-1 text-lg font-bold text-slate-900 dark:text-white">Book an appointment</h2>
+                <button type="button" class="rounded-control p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-avail-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
+            </div>
+            <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => ['date' => $date], 'errors' => [], 'prefix' => 'av-new', 'wide' => true]) ?>
+            <p class="mt-2 hidden text-sm text-rose-600" data-create-error role="alert"></p>
+            <div class="book-actions">
+                <button type="submit" class="btn btn-primary" data-book-submit>Book</button>
+                <button type="button" class="btn btn-ghost" data-avail-close>Cancel</button>
+            </div>
+        </form>
+    </dialog>
 <?php endif ?>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('shell_title') ?>When can customers book?<?= $this->endSection() ?>

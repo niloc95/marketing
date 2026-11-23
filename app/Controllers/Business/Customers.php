@@ -144,6 +144,39 @@ class Customers extends BaseController
         ], $rows)]);
     }
 
+    /**
+     * JSON for the top bar's Find (business/_topbar_tools.php, find.js):
+     * ?q= matches customers (at most 5) and, for a member who books,
+     * appointments (at most 5), both in the member's scope. Each row carries
+     * the page it opens.
+     */
+    public function find()
+    {
+        $context = service('businessContext');
+        $q       = mb_substr(trim((string) $this->request->getGet('q')), 0, 100);
+        $out     = ['customers' => [], 'appointments' => []];
+        if (mb_strlen($q) >= 2) {
+            $rows             = $this->service()->list($q, $context->providerScope(), 1, 5)['rows'];
+            $out['customers'] = array_map(static fn (array $c): array => [
+                'name'   => (string) $c['name'],
+                'detail' => implode(' · ', array_filter([(string) ($c['email'] ?? ''), (string) ($c['phone'] ?? '')])),
+                'url'    => base_url('business/customers/' . $c['hash']),
+            ], $rows);
+            if ($context->can('appointments.manage')) {
+                $service             = new \App\Services\Bookings\AppointmentService($context->listing(), $context->providerScope(), (int) $context->member()['id'], $context->accountId());
+                $out['appointments'] = array_map(static fn (array $a): array => [
+                    'name'   => (string) $a['title'],
+                    'when'   => (new \DateTimeImmutable((string) $a['start']))->format('D j M Y, H:i'),
+                    'detail' => implode(' · ', array_filter([(string) $a['service_name'], (string) $a['provider_name'], (string) $a['reference']])),
+                    'status' => (string) $a['status'],
+                    'url'    => base_url('business/calendar') . '?' . http_build_query(['view' => 'day', 'date' => substr((string) $a['start'], 0, 10), 'open' => $a['hash']]),
+                ], $service->findMatching($q, 5));
+            }
+        }
+
+        return $this->response->setHeader('Cache-Control', 'no-store')->setJSON(['data' => $out]);
+    }
+
     private function service(): CustomerService
     {
         return new CustomerService(service('businessContext')->listingId());

@@ -43,7 +43,6 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                     <button type="button" class="cal-view-btn" data-cal-view="<?= $key ?>" aria-pressed="<?= $key === $view ? 'true' : 'false' ?>"><?= $label ?></button>
                 <?php endforeach ?>
             </div>
-            <a href="<?= base_url('business/appointments/new') ?>" class="btn btn-primary btn-xs" data-cal-book><?= lucide('plus', 'h-4 w-4') ?> Book</a>
         </div>
     </div>
 
@@ -92,14 +91,7 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
             </select>
         </label>
         <p class="min-w-0 flex-1 basis-40 pb-1 text-xs text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. Drag an appointment to move it.</p>
-        <?php // Results open over the grid, so the grid keeps its size. ?>
-        <div class="relative ml-auto">
-            <label class="cal-filter">
-                <span>Find</span>
-                <input type="text" name="q" placeholder="Name, email, phone or reference" autocomplete="off" data-cal-find>
-            </label>
-            <ul class="cal-find-results" data-cal-find-results hidden></ul>
-        </div>
+        <?php // Find and Book an appointment are in the top bar on every page (business/_topbar_tools.php); here Book opens the dialog below. ?>
     </form>
 
     <div class="cal-body mt-3" data-cal-body aria-busy="true">
@@ -207,17 +199,17 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
     </dialog>
 
     <?php // Book dialog: the same fields as /business/appointments/new, sent as JSON by create.js. ?>
-    <dialog class="cal-dialog" data-cal-create aria-labelledby="cal-create-title">
+    <dialog class="cal-dialog book-dialog" data-cal-create aria-labelledby="cal-create-title">
         <form method="post" action="<?= base_url('business/appointments/new') ?>" data-cal-create-form novalidate>
             <?= csrf_field() ?>
             <div class="mb-4 flex items-center gap-3">
                 <h2 id="cal-create-title" class="flex-1 text-lg font-bold text-slate-900 dark:text-white">Book an appointment</h2>
                 <button type="button" class="rounded-control p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700" data-cal-close aria-label="Close"><?= lucide('x', 'h-5 w-5') ?></button>
             </div>
-            <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => ['date' => $date], 'errors' => [], 'prefix' => 'cal-new']) ?>
+            <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => ['date' => $date], 'errors' => [], 'prefix' => 'cal-new', 'wide' => true]) ?>
             <p class="mt-2 hidden text-sm text-rose-600" data-create-error role="alert"></p>
-            <div class="mt-4 flex gap-3">
-                <button type="submit" class="btn btn-primary">Book</button>
+            <div class="book-actions">
+                <button type="submit" class="btn btn-primary" data-book-submit>Book</button>
                 <button type="button" class="btn btn-ghost" data-cal-close>Cancel</button>
             </div>
         </form>

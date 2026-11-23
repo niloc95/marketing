@@ -17,14 +17,14 @@
 <?= $this->section('content') ?>
 <p class="mb-3 text-sm"><a class="underline" href="<?= base_url('business/calendar') ?>">Calendar</a></p>
 <?php // data-customer-url: customer-picker.js finds existing customers as you type. ?>
-<form method="post" action="<?= base_url('business/appointments/new') ?>" class="form-card form-card-narrow" data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>" data-free-url="<?= esc(base_url('business/api/appointments/free'), 'attr') ?>">
+<form method="post" action="<?= base_url('business/appointments/new') ?>" class="form-card" data-customer-url="<?= esc(base_url('business/api/customers'), 'attr') ?>" data-free-url="<?= esc(base_url('business/api/appointments/free'), 'attr') ?>">
     <?= csrf_field() ?>
     <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>. You can book any free time in working hours.</p>
     <?php if ($services === [] || $providers === []): ?>
         <p class="text-sm">Add a service and a team member who offers it first.</p>
     <?php else: ?>
-        <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => $old, 'errors' => $errors, 'prefix' => 'apt', 'initialCustomer' => $initialCustomer ?? null]) ?>
-        <button type="submit" class="btn btn-primary">Book</button>
+        <?= view('business/_appointment_fields', ['providers' => $providers, 'services' => $services, 'customFields' => $customFields, 'statuses' => $statuses, 'old' => $old, 'errors' => $errors, 'prefix' => 'apt', 'initialCustomer' => $initialCustomer ?? null, 'wide' => true]) ?>
+        <div class="book-actions"><button type="submit" class="btn btn-primary" data-book-submit>Book</button></div>
     <?php endif ?>
 </form>
 <?= $this->endSection() ?>
