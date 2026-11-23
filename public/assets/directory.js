@@ -5247,6 +5247,29 @@
       try { window.sessionStorage.setItem(SUBMITTED, KEY); } catch (e2) { /* see above */ }
     });
 
+    // A silent save (the module "silent save" below) keeps this page: what
+    // is on screen is now what is stored, so it becomes the baseline, the
+    // draft goes, and leaving warns again. Any section's save moves the
+    // profile's updated_at, so every form takes the new version, or its
+    // draft would be thrown away next visit as "saved since".
+    form.addEventListener('profile:saved', function (e) {
+      var version = (e.detail && e.detail.version) || '';
+      if (version) {
+        VERSION = version;
+        form.setAttribute('data-draft-version', version);
+      }
+      if (!(e.detail && e.detail.own)) return;
+      baseline     = snapshot();
+      baselineJson = JSON.stringify(baseline);
+      lastJson     = baselineJson;
+      baseRows.forEach(function (entry) { entry.count = repeatItems(entry.list).length; });
+      drop(KEY);
+      leaving = false;
+      try { window.sessionStorage.removeItem(SUBMITTED); } catch (e2) { /* see above */ }
+      var prev = form.previousElementSibling;
+      if (prev && prev.classList.contains('draft-banner')) prev.remove();
+    });
+
     // Signing out on a shared computer should not leave the business's details
     // sitting in this browser.
     document.querySelectorAll('[data-draft-signout]').forEach(function (link) {
@@ -5820,5 +5843,202 @@
       e.stopImmediatePropagation();
       show(pane, false, location.hash);
     }, true);
+  })();
+
+  // ----------------------------------------------------------- silent save
+  // The profile editor's Save (business/profile.php, admin/edit.php, forms
+  // with data-silent-save) is sent in the background and the page stays
+  // where it is (owner, 23 Nov 2026: every save used to reload at the top).
+  // The server answers JSON (HandlesListingUploads::silentSave()): new CSRF
+  // hash, the profile's updated_at, the strength panel drawn again.
+  //
+  // A save whose result the page must draw itself still reloads, and comes
+  // back at the same scroll position: chosen files (new photos, logo,
+  // headshots, brands), a team member, branch or card added or removed
+  // (their ids come from the save, and a second save of a row with no id
+  // would add it again), a new category, type or country (other sections'
+  // options follow it), and the address (data-silent-save="reload": the
+  // geocoder may move the pin). A rejected save reloads to show its
+  // messages beside their fields, exactly as before. Preview (formaction)
+  // and the photo and brand deletes are left alone.
+  (function () {
+    var KEEP = 'xs-keep-scroll';
+    var ROW  = /^(team|locations|sections)\[([^\]]+)\]\[([a-z_]+)\]$/;
+    var WATCH = ['category_id', 'type', 'country'];
+    var forms = document.querySelectorAll('form[data-silent-save]');
+
+    function toast(message) {
+      if (!message) return;
+      var old = document.querySelector('.save-toast');
+      if (old) old.remove();
+      var box = document.createElement('div');
+      box.className = 'save-toast';
+      box.setAttribute('role', 'status');
+      box.textContent = message;
+      document.body.appendChild(box);
+      setTimeout(function () { box.classList.add('is-gone'); }, 3500);
+      setTimeout(function () { box.remove(); }, 4000);
+    }
+
+    // Back from a save that had to reload: to where the person was.
+    try {
+      var kept = JSON.parse(window.sessionStorage.getItem(KEEP) || 'null');
+      window.sessionStorage.removeItem(KEEP);
+      var success = document.querySelector('#spa-content .alert-success');
+      if (kept && kept.path === location.pathname && success
+          && !document.querySelector('[data-error-summary], .alert-error, .alert-warning')) {
+        // After layout settles (map, editor), as the error summary does.
+        window.requestAnimationFrame(function () {
+          window.scrollTo(0, kept.y);
+          toast(success.textContent.trim());
+        });
+      }
+    } catch (e) { /* storage blocked: the page opens at the top, as before */ }
+
+    if (!forms.length || !window.fetch || !window.FormData) return;
+
+    function watched(form) {
+      var out = {};
+      WATCH.forEach(function (name) {
+        var el = form.elements.namedItem(name);
+        if (el && el.value !== undefined) out[name] = el.value;
+      });
+      return JSON.stringify(out);
+    }
+    var start = new Map();
+    forms.forEach(function (form) { start.set(form, watched(form)); });
+
+    function needsReload(form) {
+      if (form.getAttribute('data-silent-save') === 'reload') return true;
+      if (watched(form) !== start.get(form)) return true;
+      var ids = {}, filled = {}, removed = {};
+      var files = false;
+      Array.prototype.forEach.call(form.elements, function (el) {
+        if (el.disabled || !el.name) return;
+        if (el.type === 'file') {
+          if (el.files && el.files.length) files = true;
+          return;
+        }
+        var m = ROW.exec(el.name);
+        if (!m) return;
+        var key = m[1] + ':' + m[2];
+        if (m[3] === 'id') {
+          if (el.value !== '') ids[key] = true;
+        } else if (m[3] === '_remove') {
+          if (el.checked) removed[key] = true;
+        } else if ((el.tagName === 'TEXTAREA' || /^(text|email|tel|url|number)$/.test(el.type)) && el.value.trim() !== '') {
+          filled[key] = true;
+        }
+      });
+      if (files) return true;
+      return Object.keys(removed).some(function (k) { return ids[k]; })
+        || Object.keys(filled).some(function (k) { return !ids[k] && !removed[k]; });
+    }
+
+    function keepScroll(form) {
+      try {
+        window.sessionStorage.setItem(KEEP, JSON.stringify({
+          path: new URL(form.action, location.href).pathname,
+          y: window.scrollY,
+        }));
+      } catch (e) { /* nothing kept: the page opens at the top */ }
+    }
+
+    function buttons(form) {
+      var own = Array.prototype.slice.call(form.querySelectorAll('button[type="submit"]:not([formaction])'));
+      return own.concat(Array.prototype.slice.call(document.querySelectorAll('button[form="' + form.id + '"]:not([formaction])')));
+    }
+    function busy(form, on) {
+      buttons(form).forEach(function (btn) {
+        if (on) {
+          btn.setAttribute('data-label', btn.textContent);
+          btn.setAttribute('aria-disabled', 'true');
+          btn.classList.add('is-busy');
+          btn.textContent = 'Saving…';
+        } else if (btn.hasAttribute('data-label')) {
+          btn.textContent = btn.getAttribute('data-label');
+          btn.removeAttribute('data-label');
+          btn.removeAttribute('aria-disabled');
+          btn.classList.remove('is-busy');
+        }
+      });
+    }
+
+    // What a failed save marked (the "failed-save errors" module) is fixed now.
+    function clearErrors(form) {
+      var pane = form.closest('[data-pane]') || form.parentNode;
+      pane.querySelectorAll('[data-error-summary]').forEach(function (el) { el.remove(); });
+      form.querySelectorAll('.err').forEach(function (el) { el.remove(); });
+      form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
+      form.querySelectorAll('.is-invalid, [aria-invalid]').forEach(function (el) {
+        el.classList.remove('is-invalid');
+        el.removeAttribute('aria-invalid');
+      });
+      // The notices above the page (layouts main_top): admin wraps each one.
+      document.querySelectorAll('#spa-content > .alert, #spa-content > .mb-5 > .alert').forEach(function (el) {
+        (el.parentNode.id === 'spa-content' ? el : el.parentNode).remove();
+      });
+    }
+
+    var sending = false;
+    // On window and bubbling: after every form's own submit handler (the
+    // required sections check, the draft copy), like the app shell's.
+    window.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form || !form.matches || !form.matches('form[data-silent-save]') || e.defaultPrevented) return;
+      var sub = e.submitter;
+      if (sub && (sub.hasAttribute('formaction') || sub.getAttribute('formtarget'))) return;
+      if (needsReload(form)) {
+        keepScroll(form);
+        return; // the plain post goes ahead
+      }
+      e.preventDefault();
+      if (sending) return;
+      sending = true;
+      busy(form, true);
+
+      var done = function () { sending = false; busy(form, false); };
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+      }).then(function (res) {
+        var json = (res.headers.get('content-type') || '').indexOf('application/json') !== -1;
+        // Signed out meanwhile (the owner area answers 401 with where to go;
+        // admin follows a redirect to its sign in page): that page, as a
+        // plain save would have shown it. The draft copy keeps the edits.
+        if (!json) {
+          location.assign(res.url || form.action);
+          return;
+        }
+        return res.json().then(function (data) {
+          if (data && data.csrf && data.csrf.name) {
+            document.querySelectorAll('input[name="' + data.csrf.name + '"]').forEach(function (input) {
+              input.value = data.csrf.hash;
+            });
+          }
+          if (!data || !data.ok || data.reload || data.redirect) {
+            if (data && data.ok) keepScroll(form);
+            location.assign((data && (data.reload || data.redirect)) || form.action);
+            return;
+          }
+          document.querySelectorAll('form[data-draft]').forEach(function (f) {
+            f.dispatchEvent(new CustomEvent('profile:saved', { detail: { version: data.version || '', own: f === form } }));
+          });
+          clearErrors(form);
+          start.set(form, watched(form));
+          var panel = document.querySelector('.profile-editor-side .strength-panel');
+          if (panel && data.strength) panel.outerHTML = data.strength;
+          done();
+          toast(data.message || 'Saved.');
+        });
+      }).catch(function () {
+        // Network trouble: the plain post, which shows whatever happened.
+        done();
+        keepScroll(form);
+        HTMLFormElement.prototype.submit.call(form);
+      });
+    });
   })();
 })();

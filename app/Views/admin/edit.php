@@ -132,7 +132,9 @@ if (! is_array($old['hours'] ?? null)) {
             <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
         <?php endif; ?>
         <?php // Unsaved-draft backup — see business/profile.php. ?>
+        <?php // data-silent-save: see business/profile.php. A new profile goes to its own page. ?>
         <form method="post" action="<?= esc($action) ?>" enctype="multipart/form-data" id="<?= esc($formId, 'attr') ?>" class="panel profile-editor-form"
+              <?= $isNew ? '' : ($tab === 'where' ? 'data-silent-save="reload"' : 'data-silent-save') ?>
               data-draft="<?= $isNew ? 'admin-new' : 'admin-' . (int) $listing['id'] . '-' . esc((string) $tab, 'attr') ?>"
               data-draft-version="<?= esc((string) ($base['updated_at'] ?? ''), 'attr') ?>">
             <?= csrf_field() ?>

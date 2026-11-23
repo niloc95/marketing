@@ -333,14 +333,14 @@ class Admin extends BaseController
         // rows already loaded for the form. Every outstanding step rather than
         // the owner's top four: this is the list an admin works from when they
         // tell an owner what to do next.
-        $strength = $listing ? (new ListingQualityService())->strength($listing, [
+        $strength = $listing ? $this->adminStrength($listing, [
             'photos'     => count($photos),
             'services'   => count($services),
             'attributes' => count($attributes),
             'tags'       => count($tags),
             'facets'     => array_sum(array_map('count', $facets)),
             'menu'       => count($menuFiles),
-        ], PHP_INT_MAX) : null;
+        ]) : null;
 
         return view('admin/edit', [
             'strength'       => $strength,
@@ -448,14 +448,13 @@ class Admin extends BaseController
             $this->discardLogo($logo['path']);
             $this->discardTeamPhotos($headshots['team']);
 
-            $target = $here;
-            return $this->withUploadErrors(
-                redirect()->to($target)
+            return $this->silentSave($this->withUploadErrors(
+                redirect()->to($here)
                     ->with('errors', $this->withFilesNote($result['errors']))
                     ->with('old', form_typed_fields($post))
                     ->with('error', $result['message']),
                 array_filter(array_merge([$logo['error']], $headshots['errors']))
-            );
+            ), false, (int) $id, static fn (): string => '');
         }
 
         $gallery = $this->resolveGalleryPhotos($id);
@@ -470,10 +469,56 @@ class Admin extends BaseController
         // has to follow it or the admin form becomes a way to go stale.
         (new ListingQualityService())->recalculate((int) $result['id']);
 
-        return $this->withUploadErrors(
+        $redirect = $this->withUploadErrors(
             redirect()->to($id === null ? base_url('admin/edit/' . $result['id']) : $here)->with('success', $result['message']),
             array_filter(array_merge([$logo['error']], $gallery['errors'], $menuErrors, $brandErrors, $headshots['errors']))
         );
+
+        // A new profile goes to its own edit page, so only a tab saves silently.
+        return $id === null ? $redirect : $this->silentSave($redirect, true, $id, fn (): string => $this->adminStrengthPanel($id));
+    }
+
+    /**
+     * The strength meter for admin: every outstanding step rather than the
+     * owner's top four, the list an admin works from when they tell an owner
+     * what to do next. $counts from rows already loaded, else read here.
+     *
+     * @param array<string,mixed>    $listing
+     * @param array<string,int>|null $counts
+     */
+    private function adminStrength(array $listing, ?array $counts = null): array
+    {
+        $id = (int) $listing['id'];
+        if ($counts === null) {
+            $menu   = new ServiceMenuService();
+            $counts = [
+                'photos'     => count((new DirectoryListingPhotoModel())->forListing($id)),
+                'services'   => count($menu->servicesFor($id)),
+                'attributes' => count($menu->attributeKeysFor($id)),
+                'tags'       => count((new DirectoryService())->tagsForListing($id)),
+                'facets'     => array_sum(array_map('count', (new ListingFacetService())->storedFor($id))),
+                'menu'       => count((new ListingMenuService())->forListing($id)),
+            ];
+        }
+
+        return (new ListingQualityService())->strength($listing, $counts, PHP_INT_MAX);
+    }
+
+    /** The side column's strength panel as admin/edit.php draws it, for a silent save. */
+    private function adminStrengthPanel(int $id): string
+    {
+        $listing = (new DirectoryAdminService())->find($id);
+        if ($listing === null) {
+            return '';
+        }
+
+        return view('directory/_strength_panel', [
+            'strength'   => $this->adminStrength($listing),
+            'floor'      => (int) config('Directory')->recentMinQuality,
+            'target'     => (int) config('Directory')->qualityTarget,
+            'audience'   => 'admin',
+            'anchorBase' => 'admin/edit/' . $id,
+        ], ['saveData' => false]);
     }
 
     /** Remove one brand logo. Admin authority is unrestricted by listing. */

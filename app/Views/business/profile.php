@@ -88,8 +88,11 @@ $panes = array_values(array_filter($tabs, static fn (array $t): bool => $t['inli
             <?php if ($open): ?>
                 <?= view('directory/_error_summary', ['errors' => $errors ?? []]) ?>
             <?php endif ?>
-            <?php // data-draft: directory.js keeps a browser side copy of unsaved edits per section. ?>
+            <?php // data-draft: directory.js keeps a browser side copy of unsaved edits per section.
+                  // data-silent-save: Save stays on the page (directory.js, "silent save");
+                  // the address reloads, at the same scroll position, as the pin may move. ?>
             <form method="post" action="<?= base_url($action) ?>" enctype="multipart/form-data" id="profile-form-<?= esc($key, 'attr') ?>" class="panel profile-editor-form"
+                  data-silent-save<?= $key === 'where' ? '="reload"' : '' ?>
                   data-draft="business-<?= (int) $listing['id'] ?>-<?= esc($key, 'attr') ?>"
                   data-draft-version="<?= esc((string) ($listing['updated_at'] ?? ''), 'attr') ?>">
                 <?= csrf_field() ?>
