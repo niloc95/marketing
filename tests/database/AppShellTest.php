@@ -116,6 +116,7 @@ final class AppShellTest extends CIUnitTestCase
         $this->assertStringContainsString('data-shell-bare', $html);
         $this->assertStringNotContainsString('data-shell-nav', $html);
         $this->assertStringNotContainsString('header-quick', $html);
+        $this->assertSignedOutChrome($html);
     }
 
     public function testBusinessSidebarFollowsTheRole(): void
@@ -144,6 +145,34 @@ final class AppShellTest extends CIUnitTestCase
 
         $this->assertStringContainsString('data-shell-bare', $html);
         $this->assertStringNotContainsString('data-shell-nav', $html);
+        $this->assertSignedOutChrome($html);
+    }
+
+    public function testSignedInPagesHaveNoSignedOutChrome(): void
+    {
+        [$listingId, $ownerId] = $this->business();
+        $html = (string) $this->signedIn($ownerId, $listingId)->get('business/calendar')->response()->getBody();
+
+        $this->assertStringNotContainsString('shell-bare-brand', $html);
+        $this->assertStringNotContainsString('shell-footer', $html);
+        $this->assertStringContainsString('data-shell-menu', $html);
+    }
+
+    /**
+     * Signed out there is no sidebar, so the top bar carries the brand back to
+     * the site (not a menu for a sidebar that is not there), and a footer
+     * carries the legal links (owner, 23 Nov 2026).
+     */
+    private function assertSignedOutChrome(string $html): void
+    {
+        $this->assertMatchesRegularExpression('#<a class="shell-bare-brand" href="[^"]*/">#', $html);
+        $this->assertStringNotContainsString('data-shell-menu', $html);
+        $this->assertStringNotContainsString('data-shell-title', $html);
+        $this->assertStringContainsString('<footer class="shell-footer">', $html);
+        foreach (['privacy', 'terms', 'contact'] as $path) {
+            $this->assertMatchesRegularExpression('#<a href="[^"]*/' . $path . '">#', $html);
+        }
+        $this->assertStringNotContainsString('googletagmanager', $html, 'still a private page');
     }
 
     public function testPublicPagesKeepTheirOwnLayout(): void
