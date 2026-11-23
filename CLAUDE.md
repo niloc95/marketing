@@ -1,11 +1,14 @@
 # WebScheduler marketing repo
 
-Two products live here:
+One live product lives here:
 
 | Product | Code | Live at | Skill |
 |---|---|---|---|
-| WebScheduler marketing site (static) | `marketing-site/` | `webscheduler.co.za` | `marketing-site` |
 | **WebScheduler Local** (CodeIgniter 4.7, PHP 8.3, MySQL 8) | `app/`, `public/`, `resources/`, `tests/` | `local.webscheduler.co.za` (South Africa) and `local.webscheduler.app` (every other country) | `listing-service`, plus `two-sites` for anything that differs per site |
+
+The brand site `webscheduler.co.za` is built from its own repo, `niloc95/webscheduler-site`
+(since 1 Nov 2026). `marketing-site/` here is the **old** site, kept only for the outreach
+builders: never build it or release it (see the `marketing-site` skill).
 
 Releases follow the `deploy-production` skill. Load the skill before working in its area:
 they hold the rules that are not obvious from the code.
