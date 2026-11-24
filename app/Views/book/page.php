@@ -13,8 +13,10 @@
  * @var int                            $withId    the person a "Book with" link named, 0 for none
  * @var list<array{id:int,name:string,address:string}> $placeOptions where the chosen service is given (PublicBookingService::placesFor())
  * @var array{id:int,name:string,address:string}|null  $place        the chosen time's place (0 = the main address)
+ * @var array<int,list<array{id:int,name:string,address:string}>> $servicePlaces where each listed service is given, by service id
  * @var string                         $today
  * @var array<string,mixed>|null       $board     FreeTimesBoard::week(): a week, one column per place (T33)
+ * @var array<string,mixed>|null       $calendar  PublicBookingService::month(): the free days of the month beside it
  * @var string|null                    $date
  * @var array<string,mixed>|null       $slot
  * @var list<array<string,mixed>>      $fields
@@ -62,7 +64,6 @@ $whoParam = $who === '' ? null : $who;
 // Everything chosen so far, for the links of the later steps. The place
 // comes with the time a customer picks (T33), never before.
 $chosen = $service !== null ? ['service' => $service['id'], 'provider' => $whoParam] : [];
-$step   = 1;
 
 // The appointment summary (book/_summary.php, the same card as /business),
 // filled in as the steps are: each step is its own page load.
@@ -103,14 +104,14 @@ if ($service !== null) {
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white">Book online</h1>
         <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>.</p>
 
-        <div class="book-page<?= $summary !== [] ? ' has-summary' : '' ?>">
+        <div class="book-page<?= $summary !== [] ? ' has-summary' : '' ?>" id="book-steps" data-book-steps>
         <?php if ($summary !== []): ?>
             <aside class="book-page-summary"><?= view('book/_summary', ['rows' => $summary], ['saveData' => false]) ?></aside>
         <?php endif ?>
         <div class="min-w-0">
         <?php // 1. Service ?>
         <div class="panel mb-4">
-            <h2 class="mb-3 font-bold">1. Service</h2>
+            <h2 class="book-step-title">Service</h2>
             <?php if ($service !== null && count($services) > 1): ?>
                 <p class="flex flex-wrap items-center gap-3"><strong><?= esc((string) $service['name']) ?></strong>
                     <span class="text-sm text-slate-500"><?= (int) $service['duration_min'] ?> min<?= $price($service) !== '' ? ', ' . esc($price($service)) : '' ?><?= $depositText($service) !== '' ? ', ' . esc($depositText($service)) : '' ?></span>
@@ -125,6 +126,13 @@ if ($service !== null) {
                                 <span class="flex-1">
                                     <span class="block font-semibold"><?= esc((string) $s['name']) ?></span>
                                     <?php if (trim((string) ($s['description'] ?? '')) !== ''): ?><span class="block text-sm text-slate-500"><?= esc((string) $s['description']) ?></span><?php endif ?>
+                                    <?php if (($servicePlaces[(int) $s['id']] ?? []) !== []): ?>
+                                        <span class="book-service-places">
+                                            <?php foreach ($servicePlaces[(int) $s['id']] as $pl): ?>
+                                                <span class="book-service-place"><?= lucide('map-pin', 'mt-0.5 h-3.5 w-3.5 shrink-0') ?><span><?= esc($pl['name']) ?></span></span>
+                                            <?php endforeach ?>
+                                        </span>
+                                    <?php endif ?>
                                 </span>
                                 <span class="text-right text-sm text-slate-500"><?= (int) $s['duration_min'] ?> min<?= $price($s) !== '' ? '<br>' . esc($price($s)) : '' ?><?= $depositText($s) !== '' ? '<br>' . esc($depositText($s)) : '' ?></span>
                             </a>
@@ -137,7 +145,7 @@ if ($service !== null) {
         <?php // 2. Who ?>
         <?php if ($service !== null && count($providers) > 1): ?>
             <div class="panel mb-4" id="with">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. With</h2>
+                <h2 class="book-step-title">With</h2>
                 <?php if ($who !== ''): ?>
                     <p class="flex flex-wrap items-center gap-3"><strong><?= $provider !== null ? esc((string) $provider['name']) : 'Anyone available' ?></strong>
                         <a class="text-sm underline" href="<?= $link(['service' => $service['id']]) ?>#with">Change</a></p>
@@ -158,12 +166,12 @@ if ($service !== null) {
         <?php // 3. When and where: a week of free times, one column per place (book/_board.php, shared with /business) ?>
         <?php if ($service !== null && $placeOptions === []): ?>
             <div class="panel mb-4" id="time">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
+                <h2 class="book-step-title">Choose a time</h2>
                 <p class="text-sm">This service has no times online at the moment. Please contact <?= esc($listing['display_name']) ?> to book it.</p>
             </div>
         <?php elseif ($board !== null): ?>
             <div class="panel mb-4" id="time">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
+                <h2 class="book-step-title">Choose a time</h2>
                 <?php if ($slot !== null): ?>
                     <p class="flex flex-wrap items-start gap-3">
                         <span class="flex items-start gap-2"><?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0 text-slate-400') ?>
@@ -171,13 +179,27 @@ if ($service !== null) {
                                 <?php if ($place !== null): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($place['name']) ?><?= $place['address'] !== '' ? ', ' . esc($place['address']) : '' ?></span><?php endif ?></span></span>
                         <a class="text-sm underline" href="<?= $link($chosen + ['from' => $date]) ?>#time">Change</a></p>
                 <?php else: ?>
-                    <?= view('book/_board', [
-                        'board'   => $board,
-                        'mode'    => 'link',
-                        'clock'   => $clock,
-                        'timeUrl' => static fn (string $d, string $start, int $placeId): string => $link($chosen + ['place' => $placeId, 'date' => $d, 'start' => $start]) . '#details',
-                        'weekUrl' => static fn (string $from): string => $link($chosen + ['from' => $from]) . '#time',
-                    ], ['saveData' => false]) ?>
+                    <div class="book-pick">
+                        <?php if ($calendar !== null): ?>
+                            <?= view('book/_month', [
+                                'calendar' => $calendar,
+                                'date'     => null,
+                                'range'    => [$board['from'], $board['to']],
+                                'timezone' => $tz,
+                                'dayUrl'   => static fn (string $d): string => $link($chosen + ['from' => $d]) . '#time',
+                                'monthUrl' => static fn (string $m): string => $link($chosen + ['month' => $m]) . '#time',
+                            ], ['saveData' => false]) ?>
+                        <?php endif ?>
+                        <div class="min-w-0">
+                            <?= view('book/_board', [
+                                'board'   => $board,
+                                'mode'    => 'link',
+                                'clock'   => $clock,
+                                'timeUrl' => static fn (string $d, string $start, int $placeId): string => $link($chosen + ['place' => $placeId, 'date' => $d, 'start' => $start]) . '#details',
+                                'weekUrl' => static fn (string $from): string => $link($chosen + ['from' => $from]) . '#time',
+                            ], ['saveData' => false]) ?>
+                        </div>
+                    </div>
                 <?php endif ?>
             </div>
         <?php endif ?>
@@ -191,7 +213,7 @@ if ($service !== null) {
                 <input type="hidden" name="provider_id" value="<?= $provider !== null ? (int) $provider['id'] : 0 ?>">
                 <?php if ($place !== null): ?><input type="hidden" name="place" value="<?= (int) $place['id'] ?>"><?php endif ?>
                 <input type="hidden" name="start" value="<?= esc($slot['start'], 'attr') ?>">
-                <h2 class="mb-4 font-bold"><?= ++$step ?>. Your details</h2>
+                <h2 class="book-step-title">Your details</h2>
                 <?php if (count($modes) > 1): ?>
                     <fieldset class="field">
                         <legend class="mb-1 text-sm font-semibold">How would you like it?</legend>

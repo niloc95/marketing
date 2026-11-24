@@ -3790,6 +3790,20 @@
   .book-times .btn { @apply justify-center; }
   .book-cal .avail-grid { @apply gap-1.5 text-sm; }
   .book-cal .avail-day  { @apply min-h-11 rounded-lg; }
+  /* The step titles on the public booking page (Service, With, Choose a time, Your details). */
+  .book-step-title { @apply mb-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl; }
+  .dark .book-step-title { @apply text-white; }
+  /* Where each service is given, under its name in the service list. */
+  .book-service-places { @apply mt-1 flex flex-col gap-0.5; }
+  .book-service-place  { @apply flex items-start gap-1.5 text-xs font-normal text-brand-ocean; }
+  .dark .book-service-place { @apply text-primary-300; }
+  /* The public booking page: the month beside the week of times from xl, above it below. */
+  .book-pick       { @apply grid items-start gap-5 xl:grid-cols-[16rem_minmax(0,1fr)]; }
+  .book-pick .book-cal { @apply w-full max-w-xs; }
+  .book-pick .board-cols-3 { @apply xl:grid-cols-2; }
+  .avail-inview    { @apply ring-1 ring-brand-ocean/60; }
+  .avail-free.avail-inview { @apply bg-emerald-200; }
+  .dark .avail-free.avail-inview { @apply bg-emerald-500/35; }
 
   /* Free times in the calendar's move form: when, and where under it. */
   .free-times         { @apply mt-3; }
@@ -3803,7 +3817,20 @@
   .dark .free-times-summary { @apply border-primary-300/40 bg-primary-500/15 text-white; }
   /* The Book form: one column, or when (left) and customer (right) from lg up. */
   .book-layout        { @apply grid gap-4; }
-  .book-layout-wide   { @apply lg:grid-cols-2 lg:gap-8; }
+  .book-layout-wide   { @apply lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-8; }
+  /* The /business Book forms in the public booking page's steps (free-times.js). */
+  .book-step + .book-step { @apply mt-6 border-t border-slate-100 pt-6; }
+  .dark .book-step + .book-step { @apply border-slate-800; }
+  .book-step-chosen   { @apply flex flex-wrap items-center gap-3 font-semibold; }
+  .book-step-list[hidden], .book-step [hidden] { @apply hidden; }
+  .book-service-row   { @apply flex w-full items-start gap-3 py-3 text-left hover:text-primary-600; }
+  .book-service-row[aria-pressed='true'] { @apply text-brand-ocean; }
+  .book-service-desc  { @apply line-clamp-2 block text-sm font-normal text-slate-500; }
+  .book-who[aria-pressed='true'] { @apply border-brand-ocean ring-1 ring-brand-ocean; }
+  .book-form-when .book-pick { @apply xl:grid-cols-1; }
+  [data-free-lists] { @apply transition-opacity duration-150; }
+  [data-free-lists][aria-busy='true'] { @apply opacity-60 delay-200; }
+  .book-form-when .book-pick .board-cols-3 { @apply xl:grid-cols-2; }
   .book-layout-wide .book-form-who { @apply lg:border-l lg:border-slate-200 lg:pl-8; }
   .dark .book-layout-wide .book-form-who { @apply lg:border-slate-700; }
   .book-form-who > * + *   { @apply mt-4; }
@@ -3823,6 +3850,8 @@
      (above them on a phone), sticky while the steps scroll. */
   .book-page.has-summary { @apply grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6; }
   .book-page-summary  { @apply lg:sticky lg:top-24 lg:order-last; }
+  /* While a step loads in place (directory.js): dim only when it is slow, so a quick answer shows no flicker. */
+  [data-book-steps][aria-busy="true"] { @apply opacity-60 transition-opacity delay-200 duration-150; }
   .book-actions       { @apply mt-5 flex gap-3 border-t border-slate-200 pt-4; }
   .dark .book-actions { @apply border-slate-700; }
   .free-time          { @apply flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-left text-sm hover:border-brand-ocean; }

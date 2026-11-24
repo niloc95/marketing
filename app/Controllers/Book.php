@@ -70,6 +70,13 @@ class Book extends BaseController
             }
         }
         $placeId   = $place !== null ? $place['id'] : null;
+        // Where each service is given, for the service list (owner 24 Nov 2026).
+        $servicePlaces = [];
+        if ($service === null) {
+            foreach ($services as $s) {
+                $servicePlaces[(int) $s['id']] = $svc->placesFor((int) $s['id'], $withId > 0 ? $withId : null);
+            }
+        }
         $providers = $service !== null ? $svc->providersFor((int) $service['id']) : [];
         // A person's headshot from their team card, which only a Verified or
         // Plus profile shows publicly.
@@ -98,8 +105,21 @@ class Book extends BaseController
         $start = (string) ($this->request->getGet('start') ?? '');
         $ready = $service !== null && $whoChosen;
 
-        // A week of free times, one column per place (FreeTimesBoard, shared with /business).
-        $board = $ready ? (new FreeTimesBoard($listing, true))->week((int) $service['id'], $providerId, (string) ($this->request->getGet('from') ?? $date ?? '')) : null;
+        // A month of free days (to move by month, with the year) beside a week
+        // of free times, one column per place (FreeTimesBoard, shared with
+        // /business). ?month= alone opens that month's first free week; the
+        // calendar otherwise follows the week on view.
+        $from     = (string) ($this->request->getGet('from') ?? $date ?? '');
+        $monthGet = $this->request->getGet('month');
+        $calendar = null;
+        $board    = null;
+        if ($ready) {
+            $calendar = $svc->month((int) $service['id'], $providerId, null, is_string($monthGet) ? $monthGet : ($from !== '' ? substr($from, 0, 7) : null));
+            if (is_string($monthGet) && $this->request->getGet('from') === null) {
+                $from = $calendar['free'][0] ?? $calendar['month'] . '-01';
+            }
+            $board = (new FreeTimesBoard($listing, true))->week((int) $service['id'], $providerId, $from);
+        }
         $times = $ready && $date !== null && $start !== '' ? $svc->times((int) $service['id'], $providerId, $date, $placeId) : [];
         $slot  = null;
         foreach ($times as $t) {
@@ -125,12 +145,14 @@ class Book extends BaseController
             'service'   => $service,
             'withId'    => $withId,
             'placeOptions' => $placeOptions,
+            'servicePlaces' => $servicePlaces,
             'place'     => $place,
             'providers' => $providers,
             'provider'  => $provider,
             'who'       => $whoChosen ? ($provider !== null ? (string) $provider['id'] : 'any') : '',
             'today'     => $today,
             'board'     => $board,
+            'calendar'  => $calendar,
             'date'      => $date,
             'slot'      => $slot,
             'modes'     => $service !== null ? \App\Services\Bookings\Integrations\DeliveryModes::offered((int) $listing['id'], $service) : [],

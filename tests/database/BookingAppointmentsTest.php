@@ -466,6 +466,17 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertStringContainsString('class="board-col"', $answer['data']['html']);
         $this->assertStringContainsString('data-board-time data-date="2030-01-07"', $answer['data']['html'], 'buttons, not links');
         $this->assertStringNotContainsString('href=', $answer['data']['html']);
+        // The month beside it, with the year, as buttons; the week on view marked.
+        $this->assertStringContainsString('January 2030', $answer['data']['calendar']);
+        $this->assertStringContainsString('data-cal-from="2030-01-07"', $answer['data']['calendar']);
+        $this->assertStringContainsString('avail-inview', $answer['data']['calendar']);
+        $this->assertStringNotContainsString('href=', $answer['data']['calendar']);
+
+        // ?month= alone opens that month's first free week.
+        $month = json_decode($this->signedIn()->get('business/api/appointments/board?service_id=' . $this->serviceId . '&provider_id=' . $this->sarah . '&month=2030-02')->getJSON(), true);
+        $this->assertTrue($month['ok']);
+        $this->assertStringStartsWith('2030-02-', $month['data']['from']);
+        $this->assertStringContainsString('February 2030', $month['data']['calendar']);
 
         // Another business's member cannot ask about this one's people.
         $other = json_decode($this->signedIn($this->otherAccountId, $this->otherListingId)->get('business/api/appointments/board?service_id=' . $this->serviceId . '&provider_id=' . $this->sarah)->getJSON(), true);

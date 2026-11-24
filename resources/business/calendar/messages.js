@@ -17,6 +17,7 @@ export const MSG = {
   more: (n) => `${n} more`,
   until: 'to',
   finding: 'Finding free times…',
+  chooseFirst: 'Choose a service and who first, then their free times show here.',
   noFree: 'No free time in the next 60 days. Check their working hours.',
   noFreeDay: 'Nothing free that day.',
   freeOn: (day) => `Free on ${day}`,

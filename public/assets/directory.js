@@ -6104,4 +6104,82 @@
       });
     });
   })();
+
+  // ------------------------------------------------- booking steps in place
+  // The public booking page (book/page.php) and "Change your booking"
+  // (book/manage.php) are plain links, one page load per choice, so they work
+  // without script. With script, a link inside [data-book-steps] fetches the
+  // same page and swaps only that block: no white flash, the page stays
+  // where it is, and the next step (the link's #anchor) slides into view
+  // only when it is off screen. Anything unexpected (an error, a redirect to
+  // another page) falls back to the plain link.
+  (function () {
+    var first = document.querySelector('[data-book-steps]');
+    if (!first || !first.id || !window.fetch || !window.DOMParser || !window.history.pushState) return;
+    var id = first.id;
+    var pending = null;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function bring(hash) {
+      var target = hash ? document.getElementById(hash.slice(1)) : null;
+      if (!target) return;
+      var top = target.getBoundingClientRect().top;
+      // Already in the upper part of the screen: leave the page still.
+      if (top < 80 || top > window.innerHeight * 0.6) {
+        target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      }
+      var heading = target.querySelector('h2, legend');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }
+
+    // stay: a link that moves within its own step (a day, a month, Earlier,
+    // Later) keeps the page exactly where it is; only a link to another
+    // step (a time to Your details) brings that step into view.
+    function load(href, push, stay) {
+      var url = new URL(href, location.href);
+      if (pending) pending.abort();
+      var ctrl = pending = window.AbortController ? new AbortController() : null;
+      var current = document.getElementById(id);
+      if (current) current.setAttribute('aria-busy', 'true');
+      fetch(url.href, { credentials: 'same-origin', signal: ctrl ? ctrl.signal : undefined })
+        .then(function (res) {
+          if (!res.ok || new URL(res.url).pathname !== url.pathname) throw new Error('elsewhere');
+          return res.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var fresh = doc.getElementById(id);
+          var now = document.getElementById(id);
+          if (!fresh || !now) throw new Error('no steps');
+          now.replaceWith(document.importNode(fresh, true));
+          if (doc.title) document.title = doc.title;
+          if (push) window.history.pushState({ bookSteps: true }, '', url.href);
+          if (!stay) bring(url.hash);
+        })
+        .catch(function (e) {
+          if (e && e.name === 'AbortError') return;
+          location.href = url.href;
+        });
+    }
+
+    window.history.replaceState({ bookSteps: true }, '', location.href);
+
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var link = e.target.closest ? e.target.closest('[data-book-steps] a[href]') : null;
+      if (!link || link.target || link.hasAttribute('download')) return;
+      var url = new URL(link.href, location.href);
+      if (url.origin !== location.origin || url.pathname !== location.pathname) return;
+      e.preventDefault();
+      var own = url.hash && link.closest(url.hash.replace(/[^#\w-]/g, ''));
+      load(url.href, true, !!own);
+    });
+
+    window.addEventListener('popstate', function (e) {
+      if (e.state && e.state.bookSteps) load(location.href, false, true);
+    });
+  })();
 })();

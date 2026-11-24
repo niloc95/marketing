@@ -93,6 +93,60 @@ final class FreeTimesBoard
     }
 
     /**
+     * Where a service is given by the people who offer it, within $people
+     * when given (a member's scope), for the service list of a Book form.
+     *
+     * @param list<int>|null $people
+     *
+     * @return list<array{id:int,name:string,address:string}>
+     */
+    public function servicePlaces(int $serviceId, ?array $people = null): array
+    {
+        $offering = $this->engine->providersFor($serviceId, $this->public);
+
+        return $this->placesFor($serviceId, $people === null ? $offering : array_values(array_intersect($offering, $people)));
+    }
+
+    /**
+     * One month of free days for the calendar beside the week (the /business
+     * Book forms; the public page uses PublicBookingService::month() with the
+     * same shape): from today to the last day that may be booked.
+     *
+     * @return array{month:string,free:list<string>,prev:?string,next:?string,first:string,last:string}
+     */
+    public function month(int $serviceId, ?int $providerId, ?string $month): array
+    {
+        $tz    = $this->engine->timezone();
+        $today = $this->now->setTimezone($tz)->format('Y-m-d');
+        $last  = $this->public ? $this->engine->customerHorizon() : (new DateTimeImmutable($today, $tz))->modify('+10 years')->format('Y-m-d');
+        $month = $month !== null && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) ? $month : substr($today, 0, 7);
+        $month = max(substr($today, 0, 7), min(substr($last, 0, 7), $month));
+        $start = new DateTimeImmutable($month . '-01', $tz);
+        $nowUtc = $this->now->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $people = $providerId === null ? $this->engine->providersFor($serviceId, $this->public) : [$providerId];
+        $free   = [];
+        for ($d = new DateTimeImmutable(max($today, $start->format('Y-m-d')), $tz); $d->format('Y-m-d') <= min($last, $start->format('Y-m-t')); $d = $d->modify('+1 day')) {
+            $date = $d->format('Y-m-d');
+            foreach ($people as $personId) {
+                $slots = $this->engine->slots($personId, $serviceId, $date, $this->public);
+                if (array_filter($slots, static fn (array $s): bool => (string) $s['start'] > $nowUtc) !== []) {
+                    $free[] = $date;
+                    break;
+                }
+            }
+        }
+
+        return [
+            'month' => $month,
+            'free'  => $free,
+            'prev'  => $month > substr($today, 0, 7) ? $start->modify('-1 month')->format('Y-m') : null,
+            'next'  => $month < substr($last, 0, 7) ? $start->modify('+1 month')->format('Y-m') : null,
+            'first' => $today,
+            'last'  => $last,
+        ];
+    }
+
+    /**
      * One week of free times from $from (today at the earliest), a column per
      * place. $providerId null = anyone who offers the service (each time
      * then lists who is free).
