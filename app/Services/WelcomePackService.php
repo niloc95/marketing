@@ -236,8 +236,11 @@ class WelcomePackService
             'l'          => $l,
             'v'          => vertical_profile($group, $catSlug !== '' ? $catSlug : null, (string) ($l['type'] ?? '')),
             'isApp'      => $isApp,
-            'verified'   => listing_is_verified_business($profile),
-            'plus'       => ! listing_is_verified_business($profile) && listing_has_plus($profile),
+            // The plan is the site's, not today's dates: an admin preview of a
+            // Free or lapsed co.za profile still shows the Verified pack it
+            // would get, and an .app row never says Verified.
+            'verified'   => ! $isApp,
+            'plus'       => $isApp,
             'noun'       => listing_noun($profile),
             'audience'   => listing_audience($profile),
             'profileUrl' => $profileUrl,
@@ -250,7 +253,7 @@ class WelcomePackService
             'qrProfile'  => $this->qr($profileUrl),
             'qrBook'     => $bookUrl !== '' ? $this->qr($bookUrl) : '',
             'logo'       => $isApp ? '' : $this->image(FCPATH . 'assets/brand/logo-512.png', 'image/png'),
-            'seal'       => listing_is_verified_business($profile) ? $this->image(FCPATH . 'assets/verified-seal.svg', 'image/svg+xml') : '',
+            'seal'       => ! $isApp ? $this->image(FCPATH . 'assets/verified-seal.svg', 'image/svg+xml') : '',
             'ownLogo'    => $this->ownImage($l['logo_path'] ?? null),
             'regulator'  => \App\Libraries\ProfessionalRegistration::regulatorFor($catSlug !== '' ? $catSlug : null, $group, \App\Libraries\ProfessionalRegistration::countryOf($profile)),
             'builtOn'    => date('j F Y'),
@@ -343,7 +346,7 @@ class WelcomePackService
             'audience' => listing_audience($listing),
             'link'     => $link,
             'owner'    => listing_site_url($listing, 'business/welcome-pack'),
-            'plan'     => listing_is_verified_business($listing) ? 'Verified' : 'Plus',
+            'plan'     => service('site')->forRow($listing) === Sites::APP ? 'Plus' : 'Verified',
         ], ['saveData' => false]);
 
         return (new Mailer())->send(
