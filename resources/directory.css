@@ -3790,6 +3790,10 @@
   .book-times .btn { @apply justify-center; }
   .book-cal .avail-grid { @apply gap-1.5 text-sm; }
   .book-cal .avail-day  { @apply min-h-11 rounded-lg; }
+  /* Where each service is given, under its name in the service list. */
+  .book-service-places { @apply mt-1 flex flex-col gap-0.5; }
+  .book-service-place  { @apply flex items-start gap-1.5 text-xs font-normal text-brand-ocean; }
+  .dark .book-service-place { @apply text-primary-300; }
   /* The public booking page: the month beside the week of times from xl, above it below. */
   .book-pick       { @apply grid items-start gap-5 xl:grid-cols-[16rem_minmax(0,1fr)]; }
   .book-pick .book-cal { @apply w-full max-w-xs; }

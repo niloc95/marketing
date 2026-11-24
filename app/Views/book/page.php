@@ -13,6 +13,7 @@
  * @var int                            $withId    the person a "Book with" link named, 0 for none
  * @var list<array{id:int,name:string,address:string}> $placeOptions where the chosen service is given (PublicBookingService::placesFor())
  * @var array{id:int,name:string,address:string}|null  $place        the chosen time's place (0 = the main address)
+ * @var array<int,list<array{id:int,name:string,address:string}>> $servicePlaces where each listed service is given, by service id
  * @var string                         $today
  * @var array<string,mixed>|null       $board     FreeTimesBoard::week(): a week, one column per place (T33)
  * @var array<string,mixed>|null       $calendar  PublicBookingService::month(): the free days of the month beside it
@@ -126,6 +127,13 @@ if ($service !== null) {
                                 <span class="flex-1">
                                     <span class="block font-semibold"><?= esc((string) $s['name']) ?></span>
                                     <?php if (trim((string) ($s['description'] ?? '')) !== ''): ?><span class="block text-sm text-slate-500"><?= esc((string) $s['description']) ?></span><?php endif ?>
+                                    <?php if (($servicePlaces[(int) $s['id']] ?? []) !== []): ?>
+                                        <span class="book-service-places">
+                                            <?php foreach ($servicePlaces[(int) $s['id']] as $pl): ?>
+                                                <span class="book-service-place"><?= lucide('map-pin', 'mt-0.5 h-3.5 w-3.5 shrink-0') ?><span><?= esc($pl['name']) ?></span></span>
+                                            <?php endforeach ?>
+                                        </span>
+                                    <?php endif ?>
                                 </span>
                                 <span class="text-right text-sm text-slate-500"><?= (int) $s['duration_min'] ?> min<?= $price($s) !== '' ? '<br>' . esc($price($s)) : '' ?><?= $depositText($s) !== '' ? '<br>' . esc($depositText($s)) : '' ?></span>
                             </a>

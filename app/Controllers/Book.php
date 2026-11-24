@@ -70,6 +70,13 @@ class Book extends BaseController
             }
         }
         $placeId   = $place !== null ? $place['id'] : null;
+        // Where each service is given, for the service list (owner 24 Nov 2026).
+        $servicePlaces = [];
+        if ($service === null) {
+            foreach ($services as $s) {
+                $servicePlaces[(int) $s['id']] = $svc->placesFor((int) $s['id'], $withId > 0 ? $withId : null);
+            }
+        }
         $providers = $service !== null ? $svc->providersFor((int) $service['id']) : [];
         // A person's headshot from their team card, which only a Verified or
         // Plus profile shows publicly.
@@ -138,6 +145,7 @@ class Book extends BaseController
             'service'   => $service,
             'withId'    => $withId,
             'placeOptions' => $placeOptions,
+            'servicePlaces' => $servicePlaces,
             'place'     => $place,
             'providers' => $providers,
             'provider'  => $provider,
