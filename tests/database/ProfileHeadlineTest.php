@@ -58,6 +58,18 @@ final class ProfileHeadlineTest extends CIUnitTestCase
         $this->assertGreaterThan($name, strpos($html, 'class="profile-headline'), 'right under the name');
     }
 
+    public function testTheHeaderLineUnderItHasNoSuburb(): void
+    {
+        $this->listing(['suburb' => 'Berea']);
+
+        $html = (string) $this->get('directory/dr-a-d-bhatta')->getBody();
+        $head = substr($html, (int) strpos($html, '</h1>'), 1500);
+
+        $this->assertStringContainsString('Durban, ', $head);
+        $this->assertStringContainsString('KwaZulu-Natal', $head);
+        $this->assertStringNotContainsString('Berea', $head);
+    }
+
     public function testBlankShowsNothingAndIsStoredAsNull(): void
     {
         $id = $this->listing(['headline' => 'Old line']);

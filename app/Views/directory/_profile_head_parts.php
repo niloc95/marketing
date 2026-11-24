@@ -14,6 +14,7 @@
  * @var string   $catSlug
  * @var string   $province
  * @var string   $place
+ * @var string   $headTown the city (the suburb only when there is no city)
  * @var list<array<string,mixed>>    $openJobs  live vacancies, newest first
  * @var App\Services\JobBoardService $jobSvc
  */
@@ -72,7 +73,7 @@
                 <?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0') ?>
                 <span>
                 <?php if ($catSlug !== '' && $province !== ''): ?>
-                    <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province))) ?>"><?= esc($province) ?></a>
+                    <?= esc($headTown) ?><?= $headTown !== '' ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province))) ?>"><?= esc($province) ?></a>
                 <?php else: ?>
                     <?= esc($place) ?>
                 <?php endif; ?>

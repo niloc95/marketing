@@ -25,8 +25,13 @@ $city = trim((string) ($l['city'] ?? ''));
 // ever set. The $province !== '' branch below is what links through to a
 // province landing page, so a foreign listing correctly falls to the plain
 // text: there is no /directory/{category}/bavaria to link to.
+//
+// No suburb in the header (owner, 24 Nov 2026): "Durban, KwaZulu-Natal". The
+// full address is in the contact panel. The suburb stands in only when a
+// profile has no city.
+$headTown = trim((string) ($l['city'] ?? '')) ?: trim((string) ($l['suburb'] ?? ''));
 $place = trim(implode(', ', array_filter([
-    $l['suburb'] ?? '', $l['city'] ?? '', ($l['province'] ?? '') ?: ($l['region'] ?? ''),
+    $headTown, ($l['province'] ?? '') ?: ($l['region'] ?? ''),
 ])));
 $logoUrl = listing_image_url($l['logo_path'] ?? null);
 $canonical = base_url('directory/' . ($l['slug'] ?? ''));
@@ -138,7 +143,7 @@ $metaDesc = listing_meta_description($l);
         ->where('listing_id', (int) $l['id'])->where('kind', 'job')
         ->orderBy('published_at', 'DESC')->findAll(5); ?>
     <?php $jobSvc = new App\Services\JobBoardService(); ?>
-    <?php $headVars = compact('l', 'name', 'prof', 'catSlug', 'province', 'place', 'openJobs', 'jobSvc'); ?>
+    <?php $headVars = compact('l', 'name', 'prof', 'catSlug', 'province', 'place', 'headTown', 'openJobs', 'jobSvc'); ?>
     <?php $share = view('partials/_share', [
         'title'    => $name . ($prof ? ', ' . $prof : ''),
         'url'      => $canonical,
