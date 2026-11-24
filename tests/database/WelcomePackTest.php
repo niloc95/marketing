@@ -145,6 +145,17 @@ final class WelcomePackTest extends CIUnitTestCase
         $this->assertStringContainsString('physio@example.test', (new WelcomePackService())->html($this->listings->find($this->clinic)));
     }
 
+    public function testACoZaPackSaysVerifiedEvenWhenPreviewedFreeOrLapsed(): void
+    {
+        foreach ([null, date('Y-m-d', strtotime('-1 day'))] as $until) {
+            $this->listings->update($this->clinic, ['verified_until' => $until]);
+            $html = (string) preg_replace('#data:[^"]+#', '', (new WelcomePackService())->html($this->listings->find($this->clinic)));
+
+            $this->assertStringContainsString('Welcome to Verified.', $html);
+            $this->assertStringNotContainsString('Plus', $html);
+        }
+    }
+
     public function testAnAppPackIsPlusAndSaysNothingSouthAfrican(): void
     {
         $this->setEnv('sites.app.enabled', 'true');
