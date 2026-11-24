@@ -3757,12 +3757,25 @@
      and a two-column grid of paragraphs reads badly on a phone and not much
      better on a desktop. */
   .team-list   { @apply mt-3 flex flex-col gap-5; }
-  .team-member { @apply flex items-start gap-4; }
+  /* The photo with the name and role as the card's head, and every part
+     under it (qualifications, registration, areas of focus, biography, Book)
+     the full width, in line with the rest of the page (owner, 24 Nov 2026:
+     the photo column pushed all of it in). A grid on the card with the body
+     as display: contents, so its children are the grid's items without a
+     change to the markup: the photo spans the name and role rows, the rest
+     span both columns. */
+  .team-member { @apply grid grid-cols-[auto_minmax(0,1fr)] gap-x-4; }
   .team-member + .team-member { @apply border-t border-slate-100 pt-5; }
   .dark .team-member + .team-member { @apply border-slate-800; }
 
-  .team-member-body        { @apply min-w-0 flex-1; }
-  .team-member-name        { @apply text-sm font-semibold text-slate-900; }
+  .team-member-body        { @apply contents; }
+  .team-member > .team-avatar          { @apply col-start-1 row-span-2 row-start-1; }
+  .team-member-body > *                { @apply col-span-2; }
+  .team-member-body > .team-member-name { @apply col-span-1 col-start-2 row-start-1 self-end; }
+  .team-member-body > .team-member-role { @apply col-span-1 col-start-2 row-start-2 self-start; }
+  /* No role: the name alone, centred on the photo. */
+  .team-member-body > .team-member-name:not(:has(+ .team-member-role)) { @apply row-span-2 self-center; }
+  .team-member-name        { @apply text-base font-semibold text-slate-900; }
   .team-member-role        { @apply text-sm text-primary-600; }
   /* Rich text since 18 Nov 2026, the description's editor later the same day
      (RichText::sanitise): the views add .listing-prose, which draws headings,
