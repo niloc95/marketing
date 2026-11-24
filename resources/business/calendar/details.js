@@ -1,7 +1,7 @@
 /**
  * The appointment details panel (Bookings' appointment-details-modal):
- * who, when, where, answers, status, notes, and a move form for anyone
- * without a mouse to drag with, the messages sent about it and "Send
+ * who, when, where, answers, status, notes, a Reschedule view swapped in
+ * its place (Back returns), the messages sent about it and "Send
  * again" (queued, sent within the minute), and the deposit with Mark paid
  * and Mark refunded (Phase 8, for members with payments.manage).
  */
@@ -17,11 +17,26 @@ export function initDetails(root, scheduler) {
   const set = (name, value) => {
     const node = q(`[data-d="${name}"]`);
     node.textContent = value || '';
-    // An empty fact row (no phone, say) hides with its icon.
-    if (node.tagName === 'DD') { node.hidden = !value; node.previousElementSibling.hidden = !value; }
+    // An empty fact row (no phone, say) hides with its label.
+    const row = node.closest('.appt-fact');
+    if (row) row.hidden = !value;
+  };
+  const link = (sel, href) => {
+    const a = q(sel);
+    a.hidden = !href;
+    a.href = href || '#';
   };
   const error = q('[data-d-error]');
+  const mainView = q('[data-d-view="main"]');
+  const moveView = q('[data-d-view="move"]');
   let current = null;
+
+  function show(view) {
+    mainView.hidden = view !== 'main';
+    moveView.hidden = view !== 'move';
+    error.classList.add('hidden');
+    dialog.scrollTop = 0;
+  }
 
   dialog.querySelectorAll('[data-cal-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => { current = null; scheduler.busy(false); });
@@ -44,10 +59,15 @@ export function initDetails(root, scheduler) {
     error.classList.add('hidden');
     q('[data-d-swatch]').style.backgroundColor = a.provider_color;
     set('title', a.customer_name || MSG.noCustomer);
+    const pill = q('[data-d-pill]');
+    pill.textContent = a.status_label || '';
+    pill.dataset.status = a.status;
     set('service_name', a.service_name);
     set('provider_name', a.provider_name);
-    set('when', `${longDay(dateOf(a.start))}, ${hhmm(a.start)} ${MSG.until} ${hhmm(a.end)}`);
-    set('where', a.delivery_mode === 'onsite' ? [a.location_name, a.location_address].filter(Boolean).join(', ') || MSG.noAddress : MSG.online);
+    const when = `${longDay(dateOf(a.start))}, ${hhmm(a.start)} ${MSG.until} ${hhmm(a.end)}`;
+    const where = a.delivery_mode === 'onsite' ? [a.location_name, a.location_address].filter(Boolean).join(', ') || MSG.noAddress : MSG.online;
+    set('when', when);
+    set('where', where);
     set('email', a.email);
     set('phone', a.phone);
     set('reference', a.reference);
@@ -55,26 +75,28 @@ export function initDetails(root, scheduler) {
     fields.replaceChildren();
     (a.fields || []).forEach((f) => {
       const row = el('div');
-      row.append(el('dt', 'font-semibold', f.title), el('dd', 'whitespace-pre-line text-slate-600 dark:text-slate-300', f.value));
+      row.append(el('dt', '', f.title), el('dd', '', f.value));
       fields.append(row);
     });
-    const link = q('[data-d-customer]');
-    link.hidden = !a.customer_hash;
-    if (a.customer_hash) link.href = `${root.dataset.customerPage}/${a.customer_hash}`;
+    q('[data-d-fields-box]').hidden = !fields.children.length;
+    link('[data-d-customer]', a.customer_hash ? `${root.dataset.customerPage}/${a.customer_hash}` : '');
+    link('[data-d-call]', a.phone ? `tel:${a.phone.replace(/[^\d+]/g, '')}` : '');
+    link('[data-d-mail]', a.email ? `mailto:${a.email}` : '');
+    link('[data-d-whatsapp]', a.whatsapp_url);
     q('[data-d-status]').value = a.status;
     q('[data-d-notes]').value = a.notes || '';
-    const move = q('[data-d-move]');
-    move.hidden = !a.upcoming;
-    move.open = false;
-    q('[data-d-date]').value = dateOf(a.start);
-    q('[data-d-time]').value = hhmm(a.start);
-    q('[data-d-provider]').value = String(a.provider_id);
+    // Pending or confirmed can be moved, even once its time has passed (a
+    // late or missed patient); anything else says why not.
+    const reschedule = q('[data-d-reschedule]');
+    reschedule.disabled = !a.can_move;
+    const note = q('[data-d-move-note]');
+    note.hidden = a.can_move;
+    note.textContent = a.can_move ? '' : MSG.cannotMove(a.status_label);
+    q('[data-d-now]').textContent = a.delivery_mode === 'onsite' && a.location_name ? `${when}, ${MSG.at} ${a.location_name}` : when;
+    q('[data-d-passed]').hidden = a.upcoming;
     const list = q('[data-d-message-list]');
     list.replaceChildren(...(a.messages || []).map((m) => el('li', '', `${m.at}: ${m.event}, ${m.channel}${m.recipient_type === 'team' ? MSG.toTeam : ''}. ${m.outcome}.`)));
     if (!list.children.length) list.append(el('li', '', MSG.noMessages));
-    const chat = q('[data-d-whatsapp]');
-    chat.hidden = !a.whatsapp_url;
-    chat.href = a.whatsapp_url || '#';
     const pay = a.payment;
     q('[data-d-payment]').hidden = !pay;
     if (pay) {
@@ -85,8 +107,24 @@ export function initDetails(root, scheduler) {
     }
     q('[data-d-event]').value = { pending: 'pending', confirmed: 'confirmed', cancelled: 'cancelled', no_show: 'no_show' }[a.status] || 'confirmed';
     scheduler.busy(true);
+    show('main');
     if (!dialog.open) dialog.showModal();
   }
+
+  // Reschedule: the date, time and person start as they are now.
+  function openMove() {
+    if (!current || !current.can_move) return;
+    // A passed time starts empty: the new one has to be chosen.
+    q('[data-d-date]').value = current.upcoming ? dateOf(current.start) : '';
+    q('[data-d-time]').value = current.upcoming ? hhmm(current.start) : '';
+    q('[data-d-provider]').value = String(current.provider_id);
+    chosen.hidden = true;
+    show('move');
+    loadFree(false);
+    q('[data-d-back]').focus();
+  }
+  q('[data-d-reschedule]').addEventListener('click', openMove);
+  dialog.querySelectorAll('[data-d-back]').forEach((b) => b.addEventListener('click', () => { show('main'); q('[data-d-reschedule]').focus(); }));
 
   q('[data-d-status]').addEventListener('change', async (e) => {
     if (!current) return;
@@ -105,7 +143,7 @@ export function initDetails(root, scheduler) {
   });
 
   // Free times to move to: the next few, and the chosen date's, each with
-  // its place. A click fills the date and time below; Move still saves.
+  // its place. A click fills the date and time; Move appointment saves.
   const nextBox = q('[data-d-next]');
   const dayBox = q('[data-d-day]');
   const dayHeading = q('[data-d-day-heading]');
@@ -147,8 +185,11 @@ export function initDetails(root, scheduler) {
     }
   }
 
-  q('[data-d-move]').addEventListener('toggle', (e) => { if (e.target.open) { chosen.hidden = true; loadFree(false); } });
   q('[data-d-date]').addEventListener('change', () => { chosen.hidden = true; loadFree(true); });
+  q('[data-d-time]').addEventListener('input', () => {
+    dialog.querySelectorAll('.free-time[aria-pressed]').forEach((x) => x.removeAttribute('aria-pressed'));
+    chosen.hidden = true;
+  });
   q('[data-d-provider]').addEventListener('change', () => { chosen.hidden = true; loadFree(q('[data-d-date]').value !== dateOf(current.start)); });
 
   q('[data-d-save-move]').addEventListener('click', async () => {

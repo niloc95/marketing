@@ -47,6 +47,7 @@ class AppointmentService
         AvailabilityService::NOT_ON_THE_GRID => 'Choose one of the times offered.',
         'not_found'                          => 'That appointment was not found.',
         'not_upcoming'                       => 'Only upcoming appointments can be moved.',
+        'not_movable'                        => 'Only pending or confirmed appointments can be moved.',
         'not_offered'                        => 'They do not offer that service. Choose someone who does.',
     ];
 
@@ -213,6 +214,7 @@ class AppointmentService
         }
         $out['status_label'] = AppointmentStatus::label($out['status']);
         $out['upcoming']     = $this->isUpcoming($row);
+        $out['can_move']     = $this->canMove($row);
         $out['created_at']   = $row['created_at'];
         $out['messages']     = $this->messages($id);
         $out['whatsapp_url'] = $this->whatsappUrl($row);
@@ -314,8 +316,10 @@ class AppointmentService
         if ($row === null) {
             return ['ok' => false, 'error' => self::PROBLEMS['not_found']];
         }
-        if (! $this->isUpcoming($row)) {
-            return ['ok' => false, 'error' => self::PROBLEMS['not_upcoming']];
+        // The business may also move one whose time has passed (a late or
+        // missed patient): only the status counts, not the clock.
+        if (! $this->canMove($row)) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_movable']];
         }
         if ($providerId !== null && ! $this->inScope($providerId)) {
             return ['ok' => false, 'error' => self::PROBLEMS[AvailabilityService::NOT_OFFERED]];
@@ -587,6 +591,12 @@ class AppointmentService
     }
 
     /** @param array<string,mixed> $row */
+    /** Pending or confirmed: the business may move it, even once its time has passed. */
+    private function canMove(array $row): bool
+    {
+        return in_array($row['status'], AppointmentStatus::UPCOMING, true);
+    }
+
     private function isUpcoming(array $row): bool
     {
         return in_array($row['status'], AppointmentStatus::UPCOMING, true)

@@ -22,6 +22,7 @@ export const MSG = {
   noFreeDay: 'Nothing free that day.',
   freeOn: (day) => `Free on ${day}`,
   chosenTime: (label, place) => `Moving to ${label}${place ? `, at ${place}` : ''}.`,
+  cannotMove: (status) => `${status} appointments cannot be moved. Change the status first, or book a new one.`,
   book: 'Book',
   bookAt: (time) => `Book ${time}`,
   sumNone: 'Not chosen',

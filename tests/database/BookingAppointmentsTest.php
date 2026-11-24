@@ -349,13 +349,30 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertFalse($this->appointments([$this->james])->reschedule($a['id'], '2030-01-08', '15:00', $this->sarah)['ok'], 'Not into someone outside the scope');
     }
 
+    public function testTheBusinessMovesAPassedAppointmentButNotAClosedOne(): void
+    {
+        $a = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test']);
+        // Monday afternoon: Alice's 10:00 has passed and she never came.
+        $later = new AppointmentService($this->listing(), null, null, null, new DateTimeImmutable(self::MONDAY . ' 15:00', new DateTimeZone('Africa/Johannesburg')));
+
+        $view = $later->detail($a['id']);
+        $this->assertFalse($view['upcoming']);
+        $this->assertTrue($view['can_move'], 'Still confirmed, so it can be moved');
+        $this->assertTrue($later->reschedule($a['id'], '2030-01-08', '11:00')['ok']);
+        $this->assertSame('2030-01-08 09:00:00', $later->find($a['id'])['start_at']);
+
+        $this->assertTrue($later->setStatus($a['id'], 'completed')['ok']);
+        $this->assertFalse($later->detail($a['id'])['can_move']);
+        $this->assertSame('Only pending or confirmed appointments can be moved.', $later->reschedule($a['id'], '2030-01-08', '13:00')['error']);
+    }
+
     public function testCancelFreesTheTimeAndBringingBackChecksIt(): void
     {
         $a = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'a@example.test']);
 
         $this->assertTrue($this->appointments()->setStatus($a['id'], 'cancelled')['ok']);
         $this->assertNotNull($this->appointments()->find($a['id'])['cancelled_at']);
-        $this->assertSame('Only upcoming appointments can be moved.', $this->appointments()->reschedule($a['id'], self::MONDAY, '13:00')['error']);
+        $this->assertSame('Only pending or confirmed appointments can be moved.', $this->appointments()->reschedule($a['id'], self::MONDAY, '13:00')['error']);
 
         $b = $this->book('10:00', ['first_name' => 'Bob', 'email' => 'b@example.test']);
         $this->assertNotNull($b['id'], 'The time is free again');
