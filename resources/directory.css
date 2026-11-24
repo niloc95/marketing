@@ -3790,6 +3790,13 @@
   .book-times .btn { @apply justify-center; }
   .book-cal .avail-grid { @apply gap-1.5 text-sm; }
   .book-cal .avail-day  { @apply min-h-11 rounded-lg; }
+  /* The public booking page: the month beside the week of times from xl, above it below. */
+  .book-pick       { @apply grid items-start gap-5 xl:grid-cols-[16rem_minmax(0,1fr)]; }
+  .book-pick .book-cal { @apply w-full max-w-xs; }
+  .book-pick .board-cols-3 { @apply xl:grid-cols-2; }
+  .avail-inview    { @apply ring-1 ring-brand-ocean/60; }
+  .avail-free.avail-inview { @apply bg-emerald-200; }
+  .dark .avail-free.avail-inview { @apply bg-emerald-500/35; }
 
   /* Free times in the calendar's move form: when, and where under it. */
   .free-times         { @apply mt-3; }

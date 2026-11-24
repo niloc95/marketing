@@ -6,12 +6,15 @@
  *
  * @var array<string,mixed>      $calendar  PublicBookingService::month()
  * @var string|null              $date      the chosen day
+ * @var array{0:string,1:string}|null $range the days on view beside it (from, to), marked
  * @var DateTimeZone             $timezone
  * @var callable(string):string  $dayUrl    Y-m-d => link
  * @var callable(string):string  $monthUrl  Y-m => link
  */
 $month = new DateTimeImmutable($calendar['month'] . '-01', $timezone);
 $free  = array_flip($calendar['free']);
+$range ??= null;
+$inView = static fn (string $iso): bool => $range !== null && $iso >= $range[0] && $iso <= $range[1];
 ?>
 <div class="book-cal">
     <div class="mb-3 flex items-center justify-between gap-2">
@@ -29,9 +32,9 @@ $free  = array_flip($calendar['free']);
         <?php for ($d = $month; $d->format('m') === $month->format('m'); $d = $d->modify('+1 day')): ?>
             <?php $iso = $d->format('Y-m-d'); ?>
             <?php if (isset($free[$iso])): ?>
-                <a class="avail-day avail-free<?= $iso === $date ? ' avail-today' : '' ?>" href="<?= esc($dayUrl($iso), 'attr') ?>"<?= $iso === $date ? ' aria-current="date"' : '' ?> aria-label="<?= esc($d->format('l j F'), 'attr') ?>"><span class="avail-day-num"><?= $d->format('j') ?></span></a>
+                <a class="avail-day avail-free<?= $iso === $date ? ' avail-today' : '' ?><?= $inView($iso) ? ' avail-inview' : '' ?>" href="<?= esc($dayUrl($iso), 'attr') ?>"<?= $iso === $date ? ' aria-current="date"' : '' ?> aria-label="<?= esc($d->format('l j F'), 'attr') ?>"><span class="avail-day-num"><?= $d->format('j') ?></span></a>
             <?php else: ?>
-                <span class="avail-day avail-off" aria-disabled="true"><span class="avail-day-num"><?= $d->format('j') ?></span></span>
+                <span class="avail-day avail-off<?= $inView($iso) ? ' avail-inview' : '' ?>" aria-disabled="true"><span class="avail-day-num"><?= $d->format('j') ?></span></span>
             <?php endif ?>
         <?php endfor ?>
     </div>

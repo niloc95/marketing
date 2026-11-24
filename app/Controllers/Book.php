@@ -98,8 +98,21 @@ class Book extends BaseController
         $start = (string) ($this->request->getGet('start') ?? '');
         $ready = $service !== null && $whoChosen;
 
-        // A week of free times, one column per place (FreeTimesBoard, shared with /business).
-        $board = $ready ? (new FreeTimesBoard($listing, true))->week((int) $service['id'], $providerId, (string) ($this->request->getGet('from') ?? $date ?? '')) : null;
+        // A month of free days (to move by month, with the year) beside a week
+        // of free times, one column per place (FreeTimesBoard, shared with
+        // /business). ?month= alone opens that month's first free week; the
+        // calendar otherwise follows the week on view.
+        $from     = (string) ($this->request->getGet('from') ?? $date ?? '');
+        $monthGet = $this->request->getGet('month');
+        $calendar = null;
+        $board    = null;
+        if ($ready) {
+            $calendar = $svc->month((int) $service['id'], $providerId, null, is_string($monthGet) ? $monthGet : ($from !== '' ? substr($from, 0, 7) : null));
+            if (is_string($monthGet) && $this->request->getGet('from') === null) {
+                $from = $calendar['free'][0] ?? $calendar['month'] . '-01';
+            }
+            $board = (new FreeTimesBoard($listing, true))->week((int) $service['id'], $providerId, $from);
+        }
         $times = $ready && $date !== null && $start !== '' ? $svc->times((int) $service['id'], $providerId, $date, $placeId) : [];
         $slot  = null;
         foreach ($times as $t) {
@@ -131,6 +144,7 @@ class Book extends BaseController
             'who'       => $whoChosen ? ($provider !== null ? (string) $provider['id'] : 'any') : '',
             'today'     => $today,
             'board'     => $board,
+            'calendar'  => $calendar,
             'date'      => $date,
             'slot'      => $slot,
             'modes'     => $service !== null ? \App\Services\Bookings\Integrations\DeliveryModes::offered((int) $listing['id'], $service) : [],

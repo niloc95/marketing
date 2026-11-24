@@ -15,6 +15,7 @@
  * @var array{id:int,name:string,address:string}|null  $place        the chosen time's place (0 = the main address)
  * @var string                         $today
  * @var array<string,mixed>|null       $board     FreeTimesBoard::week(): a week, one column per place (T33)
+ * @var array<string,mixed>|null       $calendar  PublicBookingService::month(): the free days of the month beside it
  * @var string|null                    $date
  * @var array<string,mixed>|null       $slot
  * @var list<array<string,mixed>>      $fields
@@ -171,13 +172,27 @@ if ($service !== null) {
                                 <?php if ($place !== null): ?><span class="block text-sm text-slate-500 dark:text-slate-400"><?= esc($place['name']) ?><?= $place['address'] !== '' ? ', ' . esc($place['address']) : '' ?></span><?php endif ?></span></span>
                         <a class="text-sm underline" href="<?= $link($chosen + ['from' => $date]) ?>#time">Change</a></p>
                 <?php else: ?>
-                    <?= view('book/_board', [
-                        'board'   => $board,
-                        'mode'    => 'link',
-                        'clock'   => $clock,
-                        'timeUrl' => static fn (string $d, string $start, int $placeId): string => $link($chosen + ['place' => $placeId, 'date' => $d, 'start' => $start]) . '#details',
-                        'weekUrl' => static fn (string $from): string => $link($chosen + ['from' => $from]) . '#time',
-                    ], ['saveData' => false]) ?>
+                    <div class="book-pick">
+                        <?php if ($calendar !== null): ?>
+                            <?= view('book/_month', [
+                                'calendar' => $calendar,
+                                'date'     => null,
+                                'range'    => [$board['from'], $board['to']],
+                                'timezone' => $tz,
+                                'dayUrl'   => static fn (string $d): string => $link($chosen + ['from' => $d]) . '#time',
+                                'monthUrl' => static fn (string $m): string => $link($chosen + ['month' => $m]) . '#time',
+                            ], ['saveData' => false]) ?>
+                        <?php endif ?>
+                        <div class="min-w-0">
+                            <?= view('book/_board', [
+                                'board'   => $board,
+                                'mode'    => 'link',
+                                'clock'   => $clock,
+                                'timeUrl' => static fn (string $d, string $start, int $placeId): string => $link($chosen + ['place' => $placeId, 'date' => $d, 'start' => $start]) . '#details',
+                                'weekUrl' => static fn (string $from): string => $link($chosen + ['from' => $from]) . '#time',
+                            ], ['saveData' => false]) ?>
+                        </div>
+                    </div>
                 <?php endif ?>
             </div>
         <?php endif ?>

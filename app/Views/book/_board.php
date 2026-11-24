@@ -23,7 +23,10 @@ $timeUrl  ??= null;
 $weekUrl  ??= null;
 $isLink   = ($mode ?? 'link') === 'link';
 $fmt      = static fn (string $d, string $f): string => (new DateTimeImmutable($d))->format($f);
-$range    = $board['from'] === $board['to'] ? $fmt($board['from'], 'D j M') : $fmt($board['from'], 'D j M') . ' to ' . $fmt($board['to'], 'D j M');
+// With the year: the year of the end only, unless the week crosses into a new one.
+$range    = $board['from'] === $board['to']
+    ? $fmt($board['from'], 'D j M Y')
+    : $fmt($board['from'], substr($board['from'], 0, 4) === substr($board['to'], 0, 4) ? 'D j M' : 'D j M Y') . ' to ' . $fmt($board['to'], 'D j M Y');
 $columns  = $board['places'];
 $cols     = count($columns);
 $step     = static function (?string $to, string $label, string $icon) use ($isLink, $weekUrl): string {
