@@ -18,8 +18,11 @@ if (empty($l['description']) && $extra === []) {
     return;
 }
 ?>
+<?php // profile-story (owner, 24 Nov 2026): each card's heading stays at the
+      // top of the screen while its card is read, and the next card's heading
+      // takes its place when the card ends. CSS sticky only, see directory.css. ?>
 <?php if (! empty($l['description'])): ?>
-<div class="panel mb-5">
+<div class="panel profile-story mb-5">
     <h2 class="panel-title"><?= esc($v['headings']['description']) ?></h2>
     <?php /* The only unescaped listing content on the site. listing_rich_text()
              runs it through RichText::sanitise() first — do not swap this for a
@@ -28,7 +31,7 @@ if (empty($l['description']) && $extra === []) {
 </div>
 <?php endif; ?>
 <?php foreach ($extra as $card): ?>
-<div class="panel mb-5">
+<div class="panel profile-story mb-5">
     <h2 class="panel-title"><?= esc((string) $card['heading']) ?></h2>
     <?php // Sanitised again at render, as the description is. ?>
     <div class="listing-prose text-sm text-slate-700 dark:text-slate-300"><?= listing_rich_text((string) $card['body']) ?></div>
