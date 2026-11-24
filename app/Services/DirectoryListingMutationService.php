@@ -363,6 +363,8 @@ class DirectoryListingMutationService
         return [
             'type'           => DirectoryListingModel::normaliseType($input['type'] ?? ''),
             'display_name'   => ListingText::tidyName((string) ($input['display_name'] ?? '')),
+            // The optional second title under the name. Empty is stored as null.
+            'headline'       => ListingText::tidyName($this->clean($input['headline'] ?? '')) ?: null,
             'contact_person' => $this->clean($input['contact_person'] ?? ''),
             'category_id'  => (int) ($input['category_id'] ?? 0) ?: null,
             'description'      => $description,
@@ -782,6 +784,8 @@ class DirectoryListingMutationService
                     $data[$field] = normalise_place($this->clean($input[$field]));
                 } elseif ($field === 'display_name') {
                     $data[$field] = ListingText::tidyName($this->clean($input[$field]));
+                } elseif ($field === 'headline') {
+                    $data[$field] = ListingText::tidyName($this->clean($input[$field])) ?: null;
                 } elseif (in_array($field, ['by_appointment', 'customer_location', 'show_address', 'service_areas'], true)) {
                     continue; // checkboxes and the service-area section — handled below
                 } elseif ($field === 'position') {
@@ -1094,6 +1098,7 @@ class DirectoryListingMutationService
      */
     private const MAX_LENGTHS = [
         'display_name'   => [200, 'business name'],
+        'headline'       => [ListingText::HEADLINE_MAX, 'second title'],
         'contact_person' => [150, 'contact person'],
         'title'          => [60, 'title'],
         'position'       => [40, 'position'],
@@ -1185,6 +1190,13 @@ class DirectoryListingMutationService
                     ListingText::NAME_MAX + 1
                 );
             }
+        }
+        // The optional second title: the name's house rules, judged only when
+        // new or changed (ListingText::headlineProblem()).
+        $headline = $this->clean($input['headline'] ?? '');
+        if ($headline !== '' && $changed('headline', $headline)
+            && ($problem = ListingText::headlineProblem($headline)) !== null) {
+            $errors['headline'] = $problem;
         }
         $email = trim((string) ($input['email'] ?? ''));
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {

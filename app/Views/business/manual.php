@@ -106,6 +106,7 @@ $n = 0;
         <h3>Details</h3>
         <ul>
             <li>Your name, the kind of profile, your main category and the contact person.</li>
+            <li>A second title, if you want one: a line under your name on your profile for your speciality, role or practice, up to <?= \App\Libraries\ListingText::HEADLINE_MAX ?> characters. Leave it blank and nothing shows.</li>
             <li>Phone numbers, WhatsApp (adds a <strong>Chat on WhatsApp</strong> button), website, and links to Facebook, Instagram, LinkedIn and TikTok.</li>
             <li>Your description: up to <?= number_format($limits['cardChars']) ?> characters, with headings, bold, lists and links.</li>
             <li>More description cards <?= $paidChip() ?>: up to <?= (int) $limits['cards'] ?> extra cards, each with its own heading, for your treatments, approach or anything that needs its own space.</li>

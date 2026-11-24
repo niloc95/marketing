@@ -30,7 +30,7 @@ class ProfileSections extends BaseConfig
             'title'  => 'Details',
             'fields' => [
                 'title', 'position', 'contact_person', 'type', 'category_id',
-                'display_name', 'email_public', 'phone', 'phone_alt', 'whatsapp', 'website',
+                'display_name', 'headline', 'email_public', 'phone', 'phone_alt', 'whatsapp', 'website',
                 'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
                 'description', 'sections', \App\Services\ListingSectionService::MARKER, 'specializations',
                 'marketing_present', 'marketing_opt_in',

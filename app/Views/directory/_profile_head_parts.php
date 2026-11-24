@@ -53,6 +53,10 @@
         <?php if (($typeBadge = listing_type_badge($l)) !== ''): ?><span class="ml-1 align-middle"><?= $typeBadge ?></span><?php endif; ?>
     <?php elseif ($piece === 'name'): ?>
         <h1 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl"><?= esc($name) ?></h1>
+        <?php // The optional second title (owner, 24 Nov 2026): nothing when blank. ?>
+        <?php if (($headline = trim((string) ($l['headline'] ?? ''))) !== ''): ?>
+            <p class="profile-headline mt-1 text-base font-semibold text-slate-600 dark:text-slate-300"><?= esc($headline) ?></p>
+        <?php endif; ?>
     <?php elseif ($piece === 'rating'): ?>
         <?php $headRating = rating_summary($l); ?>
         <?php if ($headRating !== ''): ?>

@@ -19,7 +19,7 @@ class DirectoryListingModel extends Model
     protected $allowedFields = [
         // Derived from country by DerivesCountryCode. Never OWNER_EDITABLE.
         'country_code',
-        'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
+        'type', 'display_name', 'headline', 'contact_person', 'title', 'position', 'category_id',
         'credentials', 'description', 'description_text', 'phone', 'phone_alt', 'whatsapp', 'email', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'location_name', 'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code', 'country',
@@ -135,7 +135,7 @@ class DirectoryListingModel extends Model
      * travels to its customers.
      */
     public const OWNER_EDITABLE = [
-        'type', 'display_name', 'contact_person', 'title', 'position', 'category_id',
+        'type', 'display_name', 'headline', 'contact_person', 'title', 'position', 'category_id',
         'description', 'phone', 'phone_alt', 'whatsapp', 'website',
         'social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok',
         'location_name', 'address_line', 'address_line_2', 'suburb', 'city', 'province', 'region', 'postal_code',
@@ -245,6 +245,7 @@ class DirectoryListingModel extends Model
         // so any update that resubmits an unchanged slug fails validation.
         'id'               => 'permit_empty|is_natural_no_zero',
         'display_name'     => 'required|min_length[2]|max_length[200]',
+        'headline'         => 'permit_empty|max_length[160]',
         // Structural ceilings on stored text, not the editorial one. The limit
         // owners actually feel (RichText::MAX_PLAIN_LENGTH) is enforced against
         // the plain text in DirectoryListingMutationService::validate(), so
