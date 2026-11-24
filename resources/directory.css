@@ -1982,23 +1982,13 @@
   .dark .prose-legal code { @apply bg-slate-800 text-slate-300; }
 
   /* --------------------------------------------------------------- profile */
-  /* Three parts — logo, name block, share icons — and on a phone they do not fit
-     on one row. flex-wrap was meant to handle that and could not: the name block
-     is flex-1 min-w-0, so it surrenders its width to the ~200px strip of share
-     buttons instead of pushing them onto a line of their own. At 390px that left
-     the name in a 90px column — "Skin & Aesthetics Clinic" set on three lines,
-     the business's own name on two, the town on three.
-
-     A grid says it outright. Logo and name take the first row; the share icons
-     get the next one to themselves. From sm up, where the row measurably fits,
-     the third column comes back and the header is what it always was. */
-  /* Since 24 Nov 2026 (owner) the logo sits on the right, above the share
-     icons, so the name and second title start at the left edge with nothing
-     beside them. Text first in the markup (read first), placed here: text in
-     the left column over both rows, logo top right, share icons under it.
-     On a phone the text takes the full width (a logo beside it squeezed the
-     name to one word a line), and the share icons and logo share the row
-     under it: icons left, logo right. */
+  /* Three parts: the name block, the logo and the share icons. Text first in
+     the markup (read first) and placed by the grid: since 24 Nov 2026 (owner)
+     the logo sits top right with the share icons under it, so the name and
+     second title start at the left edge with nothing beside them. On a phone
+     the text takes the full width (a logo beside it squeezed the name to one
+     word a line), and the share icons and logo share the row under it: icons
+     left, logo right. */
   .profile-head {
     @apply grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-4 sm:gap-y-3;
   }
@@ -2111,26 +2101,21 @@
      row (.panel-head, .logo-strip-head) rather than the h2. Offset under what
      stays on screen above it: the site header (117px on a phone, 109px from
      md) and, from lg, the sticky profile header too (--profile-head-h,
-     measured by directory.js). Opaque, so the text scrolls under it. */
+     measured by directory.js). Opaque, so the text scrolls under it.
+
+     From lg it lines up with the Contact card's title beside it: the right
+     column stops 1.5rem under the profile header and its card has 1.5rem of
+     padding, so that 18px title is centred about 60px down. This 24px heading
+     holds right under the profile header and carries that space as its own
+     opaque top padding (2.875rem, centre at 61px), so nothing shows through a
+     gap above it. The panels give up their top padding there (lg:pt-0) and
+     the first moves up 1.5rem, so before scrolling they line up too. */
   .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
-    @apply sticky top-[117px] z-10 -mx-1 bg-white px-1 py-2 md:top-[109px];
+    @apply sticky top-[117px] z-10 -mx-1 bg-white px-1 py-2 md:top-[109px]
+           lg:top-[calc(109px+var(--profile-head-h,14rem))] lg:pt-[2.875rem];
   }
   .dark .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
     @apply bg-surface-page;
-  }
-  @media (min-width: 1024px) {
-    /* In line with the Contact card's title (owner, 24 Nov 2026). The right
-       column stops 1.5rem under the profile header and its card has 1.5rem
-       of padding, so its 18px title is centred about 60px down. This 24px
-       heading holds right under the profile header and carries that space
-       as its own opaque top padding (2.875rem, centre at 61px), so text
-       scrolls out of sight under it and nothing shows through a gap. The
-       panel gives up its top padding to make room: at rest the space from
-       the divider to the heading stays about the same. */
-    .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
-      top: calc(109px + var(--profile-head-h, 14rem));
-      padding-top: 2.875rem;
-    }
   }
 
   /* The right column is where a visitor acts — call, find, check the hours —

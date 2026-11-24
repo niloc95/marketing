@@ -29,7 +29,7 @@ $city = trim((string) ($l['city'] ?? ''));
 // No suburb in the header (owner, 24 Nov 2026): "Durban, KwaZulu-Natal". The
 // full address is in the contact panel. The suburb stands in only when a
 // profile has no city.
-$headTown = trim((string) ($l['city'] ?? '')) ?: trim((string) ($l['suburb'] ?? ''));
+$headTown = $city ?: trim((string) ($l['suburb'] ?? ''));
 $place = trim(implode(', ', array_filter([
     $headTown, ($l['province'] ?? '') ?: ($l['region'] ?? ''),
 ])));
