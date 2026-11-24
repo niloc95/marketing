@@ -354,6 +354,7 @@ $routes->group('business/reviews', ['filter' => ['businessauth:owner', 'business
 $routes->group('business/profile', ['filter' => ['businessauth:owner', 'businesscan:profile.edit']], static function ($routes) {
     $routes->get('/', static fn () => redirect()->to(base_url('business/profile/details')));
     $routes->post('photo-delete/(:num)', 'Business\Profile::deletePhoto/$1');
+    $routes->post('logo-delete', 'Business\Profile::deleteLogo');
     $routes->post('brand-delete/(:num)', 'Business\Profile::deleteBrand/$1');
     $routes->get('(:segment)', 'Business\Profile::section/$1');
     $routes->post('(:segment)/preview', 'Business\Profile::preview/$1');
@@ -495,6 +496,7 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->post('delete/(:num)', 'Admin::remove/$1');
     $routes->post('restore/(:num)', 'Admin::restore/$1');
     $routes->post('photo-delete/(:num)', 'Admin::deletePhoto/$1');
+    $routes->post('logo-delete/(:num)', 'Admin::deleteLogo/$1');
     $routes->post('brand-delete/(:num)', 'Admin::deleteBrand/$1');
     $routes->post('purge/(:num)', 'Admin::purge/$1');
     // For an owner whose verify link expired or never arrived. Inside this

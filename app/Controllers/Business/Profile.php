@@ -204,6 +204,24 @@ class Profile extends BaseController
             : redirect()->to($back)->with('success', 'Photo removed.');
     }
 
+    /** Remove this business's logo (HandlesListingUploads::removeLogo()). */
+    public function deleteLogo()
+    {
+        $ajax    = $this->request->isAJAX();
+        $listing = service('businessContext')->listing();
+        $back    = base_url('business/profile/photos');
+
+        if (! $this->removeLogo((int) $listing['id'])) {
+            return $ajax
+                ? $this->photoDeleteJson(false, 'There is no logo to remove.', 404)
+                : redirect()->to($back)->with('error', 'There is no logo to remove.');
+        }
+
+        return $ajax
+            ? $this->photoDeleteJson(true, 'Logo removed.', 200)
+            : redirect()->to($back)->with('success', 'Logo removed.');
+    }
+
     /** Remove one brand logo of this business. */
     public function deleteBrand(int $brandId)
     {

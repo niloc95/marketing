@@ -204,6 +204,7 @@ if (! is_array($old['hours'] ?? null)) {
                 'extrasHidden' => $extrasHidden,
                 'photos'       => $photos,
                 'deleteBase'   => base_url('admin/photo-delete'),
+                'logoDeleteUrl' => isset($base['id']) ? base_url('admin/logo-delete/' . (int) $base['id']) : '',
                 'brands'       => $brands ?? [],
                 'brandDeleteBase' => base_url('admin/brand-delete'),
                 'menuFiles'    => $menuFiles ?? [],

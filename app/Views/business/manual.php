@@ -133,7 +133,7 @@ $n = 0;
 
         <h3>Photos<?= $isApp ? '' : ' and video' ?></h3>
         <ul>
-            <li>Your logo and up to <?= (int) $limits['gallery'] ?> photos. The first photo leads your profile.</li>
+            <li>Your logo and up to <?= (int) $limits['gallery'] ?> photos. The first photo leads your profile. Choosing a new logo replaces the old one; <strong>Remove logo</strong> takes it off your profile. Your profile needs a logo or at least one photo before you can save it.</li>
             <li>Brands we carry: up to <?= (int) $limits['brands'] ?> brand names and logos.</li>
             <?php if (! $isApp): ?><li>Video <?= $paidChip() ?>: a YouTube or Vimeo link, shown first in your photos.</li><?php endif; ?>
         </ul>
