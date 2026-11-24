@@ -2079,9 +2079,11 @@
      children only — a branch inside _location_panel re-renders the contact, map
      and hours panels, and those stay contained cards within its section. */
   .profile-grid > div:first-child > :is(.panel, .branch-section) {
-    @apply mb-0 rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-8;
+    @apply mb-0 rounded-none border-0 border-t border-slate-200 bg-transparent px-0 py-8 lg:pt-0;
   }
-  .profile-grid > div:first-child > :first-child { @apply border-t-0 pt-0; }
+  /* lg:-mt-6: the first heading starts in line with the Contact card's title
+     beside it (its 2.875rem top padding, less 1.5rem, centres it there). */
+  .profile-grid > div:first-child > :first-child { @apply border-t-0 pt-0 lg:-mt-6; }
   /* Descendant, not child: the reviews panel sets its h3 in a row beside the
      rating. Each of these panels has exactly one h3. */
   /* Profile section titles (owner, 18 Nov 2026): one style for every title,
@@ -2117,8 +2119,17 @@
     @apply bg-surface-page;
   }
   @media (min-width: 1024px) {
+    /* In line with the Contact card's title (owner, 24 Nov 2026). The right
+       column stops 1.5rem under the profile header and its card has 1.5rem
+       of padding, so its 18px title is centred about 60px down. This 24px
+       heading holds right under the profile header and carries that space
+       as its own opaque top padding (2.875rem, centre at 61px), so text
+       scrolls out of sight under it and nothing shows through a gap. The
+       panel gives up its top padding to make room: at rest the space from
+       the divider to the heading stays about the same. */
     .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
       top: calc(109px + var(--profile-head-h, 14rem));
+      padding-top: 2.875rem;
     }
   }
 
