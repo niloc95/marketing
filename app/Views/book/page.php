@@ -64,7 +64,6 @@ $whoParam = $who === '' ? null : $who;
 // Everything chosen so far, for the links of the later steps. The place
 // comes with the time a customer picks (T33), never before.
 $chosen = $service !== null ? ['service' => $service['id'], 'provider' => $whoParam] : [];
-$step   = 1;
 
 // The appointment summary (book/_summary.php, the same card as /business),
 // filled in as the steps are: each step is its own page load.
@@ -112,7 +111,7 @@ if ($service !== null) {
         <div class="min-w-0">
         <?php // 1. Service ?>
         <div class="panel mb-4">
-            <h2 class="mb-3 font-bold">1. Service</h2>
+            <h2 class="book-step-title">Service</h2>
             <?php if ($service !== null && count($services) > 1): ?>
                 <p class="flex flex-wrap items-center gap-3"><strong><?= esc((string) $service['name']) ?></strong>
                     <span class="text-sm text-slate-500"><?= (int) $service['duration_min'] ?> min<?= $price($service) !== '' ? ', ' . esc($price($service)) : '' ?><?= $depositText($service) !== '' ? ', ' . esc($depositText($service)) : '' ?></span>
@@ -146,7 +145,7 @@ if ($service !== null) {
         <?php // 2. Who ?>
         <?php if ($service !== null && count($providers) > 1): ?>
             <div class="panel mb-4" id="with">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. With</h2>
+                <h2 class="book-step-title">With</h2>
                 <?php if ($who !== ''): ?>
                     <p class="flex flex-wrap items-center gap-3"><strong><?= $provider !== null ? esc((string) $provider['name']) : 'Anyone available' ?></strong>
                         <a class="text-sm underline" href="<?= $link(['service' => $service['id']]) ?>#with">Change</a></p>
@@ -167,12 +166,12 @@ if ($service !== null) {
         <?php // 3. When and where: a week of free times, one column per place (book/_board.php, shared with /business) ?>
         <?php if ($service !== null && $placeOptions === []): ?>
             <div class="panel mb-4" id="time">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
+                <h2 class="book-step-title">Choose a time</h2>
                 <p class="text-sm">This service has no times online at the moment. Please contact <?= esc($listing['display_name']) ?> to book it.</p>
             </div>
         <?php elseif ($board !== null): ?>
             <div class="panel mb-4" id="time">
-                <h2 class="mb-3 font-bold"><?= ++$step ?>. Choose a time</h2>
+                <h2 class="book-step-title">Choose a time</h2>
                 <?php if ($slot !== null): ?>
                     <p class="flex flex-wrap items-start gap-3">
                         <span class="flex items-start gap-2"><?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0 text-slate-400') ?>
@@ -214,7 +213,7 @@ if ($service !== null) {
                 <input type="hidden" name="provider_id" value="<?= $provider !== null ? (int) $provider['id'] : 0 ?>">
                 <?php if ($place !== null): ?><input type="hidden" name="place" value="<?= (int) $place['id'] ?>"><?php endif ?>
                 <input type="hidden" name="start" value="<?= esc($slot['start'], 'attr') ?>">
-                <h2 class="mb-4 font-bold"><?= ++$step ?>. Your details</h2>
+                <h2 class="book-step-title">Your details</h2>
                 <?php if (count($modes) > 1): ?>
                     <fieldset class="field">
                         <legend class="mb-1 text-sm font-semibold">How would you like it?</legend>

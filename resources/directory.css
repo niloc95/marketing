@@ -3790,6 +3790,9 @@
   .book-times .btn { @apply justify-center; }
   .book-cal .avail-grid { @apply gap-1.5 text-sm; }
   .book-cal .avail-day  { @apply min-h-11 rounded-lg; }
+  /* The step titles on the public booking page (Service, With, Choose a time, Your details). */
+  .book-step-title { @apply mb-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl; }
+  .dark .book-step-title { @apply text-white; }
   /* Where each service is given, under its name in the service list. */
   .book-service-places { @apply mt-1 flex flex-col gap-0.5; }
   .book-service-place  { @apply flex items-start gap-1.5 text-xs font-normal text-brand-ocean; }
