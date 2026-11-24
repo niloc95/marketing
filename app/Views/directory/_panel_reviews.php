@@ -50,7 +50,8 @@ $date   = static function (?string $d): string {
 };
 ?>
 <div class="panel mb-5" id="reviews">
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <?php // panel-head: the heading row holds at the top while reviews are read (directory.css). ?>
+    <div class="panel-head flex flex-wrap items-center justify-between gap-2">
         <h2 class="panel-title">Reviews</h2>
         <?= rating_summary($l) ?>
     </div>

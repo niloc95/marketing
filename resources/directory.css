@@ -2099,19 +2099,25 @@
   .dark .profile-grid > div:first-child > .branch-section > .branch-section-title { @apply text-white; }
   .dark .profile-grid > div:first-child > :is(.panel, .branch-section) { @apply border-slate-800 bg-transparent; }
 
-  /* Description cards (owner, 24 Nov 2026): a card's heading holds at the
-     top of the screen while that card is read, and the next card's heading
-     takes its place as the card ends. Plain position: sticky, which cannot
-     leave its own card, so no script decides the handover. Offset under what
+  /* Section headings hold while their section is read (owner, 24 Nov 2026:
+     the description cards first, then every section of the main column:
+     practitioners, services, features, reviews and the rest). A heading stays
+     at the top of the screen while its section scrolls, and the next one takes
+     its place as the section ends. Plain position: sticky, which cannot leave
+     its own panel, so no script decides the handover; it must be a direct
+     child of the panel, which is why Reviews and Brands stick their heading
+     row (.panel-head, .logo-strip-head) rather than the h2. Offset under what
      stays on screen above it: the site header (117px on a phone, 109px from
      md) and, from lg, the sticky profile header too (--profile-head-h,
      measured by directory.js). Opaque, so the text scrolls under it. */
-  .profile-grid > div:first-child > .profile-story > .panel-title {
+  .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
     @apply sticky top-[117px] z-10 -mx-1 bg-white px-1 py-2 md:top-[109px];
   }
-  .dark .profile-grid > div:first-child > .profile-story > .panel-title { @apply bg-surface-page; }
+  .dark .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
+    @apply bg-surface-page;
+  }
   @media (min-width: 1024px) {
-    .profile-grid > div:first-child > .profile-story > .panel-title {
+    .profile-grid > div:first-child > :is(.panel, .branch-section) > :is(.panel-title, .branch-section-title, .panel-head, .logo-strip-head) {
       top: calc(109px + var(--profile-head-h, 14rem));
     }
   }
