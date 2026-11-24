@@ -3817,7 +3817,18 @@
   .dark .free-times-summary { @apply border-primary-300/40 bg-primary-500/15 text-white; }
   /* The Book form: one column, or when (left) and customer (right) from lg up. */
   .book-layout        { @apply grid gap-4; }
-  .book-layout-wide   { @apply lg:grid-cols-2 lg:gap-8; }
+  .book-layout-wide   { @apply lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-8; }
+  /* The /business Book forms in the public booking page's steps (free-times.js). */
+  .book-step + .book-step { @apply mt-6 border-t border-slate-100 pt-6; }
+  .dark .book-step + .book-step { @apply border-slate-800; }
+  .book-step-chosen   { @apply flex flex-wrap items-center gap-3 font-semibold; }
+  .book-step-list[hidden], .book-step [hidden] { @apply hidden; }
+  .book-service-row   { @apply flex w-full items-start gap-3 py-3 text-left hover:text-primary-600; }
+  .book-service-row[aria-pressed='true'] { @apply text-brand-ocean; }
+  .book-service-desc  { @apply line-clamp-2 block text-sm font-normal text-slate-500; }
+  .book-who[aria-pressed='true'] { @apply border-brand-ocean ring-1 ring-brand-ocean; }
+  .book-form-when .book-pick { @apply xl:grid-cols-1; }
+  .book-form-when .book-pick .board-cols-3 { @apply xl:grid-cols-2; }
   .book-layout-wide .book-form-who { @apply lg:border-l lg:border-slate-200 lg:pl-8; }
   .dark .book-layout-wide .book-form-who { @apply lg:border-slate-700; }
   .book-form-who > * + *   { @apply mt-4; }

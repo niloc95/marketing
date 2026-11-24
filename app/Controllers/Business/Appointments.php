@@ -64,7 +64,17 @@ class Appointments extends BaseController
         if ($serviceId <= 0 || $providerId <= 0 || ($scope !== null && ! in_array($providerId, $scope, true))) {
             return $this->json(['ok' => false, 'error' => AppointmentService::PROBLEMS['not_offered']]);
         }
-        $board = (new FreeTimesBoard($context->listing(), false))->week($serviceId, $providerId, (string) $this->request->getGet('from'));
+        // The month beside the week, as on the public booking page: ?month=
+        // alone opens that month's first free week; otherwise the month
+        // follows the week asked for.
+        $free  = new FreeTimesBoard($context->listing(), false);
+        $from  = (string) $this->request->getGet('from');
+        $month = (string) $this->request->getGet('month');
+        $calendar = $free->month($serviceId, $providerId, $month !== '' ? $month : ($from !== '' ? substr($from, 0, 7) : null));
+        if ($month !== '' && $from === '') {
+            $from = $calendar['free'][0] ?? $calendar['month'] . '-01';
+        }
+        $board  = $free->week($serviceId, $providerId, $from);
         $twelve = BookingSettings::for($context->listingId())->get('localization.time_format') === '12h';
 
         return $this->json(['ok' => true, 'data' => [
@@ -73,6 +83,13 @@ class Appointments extends BaseController
                 'board' => $board,
                 'mode'  => 'button',
                 'clock' => $twelve ? static fn (string $t): string => (new \DateTimeImmutable('2000-01-01 ' . $t))->format('g:ia') : null,
+            ], ['saveData' => false]),
+            'calendar' => view('book/_month', [
+                'calendar' => $calendar,
+                'date'     => null,
+                'range'    => [$board['from'], $board['to']],
+                'timezone' => new \DateTimeZone($context->timezone()),
+                'mode'     => 'button',
             ], ['saveData' => false]),
         ]]);
     }
