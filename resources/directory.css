@@ -2043,6 +2043,9 @@
      business's mark, beside its name. */
   .profile-head > .avatar       { @apply h-16 w-16 text-lg sm:h-20 sm:w-20 sm:text-xl; }
   .profile-head > .avatar-logo  { @apply w-auto min-w-16 max-w-32 p-1.5 sm:min-w-20 sm:max-w-40; }
+  /* No white box behind the profile header's logo in dark mode (owner,
+     24 Nov 2026): the logo sits straight on the page. Cards keep theirs. */
+  .dark .profile-head > .avatar-logo { @apply bg-transparent; }
   /* The business's name in the home page's statement type. One class plus an
      element outranks the text-2xl / sm:text-3xl / text-slate-900 utilities the
      h1 carries; dark mode's dark:text-white still wins, which is the point. */
