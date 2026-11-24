@@ -120,7 +120,6 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                 <button type="button" class="btn btn-primary btn-xs" data-d-reschedule><?= lucide('calendar-days', 'h-4 w-4') ?> Reschedule</button>
                 <a class="btn btn-ghost btn-xs" href="#" data-d-customer><?= lucide('user', 'h-4 w-4') ?> Customer</a>
                 <a class="btn btn-ghost btn-xs" href="#" data-d-call><?= lucide('phone', 'h-4 w-4') ?> Call</a>
-                <a class="btn btn-ghost btn-xs" href="#" data-d-mail><?= lucide('mail', 'h-4 w-4') ?> Email</a>
                 <a class="btn btn-ghost btn-xs" href="#" target="_blank" rel="noopener" data-d-whatsapp><?= lucide('message-circle', 'h-4 w-4') ?> WhatsApp</a>
             </div>
             <p class="appt-note" data-d-move-note hidden></p>

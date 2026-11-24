@@ -81,7 +81,6 @@ export function initDetails(root, scheduler) {
     q('[data-d-fields-box]').hidden = !fields.children.length;
     link('[data-d-customer]', a.customer_hash ? `${root.dataset.customerPage}/${a.customer_hash}` : '');
     link('[data-d-call]', a.phone ? `tel:${a.phone.replace(/[^\d+]/g, '')}` : '');
-    link('[data-d-mail]', a.email ? `mailto:${a.email}` : '');
     link('[data-d-whatsapp]', a.whatsapp_url);
     q('[data-d-status]').value = a.status;
     q('[data-d-notes]').value = a.notes || '';
