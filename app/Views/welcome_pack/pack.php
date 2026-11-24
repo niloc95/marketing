@@ -23,6 +23,7 @@ $name     = (string) ($l['display_name'] ?? '');
 $category = (string) ($l['category']['name'] ?? '');
 $place    = trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])));
 $planName = $verified ? 'Verified' : 'Plus';
+$headline = trim((string) ($l['headline'] ?? ''));
 
 $addressPublic = listing_address_public($l);
 $address = array_values(array_filter(array_map('trim', [
@@ -187,6 +188,7 @@ $brand = static function (bool $onDark = false) use ($logo): string {
     <div class="cover-band" style="margin-top:5mm">
         <div class="eyebrow">Welcome pack</div>
         <h1><?= esc($name) ?></h1>
+        <?php if ($headline !== ''): ?><div class="sub"><?= esc($headline) ?></div><?php endif; ?>
         <div class="sub"><?= esc(implode(' · ', array_filter([$category, $place]))) ?></div>
     </div>
 
@@ -231,6 +233,7 @@ $brand = static function (bool $onDark = false) use ($logo): string {
             <td>
                 <div class="eyebrow"><?= $verified ? 'Verified profile' : 'Plus profile' ?></div>
                 <h1 style="font-size:20pt"><?= esc($name) ?></h1>
+                <?php if ($headline !== ''): ?><div style="font-size:11pt;font-weight:bold"><?= esc($headline) ?></div><?php endif; ?>
                 <div class="muted" style="font-size:10.5pt"><?= esc(implode(' · ', array_filter([$category, $place]))) ?></div>
             </td>
             <td class="qr-box">

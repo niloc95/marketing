@@ -14,6 +14,7 @@
  * @var string   $catSlug
  * @var string   $province
  * @var string   $place
+ * @var string   $headTown the city (the suburb only when there is no city)
  * @var list<array<string,mixed>>    $openJobs  live vacancies, newest first
  * @var App\Services\JobBoardService $jobSvc
  */
@@ -53,6 +54,10 @@
         <?php if (($typeBadge = listing_type_badge($l)) !== ''): ?><span class="ml-1 align-middle"><?= $typeBadge ?></span><?php endif; ?>
     <?php elseif ($piece === 'name'): ?>
         <h1 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl"><?= esc($name) ?></h1>
+        <?php // The optional second title (owner, 24 Nov 2026): nothing when blank. ?>
+        <?php if (($headline = trim((string) ($l['headline'] ?? ''))) !== ''): ?>
+            <p class="profile-headline mt-1 text-base font-semibold text-slate-600 dark:text-slate-300"><?= esc($headline) ?></p>
+        <?php endif; ?>
     <?php elseif ($piece === 'rating'): ?>
         <?php $headRating = rating_summary($l); ?>
         <?php if ($headRating !== ''): ?>
@@ -68,7 +73,7 @@
                 <?= lucide('map-pin', 'mt-0.5 h-4 w-4 shrink-0') ?>
                 <span>
                 <?php if ($catSlug !== '' && $province !== ''): ?>
-                    <?= esc(trim(implode(', ', array_filter([$l['suburb'] ?? '', $l['city'] ?? ''])))) ?><?= ($l['suburb'] ?? '') || ($l['city'] ?? '') ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province))) ?>"><?= esc($province) ?></a>
+                    <?= esc($headTown) ?><?= $headTown !== '' ? ', ' : '' ?><a class="hover:text-primary-500 dark:hover:text-primary-300 hover:underline" href="<?= esc(base_url('directory/' . $catSlug . '/' . slugify($province))) ?>"><?= esc($province) ?></a>
                 <?php else: ?>
                     <?= esc($place) ?>
                 <?php endif; ?>

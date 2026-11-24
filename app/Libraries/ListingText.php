@@ -28,6 +28,12 @@ final class ListingText
     /** A new or changed name longer than this is refused. Stored longer names stay valid while unchanged. */
     public const NAME_MAX = 100;
 
+    /**
+     * The optional second title under the name ("Specialist Orthopaedic
+     * Surgeon in Durban, Partner at BMR Orthopaedics"). The column is 160.
+     */
+    public const HEADLINE_MAX = 160;
+
     /** Plain-text floor for the now-compulsory description. */
     public const DESCRIPTION_MIN = 50;
 
@@ -45,7 +51,17 @@ final class ListingText
      * ordinary business-name punctuation. Anything else — emoji, arrows,
      * brackets, enclosed digits, decorative quotes — is refused.
      */
-    private const NAME_ALLOWED = "/^[\\p{L}\\p{M}\\p{Nd} &'\\x{2019}\\x{2013}.,\\-()\\/+!:@]+$/u";
+    private const NAME_CHARS   = "\\p{L}\\p{M}\\p{Nd} &'\\x{2019}\\x{2013}.,\\-()\\/+!:@";
+    private const NAME_ALLOWED = '/^[' . self::NAME_CHARS . ']+$/u';
+
+    /** The name's characters plus the middle dot and the bar, for the second title. */
+    private const HEADLINE_ALLOWED = '/^[' . self::NAME_CHARS . '\\x{00B7}|]+$/u';
+
+    /** A web or email address in a name or second title. */
+    private const LINK_PATTERN = '#https?://|www\.|\.(co\.za|com|net|org)\b|@\S+\.\S#i';
+
+    /** This many digits in a name or second title reads as a phone number. */
+    private const PHONE_DIGITS = 7;
 
     /** A person's name: letters, spaces, apostrophes, hyphens, full stops. */
     public const PERSON_ALLOWED = "/^[\\p{L}\\p{M} '\\x{2019}.\\-]+$/u";
@@ -74,10 +90,10 @@ final class ListingText
             return null; // "required" is validate()'s message, not ours
         }
 
-        if (preg_match('#https?://|www\.|\.(co\.za|com|net|org)\b|@\S+\.\S#i', $name) === 1) {
+        if (preg_match(self::LINK_PATTERN, $name) === 1) {
             return 'Please leave website and email addresses out of your business name. There are fields for them below.';
         }
-        if (preg_match_all('/\d/u', self::nfkc($name)) >= 7) {
+        if (preg_match_all('/\d/u', self::nfkc($name)) >= self::PHONE_DIGITS) {
             return 'Please put your phone number in the Phone field, not in your business name.';
         }
         if (preg_match(self::NAME_ALLOWED, $name) !== 1) {
@@ -85,6 +101,33 @@ final class ListingText
         }
         if (substr_count($name, ',') > self::NAME_MAX_COMMAS) {
             return 'Please list the areas you serve in your description, not in your business name.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Why $headline cannot be the profile's second title, or null when it can.
+     *
+     * The name's rules (no links, phone numbers, emoji or symbols), worded for
+     * this field, plus the middle dot and the bar people use to join two
+     * roles ("Surgeon · Partner at BMR"), and no limit on commas.
+     */
+    public static function headlineProblem(string $headline): ?string
+    {
+        $headline = self::collapse($headline);
+        if ($headline === '') {
+            return null;
+        }
+
+        if (preg_match(self::LINK_PATTERN, $headline) === 1) {
+            return 'Please leave website and email addresses out of your second title. There are fields for them.';
+        }
+        if (preg_match_all('/\d/u', self::nfkc($headline)) >= self::PHONE_DIGITS) {
+            return 'Please put your phone number in the Phone field, not in your second title.';
+        }
+        if (preg_match(self::HEADLINE_ALLOWED, $headline) !== 1) {
+            return 'Please use only letters, numbers and ordinary punctuation in your second title, no symbols or emoji.';
         }
 
         return null;

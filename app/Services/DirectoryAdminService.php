@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Libraries\ListingGeocoder;
+use App\Libraries\ListingText;
 use App\Libraries\RichText;
 use App\Models\DirectoryCategoryGroupModel;
 use App\Models\DirectoryCategoryModel;
@@ -174,6 +175,7 @@ class DirectoryAdminService
         // a future API call or a half-submitted form must not be able to wipe a
         // listing's contact details.
         $text = [
+            'headline'       => 'headline',
             'contact_person' => null,
             'title'          => null,
             'position'       => null,
@@ -278,6 +280,20 @@ class DirectoryAdminService
                         'message' => 'Please correct the highlighted fields.',
                     ];
                 }
+                continue;
+            }
+
+            if ($mode === 'headline') {
+                // Optional; only the column's length is held to here, like the
+                // other admin text. Empty is stored as null.
+                if (mb_strlen($value) > ListingText::HEADLINE_MAX) {
+                    return [
+                        'ok'      => false,
+                        'errors'  => [$field => sprintf('Please keep the second title to %d characters.', ListingText::HEADLINE_MAX)],
+                        'message' => 'Please correct the highlighted fields.',
+                    ];
+                }
+                $data[$field] = ListingText::tidyName($value) ?: null;
                 continue;
             }
 

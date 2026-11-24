@@ -300,6 +300,15 @@ $in      = static fn (string ...$keys): bool => $section === null || in_array($s
     </div>
 </div>
 
+<?php // Optional second title under the name on the profile (owner, 24 Nov
+      // 2026). Blank shows nothing; rules in ListingText::headlineProblem(). ?>
+<div class="field">
+    <label for="field-headline">Second title <span class="font-normal text-slate-500 dark:text-slate-400">(optional)</span></label>
+    <input type="text" id="field-headline" name="headline" value="<?= esc($v('headline'), 'attr') ?>" maxlength="<?= \App\Libraries\ListingText::HEADLINE_MAX ?>" placeholder="For example Specialist Orthopaedic Surgeon, Partner at City Orthopaedics">
+    <div class="hint">One line shown under your name on your profile: your speciality, role or practice. Leave blank to show nothing.</div>
+    <?php if ($err('headline')): ?><div class="err"><?= esc($err('headline')) ?></div><?php endif; ?>
+</div>
+
 <div class="form-row">
     <div class="field">
         <label for="field-phone">Phone</label>
