@@ -3828,6 +3828,8 @@
   .book-service-desc  { @apply line-clamp-2 block text-sm font-normal text-slate-500; }
   .book-who[aria-pressed='true'] { @apply border-brand-ocean ring-1 ring-brand-ocean; }
   .book-form-when .book-pick { @apply xl:grid-cols-1; }
+  [data-free-lists] { @apply transition-opacity duration-150; }
+  [data-free-lists][aria-busy='true'] { @apply opacity-60 delay-200; }
   .book-form-when .book-pick .board-cols-3 { @apply xl:grid-cols-2; }
   .book-layout-wide .book-form-who { @apply lg:border-l lg:border-slate-200 lg:pl-8; }
   .dark .book-layout-wide .book-form-who { @apply lg:border-slate-700; }

@@ -198,15 +198,20 @@ export function initFreeTimes(form, url) {
     const start = from || (month ? '' : field('date').value);
     if (start) params.set('from', start);
     if (month) params.set('month', month);
-    boardBox.replaceChildren(el('p', 'free-times-empty', MSG.finding));
+    // Keep the week and month on screen (dimmed) while the next one loads,
+    // so the form does not shrink and jump; "Finding" only when empty.
+    const hasBoard = Boolean(boardBox.querySelector('[data-board]'));
+    if (hasBoard) lists.setAttribute('aria-busy', 'true');
+    else boardBox.replaceChildren(el('p', 'free-times-empty', MSG.finding));
     let body;
     try {
       body = await getJson(`${url}?${params}`);
     } catch {
-      if (mine === ask) boardBox.replaceChildren(el('p', 'free-times-empty', MSG.failed));
+      if (mine === ask) { lists.removeAttribute('aria-busy'); boardBox.replaceChildren(el('p', 'free-times-empty', MSG.failed)); }
       return;
     }
     if (mine !== ask) return; // A newer question was asked meanwhile.
+    lists.removeAttribute('aria-busy');
     if (!body.ok) {
       boardBox.replaceChildren(el('p', 'free-times-empty', body.error || MSG.failed));
       summarise();

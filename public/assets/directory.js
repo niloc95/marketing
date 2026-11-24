@@ -6135,7 +6135,10 @@
       }
     }
 
-    function load(href, push) {
+    // stay: a link that moves within its own step (a day, a month, Earlier,
+    // Later) keeps the page exactly where it is; only a link to another
+    // step (a time to Your details) brings that step into view.
+    function load(href, push, stay) {
       var url = new URL(href, location.href);
       if (pending) pending.abort();
       var ctrl = pending = window.AbortController ? new AbortController() : null;
@@ -6154,7 +6157,7 @@
           now.replaceWith(document.importNode(fresh, true));
           if (doc.title) document.title = doc.title;
           if (push) window.history.pushState({ bookSteps: true }, '', url.href);
-          bring(url.hash);
+          if (!stay) bring(url.hash);
         })
         .catch(function (e) {
           if (e && e.name === 'AbortError') return;
@@ -6171,11 +6174,12 @@
       var url = new URL(link.href, location.href);
       if (url.origin !== location.origin || url.pathname !== location.pathname) return;
       e.preventDefault();
-      load(url.href, true);
+      var own = url.hash && link.closest(url.hash.replace(/[^#\w-]/g, ''));
+      load(url.href, true, !!own);
     });
 
     window.addEventListener('popstate', function (e) {
-      if (e.state && e.state.bookSteps) load(location.href, false);
+      if (e.state && e.state.bookSteps) load(location.href, false, true);
     });
   })();
 })();
