@@ -103,7 +103,7 @@ if ($service !== null) {
         <h1 class="mb-1 text-2xl font-extrabold text-slate-900 dark:text-white">Book online</h1>
         <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Times are in <?= esc($timezone) ?>.</p>
 
-        <div class="book-page<?= $summary !== [] ? ' has-summary' : '' ?>">
+        <div class="book-page<?= $summary !== [] ? ' has-summary' : '' ?>" id="book-steps" data-book-steps>
         <?php if ($summary !== []): ?>
             <aside class="book-page-summary"><?= view('book/_summary', ['rows' => $summary], ['saveData' => false]) ?></aside>
         <?php endif ?>

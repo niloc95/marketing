@@ -70,7 +70,7 @@ $tzDay = static fn (string $d): string => (new DateTimeImmutable($d, $timezone))
         <?php endif ?>
 
         <?php if (in_array($a['status'], AppointmentStatus::UPCOMING, true)): ?>
-            <div class="panel mt-6" id="change">
+            <div class="panel mt-6" id="change" data-book-steps>
                 <h2 class="mb-2 font-bold">Change your booking</h2>
                 <?php if ($moveRefusal !== null): ?>
                     <p class="text-sm"><?= esc($moveRefusal) ?></p>

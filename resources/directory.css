@@ -3823,6 +3823,8 @@
      (above them on a phone), sticky while the steps scroll. */
   .book-page.has-summary { @apply grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6; }
   .book-page-summary  { @apply lg:sticky lg:top-24 lg:order-last; }
+  /* While a step loads in place (directory.js): dim only when it is slow, so a quick answer shows no flicker. */
+  [data-book-steps][aria-busy="true"] { @apply opacity-60 transition-opacity delay-200 duration-150; }
   .book-actions       { @apply mt-5 flex gap-3 border-t border-slate-200 pt-4; }
   .dark .book-actions { @apply border-slate-700; }
   .free-time          { @apply flex flex-col items-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-left text-sm hover:border-brand-ocean; }
