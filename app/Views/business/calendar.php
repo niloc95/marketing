@@ -120,9 +120,29 @@ $views = ['day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'agenda' => 'Lis
                 <button type="button" class="btn btn-primary btn-xs" data-d-reschedule><?= lucide('calendar-days', 'h-4 w-4') ?> Reschedule</button>
                 <a class="btn btn-ghost btn-xs" href="#" data-d-customer><?= lucide('user', 'h-4 w-4') ?> Customer</a>
                 <a class="btn btn-ghost btn-xs" href="#" data-d-call><?= lucide('phone', 'h-4 w-4') ?> Call</a>
+                <button type="button" class="btn btn-ghost btn-xs" aria-expanded="false" aria-controls="cal-d-compose" data-d-email><?= lucide('mail', 'h-4 w-4') ?> Email <?= lucide('chevron-down', 'appt-chevron h-4 w-4') ?></button>
                 <a class="btn btn-ghost btn-xs" href="#" target="_blank" rel="noopener" data-d-whatsapp><?= lucide('message-circle', 'h-4 w-4') ?> WhatsApp</a>
             </div>
             <p class="appt-note" data-d-move-note hidden></p>
+
+            <?php // Email the customer: rolls down under the actions. Sent by
+                  // bookings:dispatch in the standard booking email, details added. ?>
+            <form class="appt-compose" id="cal-d-compose" data-d-compose hidden novalidate>
+                <p class="appt-compose-to"><span class="appt-label">To</span> <span data-d-compose-to></span></p>
+                <div class="field mb-0 mt-3">
+                    <label for="cal-d-subject">Subject</label>
+                    <input id="cal-d-subject" type="text" maxlength="<?= \App\Services\Bookings\AppointmentService::EMAIL_SUBJECT_MAX ?>" required data-d-subject>
+                </div>
+                <div class="field mb-0 mt-3">
+                    <label for="cal-d-message">Message</label>
+                    <textarea id="cal-d-message" rows="5" maxlength="<?= \App\Services\Bookings\AppointmentService::EMAIL_BODY_MAX ?>" required data-d-message></textarea>
+                </div>
+                <p class="appt-hint">The appointment details go under your message, in your usual booking email. Replies come to you.</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary btn-xs" data-d-compose-send>Send email</button>
+                    <button type="button" class="btn btn-ghost btn-xs" data-d-compose-cancel>Cancel</button>
+                </div>
+            </form>
 
             <dl class="appt-card appt-facts">
                 <div class="appt-fact"><dt><?= lucide('clock', 'h-4 w-4') ?><span>When</span></dt><dd data-d="when"></dd></div>

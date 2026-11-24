@@ -33,6 +33,19 @@ class BookingNotifications extends BaseConfig
         'no_show'     => 'Marked as a no show',
     ];
 
+    /**
+     * A message the business writes to the customer about an appointment
+     * (Email in the calendar's details). Not an event with rules: it is sent
+     * because someone wrote it, in the standard booking email.
+     */
+    public const MESSAGE = 'message';
+
+    /** What a queue or log row's event is called on screen. */
+    public static function label(string $event): string
+    {
+        return self::EVENTS[$event] ?? ($event === self::MESSAGE ? 'Message from you' : $event);
+    }
+
     /** Events the team hears about, when the customer did it (booked, moved, cancelled online). */
     public const TEAM_EVENTS = ['pending', 'confirmed', 'rescheduled', 'cancelled'];
 

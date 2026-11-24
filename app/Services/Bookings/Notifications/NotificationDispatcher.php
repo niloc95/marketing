@@ -162,7 +162,9 @@ class NotificationDispatcher
             }
         }
 
-        $template = $team ? null : $templates->get($event, $channel);
+        $template = $team ? null : ($event === Catalog::MESSAGE
+            ? ['subject' => (string) $row['subject'], 'body' => (string) $row['body']]
+            : $templates->get($event, $channel));
         if (! $team && $template === null) {
             return $this->cancel($row, 'No message for this event.');
         }

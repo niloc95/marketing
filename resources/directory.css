@@ -4774,6 +4774,11 @@
   .appt-chosen { @apply mt-4 rounded-xl border border-brand-ocean/40 bg-primary-50 px-4 py-3 text-sm font-semibold text-brand-ocean dark:border-primary-300/40 dark:bg-primary-500/15 dark:text-white; }
   .appt-foot  { @apply mt-6 flex flex-wrap gap-2 border-t border-slate-200 pt-4 dark:border-slate-700; }
   .appt-error { @apply mx-6 mb-4 text-sm text-rose-600; }
+  .appt-compose { @apply mt-3 rounded-xl border border-brand-ocean/30 bg-white p-4 shadow-sm dark:border-primary-300/30 dark:bg-slate-900; }
+  .appt-compose-to { @apply flex flex-wrap items-baseline gap-x-2 text-sm; }
+  .appt-hint  { @apply mt-2 text-xs text-slate-500 dark:text-slate-400; }
+  .appt-chevron { @apply transition-transform; }
+  [data-d-email][aria-expanded='true'] .appt-chevron { @apply rotate-180; }
   .appt-dialog .free-times-list { @apply grid gap-2 sm:grid-cols-2; }
   .appt-dialog .free-time { @apply w-full; }
   /* A class that sets display must never beat the hidden attribute. */

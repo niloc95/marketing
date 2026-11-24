@@ -3,6 +3,7 @@
 namespace App\Services\Bookings\Notifications;
 
 use App\Libraries\Mailer;
+use App\Services\Bookings\AppointmentStatus;
 
 /**
  * Sending one message on one channel. Ported from Bookings'
@@ -63,10 +64,17 @@ class Channels
             return $ok ? ['ok' => true, 'error' => null] : ['ok' => false, 'error' => 'The mail server did not accept the email.'];
         }
 
-        $showAnswers = str_contains($template['body'], '{answers}');
-        $filled      = NotificationTemplates::fill($template, ['{answers}' => ''] + $values);
-        $upcoming    = in_array($event, ['pending', 'confirmed', 'rescheduled', 'reminder'], true);
-        $button      = $context['manage_url'] !== '' && ! in_array($event, ['cancelled', 'no_show'], true)
+        // A written message is sent as typed (no placeholders) under the
+        // subject as its heading; the details follow the appointment as it is.
+        $written     = $event === $config::MESSAGE;
+        $showAnswers = ! $written && str_contains($template['body'], '{answers}');
+        $filled      = $written ? $template : NotificationTemplates::fill($template, ['{answers}' => ''] + $values);
+        $status      = (string) ($context['appointment']['status'] ?? '');
+        $upcoming    = $written
+            ? in_array($status, AppointmentStatus::UPCOMING, true) && (string) $context['appointment']['end_at'] > gmdate('Y-m-d H:i:s')
+            : in_array($event, ['pending', 'confirmed', 'rescheduled', 'reminder'], true);
+        $closed      = $written ? ! in_array($status, AppointmentStatus::UPCOMING, true) : in_array($event, ['cancelled', 'no_show'], true);
+        $button      = $context['manage_url'] !== '' && ! $closed
             ? ['Change or cancel your booking', $context['manage_url']]
             : ['Book again', $context['booking_url']];
         $unsub       = $context['customer'] !== null
@@ -77,7 +85,7 @@ class Channels
 
         $body = view('emails/booking-notification', [
             'business'      => $values['{business}'],
-            'heading'       => $config->customerHeadings[$event] ?? '',
+            'heading'       => $written ? $filled['subject'] : ($config->customerHeadings[$event] ?? ''),
             'paragraphs'    => $split($filled['body']),
             'details'       => $context['details'],
             'place'         => $upcoming ? $context['place'] : null,

@@ -413,6 +413,7 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:appointmen
     $routes->post('api/appointments/(:num)/status', 'Business\Appointments::status/$1');
     $routes->post('api/appointments/(:num)/notes', 'Business\Appointments::notes/$1');
     $routes->post('api/appointments/(:num)/notify', 'Business\Appointments::notify/$1');
+    $routes->post('api/appointments/(:num)/email', 'Business\Appointments::email/$1');
 });
 // Phase 8: deposits. Mark one paid or refunded from the details panel, and the list.
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:payments.manage']], static function ($routes) {

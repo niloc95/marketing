@@ -138,7 +138,7 @@ class Handbook extends BaseConfig
         'xs_booking_customers' => ['purpose' => 'A business\'s customers (no accounts; hash links)', 'owner' => 'CustomerService', 'product' => 'bookings', 'personal' => 'Name, email, phone; retention by bookings:retention'],
         'xs_booking_notification_rules' => ['purpose' => 'Which events send which message on which channel', 'owner' => 'NotificationRules', 'product' => 'bookings', 'personal' => null],
         'xs_booking_templates' => ['purpose' => 'Message templates per business', 'owner' => 'NotificationTemplates', 'product' => 'bookings', 'personal' => null],
-        'xs_booking_notification_queue' => ['purpose' => 'Messages waiting to send (bookings:dispatch)', 'owner' => 'NotificationQueue, NotificationDispatcher', 'product' => 'bookings', 'personal' => 'Recipient until sent'],
+        'xs_booking_notification_queue' => ['purpose' => 'Messages waiting to send (bookings:dispatch)', 'owner' => 'NotificationQueue, NotificationDispatcher', 'product' => 'bookings', 'personal' => 'Recipient until sent; a written email\'s subject and text (subject, body) until bookings:prune'],
         'xs_booking_delivery_logs' => ['purpose' => 'What was sent, masked recipients only', 'owner' => 'DeliveryLog', 'product' => 'bookings', 'personal' => 'Masked only'],
         'xs_booking_opt_outs' => ['purpose' => 'Customers who stopped booking emails', 'owner' => 'OptOuts', 'product' => 'bookings', 'personal' => 'Customer reference'],
         'xs_booking_inbox' => ['purpose' => 'Notices for the team in /business/notifications', 'owner' => 'NotificationCentre', 'product' => 'bookings', 'personal' => null],

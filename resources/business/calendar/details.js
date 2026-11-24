@@ -7,7 +7,7 @@
  */
 import { getJson, postJson } from './api.js';
 import { el } from './chip.js';
-import { dateOf, hhmm, longDay } from './dates.js';
+import { dateOf, hhmm, longDay, shortDay } from './dates.js';
 import { MSG } from './messages.js';
 import { renderFreeTimes } from '../free-times.js';
 
@@ -82,6 +82,9 @@ export function initDetails(root, scheduler) {
     link('[data-d-customer]', a.customer_hash ? `${root.dataset.customerPage}/${a.customer_hash}` : '');
     link('[data-d-call]', a.phone ? `tel:${a.phone.replace(/[^\d+]/g, '')}` : '');
     link('[data-d-whatsapp]', a.whatsapp_url);
+    q('[data-d-email]').hidden = !a.email;
+    q('[data-d-compose-to]').textContent = a.customer_name ? `${a.customer_name}, ${a.email}` : a.email || '';
+    compose(false);
     q('[data-d-status]').value = a.status;
     q('[data-d-notes]').value = a.notes || '';
     // Pending or confirmed can be moved, even once its time has passed (a
@@ -132,6 +135,38 @@ export function initDetails(root, scheduler) {
     scheduler.toast(MSG.statusSaved);
     await scheduler.reload();
     await open(current.id);
+  });
+
+  // Email the customer: Email rolls the form down and up again. A new
+  // appointment starts with a fresh subject and an empty message.
+  const composeForm = q('[data-d-compose]');
+  const emailButton = q('[data-d-email]');
+  function compose(open) {
+    composeForm.hidden = !open;
+    emailButton.setAttribute('aria-expanded', String(open));
+    if (!open) {
+      composeForm.reset();
+      return;
+    }
+    if (current && !q('[data-d-subject]').value) q('[data-d-subject]').value = MSG.emailSubject(shortDay(dateOf(current.start)), hhmm(current.start));
+    q('[data-d-message]').focus();
+  }
+  emailButton.addEventListener('click', () => compose(composeForm.hidden));
+  q('[data-d-compose-cancel]').addEventListener('click', () => { compose(false); emailButton.focus(); });
+  composeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!current) return;
+    const subject = q('[data-d-subject]').value.trim();
+    const message = q('[data-d-message]').value.trim();
+    if (!subject || !message) { fail(MSG.emailEmpty); return; }
+    const send = q('[data-d-compose-send]');
+    send.disabled = true;
+    const res = await postJson(`${root.dataset.appointmentUrl}/${current.id}/email`, { subject, message });
+    send.disabled = false;
+    if (!res.ok) { fail(res.error); return; }
+    error.classList.add('hidden');
+    compose(false);
+    scheduler.toast(MSG.emailQueued);
   });
 
   q('[data-d-save-notes]').addEventListener('click', async () => {

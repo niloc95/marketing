@@ -527,6 +527,47 @@ class AppointmentService
         return ['ok' => true, 'error' => null];
     }
 
+    /** Longest subject and text of a written email (Email in the details). */
+    public const EMAIL_SUBJECT_MAX = 150;
+    public const EMAIL_BODY_MAX    = 5000;
+
+    /**
+     * Email the customer about this appointment (Email in the calendar's
+     * details): the subject and text as written, in the standard booking
+     * email with the appointment's details. Queued, sent within the minute.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function email(int $id, string $subject, string $body): array
+    {
+        $row = $this->find($id);
+        if ($row === null) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_found']];
+        }
+        $subject = trim(preg_replace('/\s+/u', ' ', $subject) ?? '');
+        $body    = trim(str_replace(["\r\n", "\r"], "\n", $body));
+        if ($subject === '' || $body === '') {
+            return ['ok' => false, 'error' => 'Write a subject and a message.'];
+        }
+        if (mb_strlen($subject) > self::EMAIL_SUBJECT_MAX || mb_strlen($body) > self::EMAIL_BODY_MAX) {
+            return ['ok' => false, 'error' => 'Keep the subject to ' . self::EMAIL_SUBJECT_MAX . ' characters and the message to ' . number_format(self::EMAIL_BODY_MAX) . '.'];
+        }
+        $customer = (int) $row['customer_id'] > 0 ? \App\Models\Bookings\BookingCustomerModel::forBusiness($this->listingId)->find((int) $row['customer_id']) : null;
+        $to       = is_array($customer) ? (string) ($customer['email'] ?? '') : '';
+        if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            return ['ok' => false, 'error' => 'This customer has no email address.'];
+        }
+        if ((new \App\Services\Bookings\Notifications\OptOuts($this->listingId))->isOptedOut('email', $to)) {
+            return ['ok' => false, 'error' => 'This customer asked not to get emails from you.'];
+        }
+        if (! (new NotificationQueue($this->listingId, $this->now))->message($id, $subject, $body)) {
+            return ['ok' => false, 'error' => 'That did not work. Try again.'];
+        }
+        $this->audit->record($this->listingId, $this->accountId, 'appointment.emailed', 'appointment', $id, null, $subject);
+
+        return ['ok' => true, 'error' => null];
+    }
+
     /**
      * The last messages about this appointment, for the details panel.
      *
@@ -538,7 +579,7 @@ class AppointmentService
             ->where('appointment_id', $id)->whereIn('outcome', ['sent', 'failed'])->orderBy('id', 'DESC')->findAll(10);
 
         return array_map(fn (array $r): array => [
-            'event'          => \Config\BookingNotifications::EVENTS[$r['event']] ?? $r['event'],
+            'event'          => \Config\BookingNotifications::label((string) $r['event']),
             'channel'        => \Config\BookingNotifications::CHANNEL_LABELS[$r['channel']] ?? $r['channel'],
             'outcome'        => \App\Services\Bookings\Notifications\DeliveryLog::LABELS[$r['outcome']] ?? $r['outcome'],
             'recipient_type' => (string) $r['recipient_type'],
