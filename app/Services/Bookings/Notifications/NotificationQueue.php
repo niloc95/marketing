@@ -122,6 +122,21 @@ class NotificationQueue
     }
 
     /**
+     * Queue a message the business wrote to the customer (Email in the
+     * calendar's details): sent by the dispatcher in the standard booking
+     * email with the appointment's details. Each one is its own row.
+     */
+    public function message(int $appointmentId, string $subject, string $body): bool
+    {
+        $appointment = BookingAppointmentModel::forBusiness($this->listingId)->find($appointmentId);
+        if (! is_array($appointment)) {
+            return false;
+        }
+
+        return $this->add($appointment, Catalog::MESSAGE, 'email', null, 'manual:' . bin2hex(random_bytes(8)), null, ['subject' => $subject, 'body' => $body]);
+    }
+
+    /**
      * Queue the reminders that are due now for this business.
      *
      * @return array{scanned:int,queued:int}
@@ -243,7 +258,8 @@ class NotificationQueue
         );
     }
 
-    private function add(array $appointment, string $event, string $channel, ?int $memberId, ?string $marker, ?int $offset = null): bool
+    /** @param array{subject?:string,body?:string} $message a written message's subject and text */
+    private function add(array $appointment, string $event, string $channel, ?int $memberId, ?string $marker, ?int $offset = null, array $message = []): bool
     {
         $key = implode(':', array_filter([
             $memberId === null ? 'c' : 'm' . $memberId, $channel, $event, 'a' . $appointment['id'], $marker,
@@ -276,6 +292,8 @@ class NotificationQueue
                 'correlation_id'       => bin2hex(random_bytes(16)),
                 'reminder_offset_min'  => $offset,
                 'schedule_fingerprint' => in_array($event, ['reminder', 'rescheduled'], true) ? self::fingerprint($appointment) : null,
+                'subject'              => $message['subject'] ?? null,
+                'body'                 => $message['body'] ?? null,
             ]);
         } catch (\Throwable $e) {
             // The unique key: another request queued the same message first.

@@ -91,6 +91,7 @@ class Forms extends BaseConfig
         'business/api/appointments/(:num)/status',
         'business/api/appointments/(:num)/notes',
         'business/api/appointments/(:num)/notify',
+        'business/api/appointments/(:num)/email',
         'business/api/appointments/(:num)/payment',
         // A 301 to add-profile, registered for every method.
         'list-your-practice',

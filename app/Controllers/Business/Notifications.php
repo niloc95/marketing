@@ -74,7 +74,7 @@ class Notifications extends BaseController
         foreach (DeliveryLog::latest($context->listingId(), [], 5000) as $r) {
             fputcsv($out, [
                 (new \DateTimeImmutable((string) $r['created_at'], new \DateTimeZone('UTC')))->setTimezone($tz)->format('Y-m-d H:i'),
-                \Config\BookingNotifications::EVENTS[$r['event']] ?? $r['event'],
+                \Config\BookingNotifications::label((string) $r['event']),
                 \Config\BookingNotifications::CHANNEL_LABELS[$r['channel']] ?? $r['channel'],
                 ($r['recipient_type'] === 'team' ? 'Team: ' : '') . (string) $r['recipient'],
                 DeliveryLog::LABELS[$r['outcome']] ?? $r['outcome'],

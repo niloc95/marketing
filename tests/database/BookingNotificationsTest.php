@@ -520,6 +520,51 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertCount(2, $this->appointments()->detail($id)['messages']);
     }
 
+    public function testTheBusinessEmailsTheCustomerInTheStandardEmail(): void
+    {
+        BookingSettings::for($this->listingId)->save(['notifications.reply_to' => 'desk@salon.example'], null);
+        $id = $this->book('2030-01-09', '10:00', 'confirmed');
+        $this->dispatch();
+        $this->sent = [];
+
+        $this->assertSame('Write a subject and a message.', $this->appointments()->email($id, ' ', 'Hi')['error']);
+        $this->assertFalse($this->appointments()->email($id, 'Hi', str_repeat('a', 5001))['ok'], 'Too long');
+        $this->assertSame(['ok' => true, 'error' => null], $this->appointments()->email($id, 'Bring your X rays', "Hello Alice,\n\nPlease bring your <b>X rays</b> {business}."));
+        $row = $this->queue()[1];
+        $this->assertSame(['message', 'email', 'queued', 'Bring your X rays'], [$row['event'], $row['channel'], $row['status'], $row['subject']]);
+
+        $this->assertSame(1, $this->dispatch()['sent']);
+        $mail = $this->sent[0];
+        $this->assertSame('Bring your X rays', $mail['subject']);
+        $this->assertSame(['alice@example.test'], (array) $mail['recipients']);
+        $this->assertStringContainsString('Salon Lumi via WebScheduler Local', (string) $mail['headers']['From']);
+        $this->assertSame('desk@salon.example', $mail['replyTo'] ?? null);
+        $body     = (string) $mail['body'];
+        $customer = (new CustomerService($this->listingId))->findByEmail('alice@example.test');
+        $appt     = BookingAppointmentModel::forBusiness($this->listingId)->find($id);
+        $this->assertStringContainsString('Please bring your &lt;b&gt;X rays&lt;/b&gt; {business}.', $body, 'Sent as typed: escaped, no placeholders');
+        $this->assertStringContainsString('/book/customer/' . $customer['hash'] . '/' . $appt['hash'], $body, 'The change or cancel link');
+        $this->assertStringContainsString('/book/unsubscribe/' . $customer['hash'], (string) $mail['headers']['List-Unsubscribe']);
+        $this->assertSame('Message from you', $this->appointments()->detail($id)['messages'][0]['event']);
+
+        // Someone who stopped emails gets none, and the business is told.
+        (new OptOuts($this->listingId))->optOut('email', 'alice@example.test');
+        $this->assertSame('This customer asked not to get emails from you.', $this->appointments()->email($id, 'Hi', 'Again')['error']);
+    }
+
+    public function testTheEmailEndpointSendsAndAnotherBusinessCannot(): void
+    {
+        $id = $this->book('2030-01-09', '10:00', 'confirmed');
+        $this->signIn();
+        $this->post('business/api/appointments/' . $id . '/email', [csrf_token() => csrf_hash(), 'subject' => 'Hello', 'message' => 'See you soon.'])->assertOK();
+        $queued = $this->queue();
+        $this->assertSame(['message', 'Hello', 'See you soon.'], [end($queued)['event'], end($queued)['subject'], end($queued)['body']]);
+
+        $other = new AppointmentService($this->listings->find($this->otherId), null, null, null, $this->now);
+        $this->assertSame(AppointmentService::PROBLEMS['not_found'], $other->email($id, 'Hello', 'Not yours.')['error']);
+        $this->assertCount(count($queued), $this->queue());
+    }
+
     public function testTheDispatchCommandRunsEveryBusiness(): void
     {
         $this->book('2030-01-09', '10:00', 'confirmed');

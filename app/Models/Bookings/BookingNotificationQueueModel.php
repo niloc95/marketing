@@ -13,5 +13,5 @@ class BookingNotificationQueueModel extends BookingScopedModel
     protected $useTimestamps = true;
     protected $allowedFields = ['listing_id', 'appointment_id', 'event', 'channel', 'recipient_type', 'member_id', 'status', 'attempts',
         'max_attempts', 'run_after', 'locked_at', 'lock_token', 'last_error', 'sent_at', 'idempotency_key',
-        'correlation_id', 'reminder_offset_min', 'schedule_fingerprint'];
+        'correlation_id', 'reminder_offset_min', 'schedule_fingerprint', 'subject', 'body'];
 }

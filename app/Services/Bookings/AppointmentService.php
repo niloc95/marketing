@@ -47,6 +47,7 @@ class AppointmentService
         AvailabilityService::NOT_ON_THE_GRID => 'Choose one of the times offered.',
         'not_found'                          => 'That appointment was not found.',
         'not_upcoming'                       => 'Only upcoming appointments can be moved.',
+        'not_movable'                        => 'Only pending or confirmed appointments can be moved.',
         'not_offered'                        => 'They do not offer that service. Choose someone who does.',
     ];
 
@@ -213,6 +214,7 @@ class AppointmentService
         }
         $out['status_label'] = AppointmentStatus::label($out['status']);
         $out['upcoming']     = $this->isUpcoming($row);
+        $out['can_move']     = $this->canMove($row);
         $out['created_at']   = $row['created_at'];
         $out['messages']     = $this->messages($id);
         $out['whatsapp_url'] = $this->whatsappUrl($row);
@@ -314,8 +316,10 @@ class AppointmentService
         if ($row === null) {
             return ['ok' => false, 'error' => self::PROBLEMS['not_found']];
         }
-        if (! $this->isUpcoming($row)) {
-            return ['ok' => false, 'error' => self::PROBLEMS['not_upcoming']];
+        // The business may also move one whose time has passed (a late or
+        // missed patient): only the status counts, not the clock.
+        if (! $this->canMove($row)) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_movable']];
         }
         if ($providerId !== null && ! $this->inScope($providerId)) {
             return ['ok' => false, 'error' => self::PROBLEMS[AvailabilityService::NOT_OFFERED]];
@@ -523,6 +527,47 @@ class AppointmentService
         return ['ok' => true, 'error' => null];
     }
 
+    /** Longest subject and text of a written email (Email in the details). */
+    public const EMAIL_SUBJECT_MAX = 150;
+    public const EMAIL_BODY_MAX    = 5000;
+
+    /**
+     * Email the customer about this appointment (Email in the calendar's
+     * details): the subject and text as written, in the standard booking
+     * email with the appointment's details. Queued, sent within the minute.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    public function email(int $id, string $subject, string $body): array
+    {
+        $row = $this->find($id);
+        if ($row === null) {
+            return ['ok' => false, 'error' => self::PROBLEMS['not_found']];
+        }
+        $subject = trim(preg_replace('/\s+/u', ' ', $subject) ?? '');
+        $body    = trim(str_replace(["\r\n", "\r"], "\n", $body));
+        if ($subject === '' || $body === '') {
+            return ['ok' => false, 'error' => 'Write a subject and a message.'];
+        }
+        if (mb_strlen($subject) > self::EMAIL_SUBJECT_MAX || mb_strlen($body) > self::EMAIL_BODY_MAX) {
+            return ['ok' => false, 'error' => 'Keep the subject to ' . self::EMAIL_SUBJECT_MAX . ' characters and the message to ' . number_format(self::EMAIL_BODY_MAX) . '.'];
+        }
+        $customer = (int) $row['customer_id'] > 0 ? \App\Models\Bookings\BookingCustomerModel::forBusiness($this->listingId)->find((int) $row['customer_id']) : null;
+        $to       = is_array($customer) ? (string) ($customer['email'] ?? '') : '';
+        if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            return ['ok' => false, 'error' => 'This customer has no email address.'];
+        }
+        if ((new \App\Services\Bookings\Notifications\OptOuts($this->listingId))->isOptedOut('email', $to)) {
+            return ['ok' => false, 'error' => 'This customer asked not to get emails from you.'];
+        }
+        if (! (new NotificationQueue($this->listingId, $this->now))->message($id, $subject, $body)) {
+            return ['ok' => false, 'error' => 'That did not work. Try again.'];
+        }
+        $this->audit->record($this->listingId, $this->accountId, 'appointment.emailed', 'appointment', $id, null, $subject);
+
+        return ['ok' => true, 'error' => null];
+    }
+
     /**
      * The last messages about this appointment, for the details panel.
      *
@@ -534,7 +579,7 @@ class AppointmentService
             ->where('appointment_id', $id)->whereIn('outcome', ['sent', 'failed'])->orderBy('id', 'DESC')->findAll(10);
 
         return array_map(fn (array $r): array => [
-            'event'          => \Config\BookingNotifications::EVENTS[$r['event']] ?? $r['event'],
+            'event'          => \Config\BookingNotifications::label((string) $r['event']),
             'channel'        => \Config\BookingNotifications::CHANNEL_LABELS[$r['channel']] ?? $r['channel'],
             'outcome'        => \App\Services\Bookings\Notifications\DeliveryLog::LABELS[$r['outcome']] ?? $r['outcome'],
             'recipient_type' => (string) $r['recipient_type'],
@@ -587,6 +632,12 @@ class AppointmentService
     }
 
     /** @param array<string,mixed> $row */
+    /** Pending or confirmed: the business may move it, even once its time has passed. */
+    private function canMove(array $row): bool
+    {
+        return in_array($row['status'], AppointmentStatus::UPCOMING, true);
+    }
+
     private function isUpcoming(array $row): bool
     {
         return in_array($row['status'], AppointmentStatus::UPCOMING, true)

@@ -48,7 +48,7 @@ $zone  = new DateTimeZone($tz);
                 <?php foreach ($rows as $r): ?>
                     <tr>
                         <td class="whitespace-nowrap"><?= esc((new DateTimeImmutable((string) $r['created_at'], new DateTimeZone('UTC')))->setTimezone($zone)->format('j M H:i')) ?></td>
-                        <td><?= esc(Catalog::EVENTS[$r['event']] ?? $r['event']) ?>, <?= esc(Catalog::CHANNEL_LABELS[$r['channel']] ?? $r['channel']) ?></td>
+                        <td><?= esc(Catalog::label((string) $r['event'])) ?>, <?= esc(Catalog::CHANNEL_LABELS[$r['channel']] ?? $r['channel']) ?></td>
                         <td><?= $r['recipient_type'] === 'team' ? 'Team: ' : '' ?><?= esc((string) $r['recipient']) ?></td>
                         <td>
                             <?= esc(DeliveryLog::LABELS[$r['outcome']] ?? $r['outcome']) ?>
