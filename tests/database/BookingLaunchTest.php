@@ -206,11 +206,19 @@ final class BookingLaunchTest extends CIUnitTestCase
     private function bookAt(string $when, string $email, string $name): array
     {
         $local  = (new DateTimeImmutable($when, new DateTimeZone('Africa/Johannesburg')))->setTime(10, 0);
-        $svc    = new AppointmentService($this->listings->find($this->listingId), null, null, null, $local->modify('-1 day'));
-        $result = $svc->create([
-            'provider_id' => $this->sarah, 'service_id' => $this->serviceId, 'date' => $local->format('Y-m-d'), 'time' => '10:00', 'status' => 'confirmed',
-            'first_name' => $name, 'last_name' => 'Test', 'email' => $email, 'phone' => '082 555 1234',
-        ]);
+        // The date is relative to today, so it may land on a public holiday
+        // (the business is closed then): take the next open day. A few days
+        // either way keeps the test's meaning (the cut off is 24 months).
+        for ($try = 0; $try < 5; $try++, $local = $local->modify('+1 day')) {
+            $svc    = new AppointmentService($this->listings->find($this->listingId), null, null, null, $local->modify('-1 day'));
+            $result = $svc->create([
+                'provider_id' => $this->sarah, 'service_id' => $this->serviceId, 'date' => $local->format('Y-m-d'), 'time' => '10:00', 'status' => 'confirmed',
+                'first_name' => $name, 'last_name' => 'Test', 'email' => $email, 'phone' => '082 555 1234',
+            ]);
+            if (($result['errors']['time'] ?? '') !== 'The business is closed that day.') {
+                break;
+            }
+        }
         $this->assertSame([], $result['errors']);
         $row = A::forBusiness($this->listingId)->find((int) $result['id']);
 
