@@ -22,6 +22,13 @@ use DateTimeZone;
  *
  * Read only. Prints PASS or FAIL per check with up to 5 offending ids, and
  * the tallies load:seed left in writable/loadtest/. Exit code 1 on any FAIL.
+ *
+ * The doctor pass (owner, 24 Nov 2026: "can Dr B see Dr D's patients?")
+ * gives each person at a sampled profile the scope a signed in doctor gets
+ * (BookingAuthorization::providerScope() for the provider role: their own
+ * person) and goes through the same services as the /business screens:
+ * calendar, opening an appointment, customers, a customer's history, and
+ * Find. The seed has no doctor sign ins, so the scope is built, not read.
  */
 class LoadCheck extends BaseCommand
 {
@@ -83,6 +90,8 @@ class LoadCheck extends BaseCommand
 
         CLI::newLine();
         $this->scopePass($db, max(1, (int) (CLI::getOption('sample') ?? 20)));
+        CLI::newLine();
+        $this->doctorPass($db, max(1, (int) (CLI::getOption('sample') ?? 20)));
         CLI::newLine();
         $this->tallies();
 
@@ -185,6 +194,96 @@ class LoadCheck extends BaseCommand
         $this->result('Calendar filter for someone else shows nothing', $filterLeaks === 0, (string) $filterLeaks);
         $this->result('Opening someone else\'s appointment by id is refused', $findLeaks === 0, (string) $findLeaks);
         $this->result('Customer list shows only their people\'s customers', $customerLeaks === 0, (string) $customerLeaks);
+    }
+
+    /** Each doctor, as if signed in, through the services the /business screens use. */
+    private function doctorPass($db, int $sample): void
+    {
+        $ids  = array_map('intval', array_column($db->query('SELECT id FROM lt_ids ORDER BY RAND() LIMIT ' . $sample)->getResultArray(), 'id'));
+        $tz   = new DateTimeZone('Africa/Johannesburg');
+        $from = date('Y-m-d', strtotime('-7 days'));
+        $to   = date('Y-m-d', strtotime('+35 days'));
+        $doctors = $shared = 0;
+        $leaks   = array_fill_keys(['calendar', 'filter', 'open', 'list', 'visible', 'history', 'shared', 'findCustomer', 'findAppointment', 'foreign'], 0);
+
+        foreach ($ids as $listingId) {
+            $listing = (array) (new \App\Models\DirectoryListingModel())->find($listingId);
+            $all     = array_map('intval', array_column($db->query('SELECT id FROM xs_booking_providers WHERE listing_id = ?', [$listingId])->getResultArray(), 'id'));
+            $customers = new CustomerService($listingId);
+            $search    = new \App\Services\Bookings\BookingSearch($listingId, (string) ($listing['country_code'] ?? 'ZA'));
+            foreach ($all as $doctor) {
+                $doctors++;
+                $scope   = [$doctor];
+                $outside = array_values(array_diff($all, $scope));
+                $mine    = static fn (int $customerId): bool => (bool) $db->query('SELECT 1 FROM xs_booking_appointments WHERE listing_id = ? AND customer_id = ? AND provider_id = ? LIMIT 1', [$listingId, $customerId, $doctor])->getRowArray();
+
+                // Calendar: their own column only; asking for a colleague shows nothing.
+                $query = new CalendarQuery($listingId, $tz);
+                foreach ($query->forRange($from, $to, [], $scope) as $e) {
+                    $leaks['calendar'] += (int) ((int) $e['provider_id'] !== $doctor);
+                }
+                foreach ($outside as $pid) {
+                    $leaks['filter'] += count($query->forRange($from, $to, ['provider_id' => $pid], $scope));
+                }
+
+                $svc = new AppointmentService($listing, $scope, null);
+                foreach ($outside as $pid) {
+                    // A colleague's appointment, opened by id (details, Email, Reschedule all start here).
+                    $row = BookingAppointmentModel::forBusiness($listingId)->where('provider_id', $pid)->orderBy('RAND()')->first();
+                    if ($row !== null && ($svc->find((int) $row['id']) !== null || $svc->detail((int) $row['id']) !== null)) {
+                        $leaks['open']++;
+                    }
+                    // A patient only the colleague has seen: hidden, no history, not found by name or phone.
+                    $only = $db->query('SELECT c.id, c.first_name, c.last_name, c.phone FROM xs_booking_customers c
+                        WHERE c.listing_id = ? AND EXISTS (SELECT 1 FROM xs_booking_appointments a WHERE a.customer_id = c.id AND a.provider_id = ?)
+                        AND NOT EXISTS (SELECT 1 FROM xs_booking_appointments a WHERE a.customer_id = c.id AND a.provider_id = ?) ORDER BY RAND() LIMIT 1', [$listingId, $pid, $doctor])->getRowArray();
+                    if ($only !== null) {
+                        $leaks['visible'] += (int) $customers->visible((int) $only['id'], $scope);
+                        $leaks['history'] += count($customers->history((int) $only['id'], $scope));
+                        foreach ([trim($only['first_name'] . ' ' . $only['last_name']), (string) $only['phone']] as $q) {
+                            foreach ($search->customers($q, $scope) as $hit) {
+                                $leaks['findCustomer'] += (int) ! $mine((int) $hit['id']);
+                            }
+                            foreach ($search->appointments($q, $scope) as $hit) {
+                                $leaks['findAppointment'] += (int) ((int) BookingAppointmentModel::forBusiness($listingId)->find((int) $hit['id'])['provider_id'] !== $doctor);
+                            }
+                        }
+                    }
+                }
+
+                // A patient both have seen: the history holds only this doctor's appointments.
+                $both = $db->query('SELECT a.customer_id FROM xs_booking_appointments a WHERE a.listing_id = ? AND a.provider_id = ?
+                    AND EXISTS (SELECT 1 FROM xs_booking_appointments b WHERE b.customer_id = a.customer_id AND b.provider_id <> ?) LIMIT 1', [$listingId, $doctor, $doctor])->getRowArray();
+                if ($both !== null) {
+                    $shared++;
+                    foreach ($customers->history((int) $both['customer_id'], $scope) as $h) {
+                        $leaks['shared'] += (int) ((int) $h['provider_id'] !== $doctor);
+                    }
+                }
+
+                // Customers page: everyone listed has seen this doctor.
+                foreach ($customers->list('', $scope, 1, 200)['rows'] as $c) {
+                    $leaks['list'] += (int) ! $mine((int) $c['id']);
+                }
+
+                // Another profile's appointment by id.
+                $foreign = $db->query('SELECT a.id FROM xs_booking_appointments a JOIN lt_ids l ON l.id = a.listing_id WHERE a.listing_id <> ? ORDER BY a.id DESC LIMIT 1', [$listingId])->getRowArray();
+                if ($foreign !== null && $svc->find((int) $foreign['id']) !== null) {
+                    $leaks['foreign']++;
+                }
+            }
+        }
+        CLI::write("Doctor scope pass: {$doctors} doctors on " . count($ids) . " profiles, {$shared} with a patient shared with a colleague.");
+        $this->result('Calendar shows only their own appointments', $leaks['calendar'] === 0, (string) $leaks['calendar']);
+        $this->result('Calendar filter for a colleague shows nothing', $leaks['filter'] === 0, (string) $leaks['filter']);
+        $this->result('Opening a colleague\'s appointment by id is refused', $leaks['open'] === 0, (string) $leaks['open']);
+        $this->result('A colleague\'s patient is hidden', $leaks['visible'] === 0, (string) $leaks['visible']);
+        $this->result('A colleague\'s patient has no history for them', $leaks['history'] === 0, (string) $leaks['history']);
+        $this->result('A shared patient shows only their own appointments', $leaks['shared'] === 0, (string) $leaks['shared']);
+        $this->result('Find by a colleague\'s patient name or phone finds none of theirs', $leaks['findCustomer'] === 0, (string) $leaks['findCustomer']);
+        $this->result('Find shows only their own appointments', $leaks['findAppointment'] === 0, (string) $leaks['findAppointment']);
+        $this->result('Customers page lists only their own patients', $leaks['list'] === 0, (string) $leaks['list']);
+        $this->result('Another profile\'s appointment by id is refused', $leaks['foreign'] === 0, (string) $leaks['foreign']);
     }
 
     /** What load:seed found while booking. */
