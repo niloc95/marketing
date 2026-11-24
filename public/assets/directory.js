@@ -1006,23 +1006,25 @@
   document.addEventListener('click', function (e) {
     // Brand logos (_brand_fields.php) delete the same way, with their own
     // panel, item and error hooks and their own counter afterwards.
-    var btn = e.target.closest ? e.target.closest('button[data-photo-delete], button[data-brand-delete]') : null;
+    var btn = e.target.closest ? e.target.closest('button[data-photo-delete], button[data-brand-delete], button[data-logo-delete]') : null;
     if (!btn || e.defaultPrevented || !window.fetch || !window.FormData) return;
     var isBrand = btn.hasAttribute('data-brand-delete');
+    // The logo (_form_fields.php) too: one item, its whole panel.
+    var kind = isBrand ? 'brand' : (btn.hasAttribute('data-logo-delete') ? 'logo' : 'photo');
     e.preventDefault();
 
     // Only the CSRF token goes along — the rest of the listing form is not the
     // delete endpoint's business, and posting the picked uploads would send
     // megabytes for nothing.
-    var panel = btn.closest(isBrand ? '[data-brand-manage]' : '[data-photo-manage]');
+    var panel = btn.closest('[data-' + kind + '-manage]');
     var body  = new FormData();
     var name  = panel && panel.getAttribute('data-csrf-name');
     var token = name && btn.form ? btn.form.querySelector('input[name="' + name + '"]') : null;
     if (token) body.append(name, token.value);
 
-    var item  = btn.closest(isBrand ? '[data-brand-item]' : '[data-photo-item]');
-    var errEl = panel && panel.querySelector(isBrand ? '[data-brand-error]' : '[data-photo-error]');
-    var noun  = isBrand ? 'brand' : 'photo';
+    var item  = kind === 'logo' ? panel : btn.closest('[data-' + kind + '-item]');
+    var errEl = panel && panel.querySelector('[data-' + kind + '-error]');
+    var noun  = kind;
     btn.disabled = true;
     if (errEl) errEl.hidden = true;
 
@@ -1057,6 +1059,7 @@
         }
 
         if (item) item.remove();
+        if (kind === 'logo') return;
         if (isBrand) {
           syncBrandSlots(panel, data.slots);
         } else {

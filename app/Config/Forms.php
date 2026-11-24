@@ -57,7 +57,7 @@ class Forms extends BaseConfig
         'newsletter'       => ['label' => 'Newsletter signup', 'posts' => ['newsletter' => 'newsletter'], 'pages' => ['newsletter']],
         'newsletter_confirm' => ['label' => 'Newsletter confirm', 'posts' => ['newsletter/confirm/(:segment)' => 'newsletter/confirm/$1']],
         // Online bookings (docs/bookings/).
-        'business_profile'  => ['label' => 'Edit profile (business area)', 'posts' => ['business/profile/(:segment)' => 'business/profile/$1', 'business/profile/photo-delete/(:num)' => 'business/profile/photos', 'business/profile/brand-delete/(:num)' => 'business/profile/photos']],
+        'business_profile'  => ['label' => 'Edit profile (business area)', 'posts' => ['business/profile/(:segment)' => 'business/profile/$1', 'business/profile/photo-delete/(:num)' => 'business/profile/photos', 'business/profile/logo-delete' => 'business/profile/photos', 'business/profile/brand-delete/(:num)' => 'business/profile/photos']],
         'business_bookings' => ['label' => 'Turn on online bookings', 'posts' => ['business/bookings/turn-on' => 'business/calendar']],
         'business_sign_in'  => ['label' => 'Business sign in', 'posts' => ['business/sign-in' => 'business/sign-in', 'business/sign-in/link' => 'business/sign-in', 'business/sign-in/(:segment)' => 'business/sign-in/$1']],
         'business_sign_out' => ['label' => 'Business sign out', 'posts' => ['business/sign-out' => 'business/sign-in']],

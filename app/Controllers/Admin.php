@@ -565,6 +565,23 @@ class Admin extends BaseController
             : redirect()->to(base_url('admin/edit/' . $listingId . '/photos'))->with('success', 'Photo removed.');
     }
 
+    /** Remove a profile's logo (HandlesListingUploads::removeLogo()). */
+    public function deleteLogo(int $listingId)
+    {
+        $ajax = $this->request->isAJAX();
+        $back = base_url('admin/edit/' . $listingId . '/photos');
+
+        if (! $this->removeLogo($listingId)) {
+            return $ajax
+                ? $this->photoDeleteJson(false, 'There is no logo to remove.', 404)
+                : redirect()->to($back)->with('error', 'There is no logo to remove.');
+        }
+
+        return $ajax
+            ? $this->photoDeleteJson(true, 'Logo removed.', 200)
+            : redirect()->to($back)->with('success', 'Logo removed.');
+    }
+
     /**
      * Email the owner their top profile strength steps (ProfileNudgeService::sendNow()).
      */

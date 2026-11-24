@@ -125,6 +125,7 @@ $panes = array_values(array_filter($tabs, static fn (array $t): bool => $t['inli
                     'vFacets'      => $vFacets,
                     'photos'       => $photos,
                     'deleteBase'   => base_url('business/profile/photo-delete'),
+                    'logoDeleteUrl' => base_url('business/profile/logo-delete'),
                     'brands'       => $brands ?? [],
                     'brandDeleteBase' => base_url('business/profile/brand-delete'),
                     'menuFiles'    => $menuFiles ?? [],

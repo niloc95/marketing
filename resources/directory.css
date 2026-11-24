@@ -3292,7 +3292,9 @@
 
   /* ------------------------------------------------- image upload previews */
   /* What is already stored, so an editor can see it before replacing it. */
-  .upload-current     { @apply mb-2 flex items-center gap-3; }
+  .upload-current     { @apply mb-2 flex flex-wrap items-center gap-3; }
+  /* Remove logo's error line (photo-manage-error) on a line of its own. */
+  .upload-current > [data-logo-error] { @apply basis-full; }
   /* h-14 with a free width, for the reason .avatar-logo explains: this box is
      showing the operator what is stored, and a 423x93 logo squeezed into 56x56
      is 56x12 of unreadable sliver. */

@@ -37,6 +37,7 @@
  * @var array    $menuFiles   stored menu files (edit pages only), rendered by _menu_fields.php
  * @var string   $deleteBase  where a photo's delete button posts, e.g. base_url('manage/photo-delete')
  * @var array    $brands      stored brand logos (edit pages only), rendered by _brand_fields.php
+ * @var string   $logoDeleteUrl where the current logo's Remove button posts (edit pages only)
  * @var string   $brandDeleteBase  where a brand's delete button posts, e.g. base_url('manage/brand-delete')
  * @var bool     $addressRequired  insist on a full address (public signup only)
  * @var bool     $privateDetailsRequired  insist on a title and a contact person (not admin intake)
@@ -77,6 +78,7 @@ $menuFiles   = $menuFiles   ?? [];
 $deleteBase  = $deleteBase  ?? '';
 $brands          = $brands          ?? [];
 $brandDeleteBase = $brandDeleteBase ?? '';
+$logoDeleteUrl   = $logoDeleteUrl ?? '';
 // The owner's own public address, passed by business/profile.php only, so the
 // "no website?" hint can name it. Signup has no slug yet and admin does not
 // need telling, so both fall back to the generic wording.
@@ -113,7 +115,7 @@ helper('directory_hours');
 $section = $section ?? null;
 $in      = static fn (string ...$keys): bool => $section === null || in_array($section, $keys, true);
 ?>
-<?php if (($photos !== [] && $deleteBase !== '') || ($brands !== [] && $brandDeleteBase !== '')): ?>
+<?php if (($photos !== [] && $deleteBase !== '') || ($brands !== [] && $brandDeleteBase !== '') || ($existingLogo !== '' && $logoDeleteUrl !== '')): ?>
     <?php // Pressing Enter in a text field submits the form through its *first*
           // submit button in tree order. The photo delete buttons further down are
           // submit buttons, so without this one Enter would ask to delete a photo
@@ -758,10 +760,18 @@ $socialErrored  = array_filter(array_keys($socialNetworks), static fn (string $f
 <div class="field">
     <label for="logo-input">Logo / photo</label>
     <?php if ($existingLogo !== ''): ?>
-        <div class="upload-current" data-image-current>
+        <?php // Remove logo (owner, 24 Nov 2026) deletes in place like a gallery
+              // photo: a submit button with its own formaction, caught by
+              // directory.js; without script it posts and comes back here. ?>
+        <div class="upload-current" data-image-current data-logo-manage data-csrf-name="<?= esc(csrf_token(), 'attr') ?>">
             <?php // Same absolute-vs-relative rule the card and profile pages use. ?>
             <img src="<?= esc(preg_match('#^https?://#i', $existingLogo) ? $existingLogo : base_url($existingLogo)) ?>" alt="Current logo">
             <span class="hint">Current logo. Choosing a file replaces it.</span>
+            <?php if ($logoDeleteUrl !== ''): ?>
+                <button type="submit" class="btn-ghost btn-xs" formaction="<?= esc($logoDeleteUrl, 'attr') ?>" formmethod="post" formnovalidate
+                        data-logo-delete data-confirm="Remove this logo? This cannot be undone.">Remove logo</button>
+                <p class="photo-manage-error" role="alert" data-logo-error hidden></p>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
     <input type="file" id="logo-input" name="logo" accept="image/*" data-image-upload="single">

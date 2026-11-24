@@ -48,6 +48,36 @@ trait HandlesListingUploads
     }
 
     /**
+     * Remove a profile's logo (owner, 24 Nov 2026): the column emptied and the
+     * file deleted, unless another profile points at the same file (imports
+     * can share one). Like a gallery delete it does not enforce the "logo or
+     * one photo" rule; the next save does. The score is recalculated because
+     * this, like a photo delete, lowers it without a save.
+     *
+     * @return bool false when the profile has no logo to remove
+     */
+    protected function removeLogo(int $listingId): bool
+    {
+        $db   = db_connect();
+        $path = trim((string) ($db->table('directory_listings')->select('logo_path')
+            ->where('id', $listingId)->get()->getRowArray()['logo_path'] ?? ''));
+        if ($path === '') {
+            return false;
+        }
+
+        $db->table('directory_listings')->where('id', $listingId)
+            ->update(['logo_path' => null, 'updated_at' => date('Y-m-d H:i:s')]);
+
+        $shared = $db->table('directory_listings')->where('logo_path', $path)->countAllResults();
+        if ($shared === 0) {
+            (new DirectoryListingPhotoModel())->deleteFileAt($path);
+        }
+        (new \App\Services\ListingQualityService())->recalculate($listingId);
+
+        return true;
+    }
+
+    /**
      * Throw away headshots that were processed but never got attached to a row.
      *
      * The team equivalent of discardLogo(), and needed for the same reason: the
