@@ -15,7 +15,11 @@ use DateTimeZone;
 /**
  * Booking emails under load (owner, 20 Nov 2026), on the load test DB.
  *
- *   php spark load:mail fire [--flood 20] [--workers 8] [--keep-on] [--at "2026-11-22 22:00"]
+ *   php spark load:mail fire [--flood 20] [--workers 8] [--keep-on] [--at "2026-11-22 22:00"] [--with "command"]
+ *
+ * --with starts a shell command beside the booking flood (signed in staff
+ * writing to customers over HTTP, Discover searches) and waits for it
+ * before sending, so what it queues is sent and checked here too.
  *
  * --at runs the dispatcher as if it were that UTC time (the flood still
  * books in real time). Reminders only go for appointments in the next 24
@@ -48,7 +52,7 @@ class LoadMail extends BaseCommand
     protected $group       = 'Directory';
     protected $name        = 'load:mail';
     protected $description = 'Fire booking emails on the load test DB and check each one.';
-    protected $usage       = 'load:mail fire|off [--flood 20] [--workers 8] [--keep-on] [--at "Y-m-d H:i" UTC]';
+    protected $usage       = 'load:mail fire|off [--flood 20] [--workers 8] [--keep-on] [--at "Y-m-d H:i" UTC] [--with "command"]';
 
     private const LOCK = 'webscheduler_bookings_dispatch';
 
@@ -145,9 +149,20 @@ class LoadMail extends BaseCommand
 
             $secs    = (int) (CLI::getOption('flood') ?? 20);
             $workers = (int) (CLI::getOption('workers') ?? 8);
+            $with = CLI::getOption('with');
+            $side = null;
+            if (is_string($with) && $with !== '') {
+                CLI::write('Alongside: ' . $with);
+                $side = proc_open(['bash', '-c', 'cd ' . escapeshellarg(ROOTPATH) . ' && ' . $with], [1 => STDOUT, 2 => STDERR], $unused);
+            }
             if ($secs > 0) {
                 CLI::write("Booking for {$secs} s with {$workers} workers (scripts/load-flood.sh) ...");
                 passthru(sprintf('cd %s && WORKERS=%d SECS=%d PROFILE_BASE=%d bash scripts/load-flood.sh', escapeshellarg(ROOTPATH), $workers, $secs, mt_rand(0, 400)));
+            }
+            if ($side !== false && $side !== null) {
+                CLI::write('Waiting for the side command ...');
+                $code = proc_close($side);
+                CLI::write('Side command finished (exit ' . $code . ').', $code === 0 ? 'green' : 'red');
             }
             $queued = (int) $db->query("SELECT COUNT(*) AS n FROM xs_booking_notification_queue WHERE status = 'queued'")->getRow()->n;
             CLI::write("Queued after the bookings: {$queued} (reminders are queued by the first run).");
