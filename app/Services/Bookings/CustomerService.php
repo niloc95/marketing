@@ -234,6 +234,40 @@ class CustomerService
     }
 
     /**
+     * For the customer cards: each customer's next upcoming appointment, their
+     * last one that has passed, and how many they have, within the member's
+     * scope. Cancelled and no show appointments count but are never "next".
+     *
+     * @param list<int>      $customerIds
+     * @param list<int>|null $scope
+     *
+     * @return array<int,array{next:?string,last:?string,total:int}> UTC start times, by customer id
+     */
+    public function summaries(array $customerIds, ?array $scope, ?DateTimeImmutable $now = null): array
+    {
+        $customerIds = array_values(array_unique(array_map('intval', $customerIds)));
+        if ($customerIds === [] || $scope === []) {
+            return [];
+        }
+        $now      = gmdate('Y-m-d H:i:s', ($now ?? new DateTimeImmutable())->getTimestamp());
+        $upcoming = "'" . implode("','", AppointmentStatus::UPCOMING) . "'";
+        $model    = BookingAppointmentModel::forBusiness($this->listingId)
+            ->select('customer_id, COUNT(*) AS total,'
+                . " MIN(CASE WHEN status IN ({$upcoming}) AND end_at > '{$now}' THEN start_at END) AS next_at,"
+                . " MAX(CASE WHEN start_at <= '{$now}' THEN start_at END) AS last_at", false)
+            ->whereIn('customer_id', $customerIds);
+        if ($scope !== null) {
+            $model->whereIn('provider_id', array_map('intval', $scope));
+        }
+        $out = [];
+        foreach ($model->groupBy('customer_id')->findAll() as $r) {
+            $out[(int) $r['customer_id']] = ['next' => $r['next_at'], 'last' => $r['last_at'], 'total' => (int) $r['total']];
+        }
+
+        return $out;
+    }
+
+    /**
      * Counts for the customer page (Bookings' getStats()).
      *
      * @return array{total:int,upcoming:int,completed:int,cancelled:int,no_show:int}

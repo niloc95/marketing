@@ -264,7 +264,7 @@ $n = 0;
                 <li><strong>Dashboard</strong>: today's appointments and what needs attention.</li>
                 <li><strong>Notices</strong>: every booking made, moved or cancelled online. Choose <strong>Email me too</strong> to get them by email as well.</li>
                 <li><strong>Calendar</strong>: your appointments by day, week or month. Add, move or cancel one, and keep notes. Click an appointment and choose <strong>Reschedule</strong> to move it, even when the patient missed the time; completed, cancelled and no show appointments stay where they are. <strong>Email</strong> opens a short form to write to the customer: they get your message in your usual booking email with the appointment details, and their reply comes to you.</li>
-                <li><strong>Customers</strong>: everyone who has booked, with their history.</li>
+                <li><strong>Customers</strong>: everyone who has booked, as cards with their next or last appointment, <strong>Book</strong> and <strong>Call</strong>. Open a customer to see their upcoming and past appointments; click one to see it, change its status or move it without leaving their page (<strong>Open in calendar</strong> takes you to the day). Their details stay closed until you choose <strong>Edit</strong>.</li>
                 <li><strong>Services</strong> and <strong>Team</strong>: what can be booked, for how long, and with whom.</li>
                 <li><strong>Time off</strong>: times nobody can book. Public holidays follow your profile's holiday hours.</li>
                 <li><strong>Availability</strong>: the free times for any service and person, as <?= esc($audience) ?> see them. Pick a free time to book it.</li>

@@ -39,7 +39,7 @@ class Calendar extends BaseController
             'today'         => $today,
             'timezone'      => $context->timezone(),
             'open'          => preg_match('/^[0-9a-f]{32}$/', (string) $this->request->getGet('open')) ? (string) $this->request->getGet('open') : '',
-            'providers'     => $this->providers(),
+            'providers'     => self::providersInScope(),
             'services'      => (new CatalogueService($context->listingId()))->services(),
             'locations'     => (new TeamService($context->listingId()))->locationChoices($listing),
             'statuses'      => AppointmentStatus::options(),
@@ -50,7 +50,7 @@ class Calendar extends BaseController
     }
 
     /** Channels "Send again" offers: email, and WhatsApp when the business's account sends. @return array<string,string> */
-    private static function sendChannels(int $listingId): array
+    public static function sendChannels(int $listingId): array
     {
         $integrations = new \App\Services\Bookings\Notifications\BookingIntegrations($listingId);
 
@@ -102,7 +102,8 @@ class Calendar extends BaseController
     }
 
     /** @return list<array<string,mixed>> */
-    private function providers(): array
+    /** The people the member may see, for the details dialog's Reschedule (calendar and customer page). */
+    public static function providersInScope(): array
     {
         $context = service('businessContext');
         $scope   = $context->providerScope();

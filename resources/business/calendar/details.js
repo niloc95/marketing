@@ -51,7 +51,7 @@ export function initDetails(root, scheduler) {
     try {
       body = await getJson(`${root.dataset.appointmentUrl}/${id}`);
     } catch {
-      scheduler.toast(MSG.loadFailed);
+      scheduler.toast(MSG.appointmentFailed);
       return;
     }
     const a = body.data;
@@ -79,7 +79,9 @@ export function initDetails(root, scheduler) {
       fields.append(row);
     });
     q('[data-d-fields-box]').hidden = !fields.children.length;
-    link('[data-d-customer]', a.customer_hash ? `${root.dataset.customerPage}/${a.customer_hash}` : '');
+    // The calendar links to the customer; the customer page links back to the calendar.
+    if (q('[data-d-customer]')) link('[data-d-customer]', a.customer_hash ? `${root.dataset.customerPage}/${a.customer_hash}` : '');
+    if (q('[data-d-calendar]')) link('[data-d-calendar]', `${root.dataset.calendarPage}?view=day&date=${dateOf(a.start)}&open=${a.hash}`);
     link('[data-d-call]', a.phone ? `tel:${a.phone.replace(/[^\d+]/g, '')}` : '');
     link('[data-d-whatsapp]', a.whatsapp_url);
     q('[data-d-email]').hidden = !a.email;

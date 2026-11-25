@@ -4,6 +4,7 @@ namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
 use App\Services\Bookings\Notifications\OptOuts;
+use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\CustomerService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -22,9 +23,13 @@ class Customers extends BaseController
         $q       = mb_substr(trim((string) $this->request->getGet('q')), 0, 100);
         $page    = max(1, (int) $this->request->getGet('page'));
 
+        $result = $this->service()->list($q, $context->providerScope(), $page);
+
         return view('business/customers', [
-            'q'      => $q,
-            'result' => $this->service()->list($q, $context->providerScope(), $page),
+            'q'         => $q,
+            'result'    => $result,
+            'summaries' => $this->service()->summaries(array_column($result['rows'], 'id'), $context->providerScope()),
+            'timezone'  => $context->timezone(),
         ]);
     }
 
@@ -62,12 +67,28 @@ class Customers extends BaseController
         $context  = service('businessContext');
         $customer = $this->visible($hash);
 
+        // Upcoming soonest first (an appointment under way still counts), then the rest newest first.
+        $now      = gmdate('Y-m-d H:i:s');
+        $upcoming = [];
+        $past     = [];
+        foreach ($this->service()->history($customer['id'], $context->providerScope()) as $a) {
+            if (in_array($a['status'], AppointmentStatus::UPCOMING, true) && $a['end_at'] > $now) {
+                array_unshift($upcoming, $a);
+            } else {
+                $past[] = $a;
+            }
+        }
+
         return view('business/customer', [
             'customer'     => $customer,
             'old'          => flash('customer_old') ?: $customer,
             'errors'       => flash('errors') ?: [],
             'customFields' => $this->service()->customFields(),
-            'history'      => $this->service()->history($customer['id'], $context->providerScope()),
+            'upcoming'     => $upcoming,
+            'past'         => $past,
+            'providers'    => Calendar::providersInScope(),
+            'statuses'     => AppointmentStatus::options(),
+            'sendChannels' => Calendar::sendChannels($context->listingId()),
             'stats'        => $this->service()->stats($customer['id']),
             'impact'       => $context->can('customers.delete') ? $this->service()->deletionImpact($customer['id']) : null,
             'timezone'     => $context->timezone(),

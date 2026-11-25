@@ -13,6 +13,7 @@ import { dashboardPages } from './dashboard.js';
 import { initBookingForm } from './customer-picker.js';
 import { initAvailability } from './availability.js';
 import { initFind } from './find.js';
+import { initCustomerPage } from './customer-page.js';
 
 // Once per load: they live outside the swapped content.
 initTheme();
@@ -22,6 +23,7 @@ registerPage('[data-calendar]', initCalendar);
 registerPage('[data-provider-form]', initProviderForm);
 registerPage('form[data-customer-url]', initBookingForm);
 registerPage('[data-availability]', initAvailability);
+registerPage('[data-customer-view]', initCustomerPage);
 // The top bar's Find: the head is swapped with each page, so it registers like one.
 registerPage('[data-shell-find]', initFind);
 dashboardPages.forEach(([selector, init]) => registerPage(selector, init));

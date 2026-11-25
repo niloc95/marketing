@@ -516,6 +516,42 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertStringNotContainsString('data-customer-initial=', $page);
     }
 
+    public function testCustomerCardsShowNextAndLastWithinScope(): void
+    {
+        $this->book('09:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
+        $this->book('11:00', ['first_name' => 'Alice', 'email' => 'alice@example.test', 'provider_id' => $this->james]);
+        $this->book('13:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
+        $customers = new CustomerService($this->listingId);
+        $alice     = (int) $customers->findByEmail('alice@example.test')['id'];
+
+        // At 10:00 local (08:00 UTC) on the Monday: 09:00 has passed, 11:00 is next.
+        $now = new DateTimeImmutable(self::MONDAY . ' 08:00:00', new DateTimeZone('UTC'));
+        $all = $customers->summaries([$alice], null, $now)[$alice];
+        $this->assertSame([self::MONDAY . ' 07:00:00', self::MONDAY . ' 09:00:00', 3], [$all['last'], $all['next'], $all['total']]);
+
+        $sarahOnly = $customers->summaries([$alice], [$this->sarah], $now)[$alice];
+        $this->assertSame([self::MONDAY . ' 11:00:00', 2], [$sarahOnly['next'], $sarahOnly['total']], 'James\'s appointment is outside the scope');
+        $this->assertSame([], $customers->summaries([$alice], [], $now));
+        $this->assertSame([], (new CustomerService($this->otherListingId))->summaries([$alice], null, $now), 'Another business sees nothing');
+    }
+
+    public function testACustomersAppointmentsOpenInPlace(): void
+    {
+        $a     = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
+        $hash  = (new CustomerService($this->listingId))->findByEmail('alice@example.test')['hash'];
+        $page  = $this->signedIn()->get('business/customers/' . $hash)->getBody();
+
+        $this->assertStringContainsString('data-customer-view', $page);
+        $this->assertStringContainsString('data-appt-open="' . $a['id'] . '"', $page, 'the card opens the dialog on this page');
+        $this->assertStringContainsString('data-cal-details', $page);
+        $this->assertStringContainsString('data-d-calendar', $page, 'Open in calendar instead of a Customer button');
+        $this->assertStringNotContainsString('data-d-customer', $page);
+
+        $list = $this->signedIn()->get('business/customers')->getBody();
+        $this->assertStringContainsString('cust-card', $list);
+        $this->assertStringContainsString('business/appointments/new?customer=' . $hash, $list);
+    }
+
     public function testAnotherBusinessGetsNotFound(): void
     {
         $a     = $this->book('10:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);
