@@ -530,12 +530,16 @@ class PublicBookingService
      * Book. `provider_id` 0 is "anyone available": the first person free at
      * that time, in team order.
      *
+     * `$patientId` is a returning patient who proved their email on this
+     * device (ReturningPatientService, T37): the booking is theirs whatever
+     * email was posted. Never take it from the form.
+     *
      * @param array<string,mixed> $input service_id, provider_id, start (UTC Y-m-d H:i:s),
      *                                   the customer fields, field_1 ... field_6, notes, accept
      *
      * @return array{token:?string,reference:?string,errors:array<string,string>}
      */
-    public function book(array $input): array
+    public function book(array $input, ?int $patientId = null): array
     {
         $serviceId  = (int) ($input['service_id'] ?? 0);
         $providerId = (int) ($input['provider_id'] ?? 0);
@@ -578,6 +582,10 @@ class PublicBookingService
 
         // The customer as the business's form asks for them.
         $customers = new CustomerService($this->listingId);
+        $patient   = $patientId !== null ? $customers->find($patientId) : null;
+        if ($patient !== null) {
+            $input['email'] = (string) $patient['email'];
+        }
         $person    = [];
         foreach ($this->customerFields($deposit !== null) as $f) {
             $value = trim((string) ($input[$f['name']] ?? ''));
@@ -612,7 +620,9 @@ class PublicBookingService
             return ['token' => null, 'reference' => null, 'errors' => $errors];
         }
 
-        $customer = $customers->findOrCreate($person + ['notes' => null] + $customers->answers($input), null);
+        $customer = $patient !== null
+            ? $customers->updateVerified((int) $patient['id'], $person + ['notes' => null] + $customers->answers($input))
+            : $customers->findOrCreate($person + ['notes' => null] + $customers->answers($input), null);
         if ($customer['id'] === null) {
             return ['token' => null, 'reference' => null, 'errors' => $customer['errors']];
         }

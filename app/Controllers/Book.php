@@ -6,10 +6,12 @@ use App\Controllers\Concerns\RedirectsToOwningSite;
 use App\Models\Bookings\BookingAppointmentModel;
 use App\Models\DirectoryListingModel;
 use App\Services\Bookings\AppointmentStatus;
+use App\Services\Bookings\CustomerService;
 use App\Services\Bookings\Notifications\NotificationRules;
 use App\Services\Bookings\Payments\DepositService;
 use App\Services\Bookings\FreeTimesBoard;
 use App\Services\Bookings\PublicBookingService;
+use App\Services\Bookings\ReturningPatientService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -26,6 +28,9 @@ use DateTimeZone;
  *   {hash}`: all their bookings with that business. Both are private:
  *   noindex, no store, no referrer (the key is in the address).
  * - `/book/find`: emails the links; the same answer whether anything matched.
+ * - `/directory/{slug}/book/returning*`: "Booked here before?" on the details
+ *   step (T37). An emailed code or link proves the patient's email, and the
+ *   form is then filled in from their record with this business.
  *
  * All of it answers 404 while bookings are off, on a site that does not take
  * them yet (D2: co.za first), or for a profile that takes none.
@@ -35,6 +40,14 @@ class Book extends BaseController
     use RedirectsToOwningSite;
 
     public const SENT_MESSAGE = 'If that address has upcoming bookings, we have emailed it the links. Check your inbox in a minute or two.';
+
+    public const CODE_WRONG = 'That code is not right, or it has expired. Check the email and try again.';
+
+    public const CODE_TOO_MANY = 'Too many tries. Ask for a new code.';
+
+    public const LINK_EXPIRED = 'That link has expired or was already used. Ask for a new code below.';
+
+    public const TIME_GONE = 'Your details are filled in, but that time was taken in the meantime. Please pick another.';
 
     public function page(string $slug)
     {
@@ -136,6 +149,14 @@ class Book extends BaseController
         }
         $deposit = $service !== null ? ($deposits[(int) $service['id']] ?? null) : null;
 
+        // A returning patient who proved their email on this device (T37):
+        // the form starts with their details; what they typed last wins.
+        $patientId = ReturningPatientService::verifiedId((int) $listing['id']);
+        $prefill   = $patientId !== null ? (new ReturningPatientService($listing))->prefill($patientId) : [];
+        if ($patientId !== null && $prefill === []) {
+            $patientId = null;
+        }
+
         return $this->respondPrivate(view('book/page', [
             'listing'   => $listing,
             'deposits'  => $deposits,
@@ -160,8 +181,15 @@ class Book extends BaseController
             'questions' => (new \App\Services\Bookings\CustomerService((int) $listing['id']))->customFields(),
             'hasTerms'  => $svc->hasTerms(),
             'policies'  => $svc->policies(),
-            'old'       => flash('book_old') ?: [],
+            'old'       => array_merge($prefill, flash('book_old') ?: []),
             'errors'    => flash('errors') ?: [],
+            'returning' => [
+                'patient' => $patientId !== null ? trim(($prefill['first_name'] ?? '')) : null,
+                'email'   => $patientId !== null ? ($prefill['email'] ?? '') : '',
+                'pending' => $patientId === null ? ReturningPatientService::pendingEmail((int) $listing['id']) : null,
+                'error'   => flash('returning_error'),
+                'sent'    => (bool) flash('returning_sent'),
+            ],
             'timezone'  => $svc->timezone()->getName(),
             'twelveHour' => \App\Services\Bookings\BookingSettings::for((int) $listing['id'])->get('localization.time_format') === '12h',
         ]), false);
@@ -214,13 +242,7 @@ class Book extends BaseController
     {
         [$listing, $svc] = $this->bookable($slug, false);
         $post = (array) $this->request->getPost();
-        $back = base_url('directory/' . $listing['slug'] . '/book') . '?' . http_build_query(array_filter([
-            'service'  => (string) ($post['service_id'] ?? ''),
-            'place'    => ctype_digit((string) ($post['place'] ?? '')) ? (string) $post['place'] : '',
-            'provider' => ((int) ($post['provider_id'] ?? 0)) > 0 ? (string) $post['provider_id'] : 'any',
-            'date'     => $this->localDate((string) ($post['start'] ?? ''), $svc->timezone()),
-            'start'    => (string) ($post['start'] ?? ''),
-        ])) . '#details';
+        $back = $this->bookUrl($listing, $svc, $post);
 
         if (honeypot_tripped('book')) {
             return redirect()->to($back)->with('error', 'We could not take this booking. Please try again.');
@@ -240,7 +262,7 @@ class Book extends BaseController
                 ->with('error', 'Too many bookings from here in a short time. Please wait a little and try again.');
         }
 
-        $result = $svc->book($post);
+        $result = $svc->book($post, ReturningPatientService::verifiedId((int) $listing['id']));
         if ($result['errors'] !== []) {
             // A time that has gone sends them back to choose another; anything else stays on the form.
             if (isset($result['errors']['start']) || isset($result['errors']['provider_id']) || isset($result['errors']['service_id'])) {
@@ -251,7 +273,140 @@ class Book extends BaseController
                 ->with('error', reset($result['errors']));
         }
 
+        // Proven for one booking: a shared computer keeps nobody's details.
+        ReturningPatientService::forget((int) $listing['id']);
+
         return redirect()->to(base_url('book/' . $result['token'] . '?new=1'), 303);
+    }
+
+    // Booked here before? (T37)
+
+    /** Email a code and a link. The same answer whether the address is known or not. */
+    public function returningSend(string $slug)
+    {
+        [$listing, $svc] = $this->bookable($slug, false);
+        $post = (array) $this->request->getPost();
+        $back = $this->bookUrl($listing, $svc, $post);
+        if (honeypot_tripped('book_returning')) {
+            return redirect()->to($back)->with('returning_sent', true);
+        }
+        $email = CustomerService::normalEmail((string) ($post['returning_email'] ?? ''));
+        if ($email === null) {
+            return redirect()->to($back)->with('returning_error', 'Please enter the email you booked with before.');
+        }
+        $throttler = service('throttler');
+        if ($throttler->check('bookret-ip-' . md5((string) $this->request->getIPAddress()), 5, HOUR) === false
+            || $throttler->check('bookret-to-' . md5($email), 3, HOUR) === false) {
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('returning_error', 'Too many codes asked for from here. Please wait a little, or fill in your details below.');
+        }
+        // A demo profile sends nothing and says the same.
+        if (! listing_is_demo($listing)) {
+            (new ReturningPatientService($listing))->send($email, ReturningPatientService::selection($post));
+        }
+        ReturningPatientService::rememberSent((int) $listing['id'], $email);
+
+        return redirect()->to($back)->with('returning_sent', true);
+    }
+
+    /** The 6 digit code from the email. */
+    public function returningCode(string $slug)
+    {
+        [$listing, $svc] = $this->bookable($slug, false);
+        $post      = (array) $this->request->getPost();
+        $back      = $this->bookUrl($listing, $svc, $post);
+        $listingId = (int) $listing['id'];
+        $email     = ReturningPatientService::pendingEmail($listingId);
+        if ($email === null) {
+            form_outcome('expired');
+
+            return redirect()->to($back)->with('returning_error', 'Your code has expired. Ask for a new one.');
+        }
+        if (service('throttler')->check('bookcode-ip-' . md5((string) $this->request->getIPAddress()), 15, HOUR) === false) {
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('returning_error', self::CODE_TOO_MANY);
+        }
+        $customerId = (new ReturningPatientService($listing))->checkCode($email, (string) ($post['code'] ?? ''));
+        if ($customerId === null) {
+            return redirect()->to($back)->with('returning_error', ReturningPatientService::countTry($listingId) ? self::CODE_WRONG : self::CODE_TOO_MANY);
+        }
+        ReturningPatientService::rememberVerified($listingId, $customerId);
+
+        return redirect()->to($back);
+    }
+
+    /**
+     * The emailed link only asks (mail scanners open every link); the button
+     * posts to returningRedeem(). The chosen time rides along in the query.
+     */
+    public function returningLink(string $slug, string $token)
+    {
+        [$listing, $svc] = $this->bookable($slug);
+        if ($listing instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $listing;
+        }
+
+        return $this->respondPrivate(view('book/returning', [
+            'listing'   => $listing,
+            'action'    => base_url('directory/' . $listing['slug'] . '/book/returning/' . $token),
+            'selection' => ReturningPatientService::selection((array) $this->request->getGet()),
+        ]));
+    }
+
+    public function returningRedeem(string $slug, string $token)
+    {
+        [$listing, $svc] = $this->bookable($slug, false);
+        $post       = (array) $this->request->getPost();
+        $back       = $this->bookUrl($listing, $svc, $post);
+        $customerId = (new ReturningPatientService($listing))->redeemLink($token);
+        if ($customerId === null) {
+            form_outcome('expired');
+
+            return redirect()->to($back)->with('returning_error', self::LINK_EXPIRED);
+        }
+        ReturningPatientService::rememberVerified((int) $listing['id'], $customerId);
+
+        // The time may have gone while they read their email.
+        $sel = ReturningPatientService::selection($post);
+        if ($sel['start'] !== '' && $sel['service_id'] !== '') {
+            $date = $this->localDate($sel['start'], $svc->timezone());
+            $free = array_column($svc->times((int) $sel['service_id'], (int) $sel['provider_id'] > 0 ? (int) $sel['provider_id'] : null, $date, $sel['place'] !== '' ? (int) $sel['place'] : null), 'start');
+            if (! in_array($sel['start'], $free, true)) {
+                return redirect()->to($this->bookUrl($listing, $svc, ['start' => ''] + $post, '#time'))->with('error', self::TIME_GONE);
+            }
+        }
+
+        return redirect()->to($back);
+    }
+
+    /** "Not you?": the form goes back to empty. */
+    public function returningForget(string $slug)
+    {
+        [$listing, $svc] = $this->bookable($slug, false);
+        ReturningPatientService::forget((int) $listing['id']);
+
+        return redirect()->to($this->bookUrl($listing, $svc, (array) $this->request->getPost()));
+    }
+
+    /**
+     * The booking page with the time chosen so far, from the hidden fields
+     * every form on the details step carries.
+     *
+     * @param array<string,mixed> $post
+     */
+    private function bookUrl(array $listing, PublicBookingService $svc, array $post, string $anchor = '#details'): string
+    {
+        $start = (string) ($post['start'] ?? '');
+
+        return base_url('directory/' . $listing['slug'] . '/book') . '?' . http_build_query(array_filter([
+            'service'  => (string) ($post['service_id'] ?? ''),
+            'place'    => ctype_digit((string) ($post['place'] ?? '')) ? (string) $post['place'] : '',
+            'provider' => ((int) ($post['provider_id'] ?? 0)) > 0 ? (string) $post['provider_id'] : 'any',
+            'date'     => $this->localDate($start, $svc->timezone()),
+            'start'    => $start,
+        ])) . $anchor;
     }
 
     public function terms(string $slug)

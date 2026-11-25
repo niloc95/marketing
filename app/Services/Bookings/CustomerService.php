@@ -214,6 +214,44 @@ class CustomerService
     }
 
     /**
+     * A returning patient who proved their email (ReturningPatientService,
+     * T37) books as themselves: their own email is kept whatever was posted,
+     * a phone or address they typed replaces the old one, and names are
+     * still only filled in when empty (a booking never renames anyone).
+     *
+     * @param array<string,mixed> $input
+     *
+     * @return array{id:?int,created:bool,errors:array<string,string>}
+     */
+    public function updateVerified(int $customerId, array $input): array
+    {
+        $existing = $this->find($customerId);
+        if ($existing === null) {
+            return ['id' => null, 'created' => false, 'errors' => ['email' => 'Please check your details and try again.']];
+        }
+        [$data, $errors] = $this->clean(['email' => $existing['email']] + $input);
+        if ($errors !== []) {
+            return ['id' => null, 'created' => false, 'errors' => $errors];
+        }
+        $patch = [];
+        foreach (['first_name', 'last_name'] as $field) {
+            if ($data[$field] !== null && trim((string) ($existing[$field] ?? '')) === '') {
+                $patch[$field] = $data[$field];
+            }
+        }
+        foreach (['phone', 'address'] as $field) {
+            if ($data[$field] !== null && $data[$field] !== $existing[$field]) {
+                $patch[$field] = $data[$field];
+            }
+        }
+        if ($patch !== []) {
+            BookingCustomerModel::forBusiness($this->listingId)->update($customerId, $patch);
+        }
+
+        return ['id' => $customerId, 'created' => false, 'errors' => []];
+    }
+
+    /**
      * Appointments of one customer, newest first, within the member's scope.
      *
      * @param list<int>|null $scope

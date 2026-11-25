@@ -31,6 +31,7 @@
  * @var array<string,string>           $errors
  * @var string                         $timezone
  * @var bool                           $twelveHour
+ * @var array{patient:?string,email:string,pending:?string,error:mixed,sent:bool} $returning "Booked here before?" (T37)
  */
 $siteName = config('Directory')->siteName();
 $base     = 'directory/' . $listing['slug'] . '/book';
@@ -206,14 +207,25 @@ if ($service !== null) {
 
         <?php // 4. Your details ?>
         <?php if ($slot !== null): ?>
-            <form method="post" action="<?= base_url($base) ?>" class="form-card" id="details">
+            <div class="form-card" id="details">
+            <h2 class="book-step-title">Your details</h2>
+            <?= view('book/_returning', [
+                'base'      => $base,
+                'returning' => $returning,
+                'hidden'    => [
+                    'service_id'  => (string) $service['id'],
+                    'provider_id' => $provider !== null ? (string) $provider['id'] : '0',
+                    'place'       => $place !== null ? (string) $place['id'] : '',
+                    'start'       => (string) $slot['start'],
+                ],
+            ], ['saveData' => false]) ?>
+            <form method="post" action="<?= base_url($base) ?>">
                 <?= csrf_field() ?>
                 <?= honeypot_field() ?>
                 <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
                 <input type="hidden" name="provider_id" value="<?= $provider !== null ? (int) $provider['id'] : 0 ?>">
                 <?php if ($place !== null): ?><input type="hidden" name="place" value="<?= (int) $place['id'] ?>"><?php endif ?>
                 <input type="hidden" name="start" value="<?= esc($slot['start'], 'attr') ?>">
-                <h2 class="book-step-title">Your details</h2>
                 <?php if (count($modes) > 1): ?>
                     <fieldset class="field">
                         <legend class="mb-1 text-sm font-semibold">How would you like it?</legend>
@@ -231,7 +243,7 @@ if ($service !== null) {
                         <div class="field">
                             <label for="bk-<?= $f['name'] ?>"><?= $labels[$f['name']] ?><?= $f['required'] ? '' : ' <span class="font-normal text-slate-500">(optional)</span>' ?></label>
                             <input id="bk-<?= $f['name'] ?>" type="<?= $types[$f['name']] ?? 'text' ?>" name="<?= $f['name'] ?>" value="<?= esc($val($f['name']), 'attr') ?>" maxlength="<?= $f['name'] === 'email' ? 190 : 80 ?>"
-                                   autocomplete="<?= ['first_name' => 'given-name', 'last_name' => 'family-name', 'email' => 'email', 'phone' => 'tel'][$f['name']] ?? 'off' ?>"<?= $f['required'] ? ' required' : '' ?>>
+                                   autocomplete="<?= ['first_name' => 'given-name', 'last_name' => 'family-name', 'email' => 'email', 'phone' => 'tel'][$f['name']] ?? 'off' ?>"<?= $f['required'] ? ' required' : '' ?><?= $f['name'] === 'email' && $returning['patient'] !== null ? ' readonly' : '' ?>>
                             <?= $err($f['name']) ?>
                         </div>
                     <?php endforeach ?>
@@ -273,6 +285,7 @@ if ($service !== null) {
                 <?php endif ?>
                 <button type="submit" class="btn btn-accent btn-block"><?= $deposit !== null ? 'Book and pay the deposit' : 'Book ' . esc((string) $service['name']) . ', ' . esc($dayName((string) $date)) . ' at ' . esc($clock($slot['time'])) ?></button>
             </form>
+            </div>
         <?php endif ?>
 
         </div>
