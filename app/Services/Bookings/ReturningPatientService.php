@@ -16,8 +16,11 @@ use DateTimeImmutable;
  * - **One email, a code and a link.** The 6 digit code keeps a phone user on
  *   the page they were on; the link (carrying the chosen time) is for anyone
  *   who would rather click. Both are stored hashed on the customer row
- *   (`login_*`, the only columns of xs_booking_customers written here), both
- *   end after CODE_MINUTES, and using either clears both.
+ *   (`login_*`, the only columns of xs_booking_customers written here): the
+ *   link as SHA-256 (256 random bits need no key), the code as HMAC SHA-256
+ *   keyed with encryption.key, so a copy of the database alone cannot be
+ *   searched for a 6 digit code. The code ends after CODE_MINUTES, the link
+ *   after LINK_MINUTES, and using either clears both.
  * - **Nothing says whether someone is a patient.** An unknown email gets the
  *   same answer as a known one and no mail is sent; a code typed for an
  *   unknown email simply never matches. Seeing a particular doctor is
@@ -32,7 +35,11 @@ use DateTimeImmutable;
  */
 class ReturningPatientService
 {
-    public const CODE_MINUTES = 15;
+    /** How long the emailed code works. */
+    public const CODE_MINUTES = 5;
+
+    /** How long the emailed link works. */
+    public const LINK_MINUTES = 10;
 
     public const MAX_TRIES = 5;
 
@@ -65,13 +72,21 @@ class ReturningPatientService
         if ($customer === null) {
             return;
         }
+        if (self::key() === '') {
+            // Never store a code hashed without the key (the partner bank
+            // details rule): send nothing, and say so in the log.
+            log_message('critical', 'Returning patient code not sent: encryption.key is not set.');
+
+            return;
+        }
         $code  = sprintf('%06d', random_int(0, 999999));
         $token = TokenHash::mint();
         BookingCustomerModel::forBusiness($this->listingId)->update((int) $customer['id'], [
             'login_token_hash' => TokenHash::hash($token),
             'login_code_hash'  => $this->codeHash($code, (string) $customer['hash']),
-            'login_expires'    => gmdate('Y-m-d H:i:s', $this->now->getTimestamp() + self::CODE_MINUTES * 60),
-            'login_tries'      => 0,
+            'login_expires'      => gmdate('Y-m-d H:i:s', $this->now->getTimestamp() + self::LINK_MINUTES * 60),
+            'login_code_expires' => gmdate('Y-m-d H:i:s', $this->now->getTimestamp() + self::CODE_MINUTES * 60),
+            'login_tries'        => 0,
         ]);
 
         $query = array_filter(self::selection($selection), static fn (string $v): bool => $v !== '');
@@ -82,7 +97,8 @@ class ReturningPatientService
             'firstName' => (string) $customer['first_name'],
             'code'      => $code,
             'link'      => $link,
-            'minutes'   => self::CODE_MINUTES,
+            'codeMinutes' => self::CODE_MINUTES,
+            'linkMinutes' => self::LINK_MINUTES,
         ], ['saveData' => false]);
         (new Mailer())->send($email, 'Your code to book with ' . $this->listing['display_name'], $body, '', [
             'fromName' => $this->listing['display_name'] . ' via WebScheduler Local',
@@ -94,7 +110,8 @@ class ReturningPatientService
     {
         $code     = preg_replace('/\D+/', '', $code) ?? '';
         $customer = $this->customerByEmail($email);
-        if ($customer === null || strlen($code) !== 6 || ! $this->live($customer)) {
+        if ($customer === null || strlen($code) !== 6 || self::key() === '' || ! $this->live($customer, 'login_code_expires')
+            || (string) ($customer['login_code_hash'] ?? '') === '') {
             return null;
         }
         if (! hash_equals((string) $customer['login_code_hash'], $this->codeHash($code, (string) $customer['hash']))) {
@@ -118,7 +135,7 @@ class ReturningPatientService
         }
         $customer = BookingCustomerModel::forBusiness($this->listingId)
             ->where('login_token_hash', TokenHash::hash($token))->where('purged_at', null)->first();
-        if (! is_array($customer) || ! $this->live($customer)) {
+        if (! is_array($customer) || ! $this->live($customer, 'login_expires')) {
             return null;
         }
         BookingCustomerModel::forBusiness($this->listingId)->update((int) $customer['id'], $this->cleared());
@@ -248,24 +265,51 @@ class ReturningPatientService
         return is_array($row) ? $row : null;
     }
 
-    /** @param array<string,mixed> $customer */
-    private function live(array $customer): bool
+    /**
+     * Whether the code (login_code_expires) or the link (login_expires) is
+     * still live: not past its time and not spent by five wrong codes.
+     *
+     * @param array<string,mixed> $customer
+     */
+    private function live(array $customer, string $expiresColumn): bool
     {
-        return ! empty($customer['login_expires'])
-            && (string) $customer['login_expires'] > gmdate('Y-m-d H:i:s', $this->now->getTimestamp())
+        return ! empty($customer[$expiresColumn])
+            && (string) $customer[$expiresColumn] > gmdate('Y-m-d H:i:s', $this->now->getTimestamp())
             && (int) ($customer['login_tries'] ?? 0) < self::MAX_TRIES;
     }
 
     /** @return array<string,null> */
     private function cleared(): array
     {
-        return ['login_token_hash' => null, 'login_code_hash' => null, 'login_expires' => null, 'login_tries' => null];
+        return ['login_token_hash' => null, 'login_code_hash' => null, 'login_expires' => null, 'login_code_expires' => null, 'login_tries' => null];
     }
 
-    /** Salted with the customer's own hash, so one code's hash says nothing about another row. */
+    /**
+     * HMAC SHA-256 keyed with encryption.key, over the code and the
+     * customer's own hash (so one row's value says nothing about another's).
+     * Compared with hash_equals() only.
+     */
     private function codeHash(string $code, string $customerHash): string
     {
-        return hash('sha256', $code . '|' . $customerHash . '|' . config('Encryption')->key);
+        return hash_hmac('sha256', $code . '|' . $customerHash, self::key());
+    }
+
+    /**
+     * The application's encryption.key as raw bytes ('' when it is not set),
+     * read like CI4's Encrypter reads it: `hex2bin:` and `base64:` prefixes
+     * decoded.
+     */
+    private static function key(): string
+    {
+        $key = (string) (config('Encryption')->key ?? '');
+        if (str_starts_with($key, 'hex2bin:')) {
+            return (string) hex2bin(substr($key, 8));
+        }
+        if (str_starts_with($key, 'base64:')) {
+            return (string) base64_decode(substr($key, 7), true);
+        }
+
+        return $key;
     }
 
     /** @return array<string,mixed> */

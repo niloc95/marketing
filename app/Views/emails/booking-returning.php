@@ -8,7 +8,8 @@
  * @var string $firstName
  * @var string $code
  * @var string $link
- * @var int    $minutes
+ * @var int    $codeMinutes
+ * @var int    $linkMinutes
  */
 ?>
 <?= $this->extend('emails/_layout') ?>
@@ -20,5 +21,5 @@
         <p style="margin:18px 0">
             <a href="<?= esc($link) ?>" style="background:#F77F00;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:11px;display:inline-block">Continue my booking</a>
         </p>
-        <p style="font-size:13px;color:#64748b">The code and the link work once, for <?= (int) $minutes ?> minutes. Never share them: anyone with them can book as you. If you did not ask for this email, you can ignore it.</p>
+        <p style="font-size:13px;color:#64748b">The code works for <?= (int) $codeMinutes ?> minutes and the link for <?= (int) $linkMinutes ?>, once each. Never share them: anyone with them can book as you. If you did not ask for this email, you can ignore it.</p>
 <?= $this->endSection() ?>

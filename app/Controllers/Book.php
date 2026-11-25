@@ -47,6 +47,11 @@ class Book extends BaseController
 
     public const LINK_EXPIRED = 'That link has expired or was already used. Ask for a new code below.';
 
+    public const LINK_TOO_MANY = 'Too many tries with booking links from here. Please wait a little, or fill in your details below.';
+
+    /** Failed link uses allowed per IP an hour (returningRedeem()). */
+    public const LINK_TRIES_PER_HOUR = 10;
+
     public const TIME_GONE = 'Your details are filled in, but that time was taken in the meantime. Please pick another.';
 
     public function page(string $slug)
@@ -340,6 +345,8 @@ class Book extends BaseController
     /**
      * The emailed link only asks (mail scanners open every link); the button
      * posts to returningRedeem(). The chosen time rides along in the query.
+     * This page looks nothing up, so opening or refreshing it tells nobody
+     * whether a token is real, and it is not counted.
      */
     public function returningLink(string $slug, string $token)
     {
@@ -358,15 +365,34 @@ class Book extends BaseController
     public function returningRedeem(string $slug, string $token)
     {
         [$listing, $svc] = $this->bookable($slug, false);
-        $post       = (array) $this->request->getPost();
-        $back       = $this->bookUrl($listing, $svc, $post);
+        $post      = (array) $this->request->getPost();
+        $back      = $this->bookUrl($listing, $svc, $post);
+        $listingId = (int) $listing['id'];
+
+        // Pressed twice, or the form sent again: already proven on this
+        // device, so straight back. Nothing is checked, so nothing is counted.
+        if (ReturningPatientService::verifiedId($listingId) !== null) {
+            return redirect()->to($back);
+        }
+        // Only failed uses count (10 an hour per client IP, which behind
+        // Cloudflare is CF-Connecting-IP, trusted only from Cloudflare's
+        // ranges: Config\App::$proxyIPs). A cost 0 check reads the bucket
+        // without spending it.
+        $throttler = service('throttler');
+        $bucket    = 'booklink-ip-' . md5((string) $this->request->getIPAddress());
+        if ($throttler->check($bucket, self::LINK_TRIES_PER_HOUR, HOUR, 0) === false) {
+            form_outcome('throttled');
+
+            return redirect()->to($back)->with('returning_error', self::LINK_TOO_MANY);
+        }
         $customerId = (new ReturningPatientService($listing))->redeemLink($token);
         if ($customerId === null) {
+            $throttler->check($bucket, self::LINK_TRIES_PER_HOUR, HOUR);
             form_outcome('expired');
 
             return redirect()->to($back)->with('returning_error', self::LINK_EXPIRED);
         }
-        ReturningPatientService::rememberVerified((int) $listing['id'], $customerId);
+        ReturningPatientService::rememberVerified($listingId, $customerId);
 
         // The time may have gone while they read their email.
         $sel = ReturningPatientService::selection($post);

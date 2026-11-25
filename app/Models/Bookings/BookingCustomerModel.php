@@ -17,6 +17,6 @@ class BookingCustomerModel extends BookingScopedModel
     protected $allowedFields = [
         'listing_id', 'hash', 'first_name', 'last_name', 'email', 'phone', 'address', 'notes',
         'custom_fields', 'purged_at',
-        'login_token_hash', 'login_code_hash', 'login_expires', 'login_tries',
+        'login_token_hash', 'login_code_hash', 'login_expires', 'login_code_expires', 'login_tries',
     ];
 }
