@@ -4804,6 +4804,27 @@
   .cust-card-actions .btn, .cust-edit .btn, #their-data .btn { @apply inline-flex items-center gap-1.5; }
   .cust-avatar { @apply grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-50 text-sm font-bold text-primary-700 dark:bg-primary-500/15 dark:text-primary-200; }
 
+  /* Services list (business/services.php): cards like Customers, then the
+     categories as one titled section with a row each. */
+  .svc-cards { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-3; }
+  .svc-card { @apply flex flex-col gap-3 p-5; }
+  .svc-card-archived { @apply opacity-60; }
+  .svc-card-head { @apply block rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300; }
+  .svc-card-head:hover .svc-card-name { @apply underline; }
+  .svc-card-name { @apply block break-words font-semibold text-slate-900 dark:text-white; }
+  .svc-card-cat { @apply mt-1 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400; }
+  .svc-card-lines { @apply space-y-1.5 text-sm text-slate-700 dark:text-slate-200; }
+  .svc-card-lines li { @apply flex items-start gap-2; }
+  .svc-card-lines svg { @apply mt-0.5 shrink-0 text-slate-400; }
+  .svc-card-actions { @apply mt-auto flex flex-wrap gap-2; }
+  .svc-card-actions .btn, .svc-cat-row .btn { @apply inline-flex items-center gap-1.5; }
+  .svc-cat-rows { @apply divide-y divide-slate-200 dark:divide-slate-700; }
+  .svc-cat-row { @apply flex flex-wrap items-center gap-2 py-3 first:pt-0 last:pb-0; }
+  .svc-cat-form { @apply flex min-w-0 flex-1 flex-wrap items-center gap-2; }
+  .svc-cat-name { flex: 1 1 calc(100% - 1.25rem); }
+  .svc-cat-form { flex-basis: 100%; }
+  @media (min-width: 640px) { .svc-cat-name, .svc-cat-form { flex: 1 1 0%; } }
+
   /* A service (business/service_form.php): titled sections on the left,
      a sticky summary of what customers see with the actions on the right.
      Choices (how it is given, who offers it) are checkbox cards; a ticked
