@@ -28,12 +28,12 @@ $members   = $cover['members'];
                 <tr>
                     <th>Customers book</th>
                     <?php foreach ($members as $m): ?>
-                        <th class="text-center">
+                        <th class="text-left align-bottom">
                             <input type="hidden" name="members[]" value="<?= (int) $m['id'] ?>">
                             <span class="block"><?= esc((string) ($m['account_name'] ?: $m['account_email'])) ?></span>
                             <span class="block text-xs font-normal text-slate-500 dark:text-slate-400"><?= esc($roleLabels[$m['role']] ?? '') ?></span>
                             <?php if ($m['role'] === BookingPermissions::ADMIN): ?>
-                                <label class="mt-1 inline-flex items-center gap-1 text-xs font-normal"><input type="checkbox" name="all[]" value="<?= (int) $m['id'] ?>"<?= (int) $m['notices_all'] === 1 ? ' checked' : '' ?>> Everyone</label>
+                                <label class="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-normal"><input type="checkbox" name="all[]" value="<?= (int) $m['id'] ?>"<?= (int) $m['notices_all'] === 1 ? ' checked' : '' ?>> Everyone</label>
                             <?php endif ?>
                         </th>
                     <?php endforeach ?>
@@ -51,15 +51,17 @@ $members   = $cover['members'];
                             $can   = $staff || in_array($pid, $cover['canCover'][$mid] ?? [], true);
                             $ref   = esc((string) ($m['account_name'] ?: $m['account_email']), 'attr') . ', ' . esc((string) $p['name'], 'attr');
                             ?>
-                            <td class="text-center text-xs">
+                            <td class="text-xs">
+                                <div class="flex flex-col items-start gap-1.5">
                                 <?php if ($staff): ?>
-                                    <label class="flex items-center justify-center gap-1"><input type="checkbox" name="looks[<?= $mid ?>][]" value="<?= $pid ?>" aria-label="<?= $ref ?>: looks after"<?= in_array($pid, $cover['looks'][$mid] ?? [], true) ? ' checked' : '' ?>> Looks after</label>
+                                    <label class="inline-flex items-center gap-1.5 whitespace-nowrap"><input type="checkbox" name="looks[<?= $mid ?>][]" value="<?= $pid ?>" aria-label="<?= $ref ?>: looks after"<?= in_array($pid, $cover['looks'][$mid] ?? [], true) ? ' checked' : '' ?>> Looks after</label>
                                 <?php endif ?>
                                 <?php if ($can): ?>
-                                    <label class="flex items-center justify-center gap-1"><input type="checkbox" name="notices[<?= $mid ?>][]" value="<?= $pid ?>" aria-label="<?= $ref ?>: notices"<?= in_array($pid, $cover['notices'][$mid] ?? [], true) ? ' checked' : '' ?>> Notices</label>
+                                    <label class="inline-flex items-center gap-1.5 whitespace-nowrap"><input type="checkbox" name="notices[<?= $mid ?>][]" value="<?= $pid ?>" aria-label="<?= $ref ?>: notices"<?= in_array($pid, $cover['notices'][$mid] ?? [], true) ? ' checked' : '' ?>> Notices</label>
                                 <?php else: ?>
                                     <span class="text-slate-400" title="Team members only get notices for their own bookings">&middot;</span>
                                 <?php endif ?>
+                                </div>
                             </td>
                         <?php endforeach ?>
                     </tr>
